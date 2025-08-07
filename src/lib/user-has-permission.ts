@@ -1,0 +1,32 @@
+import { useEffect } from "react";
+
+import { PermissionKey } from "@/app/(protected)/_components/dto";
+import { useAuthStore } from "../store/auth-store";
+
+type AccessType = "read" | "write";
+
+const useHasPermission = (
+  requiredPermissionKey: PermissionKey,
+  accessType: AccessType = "read",
+): boolean => {
+  const { role, permissions, loadAuth, isLoaded } = useAuthStore();
+
+  useEffect(() => {
+    if (!isLoaded || role === null) {
+      loadAuth();
+    }
+  }, [isLoaded, role, loadAuth]);
+
+  if (role === "MASTER" || role === "BUSINESS_ADMIN") {
+    return true;
+  }
+
+  const permission = permissions.find(
+    (perm) => perm.permissionKey === requiredPermissionKey,
+  );
+
+  if (!permission) return false;
+  return accessType === "write" ? permission.canWrite : permission.canRead;
+};
+
+export { useHasPermission };

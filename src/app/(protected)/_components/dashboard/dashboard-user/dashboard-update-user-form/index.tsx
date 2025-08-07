@@ -1,0 +1,324 @@
+import { useFormState, useFormStatus } from "react-dom";
+import {
+  Dialog,
+  DialogScrollContent,
+  DialogDescription,
+  DialogTitle,
+  DialogHeader,
+} from "@/components/ui/dialog";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Loader, X } from "lucide-react";
+
+import FormInput from "@/components/custom/form-input";
+import { Label } from "@/components/ui/label";
+
+import { DashboardUserRegistrationProps } from "../dto";
+import {
+  useUpdateGenerateRandomPassword,
+  useDashboardUpdateUserForm,
+} from "./hooks";
+
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateUserRegistration } from "@/actions/update-user-registration";
+
+import {
+  DashboardUpdateUserContainerProps,
+  DashboardUpdateUserFormState,
+} from "./dto";
+import { roleLabels, UserBusinessRole } from "../../../dto";
+
+import { SearchProfileAccess } from "../../../search-profile-access";
+
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth-store";
+
+interface UpdateUserProps {
+  userData: DashboardUserRegistrationProps;
+  handleOpenUpdateUser: () => void;
+  isUpdateUser: boolean;
+}
+
+const DashboardUpdateUserFormContainer = ({
+  state,
+  handleUpdateSearchProfileAccessInputValue,
+  handleUpdateUserEmail,
+  handleUpdateUserName,
+  handleUpdateUserRole,
+  handleOpenUpdateUser,
+  isDirty,
+  userValues: {
+    userEmail,
+    userName,
+    userRole,
+    commandProfileAccessInputValue: { searchProfileAccessInputValue },
+  },
+}: DashboardUpdateUserContainerProps) => {
+  const { pending } = useFormStatus();
+  const { handleGeneratePassword, handleChangePassword, password } =
+    useUpdateGenerateRandomPassword();
+
+  const { businessId } = useAuthStore();
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+        <FormInput
+          label={"Email"}
+          htmlfor={"email"}
+          name="email"
+          type="email"
+          onChange={(event) => handleUpdateUserEmail(event.currentTarget.value)}
+          errorName={state?.updateUserError?.email}
+          placeholder={"E-mail"}
+          disabled={pending}
+          value={userEmail}
+        />
+
+        <FormInput
+          label={"Nome"}
+          htmlfor={"name"}
+          name="name"
+          type="text"
+          onChange={(event) => handleUpdateUserName(event.currentTarget.value)}
+          errorName={state?.updateUserError?.name}
+          placeholder={"Nome"}
+          disabled={pending}
+          value={userName}
+        />
+
+        <div className="w-full flex flex-col gap-3">
+          <Label
+            htmlFor="role"
+            className={cn(
+              state.updateUserError?.role && "h-4 truncate text-red-500",
+            )}
+          >
+            {state.updateUserError?.role
+              ? state.updateUserError?.role
+              : "Nível de acesso"}
+          </Label>
+
+          <Select
+            name="role"
+            disabled={pending}
+            value={userRole}
+            onValueChange={(value) => {
+              handleUpdateUserRole(value);
+
+              handleUpdateSearchProfileAccessInputValue({
+                profileAccessId: "",
+                searchProfileAccessInputValue: "",
+              });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Nível de acesso" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(UserBusinessRole).map((role) => (
+                <SelectItem
+                  key={role}
+                  value={role}
+                  className="cursor-pointer 
+                  hover:bg-accent hover:text-accent-foreground"
+                >
+                  {roleLabels[role]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-end gap-2 w-full">
+          <div className="w-full -mt-1">
+            <FormInput
+              label="Senha"
+              htmlfor="password"
+              name="password"
+              type="password"
+              errorName={state?.updateUserError?.password}
+              placeholder="Senha"
+              value={password}
+              onChange={(e) => handleChangePassword(e.target.value)}
+              disabled={pending}
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handleGeneratePassword}
+            disabled={pending}
+          >
+            Gerar
+          </Button>
+        </div>
+      </div>
+
+      {userRole &&
+        searchProfileAccessInputValue &&
+        userRole !== "BUSINESS_ADMIN" &&
+        searchProfileAccessInputValue !== "N/A" && (
+          <div className="grid grid-cols-1 gap-4 w-full mt-6">
+            <div className="flex items-center gap-2 w-full ml-auto">
+              <div
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-dashed truncate h-8 text-left",
+                )}
+              >
+                <span>Perfil:</span>
+                <span className="w-full truncate">
+                  {searchProfileAccessInputValue}
+                </span>
+              </div>
+
+              <Button
+                className="h-8 w-4"
+                variant="ghost"
+                onClick={() =>
+                  handleUpdateSearchProfileAccessInputValue({
+                    profileAccessId: "",
+                    searchProfileAccessInputValue: "",
+                  })
+                }
+              >
+                <X />
+              </Button>
+            </div>
+          </div>
+        )}
+
+      {userRole && userRole !== "BUSINESS_ADMIN" && (
+        <div className="grid mt-4 grid-cols-1 gap-4">
+          <SearchProfileAccess
+            errorProfileAccessId={state.updateUserError?.profileAccessId}
+            searchProfileAccessInputValue={searchProfileAccessInputValue}
+            businessId={businessId as string}
+            handleUpdateSearchProfileAccessInputValue={
+              handleUpdateSearchProfileAccessInputValue
+            }
+          />
+        </div>
+      )}
+
+      <div className="flex justify-end mt-8 gap-2">
+        <Button type="button" variant="outline" onClick={handleOpenUpdateUser}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={pending || (!isDirty && !password)}>
+          <span>Editar Usuário</span>
+          {pending && (
+            <div className="ml-2 animate-spin">
+              <Loader />
+            </div>
+          )}
+        </Button>
+      </div>
+    </>
+  );
+};
+
+const DashboardUpdateUserForm = ({
+  userData,
+  handleOpenUpdateUser,
+  isUpdateUser,
+}: UpdateUserProps): JSX.Element => {
+  const defaultState: DashboardUpdateUserFormState = {};
+  const [state, dispatch] = useFormState(handleUpdateUserRegistration, null);
+
+  const {
+    formRef,
+    handleUpdateSearchProfileAccessInputValue,
+    handleUpdateUserEmail,
+    handleUpdateUserName,
+    handleUpdateUserRole,
+    commandProfileAccessInputValue,
+    userEmail,
+    userName,
+    userRole,
+    isDirty,
+  } = useDashboardUpdateUserForm({
+    state,
+    handleOpenUpdateUser,
+    userValues: userData,
+    isUpdateUser,
+  });
+
+  const { businessId } = useAuthStore();
+
+  return (
+    <Dialog
+      onOpenChange={() => {
+        if (isUpdateUser) {
+          formRef.current?.reset();
+
+          const resetProfileAccessInputValue = {
+            searchProfileAccessInputValue: "",
+            profileAccessId: "",
+          };
+
+          handleUpdateSearchProfileAccessInputValue(
+            resetProfileAccessInputValue,
+          );
+        }
+
+        handleOpenUpdateUser();
+      }}
+      open={isUpdateUser}
+    >
+      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Editar Usuário</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Insira as informações solicitadas abaixo para concluir a edição do
+            usuário.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          ref={formRef}
+          action={(formData: FormData) => {
+            const extraData = {
+              businessId: businessId as string,
+              profileAccessId: commandProfileAccessInputValue.profileAccessId,
+              userId: userData.id,
+            };
+
+            appendExtraDataToForm(formData, extraData);
+            return dispatch(formData);
+          }}
+        >
+          <DashboardUpdateUserFormContainer
+            state={state ?? defaultState}
+            handleOpenUpdateUser={handleOpenUpdateUser}
+            handleUpdateUserEmail={handleUpdateUserEmail}
+            handleUpdateUserName={handleUpdateUserName}
+            handleUpdateUserRole={handleUpdateUserRole}
+            handleUpdateSearchProfileAccessInputValue={
+              handleUpdateSearchProfileAccessInputValue
+            }
+            isDirty={isDirty}
+            userValues={{
+              userEmail,
+              userName,
+              userRole,
+              commandProfileAccessInputValue,
+            }}
+          />
+        </form>
+      </DialogScrollContent>
+    </Dialog>
+  );
+};
+
+export { DashboardUpdateUserForm };

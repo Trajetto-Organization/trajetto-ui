@@ -1,0 +1,294 @@
+import { useFormState, useFormStatus } from "react-dom";
+import { Loader, X } from "lucide-react";
+
+import {
+  Dialog,
+  DialogScrollContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+import { Button, buttonVariants } from "@/components/ui/button";
+
+import { handleUpdatePart } from "@/actions/update-part";
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+import { UpdatePartContainerProps, UpdatePartFormState } from "./dto";
+
+import { PartProps } from "../dto";
+import { useUpdatePartForm } from "./hooks";
+
+import { SearchBusiness } from "../../../search-business";
+import { SearchSupplier } from "../../../search-supplier";
+
+import FormInput from "@/components/custom/form-input";
+
+import { cn } from "@/lib/utils";
+
+interface UpdatePartProps {
+  partData: PartProps;
+  handleCloseUpdatePart: () => void;
+  isUpdatePartOpen: boolean;
+}
+
+const UpdatePartFormContainer = ({
+  state,
+  handleCloseUpdatePart,
+  handleUpdateDescription,
+  handleUnitPriceChange,
+  handleUnitPriceBlur,
+  isDirty,
+  handleUpdateSearchBussinessInputValue,
+  handleUpdateSearchSupplierInputValue,
+  partValues: {
+    description,
+    displayUnitPrice,
+    commandBusinnessInputValue: { searchBusinessInputValue, businessId },
+    commandSupplierInputValue: { searchSupplierInputValue },
+  },
+}: UpdatePartContainerProps): JSX.Element => {
+  const { pending } = useFormStatus();
+
+  return (
+    <div className="space-y-6 mt-2">
+      <div className="space-y-5">
+        <FormInput
+          label={"Descrição da Peça"}
+          htmlfor={"description"}
+          name="description"
+          type="text"
+          errorName={state.updatePartError?.description}
+          value={description}
+          onChange={(event) =>
+            handleUpdateDescription(event.currentTarget.value)
+          }
+          placeholder={"Digite a descrição da peça"}
+          disabled={pending}
+        />
+
+        <FormInput
+          label={"Preço Unitário"}
+          htmlfor={"unit_price"}
+          name="unit_price"
+          type="text"
+          errorName={state.updatePartError?.unit_price}
+          value={displayUnitPrice}
+          onChange={handleUnitPriceChange}
+          onBlur={handleUnitPriceBlur}
+          placeholder={"0,00"}
+          disabled={pending}
+        />
+      </div>
+
+      {((searchSupplierInputValue && searchSupplierInputValue !== "N/A") ||
+        searchBusinessInputValue) && (
+        <div className="grid grid-cols-2 gap-4 w-full">
+          {searchBusinessInputValue && (
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-dashed truncate h-8 text-left",
+                )}
+              >
+                <span>Empresa:</span>
+                <span className="w-full truncate">
+                  {searchBusinessInputValue}
+                </span>
+              </div>
+
+              <Button
+                className="h-8 w-4"
+                variant="ghost"
+                onClick={() =>
+                  handleUpdateSearchBussinessInputValue({
+                    businessId: "",
+                    searchBusinessInputValue: "",
+                  })
+                }
+              >
+                <X />
+              </Button>
+            </div>
+          )}
+
+          {searchSupplierInputValue && searchSupplierInputValue !== "N/A" && (
+            <div className="flex items-center gap-2 w-full ml-auto">
+              <div
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-dashed truncate h-8 text-left",
+                )}
+              >
+                <span>Fornecedor:</span>
+                <span className="w-full truncate">
+                  {searchSupplierInputValue}
+                </span>
+              </div>
+
+              <Button
+                className="h-8 w-4"
+                variant="ghost"
+                onClick={() =>
+                  handleUpdateSearchSupplierInputValue({
+                    supplierId: "",
+                    searchSupplierInputValue: "",
+                  })
+                }
+              >
+                <X />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div
+        className={`grid ${
+          searchBusinessInputValue
+            ? "grid-cols-1 md:grid-cols-2"
+            : "grid-cols-1"
+        } gap-4`}
+      >
+        <SearchBusiness
+          handleUpdateSearchBussinessInputValue={
+            handleUpdateSearchBussinessInputValue
+          }
+          searchBusinessInputValue={searchBusinessInputValue}
+          errorBusinessId={state.updatePartError?.businessId}
+        />
+
+        {searchBusinessInputValue && (
+          <SearchSupplier
+            errorSupplierId={state.updatePartError?.supplierId}
+            searchSupplierInputValue={
+              searchSupplierInputValue === "N/A" ? "" : searchSupplierInputValue
+            }
+            businessId={businessId}
+            handleUpdateSearchSupplierInputValue={
+              handleUpdateSearchSupplierInputValue
+            }
+            isOptional={true}
+          />
+        )}
+      </div>
+
+      <div className="flex justify-end mt-6 gap-2">
+        <Button type="button" variant="outline" onClick={handleCloseUpdatePart}>
+          Cancelar
+        </Button>
+        <Button type="submit" disabled={pending || !isDirty}>
+          <span>Editar Peça</span>
+          {pending && (
+            <div className="ml-2 animate-spin">
+              <Loader />
+            </div>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+const UpdatePartForm = ({
+  partData,
+  handleCloseUpdatePart,
+  isUpdatePartOpen,
+}: UpdatePartProps): JSX.Element => {
+  const defaultState: UpdatePartFormState = {};
+  const [state, dispatch] = useFormState(handleUpdatePart, null);
+
+  const {
+    formRef,
+    description,
+    displayUnitPrice,
+    isDirty,
+    handleUpdateDescription,
+    handleUnitPriceChange,
+    handleUnitPriceBlur,
+    commandBusinnessInputValue,
+    commandSupplierInputValue,
+    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchSupplierInputValue,
+  } = useUpdatePartForm({
+    state,
+    partValues: partData,
+    isUpdatePartOpen,
+    handleCloseUpdatePart,
+  });
+
+  return (
+    <Dialog
+      onOpenChange={() => {
+        if (isUpdatePartOpen) {
+          formRef.current?.reset();
+
+          const resetBusinessInputValue = {
+            searchBusinessInputValue: "",
+            businessId: "",
+          };
+
+          const resetProfileAccessInputValue = {
+            searchSupplierInputValue: "",
+            supplierId: "",
+          };
+
+          handleUpdateSearchBussinessInputValue(resetBusinessInputValue);
+          handleUpdateSearchSupplierInputValue(resetProfileAccessInputValue);
+
+          handleUpdateDescription("");
+        }
+
+        handleCloseUpdatePart();
+      }}
+      open={isUpdatePartOpen}
+    >
+      <DialogScrollContent className="max-w-xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="text-xl">Editar Peça</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            Insira as informações solicitadas abaixo para concluir a edição da
+            peça.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          ref={formRef}
+          action={(formData: FormData) => {
+            const extraData = {
+              businessId: commandBusinnessInputValue.businessId,
+              supplierId: commandSupplierInputValue.supplierId,
+              partId: partData.id,
+            };
+
+            appendExtraDataToForm(formData, extraData);
+            return dispatch(formData);
+          }}
+        >
+          <UpdatePartFormContainer
+            state={state ?? defaultState}
+            handleCloseUpdatePart={handleCloseUpdatePart}
+            handleUpdateDescription={handleUpdateDescription}
+            handleUnitPriceChange={handleUnitPriceChange}
+            handleUnitPriceBlur={handleUnitPriceBlur}
+            handleUpdateSearchBussinessInputValue={
+              handleUpdateSearchBussinessInputValue
+            }
+            handleUpdateSearchSupplierInputValue={
+              handleUpdateSearchSupplierInputValue
+            }
+            isDirty={isDirty}
+            partValues={{
+              description,
+              displayUnitPrice,
+              commandBusinnessInputValue,
+              commandSupplierInputValue,
+            }}
+          />
+        </form>
+      </DialogScrollContent>
+    </Dialog>
+  );
+};
+
+export { UpdatePartForm };

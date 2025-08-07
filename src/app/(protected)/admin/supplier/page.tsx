@@ -1,0 +1,131 @@
+import { createElement } from "react";
+
+import { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import PageContainer from "../../_components/layout/protected-page-container";
+import { ProtectedHeading } from "../../_components/layout/protected-heading";
+
+import { DataTable } from "../../_components/tanstack-table/data-table";
+import { tableSupplierCollumns } from "../../_components/admin/supplier/table-supplier-collumns";
+
+import { SupplierToolbar } from "../../_components/admin/supplier/supplier-toolbar";
+import { SupplierProps } from "../../_components/admin/supplier/dto";
+
+import { parseNDJSON } from "@/lib/parse-nd-json";
+import { getCookies } from "@/actions/cookies";
+
+interface MetaInfo {
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+interface SupplierQueryParamsProps {
+  searchParams: { page?: string; pageSize?: string; search?: string };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Fornecedores",
+    description: `
+      Gerencie de forma integrada todos os seus fornecedores e parceiros comerciais. 
+      Cadastre, visualize e controle informações detalhadas de cada fornecedor, 
+      acompanhe históricos de fornecimento, mantenha dados de contato atualizados e 
+      otimize seus processos de compra e gerenciamneto com a nossa plataforma.`,
+  };
+}
+
+const Supplier = async ({
+  searchParams,
+}: SupplierQueryParamsProps): Promise<JSX.Element | undefined> => {
+  const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) {
+    redirect("/login");
+  }
+
+  const page = Number(searchParams.page) || 1;
+  const pageSize = Number(searchParams.pageSize) || 10;
+
+  const search = searchParams.search || "";
+
+  let supplierResponseError = {
+    error: false,
+    errorMessage: "",
+  };
+
+  let supplier: SupplierProps[] = [];
+  let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
+
+  let response: Response | undefined;
+
+  try {
+    response = await fetch(
+      `${process.env.HTTP_REQUEST}/supplier/list-supplier?page=${page}&pageSize=${pageSize}&search=${search}`,
+      {
+        credentials: "include",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Encoding": "gzip", // Send header for compression
+          Authorization: `Bearer ${tokenAccess}`,
+        },
+        next: {
+          tags: ["create-supplier", "delete-supplier", "update-supplier"],
+        },
+      },
+    );
+  } catch (error) {
+    supplierResponseError = {
+      error: true,
+      errorMessage:
+        "Ocorreu um erro inesperado ao tentar recuperar a lista de fornecedores",
+    };
+
+    supplier = [];
+    meta = { total: 0, page: 1, pageSize: pageSize };
+  }
+
+  if (response) {
+    if (!response.ok) {
+      if (response.status === 401) {
+        redirect("/login");
+      }
+
+      supplierResponseError = {
+        error: true,
+        errorMessage:
+          "Houve um erro ao tentar recuperar a lista de fornecedores",
+      };
+
+      supplier = [];
+      meta = { total: 0, page: 1, pageSize: pageSize };
+    } else {
+      // Instead of using response.json(), we process NDJSON
+      const { meta: metaParsed, data } = await parseNDJSON(response);
+
+      supplier = data;
+      meta = metaParsed;
+    }
+  }
+
+  return (
+    <PageContainer>
+      <ProtectedHeading
+        title={"Fornecedores"}
+        description="Controle centralizado de parceiros comerciais. Cadastre, monitore e gerencie seus fornecedores."
+      />
+
+      <DataTable
+        data={supplier}
+        meta={meta}
+        columns={tableSupplierCollumns}
+        responseError={supplierResponseError}
+        toolbar={createElement(SupplierToolbar)}
+      />
+    </PageContainer>
+  );
+};
+
+export default Supplier;

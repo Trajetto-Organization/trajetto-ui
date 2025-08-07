@@ -1,0 +1,38 @@
+import { z } from "zod";
+
+export const vehicleTableSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  license_plate: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  acquisition_date: z.string(),
+  fleet_type: z.enum(["OWNED", "THIRD_PARTY"]),
+  fleet_id: z.string().optional(),
+  last_maintenance_date: z.string(),
+  current_mileage: z.number(),
+  last_maintenance_mileage: z.number(),
+  maintenance_interval_km: z.number(),
+  maintenance_interval_months: z.number(),
+  renavam: z.string(),
+  manufacturing_year: z.string(),
+  model_year: z.string(),
+  km_per_liter: z.number(),
+  number_of_axles: z.number(),
+  status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED", "IN_ROUTE"]),
+  vehicleTypeId: z.string().optional(),
+  vehicleTypeDescription: z.string(),
+  fuelTypeId: z.string(),
+  fuelTypeDescription: z.string(),
+  driverId: z.string().optional(),
+  driverName: z.string(),
+  driverCnh: z.string(),
+  branchId: z.string().optional(),
+  branchName: z.string(),
+  businessId: z.string().optional(),
+  business_name: z.string().optional(),
+  created_at: z.string(),
+  updated_at: z.string(),
+});
+
+export type vehicleTableSchema = z.infer<typeof vehicleTableSchema>;

@@ -1,0 +1,134 @@
+import { createElement } from "react";
+
+import { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import PageContainer from "../../_components/layout/protected-page-container";
+import { ProtectedHeading } from "../../_components/layout/protected-heading";
+
+import { DataTable } from "../../_components/tanstack-table/data-table";
+
+import { DashboardServiceOrderPartToolbar } from "../../_components/dashboard/dashboard-service-order-part/dashboard-service-order-part-toolbar";
+import { dashboardTableServiceOrderPartCollumns } from "../../_components/dashboard/dashboard-service-order-part/dashboard-table-service-order-part-collumns";
+
+import { DashboardServiceOrderPartProps } from "../../_components/dashboard/dashboard-service-order-part/dto";
+
+import { parseNDJSON } from "@/lib/parse-nd-json";
+import { getCookies } from "@/actions/cookies";
+
+interface MetaInfo {
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+interface ServiceOrderPartQueryParamsProps {
+  searchParams: { page?: string; pageSize?: string; search?: string };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Ordem de serviço por peça",
+    description: `
+      Gerencie facilmente as ordens de serviço das peças cadastradas. Consulte, edite e 
+      remova informações essenciais de maneira rápida e segura.`,
+  };
+}
+
+const ServiceOrderPart = async ({
+  searchParams,
+}: ServiceOrderPartQueryParamsProps): Promise<JSX.Element | undefined> => {
+  const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) {
+    redirect("/login");
+  }
+
+  const page = Number(searchParams.page) || 1;
+  const pageSize = Number(searchParams.pageSize) || 10;
+
+  const search = searchParams.search || "";
+
+  let serviceOrderPartResponseError = {
+    error: false,
+    errorMessage: "",
+  };
+
+  let serviceOrderPart: DashboardServiceOrderPartProps[] = [];
+  let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
+
+  let response: Response | undefined;
+
+  try {
+    response = await fetch(
+      `${process.env.HTTP_REQUEST}/service-order-part/list-service-order-part?page=${page}&pageSize=${pageSize}&search=${search}`,
+      {
+        credentials: "include",
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept-Encoding": "gzip", // Send header for compression
+          Authorization: `Bearer ${tokenAccess}`,
+        },
+        next: {
+          tags: [
+            "create-service-order-part",
+            "delete-service-order-part",
+            "update-service-order-part",
+          ],
+        },
+      },
+    );
+  } catch (error) {
+    serviceOrderPartResponseError = {
+      error: true,
+      errorMessage:
+        "Ocorreu um erro inesperado ao tentar recuperar a lista das ordens de serviço por peça",
+    };
+
+    serviceOrderPart = [];
+    meta = { total: 0, page: 1, pageSize: pageSize };
+  }
+
+  if (response) {
+    if (!response.ok) {
+      if (response.status === 401) {
+        redirect("/login");
+      }
+
+      serviceOrderPartResponseError = {
+        error: true,
+        errorMessage:
+          "Houve um erro ao tentar recuperar a lista das ordens de serviço por peça",
+      };
+
+      serviceOrderPart = [];
+      meta = { total: 0, page: 1, pageSize: pageSize };
+    } else {
+      // Instead of using response.json(), we process NDJSON
+      const { meta: metaParsed, data } = await parseNDJSON(response);
+
+      serviceOrderPart = data;
+      meta = metaParsed;
+    }
+  }
+
+  return (
+    <PageContainer>
+      <ProtectedHeading
+        title={"Ordem de serviço por peça"}
+        description="Gerencie as ordens de serviços das peças cadastradas, delete, edite e mantenha os dados sempre atualizados."
+      />
+
+      <DataTable
+        data={serviceOrderPart}
+        meta={meta}
+        columns={dashboardTableServiceOrderPartCollumns}
+        responseError={serviceOrderPartResponseError}
+        toolbar={createElement(DashboardServiceOrderPartToolbar)}
+      />
+    </PageContainer>
+  );
+};
+
+export default ServiceOrderPart;

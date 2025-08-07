@@ -1,0 +1,18 @@
+interface UpdateUserPasswordValidationError {
+  current_password?: string[];
+  new_password?: string[];
+  confirm_new_password?: string[];
+  userPasswordErrorMessage?: string;
+}
+
+interface UpdateUserPasswordFormState {
+  userPasswordError?: UpdateUserPasswordValidationError;
+  successMessage?: string;
+}
+
+interface UpdateUserPasswordContainerProps {
+  state: UpdateUserPasswordFormState;
+  error: boolean;
+}
+
+export type { UpdateUserPasswordContainerProps, UpdateUserPasswordFormState };

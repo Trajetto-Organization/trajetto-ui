@@ -1,0 +1,99 @@
+import {
+  CommandBranchInputValue,
+  CommandDriverInputValue,
+  CommandFuelTypeInputValue,
+  CommandVehicleTypeInputValue,
+} from "@/app/(protected)/_components/dto";
+
+import { DashboardVehicleProps } from "../../dto";
+
+interface DashboardUpdateVehicleValidationError {
+  description?: string[];
+  license_plate?: string[];
+  brand?: string[];
+  model?: string[];
+  acquisition_date?: string[];
+  fleet_type?: string[];
+  fleet_id?: string[];
+  last_maintenance_date?: string[];
+  current_mileage?: string[];
+  last_maintenance_mileage?: string[];
+  maintenance_interval_km?: string[];
+  maintenance_interval_months?: string[];
+  renavam?: string[];
+  manufacturing_year?: string[];
+  model_year?: string[];
+  km_per_liter?: string[];
+  number_of_axles?: string[];
+  status?: string[];
+  businessId?: string[];
+  branchId?: string[];
+  vehicleTypeId?: string[];
+  fuelTypeId?: string[];
+  driverId?: string[];
+  updateVehicleErrorMessage?: string;
+}
+
+interface DashboardUpdateVehicleFormState {
+  updateVehicleError?: DashboardUpdateVehicleValidationError;
+  successMessage?: string;
+}
+
+interface DashboardUpdateVehicleContainerProps {
+  state: DashboardUpdateVehicleFormState;
+  onBack: () => void;
+  vehicleData: DashboardVehicleProps;
+  isBranchDirty: boolean;
+  isUpdateVehicleOpen: boolean;
+}
+
+interface DashboardSelectBranchByStepProps {
+  state: DashboardUpdateVehicleFormState;
+  businessId: string;
+  commandBranchInputValue: CommandBranchInputValue;
+  handleUpdateSearchBranchInputValue: (
+    branchData: CommandBranchInputValue,
+  ) => void;
+  onContinue: () => void;
+}
+
+interface DashboardSelectDriverVehicleTypeStepProps {
+  state: DashboardUpdateVehicleFormState;
+  businessId: string;
+  commandDriverInputValue: CommandDriverInputValue;
+  commandVehicleTypeInputValue: CommandVehicleTypeInputValue;
+  handleUpdateSearchDriverInputValue: (
+    driverData: CommandDriverInputValue,
+  ) => void;
+  handleUpdateSearchVehicleTypeInputValue: (
+    vehicleTypeData: CommandVehicleTypeInputValue,
+  ) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}
+
+interface DashboardSelectFuelTypeStepProps {
+  state: DashboardUpdateVehicleFormState;
+  businessId: string;
+  commandFuelTypeInputValue: CommandFuelTypeInputValue;
+  handleUpdateSearchFuelTypeInputValue: (
+    fuelTypeData: CommandFuelTypeInputValue,
+  ) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}
+
+interface DashboardUpdateVehicleFormProps {
+  vehicleData: DashboardVehicleProps;
+  handleCloseUpdateVehicle: () => void;
+  isUpdateVehicleOpen: boolean;
+}
+
+export type {
+  DashboardUpdateVehicleFormState,
+  DashboardUpdateVehicleFormProps,
+  DashboardUpdateVehicleContainerProps,
+  DashboardSelectBranchByStepProps,
+  DashboardSelectDriverVehicleTypeStepProps,
+  DashboardSelectFuelTypeStepProps,
+};

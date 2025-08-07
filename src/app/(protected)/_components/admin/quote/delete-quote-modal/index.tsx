@@ -1,0 +1,120 @@
+"use client";
+
+import { useFormState, useFormStatus } from "react-dom";
+import { Loader, ShieldAlert } from "lucide-react";
+
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import { Button } from "@/components/ui/button";
+import { QuoteProps } from "../dto";
+
+import { handleDeleteQuote } from "@/actions/delete-quote";
+import { useDeleteQuoteForm } from "./hooks";
+
+interface DeleteQuoteModalProps {
+  quote: QuoteProps;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface DeleteQuoteModalButton {
+  quote: QuoteProps;
+}
+
+const DeleteQuoteModalFormContainer = ({ quote }: DeleteQuoteModalButton) => {
+  const { pending } = useFormStatus();
+
+  const statusLabels = {
+    PENDING: "Pendente",
+    CONTACTED: "Contatado",
+    CLOSED: "Fechado",
+    CONVERTED: "Convertido",
+  };
+
+  return (
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Deletar Orçamento</AlertDialogTitle>
+        <AlertDialogDescription asChild>
+          <div>
+            Tem certeza que deseja deletar este orçamento?
+            <span className="block mt-4 font-medium text-foreground">
+              Informações do orçamento:
+            </span>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>Empresa: {quote.company}</li>
+              <li>Contato: {quote.name}</li>
+              <li>E-mail: {quote.email}</li>
+              <li>Status: {statusLabels[quote.status]}</li>
+            </ul>
+            <span className="block mt-4 font-medium text-foreground">
+              Consequências:
+            </span>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              <li>
+                <strong>Validação prévia:</strong>
+              </li>
+              <li>
+                Todos os dados do orçamento serão excluídos permanentemente
+              </li>
+              <li>Não há registros relacionados que serão afetados</li>
+            </ul>
+            <span className="block mt-4 text-red-600 dark:text-red-400 font-medium">
+              Esta ação não pode ser desfeita!
+            </span>
+          </div>
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter className="mt-6">
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+        <Button
+          type="submit"
+          disabled={pending}
+          variant="secondary"
+          className="bg-red-600/10 dark:bg-red-500/10 
+        dark:text-red-500 text-red-600"
+        >
+          <ShieldAlert className="mr-1 size-5" />
+          <span>Deletar Orçamento</span>
+          {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
+        </Button>
+      </AlertDialogFooter>
+    </>
+  );
+};
+
+const DeleteQuoteModal = ({
+  quote,
+  isOpen,
+  onClose,
+}: DeleteQuoteModalProps): JSX.Element => {
+  const [state, dispatch] = useFormState(
+    () => handleDeleteQuote({ quoteId: quote.id }),
+    null,
+  );
+
+  useDeleteQuoteForm({ state, onClose });
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent
+        className="bg-white 
+        dark:bg-[#121214]"
+      >
+        <form action={dispatch}>
+          <DeleteQuoteModalFormContainer quote={quote} />
+        </form>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+export { DeleteQuoteModal };

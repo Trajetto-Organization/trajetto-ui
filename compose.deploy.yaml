@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   trajetto-ui:
-    image: ghcr.io/intrajetto/trajetto-ui:latest
+    image: ghcr.io/trajetto-organization/trajetto-ui:latest
     environment:
       NODE_ENV: production
       METADATA_BASE: ${METADATA_BASE}

@@ -100,7 +100,7 @@ export function FineToolbar<TData>({
                 cooldownTimeMs: 15000,
               }}
             />
-            <ExportFineExcelButton />
+            <ExportFineExcelButton hasData={table.getFilteredRowModel().rows.length > 0} />
             <DataTableViewOptions table={table} />
             <CreateFineForm />
           </div>

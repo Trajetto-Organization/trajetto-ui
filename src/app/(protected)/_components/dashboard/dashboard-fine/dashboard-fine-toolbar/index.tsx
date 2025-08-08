@@ -95,7 +95,7 @@ export function DashboardFineToolbar<TData>({
                 cooldownTimeMs: 15000,
               }}
             />
-            <ExportFineExcelButton />
+            <ExportFineExcelButton hasData={table.getFilteredRowModel().rows.length > 0} />
             <DataTableViewOptions table={table} />
             <DashboardCreateFineForm />
           </div>

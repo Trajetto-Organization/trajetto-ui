@@ -11,9 +11,10 @@ import { handleExportFineExcel } from "@/actions/export-fine-excel";
 
 interface ExportFineExcelButtonProps {
   className?: string;
+  hasData?: boolean;
 }
 
-const ExportFineExcelButton = ({ className }: ExportFineExcelButtonProps) => {
+const ExportFineExcelButton = ({ className, hasData = false }: ExportFineExcelButtonProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const searchParams = useSearchParams();
 
@@ -74,7 +75,7 @@ const ExportFineExcelButton = ({ className }: ExportFineExcelButtonProps) => {
       variant="outline"
       size="sm"
       onClick={handleExportExcel}
-      disabled={isExporting}
+      disabled={isExporting || !hasData}
       className={`h-8 gap-1 ${className}`}
     >
       {isExporting ? (

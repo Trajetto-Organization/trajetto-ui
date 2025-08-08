@@ -1,6 +1,6 @@
 import analyzer from "@next/bundle-analyzer";
 
-import nextBuildId from "next-build-id";
+import { v4 as uuidv4 } from "uuid";
 import plugins from "next-compose-plugins";
 
 const withBundleAnalyzer = analyzer({
@@ -9,19 +9,32 @@ const withBundleAnalyzer = analyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  generateBuildId: async () => nextBuildId(),
+  output: "standalone",
+  generateBuildId: async () => uuidv4(),
   logging: {
     fetches: {
       fullUrl: true,
     },
   },
   images: {
-    // Domains for external images
-    domains: [
-      "cdn.sanity.io",
-      "images.unsplash.com",
-      "avatar.vercel.sh",
-      "picsum.photos",
+    // Remote patterns for external images
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "avatar.vercel.sh",
+      },
+      {
+        protocol: "https",
+        hostname: "picsum.photos",
+      },
     ],
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },

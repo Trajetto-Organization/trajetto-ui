@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  trajetto-ui:
+    image: intrajetto/trajetto-ui:latest
+    environment:
+      NODE_ENV: production
+      METADATA_BASE: ${METADATA_BASE}
+      HTTP_REQUEST: ${HTTP_REQUEST}
+      NEXT_PUBLIC_HTTP_REQUEST: ${NEXT_PUBLIC_HTTP_REQUEST}
+      NEXT_PUBLIC_SANITY_PROJECT_ID: ${NEXT_PUBLIC_SANITY_PROJECT_ID}
+      NEXT_PUBLIC_SANITY_DATASET: ${NEXT_PUBLIC_SANITY_DATASET}
+      SANITY_WEBHOOK_SECRET: ${SANITY_WEBHOOK_SECRET}
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.trajetto-ui.rule=Host(`intrajetto.com`)
+        - traefik.http.routers.trajetto-ui.entrypoints=websecure
+        - traefik.http.routers.trajetto-ui.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.trajetto-ui.priority=1
+        - traefik.http.routers.trajetto-ui.service=trajetto-ui
+        - traefik.http.services.trajetto-ui.loadbalancer.server.port=3000
+        - traefik.http.services.trajetto-ui.loadbalancer.passHostHeader=true
+        - traefik.docker.network=minha_rede
+    networks:
+      - minha_rede
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  minha_rede:
+    external: true

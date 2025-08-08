@@ -9,7 +9,10 @@
     "lint": "next lint",
     "lint:check": "prettier --check .",
     "lint:fix": "prettier --write .",
-    "dev:auto-tunnel": "node scripts/dev-with-tunnel.js"
+    "dev:auto-tunnel": "node scripts/dev-with-tunnel.js",
+    "services:up": "docker compose -f compose.local.yaml up -d",
+    "services:down": "docker compose -f compose.local.yaml down",
+    "services:stop": "docker compose -f compose.local.yaml stop"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -65,6 +68,7 @@
     "react-query": "^3.39.3",
     "recharts": "^2.15.3",
     "sanity": "3.88.2",
+    "sharp": "^0.34.3",
     "socket.io-client": "^4.8.1",
     "sonner": "^1.7.0",
     "styled-components": "6.1",
@@ -83,7 +87,6 @@
     "@types/react-input-mask": "3.0.2",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
-    "next-build-id": "^3.0.0",
     "ngrok": "^5.0.0-beta.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",

@@ -9,7 +9,7 @@ import {
 
 import {
   Dialog,
-  DialogScrollContent,
+  DialogContent,
   DialogDescription,
   DialogTitle,
   DialogTrigger,
@@ -123,7 +123,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
                 <span>Atualizar Senha</span>
               </Button>
             </DialogTrigger>
-            <DialogScrollContent
+            <DialogContent
               className="overflow-hidden p-0 bg-white 
             dark:bg-[#121214] max-w-md rounded-2xl md:border"
             >
@@ -154,7 +154,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
                   error={error}
                 />
               </form>
-            </DialogScrollContent>
+            </DialogContent>
           </Dialog>
         </div>
       </div>

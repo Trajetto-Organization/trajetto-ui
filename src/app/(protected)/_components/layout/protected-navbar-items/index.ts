@@ -4,6 +4,7 @@ import {
   Command,
   Container,
   Fuel,
+  Gauge,
   Handshake,
   HeadphonesIcon,
   Kanban,
@@ -56,6 +57,7 @@ const protectedNavIcons = {
   headphones: HeadphonesIcon,
   receipt: Receipt,
   fine: NotepadText,
+  supply: Gauge,
 };
 
 const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
@@ -164,6 +166,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           title: "Tipo de combustível",
           url: "/admin/fuel-type",
           icon: "fuel",
+        },
+        {
+          title: "Cadastro de abastecimento",
+          url: "/admin/fuel",
+          icon: "supply",
         },
         {
           title: "Cadastro de motoristas",
@@ -280,6 +287,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           title: "Tipo de combustível",
           url: "/dashboard/fuel-type",
           icon: "fuel",
+        },
+        {
+          title: "Cadastro de abastecimento",
+          url: "/dashboard/fuel",
+          icon: "supply",
         },
         {
           title: "Cadastro de motoristas",
@@ -405,6 +417,12 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           url: "/dashboard/fuel-type",
           icon: "fuel",
           requiredPermission: permissions.FUEL_TYPE_MANAGE,
+        },
+        {
+          title: "Cadastro de abastecimento",
+          url: "/dashboard/fuel",
+          icon: "supply",
+          requiredPermission: permissions.FUEL_MANAGE,
         },
         {
           title: "Cadastro de motoristas",

@@ -14,7 +14,8 @@ type PermissionKey =
   | "vehicle_manage"
   | "account_payable_manage"
   | "kanban_manage"
-  | "fine_manage";
+  | "fine_manage"
+  | "fuel_manage";
 
 enum EnumPermissionKey {
   BRANCH_MANAGE = "branch_manage",
@@ -32,6 +33,7 @@ enum EnumPermissionKey {
   ACCOUNT_PAYABLE_MANAGE = "account_payable_manage",
   KANBAN_MANAGE = "kanban_manage",
   FINE_MANAGE = "fine_manage",
+  FUEL_MANAGE = "fuel_manage",
 }
 
 enum UserBusinessRole {

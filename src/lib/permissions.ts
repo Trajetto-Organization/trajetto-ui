@@ -14,6 +14,7 @@ const permissions = {
   ACCOUNT_PAYABLE_MANAGE: "account_payable_manage",
   KANBAN_MANAGE: "kanban_manage",
   FINE_MANAGE: "fine_manage",
+  FUEL_MANAGE: "fuel_manage",
 } as const;
 
 const permissionLabels = {
@@ -33,6 +34,7 @@ const permissionLabels = {
   [permissions.ACCOUNT_PAYABLE_MANAGE]: "Gerenciar Contas a Pagar",
   [permissions.KANBAN_MANAGE]: "Gerenciar Kanban",
   [permissions.FINE_MANAGE]: "Gerenciar Multas",
+  [permissions.FUEL_MANAGE]: "Gerenciar Abastecimentos",
 };
 
 export { permissionLabels, permissions };

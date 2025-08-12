@@ -10,7 +10,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { QuoteProps } from "../dto";
 
 import {
@@ -70,142 +69,136 @@ export function ViewQuoteModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
-          <div className="space-y-6">
-            {/* Customer Information */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3">
-                Informações do Cliente
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Empresa:</span>
-                  <span className="text-sm">{quote.company}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Contact className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Contato:</span>
-                  <span className="text-sm">{quote.name}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">E-mail:</span>
-                  <a
-                    href={`mailto:${quote.email}`}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    {quote.email}
-                  </a>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Telefone:</span>
-                  <a
-                    href={`tel:${quote.telephone}`}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    {quote.telephone}
-                  </a>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Car className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Tamanho da Frota:</span>
-                  <span className="text-sm">
-                    {fleetLabels[quote.fleet_size] || quote.fleet_size}
-                  </span>
-                </div>
+        <div className="space-y-6">
+          {/* Customer Information */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">
+              Informações do Cliente
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Empresa:</span>
+                <span className="text-sm">{quote.company}</span>
               </div>
-            </div>
-
-            <Separator />
-
-            {/* Customer Message */}
-            {quote.message && (
-              <>
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Mensagem do Cliente
-                  </h3>
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <p className="text-sm whitespace-pre-wrap">
-                      {quote.message}
-                    </p>
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
-
-            {/* Internal Notes */}
-            {quote.notes && (
-              <>
-                <div>
-                  <h3
-                    className="text-lg font-semibold mb-3 
-                    flex items-center gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Notas Internas
-                  </h3>
-                  <div
-                    className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg 
-                    p-4 border border-blue-200 dark:border-blue-800"
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{quote.notes}</p>
-                  </div>
-                </div>
-                <Separator />
-              </>
-            )}
-
-            {/* Dates */}
-            <div>
-              <h3
-                className="text-lg font-semibold mb-3 
-                flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                Informações de Tempo
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">Criado em:</span>
-                  <span className="text-sm">{quote.created_at}</span>
-                </div>
-                {quote.contacted_at && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">Contatado em:</span>
-                    <span className="text-sm">{quote.contacted_at}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">
-                    Última atualização:
-                  </span>
-                  <span className="text-sm">{quote.updated_at}</span>
-                </div>
+              <div className="flex items-center gap-3">
+                <Contact className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Contato:</span>
+                <span className="text-sm">{quote.name}</span>
               </div>
-            </div>
-
-            {/* Budget ID */}
-            <div className="pt-4 border-t">
-              <div
-                className="flex items-center gap-3 
-                text-xs text-muted-foreground"
-              >
-                <span>ID do Orçamento:</span>
-                <code
-                  className="px-2 py-1 
-                  bg-muted rounded"
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">E-mail:</span>
+                <a
+                  href={`mailto:${quote.email}`}
+                  className="text-sm text-blue-600 hover:underline"
                 >
-                  {quote.id}
-                </code>
+                  {quote.email}
+                </a>
+              </div>
+              <div className="flex items-center gap-3">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Telefone:</span>
+                <a
+                  href={`tel:${quote.telephone}`}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  {quote.telephone}
+                </a>
+              </div>
+              <div className="flex items-center gap-3">
+                <Car className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Tamanho da Frota:</span>
+                <span className="text-sm">
+                  {fleetLabels[quote.fleet_size] || quote.fleet_size}
+                </span>
               </div>
             </div>
           </div>
-        </ScrollArea>
+
+          <Separator />
+
+          {/* Customer Message */}
+          {quote.message && (
+            <>
+              <div>
+                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Mensagem do Cliente
+                </h3>
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm whitespace-pre-wrap">{quote.message}</p>
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Internal Notes */}
+          {quote.notes && (
+            <>
+              <div>
+                <h3
+                  className="text-lg font-semibold mb-3 
+                    flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  Notas Internas
+                </h3>
+                <div
+                  className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg 
+                    p-4 border border-blue-200 dark:border-blue-800"
+                >
+                  <p className="text-sm whitespace-pre-wrap">{quote.notes}</p>
+                </div>
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Dates */}
+          <div>
+            <h3
+              className="text-lg font-semibold mb-3 
+              flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Informações de Tempo
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">Criado em:</span>
+                <span className="text-sm">{quote.created_at}</span>
+              </div>
+              {quote.contacted_at && (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">Contatado em:</span>
+                  <span className="text-sm">{quote.contacted_at}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium">Última atualização:</span>
+                <span className="text-sm">{quote.updated_at}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Budget ID */}
+          <div className="pt-4 border-t">
+            <div
+              className="flex items-center gap-3 
+                text-xs text-muted-foreground"
+            >
+              <span>ID do Orçamento:</span>
+              <code
+                className="px-2 py-1 
+                  bg-muted rounded"
+              >
+                {quote.id}
+              </code>
+            </div>
+          </div>
+        </div>
       </DialogScrollContent>
     </Dialog>
   );

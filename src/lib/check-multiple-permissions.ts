@@ -101,6 +101,7 @@ function getPermissionName(permissionKey: PermissionKey): string {
     account_payable_manage: "Gerenciar Contas a Pagar",
     kanban_manage: "Gerenciar Kanban",
     fine_manage: "Gerenciar Multas",
+    fuel_manage: "Gerenciar Abastecimentos",
   };
 
   return permissionNames[permissionKey] || permissionKey;

@@ -96,7 +96,7 @@ export function DashboardFineToolbar<TData>({
                 cooldownTimeMs: 15000,
               }}
             />
-            <ExportExcelButton 
+            <ExportExcelButton
               hasData={table.getFilteredRowModel().rows.length > 0}
               exportAction={handleExportFineExcel}
               entityName="relatório de multas"

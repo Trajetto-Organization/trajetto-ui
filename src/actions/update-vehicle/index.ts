@@ -2,6 +2,7 @@
 
 import { createUpdateVehicleSchema } from "@/schemas/create-update-vehicle-schema";
 import { getCookies } from "../cookies";
+
 import { parseJwt } from "@/lib/decode-jwt";
 
 interface VehicleProps {
@@ -28,11 +29,6 @@ const handleUpdateVehicle = async (
   const decoded = parseJwt(tokenAccess as string);
   const userRole = decoded?.role;
 
-  // Remove current_mileage if user is not MASTER
-  if (userRole !== "MASTER" && vehicleValues.current_mileage) {
-    delete vehicleValues.current_mileage;
-  }
-
   const updateVehicleValidation =
     createUpdateVehicleSchema.safeParse(vehicleValues);
 
@@ -44,7 +40,13 @@ const handleUpdateVehicle = async (
     };
   }
 
-  const vehicleData = updateVehicleValidation.data;
+  let vehicleData: Partial<typeof updateVehicleValidation.data> =
+    updateVehicleValidation.data;
+
+  if (userRole !== "MASTER") {
+    const { current_mileage, ...rest } = vehicleData;
+    vehicleData = rest;
+  }
 
   try {
     const response = await fetch(updateVehicle, {

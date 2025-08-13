@@ -22,12 +22,12 @@ interface ExportExcelButtonProps {
   buttonText?: string;
 }
 
-const ExportExcelButton = ({ 
-  className, 
-  hasData = false, 
+const ExportExcelButton = ({
+  className,
+  hasData = false,
   exportAction,
   entityName = "relatório",
-  buttonText = "Exportar (Excel)"
+  buttonText = "Exportar (Excel)",
 }: ExportExcelButtonProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const searchParams = useSearchParams();
@@ -91,6 +91,7 @@ const ExportExcelButton = ({
       onClick={handleExportExcel}
       disabled={isExporting || !hasData}
       className={`h-8 gap-1 ${className}`}
+      data-tutorial="export-excel"
     >
       {isExporting ? (
         <Loader2 className="h-4 w-4 animate-spin" />

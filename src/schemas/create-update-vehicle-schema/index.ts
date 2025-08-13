@@ -212,8 +212,7 @@ const createUpdateVehicleSchema = z
         })
         .nonnegative("A quilometragem atual deve ser um valor não negativo.")
         .min(0.1, "A quilometragem atual deve ser maior que zero.")
-        .max(9999999, "A quilometragem atual não pode exceder 9.999.999 km.")
-        .optional(),
+        .max(9999999, "A quilometragem atual não pode exceder 9.999.999 km."),
     ),
     last_maintenance_mileage: z.preprocess(
       (val) => {

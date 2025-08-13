@@ -243,6 +243,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/fine": [
     {
@@ -273,6 +284,20 @@ const tutorialConfigs: TutorialConfig = {
       title: "Busca de Multas 🔍",
       content: `Localize multas rapidamente por valor, código de infração, placa do veículo, nome do motorista ou qualquer informação relacionada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='export-excel']",
+      title: "Exportar Relatório de Multas 📊",
+      content: `Clique aqui para exportar um relatório completo de multas em formato Excel (.xlsx).
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Multas
+      O arquivo exportado contém todas as multas filtradas atualmente na tabela, com informações detalhadas como:
+      • Dados do veículo e motorista envolvidos
+      • Código de infração e valor da multa
+      • Datas de ocorrência e vencimento
+      • Status de pagamento e observações
+      IMPORTANTE: A exportação será realizada apenas se houver dados na tabela para exportar.`,
       placement: "bottom",
     },
     {
@@ -307,6 +332,17 @@ const tutorialConfigs: TutorialConfig = {
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],
@@ -366,6 +402,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
 
   "/dashboard/fuel-type": [
@@ -420,6 +467,17 @@ const tutorialConfigs: TutorialConfig = {
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],
@@ -481,6 +539,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/permission": [
     {
@@ -539,6 +608,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/profile-access": [
     {
@@ -592,6 +672,17 @@ const tutorialConfigs: TutorialConfig = {
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],
@@ -652,6 +743,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/service-order": [
     {
@@ -710,6 +812,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/supplier": [
     {
@@ -763,6 +876,17 @@ const tutorialConfigs: TutorialConfig = {
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],
@@ -822,6 +946,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/vehicle-type": [
     {
@@ -875,6 +1010,17 @@ const tutorialConfigs: TutorialConfig = {
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],
@@ -939,6 +1085,17 @@ const tutorialConfigs: TutorialConfig = {
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
   ],
   "/dashboard/account-payable": [
     {
@@ -1000,6 +1157,17 @@ const tutorialConfigs: TutorialConfig = {
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       Esta ação é útil para verificar atualizações em tempo real dos status de pagamento e novos vencimentos.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],
@@ -1070,6 +1238,17 @@ const tutorialConfigs: TutorialConfig = {
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
       Esta ação é útil para verificar novos abastecimentos registrados por outros usuários em tempo real.
       NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "left",
     },
   ],

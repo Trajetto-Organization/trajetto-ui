@@ -30,9 +30,13 @@ const FuelInfoAlert = ({
       ? calculateTotalAmount(liters, pricePerLiter)
       : null;
   const mileageIncrease =
-    currentMileage && lastFuelMileage ? currentMileage - lastFuelMileage : null;
+    currentMileage && lastFuelMileage && currentMileage > lastFuelMileage
+      ? currentMileage - lastFuelMileage
+      : null;
   const actualEfficiency =
-    mileageIncrease && liters ? mileageIncrease / liters : null;
+    mileageIncrease && mileageIncrease > 0 && liters && liters > 0
+      ? mileageIncrease / liters
+      : null;
 
   // Determine efficiency status
   let efficiencyStatus: "good" | "warning" | "alert" | null = null;
@@ -61,7 +65,9 @@ const FuelInfoAlert = ({
           {/* Calculated values */}
           {liters && <div>• Litros: {formatLiters(liters)} L</div>}
 
-          {pricePerLiter && <div>• Preço/L: {formatToBrazilianCurrency(pricePerLiter)}</div>}
+          {pricePerLiter && (
+            <div>• Preço/L: {formatToBrazilianCurrency(pricePerLiter)}</div>
+          )}
 
           {totalAmount && (
             <div>
@@ -69,7 +75,7 @@ const FuelInfoAlert = ({
             </div>
           )}
 
-          {mileageIncrease && (
+          {mileageIncrease && mileageIncrease > 0 && (
             <div>• Distância: {mileageIncrease.toLocaleString()} km</div>
           )}
         </div>
@@ -110,6 +116,27 @@ const FuelInfoAlert = ({
                   </span>
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* No efficiency data message */}
+        {(!mileageIncrease || mileageIncrease <= 0) && (
+          <div
+            className="mt-3 p-2 rounded-md bg-gray-50 
+            dark:bg-gray-900/20 border border-gray-200 
+            dark:border-gray-700"
+          >
+            <div
+              className="flex items-center gap-2 text-sm 
+              text-gray-600 dark:text-gray-400"
+            >
+              <Info className="h-4 w-4" />
+              <span>
+                <strong>Análise de eficiência:</strong> Não disponível. É
+                necessário ter o registro do abastecimento anterior para
+                calcular a distância percorrida.
+              </span>
             </div>
           </div>
         )}

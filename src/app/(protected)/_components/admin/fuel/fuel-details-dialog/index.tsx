@@ -27,6 +27,7 @@ import { FuelInfoAlert } from "../fuel-info-alert";
 import { FuelDetailsDialogProps } from "./dto";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+import { formatDate } from "@/lib/format-values";
 
 const FuelDetailsDialog = ({
   fuelData,
@@ -73,7 +74,7 @@ const FuelDetailsDialog = ({
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Data:</span>
                   <Badge variant="outline">
-                    {fuelData.refueling_date || "N/A"}
+                    {formatDate(fuelData.refueling_date, "pt-BR") || "N/A"}
                   </Badge>
                 </div>
 
@@ -94,7 +95,8 @@ const FuelDetailsDialog = ({
                   <span className="text-sm font-medium">Total:</span>
                   <Badge
                     variant="default"
-                    className="bg-green-100 text-green-800 hover:bg-green-900 hover:text-green-100"
+                    className="bg-green-100 text-green-800 
+                    hover:bg-green-900 hover:text-green-100"
                   >
                     {fuelData.total_amount}
                   </Badge>
@@ -240,6 +242,7 @@ const FuelDetailsDialog = ({
                 pricePerLiter={pricePerLiter}
                 currentMileage={fuelData.current_mileage}
                 lastFuelMileage={vehicleData.last_maintenance_mileage as number}
+                vehicleKmPerLiter={vehicleData.km_per_liter}
               />
             ) : (
               <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-md p-4">

@@ -5,6 +5,7 @@ interface VehicleData {
   current_mileage: number;
   maintenance_interval_km: number;
   last_maintenance_mileage?: number | null;
+  km_per_liter: number;
 }
 
 interface FetchVehicleDataProps {
@@ -43,6 +44,7 @@ const fetchVehicleData = async ({
     current_mileage: data.current_mileage || 0,
     maintenance_interval_km: data.maintenance_interval_km || 0,
     last_maintenance_mileage: data.last_maintenance_mileage || null,
+    km_per_liter: data.km_per_liter || 0,
   };
 };
 

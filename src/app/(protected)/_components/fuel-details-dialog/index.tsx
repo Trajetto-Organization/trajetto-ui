@@ -26,7 +26,7 @@ import {
 import { FuelInfoAlert } from "../fuel-info-alert";
 import { FuelDetailsDialogProps } from "./dto";
 
-import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+import { useFetchVehicleData } from "../search-vehicle-by-id-business";
 import { formatDate } from "@/lib/format-values";
 
 const FuelDetailsDialog = ({

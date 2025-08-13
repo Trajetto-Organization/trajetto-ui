@@ -1,4 +1,4 @@
-import { FuelProps } from "../../dto";
+import { FuelProps } from "../../admin/fuel/dto";
 
 interface FuelDetailsDialogProps {
   fuelData: FuelProps;

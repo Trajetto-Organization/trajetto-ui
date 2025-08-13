@@ -17,8 +17,8 @@ import { fuelTableSchema } from "@/schemas/fuel-table-schema";
 import { useFuelRowActions } from "./hooks";
 import { DeleteFuelForm } from "../delete-fuel-form";
 
-import { FuelDetailsDialog } from "../fuel-details-dialog";
-import { useFuelDetailsDialog } from "../fuel-details-dialog/hooks";
+import { FuelDetailsDialog } from "../../../fuel-details-dialog";
+import { useFuelDetailsDialog } from "../../../fuel-details-dialog/hooks";
 
 import { UpdateFuelForm } from "../update-fuel-form";
 import { toast } from "sonner";

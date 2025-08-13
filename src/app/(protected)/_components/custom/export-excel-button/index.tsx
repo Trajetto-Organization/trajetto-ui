@@ -7,14 +7,28 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
-import { handleExportFineExcel } from "@/actions/export-fine-excel";
 
-interface ExportFineExcelButtonProps {
+interface ExportExcelButtonProps {
   className?: string;
   hasData?: boolean;
+  exportAction: (search?: string) => Promise<{
+    success?: boolean;
+    message?: string;
+    base64Data?: string;
+    filename?: string;
+    totalRecords?: number;
+  }>;
+  entityName?: string;
+  buttonText?: string;
 }
 
-const ExportFineExcelButton = ({ className, hasData = false }: ExportFineExcelButtonProps) => {
+const ExportExcelButton = ({ 
+  className, 
+  hasData = false, 
+  exportAction,
+  entityName = "relatório",
+  buttonText = "Exportar (Excel)"
+}: ExportExcelButtonProps) => {
   const [isExporting, setIsExporting] = useState(false);
   const searchParams = useSearchParams();
 
@@ -23,11 +37,11 @@ const ExportFineExcelButton = ({ className, hasData = false }: ExportFineExcelBu
 
     try {
       const search = searchParams.get("search") || "";
-      const result = await handleExportFineExcel(search);
+      const result = await exportAction(search);
 
       if (!result.success || !result.base64Data) {
         toast.error(
-          result.message || "Erro ao exportar relatório. Tente novamente.",
+          result.message || `Erro ao exportar ${entityName}. Tente novamente.`,
         );
         return;
       }
@@ -54,7 +68,7 @@ const ExportFineExcelButton = ({ className, hasData = false }: ExportFineExcelBu
 
       a.download =
         result.filename ||
-        `relatorio-multas-${new Date().toISOString().split("T")[0]}.xlsx`;
+        `${entityName}-${new Date().toISOString().split("T")[0]}.xlsx`;
       document.body.appendChild(a);
 
       a.click();
@@ -62,9 +76,9 @@ const ExportFineExcelButton = ({ className, hasData = false }: ExportFineExcelBu
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success(result.message || "Relatório exportado com sucesso!");
+      toast.success(result.message || `${entityName} exportado com sucesso!`);
     } catch (error) {
-      toast.error("Erro ao exportar relatório. Tente novamente.");
+      toast.error(`Erro ao exportar ${entityName}. Tente novamente.`);
     } finally {
       setIsExporting(false);
     }
@@ -83,9 +97,9 @@ const ExportFineExcelButton = ({ className, hasData = false }: ExportFineExcelBu
       ) : (
         <FileSpreadsheet className="h-4 w-4" />
       )}
-      {isExporting ? "Exportando..." : "Exportar (Excel)"}
+      {isExporting ? "Exportando..." : buttonText}
     </Button>
   );
 };
 
-export { ExportFineExcelButton };
+export { ExportExcelButton };

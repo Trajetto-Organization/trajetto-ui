@@ -14,7 +14,8 @@ import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-op
 import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
 import { DashboardCreateFineForm } from "../dashboard-create-fine-form";
 
-import { ExportFineExcelButton } from "../../../custom/export-fine-excel-button";
+import { ExportExcelButton } from "../../../custom/export-excel-button";
+import { handleExportFineExcel } from "@/actions/export-fine-excel";
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -95,7 +96,12 @@ export function DashboardFineToolbar<TData>({
                 cooldownTimeMs: 15000,
               }}
             />
-            <ExportFineExcelButton hasData={table.getFilteredRowModel().rows.length > 0} />
+            <ExportExcelButton 
+              hasData={table.getFilteredRowModel().rows.length > 0}
+              exportAction={handleExportFineExcel}
+              entityName="relatório de multas"
+              buttonText="Exportar (Excel)"
+            />
             <DataTableViewOptions table={table} />
             <DashboardCreateFineForm />
           </div>

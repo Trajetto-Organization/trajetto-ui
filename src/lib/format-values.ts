@@ -191,6 +191,28 @@ const formatNumericInput = (
   }
 };
 
+// Function to format phone number for display
+const formatPhoneNumber = (phone: string | null | undefined): string => {
+  if (!phone || phone.trim() === "") {
+    return "N/A";
+  }
+
+  // Remove all non-numeric characters
+  const cleanPhone = phone.replace(/\D/g, "");
+
+  // Check if it's a valid Brazilian phone number
+  if (cleanPhone.length === 11) {
+    // Mobile number format: (XX) 9XXXX-XXXX
+    return `(${cleanPhone.slice(0, 2)}) ${cleanPhone.slice(2, 7)}-${cleanPhone.slice(7)}`;
+  } else if (cleanPhone.length === 10) {
+    // Landline number format: (XX) XXXX-XXXX
+    return `(${cleanPhone.slice(0, 2)}) ${cleanPhone.slice(2, 6)}-${cleanPhone.slice(6)}`;
+  }
+
+  // If it doesn't match expected format, return as is
+  return phone;
+};
+
 export {
   formatCurrencyToNumber,
   formatNotificationDate,
@@ -199,3 +221,5 @@ export {
   parseCurrencyToNumber,
   formatDate,
 };
+
+export { formatPhoneNumber };

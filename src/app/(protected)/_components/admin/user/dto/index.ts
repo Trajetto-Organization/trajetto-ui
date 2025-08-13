@@ -11,6 +11,7 @@ interface UserRegistrationProps {
   businessId: string;
   profileAccess: string;
   profileAccessId: string;
+  whatsapp_phone?: string | null;
   created_at: string;
   updated_at: string;
 }

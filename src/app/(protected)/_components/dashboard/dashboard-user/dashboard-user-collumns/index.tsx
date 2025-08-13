@@ -8,6 +8,7 @@ import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collum
 
 import { DashboardDataTableUserRowActions } from "../dashboard-data-table-row-actions";
 import { UserBusinessRole } from "../../../dto";
+import { formatPhoneNumber } from "@/lib/format-values";
 
 const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
   {
@@ -122,6 +123,20 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
+  },
+  {
+    accessorKey: "whatsapp_phone",
+    meta: {
+      title: "Telefone WhatsApp",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Telefone WhatsApp" />
+    ),
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-36">
+        {formatPhoneNumber(row.getValue("whatsapp_phone"))}
+      </p>
+    ),
   },
   {
     accessorKey: "role",

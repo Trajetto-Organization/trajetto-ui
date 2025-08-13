@@ -1003,6 +1003,76 @@ const tutorialConfigs: TutorialConfig = {
       placement: "left",
     },
   ],
+  "/dashboard/fuel": [
+    {
+      target: "[data-tutorial='welcome']",
+      title: "Controle de Abastecimento ⛽",
+      content: `Esta é sua central de controle completo de abastecimentos da frota.
+      Registre e monitore todos os abastecimentos realizados, controle custos com combustível e acompanhe o consumo de cada veículo para otimizar a gestão operacional.`,
+      placement: "center",
+    },
+    {
+      target: "[data-tutorial='create-button']",
+      title: "Registrar Novo Abastecimento 🆕",
+      content: `Para adicionar um novo registro de abastecimento ao sistema, clique neste botão.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Abastecimento
+      • LEITURA em Gerenciar Veículos
+      • LEITURA em Gerenciar Tipos de Combustível
+      • LEITURA em Gerenciar Filiais (para vincular à filial responsável)
+      • LEITURA em Gerenciar Motoristas (para identificar o condutor)
+      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador do sistema.
+      Informe dados precisos como quantidade de litros, valor total, odômetro atual e posto onde foi realizado o abastecimento.`,
+      placement: "bottom",
+    },
+    {
+      target: "[placeholder='Procurar...']",
+      title: "Buscar Abastecimentos 🔍",
+      content: `Encontre rapidamente registros específicos digitando placa do veículo, valor do abastecimento, nome do posto ou qualquer outra informação relacionada.
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "bottom",
+    },
+    {
+      target: "[role='table']",
+      title: "Histórico de Abastecimentos 📋",
+      content: `Visualize todos os abastecimentos registrados no sistema com informações completas e organizadas.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Abastecimento
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      A tabela apresenta informações detalhadas como veículo abastecido, tipo de combustível, quantidade em litros, valor total, data/hora do abastecimento e localização do posto.
+      DICA: Use os filtros para analisar consumo por período, veículo específico ou tipo de combustível.`,
+      placement: "bottom",
+      spotlightPadding: 20,
+    },
+    {
+      target: "[role='table'] th:last-child",
+      title: "Ações do Abastecimento ⚙️",
+      content: `Nesta coluna aparecem os botões de ação (três pontos ⋮) para gerenciar cada registro de abastecimento.
+      IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Abastecimento
+      • LEITURA em Gerenciar Veículos
+      • LEITURA em Gerenciar Tipos de Combustível
+      • LEITURA em Gerenciar Filiais
+      • LEITURA em Gerenciar Motoristas
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      Funcionalidades disponíveis:
+      • Editar quantidade, valor ou informações do posto
+      • Corrigir dados do odômetro ou data/hora
+      • Alterar veículo ou tipo de combustível (se necessário)
+      • Excluir permanentemente do sistema
+      ATENÇÃO: A exclusão remove permanentemente o registro e afeta relatórios de consumo e custos.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      Esta ação é útil para verificar novos abastecimentos registrados por outros usuários em tempo real.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+  ],
 };
 
 export { tutorialConfigs, canViewAdvancedFeatures };

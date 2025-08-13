@@ -20,6 +20,7 @@ import { DeleteFuelForm } from "../delete-fuel-form";
 import { FuelDetailsDialog } from "../fuel-details-dialog";
 import { useFuelDetailsDialog } from "../fuel-details-dialog/hooks";
 
+import { UpdateFuelForm } from "../update-fuel-form";
 import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
@@ -31,7 +32,13 @@ export function DataTableFuelRowActions<TData>({
 }: DataTableRowActionsProps<TData>) {
   const columnRowAction = fuelTableSchema.parse(row.original);
 
-  const { handleOpenDropdown, isDropdownOpen } = useFuelRowActions();
+  const {
+    handleOpenDropdown,
+    isDropdownOpen,
+    isUpdateFuelOpen,
+    handleCloseUpdateFuel,
+  } = useFuelRowActions();
+
   const { isOpen, handleToggleDialog } = useFuelDetailsDialog();
 
   const handleCopyID = (column: string) => {
@@ -46,6 +53,10 @@ export function DataTableFuelRowActions<TData>({
   };
 
   const menuActions = [
+    {
+      label: "Editar Abastecimento",
+      onClick: handleCloseUpdateFuel,
+    },
     {
       label: "Copiar ID",
       onClick: () => handleCopyID(columnRowAction.id),
@@ -117,6 +128,14 @@ export function DataTableFuelRowActions<TData>({
           fuelData={columnRowAction}
           isOpen={isOpen}
           onOpenChange={handleToggleDialog}
+        />
+      )}
+
+      {isUpdateFuelOpen && (
+        <UpdateFuelForm
+          fuelData={columnRowAction}
+          handleCloseUpdateFuel={handleCloseUpdateFuel}
+          isUpdateFuelOpen={isUpdateFuelOpen}
         />
       )}
     </>

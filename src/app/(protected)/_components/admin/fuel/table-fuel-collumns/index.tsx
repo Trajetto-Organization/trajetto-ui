@@ -7,6 +7,7 @@ import { fuelTableSchema } from "@/schemas/fuel-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableFuelRowActions } from "../data-table-row-actions";
+import { formatDate } from "@/lib/format-values";
 
 const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
   {
@@ -61,7 +62,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("refueling_date") ?? "N/A"}
+          {formatDate(row.getValue("refueling_date"), "pt-BR") ?? "N/A"}
         </p>
       );
     },
@@ -92,10 +93,10 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Litros" />
     ),
     cell: ({ row }) => {
-      const liters = row.getValue("liters_amount") as string;
+      const liters = row.getValue("liters_amount") as number;
       return (
         <p className="truncate font-medium w-24">
-          {liters ? `${liters}L` : "N/A"}
+          {liters ? `${Number(liters).toFixed(3).replace(".", ",")}L` : "N/A"}
         </p>
       );
     },

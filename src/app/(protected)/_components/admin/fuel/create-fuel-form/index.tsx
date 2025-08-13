@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
 import { Info, Loader, X } from "lucide-react";
@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 // Step 1: Select Business and Branch
 const SelectBusinessBranchStep = ({
@@ -175,7 +176,7 @@ const SelectVehicleDriverStep = ({
       {/* Show selected items if any */}
       {(commandVehicleInputValue.searchVehicleInputValue ||
         commandDriverInputValue.searchDriverInputValue) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+        <div className="grid grid-cols-2 gap-4 w-full">
           {/* Display selected Vehicle if any */}
           {commandVehicleInputValue.searchVehicleInputValue && (
             <div className="flex items-center gap-2">
@@ -415,10 +416,7 @@ const CreateFuelFormContainer = ({
 
   return (
     <>
-      <div
-        className="grid grid-cols-1 
-        md:grid-cols-2 gap-4 mt-5"
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Refueling Date */}
         <DatePickerField
           label="Data do abastecimento"
@@ -495,7 +493,8 @@ const CreateFuelFormContainer = ({
             <AlertDescription className="text-blue-700 dark:text-blue-300">
               <strong>ℹ️ Informações importantes:</strong>
               <br />
-              • Informe a quilometragem atual do veículo no momento do reabastecimento
+              • Informe a quilometragem atual do veículo no momento do
+              reabastecimento
               <br />
               • Não é possível informar uma quilometragem menor que a atual do
               veículo
@@ -582,7 +581,7 @@ const CreateFuelForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -647,20 +646,16 @@ const CreateFuelForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
-              // Add selected IDs to form data
-              formData.append(
-                "businessId",
-                commandBusinessInputValue.businessId,
-              );
-              formData.append("branchId", commandBranchInputValue.branchId);
-              formData.append("vehicleId", commandVehicleInputValue.vehicleId);
-              formData.append("driverId", commandDriverInputValue.driverId);
-              formData.append(
-                "fuelTypeId",
-                commandFuelTypeInputValue.fuelTypeId,
-              );
+              const extraData = {
+                businessId: commandBusinessInputValue.businessId,
+                branchId: commandBranchInputValue.branchId,
+                vehicleId: commandVehicleInputValue.vehicleId,
+                driverId: commandDriverInputValue.driverId,
+                fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+              };
 
-              dispatch(formData);
+              appendExtraDataToForm(formData, extraData);
+              return dispatch(formData);
             }}
           >
             <CreateFuelFormContainer

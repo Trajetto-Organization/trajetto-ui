@@ -264,10 +264,13 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
   {
     accessorKey: "registrationUserId",
     meta: {
-      title: "Identificador do nome do usuário",
+      title: "Identificador do responsável",
     },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nome do responsável" />
+      <DataTableColumnHeader
+        column={column}
+        title="Identificador do responsável"
+      />
     ),
     cell: ({ row }) => {
       return (

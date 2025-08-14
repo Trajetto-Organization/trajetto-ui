@@ -139,6 +139,25 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
   },
   {
+    accessorKey: "access_revoked",
+    meta: {
+      title: "Revogação de acesso",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Revogação de acesso" />
+    ),
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-36">
+        {row.getValue("access_revoked") === true
+          ? "Acesso revogado"
+          : "Acesso não revogado"}
+      </p>
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+  },
+  {
     accessorKey: "role",
     meta: {
       title: "Nível de acesso",

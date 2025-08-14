@@ -19,6 +19,8 @@ import { useDashboardUpdateUserForm } from "./hooks";
 import { DashboardUpdateUserForm } from "../dashboard-update-user-form";
 import { DashboardDeleteUserForm } from "../dashboard-delete-user-form";
 
+import { DashboardRevokeUserAccessForm } from "../dashboard-revoke-user-access";
+
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +36,8 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { useAuthStore } from "@/store/auth-store";
+
 interface DashboardDataTableRowActionsProps<TData> {
   row: Row<TData>;
 }
@@ -48,6 +52,8 @@ export function DashboardDataTableUserRowActions<TData>({
     handleOpenDropdown,
     isDropdownOpen,
   } = useDashboardUpdateUserForm();
+
+  const { role } = useAuthStore();
 
   const handleCopyID = (collumn: string) => {
     navigator.clipboard
@@ -72,6 +78,9 @@ export function DashboardDataTableUserRowActions<TData>({
       label: getPermissionName(permissions.PROFILE_ACCESS_MANAGE),
     },
   ]);
+
+  // Check if current user is BUSINESS_ADMIN to show revoke access
+  const canRevokeAccess = role === "BUSINESS_ADMIN";
 
   const menuActions = [
     {
@@ -138,6 +147,12 @@ export function DashboardDataTableUserRowActions<TData>({
             </TooltipProvider>
           ))}
           <DropdownMenuSeparator />
+          {canRevokeAccess && (
+            <DashboardRevokeUserAccessForm
+              access_revoked={collumnRowAction.access_revoked}
+              userId={collumnRowAction.id}
+            />
+          )}
           <DashboardDeleteUserForm userId={collumnRowAction.id} />
         </DropdownMenuContent>
       </DropdownMenu>

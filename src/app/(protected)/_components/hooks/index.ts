@@ -48,7 +48,8 @@ function useCepQuery(cep: string) {
   return useQuery(["cep", numericCep], () => fetchCep(numericCep), {
     enabled: numericCep.length === 8, // Only runs if the zip code has 8 digits
     refetchOnWindowFocus: false,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 }
 
@@ -57,7 +58,9 @@ function useCepValidation({ initialData, isOpen }: UseCepValidationProps) {
   const initialFormValuesRef = useRef(formValues);
 
   const toastIdRef = useRef<string | number | null>(null);
-  const toastShownRef = useRef<boolean>(false);
+  const lastSuccessfulCepRef = useRef<string>("");
+
+  const hasShownToastForCepRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const newValues: Record<string, string> = {};
@@ -72,6 +75,14 @@ function useCepValidation({ initialData, isOpen }: UseCepValidationProps) {
 
     setFormValues(newValues);
     initialFormValuesRef.current = newValues;
+
+    // Reset toast tracking when form resets
+    hasShownToastForCepRef.current.clear();
+    const initialCep = newValues.cep?.replace(/\D/g, "") || "";
+    if (initialCep.length === 8) {
+      hasShownToastForCepRef.current.add(initialCep);
+      lastSuccessfulCepRef.current = initialCep;
+    }
   }, [initialData, isOpen]);
 
   const cepValue = formValues["cep"] || "";
@@ -104,11 +115,7 @@ function useCepValidation({ initialData, isOpen }: UseCepValidationProps) {
       toastIdRef.current = null;
     }
 
-    if (!cepLoading && cepData && !toastShownRef.current) {
-      const initialCep =
-        initialFormValuesRef.current.cep?.replace(/\D/g, "") || "";
-      const isNewCep = numericCep !== initialCep;
-
+    if (!cepLoading && cepData && numericCep.length === 8) {
       setFormValues((prev) => ({
         ...prev,
         city: cepData.city,
@@ -116,12 +123,19 @@ function useCepValidation({ initialData, isOpen }: UseCepValidationProps) {
         street: cepData.street,
       }));
 
-      if (isNewCep) toast.success("CEP encontrado!");
+      // Only show toast if we haven't shown it for this CEP before
+      if (!hasShownToastForCepRef.current.has(numericCep)) {
+        toast.success("CEP encontrado!");
+
+        hasShownToastForCepRef.current.add(numericCep);
+        lastSuccessfulCepRef.current = numericCep;
+      }
     }
 
     if (cepError) {
       toast.error("CEP inválido! Preencha manualmente");
-      toastShownRef.current = false;
+      // Don't clear the tracking set on error, just reset lastSuccessful
+      lastSuccessfulCepRef.current = "";
     }
   }, [cepLoading, cepData, cepError, numericCep]);
 

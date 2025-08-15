@@ -260,6 +260,14 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
                 return isMatch;
               },
             }),
+            queryClientProps.resetQueries({
+              predicate: (query) => {
+                return (
+                  Array.isArray(query.queryKey) &&
+                  query.queryKey[0] === "vehicleData"
+                );
+              },
+            }),
           ]);
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {

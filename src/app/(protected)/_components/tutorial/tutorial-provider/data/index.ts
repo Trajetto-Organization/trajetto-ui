@@ -37,6 +37,84 @@ const canViewAdvancedFeatures = (
   );
 };
 
+// Helper function to check if a user has a specific permission
+const hasPermission = (
+  userPermissions?: UserPermissions,
+  permissionKey?: string,
+): boolean => {
+  if (!userPermissions || !permissionKey) return true;
+  if (!userPermissions.permissions) return false;
+
+  return userPermissions.permissions.some(
+    (perm) =>
+      perm.permissionKey === permissionKey && (perm.canRead || perm.canWrite),
+  );
+};
+
+// Helper function to determine if dashboard cards should be displayed based on permissions
+const shouldDisplayDashboardCard = (
+  userPermissions?: UserPermissions,
+  cardType?: string,
+): boolean => {
+  if (!userPermissions || !cardType) return true;
+
+  // MASTER sees everything
+  if (userPermissions.role === "MASTER") return true;
+
+  // BUSINESS_ADMIN sees everything except "businesses"
+  if (userPermissions.role === "BUSINESS_ADMIN") {
+    return cardType !== "businesses";
+  }
+
+  if (userPermissions.role === "BUSINESS_USER") {
+    const permissionMap: Record<string, string> = {
+      vehicles: "vehicle_manage",
+      drivers: "driver_manage",
+      businesses: "business_manage",
+      branches: "branch_manage",
+      parts: "part_manage",
+      suppliers: "supplier_manage",
+      serviceOrders: "service_order_manage",
+      users: "user_registration_manage",
+      fines: "fine_manage",
+      fuel: "fuel_manage",
+    };
+
+    const requiredPermission = permissionMap[cardType];
+    return requiredPermission ? hasPermission(userPermissions, requiredPermission) : false;
+  }
+
+  return true;
+};
+
+// Helper function to check if interactive cards section should be shown
+const shouldShowInteractiveCards = (userPermissions?: UserPermissions): boolean => {
+  if (!userPermissions) return true;
+  if (userPermissions.role === "MASTER" || userPermissions.role === "BUSINESS_ADMIN") return true;
+  
+  if (userPermissions.role === "BUSINESS_USER") {
+    // Check if user has at least one permission that would show a card
+    const cardTypes = ["vehicles", "drivers", "branches", "parts", "suppliers", "serviceOrders", "users", "fines"];
+    return cardTypes.some(cardType => shouldDisplayDashboardCard(userPermissions, cardType));
+  }
+  
+  return true;
+};
+
+// Helper function to check if quick access section should be shown
+const shouldShowQuickAccess = (userPermissions?: UserPermissions): boolean => {
+  if (!userPermissions) return true;
+  if (userPermissions.role === "MASTER" || userPermissions.role === "BUSINESS_ADMIN") return true;
+  
+  if (userPermissions.role === "BUSINESS_USER") {
+    // Check if user has at least one permission that would show a quick link
+    const linkTypes = ["users", "vehicles", "businesses", "serviceOrders", "drivers", "branches", "parts", "suppliers", "fines"];
+    return linkTypes.some(linkType => shouldDisplayDashboardCard(userPermissions, linkType));
+  }
+  
+  return true;
+};
+
 // Tutorial configurations rewritten elegantly - maintaining original structure
 const tutorialConfigs: TutorialConfig = {
   "/dashboard": [
@@ -108,6 +186,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize as métricas principais do sistema de forma clara e organizada, incluindo veículos cadastrados, ordens de serviço em andamento e muito mais.
       DICA: Os cartões coloridos indicam alterações percentuais em relação ao período anterior.`,
       placement: "bottom",
+      condition: (userPermissions) => shouldShowInteractiveCards(userPermissions),
     },
     {
       target: "[role='table']",
@@ -123,6 +202,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Estes cartões inteligentes permitem acessar rapidamente as áreas mais utilizadas do sistema.
       DICA: Clique em qualquer cartão para navegar diretamente para a seção correspondente, sem usar o menu lateral.`,
       placement: "top",
+      condition: (userPermissions) => shouldShowQuickAccess(userPermissions),
     },
   ],
   "/dashboard/charts": [
@@ -1254,5 +1334,12 @@ const tutorialConfigs: TutorialConfig = {
   ],
 };
 
-export { tutorialConfigs, canViewAdvancedFeatures };
+export { 
+  tutorialConfigs, 
+  canViewAdvancedFeatures, 
+  shouldShowInteractiveCards, 
+  shouldShowQuickAccess,
+  shouldDisplayDashboardCard,
+  hasPermission 
+};
 export type { TutorialStep };

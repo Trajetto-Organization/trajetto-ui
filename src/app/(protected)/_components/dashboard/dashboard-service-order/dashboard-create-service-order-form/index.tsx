@@ -49,12 +49,14 @@ import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
+
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
 
@@ -715,7 +717,11 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
                 disabled={!permissionsRequired.hasAllPermissions}
                 data-tutorial="create-button"
               >
-                <Button size="sm" className="h-8" disabled={!permissionsRequired.hasAllPermissions}>
+                <Button
+                  size="sm"
+                  className="h-8"
+                  disabled={!permissionsRequired.hasAllPermissions}
+                >
                   Criar Ordem de Serviço
                 </Button>
               </DialogTrigger>

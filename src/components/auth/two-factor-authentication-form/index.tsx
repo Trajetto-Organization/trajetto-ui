@@ -95,7 +95,9 @@ const TwoFactorAuthenticationFormContainer = ({
       <ErrorForm
         message={
           state.twoFactorError?.twoFactorErrorMessage ||
-          state.twoFactorError?.code?.toString()
+          (state.twoFactorError?.code && Array.isArray(state.twoFactorError.code) 
+            ? state.twoFactorError.code[0] 
+            : state.twoFactorError?.code?.toString())
         }
       />
 

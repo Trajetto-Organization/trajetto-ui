@@ -70,6 +70,9 @@ const DashboardCreateUserFormContainer = ({
   const { selectedRole, setSelectedRole } = useSelectUserRole();
   const { businessId, role } = useAuthStore();
 
+  // Only MASTER users can set custom passwords
+  const canSetCustomPassword = role === "MASTER";
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
@@ -141,37 +144,54 @@ const DashboardCreateUserFormContainer = ({
           </Select>
         </div>
 
-        <div className="flex items-end gap-2 w-full">
-          <div className="w-full -mt-1">
-            <FormInput
-              label="Senha"
-              htmlfor="password"
-              name="password"
-              type="password"
-              errorName={state?.createUserError?.password}
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => handleChangePassword(e.target.value)}
-              disabled={pending}
-            />
-          </div>
+        {canSetCustomPassword && (
+          <div className="flex items-end gap-2 w-full">
+            <div className="w-full -mt-1">
+              <FormInput
+                label="Senha"
+                htmlfor="password"
+                name="password"
+                type="password"
+                errorName={state?.createUserError?.password}
+                placeholder="Senha"
+                value={password}
+                onChange={(e) => handleChangePassword(e.target.value)}
+                disabled={pending}
+              />
+            </div>
 
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleGeneratePassword}
-            disabled={pending}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleGeneratePassword}
+              disabled={pending}
+            >
+              Gerar
+            </Button>
+          </div>
+        )}
+
+        {!canSetCustomPassword && (
+          <div
+            className="flex items-center justify-center 
+            p-4 bg-muted/50 rounded-lg border border-dashed"
           >
-            Gerar
-          </Button>
-        </div>
+            <p className="text-sm text-muted-foreground text-center">
+              🔐 A senha será gerada automaticamente e enviada por e-mail ao
+              usuário
+            </p>
+          </div>
+        )}
       </div>
 
       {selectedRole && searchProfileAccessInputValue && (
         <div className="grid grid-cols-1 gap-4 w-full mt-6">
           {selectedRole !== "BUSINESS_ADMIN" &&
             searchProfileAccessInputValue && (
-              <div className="flex items-center gap-2 w-full ml-auto">
+              <div
+                className="flex items-center 
+                gap-2 w-full ml-auto"
+              >
                 <div
                   className={cn(
                     buttonVariants({ variant: "outline" }),
@@ -273,7 +293,11 @@ const DashboardCreateUserForm = (): JSX.Element => {
                 disabled={!permissionsRequired.hasAllPermissions}
                 data-tutorial="create-button"
               >
-                <Button size="sm" className="h-8" disabled={!permissionsRequired.hasAllPermissions}>
+                <Button
+                  size="sm"
+                  className="h-8"
+                  disabled={!permissionsRequired.hasAllPermissions}
+                >
                   Criar Usuário
                 </Button>
               </DialogTrigger>

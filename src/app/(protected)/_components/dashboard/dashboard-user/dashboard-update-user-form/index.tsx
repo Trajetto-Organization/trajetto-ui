@@ -66,7 +66,10 @@ const DashboardUpdateUserFormContainer = ({
   const { handleGeneratePassword, handleChangePassword, password } =
     useUpdateGenerateRandomPassword();
 
-  const { businessId } = useAuthStore();
+  const { businessId, role } = useAuthStore();
+
+  // Only MASTER users can set custom passwords
+  const canSetCustomPassword = role === "MASTER";
 
   return (
     <>
@@ -124,44 +127,64 @@ const DashboardUpdateUserFormContainer = ({
               <SelectValue placeholder="Nível de acesso" />
             </SelectTrigger>
             <SelectContent>
-              {Object.values(UserBusinessRole).map((role) => (
-                <SelectItem
-                  key={role}
-                  value={role}
-                  className="cursor-pointer 
-                  hover:bg-accent hover:text-accent-foreground"
-                >
-                  {roleLabels[role]}
-                </SelectItem>
-              ))}
+              {Object.values(UserBusinessRole)
+                .filter(
+                  (roleItem) =>
+                    role !== UserBusinessRole.BUSINESS_USER ||
+                    roleItem === UserBusinessRole.BUSINESS_USER,
+                )
+                .map((roleItem) => (
+                  <SelectItem
+                    key={roleItem}
+                    value={roleItem}
+                    className="cursor-pointer 
+                    hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {roleLabels[roleItem]}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="flex items-end gap-2 w-full">
-          <div className="w-full -mt-1">
-            <FormInput
-              label="Senha"
-              htmlfor="password"
-              name="password"
-              type="password"
-              errorName={state?.updateUserError?.password}
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => handleChangePassword(e.target.value)}
-              disabled={pending}
-            />
-          </div>
+        {canSetCustomPassword && (
+          <div className="flex items-end gap-2 w-full">
+            <div className="w-full -mt-1">
+              <FormInput
+                label="Senha"
+                htmlfor="password"
+                name="password"
+                type="password"
+                errorName={state?.updateUserError?.password}
+                placeholder="Senha"
+                value={password}
+                onChange={(e) => handleChangePassword(e.target.value)}
+                disabled={pending}
+              />
+            </div>
 
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleGeneratePassword}
-            disabled={pending}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={handleGeneratePassword}
+              disabled={pending}
+            >
+              Gerar
+            </Button>
+          </div>
+        )}
+
+        {!canSetCustomPassword && (
+          <div
+            className="flex items-center justify-center 
+            p-4 bg-muted/50 rounded-lg border border-dashed"
           >
-            Gerar
-          </Button>
-        </div>
+            <p className="text-sm text-muted-foreground text-center">
+              🔐 A senha será gerada automaticamente e enviada por e-mail ao
+              usuário
+            </p>
+          </div>
+        )}
       </div>
 
       {userRole &&

@@ -13,13 +13,12 @@ export const metadata: Metadata = {
   title: "Contato",
   description: `
     Entre em contato com a equipe Trajetto para soluções personalizadas em gestão de frotas 
-    e otimização logística. Solicite uma demonstração gratuita ou tire suas dúvidas com nossos especialistas.
+    e otimização logística. Solicite uma demonstração ou tire suas dúvidas com nossos especialistas.
   `.trim(),
   keywords: [
     "contato trajetto",
     "falar com trajetto",
     "suporte trajetto",
-    "demonstração gratuita",
     "consultoria frotas",
     "atendimento ao cliente",
     "especialistas frotas",
@@ -37,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Contato | Trajetto - Entre em Contato Conosco",
     description: `
-      Fale com nossos especialistas em gestão de frotas. Solicite uma demonstração gratuita 
+      Fale com nossos especialistas em gestão de frotas. Solicite uma demonstração.
       e descubra como otimizar sua operação logística.
     `.trim(),
     url: `${process.env.METADATA_BASE}/contact`,
@@ -57,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Contato | Trajetto - Entre em Contato Conoscos",
     description: `
-      Fale com nossos especialistas em gestão de frotas. Demonstração gratuita disponível.
+      Fale com nossos especialistas em gestão de frotas.
     `.trim(),
     images: [`${process.env.METADATA_BASE}/og-default.jpg`],
   },
@@ -89,7 +88,7 @@ const Contact = (): JSX.Element => {
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold">Onde Estamos</h2>
               <p className="text-muted-foreground mt-2">
-                Visite nossa sede ou entre em contato online
+                Saiba onde estamos localizados
               </p>
             </div>
 

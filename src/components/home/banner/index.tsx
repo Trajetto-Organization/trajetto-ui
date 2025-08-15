@@ -11,11 +11,11 @@ const Banner = (): JSX.Element => {
     from-[#f50057] flex-col items-center justify-center px-5"
     >
       <h2 className="text-center text-4xl font-medium text-white">
-        Comece Sua Jornada Hoje
+        Pense Diferente. Gerencie Diferente.
       </h2>
 
       <p className="mt-4 text-center text-gray-100 lg:text-lg">
-        Reduza custos e ganhe eficiência. Solicite um orçamento!
+        A plataforma que vai mudar para sempre como você vê gestão de frotas.
       </p>
 
       <div
@@ -23,7 +23,7 @@ const Banner = (): JSX.Element => {
         gap-6 md:flex-row justify-center w-full"
       >
         <Link
-          href={"/login"}
+          href={"/quote"}
           aria-label="Back to dashboard page"
           className={cn(
             buttonVariants({

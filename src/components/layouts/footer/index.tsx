@@ -35,7 +35,7 @@ const Footer = (): JSX.Element => {
           <div className="space-y-4">
             <h3 className="font-bold text-xl">Trajetto</h3>
             <p className="text-muted-foreground">
-              Gerenciamento avançado de frotas para o mundo moderno.
+              Controle total da sua frota em uma única plataforma.
             </p>
             <div className="flex space-x-4">
               <Link

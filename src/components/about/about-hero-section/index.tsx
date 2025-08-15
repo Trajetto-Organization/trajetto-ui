@@ -42,7 +42,7 @@ const AboutHeroSection = () => {
           className="text-xl md:text-2xl max-w-3xl 
           mx-auto leading-relaxed"
         >
-          Transformando a gestão de frotas com tecnologia e inovação desde 2015
+          Transformando a gestão de frotas com tecnologia e inovação
         </motion.p>
       </div>
     </section>

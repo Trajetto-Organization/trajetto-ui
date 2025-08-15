@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 
 import { ArrowRight, MessageCircleMore } from "lucide-react";
@@ -28,8 +26,8 @@ const Hero = (): JSX.Element => {
               Gestão de Frotas Inteligentes para a Nova Era
             </h1>
             <p className="text-xl text-muted-foreground">
-              Plataforma inteligente de monitoramento de veículos para rastrear,
-              gerenciar e otimizar sua frota com máxima precisão e eficiência.
+              Plataforma inteligente de gestão de frotas, gerencie e otimize sua
+              frota com máxima precisão e eficiência.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link

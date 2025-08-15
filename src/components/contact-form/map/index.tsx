@@ -62,19 +62,19 @@ const Map = (): JSX.Element => {
           md:grid-cols-3 gap-4"
         >
           <div className="text-center">
-            <p className="font-medium">Address</p>
+            <p className="font-medium">Endereço</p>
             <p className="text-sm text-muted-foreground">
               Av. Afonso Pena, 1500 - Centro
             </p>
           </div>
           <div className="text-center">
-            <p className="font-medium">Phone</p>
+            <p className="font-medium">WhatsApp</p>
             <p className="text-sm text-muted-foreground">+55 (31) 99999-9999</p>
           </div>
           <div className="text-center">
             <p className="font-medium">Email</p>
             <p className="text-sm text-muted-foreground">
-              contact@trajetto.com
+              intrajetto@gmail.com
             </p>
           </div>
         </div>

@@ -10,14 +10,13 @@ export const metadata: Metadata = {
   title: "Orçamento Gratuito | Trajetto - Solicite Sua Cotação Personalizada",
   description: `
     Solicite um orçamento personalizado para sua empresa e descubra como o 
-    Trajetto pode transformar a gestão da sua frota com economia, eficiência e controle total. 
-    Demonstração gratuita incluída. Sem compromisso.
+    Trajetto pode transformar a gestão da sua frota com economia, eficiência e 
+    controle total sem compromisso.
   `.trim(),
   keywords: [
     "orçamento trajetto",
     "cotação gestão frotas",
     "preço sistema frotas",
-    "demonstração gratuita",
     "proposta comercial",
     "custo benefício",
     "investimento frotas",
@@ -37,7 +36,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Orçamento Gratuito | Trajetto - Solicite Sua Cotação",
     description: `
-      Solicite orçamento personalizado para gestão da sua frota. Demonstração gratuita, 
+      Solicite orçamento personalizado para gestão da sua frota 
       sem compromisso. Descubra quanto você pode economizar com o Trajetto.
     `.trim(),
     url: `${process.env.METADATA_BASE}/quote`,
@@ -57,7 +56,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Orçamento Gratuito | Trajetto - Solicite Sua Cotação",
     description: `
-      Orçamento personalizado para gestão de frotas. Demonstração gratuita, sem compromisso.
+      Orçamento personalizado para gestão de frotas sem compromisso.
     `.trim(),
     images: [`${process.env.METADATA_BASE}/og-default.jpg`],
   },

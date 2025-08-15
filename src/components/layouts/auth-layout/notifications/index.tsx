@@ -30,12 +30,18 @@ const Notification = ({
     >
       <div className="flex flex-row items-center gap-3">
         <div
-          className="flex size-10 items-center justify-center rounded-2xl"
+          className="flex size-10 items-center justify-center rounded-2xl shrink-0"
           style={{
             backgroundColor: color,
           }}
         >
-          <span className="text-lg">{icon}</span>
+          <span
+            className="text-base leading-none 
+            flex items-center justify-center 
+            w-full h-full"
+          >
+            {icon}
+          </span>
         </div>
         <div className="flex flex-col overflow-hidden">
           <figcaption
@@ -58,33 +64,41 @@ const Notification = ({
 const Notifications = (): JSX.Element => {
   let notifications = [
     {
-      name: "Manutenção Agendada",
-      description: "O veículo ABC-1234 tem manutenção programada para amanhã.",
-      time: "15m atrás",
-      icon: "🔧",
+      name: "Nova Multa Registrada",
+      description: "Multa de R$ 195,23 registrada para o veículo ABC-1234.",
+      time: "às 17:49",
+      icon: "🚨",
       color: "#FF3D71",
     },
     {
-      name: "Desvio de Rota",
-      description: "O veículo XYZ-5678 desviou da rota planejada.",
-      time: "10m atrás",
-      icon: "⚠️",
-      color: "#FFB800",
+      name: "Nova Conta a Pagar",
+      description: "Nova conta a pagar de R$ 1.250,00 foi atribuída a você.",
+      time: "às 17:49",
+      icon: "💳",
+      color: "#1E86FF",
     },
     {
-      name: "Alerta de Combustível",
-      description:
-        "O nível de combustível do veículo DEF-9101 está abaixo de 10%.",
-      time: "5m atrás",
+      name: "Abastecimento Atualizado",
+      description: "Abastecimento atualizado para o veículo AGL0944.",
+      time: "às 17:49",
       icon: "⛽",
       color: "#1E86FF",
     },
     {
-      name: "Novo Relatório Disponível",
-      description: "O relatório semanal de desempenho da frota está pronto.",
-      time: "2m atrás",
-      icon: "📊",
+      name: "Novo Usuário Cadastrado",
+      description:
+        "Usuário João Silva criado | E-mail não verificado: joaosilva@gmail.com.",
+      time: "às 17:49",
+      icon: "👤",
       color: "#00C9A7",
+    },
+    {
+      name: "Nova Ordem de Serviço",
+      description:
+        "Você foi designado como responsável pela ordem de serviço do veículo XYZ-5678.",
+      time: "às 17:49",
+      icon: "🔧",
+      color: "#4CAF50",
     },
   ];
 

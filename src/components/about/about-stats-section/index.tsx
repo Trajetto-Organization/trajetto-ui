@@ -60,13 +60,13 @@ const AboutStatsSection = () => {
       description: "Economizando combustível e tempo",
     },
     {
-      value: 12,
-      suffix: "",
-      label: "Países Atendidos",
+      value: 99,
+      suffix: "%",
+      label: "Satisfação dos Clientes",
       icon: Globe,
       color1: "#8b5cf6", // Purple
       color2: "#6d28d9", // Violet
-      description: "Presença internacional",
+      description: "Clientes recomendam nossa solução",
     },
   ];
 

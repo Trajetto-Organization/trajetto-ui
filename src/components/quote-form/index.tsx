@@ -11,12 +11,12 @@ import {
   Building,
   Check,
   ChevronRight,
-  Clock,
   Loader,
   Mail,
   Phone,
   Shield,
   User,
+  Fuel,
 } from "lucide-react";
 
 import FormInput from "@/components/custom/form-input";
@@ -186,16 +186,16 @@ const QuoteForm = (): JSX.Element => {
       icon: <BarChart3 className="h-8 w-8 text-[#d81b60]" />,
     },
     {
-      title: "Aumento de Produtividade",
+      title: "Controle Multi-Empresas",
       description:
-        "Optimize rotas e aumente a eficiência operacional da sua frota",
-      icon: <Clock className="h-8 w-8 text-[#d81b60]" />,
+        "Gerencie várias empresas e filiais com isolamento total de dados",
+      icon: <Building className="h-8 w-8 text-[#d81b60]" />,
     },
     {
-      title: "Monitoramento em Tempo Real",
+      title: "Gestão de Combustível",
       description:
-        "Acompanhe seus veículos 24/7 com alertas e notificações instantâneas",
-      icon: <Shield className="h-8 w-8 text-[#d81b60]" />,
+        "Controle abastecimentos, quilometragem e custos por litro automaticamente",
+      icon: <Fuel className="h-8 w-8 text-[#d81b60]" />,
     },
     {
       title: "Gestão Completa",
@@ -398,15 +398,18 @@ const QuoteForm = (): JSX.Element => {
                 <h3 className="text-2xl font-bold mb-6">O que oferecemos</h3>
                 <ul className="space-y-4">
                   {[
-                    "Monitoramento em tempo real 24/7",
+                    "Gestão completa de ordens de serviço",
                     "Controle de combustível e manutenções",
                     "Gestão de multas e documentos",
                     "Relatórios detalhados de desempenho",
-                    "Otimização inteligente de rotas",
-                    "Alertas de manutenção preventiva",
-                    "Aplicativo mobile para motoristas",
-                    "Painel administrativo personalizado",
-                    "Integração com sistemas de ERP",
+                    "Controle de usuários com autenticação 2FA",
+                    "Sistema multi-empresas e filiais",
+                    "Exportação de relatórios em Excel",
+                    "Integração com WhatsApp para notificações",
+                    "Controle granular de permissões por usuário",
+                    "Gestão de motoristas e documentação",
+                    "Dashboards com métricas essenciais",
+                    "Histórico completo de manutenções",
                     "Suporte técnico especializado",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start">

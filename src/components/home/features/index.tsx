@@ -1,31 +1,50 @@
 import { Step } from "@/components/step";
-import { Activity, BarChart3, Map, Shield } from "lucide-react";
+import {
+  BarChart3,
+  Fuel,
+  Shield,
+  Users,
+  AlertTriangle,
+  Settings,
+} from "lucide-react";
 
 const Features = (): JSX.Element => {
   const features = [
     {
       icon: Shield,
-      title: "Manutenção Preditiva",
+      title: "Controle de Manutenção",
       description:
-        "Previsões baseadas em IA para evitar avarias e otimizar os calendários de manutenção para toda a sua frota.",
+        "Gerencie ordens de serviço, acompanhe intervalos de manutenção por quilometragem e mantenha histórico completo de cada veículo.",
     },
     {
-      icon: Activity,
-      title: "Monitoramento Detalhado",
+      icon: Fuel,
+      title: "Gestão de Combustível",
       description:
-        "Monitore status, localização e desempenho do veículo em tempo real com máxima precisão e eficiência.",
+        "Monitore abastecimentos, controle custos por litro, acompanhe quilometragem e otimize o consumo da sua frota.",
     },
     {
-      icon: Map,
-      title: "Otimização de Rota",
+      icon: Users,
+      title: "Gestão de Equipe",
       description:
-        "Algoritmos de roteamento inteligentes para reduzir o consumo de combustível e melhorar a eficiência em todas as suas rotas.",
+        "Controle total de usuários, motoristas e permissões com autenticação de dois fatores e níveis de acesso granulares.",
+    },
+    {
+      icon: AlertTriangle,
+      title: "Controle de Multas",
+      description:
+        "Registre e monitore infrações de trânsito, associe multas aos veículos e motoristas responsáveis para controle total.",
+    },
+    {
+      icon: Settings,
+      title: "Multi-Empresas",
+      description:
+        "Gerencie múltiplas empresas e filiais em uma única plataforma com isolamento total de dados e permissões específicas.",
     },
     {
       icon: BarChart3,
-      title: "Análise Avançada",
+      title: "Dashboards Inteligentes",
       description:
-        "Informações abrangentes sobre o desempenho da frota e métricas operacionais com relatórios detalhados.",
+        "Métricas em tempo real, relatórios personalizados e insights poderosos para tomada de decisões estratégicas.",
     },
   ];
 
@@ -58,7 +77,7 @@ const Features = (): JSX.Element => {
               empresas de todos os tamanhos
             </p>
           </div>
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <div
                 key={feature.title}

@@ -1,9 +1,9 @@
 const Stats = (): JSX.Element => {
   const stats = [
-    { value: "99.9%", label: "Tempo de atividade" },
+    { value: "30%", label: "Redução de Custos" },
     { value: "24/7", label: "Monitoramento" },
-    { value: "15min", label: "Tempo de resposta" },
-    { value: "500+", label: "Clientes satisfeitos" },
+    { value: "100%", label: "Controle Total" },
+    { value: "∞", label: "Veículos Suportados" },
   ];
 
   return (

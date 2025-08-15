@@ -16,15 +16,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import {
-  Loader,
-  Mail,
-  Phone,
-  MessageSquare,
-  Send,
-  MapPin,
-  Clock,
-} from "lucide-react";
+import { Loader, Mail, MessageSquare, Send, MapPin, Clock } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa6";
 
 const ContactForm = (): JSX.Element => {
   const {
@@ -140,10 +133,10 @@ const ContactForm = (): JSX.Element => {
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/10 p-3 rounded-full">
-                      <Phone className="h-5 w-5" />
+                      <FaWhatsapp className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm text-white/70">Telefone</p>
+                      <p className="text-sm text-white/70">WhatsApp</p>
                       <p className="font-medium">+55 (31) 999999-9999</p>
                     </div>
                   </div>
@@ -154,7 +147,7 @@ const ContactForm = (): JSX.Element => {
                     </div>
                     <div>
                       <p className="text-sm text-white/70">Email</p>
-                      <p className="font-medium">contact@trajetto.com</p>
+                      <p className="font-medium">intrajetto@gmail.com</p>
                     </div>
                   </div>
 

@@ -32,6 +32,7 @@ interface DashboardUpdateFuelContainerProps {
   fuelData: DashboardFuelProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateFuelOpen: boolean;
+  commandVehicleInputValue: CommandVehicleInputValue;
 }
 
 interface DashboardSelectBranchStepProps {

@@ -326,6 +326,7 @@ const DashboardUpdateFuelContainer = ({
   fuelData,
   isBusinessAndEntityDirty,
   isUpdateFuelOpen,
+  commandVehicleInputValue,
 }: DashboardUpdateFuelContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
@@ -333,9 +334,9 @@ const DashboardUpdateFuelContainer = ({
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [isDirty, setIsDirty] = useState<boolean>(false);
 
-  // Fetch current vehicle data for validation
+  // Fetch current vehicle data for validation - use selected vehicle or fallback to original
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
-    vehicleId: fuelData.vehicleId,
+    vehicleId: commandVehicleInputValue.vehicleId || fuelData.vehicleId,
     businessId: businessId as string,
   });
 
@@ -582,7 +583,10 @@ const DashboardUpdateFuelContainer = ({
         <Button type="button" variant="outline" onClick={onBack}>
           Voltar
         </Button>
-        <Button type="submit" disabled={pending || !hasAnyChange}>
+        <Button
+          type="submit"
+          disabled={pending || !hasAnyChange || isLoadingVehicle}
+        >
           <span>Atualizar Abastecimento</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -722,6 +726,7 @@ const DashboardUpdateFuelForm = ({
               fuelData={fuelData}
               isBusinessAndEntityDirty={isBusinessAndEntityDirty}
               isUpdateFuelOpen={isUpdateFuelOpen}
+              commandVehicleInputValue={commandVehicleInputValue}
             />
           </form>
         )}

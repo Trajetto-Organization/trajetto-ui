@@ -634,7 +634,10 @@ const UpdateFuelContainer = ({
         <Button type="button" variant="outline" onClick={onBack}>
           Voltar
         </Button>
-        <Button type="submit" disabled={pending || !hasAnyChange}>
+        <Button
+          type="submit"
+          disabled={pending || !hasAnyChange || isLoadingVehicle}
+        >
           <span>Atualizar Abastecimento</span>
           {pending && (
             <div className="ml-2 animate-spin">

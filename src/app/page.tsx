@@ -4,7 +4,9 @@ import { Features } from "@/components/home/features";
 import { Hero } from "@/components/home/hero";
 
 import { Stats } from "@/components/home/stats";
+
 import { FleetManagementDashboard } from "@/components/home/fleet-management-dashboard";
+import { InteractiveDemo } from "@/components/home/interactive-demo";
 
 import { Reviews } from "@/components/home/reviews";
 import { AppShowcase } from "@/components/home/app-show-case";
@@ -24,6 +26,7 @@ const Home = (): JSX.Element => {
       </main>
       <Stats />
       <FleetManagementDashboard />
+      <InteractiveDemo />
       <Reviews />
       <AppShowcase />
       <Banner />

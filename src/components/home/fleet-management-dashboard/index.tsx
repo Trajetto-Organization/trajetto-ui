@@ -122,7 +122,7 @@ const FleetManagementDashboard = (): JSX.Element => {
           {/* Dashboard image */}
           <div className="relative w-full h-full">
             <Image
-              src="/about-bg.jpg"
+              src="/trajetto-management-dashboard.png"
               alt="Dashboard de Gerenciamento de Frota"
               layout="fill"
               objectFit="cover"
@@ -140,28 +140,6 @@ const FleetManagementDashboard = (): JSX.Element => {
                 backgroundPosition: `${glareX}px ${glareY}px`,
               }}
             />
-
-            {/* UI Elements overlay for added depth */}
-            <div className="absolute inset-0 z-30 pointer-events-none">
-              <motion.div
-                className="absolute top-4 right-4 bg-white/10 
-                backdrop-blur-sm rounded-md px-3 py-2 shadow-lg"
-                style={{ translateZ: "20px" }}
-              >
-                <div className="h-2 w-16 bg-green-500 rounded-full" />
-                <div className="mt-1 text-xs text-white/80">Sistema online</div>
-              </motion.div>
-
-              <motion.div
-                className="absolute bottom-4 left-4 bg-white/10 
-                backdrop-blur-sm rounded-md px-3 py-2 shadow-lg"
-                style={{ translateZ: "15px" }}
-              >
-                <div className="text-xs text-white/80">
-                  Veículos ativos: 28/30
-                </div>
-              </motion.div>
-            </div>
           </div>
         </motion.div>
 

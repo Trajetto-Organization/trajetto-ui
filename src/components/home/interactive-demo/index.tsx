@@ -1,32 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 
 import Image from "next/image";
 import {
-  ArrowRight,
-  ArrowLeft,
-  Car,
-  Users,
-  Building2,
-  Briefcase,
-  Container,
-  Package,
-  FileText,
-  Receipt,
-  Play,
-  Pause,
   LineChart,
-  ChartArea,
+  BarChart3,
   RefreshCw,
-  LayoutDashboardIcon,
-  Kanban,
-  Truck,
-  NotepadText,
   ChevronRight,
   Search,
-  MenuIcon,
+  Menu,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,184 +27,62 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import {
+  DemoTooltip,
+  FloatingControls,
+  KeyboardHints,
+  StepInformation,
+} from "./components";
+
+import {
+  useTooltipPosition,
+  useDemoNavigation,
+  useKeyboardNavigation,
+} from "./hooks";
+
+import {
+  demoSteps,
+  fakeStats,
+  fakeActivities,
+  fakeQuickLinks,
+  sidebarItems,
+} from "./data/demoData";
+
 const InteractiveDemo = () => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
-
   const tooltipRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const demoSteps = [
-    {
-      title: "Bem-vindo ao Dashboard",
-      description: "Visão geral completa da sua operação em tempo real",
-      highlight: "overview",
-      tooltip: {
-        title: "Dashboard Inteligente",
-        content:
-          "Monitore todos os aspectos da sua frota em uma única tela centralizada.",
-        target: "[data-demo-target='overview']",
-      },
-    },
-    {
-      title: "Cards Estatísticos",
-      description: "Métricas importantes em tempo real",
-      highlight: "stats",
-      tooltip: {
-        title: "Estatísticas em Tempo Real",
-        content:
-          "Acompanhe veículos, motoristas, empresas e muito mais com dados atualizados.",
-        target: "[data-demo-target='stats']",
-      },
-    },
-    {
-      title: "Atividades Recentes",
-      description: "Histórico detalhado de todas as ações",
-      highlight: "activity",
-      tooltip: {
-        title: "Monitoramento de Atividades",
-        content:
-          "Veja quem fez o quê e quando, com rastreamento completo de ações.",
-        target: "[data-demo-target='activity']",
-      },
-    },
-    {
-      title: "Links Rápidos",
-      description: "Acesso direto às funcionalidades principais",
-      highlight: "quicklinks",
-      tooltip: {
-        title: "Navegação Eficiente",
-        content: "Acesse rapidamente as seções mais utilizadas do sistema.",
-        target: "[data-demo-target='quicklinks']",
-      },
-    },
-  ];
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
 
-  const fakeStats = [
-    { title: "Veículos", value: 24, change: 12, icon: Car, color: "#3b82f6" },
-    {
-      title: "Motoristas",
-      value: 18,
-      change: 5,
-      icon: Users,
-      color: "#10b981",
-    },
-    {
-      title: "Empresas",
-      value: 3,
-      change: 1,
-      icon: Briefcase,
-      color: "#8b5cf6",
-    },
-    {
-      title: "Filiais",
-      value: 8,
-      change: 2,
-      icon: Building2,
-      color: "#f97316",
-    },
-    {
-      title: "Peças",
-      value: 156,
-      change: 23,
-      icon: Container,
-      color: "#ec4899",
-    },
-    {
-      title: "Fornecedores",
-      value: 12,
-      change: 3,
-      icon: Package,
-      color: "#6366f1",
-    },
-    {
-      title: "Ordens de Serviço",
-      value: 45,
-      change: 8,
-      icon: FileText,
-      color: "#14b8a6",
-    },
-    { title: "Multas", value: 7, change: -2, icon: Receipt, color: "#dc2626" },
-  ];
+  // Custom hooks
+  const {
+    currentStep,
+    setCurrentStep,
+    isPlaying,
+    nextStep,
+    prevStep,
+    startAutoTour,
+    pauseAutoTour,
+  } = useDemoNavigation(demoSteps);
 
-  const fakeActivities = [
-    {
-      type: "Veículo",
-      description: "Novo veículo ABC-1234 adicionado",
-      user: "João Silva",
-      email: "joao@empresa.com",
-      date: "Hoje, 14:30",
-      status: "Criado",
-    },
-    {
-      type: "Multa",
-      description: "Multa registrada para veículo XYZ-5678",
-      user: "Maria Santos",
-      email: "maria@empresa.com",
-      date: "Hoje, 13:15",
-      status: "Pendente",
-    },
-    {
-      type: "Ordem de serviço",
-      description: "Manutenção preventiva concluída",
-      user: "Carlos Lima",
-      email: "carlos@empresa.com",
-      date: "Hoje, 11:45",
-      status: "Completo",
-    },
-    {
-      type: "Motorista",
-      description: "Perfil de motorista atualizado",
-      user: "Ana Costa",
-      email: "ana@empresa.com",
-      date: "Ontem, 16:20",
-      status: "Atualizado",
-    },
-  ];
+  const { tooltipPosition, arrowPosition, arrowConfig, updateTooltipPosition } =
+    useTooltipPosition(currentStep, demoSteps, mainRef, tooltipRef);
 
-  const fakeQuickLinks = [
-    { title: "Gerenciar Usuários", icon: Users, color: "#3b82f6" },
-    { title: "Veículos", icon: Car, color: "#10b981" },
-    { title: "Empresas", icon: Briefcase, color: "#8b5cf6" },
-    { title: "Ordens de Serviço", icon: FileText, color: "#f97316" },
-    { title: "Motoristas", icon: Users, color: "#ec4899" },
-    { title: "Filiais", icon: Building2, color: "#6366f1" },
-    { title: "Peças", icon: Container, color: "#14b8a6" },
-    { title: "Multas", icon: Receipt, color: "#dc2626" },
-  ];
+  useKeyboardNavigation({
+    currentStep,
+    totalSteps: demoSteps.length,
+    isPlaying,
+    prevStep,
+    nextStep,
+    startAutoTour,
+    pauseAutoTour,
+  });
 
-  const nextStep = () => {
-    if (currentStep < demoSteps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const startAutoTour = () => {
-    setIsPlaying(true);
-    setCurrentStep(0);
-  };
-
-  const pauseAutoTour = () => {
-    setIsPlaying(false);
-  };
-
-  // Simple tooltip positioning with correct scroll behavior
-  const updateTooltipPosition = useCallback(() => {
+  // Scroll and position management
+  useEffect(() => {
     const currentStepData = demoSteps[currentStep];
-    if (
-      !currentStepData?.tooltip ||
-      !containerRef.current ||
-      !tooltipRef.current
-    )
-      return;
+    if (!currentStepData?.tooltip || !containerRef.current) return;
 
     const target = containerRef.current.querySelector(
       currentStepData.tooltip.target,
@@ -228,81 +90,60 @@ const InteractiveDemo = () => {
 
     if (!target) return;
 
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-
-    const tooltipRect = tooltipRef.current.getBoundingClientRect();
-
-    // Calculate position to point to target element (bottom of target)
-    const targetCenterX = targetRect.left + targetRect.width / 2;
-    const targetBottom = targetRect.bottom;
-
-    // Position tooltip below target, centered horizontally
-    let top = targetBottom - containerRect.top + 16;
-    let left = targetCenterX - containerRect.left - tooltipRect.width / 2;
-
-    // Keep tooltip within container horizontally
-    const margin = 16;
-    left = Math.max(
-      margin,
-      Math.min(left, containerRect.width - tooltipRect.width - margin),
-    );
-
-    // IMPORTANT: Limit tooltip to container bounds (creates "stick to top" behavior)
-    top = Math.max(
-      margin,
-      Math.min(top, containerRect.height - tooltipRect.height - margin),
-    );
-
-    setTooltipPosition({ top, left });
-  }, [currentStep]);
-
-  // Effect to handle tooltip positioning and scroll listening
-  useEffect(() => {
-    const currentStepData = demoSteps[currentStep];
-    if (!currentStepData?.tooltip) return;
-
-    // Initial position calculation
-    const timeoutId = setTimeout(updateTooltipPosition, 100);
-
-    // Add scroll listener to the ScrollArea inside the demo
-    const scrollArea = containerRef.current?.querySelector(
+    const scrollArea = containerRef.current.querySelector(
       "[data-radix-scroll-area-viewport]",
-    );
-    if (scrollArea) {
-      scrollArea.addEventListener("scroll", updateTooltipPosition, {
-        passive: true,
-      });
-    }
+    ) as HTMLElement;
 
-    // Add resize listener
-    window.addEventListener("resize", updateTooltipPosition);
+    if (!scrollArea) return;
+
+    const handleScrollAndPosition = () => {
+      const targetRect = target.getBoundingClientRect();
+      const scrollAreaRect = scrollArea.getBoundingClientRect();
+
+      const isVisible =
+        targetRect.top >= scrollAreaRect.top &&
+        targetRect.bottom <= scrollAreaRect.bottom;
+
+      if (!isVisible) {
+        (target as HTMLElement).scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+
+        setTimeout(() => {
+          updateTooltipPosition();
+        }, 300);
+      } else {
+        setTimeout(() => {
+          updateTooltipPosition();
+        }, 10);
+      }
+    };
+
+    const handleResize = () => {
+      setTimeout(() => {
+        updateTooltipPosition();
+      }, 50);
+    };
+
+    const handleScroll = () => {
+      setTimeout(() => {
+        updateTooltipPosition();
+      }, 10);
+    };
+
+    requestAnimationFrame(() => {
+      setTimeout(handleScrollAndPosition, 10);
+    });
+
+    window.addEventListener("resize", handleResize);
+    scrollArea.addEventListener("scroll", handleScroll);
 
     return () => {
-      clearTimeout(timeoutId);
-      if (scrollArea) {
-        scrollArea.removeEventListener("scroll", updateTooltipPosition);
-      }
-      window.removeEventListener("resize", updateTooltipPosition);
+      window.removeEventListener("resize", handleResize);
+      scrollArea.removeEventListener("scroll", handleScroll);
     };
   }, [currentStep, updateTooltipPosition]);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setCurrentStep((prev) => {
-          if (prev < demoSteps.length - 1) {
-            return prev + 1;
-          } else {
-            setIsPlaying(false);
-            return 0;
-          }
-        });
-      }, 4000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -331,7 +172,7 @@ const InteractiveDemo = () => {
         opacity-[0.02] pointer-events-none"
       />
       <div
-        className="absolute top-20 left-20 w-40 h-40 ]
+        className="absolute top-20 left-20 w-40 h-40 
         rounded-full bg-[#d81b60]/5 filter blur-3xl"
       />
       <div
@@ -361,7 +202,7 @@ const InteractiveDemo = () => {
           </p>
         </div>
 
-        {/* Demo Interface - Exact Layout Replica */}
+        {/* Demo Interface */}
         <div className="max-w-7xl mx-auto">
           <motion.div
             ref={containerRef}
@@ -373,17 +214,17 @@ const InteractiveDemo = () => {
             transition={{ duration: 0.8 }}
             id="interactive-demo-container"
           >
-            {/* Exact Sidebar + SidebarInset Layout */}
+            {/* Layout with Sidebar */}
             <div
               className="flex h-[400px] sm:h-[500px] 
               md:h-[600px] lg:h-[700px] xl:h-[800px]"
             >
-              {/* Exact Sidebar Replica - Responsive */}
+              {/* Sidebar */}
               <div
                 className="hidden lg:flex w-48 xl:w-64 bg-sidebar 
                 border-r border-sidebar-border flex-col overflow-hidden pt-2"
               >
-                {/* Sidebar Header - Exact Replica */}
+                {/* Sidebar Header */}
                 <div
                   className="flex gap-2 py-2 
                   text-sidebar-accent-foreground 
@@ -411,7 +252,7 @@ const InteractiveDemo = () => {
                   </div>
                 </div>
 
-                {/* Sidebar Content - Exact Menu Structure */}
+                {/* Sidebar Content */}
                 <ScrollArea className="flex-1 px-2 xl:px-3 py-3">
                   <div
                     className="px-2 xl:px-3 text-xs 
@@ -420,79 +261,31 @@ const InteractiveDemo = () => {
                     ADMINISTRAÇÃO
                   </div>
                   <div className="space-y-1">
-                    {/* Dashboard - Active */}
-                    <div
-                      className="flex items-center rounded-md px-2 
-                      xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm 
-                      font-medium bg-sidebar-accent 
-                      text-sidebar-accent-foreground"
-                    >
-                      <LayoutDashboardIcon className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
-                      <span className="hidden xl:inline">Dashboard</span>
-                      <span className="xl:hidden text-xs">Dash</span>
-                    </div>
-
-                    {/* Kanban */}
-                    <div
-                      className="flex items-center rounded-md px-2 
-                      xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm 
-                      font-medium text-sidebar-foreground/70 
-                      hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    >
-                      <Kanban className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
-                      <span className="hidden xl:inline">Kanban</span>
-                    </div>
-
-                    {/* Multas */}
-                    <div
-                      className="flex items-center rounded-md 
-                      px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm 
-                      font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent 
-                      hover:text-sidebar-accent-foreground"
-                    >
-                      <NotepadText className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
-                      <span className="hidden xl:inline">Multas</span>
-                    </div>
-
-                    {/* Empresas Group */}
-                    <div
-                      className="flex items-center rounded-md px-2 
-                      xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium 
-                      text-sidebar-foreground/70 hover:bg-sidebar-accent 
-                      hover:text-sidebar-accent-foreground"
-                    >
-                      <Building2 className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
-                      <span className="hidden xl:inline">Empresas</span>
-                      <ChevronRight className="ml-auto h-3 xl:h-4 w-3 xl:w-4" />
-                    </div>
-
-                    {/* Usuários Group */}
-                    <div
-                      className="flex items-center rounded-md px-2 
-                      xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium 
-                      text-sidebar-foreground/70 hover:bg-sidebar-accent 
-                      hover:text-sidebar-accent-foreground"
-                    >
-                      <Users className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
-                      <span className="hidden xl:inline">Usuários</span>
-                      <ChevronRight className="ml-auto h-3 xl:h-4 w-3 xl:w-4" />
-                    </div>
-
-                    {/* Veículos Group */}
-                    <div
-                      className="flex items-center rounded-md px-2 
-                      xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium 
-                      text-sidebar-foreground/70 hover:bg-sidebar-accent 
-                      hover:text-sidebar-accent-foreground"
-                    >
-                      <Truck className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
-                      <span className="hidden xl:inline">Veículos</span>
-                      <ChevronRight className="ml-auto h-3 xl:h-4 w-3 xl:w-4" />
-                    </div>
+                    {sidebarItems.map((item, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center rounded-md px-2 
+                        xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm 
+                        font-medium ${
+                          item.isActive
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        }`}
+                      >
+                        <item.icon className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
+                        <span className="hidden xl:inline">{item.title}</span>
+                        {item.shortTitle && (
+                          <span className="xl:hidden text-xs">{item.shortTitle}</span>
+                        )}
+                        {item.hasChevron && (
+                          <ChevronRight className="ml-auto h-3 xl:h-4 w-3 xl:w-4" />
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </ScrollArea>
 
-                {/* Sidebar Footer - Exact User Menu */}
+                {/* Sidebar Footer */}
                 <div className="mt-auto p-2 xl:p-3">
                   <div
                     className="flex items-center gap-1 xl:gap-2 
@@ -522,16 +315,16 @@ const InteractiveDemo = () => {
                 </div>
               </div>
 
-              {/* SidebarInset - Main Content Area */}
+              {/* Main Content Area */}
               <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Header - Exact Navbar */}
+                {/* Header */}
                 <header
                   className="flex h-10 sm:h-12 lg:h-14 shrink-0 
                   items-center justify-between gap-2 border-b 
                   border-border px-2 sm:px-4"
                 >
                   <div className="flex items-center gap-1 sm:gap-2">
-                    <MenuIcon className="hidden lg:flex -ml-1 h-3 sm:h-4 w-3 sm:w-4" />
+                    <Menu className="hidden lg:flex -ml-1 h-3 sm:h-4 w-3 sm:w-4" />
                     <div className="hidden lg:flex h-3 sm:h-4 w-px bg-border" />
                     <div className="text-xs sm:text-sm text-muted-foreground">
                       Dashboard
@@ -543,28 +336,49 @@ const InteractiveDemo = () => {
                       sm:h-4 w-3 sm:w-4 -translate-y-1/2 text-muted-foreground"
                     />
                     <input
-                      className="h-7 sm:h-9 w-32 sm:w-40 lg:w-64 rounded-md border border-input bg-background pl-7 sm:pl-9 pr-2 sm:pr-3 text-xs sm:text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="h-7 sm:h-9 w-32 sm:w-40 lg:w-64 rounded-md border 
+                      border-input bg-background pl-7 sm:pl-9 pr-2 sm:pr-3 text-xs 
+                      sm:text-sm ring-offset-background placeholder:text-muted-foreground 
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+                      focus-visible:ring-offset-2"
                       placeholder="Buscar..."
                       readOnly
                     />
                   </div>
                 </header>
 
-                {/* Main Content */}
-                <ScrollArea className="h-full w-full">
-                  <main className="px-2 sm:px-4 lg:px-6 pt-3 sm:pt-4 lg:pt-6 pb-4 sm:pb-6 lg:pb-8">
-                    {/* Tabs - Exact Layout */}
+                {/* Main Content with ScrollArea */}
+                <ScrollArea className="h-full w-full" ref={scrollAreaRef}>
+                  <main
+                    ref={mainRef}
+                    className="px-2 sm:px-4 lg:px-6 pt-3 
+                    sm:pt-4 lg:pt-6 pb-4 sm:pb-6 
+                    lg:pb-8 relative"
+                  >
+                    {/* Tabs */}
                     <div
-                      className="flex flex-col gap-2 sm:gap-4 sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6"
+                      className="flex flex-col gap-2 sm:gap-4 sm:flex-row 
+                      sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6"
                       data-demo-target="overview"
                     >
-                      <div className="flex bg-muted p-0.5 sm:p-1 rounded-lg w-full sm:w-auto">
-                        <button className="flex items-center space-x-1 flex-1 sm:flex-initial rounded-md bg-background px-2 sm:px-3 py-1 shadow-sm text-xs sm:text-sm">
+                      <div
+                        className="flex bg-muted p-0.5 sm:p-1 
+                        rounded-lg w-full sm:w-auto"
+                      >
+                        <button
+                          className="flex items-center space-x-1 
+                          flex-1 sm:flex-initial rounded-md bg-background 
+                          px-2 sm:px-3 py-1 shadow-sm text-xs sm:text-sm"
+                        >
                           <LineChart className="h-3 sm:h-4 w-3 sm:w-4" />
                           <span>Overview</span>
                         </button>
-                        <button className="flex items-center space-x-1 flex-1 sm:flex-initial px-2 sm:px-3 py-1 text-xs sm:text-sm text-muted-foreground">
-                          <ChartArea className="h-3 sm:h-4 w-3 sm:w-4" />
+                        <button
+                          className="flex items-center space-x-1 flex-1 
+                          sm:flex-initial px-2 sm:px-3 py-1 text-xs 
+                          sm:text-sm text-muted-foreground"
+                        >
+                          <BarChart3 className="h-3 sm:h-4 w-3 sm:w-4" />
                           <span>Análise Gráfica</span>
                         </button>
                       </div>
@@ -573,40 +387,62 @@ const InteractiveDemo = () => {
                         size="sm"
                         className="text-xs sm:text-sm h-7 sm:h-8"
                       >
-                        <RefreshCw className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                        <RefreshCw
+                          className="h-3 sm:h-4 w-3 
+                          sm:w-4 mr-1 sm:mr-2"
+                        />
                         <span className="">Atualizar</span>
                       </Button>
                     </div>
 
-                    {/* Stats Grid - Exact StatCard Layout */}
+                    {/* Stats Grid */}
                     <motion.div
                       data-demo-target="stats"
-                      className={`grid grid-cols-2 gap-1.5 sm:gap-2 lg:gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-3 sm:mb-4 lg:mb-6 transition-all duration-500 ${
+                      className={`grid grid-cols-2 gap-1.5 sm:gap-2 lg:gap-4 
+                      sm:grid-cols-2 lg:grid-cols-4 mb-3 sm:mb-4 
+                      lg:mb-6 transition-all duration-500 ${
                         currentStep === 1
-                          ? "ring-1 sm:ring-2 ring-[#d81b60] rounded-lg p-1 sm:p-2 bg-[#d81b60]/5"
+                          ? "ring-2 ring-[#d81b60] rounded-lg p-2 bg-[#d81b60]/5 shadow-lg"
                           : ""
                       }`}
                     >
                       {fakeStats.map((stat, index) => (
                         <Card
                           key={index}
-                          className="overflow-hidden shadow-sm sm:shadow-md"
+                          className="overflow-hidden 
+                          shadow-sm sm:shadow-md"
                         >
                           <div className="flex">
                             <div
-                              className="flex w-1/4 items-center justify-center p-1.5 sm:p-2 lg:p-4"
+                              className="flex w-1/4 items-center 
+                              justify-center p-1.5 sm:p-2 lg:p-4"
                               style={{ backgroundColor: stat.color }}
                             >
-                              <stat.icon className="h-2.5 sm:h-3 lg:h-4 w-2.5 sm:w-3 lg:w-4 text-white" />
+                              <stat.icon
+                                className="h-2.5 sm:h-3 lg:h-4 
+                                w-2.5 sm:w-3 lg:w-4 text-white"
+                              />
                             </div>
                             <div className="w-3/4">
-                              <CardHeader className="pb-1 sm:pb-2 pt-1.5 sm:pt-2 lg:pt-4 px-2 sm:px-4 lg:px-6">
-                                <CardTitle className="text-xs sm:text-sm font-medium leading-tight">
+                              <CardHeader
+                                className="pb-1 sm:pb-2 pt-1.5 sm:pt-2 
+                                lg:pt-4 px-2 sm:px-4 lg:px-6"
+                              >
+                                <CardTitle
+                                  className="text-xs sm:text-sm 
+                                  font-medium leading-tight"
+                                >
                                   {stat.title}
                                 </CardTitle>
                               </CardHeader>
-                              <CardContent className="pb-1.5 sm:pb-2 lg:pb-4 pt-0 px-2 sm:px-4 lg:px-6">
-                                <div className="text-lg sm:text-xl lg:text-2xl font-bold">
+                              <CardContent
+                                className="pb-1.5 sm:pb-2 lg:pb-4 
+                                pt-0 px-2 sm:px-4 lg:px-6"
+                              >
+                                <div
+                                  className="text-lg sm:text-xl 
+                                  lg:text-2xl font-bold"
+                                >
                                   {stat.value}
                                 </div>
                                 <p
@@ -634,17 +470,20 @@ const InteractiveDemo = () => {
                       ))}
                     </motion.div>
 
-                    {/* Recent Activity - Exact Table Layout */}
+                    {/* Recent Activity */}
                     <motion.div
                       data-demo-target="activity"
                       className={`mb-3 sm:mb-4 lg:mb-6 transition-all duration-500 ${
                         currentStep === 2
-                          ? "ring-1 sm:ring-2 ring-[#d81b60] rounded-lg p-1 sm:p-2 bg-[#d81b60]/5"
+                          ? "ring-2 ring-[#d81b60] rounded-lg p-2 bg-[#d81b60]/5 shadow-lg"
                           : ""
                       }`}
                     >
                       <Card className="shadow-sm sm:shadow-md">
-                        <CardHeader className="pb-2 sm:pb-4 pt-3 sm:pt-4 lg:pt-6 px-3 sm:px-4 lg:px-6">
+                        <CardHeader
+                          className="pb-2 sm:pb-4 pt-3 sm:pt-4 
+                          lg:pt-6 px-3 sm:px-4 lg:px-6"
+                        >
                           <CardTitle className="text-sm sm:text-base lg:text-lg">
                             Atividades Recentes
                           </CardTitle>
@@ -657,22 +496,40 @@ const InteractiveDemo = () => {
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead className="text-xs sm:text-sm px-1 sm:px-2 lg:px-4">
+                                  <TableHead
+                                    className="text-xs sm:text-sm 
+                                    px-1 sm:px-2 lg:px-4"
+                                  >
                                     Tipo
                                   </TableHead>
-                                  <TableHead className="w-[30%] sm:w-[25%] text-xs sm:text-sm px-1 sm:px-2 lg:px-4">
+                                  <TableHead
+                                    className="w-[30%] sm:w-[25%] text-xs 
+                                    sm:text-sm px-1 sm:px-2 lg:px-4"
+                                  >
                                     Descrição
                                   </TableHead>
-                                  <TableHead className="hidden lg:table-cell text-xs sm:text-sm px-1 sm:px-2 lg:px-4">
+                                  <TableHead
+                                    className="hidden lg:table-cell text-xs 
+                                    sm:text-sm px-1 sm:px-2 lg:px-4"
+                                  >
                                     Nome do usuário
                                   </TableHead>
-                                  <TableHead className="hidden xl:table-cell text-xs sm:text-sm px-1 sm:px-2 lg:px-4">
+                                  <TableHead
+                                    className="hidden xl:table-cell text-xs 
+                                    sm:text-sm px-1 sm:px-2 lg:px-4"
+                                  >
                                     E-mail do usuário
                                   </TableHead>
-                                  <TableHead className="text-xs sm:text-sm px-1 sm:px-2 lg:px-4">
+                                  <TableHead
+                                    className="text-xs sm:text-sm 
+                                    px-1 sm:px-2 lg:px-4"
+                                  >
                                     Data
                                   </TableHead>
-                                  <TableHead className="text-xs sm:text-sm px-1 sm:px-2 lg:px-4">
+                                  <TableHead
+                                    className="text-xs sm:text-sm 
+                                    px-1 sm:px-2 lg:px-4"
+                                  >
                                     Status
                                   </TableHead>
                                 </TableRow>
@@ -680,22 +537,41 @@ const InteractiveDemo = () => {
                               <TableBody>
                                 {fakeActivities.map((activity, index) => (
                                   <TableRow key={index}>
-                                    <TableCell className="font-medium text-xs sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2">
+                                    <TableCell
+                                      className="font-medium text-xs 
+                                      sm:text-sm px-1 sm:px-2 lg:px-4 
+                                      py-1.5 sm:py-2"
+                                    >
                                       {activity.type}
                                     </TableCell>
-                                    <TableCell className="text-xs sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2">
+                                    <TableCell
+                                      className="text-xs sm:text-sm px-1 
+                                      sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                    >
                                       {activity.description}
                                     </TableCell>
-                                    <TableCell className="hidden lg:table-cell text-xs sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2">
+                                    <TableCell
+                                      className="hidden lg:table-cell text-xs 
+                                      sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                    >
                                       {activity.user}
                                     </TableCell>
-                                    <TableCell className="hidden xl:table-cell text-xs sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2">
+                                    <TableCell
+                                      className="hidden xl:table-cell text-xs 
+                                      sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                    >
                                       {activity.email}
                                     </TableCell>
-                                    <TableCell className="text-xs sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2">
+                                    <TableCell
+                                      className="text-xs sm:text-sm px-1 
+                                      sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                    >
                                       {activity.date}
                                     </TableCell>
-                                    <TableCell className="text-xs sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2">
+                                    <TableCell
+                                      className="text-xs sm:text-sm px-1 
+                                      sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                    >
                                       {getStatusBadge(activity.status)}
                                     </TableCell>
                                   </TableRow>
@@ -707,32 +583,49 @@ const InteractiveDemo = () => {
                       </Card>
                     </motion.div>
 
-                    {/* Quick Links - Exact Layout */}
+                    {/* Quick Links */}
                     <motion.div
                       data-demo-target="quicklinks"
                       className={`transition-all duration-500 ${
                         currentStep === 3
-                          ? "ring-1 sm:ring-2 ring-[#d81b60] rounded-lg p-1 sm:p-2 bg-[#d81b60]/5"
+                          ? "ring-2 ring-[#d81b60] rounded-lg p-2 bg-[#d81b60]/5 shadow-lg"
                           : ""
                       }`}
                     >
-                      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:gap-4 md:grid-cols-4">
+                      <div
+                        className="grid grid-cols-2 gap-2 
+                        sm:gap-3 lg:gap-4 md:grid-cols-4"
+                      >
                         {fakeQuickLinks.map((link, index) => (
                           <Card
                             key={index}
-                            className="shadow-sm sm:shadow-md transition-all hover:bg-muted/50 h-full min-h-[80px] sm:min-h-[100px] lg:min-h-[120px] xl:min-h-[140px]"
+                            className="shadow-sm sm:shadow-md transition-all 
+                            hover:bg-muted/50 h-full min-h-[80px] sm:min-h-[100px] 
+                            lg:min-h-[120px] xl:min-h-[140px]"
                           >
-                            <CardContent className="flex h-full flex-col items-center justify-center p-2 sm:p-4 lg:p-6 text-center">
+                            <CardContent
+                              className="flex h-full flex-col 
+                              items-center justify-center p-2 
+                              sm:p-4 lg:p-6 text-center"
+                            >
                               <div
-                                className="mb-1 sm:mb-2 lg:mb-3 rounded-full p-1 sm:p-2 lg:p-3 flex-shrink-0"
+                                className="mb-1 sm:mb-2 lg:mb-3 
+                                rounded-full p-1 sm:p-2 lg:p-3 
+                                flex-shrink-0"
                                 style={{
                                   backgroundColor: `${link.color}20`,
                                   color: link.color,
                                 }}
                               >
-                                <link.icon className="h-3 sm:h-4 lg:h-5 xl:h-6 w-3 sm:w-4 lg:w-5 xl:w-6" />
+                                <link.icon
+                                  className="h-3 sm:h-4 lg:h-5 
+                                  xl:h-6 w-3 sm:w-4 lg:w-5 xl:w-6"
+                                />
                               </div>
-                              <CardTitle className="text-xs sm:text-sm font-medium leading-tight">
+                              <CardTitle
+                                className="text-xs sm:text-sm 
+                                font-medium leading-tight"
+                              >
                                 <span className="hidden sm:inline">
                                   {link.title}
                                 </span>
@@ -745,189 +638,42 @@ const InteractiveDemo = () => {
                         ))}
                       </div>
                     </motion.div>
+
+                    {/* Tooltip inside main */}
+                    <DemoTooltip
+                      ref={tooltipRef}
+                      currentStep={demoSteps[currentStep]}
+                      tooltipPosition={tooltipPosition}
+                      arrowPosition={arrowPosition}
+                      arrowConfig={arrowConfig}
+                    />
                   </main>
                 </ScrollArea>
               </div>
             </div>
 
-            {/* Simple Interactive Tooltip */}
-            <AnimatePresence>
-              {demoSteps[currentStep]?.tooltip && (
-                <motion.div
-                  ref={tooltipRef}
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8, y: 20 }}
-                  transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                  className="absolute bg-[#d81b60] text-white p-3 sm:p-4 rounded-xl shadow-2xl max-w-xs z-50 pointer-events-none"
-                  style={{
-                    top: tooltipPosition.top,
-                    left: tooltipPosition.left,
-                  }}
-                >
-                  <div className="font-semibold mb-2 text-xs sm:text-sm">
-                    {demoSteps[currentStep].tooltip.title}
-                  </div>
-                  <div className="text-xs opacity-90 leading-relaxed">
-                    {demoSteps[currentStep].tooltip.content}
-                  </div>
-                  <div className="absolute w-3 h-3 bg-[#d81b60] transform rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2"></div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Floating Controls - Always Visible */}
+            <FloatingControls
+              currentStep={currentStep}
+              totalSteps={demoSteps.length}
+              isPlaying={isPlaying}
+              onPrevStep={prevStep}
+              onNextStep={nextStep}
+              onStartAutoTour={startAutoTour}
+              onPauseAutoTour={pauseAutoTour}
+            />
+
+            {/* Keyboard Shortcuts Hint */}
+            <KeyboardHints />
           </motion.div>
 
-          {/* Navigation - Completely Reorganized Layout */}
-          <div className="mt-6 sm:mt-8 lg:mt-10">
-            {/* Desktop Layout - Everything on same lines */}
-            <div className="hidden lg:block">
-              {/* Title and Description with Navigation Buttons on same line */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="text-left flex-1">
-                  <div className="text-xl xl:text-2xl font-bold mb-2 text-foreground">
-                    {demoSteps[currentStep]?.title}
-                  </div>
-                  <div className="text-base xl:text-lg text-muted-foreground leading-relaxed">
-                    {demoSteps[currentStep]?.description}
-                  </div>
-                </div>
-
-                {/* Navigation Buttons on the right */}
-                <div className="flex items-center gap-4 ml-8">
-                  <Button
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={currentStep === 0}
-                    className="flex items-center space-x-2 min-w-[120px] h-11 border-2 hover:bg-muted transition-all duration-200"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="font-medium">Anterior</span>
-                  </Button>
-
-                  <Button
-                    onClick={nextStep}
-                    disabled={currentStep === demoSteps.length - 1}
-                    className="flex items-center space-x-2 bg-[#d81b60] hover:bg-[#c2185b] text-white min-w-[120px] h-11 shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
-                  >
-                    <span>Próximo</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Step Indicators and Auto Tour on same line */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 bg-muted p-2 rounded-full">
-                  {demoSteps.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentStep(index)}
-                      className={`w-3.5 h-3.5 rounded-full transition-all duration-300 hover:scale-110 ${
-                        index === currentStep
-                          ? "bg-[#d81b60] shadow-lg"
-                          : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                      }`}
-                      aria-label={`Ir para passo ${index + 1}`}
-                    />
-                  ))}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  onClick={isPlaying ? pauseAutoTour : startAutoTour}
-                  className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="w-4 h-4" />
-                      <span className="text-sm">Pausar Tour</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4" />
-                      <span className="text-sm">Tour Automático</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            {/* Mobile/Tablet Layout - Stacked */}
-            <div className="lg:hidden space-y-4">
-              {/* Step Info */}
-              <div className="text-center px-4">
-                <div className="text-lg sm:text-xl font-bold mb-2 text-foreground">
-                  {demoSteps[currentStep]?.title}
-                </div>
-                <div className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                  {demoSteps[currentStep]?.description}
-                </div>
-              </div>
-
-              {/* Step Indicators */}
-              <div className="flex justify-center">
-                <div className="flex items-center space-x-2 sm:space-x-3 bg-muted p-1.5 sm:p-2 rounded-full">
-                  {demoSteps.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentStep(index)}
-                      className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-300 hover:scale-110 ${
-                        index === currentStep
-                          ? "bg-[#d81b60] shadow-lg"
-                          : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
-                      }`}
-                      aria-label={`Ir para passo ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Navigation Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4">
-                <Button
-                  variant="outline"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className="flex items-center space-x-2 w-full sm:w-auto min-w-[120px] h-10 sm:h-11 order-2 sm:order-1 border-2 hover:bg-muted transition-all duration-200"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span className="font-medium">Anterior</span>
-                </Button>
-
-                <Button
-                  onClick={nextStep}
-                  disabled={currentStep === demoSteps.length - 1}
-                  className="flex items-center space-x-2 bg-[#d81b60] hover:bg-[#c2185b] text-white w-full sm:w-auto min-w-[120px] h-10 sm:h-11 order-1 sm:order-2 shadow-lg hover:shadow-xl transition-all duration-200 font-medium"
-                >
-                  <span>Próximo</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Auto Tour Controls */}
-              <div className="flex justify-center">
-                <Button
-                  variant="ghost"
-                  onClick={isPlaying ? pauseAutoTour : startAutoTour}
-                  className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {isPlaying ? (
-                    <>
-                      <Pause className="w-3 sm:w-4 h-3 sm:h-4" />
-                      <span className="text-xs sm:text-sm">Pausar Tour</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3 sm:w-4 h-3 sm:h-4" />
-                      <span className="text-xs sm:text-sm">
-                        Tour Automático
-                      </span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
+          {/* Step Information */}
+          <StepInformation
+            currentStep={currentStep}
+            totalSteps={demoSteps.length}
+            stepData={demoSteps[currentStep]}
+            onStepChange={setCurrentStep}
+          />
         </div>
       </div>
     </section>

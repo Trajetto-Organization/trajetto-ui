@@ -1,24 +1,24 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
     return NextResponse.json(
       {
-        status: 'ok',
+        status: "ok",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV,
       },
-      { status: 200 }
-    )
+      { status: 200 },
+    );
   } catch (error) {
     return NextResponse.json(
       {
-        status: 'error',
+        status: "error",
         timestamp: new Date().toISOString(),
-        error: 'Health check failed',
+        error: "Health check failed",
       },
-      { status: 500 }
-    )
+      { status: 500 },
+    );
   }
 }

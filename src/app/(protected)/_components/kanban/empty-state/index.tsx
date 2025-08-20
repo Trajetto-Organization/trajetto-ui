@@ -177,7 +177,7 @@ const KanbanEmptyState = ({
               </>
             ) : (
               <>
-                Você não possui cards atribuídos nesta empresa.
+                Você não possui cards atribuídos.
                 <br className="hidden sm:block" />
                 <span
                   className="text-xs sm:text-sm block 

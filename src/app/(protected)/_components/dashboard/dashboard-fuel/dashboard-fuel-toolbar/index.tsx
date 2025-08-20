@@ -14,6 +14,9 @@ import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-op
 import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
 import { DashboardCreateFuelForm } from "../dashboard-create-fuel-form";
 
+import { ExportExcelButton } from "../../../custom/export-excel-button";
+import { handleExportFuelExcel } from "@/actions/export-fuel-excel";
+
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   error: boolean;
@@ -98,6 +101,12 @@ export function DashboardFuelToolbar<TData>({
                 timeWindowMs: 30000,
                 cooldownTimeMs: 15000,
               }}
+            />
+            <ExportExcelButton
+              hasData={table.getFilteredRowModel().rows.length > 0}
+              exportAction={handleExportFuelExcel}
+              entityName="relatório de abastecimentos"
+              buttonText="Exportar (Excel)"
             />
             <DataTableViewOptions table={table} />
             <DashboardCreateFuelForm />

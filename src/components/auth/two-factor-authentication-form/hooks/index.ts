@@ -46,7 +46,7 @@ function useTwoFactorForm(email: string) {
         setResendTimer(10);
       }
     } catch (error) {
-      toast.error("Failed to resend code. Please try again.");
+      toast.error("Falha ao reenviar o código. Por favor, tente novamente.");
     }
   };
 

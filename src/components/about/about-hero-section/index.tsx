@@ -16,7 +16,7 @@ const AboutHeroSection = () => {
       <div
         className="absolute inset-0 bg-cover bg-center z-0"
         style={{
-          backgroundImage: "url('/about-bg.jpg')",
+          backgroundImage: "url('/about.jpg')",
           backgroundAttachment: "fixed",
         }}
       />

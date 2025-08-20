@@ -128,9 +128,11 @@ const Profile = async (): Promise<JSX.Element> => {
   const canSeeNotifications =
     userLogged.role === "BUSINESS_USER" || userLogged.role === "BUSINESS_ADMIN";
 
-  // Check permission to view WhatsApp (only BUSINESS_ADMIN and MASTER)
+  // Check permission to view WhatsApp (BUSINESS_ADMIN, BUSINESS_USER and MASTER)
   const canSeeWhatsApp =
-    userLogged.role === "BUSINESS_ADMIN" || userLogged.role === "MASTER";
+    userLogged.role === "BUSINESS_ADMIN" || 
+    userLogged.role === "BUSINESS_USER" || 
+    userLogged.role === "MASTER";
 
   // Search WhatsApp settings only if you have WhatsApp permission
   const whatsappSettings = canSeeWhatsApp

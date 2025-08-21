@@ -632,6 +632,37 @@ const DashboardCreateServiceOrderFormContainer = ({
                 • <strong>🔄 Sincronização:</strong> O veículo é atualizado
                 automaticamente quando a OS é finalizada
               </li>
+              <li>
+                • <strong>📋 Kanban:</strong> A ordem será automaticamente
+                adicionada ao seu kanban (colunas padrão criadas se necessário)
+              </li>
+            </ul>
+          </div>
+
+          <div
+            className="bg-green-50 dark:bg-green-900/20 
+            p-4 rounded-lg border border-green-200 mt-4"
+          >
+            <h4 className="font-semibold text-green-700 dark:text-green-300 mb-2">
+              📋 Integração Automática com Kanban:
+            </h4>
+            <ul className="text-sm text-green-600 dark:text-green-400 space-y-1">
+              <li>
+                • <strong>🏗️ Criação:</strong> Colunas padrão criadas
+                automaticamente se não existirem
+              </li>
+              <li>
+                • <strong>📍 Posicionamento:</strong> Card adicionado na coluna
+                &quot;Pendente&quot; ou &quot;Concluído&quot;
+              </li>
+              <li>
+                • <strong>🎯 Prioridade:</strong> Definida automaticamente pelo
+                valor da manutenção
+              </li>
+              <li>
+                • <strong>📅 Vencimento:</strong> Data calculada automaticamente
+                (7 dias)
+              </li>
             </ul>
           </div>
         </div>

@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { LinkedInLogoIcon, TwitterLogoIcon } from "@radix-ui/react-icons";
+import {
+  InstagramLogoIcon,
+  LinkedInLogoIcon,
+  TwitterLogoIcon,
+} from "@radix-ui/react-icons";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -43,19 +47,31 @@ const Footer = (): JSX.Element => {
                 className={cn(
                   buttonVariants({ size: "icon", variant: "ghost" }),
                 )}
-                href=""
+                target="_blank"
+                href="https://www.linkedin.com/company/intrajetto"
               >
                 <LinkedInLogoIcon className="h-5 w-5" />
               </Link>
               <Link
+                aria-label="Redirecionar para o instagram"
+                className={cn(
+                  buttonVariants({ size: "icon", variant: "ghost" }),
+                )}
+                target="_blank"
+                href="https://www.instagram.com/trajetto_official"
+              >
+                <InstagramLogoIcon className="h-5 w-5" />
+              </Link>
+              {/* <Link
                 aria-label="Redirecionar para o twitter"
                 className={cn(
                   buttonVariants({ size: "icon", variant: "ghost" }),
                 )}
+                target="_blank"
                 href=""
               >
                 <TwitterLogoIcon className="h-5 w-5" />
-              </Link>
+              </Link> */}
             </div>
           </div>
 

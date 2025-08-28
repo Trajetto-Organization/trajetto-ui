@@ -36,9 +36,9 @@ const Features = (): JSX.Element => {
     },
     {
       icon: Settings,
-      title: "Multi-Empresas",
+      title: "Multi-Filiais",
       description:
-        "Gerencie múltiplas empresas e filiais em uma única plataforma com isolamento total de dados e permissões específicas.",
+        "Gerencie múltiplas filiais em uma única plataforma com isolamento total de dados e permissões específicas.",
     },
     {
       icon: BarChart3,

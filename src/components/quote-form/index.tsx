@@ -186,9 +186,8 @@ const QuoteForm = (): JSX.Element => {
       icon: <BarChart3 className="h-8 w-8 text-[#d81b60]" />,
     },
     {
-      title: "Controle Multi-Empresas",
-      description:
-        "Gerencie várias empresas e filiais com isolamento total de dados",
+      title: "Controle Multi-Filiais",
+      description: "Gerencie várias filiais com isolamento total de dados",
       icon: <Building className="h-8 w-8 text-[#d81b60]" />,
     },
     {

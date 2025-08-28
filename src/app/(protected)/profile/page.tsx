@@ -130,14 +130,12 @@ const Profile = async (): Promise<JSX.Element> => {
 
   // Check permission to view WhatsApp (BUSINESS_ADMIN, BUSINESS_USER and MASTER)
   const canSeeWhatsApp =
-    userLogged.role === "BUSINESS_ADMIN" || 
-    userLogged.role === "BUSINESS_USER" || 
+    userLogged.role === "BUSINESS_ADMIN" ||
+    userLogged.role === "BUSINESS_USER" ||
     userLogged.role === "MASTER";
 
   // Search WhatsApp settings only if you have WhatsApp permission
-  const whatsappSettings = canSeeWhatsApp
-    ? await getWhatsAppSettings()
-    : null;
+  const whatsappSettings = canSeeWhatsApp ? await getWhatsAppSettings() : null;
 
   return (
     <PageContainer>
@@ -186,7 +184,10 @@ const Profile = async (): Promise<JSX.Element> => {
             <TabsContent value="notifications" className="mt-6">
               <div className="space-y-6">
                 {canSeeWhatsApp && (
-                  <WhatsAppNotifications error={userResponseError} />
+                  <WhatsAppNotifications
+                    error={userResponseError}
+                    userRole={userLogged.role}
+                  />
                 )}
 
                 <Card>

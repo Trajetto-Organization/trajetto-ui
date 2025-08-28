@@ -14,13 +14,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 import { useWhatsAppSettings } from "../hooks/useWhatsAppSettings";
-
 import { useWhatsAppContext } from "../provider";
 
 import { useWhatsAppConnection } from "../hooks/useWhatsAppConnection";
 import { useWhatsAppGlobalEvents } from "../hooks/useWhatsAppGlobalEvents";
 
-const WhatsAppSettings = (): JSX.Element => {
+import { UserRole } from "../../../../dto";
+
+interface WhatsAppSettingsProps {
+  userRole?: UserRole;
+}
+
+const WhatsAppSettings = ({ userRole }: WhatsAppSettingsProps): JSX.Element => {
   const { settings, updateSettings } = useWhatsAppContext();
 
   // Get status of active operations
@@ -172,8 +177,9 @@ const WhatsAppSettings = (): JSX.Element => {
         <div className="space-y-0.5">
           <Label htmlFor="whatsapp-toggle">Notificações WhatsApp</Label>
           <p className="text-sm text-muted-foreground">
-            Ative para receber alertas de multas, ordens de serviços e outras
-            notificações importantes
+            {userRole === "BUSINESS_USER"
+              ? "Ative para receber alertas de ordens de serviços e outras notificações importantes"
+              : "Ative para receber alertas de multas, ordens de serviços e outras notificações importantes"}
           </p>
         </div>
 

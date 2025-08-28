@@ -6,13 +6,16 @@ import { WhatsAppConnection } from "./whatsAppConnection";
 import { WhatsAppStatus } from "./whatsAppStatus";
 
 import { WhatsAppSettings } from "./whatsAppSettings";
+import { UserRole } from "../../../../dto";
 
 interface WhatsAppNotificationsProps {
   error: boolean;
+  userRole?: UserRole;
 }
 
 const WhatsAppNotifications = ({
   error,
+  userRole,
 }: WhatsAppNotificationsProps): JSX.Element => {
   if (error) {
     return (
@@ -31,7 +34,7 @@ const WhatsAppNotifications = ({
       <CardContent className="p-6">
         <div className="space-y-6">
           {/* Basic Settings (Enable/Disable + Phone) */}
-          <WhatsAppSettings />
+          <WhatsAppSettings userRole={userRole} />
 
           {/* Connection buttons (QR Code + Pairing Code) */}
           <WhatsAppConnection />

@@ -80,7 +80,7 @@ const DatePickerField: React.FC<FormFieldProps> = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Label htmlFor={htmlfor} className="text-red-500 truncate">
+              <Label htmlFor={htmlfor} className="text-red-500">
                 {errorName[0]}
               </Label>
             </TooltipTrigger>

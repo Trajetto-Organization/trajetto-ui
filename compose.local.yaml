@@ -5,6 +5,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID}
+        - NEXT_PUBLIC_SANITY_DATASET=${NEXT_PUBLIC_SANITY_DATASET}
+        - NEXT_PUBLIC_HTTP_REQUEST=${NEXT_PUBLIC_HTTP_REQUEST}
+        - METADATA_BASE=${METADATA_BASE}
+        - SANITY_WEBHOOK_SECRET=${SANITY_WEBHOOK_SECRET}
     container_name: trajetto-ui
     ports:
       - "3000:3000"

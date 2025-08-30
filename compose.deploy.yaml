@@ -14,7 +14,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
-        - traefik.http.routers.trajetto-ui.rule=Host(`intrajetto.com`)
+        - traefik.http.routers.trajetto-ui.rule=Host(`www.intrajetto.com`)
         - traefik.http.routers.trajetto-ui.entrypoints=websecure
         - traefik.http.routers.trajetto-ui.tls.certresolver=letsencryptresolver
         - traefik.http.routers.trajetto-ui.priority=1
@@ -26,7 +26,7 @@ services:
       - minha_rede
     restart: unless-stopped
     # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+    #   test: ["CMD-SHELL", "curl -f https://intrajetto/api/health || exit 1"]
     #   interval: 30s
     #   timeout: 10s
     #   retries: 3

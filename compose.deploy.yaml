@@ -14,7 +14,7 @@ services:
     deploy:
       labels:
         - traefik.enable=true
-        - traefik.http.routers.trajetto-ui.rule=Host(`intrajetto.com`)
+        - traefik.http.routers.trajetto-ui.rule=Host(`intrajetto.com`,`www.intrajetto.com`)
         - traefik.http.routers.trajetto-ui.entrypoints=websecure
         - traefik.http.routers.trajetto-ui.tls.certresolver=letsencryptresolver
         - traefik.http.routers.trajetto-ui.priority=1

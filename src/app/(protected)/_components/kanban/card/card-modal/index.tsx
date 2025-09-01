@@ -51,6 +51,7 @@ import {
   ShieldAlert,
   Trash2,
   CheckCircle2,
+  Copy,
 } from "lucide-react";
 
 import { Calendar } from "@/components/ui/calendar";
@@ -558,6 +559,17 @@ const CardModal = ({
 
   const { invalidateKanbanQueries } = useKanbanQueryClient();
 
+  const handleCopyID = (cardId: string) => {
+    navigator.clipboard
+      .writeText(cardId)
+      .then(() => {
+        toast.success("ID do card copiado para a área de transferência!");
+      })
+      .catch((err) => {
+        toast.error("Erro ao copiar o ID: " + err);
+      });
+  };
+
   const [state, dispatch] = useFormState(
     isEditing ? handleUpdateKanbanCard : handleCreateKanbanCard,
     null,
@@ -603,12 +615,36 @@ const CardModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogScrollContent className="max-w-xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar" : "Novo"} Card</DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Edite os detalhes do card existente"
-              : "Adicione um novo card à coluna"}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1.5">
+              <DialogTitle>{isEditing ? "Editar" : "Novo"} Card</DialogTitle>
+              <DialogDescription>
+                {isEditing
+                  ? "Edite os detalhes do card existente"
+                  : "Adicione um novo card à coluna"}
+              </DialogDescription>
+            </div>
+            {isEditing && card && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleCopyID(card.id)}
+                className="flex items-center gap-2 text-xs"
+              >
+                <Copy className="h-3 w-3" />
+                Copiar ID
+              </Button>
+            )}
+          </div>
+          {isEditing && card && (
+            <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/30 rounded-md">
+              <span className="font-medium">ID do Card:</span>{" "}
+              <code className="font-mono text-[10px] bg-background px-1 py-0.5 rounded">
+                {card.id}
+              </code>
+            </div>
+          )}
         </DialogHeader>
 
         <form

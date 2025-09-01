@@ -212,7 +212,7 @@ const KanbanBoardProvider = ({
               />
               <Input
                 type="text"
-                placeholder="Buscar por coluna, card, usuário ou prioridade..."
+                placeholder="Buscar por ID, coluna, card, usuário ou prioridade..."
                 value={searchValue}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 pr-10 w-full"
@@ -268,8 +268,8 @@ const KanbanBoardProvider = ({
               type="text"
               placeholder={
                 hasLimitedAccess
-                  ? "Buscar seus cards..."
-                  : "Buscar por coluna, card ou usuário..."
+                  ? "Buscar seus cards por ID, título ou usuário..."
+                  : "Buscar por ID, coluna, card ou usuário..."
               }
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}

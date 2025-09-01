@@ -25,12 +25,18 @@ services:
     networks:
       - minha_rede
     restart: unless-stopped
-    # healthcheck:
-    #   test: ["CMD-SHELL", "curl -f https://intrajetto/api/health || exit 1"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    #   start_period: 60s
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
 networks:
   minha_rede:

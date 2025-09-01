@@ -18,7 +18,7 @@ interface KanbanCard {
   position: number;
   priority: "low" | "medium" | "high" | "urgent";
   dueDate?: string | null;
-  completed?: boolean; // ✅ Campo já existe, mantendo
+  completed?: boolean;
   columnId: string;
   assignedUserId?: string | null;
   assignedTo?: KanbanUser | null; // Assigned user data

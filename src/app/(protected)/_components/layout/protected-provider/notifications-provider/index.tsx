@@ -148,6 +148,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Remove IDs from the set if they are no longer in real-time notifications.
       const remainingIds = new Set(filtered.map((n) => n.id));
+
+      // Add server notification IDs to prevent duplicate toast/sound
+      serverNotificationIds.forEach((id) => remainingIds.add(id));
+
       notificationIdsReceived.current = remainingIds;
 
       return filtered;
@@ -201,6 +205,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             return;
           }
 
+          // Check if already received - block EVERYTHING if duplicate
           if (notificationIdsReceived.current.has(notification.id)) {
             return;
           }

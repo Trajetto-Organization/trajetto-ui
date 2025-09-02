@@ -28,13 +28,15 @@ services:
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          'node -e "const http = require(''http''); const req = http.get(''http://localhost:3000/api/health'', (res) => process.exit(res.statusCode === 200 ? 0 : 1)); req.on(''error'', () => process.exit(1)); req.setTimeout(5000, () => { req.destroy(); process.exit(1); });"',
+          "CMD",
+          "node",
+          "-e",
+          "const http = require('http'); http.get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });",
         ]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 120s
+      retries: 3
+      start_period: 90s
 
 networks:
   minha_rede:

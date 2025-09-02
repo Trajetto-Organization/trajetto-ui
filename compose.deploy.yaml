@@ -26,13 +26,7 @@ services:
       - minha_rede
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          "CMD",
-          "node",
-          "-e",
-          "const http = require('http'); http.get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });",
-        ]
+      test: ["CMD", "curl", "--fail", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

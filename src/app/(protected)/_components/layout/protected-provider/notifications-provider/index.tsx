@@ -54,11 +54,56 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const socketInitialized = useRef(false);
   const notificationIdsReceived = useRef<Set<string>>(new Set());
+  const pendingToasts = useRef(new Set<string>());
+  const toastTimeouts = useRef(new Map<string, NodeJS.Timeout>());
 
   // Custom event dispatcher for WhatsApp notifications
   const whatsAppEventDispatcher = useRef<{
     [key: string]: ((data: any) => void)[];
   }>({});
+
+  // Enhanced toast system with delay handling
+  const showToastSafely = useCallback((notification: any) => {
+    const notificationId = notification.id;
+    
+    // Clear any existing timeout for this notification
+    const existingTimeout = toastTimeouts.current.get(notificationId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      toastTimeouts.current.delete(notificationId);
+    }
+    
+    // Add to pending toasts
+    pendingToasts.current.add(notificationId);
+    
+    // Set a timeout to ensure toast shows even with delays
+    const timeoutId = setTimeout(() => {
+      if (pendingToasts.current.has(notificationId)) {
+        // Show toast
+        toast.message("", {
+          closeButton: true,
+          action: (
+            <div>
+              <strong>{notification.title}</strong>
+              <p>{notification.message}</p>
+            </div>
+          ),
+        });
+        
+        // Play sound
+        try {
+          const audio = new Audio("/sounds/notification.mp3");
+          audio.play().catch((e) => {});
+        } catch (error) {}
+        
+        // Remove from pending
+        pendingToasts.current.delete(notificationId);
+        toastTimeouts.current.delete(notificationId);
+      }
+    }, 100); // 100ms delay to allow for sync
+    
+    toastTimeouts.current.set(notificationId, timeoutId);
+  }, []);
 
   // Function to handle WhatsApp notifications
   const handleWhatsAppNotification = (notification: any) => {
@@ -150,13 +195,36 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       const remainingIds = new Set(filtered.map((n) => n.id));
 
       // Add server notification IDs to prevent duplicate toast/sound
-      serverNotificationIds.forEach((id) => remainingIds.add(id));
+      serverNotificationIds.forEach((id) => {
+        remainingIds.add(id);
+        
+        // Cancel pending toast for this ID if it exists
+        if (pendingToasts.current.has(id)) {
+          const timeoutId = toastTimeouts.current.get(id);
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            toastTimeouts.current.delete(id);
+          }
+          pendingToasts.current.delete(id);
+        }
+      });
 
       notificationIdsReceived.current = remainingIds;
 
       return filtered;
     });
   };
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      toastTimeouts.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      toastTimeouts.current.clear();
+      pendingToasts.current.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (socketInitialized.current) return;
@@ -216,10 +284,38 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
           // Format date before adding to list
           const formattedNotification = {
             ...notification,
-            created_at:
-              typeof notification.created_at === "string"
-                ? formatNotificationDate(new Date(notification.created_at))
-                : formatNotificationDate(notification.created_at),
+            created_at: (() => {
+              try {
+                let date: Date;
+
+                if (typeof notification.created_at === "string") {
+                  // Handle ISO strings and already formatted strings
+                  if (
+                    notification.created_at.includes("T") ||
+                    notification.created_at.includes("-")
+                  ) {
+                    date = new Date(notification.created_at);
+                  } else {
+                    // Already formatted string, return as is
+                    return notification.created_at;
+                  }
+                } else {
+                  date =
+                    notification.created_at instanceof Date
+                      ? notification.created_at
+                      : new Date(notification.created_at);
+                }
+
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                  return formatNotificationDate(new Date()); // Use current date as fallback
+                }
+
+                return formatNotificationDate(date);
+              } catch (error) {
+                return formatNotificationDate(new Date()); // Use current date as fallback
+              }
+            })(),
           };
 
           // Add to real-time notification list
@@ -237,22 +333,8 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             setUnreadCount((prev) => prev + 1);
           }
 
-          // Show toast with notification
-          toast.message("", {
-            closeButton: true,
-            action: (
-              <div>
-                <strong>{notification.title}</strong>
-                <p>{notification.message}</p>
-              </div>
-            ),
-          });
-
-          // Play notification sound if supported
-          try {
-            const audio = new Audio("/sounds/notification.mp3");
-            audio.play().catch((e) => {});
-          } catch (error) {}
+          // Show toast with enhanced delay handling
+          showToastSafely(notification);
 
           // Show browser notification if allowed
           if (Notification.permission === "granted") {

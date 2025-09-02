@@ -40,7 +40,7 @@ const WhatsAppNotifications = ({
           <WhatsAppConnection />
 
           {/* Connection Status + Progress */}
-          <WhatsAppStatus />
+          <WhatsAppStatus userRole={userRole} />
         </div>
       </CardContent>
     </Card>

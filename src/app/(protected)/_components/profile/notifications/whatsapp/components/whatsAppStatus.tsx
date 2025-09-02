@@ -13,14 +13,36 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 
 import { useWhatsAppContext } from "../provider";
+import { UserRole } from "@/app/(protected)/_components/dto";
 
-const WhatsAppStatus = (): JSX.Element | null => {
+interface WhatsAppStatusProps {
+  userRole?: UserRole;
+}
+
+const WhatsAppStatus = ({
+  userRole,
+}: WhatsAppStatusProps): JSX.Element | null => {
   const {
     settings,
     syncProgress,
     showSyncProgress,
     showConnectionConfirmation,
   } = useWhatsAppContext();
+
+  // Function to get notifications based on user role
+  const getNotificationsList = (role?: UserRole) => {
+    if (role === "BUSINESS_USER") {
+      return ["Alertas de manutenção", "Atualizações importantes do sistema"];
+    }
+
+    // For BUSINESS_ADMIN, MASTER, and other roles
+    return [
+      "Novas multas registradas",
+      "Vencimentos de documentos",
+      "Alertas de manutenção",
+      "Atualizações importantes do sistema",
+    ];
+  };
 
   // If it is not enabled, it does not show
   if (!settings?.instanceConnected) {
@@ -102,10 +124,9 @@ const WhatsAppStatus = (): JSX.Element | null => {
           <AlertDescription>
             WhatsApp conectado com sucesso! Você receberá notificações sobre:
             <ul className="mt-2 ml-4 list-disc text-sm">
-              <li>Novas multas registradas</li>
-              <li>Vencimentos de documentos</li>
-              <li>Alertas de manutenção</li>
-              <li>Atualizações importantes do sistema</li>
+              {getNotificationsList(userRole).map((notification, index) => (
+                <li key={index}>{notification}</li>
+              ))}
             </ul>
           </AlertDescription>
         </Alert>

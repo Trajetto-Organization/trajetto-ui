@@ -252,7 +252,12 @@ const NotificationCard = ({
   }, null);
 
   useNotifications(markAsReadState || deleteState);
-  const formattedDate = notification.created_at as string;
+
+  const formattedDate = formatNotificationDate(
+    typeof notification.created_at === "string"
+      ? new Date(notification.created_at)
+      : notification.created_at,
+  );
 
   return (
     <Card

@@ -8,9 +8,8 @@ import {
   useRef,
   useCallback,
 } from "react";
-import { toast } from "sonner";
 
-import { formatNotificationDate } from "@/lib/format-values";
+import { toast } from "sonner";
 import { initializeSocket, getSocket } from "@/socket";
 
 interface Notification {
@@ -211,10 +210,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
           // Format date before adding to list
           const formattedNotification = {
             ...notification,
-            created_at:
-              typeof notification.created_at === "string"
-                ? formatNotificationDate(new Date(notification.created_at))
-                : formatNotificationDate(notification.created_at),
+            created_at: notification.created_at,
           };
 
           // Add to real-time notification list

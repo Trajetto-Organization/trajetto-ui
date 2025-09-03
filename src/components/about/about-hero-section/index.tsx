@@ -2,23 +2,44 @@
 
 import { motion } from "framer-motion";
 
+import Image from "next/image";
+import { useState } from "react";
+
 const AboutHeroSection = () => {
+  const [imageLoaded, setImageLoaded] = useState<boolean>(false);
+
   return (
     <section
       className="relative h-[60vh] min-h-[500px] 
       flex items-center justify-center overflow-hidden"
     >
-      {/* Background image with overlay */}
+      {/* Optimized background image */}
+      <Image
+        src="/about.jpg"
+        alt="Background"
+        fill
+        className={`object-cover transition-opacity duration-700 ${
+          imageLoaded ? "opacity-100" : "opacity-0"
+        }`}
+        priority
+        quality={85}
+        onLoad={() => setImageLoaded(true)}
+        sizes="100vw"
+      />
+
+      {/* Loading skeleton */}
+      {!imageLoaded && (
+        <div
+          className="absolute inset-0 
+          bg-gradient-to-r from-gray-300 
+          to-gray-400 animate-pulse"
+        />
+      )}
+
+      {/* Background overlay */}
       <div
         className="absolute inset-0 bg-gradient-to-r 
         from-[#880e4f]/80 to-[#d81b60]/80 z-10"
-      />
-      <div
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{
-          backgroundImage: "url('/about.jpg')",
-          backgroundAttachment: "fixed",
-        }}
       />
 
       {/* Content */}

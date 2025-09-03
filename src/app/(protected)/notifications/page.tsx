@@ -6,6 +6,7 @@ import { ProtectedHeading } from "../_components/layout/protected-heading";
 
 import { NotificationList } from "../_components/notification-list";
 import { getCookies } from "@/actions/cookies";
+
 import { formatNotificationDate } from "@/lib/format-values";
 
 interface NotificationsQueryParamsProps {
@@ -83,7 +84,7 @@ const Notifications = async ({
     } else {
       const rawNotifications = await response.json();
 
-      // Formatar as datas das notificações no server-side com timezone correto
+      // Format notification dates on the server-side with the correct timezone
       notifications = {
         ...rawNotifications,
         data: rawNotifications.data.map((notification: any) => ({

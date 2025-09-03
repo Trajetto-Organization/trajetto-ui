@@ -36,6 +36,7 @@ interface NotificationsContextType {
     eventType: string,
     callback: (data: any) => void,
   ) => () => void;
+  deletedNotifications: Set<string>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType>(
@@ -51,6 +52,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [connected, setConnected] = useState<boolean>(false);
+
+  const [deletedNotifications, setDeletedNotifications] = useState<Set<string>>(
+    new Set(),
+  );
 
   const socketInitialized = useRef<boolean>(false);
   const notificationIdsReceived = useRef<Set<string>>(new Set());
@@ -222,6 +227,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       toastTimeouts.current.forEach((timeoutId) => {
         clearTimeout(timeoutId);
       });
+
       toastTimeouts.current.clear();
       pendingToasts.current.clear();
     };
@@ -376,6 +382,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const removeNotification = (notificationId: string) => {
+    // Add to deleted notifications set (this will handle both realtime and server notifications)
+    setDeletedNotifications((prev) => new Set([...prev, notificationId]));
+
     // Check if notification is in real-time list
     const notificationToRemove = realtimeNotifications.find(
       (n) => n.id === notificationId,
@@ -426,6 +435,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     setRealtimeNotifications((prev) =>
       prev.map((notification) => ({ ...notification, read: true })),
     );
+
+    // Clear deleted notifications when marking all as read
+    setDeletedNotifications(new Set());
   }, []);
 
   // Method to clear all notifications
@@ -433,6 +445,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     setRealtimeNotifications([]);
     setUnreadCount(0);
 
+    setDeletedNotifications(new Set());
     notificationIdsReceived.current.clear();
   };
 
@@ -448,6 +461,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         syncWithServerData,
         markAllNotificationsAsRead,
         subscribeToWhatsAppEvents,
+        deletedNotifications,
       }}
     >
       {children}

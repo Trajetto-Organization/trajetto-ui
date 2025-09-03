@@ -313,17 +313,17 @@ const NotificationList = ({
     useNotificationStatus();
 
   // Get real-time notifications from context
-  const { realtimeNotifications, markAllNotificationsAsRead } =
-    useNotificationsContext();
+  const {
+    realtimeNotifications,
+    markAllNotificationsAsRead,
+    deletedNotifications,
+  } = useNotificationsContext();
 
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState<boolean>(false);
 
-  // Status to track deleted notifications
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-
-  // Combine bank and real-time notifications, removing duplicates and deleted
+  // Combine bank and real-time notifications, removing duplicates and deleted notifications
   const combinedNotifications = [...realtimeNotifications, ...initialData.data]
-    .filter((notification) => !deletedIds.has(notification.id)) // Filter deleted notifications
+    .filter((notification) => !deletedNotifications.has(notification.id)) // Filter deleted notifications
     .filter(
       (notification, index, self) =>
         index === self.findIndex((n) => n.id === notification.id),
@@ -343,9 +343,6 @@ const NotificationList = ({
       // Reset flag first
       setIsMarkingAllAsRead(false);
       markAllNotificationsAsRead();
-
-      // Reset deletedIds too
-      setDeletedIds(new Set());
     }
   }, [isMarkingAllAsRead, markAllAsReadState, markAllNotificationsAsRead]);
 
@@ -373,22 +370,23 @@ const NotificationList = ({
 
   // Calculate the number of real-time notifications that do not exist in the database
   const realtimeOnlyNotifications = realtimeNotifications.filter(
-    (rn) => !initialData.data.some((db) => db.id === rn.id) && !rn.read,
+    (rn) =>
+      !initialData.data.some((db) => db.id === rn.id) &&
+      !rn.read &&
+      !deletedNotifications.has(rn.id),
   );
 
   // The actual unread total is the server total + the new ones in real time
   const totalRealUnreadCount =
     serverUnreadCount + realtimeOnlyNotifications.length;
 
-  // Remove those that were deleted locally
-  const adjustedUnreadCount =
-    totalRealUnreadCount -
-    [...deletedIds].filter(
-      (id) =>
-        // Filters only deleted IDs that match unread notifications
-        initialData.data.some((n) => n.id === id && !n.read) ||
-        realtimeNotifications.some((n) => n.id === id && !n.read),
-    ).length;
+  // Remove those that were deleted locally from server notifications
+  const deletedServerUnreadCount = [...deletedNotifications].filter((id) =>
+    initialData.data.some((n) => n.id === id && !n.read),
+  ).length;
+
+  // The adjusted unread count is the total minus deleted unread notifications
+  const adjustedUnreadCount = totalRealUnreadCount - deletedServerUnreadCount;
 
   const notificationText =
     adjustedUnreadCount === 0

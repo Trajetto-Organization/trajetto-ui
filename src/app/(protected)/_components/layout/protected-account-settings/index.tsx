@@ -82,11 +82,17 @@ const ProtectedAccountSettings = ({
     }
   }, null);
 
-  // Get real-time notification count
-  const { unreadCount } = useNotificationsContext();
+  // Get real-time notification count and deleted notifications
+  const { unreadCount, deletedNotifications } = useNotificationsContext();
 
-  // Combine database and real-time notifications
-  const totalNotificationCount = notificationCount + unreadCount;
+  // Calculate how many deleted notifications were unread from server
+  const deletedUnreadCount = deletedNotifications.size;
+
+  // Adjust total count: server count + realtime count - deleted count
+  const totalNotificationCount = Math.max(
+    0,
+    notificationCount + unreadCount - deletedUnreadCount,
+  );
 
   useProtectedAccountSettings(state);
 
@@ -119,7 +125,10 @@ const ProtectedAccountSettings = ({
         sideOffset={4}
       >
         <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+          <div
+            className="flex items-center gap-2 px-1 
+            py-1.5 text-left text-sm"
+          >
             <Avatar className="h-8 w-8 rounded-lg">
               <AvatarImage src={""} alt={""} />
               <AvatarFallback className="rounded-lg">
@@ -147,8 +156,8 @@ const ProtectedAccountSettings = ({
               {totalNotificationCount > 0 && (
                 <span
                   className="absolute right-2 top-1/2 -translate-y-1/2 
-                  flex h-5 min-w-5 px-1.5 items-center justify-center rounded-full 
-                bg-[#f50057] text-xs text-white"
+                  flex h-5 min-w-5 px-1.5 items-center justify-center 
+                  rounded-full bg-[#f50057] text-xs text-white"
                 >
                   {totalNotificationCount > 9 ? "9+" : totalNotificationCount}
                 </span>

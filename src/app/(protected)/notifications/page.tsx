@@ -6,6 +6,7 @@ import { ProtectedHeading } from "../_components/layout/protected-heading";
 
 import { NotificationList } from "../_components/notification-list";
 import { getCookies } from "@/actions/cookies";
+import { formatNotificationDate } from "@/lib/format-values";
 
 interface NotificationsQueryParamsProps {
   searchParams: { limit?: string; includeRead?: string };
@@ -80,7 +81,16 @@ const Notifications = async ({
         errorMessage: "Houve um erro ao tentar recuperar as notificações",
       };
     } else {
-      notifications = await response.json();
+      const rawNotifications = await response.json();
+      
+      // Formatar as datas das notificações no server-side com timezone correto
+      notifications = {
+        ...rawNotifications,
+        data: rawNotifications.data.map((notification: any) => ({
+          ...notification,
+          created_at: formatNotificationDate(new Date(notification.created_at))
+        }))
+      };
     }
   }
 

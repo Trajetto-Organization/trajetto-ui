@@ -52,8 +52,9 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [connected, setConnected] = useState<boolean>(false);
 
-  const socketInitialized = useRef(false);
+  const socketInitialized = useRef<boolean>(false);
   const notificationIdsReceived = useRef<Set<string>>(new Set());
+
   const pendingToasts = useRef(new Set<string>());
   const toastTimeouts = useRef(new Map<string, NodeJS.Timeout>());
 
@@ -65,17 +66,17 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   // Enhanced toast system with delay handling
   const showToastSafely = useCallback((notification: any) => {
     const notificationId = notification.id;
-    
+
     // Clear any existing timeout for this notification
     const existingTimeout = toastTimeouts.current.get(notificationId);
     if (existingTimeout) {
       clearTimeout(existingTimeout);
       toastTimeouts.current.delete(notificationId);
     }
-    
+
     // Add to pending toasts
     pendingToasts.current.add(notificationId);
-    
+
     // Set a timeout to ensure toast shows even with delays
     const timeoutId = setTimeout(() => {
       if (pendingToasts.current.has(notificationId)) {
@@ -89,19 +90,19 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             </div>
           ),
         });
-        
+
         // Play sound
         try {
           const audio = new Audio("/sounds/notification.mp3");
           audio.play().catch((e) => {});
         } catch (error) {}
-        
+
         // Remove from pending
         pendingToasts.current.delete(notificationId);
         toastTimeouts.current.delete(notificationId);
       }
     }, 100); // 100ms delay to allow for sync
-    
+
     toastTimeouts.current.set(notificationId, timeoutId);
   }, []);
 
@@ -197,7 +198,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       // Add server notification IDs to prevent duplicate toast/sound
       serverNotificationIds.forEach((id) => {
         remainingIds.add(id);
-        
+
         // Cancel pending toast for this ID if it exists
         if (pendingToasts.current.has(id)) {
           const timeoutId = toastTimeouts.current.get(id);
@@ -281,41 +282,12 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
           // Register ID to avoid duplication
           notificationIdsReceived.current.add(notification.id);
 
-          // Format date before adding to list
+          // Para notificações via Socket.IO, formatar apenas se necessário
           const formattedNotification = {
             ...notification,
-            created_at: (() => {
-              try {
-                let date: Date;
-
-                if (typeof notification.created_at === "string") {
-                  // Handle ISO strings and already formatted strings
-                  if (
-                    notification.created_at.includes("T") ||
-                    notification.created_at.includes("-")
-                  ) {
-                    date = new Date(notification.created_at);
-                  } else {
-                    // Already formatted string, return as is
-                    return notification.created_at;
-                  }
-                } else {
-                  date =
-                    notification.created_at instanceof Date
-                      ? notification.created_at
-                      : new Date(notification.created_at);
-                }
-
-                // Check if date is valid
-                if (isNaN(date.getTime())) {
-                  return formatNotificationDate(new Date()); // Use current date as fallback
-                }
-
-                return formatNotificationDate(date);
-              } catch (error) {
-                return formatNotificationDate(new Date()); // Use current date as fallback
-              }
-            })(),
+            created_at: typeof notification.created_at === "string" 
+              ? notification.created_at 
+              : formatNotificationDate(new Date(notification.created_at))
           };
 
           // Add to real-time notification list

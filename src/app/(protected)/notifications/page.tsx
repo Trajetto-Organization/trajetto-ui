@@ -82,14 +82,45 @@ const Notifications = async ({
       };
     } else {
       const rawNotifications = await response.json();
-      
+
       // Formatar as datas das notificações no server-side com timezone correto
       notifications = {
         ...rawNotifications,
         data: rawNotifications.data.map((notification: any) => ({
           ...notification,
-          created_at: formatNotificationDate(new Date(notification.created_at))
-        }))
+          created_at: (() => {
+            try {
+              let date: Date;
+
+              if (typeof notification.created_at === "string") {
+                // Handle ISO strings and already formatted strings
+                if (
+                  notification.created_at.includes("T") ||
+                  notification.created_at.includes("-")
+                ) {
+                  date = new Date(notification.created_at);
+                } else {
+                  // Already formatted string, return as is
+                  return notification.created_at;
+                }
+              } else {
+                date =
+                  notification.created_at instanceof Date
+                    ? notification.created_at
+                    : new Date(notification.created_at);
+              }
+
+              // Check if date is valid
+              if (isNaN(date.getTime())) {
+                return formatNotificationDate(new Date()); // Use current date as fallback
+              }
+
+              return formatNotificationDate(date);
+            } catch (error) {
+              return formatNotificationDate(new Date()); // Use current date as fallback
+            }
+          })(),
+        })),
       };
     }
   }

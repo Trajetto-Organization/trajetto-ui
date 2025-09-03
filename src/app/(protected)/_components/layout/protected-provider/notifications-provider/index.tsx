@@ -282,12 +282,41 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
           // Register ID to avoid duplication
           notificationIdsReceived.current.add(notification.id);
 
-          // Para notificações via Socket.IO, formatar apenas se necessário
+          // Format date before adding to list
           const formattedNotification = {
             ...notification,
-            created_at: typeof notification.created_at === "string" 
-              ? notification.created_at 
-              : formatNotificationDate(new Date(notification.created_at))
+            created_at: (() => {
+              try {
+                let date: Date;
+
+                if (typeof notification.created_at === "string") {
+                  // Handle ISO strings and already formatted strings
+                  if (
+                    notification.created_at.includes("T") ||
+                    notification.created_at.includes("-")
+                  ) {
+                    date = new Date(notification.created_at);
+                  } else {
+                    // Already formatted string, return as is
+                    return notification.created_at;
+                  }
+                } else {
+                  date =
+                    notification.created_at instanceof Date
+                      ? notification.created_at
+                      : new Date(notification.created_at);
+                }
+
+                // Check if date is valid
+                if (isNaN(date.getTime())) {
+                  return formatNotificationDate(new Date()); // Use current date as fallback
+                }
+
+                return formatNotificationDate(date);
+              } catch (error) {
+                return formatNotificationDate(new Date()); // Use current date as fallback
+              }
+            })(),
           };
 
           // Add to real-time notification list

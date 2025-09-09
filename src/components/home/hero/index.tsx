@@ -23,7 +23,7 @@ const Hero = (): JSX.Element => {
               lg:text-6xl/none bg-clip-text text-transparent 
               bg-gradient-to-r from-foreground to-foreground/70"
             >
-              Gestão de Frotas Inteligentes para a Nova Era
+              Gestão de Frotas Inteligentes e Conectadas
             </h1>
             <p className="text-xl text-muted-foreground">
               Plataforma inteligente de gestão de frotas, gerencie e otimize sua

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 const FleetManagementDashboard = (): JSX.Element => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState(false);
+  const [hovered, setHovered] = useState<boolean>(false);
 
   // Motion values ​​to control rotation in X and Y
   const mouseX = useMotionValue(0);
@@ -122,7 +122,7 @@ const FleetManagementDashboard = (): JSX.Element => {
           {/* Dashboard image */}
           <div className="relative w-full h-full">
             <Image
-              src="/trajetto-management-dashboard.png"
+              src="/Notebook.png"
               alt="Dashboard de Gerenciamento de Frota"
               layout="fill"
               objectFit="cover"

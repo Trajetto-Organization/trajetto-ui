@@ -37,6 +37,7 @@ const FleetManagementDashboard = (): JSX.Element => {
     if (!containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
+
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
@@ -90,8 +91,8 @@ const FleetManagementDashboard = (): JSX.Element => {
 
         {/* Interactive 3D Box */}
         <motion.div
-          className="relative mx-auto max-w-5xl h-[400px] 
-          md:h-[500px] rounded-2xl overflow-hidden shadow-2xl border 
+          className="relative mx-auto max-w-5xl h-[250px] sm:h-[300px] 
+          md:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl border 
           border-white/20 bg-background/80 backdrop-blur-sm"
           initial={{ scale: 0.9, opacity: 0.8, rotateX: 2 }}
           animate={{
@@ -125,8 +126,12 @@ const FleetManagementDashboard = (): JSX.Element => {
               src="/trajetto-management-dashboard.png"
               alt="Dashboard de Gerenciamento de Frota"
               layout="fill"
-              objectFit="cover"
-              className="z-10"
+              className="z-10 will-change-transform object-cover"
+              style={{
+                imageRendering: "crisp-edges",
+                backfaceVisibility: "hidden",
+                transform: "translateZ(0)",
+              }}
               priority
             />
 
@@ -152,8 +157,8 @@ const FleetManagementDashboard = (): JSX.Element => {
         >
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Imagine reunir todas essas informações da sua frota em um só lugar,
-            tomando decisões mais inteligentes, eficientes e economizando
-            recursos valiosos.
+            tomando decisões inteligentes, eficientes e economizando recursos
+            valiosos.
           </p>
           <Link
             href={"/quote"}

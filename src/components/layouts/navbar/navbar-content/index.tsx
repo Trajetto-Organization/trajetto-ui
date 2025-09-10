@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 import Link from "next/link";
 import Image from "next/image";
 
@@ -20,6 +22,8 @@ import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/app/(protected)/_components/dto";
 
+import { useIsMobile } from "@/hooks/use-mobile";
+
 interface NavbarContentProps {
   token: string;
   role: UserRole;
@@ -34,6 +38,16 @@ const navItems: { label: string; href: string }[] = [
 ];
 
 const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
+  const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
+  const isMobile = useIsMobile();
+
+  // Closes the Sheet when the screen is no longer mobile
+  useEffect(() => {
+    if (!isMobile && isSheetOpen) {
+      setIsSheetOpen(false);
+    }
+  }, [isMobile, isSheetOpen]);
+
   const NavLinks = () => (
     <NavigationMenuList>
       {navItems.map(({ label, href }) => (
@@ -79,7 +93,7 @@ const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
         </div>
 
         <div className="md:hidden">
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-5 w-5" />

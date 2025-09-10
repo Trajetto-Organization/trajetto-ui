@@ -17,11 +17,12 @@ const Hero = (): JSX.Element => {
           className="grid gap-8 lg:grid-cols-2 
           lg:gap-12 items-center"
         >
-          <div className="space-y-8">
+          <div className="space-y-6">
             <h1
               className="text-5xl font-bold tracking-tight 
-              lg:text-6xl/none bg-clip-text text-transparent 
-              bg-gradient-to-r from-foreground to-foreground/70"
+              lg:text-6xl bg-clip-text text-transparent 
+              bg-gradient-to-r from-foreground to-foreground/70 
+              leading-[1.10] pb-1"
             >
               Gestão de Frotas Inteligentes e Conectadas
             </h1>
@@ -29,7 +30,7 @@ const Hero = (): JSX.Element => {
               Plataforma inteligente de gestão de frotas, gerencie e otimize sua
               frota com máxima precisão e eficiência.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-1">
               <Link
                 href={"/login"}
                 aria-label="Back to dashboard page"

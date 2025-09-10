@@ -122,7 +122,7 @@ const FleetManagementDashboard = (): JSX.Element => {
           {/* Dashboard image */}
           <div className="relative w-full h-full">
             <Image
-              src="/Notebook.png"
+              src="/trajetto-management-dashboard.png"
               alt="Dashboard de Gerenciamento de Frota"
               layout="fill"
               objectFit="cover"
@@ -151,8 +151,9 @@ const FleetManagementDashboard = (): JSX.Element => {
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Imagine ter todas essas informações para sua frota em tempo real,
-            permitindo decisões inteligentes e economizando recursos valiosos.
+            Imagine reunir todas essas informações da sua frota em um só lugar,
+            tomando decisões mais inteligentes, eficientes e economizando
+            recursos valiosos.
           </p>
           <Link
             href={"/quote"}

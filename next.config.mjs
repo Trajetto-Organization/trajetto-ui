@@ -35,6 +35,13 @@ const nextConfig = {
         protocol: "https",
         hostname: "picsum.photos",
       },
+      // Local backend development
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "3333",
+        pathname: "/tmp/**",
+      },
     ],
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },

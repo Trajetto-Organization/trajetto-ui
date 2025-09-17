@@ -4,6 +4,7 @@ import { z } from "zod";
 const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
 const isEmptyOrWhitespace = (value: string): boolean =>
   value.trim().length === 0;
+
 const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
 
 const emptyStringToNull = (value: any) => {

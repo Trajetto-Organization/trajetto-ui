@@ -19,6 +19,7 @@ interface UpdateFuelValidationError {
   fuelTypeId?: string[];
   branchId?: string[];
   businessId?: string[];
+  odometer_photo?: string[];
   updateFuelErrorMessage?: string;
 }
 
@@ -35,6 +36,12 @@ interface UpdateFuelContainerProps {
   isUpdateFuelOpen: boolean;
   commandBusinessInputValue: CommandBusinessInputValue;
   commandVehicleInputValue: CommandVehicleInputValue;
+  odometerFile: File | null;
+  setOdometerFile: (file: File | null) => void;
+  fileError: string | null;
+  setFileError: (error: string | null) => void;
+  showImageModal: boolean;
+  setShowImageModal: (show: boolean) => void;
 }
 
 interface SelectBusinessBranchStepProps {

@@ -6,7 +6,7 @@ export const fuelTableSchema = z.object({
   liters_amount: z.string(),
   price_per_liter: z.string(),
   total_amount: z.string(),
-  odometer_photo: z.string().nullable().optional(),
+  odometer_photo: z.string(),
   odometer_verified: z.boolean(),
   notes: z.string().nullable().optional(),
   refueling_date: z.string(),

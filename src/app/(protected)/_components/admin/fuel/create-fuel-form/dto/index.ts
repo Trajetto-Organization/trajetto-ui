@@ -17,6 +17,7 @@ interface CreateFuelValidationError {
   fuelTypeId?: string[];
   branchId?: string[];
   businessId?: string[];
+  odometer_photo?: string[];
   createFuelErrorMessage?: string;
 }
 
@@ -30,6 +31,10 @@ interface CreateFuelContainerProps {
   onBack: () => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   commandBusinessInputValue: CommandBusinessInputValue;
+  odometerFile: File | null;
+  setOdometerFile: (file: File | null) => void;
+  fileError: string | null;
+  setFileError: (error: string | null) => void;
 }
 
 interface SelectBusinessBranchStepProps {

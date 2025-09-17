@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, MessageCircleMore } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 
-import { HeroVideoSection } from "./hero-video-section";
+import { HeroDashboardShowcase } from "./hero-dashboard-showcase";
 import { cn } from "@/lib/utils";
 
 const Hero = (): JSX.Element => {
@@ -15,17 +15,17 @@ const Hero = (): JSX.Element => {
       <div className="container relative">
         <div
           className="grid gap-8 lg:grid-cols-2 
-          lg:gap-12 items-center"
+          lg:gap-14 items-center"
         >
-          <div className="space-y-6">
+          <div className="space-y-8 ">
             <h1
-              className="text-5xl font-bold tracking-tight 
-              lg:text-6xl bg-clip-text text-transparent 
-              bg-gradient-to-r from-foreground to-foreground/70 
-              leading-[1.10] pb-1"
+              className="text-5xl font-bold tracking-tighter
+              lg:text-6xl bg-clip-text w-full
+              bg-gradient-to-r from-foreground to-foreground/70"
             >
-              Gestão de Frotas Inteligentes e Conectadas
+              Gestão de Frotas Inteligentes e Eficientes
             </h1>
+
             <p className="text-xl text-muted-foreground">
               Plataforma inteligente de gestão de frotas, gerencie e otimize sua
               frota com máxima precisão e eficiência.
@@ -67,8 +67,7 @@ const Hero = (): JSX.Element => {
               </Link>
             </div>
           </div>
-
-          <HeroVideoSection />
+          <HeroDashboardShowcase />
         </div>
       </div>
     </div>

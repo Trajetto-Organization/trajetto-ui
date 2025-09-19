@@ -21,7 +21,10 @@ function useCreateFuelForm(state: CreateFuelFormState | null) {
   const [isCreateFuelForm, setIsCreateFuelForm] = useState<boolean>(false);
 
   const [currentStep, setCurrentStep] = useState<
-    "select-business-branch" | "select-vehicle-driver" | "select-fuel-type" | "create-fuel"
+    | "select-business-branch"
+    | "select-vehicle-driver"
+    | "select-fuel-type"
+    | "create-fuel"
   >("select-business-branch");
 
   const [commandBusinessInputValue, setCommandBusinessInputValue] =

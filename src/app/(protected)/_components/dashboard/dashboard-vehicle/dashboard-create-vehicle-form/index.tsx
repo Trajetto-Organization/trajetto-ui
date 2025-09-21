@@ -648,7 +648,11 @@ const DashboardCreateVehicleForm = (): JSX.Element => {
                 disabled={!permissionsRequired.hasAllPermissions}
                 data-tutorial="create-button"
               >
-                <Button size="sm" className="h-8" disabled={!permissionsRequired.hasAllPermissions}>
+                <Button
+                  size="sm"
+                  className="h-8"
+                  disabled={!permissionsRequired.hasAllPermissions}
+                >
                   Criar Veículo
                 </Button>
               </DialogTrigger>

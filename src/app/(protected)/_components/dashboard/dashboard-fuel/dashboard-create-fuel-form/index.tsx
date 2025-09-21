@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { Info, Loader, X } from "lucide-react";
+import { Info, Loader, X, Upload, Image as ImageIcon } from "lucide-react";
+
+import { useDropzone } from "react-dropzone";
 
 import {
   Dialog,
@@ -27,8 +29,11 @@ import { handleCreateFuel } from "@/actions/create-fuel";
 
 import {
   formatCurrencyToNumber,
-  formatNumericInput,
   formatToBrazilianCurrency,
+  formatMileage,
+  formatLiters,
+  mileageToNumber,
+  litersToNumber,
 } from "@/lib/format-values";
 
 import { DatePickerField } from "../../../custom";
@@ -58,6 +63,7 @@ import {
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 // Step 1: Select Branch
 const DashboardSelectBranchStep = ({
@@ -336,6 +342,10 @@ const DashboardCreateFuelFormContainer = ({
   onBack,
   businessId,
   commandVehicleInputValue,
+  odometerFile,
+  setOdometerFile,
+  fileError,
+  setFileError,
 }: DashboardCreateFuelContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -374,6 +384,106 @@ const DashboardCreateFuelFormContainer = ({
     setDisplayPricePerLiter(formatToBrazilianCurrency(newNumericValue));
   };
 
+
+  const [displayMileage, setDisplayMileage] = useState<string>("");
+  const [displayLiters, setDisplayLiters] = useState<string>("");
+
+  // Refs para os inputs para submissão do form
+  const mileageInputRef = useRef<HTMLInputElement>(null);
+  const litersInputRef = useRef<HTMLInputElement>(null);
+
+  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const rawValue = e.target.value;
+    const numbersOnly = rawValue.replace(/\D/g, '');
+    const formatted = formatMileage(numbersOnly);
+
+    setDisplayMileage(formatted);
+
+    // Atualiza o valor real para submissão do form
+    if (mileageInputRef.current) {
+      mileageInputRef.current.value = mileageToNumber(formatted);
+    }
+  };
+
+  const handleLitersChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const rawValue = e.target.value;
+    const formatted = formatLiters(rawValue);
+
+    setDisplayLiters(formatted);
+
+    // Converte para formato numérico para o backend (vírgula -> ponto)
+    if (litersInputRef.current) {
+      litersInputRef.current.value = litersToNumber(formatted);
+    }
+  };
+
+  // File validation function
+  const validateFile = (file: File): string | null => {
+    if (!file.type.startsWith("image/")) {
+      return "Arquivo deve ser uma imagem.";
+    }
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      return "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.";
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return "O arquivo deve ter no máximo 5MB.";
+    }
+
+    return null;
+  };
+
+  // Dropzone configuration
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: {
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"],
+    },
+    maxSize: 5 * 1024 * 1024, // 5MB
+    maxFiles: 1,
+    multiple: false,
+    disabled: pending,
+    onDrop: (acceptedFiles: File[], rejectedFiles) => {
+      setFileError(null);
+
+      if (rejectedFiles.length > 0) {
+        const rejection = rejectedFiles[0];
+        if (rejection.errors[0]?.code === "file-too-large") {
+          setFileError("O arquivo deve ter no máximo 5MB.");
+        } else if (rejection.errors[0]?.code === "file-invalid-type") {
+          setFileError(
+            "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.",
+          );
+        } else {
+          setFileError("Arquivo inválido.");
+        }
+        return;
+      }
+
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0];
+        const validationError = validateFile(file);
+
+        if (validationError) {
+          setFileError(validationError);
+          setOdometerFile(null);
+        } else {
+          setFileError(null);
+          setOdometerFile(file);
+        }
+      }
+    },
+  });
+
+  // Remove file function
+  const removeFile = () => {
+    setOdometerFile(null);
+    setFileError(null);
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
@@ -389,34 +499,48 @@ const DashboardCreateFuelFormContainer = ({
         />
 
         {/* Current Mileage (user input) */}
-        <FormInput
-          label="Quilometragem"
-          htmlfor="current_mileage"
-          name="current_mileage"
-          type="number"
-          placeholder="Digite a quilometragem atual"
-          errorName={state.createFuelError?.current_mileage}
-          disabled={pending}
-          min="0.1"
-          max="9999999"
-          step="0.1"
-          onInput={(event) => formatNumericInput(event, 9999999, true)}
-        />
+        <div>
+          <FormInput
+            label="Quilometragem"
+            htmlfor="current_mileage_display"
+            name="current_mileage_display"
+            type="text"
+            placeholder="Ex: 15.234"
+            errorName={state.createFuelError?.current_mileage}
+            disabled={pending}
+            value={displayMileage}
+            onChange={handleMileageChange}
+          />
+          {/* Hidden input com valor real para submissão */}
+          <input
+            ref={mileageInputRef}
+            type="hidden"
+            name="current_mileage"
+            value={mileageToNumber(displayMileage)}
+          />
+        </div>
 
         {/* Liters Amount */}
-        <FormInput
-          label="Quantidade de litros"
-          htmlfor="liters_amount"
-          name="liters_amount"
-          type="number"
-          errorName={state.createFuelError?.liters_amount}
-          placeholder="0,000"
-          disabled={pending}
-          min="0.001"
-          max="99999.999"
-          step="0.001"
-          onInput={(event) => formatNumericInput(event, 99999.999, true)}
-        />
+        <div>
+          <FormInput
+            label="Quantidade de litros"
+            htmlfor="liters_amount_display"
+            name="liters_amount_display"
+            type="text"
+            errorName={state.createFuelError?.liters_amount}
+            placeholder="Ex: 45,237"
+            disabled={pending}
+            value={displayLiters}
+            onChange={handleLitersChange}
+          />
+          {/* Hidden input com valor real para submissão */}
+          <input
+            ref={litersInputRef}
+            type="hidden"
+            name="liters_amount"
+            value={litersToNumber(displayLiters)}
+          />
+        </div>
 
         {/* Price per Liter */}
         <FormInput
@@ -444,6 +568,107 @@ const DashboardCreateFuelFormContainer = ({
             disabled={pending}
             maxLength={500}
           />
+        </div>
+
+        {/* Odometer Photo Upload */}
+        <div className="col-span-2">
+          {fileError || state.createFuelError?.odometer_photo ? (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <label
+                    className="block text-sm font-medium
+                  text-red-500 mb-2 h-5 truncate"
+                  >
+                    {fileError || state.createFuelError?.odometer_photo?.[0]}
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent
+                  align="start"
+                  className="max-w-[300px]
+                  whitespace-normal break-words p-2"
+                >
+                  {fileError || state.createFuelError?.odometer_photo?.[0]}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <label
+              className="block text-sm font-medium
+              text-gray-700 dark:text-gray-300 mb-2"
+            >
+              Foto do Odômetro <span className="text-red-500">*</span>
+            </label>
+          )}
+
+          {!odometerFile ? (
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6
+              text-center cursor-pointer transition-colors
+                ${
+                  isDragActive
+                    ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                }
+                ${pending ? "opacity-50 cursor-not-allowed" : ""}
+                ${fileError || state.createFuelError?.odometer_photo ? "border-red-300 bg-red-50 dark:bg-red-950/20" : ""}`}
+            >
+              <input {...getInputProps()} name="odometer_photo" />
+              <div className="flex flex-col items-center space-y-2">
+                <Upload
+                  className={`h-8 w-8 ${isDragActive ? "text-blue-500" : "text-gray-400"}`}
+                />
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {isDragActive ? (
+                    <p>Solte a imagem aqui...</p>
+                  ) : (
+                    <>
+                      <p>
+                        Arraste e solte uma foto do odômetro aqui, ou{" "}
+                        <span className="font-medium text-blue-600 hover:text-blue-500">
+                          clique para selecionar
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        PNG, JPG, JPEG ou WebP até 5MB
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200">
+              <div className="flex-shrink-0">
+                <ImageIcon className="h-8 w-8 text-green-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div>
+                  <p
+                    className="text-sm font-medium
+                    text-green-800 dark:text-green-200"
+                  >
+                    {odometerFile.name}
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {(odometerFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={removeFile}
+                disabled={pending}
+                className="text-red-600 hover:text-red-800
+                hover:bg-red-100 dark:hover:bg-red-950/20"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Information Alert */}
@@ -509,6 +734,9 @@ const DashboardCreateFuelFormContainer = ({
 const DashboardCreateFuelForm = (): JSX.Element => {
   const defaultState: DashboardCreateFuelFormState = {};
   const [state, dispatch] = useFormState(handleCreateFuel, null);
+
+  const [odometerFile, setOdometerFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const {
     isCreateFuelForm,
@@ -652,16 +880,21 @@ const DashboardCreateFuelForm = (): JSX.Element => {
             ref={formRef}
             action={(formData) => {
               // Add selected IDs to form data
-              formData.append("businessId", businessId as string);
-              formData.append("branchId", commandBranchInputValue.branchId);
-              formData.append("vehicleId", commandVehicleInputValue.vehicleId);
-              formData.append("driverId", commandDriverInputValue.driverId);
-              formData.append(
-                "fuelTypeId",
-                commandFuelTypeInputValue.fuelTypeId,
-              );
+              const extraData = {
+                businessId: businessId as string,
+                branchId: commandBranchInputValue.branchId,
+                vehicleId: commandVehicleInputValue.vehicleId,
+                driverId: commandDriverInputValue.driverId,
+                fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+              };
 
-              dispatch(formData);
+              // Add the odometer photo file to FormData
+              if (odometerFile) {
+                formData.set("odometer_photo", odometerFile);
+              }
+
+              appendExtraDataToForm(formData, extraData);
+              return dispatch(formData);
             }}
           >
             <DashboardCreateFuelFormContainer
@@ -669,6 +902,10 @@ const DashboardCreateFuelForm = (): JSX.Element => {
               onBack={handleBackToFuelTypeStep}
               businessId={businessId as string}
               commandVehicleInputValue={commandVehicleInputValue}
+              odometerFile={odometerFile}
+              setOdometerFile={setOdometerFile}
+              fileError={fileError}
+              setFileError={setFileError}
             />
           </form>
         )}

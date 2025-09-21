@@ -36,8 +36,9 @@ import { handleCreateFuel } from "@/actions/create-fuel";
 
 import {
   formatCurrencyToNumber,
-  formatNumericInput,
   formatToBrazilianCurrency,
+  formatMileage,
+  formatLiters,
 } from "@/lib/format-values";
 import { DatePickerField } from "../../../custom";
 
@@ -426,6 +427,51 @@ const CreateFuelFormContainer = ({
     setDisplayPricePerLiter(formatToBrazilianCurrency(newNumericValue));
   };
 
+  const [displayMileage, setDisplayMileage] = useState<string>("");
+  const [displayLiters, setDisplayLiters] = useState<string>("");
+
+  const handleMileageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    const rawValue = e.target.value;
+
+    const numbersOnly = rawValue.replace(/\D/g, "");
+    const formatted = formatMileage(numbersOnly);
+
+    setDisplayMileage(formatted);
+  };
+
+  const handleMileageBlur = (): void => {
+    // Remove formatação para enviar valor numérico puro para o backend
+    const numericValue = displayMileage.replace(/\./g, "");
+    // Atualiza o value do input para o HTML form submission
+    const input = document.querySelector(
+      'input[name="current_mileage"]',
+    ) as HTMLInputElement;
+    if (input) {
+      input.value = numericValue;
+    }
+  };
+
+  const handleLitersChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const rawValue = e.target.value;
+    const formatted = formatLiters(rawValue);
+
+    setDisplayLiters(formatted);
+  };
+
+  const handleLitersBlur = (): void => {
+    // Converte para formato numérico para o backend (vírgula -> ponto)
+    const numericValue = displayLiters.replace(",", ".");
+    // Atualiza o value do input para o HTML form submission
+    const input = document.querySelector(
+      'input[name="liters_amount"]',
+    ) as HTMLInputElement;
+    if (input) {
+      input.value = numericValue;
+    }
+  };
+
   // File validation function
   const validateFile = (file: File): string | null => {
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -510,14 +556,13 @@ const CreateFuelFormContainer = ({
           label="Quilometragem"
           htmlfor="current_mileage"
           name="current_mileage"
-          type="number"
-          placeholder="Digite a quilometragem atual"
+          type="text"
+          placeholder="Ex: 15.234"
           errorName={state.createFuelError?.current_mileage}
           disabled={pending}
-          min="0.1"
-          max="9999999"
-          step="0.1"
-          onInput={(event) => formatNumericInput(event, 9999999, true)}
+          value={displayMileage}
+          onChange={handleMileageChange}
+          onBlur={handleMileageBlur}
         />
 
         {/* Liters Amount */}
@@ -525,14 +570,13 @@ const CreateFuelFormContainer = ({
           label="Quantidade de litros"
           htmlfor="liters_amount"
           name="liters_amount"
-          type="number"
+          type="text"
           errorName={state.createFuelError?.liters_amount}
-          placeholder="0,000"
+          placeholder="Ex: 45,237"
           disabled={pending}
-          min="0.001"
-          max="99999.999"
-          step="0.001"
-          onInput={(event) => formatNumericInput(event, 99999.999, true)}
+          value={displayLiters}
+          onChange={handleLitersChange}
+          onBlur={handleLitersBlur}
         />
 
         {/* Price per Liter */}

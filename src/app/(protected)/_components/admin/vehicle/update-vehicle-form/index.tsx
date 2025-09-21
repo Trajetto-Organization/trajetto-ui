@@ -386,7 +386,7 @@ const UpdateVehicleFormContainer = ({
         number_of_axles: vehicleData.number_of_axles,
         status: vehicleData.status,
       };
-      
+
       setFormValues(initialValues);
       initialFormValuesRef.current = initialValues;
     }
@@ -396,7 +396,8 @@ const UpdateVehicleFormContainer = ({
   const normalizeValue = (value: any): any => {
     if (value === null || value === undefined) return "";
     if (typeof value === "string" && value.trim() === "") return "";
-    if (typeof value === "string" && !isNaN(Number(value))) return Number(value);
+    if (typeof value === "string" && !isNaN(Number(value)))
+      return Number(value);
     return value;
   };
 
@@ -423,15 +424,17 @@ const UpdateVehicleFormContainer = ({
       const newValues = { ...prev, [fieldName]: processedValue };
 
       // Check if any field has changed using normalized comparison with initial values
-      const isAnyFieldChanged = Object.keys(initialFormValuesRef.current).some((key) => {
-        const initialValue = initialFormValuesRef.current[key];
-        const currentValue = newValues[key];
-        
-        const normalizedInitial = normalizeValue(initialValue);
-        const normalizedCurrent = normalizeValue(currentValue);
+      const isAnyFieldChanged = Object.keys(initialFormValuesRef.current).some(
+        (key) => {
+          const initialValue = initialFormValuesRef.current[key];
+          const currentValue = newValues[key];
 
-        return normalizedInitial !== normalizedCurrent;
-      });
+          const normalizedInitial = normalizeValue(initialValue);
+          const normalizedCurrent = normalizeValue(currentValue);
+
+          return normalizedInitial !== normalizedCurrent;
+        },
+      );
 
       setIsDirty(isAnyFieldChanged);
       return newValues;

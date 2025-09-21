@@ -4,7 +4,7 @@ interface DashboardFuelProps {
   liters_amount: string;
   price_per_liter: string;
   total_amount: string;
-  odometer_photo?: string | null;
+  odometer_photo: string;
   odometer_verified: boolean;
   notes?: string | null;
   refueling_date: string;

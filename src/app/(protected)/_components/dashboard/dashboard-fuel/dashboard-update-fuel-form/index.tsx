@@ -1,7 +1,18 @@
 import { useState, useEffect } from "react";
-
 import { useFormState, useFormStatus } from "react-dom";
-import { Info, Loader, X } from "lucide-react";
+
+import {
+  Info,
+  Loader,
+  X,
+  Upload,
+  Image as ImageIcon,
+  Eye,
+  Trash2,
+} from "lucide-react";
+
+import { useDropzone } from "react-dropzone";
+import Image from "next/image";
 
 import {
   Dialog,
@@ -19,8 +30,11 @@ import { handleUpdateFuel } from "@/actions/update-fuel";
 import { cn } from "@/lib/utils";
 import {
   formatCurrencyToNumber,
-  formatNumericInput,
   formatToBrazilianCurrency,
+  formatMileage,
+  formatLiters,
+  mileageToNumber,
+  litersToNumber,
 } from "@/lib/format-values";
 
 import { useDashboardUpdateFuelForm } from "./hooks";
@@ -327,6 +341,12 @@ const DashboardUpdateFuelContainer = ({
   isBusinessAndEntityDirty,
   isUpdateFuelOpen,
   commandVehicleInputValue,
+  odometerFile,
+  setOdometerFile,
+  fileError,
+  setFileError,
+  showImageModal,
+  setShowImageModal,
 }: DashboardUpdateFuelContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
@@ -372,6 +392,20 @@ const DashboardUpdateFuelContainer = ({
           if (originalIsEmpty !== newIsEmpty) return true;
 
           return originalValue !== val;
+        }
+
+        // Special handling for dates to normalize comparison
+        if (key === "refueling_date") {
+          const normalizeDate = (dateStr: string) => {
+            if (!dateStr) return "";
+            // Convert to ISO date string (YYYY-MM-DD) for consistent comparison
+            return new Date(dateStr).toISOString().split("T")[0];
+          };
+
+          const originalNormalized = normalizeDate(originalValue as string);
+          const newNormalized = normalizeDate(val);
+
+          return originalNormalized !== newNormalized;
         }
 
         if (typeof originalValue === "number") {
@@ -428,8 +462,108 @@ const DashboardUpdateFuelContainer = ({
     handleFieldChange("price_per_liter", formattedValue);
   };
 
-  // Check if there are any changes in the form
-  const hasAnyChange = isDirty || isBusinessAndEntityDirty;
+  // States for formatted display values
+  const [displayMileage, setDisplayMileage] = useState<string>("");
+  const [displayLiters, setDisplayLiters] = useState<string>("");
+
+  // Initialize display values when component mounts or data changes
+  useEffect(() => {
+    if (fuelData && isUpdateFuelOpen) {
+      setDisplayMileage(formatMileage(fuelData.current_mileage.toString()));
+      setDisplayLiters(formatLiters(fuelData.liters_amount));
+    }
+  }, [fuelData, isUpdateFuelOpen]);
+
+  const handleMileageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    const rawValue = e.target.value;
+    const numbersOnly = rawValue.replace(/\D/g, "");
+    const formatted = formatMileage(numbersOnly);
+
+    setDisplayMileage(formatted);
+    // Update form state with numeric value
+    handleFieldChange("current_mileage", mileageToNumber(formatted));
+  };
+
+  const handleLitersChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const rawValue = e.target.value;
+    const formatted = formatLiters(rawValue);
+
+    setDisplayLiters(formatted);
+    // Update form state with numeric value (convert comma to dot)
+    handleFieldChange("liters_amount", litersToNumber(formatted));
+  };
+
+  // File validation function
+  const validateFile = (file: File): string | null => {
+    if (!file.type.startsWith("image/")) {
+      return "Arquivo deve ser uma imagem.";
+    }
+
+    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      return "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.";
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return "O arquivo deve ter no máximo 5MB.";
+    }
+
+    return null;
+  };
+
+  // Dropzone configuration
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: {
+      "image/jpeg": [".jpg", ".jpeg"],
+      "image/png": [".png"],
+      "image/webp": [".webp"],
+    },
+    maxSize: 5 * 1024 * 1024, // 5MB
+    maxFiles: 1,
+    multiple: false,
+    disabled: pending,
+    onDrop: (acceptedFiles: File[], rejectedFiles) => {
+      setFileError(null);
+
+      if (rejectedFiles.length > 0) {
+        const rejection = rejectedFiles[0];
+        if (rejection.errors[0]?.code === "file-too-large") {
+          setFileError("O arquivo deve ter no máximo 5MB.");
+        } else if (rejection.errors[0]?.code === "file-invalid-type") {
+          setFileError(
+            "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.",
+          );
+        } else {
+          setFileError("Arquivo inválido.");
+        }
+        return;
+      }
+
+      if (acceptedFiles.length > 0) {
+        const file = acceptedFiles[0];
+        const validationError = validateFile(file);
+
+        if (validationError) {
+          setFileError(validationError);
+          setOdometerFile(null);
+        } else {
+          setFileError(null);
+          setOdometerFile(file);
+        }
+      }
+    },
+  });
+
+  // Remove file function
+  const removeFile = () => {
+    setOdometerFile(null);
+    setFileError(null);
+  };
+
+  const hasFileChange = odometerFile !== null;
+  const hasAnyChange = isDirty || isBusinessAndEntityDirty || hasFileChange;
 
   return (
     <>
@@ -450,15 +584,12 @@ const DashboardUpdateFuelContainer = ({
           label="Quilometragem"
           htmlfor="current_mileage"
           name="current_mileage"
-          type="number"
-          value={formValues.current_mileage || ""}
-          onChange={(e) => handleFieldChange("current_mileage", e.target.value)}
+          type="text"
+          value={displayMileage}
+          onChange={handleMileageChange}
           errorName={state.updateFuelError?.current_mileage}
           disabled={pending}
-          min="0.1"
-          max="9999999"
-          step="0.1"
-          onInput={(event) => formatNumericInput(event, 9999999, true)}
+          placeholder="Ex: 15.234"
         />
 
         {/* Liters Amount */}
@@ -466,15 +597,12 @@ const DashboardUpdateFuelContainer = ({
           label="Quantidade de litros"
           htmlfor="liters_amount"
           name="liters_amount"
-          type="number"
-          value={formValues.liters_amount || ""}
-          onChange={(e) => handleFieldChange("liters_amount", e.target.value)}
+          type="text"
+          value={displayLiters}
+          onChange={handleLitersChange}
           errorName={state.updateFuelError?.liters_amount}
           disabled={pending}
-          min="0.001"
-          max="99999.999"
-          step="0.001"
-          onInput={(event) => formatNumericInput(event, 99999.999, true)}
+          placeholder="Ex: 45,237"
         />
 
         {/* Price per Liter */}
@@ -503,6 +631,145 @@ const DashboardUpdateFuelContainer = ({
             disabled={pending}
             maxLength={500}
           />
+        </div>
+
+        {/* Odometer Photo Upload */}
+        <div className="col-span-2">
+          <label
+            className="block text-sm font-medium
+            text-gray-700 dark:text-gray-300 mb-2"
+          >
+            Foto do Odômetro
+          </label>
+
+          {/* Current Image Preview */}
+          {fuelData.odometer_photo && !odometerFile && (
+            <div
+              className="mb-4 border-2 border-dashed border-blue-300
+              bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <ImageIcon className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Imagem atual do odômetro
+                    </p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400">
+                      Clique para visualizar em tela cheia
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowImageModal(true)}
+                  disabled={pending}
+                  className="text-blue-600 hover:text-blue-800
+                  hover:bg-blue-100 dark:hover:bg-blue-950/20"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="mt-2 relative w-full h-32">
+                <Image
+                  src={fuelData.odometer_photo}
+                  alt="Imagem atual do odômetro"
+                  fill
+                  className="object-contain rounded cursor-pointer
+                  hover:opacity-80 transition-opacity"
+                  onClick={() => setShowImageModal(true)}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  priority={false}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* New File Upload */}
+          {!odometerFile ? (
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6
+              text-center cursor-pointer transition-colors
+                ${
+                  isDragActive
+                    ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
+                    : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                }
+                ${pending ? "opacity-50 cursor-not-allowed" : ""}
+                ${fileError || state.updateFuelError?.odometer_photo ? "border-red-300 bg-red-50 dark:bg-red-950/20" : ""}`}
+            >
+              <input {...getInputProps()} name="odometer_photo" />
+              <div className="flex flex-col items-center space-y-2">
+                <Upload
+                  className={`h-8 w-8 ${isDragActive ? "text-blue-500" : "text-gray-400"}`}
+                />
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {isDragActive ? (
+                    <p>Solte a nova imagem aqui...</p>
+                  ) : (
+                    <>
+                      <p>
+                        <span className="font-medium">
+                          Clique para selecionar
+                        </span>{" "}
+                        ou arraste uma nova imagem
+                      </p>
+                      <p className="text-xs mt-1">
+                        PNG, JPG, JPEG, WebP (máx. 5MB)
+                      </p>
+                      {fuelData.odometer_photo && (
+                        <p className="text-xs text-orange-600 mt-1">
+                          Substituirá a imagem atual
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="border-2 border-dashed border-green-300
+              bg-green-50 dark:bg-green-950/20 rounded-lg p-4"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <ImageIcon className="h-8 w-8 text-green-600" />
+                  <div>
+                    <p
+                      className="text-sm font-medium 
+                      text-green-800 dark:text-green-200"
+                    >
+                      {odometerFile.name}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      {(odometerFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeFile}
+                  disabled={pending}
+                  className="text-red-600 hover:text-red-800
+                  hover:bg-red-100 dark:hover:bg-red-950/20"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {(fileError || state.updateFuelError?.odometer_photo) && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {fileError || state.updateFuelError?.odometer_photo?.[0]}
+            </p>
+          )}
         </div>
 
         {/* Information Alert */}
@@ -606,6 +873,11 @@ const DashboardUpdateFuelForm = ({
 }: DashboardUpdateFuelFormProps): JSX.Element => {
   const defaultState: DashboardUpdateFuelFormState = {};
   const [state, dispatch] = useFormState(handleUpdateFuel, null);
+
+  const [odometerFile, setOdometerFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+
+  const [showImageModal, setShowImageModal] = useState<boolean>(false);
 
   const {
     formRef,
@@ -716,6 +988,11 @@ const DashboardUpdateFuelForm = ({
                 fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
               };
 
+              // Add the odometer photo file to FormData if provided
+              if (odometerFile) {
+                formData.set("odometer_photo", odometerFile);
+              }
+
               appendExtraDataToForm(formData, extraData);
               return dispatch(formData);
             }}
@@ -727,10 +1004,53 @@ const DashboardUpdateFuelForm = ({
               isBusinessAndEntityDirty={isBusinessAndEntityDirty}
               isUpdateFuelOpen={isUpdateFuelOpen}
               commandVehicleInputValue={commandVehicleInputValue}
+              odometerFile={odometerFile}
+              setOdometerFile={setOdometerFile}
+              fileError={fileError}
+              setFileError={setFileError}
+              showImageModal={showImageModal}
+              setShowImageModal={setShowImageModal}
             />
           </form>
         )}
       </DialogScrollContent>
+
+      {/* Image Modal */}
+      {showImageModal && fuelData.odometer_photo && (
+        <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+          <DialogScrollContent className="max-w-4xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Foto do Odômetro</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Visualização em tela cheia da imagem do odômetro
+              </DialogDescription>
+            </DialogHeader>
+            <div
+              className="flex justify-center
+              items-center p-4 relative min-h-[70vh]"
+            >
+              <Image
+                src={fuelData.odometer_photo}
+                alt="Imagem do odômetro em tela cheia"
+                fill
+                className="object-contain rounded-lg shadow-lg"
+                sizes="(max-width: 768px) 95vw, (max-width: 1200px) 80vw, 70vw"
+                priority={true}
+                quality={90}
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowImageModal(false)}
+              >
+                Fechar
+              </Button>
+            </div>
+          </DialogScrollContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 };

@@ -30,8 +30,11 @@ import { handleUpdateFuel } from "@/actions/update-fuel";
 import { cn } from "@/lib/utils";
 import {
   formatCurrencyToNumber,
-  formatNumericInput,
   formatToBrazilianCurrency,
+  formatMileage,
+  formatLiters,
+  mileageToNumber,
+  litersToNumber,
 } from "@/lib/format-values";
 
 import { useUpdateFuelForm } from "./hooks";
@@ -442,6 +445,20 @@ const UpdateFuelContainer = ({
           return originalValue !== val;
         }
 
+        // Special handling for dates to normalize comparison
+        if (key === "refueling_date") {
+          const normalizeDate = (dateStr: string) => {
+            if (!dateStr) return "";
+            // Convert to ISO date string (YYYY-MM-DD) for consistent comparison
+            return new Date(dateStr).toISOString().split("T")[0];
+          };
+
+          const originalNormalized = normalizeDate(originalValue as string);
+          const newNormalized = normalizeDate(val);
+
+          return originalNormalized !== newNormalized;
+        }
+
         if (typeof originalValue === "number") {
           return originalValue.toString() !== val;
         }
@@ -494,6 +511,40 @@ const UpdateFuelContainer = ({
 
     setDisplayPricePerLiter(formattedValue);
     handleFieldChange("price_per_liter", formattedValue);
+  };
+
+  // States for formatted display values
+  const [displayMileage, setDisplayMileage] = useState<string>("");
+  const [displayLiters, setDisplayLiters] = useState<string>("");
+
+  // Initialize display values when component mounts or data changes
+  useEffect(() => {
+    if (fuelData && isUpdateFuelOpen) {
+      setDisplayMileage(formatMileage(fuelData.current_mileage.toString()));
+      setDisplayLiters(formatLiters(fuelData.liters_amount));
+    }
+  }, [fuelData, isUpdateFuelOpen]);
+
+  const handleMileageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    const rawValue = e.target.value;
+
+    const numbersOnly = rawValue.replace(/\D/g, "");
+    const formatted = formatMileage(numbersOnly);
+
+    setDisplayMileage(formatted);
+    // Update form state with numeric value
+    handleFieldChange("current_mileage", mileageToNumber(formatted));
+  };
+
+  const handleLitersChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const rawValue = e.target.value;
+    const formatted = formatLiters(rawValue);
+
+    setDisplayLiters(formatted);
+    // Update form state with numeric value (convert comma to dot)
+    handleFieldChange("liters_amount", litersToNumber(formatted));
   };
 
   // File validation function
@@ -588,15 +639,12 @@ const UpdateFuelContainer = ({
           label="Quilometragem"
           htmlfor="current_mileage"
           name="current_mileage"
-          type="number"
-          value={formValues.current_mileage || ""}
-          onChange={(e) => handleFieldChange("current_mileage", e.target.value)}
+          type="text"
+          value={displayMileage}
+          onChange={handleMileageChange}
           errorName={state.updateFuelError?.current_mileage}
           disabled={pending}
-          min="0.1"
-          max="9999999"
-          step="0.1"
-          onInput={(event) => formatNumericInput(event, 9999999, true)}
+          placeholder="Ex: 15.234"
         />
 
         {/* Liters Amount */}
@@ -604,15 +652,12 @@ const UpdateFuelContainer = ({
           label="Quantidade de litros"
           htmlfor="liters_amount"
           name="liters_amount"
-          type="number"
-          value={formValues.liters_amount || ""}
-          onChange={(e) => handleFieldChange("liters_amount", e.target.value)}
+          type="text"
+          value={displayLiters}
+          onChange={handleLitersChange}
           errorName={state.updateFuelError?.liters_amount}
           disabled={pending}
-          min="0.001"
-          max="99999.999"
-          step="0.001"
-          onInput={(event) => formatNumericInput(event, 99999.999, true)}
+          placeholder="Ex: 45,237"
         />
 
         {/* Price per Liter */}

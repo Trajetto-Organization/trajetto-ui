@@ -16,6 +16,7 @@ interface DashboardCreateFuelValidationError {
   fuelTypeId?: string[];
   branchId?: string[];
   businessId?: string[];
+  odometer_photo?: string[];
   createFuelErrorMessage?: string;
 }
 
@@ -29,6 +30,10 @@ interface DashboardCreateFuelContainerProps {
   state: DashboardCreateFuelFormState;
   commandVehicleInputValue: CommandVehicleInputValue;
   businessId: string;
+  odometerFile: File | null;
+  setOdometerFile: (file: File | null) => void;
+  fileError: string | null;
+  setFileError: (error: string | null) => void;
 }
 
 interface DashboardSelectBranchStepProps {

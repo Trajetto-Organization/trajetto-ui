@@ -879,6 +879,17 @@ const DashboardCreateFuelForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
+              // Ensure mileage is sent unformatted
+              const mileageInput = document.querySelector(
+                'input[name="current_mileage"]',
+              ) as HTMLInputElement;
+              if (mileageInput && mileageInput.value.includes(".")) {
+                // Remove points if still present
+                const numericValue = mileageInput.value.replace(/\./g, "");
+                mileageInput.value = numericValue;
+                formData.set("current_mileage", numericValue);
+              }
+
               // Add selected IDs to form data
               const extraData = {
                 businessId: businessId as string,

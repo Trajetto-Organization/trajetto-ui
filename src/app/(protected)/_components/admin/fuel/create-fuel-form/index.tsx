@@ -441,18 +441,6 @@ const CreateFuelFormContainer = ({
     setDisplayMileage(formatted);
   };
 
-  const handleMileageBlur = (): void => {
-    // Remove formatação para enviar valor numérico puro para o backend
-    const numericValue = displayMileage.replace(/\./g, "");
-    // Atualiza o value do input para o HTML form submission
-    const input = document.querySelector(
-      'input[name="current_mileage"]',
-    ) as HTMLInputElement;
-    if (input) {
-      input.value = numericValue;
-    }
-  };
-
   const handleLitersChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const rawValue = e.target.value;
     const formatted = formatLiters(rawValue);
@@ -562,7 +550,6 @@ const CreateFuelFormContainer = ({
           disabled={pending}
           value={displayMileage}
           onChange={handleMileageChange}
-          onBlur={handleMileageBlur}
         />
 
         {/* Liters Amount */}
@@ -900,6 +887,18 @@ const CreateFuelForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
+              // Ensure mileage is sent unformatted
+              const mileageInput = document.querySelector(
+                'input[name="current_mileage"]',
+              ) as HTMLInputElement;
+              if (mileageInput && mileageInput.value.includes(".")) {
+                // Remove points if still present
+                const numericValue = mileageInput.value.replace(/\./g, "");
+                mileageInput.value = numericValue;
+
+                formData.set("current_mileage", numericValue);
+              }
+
               const extraData = {
                 businessId: commandBusinessInputValue.businessId,
                 branchId: commandBranchInputValue.branchId,

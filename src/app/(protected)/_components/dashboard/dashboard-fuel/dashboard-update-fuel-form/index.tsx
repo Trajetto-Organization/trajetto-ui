@@ -16,6 +16,7 @@ import Image from "next/image";
 
 import {
   Dialog,
+  DialogContent,
   DialogScrollContent,
   DialogDescription,
   DialogHeader,
@@ -345,7 +346,6 @@ const DashboardUpdateFuelContainer = ({
   setOdometerFile,
   fileError,
   setFileError,
-  showImageModal,
   setShowImageModal,
 }: DashboardUpdateFuelContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
@@ -479,6 +479,7 @@ const DashboardUpdateFuelContainer = ({
   ): void => {
     const rawValue = e.target.value;
     const numbersOnly = rawValue.replace(/\D/g, "");
+
     const formatted = formatMileage(numbersOnly);
 
     setDisplayMileage(formatted);
@@ -871,6 +872,8 @@ const DashboardUpdateFuelForm = ({
   handleCloseUpdateFuel,
   isUpdateFuelOpen,
 }: DashboardUpdateFuelFormProps): JSX.Element => {
+  const { businessId } = useAuthStore();
+
   const defaultState: DashboardUpdateFuelFormState = {};
   const [state, dispatch] = useFormState(handleUpdateFuel, null);
 
@@ -903,8 +906,6 @@ const DashboardUpdateFuelForm = ({
     fuelData,
     isUpdateFuelOpen,
   });
-
-  const { businessId } = useAuthStore();
 
   return (
     <Dialog
@@ -1029,37 +1030,24 @@ const DashboardUpdateFuelForm = ({
       {/* Image Modal */}
       {showImageModal && fuelData.odometer_photo && (
         <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-          <DialogScrollContent className="max-w-4xl max-h-[90vh]">
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle className="text-xl">Foto do Odômetro</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">
-                Visualização em tela cheia da imagem do odômetro
-              </DialogDescription>
+              <DialogTitle>Visualizar Foto - Odômetro</DialogTitle>
             </DialogHeader>
-            <div
-              className="flex justify-center
-              items-center p-4 relative min-h-[70vh]"
-            >
+            <div className="flex justify-center">
               <Image
                 src={fuelData.odometer_photo}
-                alt="Imagem do odômetro em tela cheia"
-                fill
-                className="object-contain rounded-lg shadow-lg"
-                sizes="(max-width: 768px) 95vw, (max-width: 1200px) 80vw, 70vw"
-                priority={true}
-                quality={90}
+                alt="Foto do Odômetro"
+                width={800}
+                height={600}
+                className="max-w-full max-h-96 object-contain rounded-lg"
+                unoptimized={
+                  fuelData.odometer_photo.startsWith("data:") ||
+                  fuelData.odometer_photo.includes("blob:")
+                }
               />
             </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowImageModal(false)}
-              >
-                Fechar
-              </Button>
-            </div>
-          </DialogScrollContent>
+          </DialogContent>
         </Dialog>
       )}
     </Dialog>

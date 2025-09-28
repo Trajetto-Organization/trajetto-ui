@@ -36,6 +36,10 @@ const appRoutes: AppRoute[] = [
     path: "/admin/fuel",
     title: "Abastecimento",
   },
+  {
+    path: "/admin/vehicle-checklist",
+    title: "Checklist",
+  },
 
   // DASHBOARD Routes (to BUSINESS_ADMIN and BUSINESS_USER)
   { path: "/dashboard", title: "Dashboard" },
@@ -117,6 +121,11 @@ const appRoutes: AppRoute[] = [
     path: "/dashboard/fuel",
     title: "Abastecimento",
     requiredPermission: "fuel_manage",
+  },
+  {
+    path: "/dashboard/vehicle-checklist",
+    title: "Checklist",
+    requiredPermission: "vehicle_manage",
   },
 
   // Other routes

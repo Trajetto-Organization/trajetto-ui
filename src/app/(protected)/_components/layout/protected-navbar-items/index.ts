@@ -1,5 +1,6 @@
 import {
   Building2,
+  CalendarCheckIcon,
   CircuitBoardIcon,
   Command,
   Container,
@@ -58,6 +59,7 @@ const protectedNavIcons = {
   receipt: Receipt,
   fine: NotepadText,
   supply: Gauge,
+  check: CalendarCheckIcon,
 };
 
 const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
@@ -182,6 +184,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           url: "/admin/vehicle",
           icon: "truck",
         },
+        {
+          title: "Checklist veicular",
+          url: "/admin/vehicle-checklist",
+          icon: "check",
+        },
       ],
     },
     {
@@ -302,6 +309,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           title: "Cadastro de veículo",
           url: "/dashboard/vehicle",
           icon: "truck",
+        },
+        {
+          title: "Checklist veicular",
+          url: "/dashboard/vehicle-checklist",
+          icon: "check",
         },
       ],
     },
@@ -434,6 +446,12 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           title: "Cadastro de veículo",
           url: "/dashboard/vehicle",
           icon: "truck",
+          requiredPermission: permissions.VEHICLE_MANAGE,
+        },
+        {
+          title: "Checklist veicular",
+          url: "/dashboard/vehicle-checklist",
+          icon: "check",
           requiredPermission: permissions.VEHICLE_MANAGE,
         },
       ],

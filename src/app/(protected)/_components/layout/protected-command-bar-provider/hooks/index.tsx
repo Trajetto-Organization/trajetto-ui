@@ -22,6 +22,7 @@ import {
   User,
   UserPlus,
   Wallet,
+  CalendarCheckIcon,
 } from "lucide-react";
 
 import { PermissionKey, UserPermission, UserRole } from "../../../dto";
@@ -158,6 +159,15 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "abastecimento",
         icon: <Gauge className="w-5 h-5" />,
         perform: () => router.push("/admin/fuel"),
+      },
+      {
+        id: "admin_checklist",
+        name: "Checklist",
+        section: "veículo",
+        shortcut: ["v", "l"],
+        keywords: "checklist",
+        icon: <CalendarCheckIcon className="w-5 h-5" />,
+        perform: () => router.push("/admin/vehicle-checklist"),
       },
       {
         id: "admin_driver",
@@ -313,6 +323,15 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "abastecimento",
         icon: <Gauge className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fuel"),
+      },
+      {
+        id: "checklist",
+        name: "Checklist",
+        section: "veículo",
+        shortcut: ["v", "l"],
+        keywords: "checklist",
+        icon: <CalendarCheckIcon className="w-5 h-5" />,
+        perform: () => router.push("/dashboard/vehicle-checklist"),
       },
       {
         id: "driver",
@@ -476,6 +495,16 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         icon: <Gauge className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fuel"),
         requiredPermission: permissions.FUEL_MANAGE,
+      },
+      {
+        id: "checklist",
+        name: "Checklist",
+        section: "veículo",
+        shortcut: ["v", "l"],
+        keywords: "checklist",
+        icon: <CalendarCheckIcon className="w-5 h-5" />,
+        perform: () => router.push("/dashboard/vehicle-checklist"),
+        requiredPermission: permissions.VEHICLE_MANAGE,
       },
       {
         id: "driver",

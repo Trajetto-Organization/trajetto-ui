@@ -1,0 +1,164 @@
+"use client";
+
+import { Row } from "@tanstack/react-table";
+
+import { MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
+
+import { useDashboardVehicleChecklistRowActions } from "./hooks";
+import { DashboardDeleteVehicleChecklistForm } from "../dashboard-delete-vehicle-checklist-form";
+
+import { DashboardUpdateVehicleChecklistForm } from "../dashboard-update-vehicle-checklist-form";
+import { toast } from "sonner";
+
+import {
+  getPermissionName,
+  useCheckMultiplePermissions,
+} from "@/lib/check-multiple-permissions";
+import { permissions } from "@/lib/permissions";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface DataTableRowActionsProps<TData> {
+  row: Row<TData>;
+}
+
+export function DataTableVehicleChecklistRowActions<TData>({
+  row,
+}: DataTableRowActionsProps<TData>) {
+  const columnRowAction = vehicleChecklistTableSchema.parse(row.original);
+
+  const {
+    handleOpenDropdown,
+    isDropdownOpen,
+    handleCloseUpdateChecklist,
+    isUpdateChecklistOpen,
+  } = useDashboardVehicleChecklistRowActions();
+
+  const handleCopyID = (column: string) => {
+    navigator.clipboard
+      .writeText(column)
+      .then(() => {
+        toast.success("ID copiado para a área de transferência!");
+      })
+      .catch((err) => {
+        toast.error("Erro ao copiar o ID: " + err);
+      });
+  };
+
+  const permissionsRequired = useCheckMultiplePermissions([
+    {
+      key: permissions.VEHICLE_MANAGE,
+      action: "write",
+      label: getPermissionName(permissions.VEHICLE_MANAGE),
+    },
+    {
+      key: permissions.BRANCH_MANAGE,
+      action: "read",
+      label: getPermissionName(permissions.BRANCH_MANAGE),
+    },
+    {
+      key: permissions.DRIVER_MANAGE,
+      action: "read",
+      label: getPermissionName(permissions.DRIVER_MANAGE),
+    },
+  ]);
+
+  const menuActions = [
+    {
+      label: "Editar Checklist",
+      onClick: handleCloseUpdateChecklist,
+      disabled: !permissionsRequired.hasAllPermissions,
+      tooltip: !permissionsRequired.hasAllPermissions
+        ? permissionsRequired.tooltipMessage
+        : "",
+    },
+    {
+      label: "Copiar ID",
+      onClick: () => handleCopyID(columnRowAction.id),
+    },
+    {
+      label: "Copiar ID da empresa",
+      onClick: () => handleCopyID(columnRowAction.businessId as string),
+    },
+    {
+      label: "Copiar ID da filial",
+      onClick: () => handleCopyID(columnRowAction.branchId as string),
+    },
+    {
+      label: "Copiar ID do veículo",
+      onClick: () => handleCopyID(columnRowAction.vehicleId as string),
+    },
+    {
+      label: "Copiar ID do motorista",
+      onClick: () => handleCopyID(columnRowAction.driverId as string),
+    },
+  ];
+
+  return (
+    <>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={handleOpenDropdown}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+          >
+            <MoreHorizontal />
+            <span className="sr-only">Abrir Menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[160px]">
+          {menuActions.map((action) => (
+            <TooltipProvider key={action.label}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <DropdownMenuItem
+                      className="cursor-pointer 
+                      truncate block"
+                      onClick={action.onClick}
+                      disabled={action.disabled}
+                    >
+                      {action.label}
+                    </DropdownMenuItem>
+                  </div>
+                </TooltipTrigger>
+                {action.disabled && action.tooltip && (
+                  <TooltipContent className="max-w-sm">
+                    <p>{action.tooltip}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          ))}
+          <DropdownMenuSeparator />
+          <DashboardDeleteVehicleChecklistForm
+            checklistId={columnRowAction.id}
+          />
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {isUpdateChecklistOpen && (
+        <DashboardUpdateVehicleChecklistForm
+          checklistData={columnRowAction}
+          handleCloseUpdateChecklist={handleCloseUpdateChecklist}
+          isUpdateChecklistOpen={isUpdateChecklistOpen}
+        />
+      )}
+    </>
+  );
+}

@@ -72,14 +72,17 @@ const ProtectedAccountSettings = ({
   notificationCount = 0,
 }: ProtectedAccountSettingsProps): JSX.Element => {
   const [state, dispatch] = useFormState(async () => {
-    try {
-      const logOut = await handleLogoutUser();
-      disconnectSocket();
+    // IMMEDIATE logout - don't wait for anything
+    useAuthStore.getState().logout();
 
-      return logOut;
-    } finally {
-      useAuthStore.getState().logout();
-    }
+    // Fire and forget operations (no waiting to complete)
+    Promise.resolve().then(() => {
+      disconnectSocket();
+      handleLogoutUser().catch(() => {}); // Ignores errors
+    });
+
+    // Redirects immediately
+    return null;
   }, null);
 
   // Get real-time notification count and deleted notifications

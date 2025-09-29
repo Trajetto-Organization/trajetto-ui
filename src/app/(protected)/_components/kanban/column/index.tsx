@@ -70,7 +70,7 @@ const Column = ({
       type: "column",
       column,
     },
-    disabled: !hasUserPermission, // Desabilita o sortable quando não tem permissão
+    disabled: !hasUserPermission, // Disables sortable when not allowed
   });
 
   const style = {

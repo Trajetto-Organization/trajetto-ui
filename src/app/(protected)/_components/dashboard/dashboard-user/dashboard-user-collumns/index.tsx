@@ -3,12 +3,46 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Badge } from "@/components/ui/badge";
+
 import { userTableSchema } from "@/schemas/user-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableUserRowActions } from "../dashboard-data-table-row-actions";
 import { UserBusinessRole } from "../../../dto";
+
 import { formatPhoneNumber } from "@/lib/format-values";
+
+// Labels and colors for user status badges
+const twoFactorLabels = {
+  true: "Habilitado",
+  false: "Desabilitado",
+} as const;
+
+const twoFactorColors = {
+  true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  false: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+} as const;
+
+const emailVerifiedLabels = {
+  true: "Verificado",
+  false: "Não verificado",
+} as const;
+
+const emailVerifiedColors = {
+  true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  false: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+} as const;
+
+const accessRevokedLabels = {
+  true: "Acesso revogado",
+  false: "Acesso não revogado",
+} as const;
+
+const accessRevokedColors = {
+  true: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+  false: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+} as const;
 
 const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
   {
@@ -94,13 +128,19 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Verificação (2FA)" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-36">
-        {row.getValue("two_factor_enabled") === true
-          ? "Habilitado"
-          : "Desabilitado"}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const twoFactor = row.getValue("two_factor_enabled") as boolean;
+      return (
+        <Badge
+          variant="outline"
+          className={
+            twoFactorColors[String(twoFactor) as keyof typeof twoFactorColors]
+          }
+        >
+          {twoFactorLabels[String(twoFactor) as keyof typeof twoFactorLabels]}
+        </Badge>
+      );
+    },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -113,13 +153,25 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Verificação de e-mail" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-36">
-        {row.getValue("email_verified") === true
-          ? "Verificado"
-          : "Não verificado"}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const emailVerified = row.getValue("email_verified") as boolean;
+      return (
+        <Badge
+          variant="outline"
+          className={
+            emailVerifiedColors[
+              String(emailVerified) as keyof typeof emailVerifiedColors
+            ]
+          }
+        >
+          {
+            emailVerifiedLabels[
+              String(emailVerified) as keyof typeof emailVerifiedLabels
+            ]
+          }
+        </Badge>
+      );
+    },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -146,13 +198,25 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Revogação de acesso" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-36">
-        {row.getValue("access_revoked") === true
-          ? "Acesso revogado"
-          : "Acesso não revogado"}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const accessRevoked = row.getValue("access_revoked") as boolean;
+      return (
+        <Badge
+          variant="outline"
+          className={
+            accessRevokedColors[
+              String(accessRevoked) as keyof typeof accessRevokedColors
+            ]
+          }
+        >
+          {
+            accessRevokedLabels[
+              String(accessRevoked) as keyof typeof accessRevokedLabels
+            ]
+          }
+        </Badge>
+      );
+    },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },

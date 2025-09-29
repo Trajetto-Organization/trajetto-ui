@@ -3,11 +3,24 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Badge } from "@/components/ui/badge";
+
 import { driverTableSchema } from "@/schemas/driver-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableDriverRowActions } from "../data-table-row-actions";
 import { formatDate } from "@/lib/format-values";
+
+// Labels and colors for driver status badges
+const statusLabels = {
+  ACTIVE: "Ativo",
+  INACTIVE: "Inativo",
+} as const;
+
+const statusColors = {
+  ACTIVE: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  INACTIVE: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+} as const;
 
 const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
   {
@@ -48,6 +61,25 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
     ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
+    accessorKey: "status",
+    meta: {
+      title: "Status",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue("status") as keyof typeof statusLabels;
+      return (
+        <Badge variant="outline" className={statusColors[status]}>
+          {statusLabels[status] || status || "N/A"}
+        </Badge>
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -245,24 +277,6 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       return (
         <p className="truncate font-medium w-64">
           {row.getValue("complement") ?? "N/A"}
-        </p>
-      );
-    },
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "status",
-    meta: {
-      title: "Status",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("status") === "ACTIVE" ? "Ativo" : "Inativo"}
         </p>
       );
     },

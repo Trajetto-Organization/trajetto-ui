@@ -3,11 +3,35 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Badge } from "@/components/ui/badge";
+
 import { accountPayableTableSchema } from "@/schemas/account-payable-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableAccountPayableRowActions } from "../dashboard-data-table-row-actions";
 import { formatDate } from "@/lib/format-values";
+
+// Labels and colors for account payable status badges
+const statusLabels = {
+  "Parcial com atraso": "Parcial c/ Atraso",
+  Vencido: "Vencido",
+  "Pago com atraso": "Pago c/ Atraso",
+  Pago: "Pago",
+  Pendente: "Pendente",
+  Parcial: "Parcial",
+} as const;
+
+const statusColors = {
+  "Parcial com atraso":
+    "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200",
+  Vencido: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+  "Pago com atraso":
+    "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+  Pago: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  Pendente: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200",
+  Parcial:
+    "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200",
+} as const;
 
 const dashboardAccountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] =
   [
@@ -55,6 +79,23 @@ const dashboardAccountPayableTableCollumns: ColumnDef<accountPayableTableSchema>
       enableHiding: false,
     },
     {
+      accessorKey: "status",
+      meta: {
+        title: "Status",
+      },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row }) => {
+        const status = row.getValue("status") as keyof typeof statusLabels;
+        return (
+          <Badge variant="outline" className={statusColors[status]}>
+            {statusLabels[status] || status || "N/A"}
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: "issue_date",
       meta: {
         title: "Data da emissão",
@@ -63,7 +104,7 @@ const dashboardAccountPayableTableCollumns: ColumnDef<accountPayableTableSchema>
         <DataTableColumnHeader column={column} title="Data da emissão" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-64">
+        <p className="truncate font-medium w-40">
           {row.getValue("issue_date") ?? "N/A"}
         </p>
       ),
@@ -81,7 +122,7 @@ const dashboardAccountPayableTableCollumns: ColumnDef<accountPayableTableSchema>
       ),
       cell: ({ row }) => {
         return (
-          <p className="truncate font-medium w-64">
+          <p className="truncate font-medium w-40">
             {formatDate(row.getValue("due_date"), "pt-BR") ?? "N/A"}
           </p>
         );
@@ -100,7 +141,7 @@ const dashboardAccountPayableTableCollumns: ColumnDef<accountPayableTableSchema>
       ),
       cell: ({ row }) => {
         return (
-          <p className=" truncate font-medium w-24">
+          <p className=" truncate font-medium w-36">
             {formatDate(row.getValue("payment_date"), "pt-BR") ?? "N/A"}
           </p>
         );
@@ -288,22 +329,6 @@ const dashboardAccountPayableTableCollumns: ColumnDef<accountPayableTableSchema>
         return (
           <p className="truncate font-medium w-44">
             {row.getValue("registrationUserName") ?? "N/A"}
-          </p>
-        );
-      },
-    },
-    {
-      accessorKey: "status",
-      meta: {
-        title: "Status",
-      },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row }) => {
-        return (
-          <p className="truncate font-medium w-44">
-            {row.getValue("status") ?? "N/A"}
           </p>
         );
       },

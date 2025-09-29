@@ -3,11 +3,24 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Badge } from "@/components/ui/badge";
+
 import { permissionsTableSchema } from "@/schemas/permissions-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTablePermissionRowActions } from "../data-table-row-actions";
-import { permissionLabels } from "@/lib/permissions";
+import { permissionLabels as permissionTypeLabels } from "@/lib/permissions";
+
+// Labels and colors for permission badges
+const permissionStatusLabels = {
+  true: "Habilitado",
+  false: "Desabilitado",
+} as const;
+
+const permissionColors = {
+  true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  false: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+} as const;
 
 const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
   {
@@ -81,11 +94,11 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     cell: ({ row }) => {
       const permissionKey = row.getValue(
         "permission",
-      ) as keyof typeof permissionLabels;
+      ) as keyof typeof permissionTypeLabels;
 
       return (
         <p className="truncate font-medium w-36">
-          {permissionLabels[permissionKey] ?? "N/A"}
+          {permissionTypeLabels[permissionKey] ?? "N/A"}
         </p>
       );
     },
@@ -103,11 +116,23 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Leitura" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-20">
-        {row.getValue("canRead") === true ? "Habilitado" : "Desabilitado"}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const canRead = row.getValue("canRead") as boolean;
+      return (
+        <Badge
+          variant="outline"
+          className={
+            permissionColors[String(canRead) as keyof typeof permissionColors]
+          }
+        >
+          {
+            permissionStatusLabels[
+              String(canRead) as keyof typeof permissionStatusLabels
+            ]
+          }
+        </Badge>
+      );
+    },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -122,11 +147,23 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Escrita" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-20">
-        {row.getValue("canWrite") === true ? "Habilitado" : "Desabilitado"}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const canWrite = row.getValue("canWrite") as boolean;
+      return (
+        <Badge
+          variant="outline"
+          className={
+            permissionColors[String(canWrite) as keyof typeof permissionColors]
+          }
+        >
+          {
+            permissionStatusLabels[
+              String(canWrite) as keyof typeof permissionStatusLabels
+            ]
+          }
+        </Badge>
+      );
+    },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },

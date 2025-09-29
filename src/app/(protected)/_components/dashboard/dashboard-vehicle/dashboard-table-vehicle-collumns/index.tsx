@@ -3,11 +3,28 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Badge } from "@/components/ui/badge";
+
 import { vehicleTableSchema } from "@/schemas/vehicle-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableVehicleRowActions } from "../dashboard-data-table-row-actions";
 import { formatDate } from "@/lib/format-values";
+
+// Labels and colors for vehicle status badges
+const statusLabels = {
+  ACTIVE: "Ativo",
+  INACTIVE: "Inativo",
+  BLOCKED: "Bloqueado",
+  IN_ROUTE: "Em rota",
+} as const;
+
+const statusColors = {
+  ACTIVE: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  INACTIVE: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200",
+  BLOCKED: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+  IN_ROUTE: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200",
+} as const;
 
 const dashboardTableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
   {
@@ -52,6 +69,28 @@ const dashboardTableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     enableHiding: false,
   },
   {
+    accessorKey: "status",
+    meta: {
+      title: "Status do veículo",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status do veículo" />
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue("status") as keyof typeof statusLabels;
+      return (
+        <Badge variant="outline" className={statusColors[status]}>
+          {statusLabels[status] || status || "N/A"}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
     accessorKey: "description",
     meta: {
       title: "Nome do veículo",
@@ -61,7 +100,7 @@ const dashboardTableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className="truncate font-medium w-44">
+        <p className="truncate font-medium w-32">
           {row.getValue("description") ?? "N/A"}
         </p>
       );
@@ -350,36 +389,6 @@ const dashboardTableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
           {row.getValue("number_of_axles") ?? "N/A"}
         </p>
       );
-    },
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "status",
-    meta: {
-      title: "Status do veículo",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status do veículo" />
-    ),
-    cell: ({ row }) => {
-      const status = row.getValue("status");
-
-      const statusMap: Record<string, string> = {
-        ACTIVE: "Ativo",
-        INACTIVE: "Inativo",
-        BLOCKED: "Bloqueado",
-        IN_ROUTE: "Em rota",
-      };
-
-      const translatedStatus: string = status
-        ? statusMap[status as keyof typeof statusMap] || String(status)
-        : "N/A";
-
-      return <p className="truncate font-medium w-24">{translatedStatus}</p>;
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
     },
     enableSorting: false,
     enableHiding: false,

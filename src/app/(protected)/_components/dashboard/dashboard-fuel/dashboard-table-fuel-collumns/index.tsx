@@ -3,11 +3,24 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { Badge } from "@/components/ui/badge";
+
 import { fuelTableSchema } from "@/schemas/fuel-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableFuelRowActions } from "../dashboard-data-table-row-actions";
 import { formatDate } from "@/lib/format-values";
+
+// Labels and colors for odometer verification badges
+const odometerLabels = {
+  true: "Verificado",
+  false: "Não verificado",
+} as const;
+
+const odometerColors = {
+  true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  false: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+} as const;
 
 const dashboardTableFuelColumns: ColumnDef<fuelTableSchema>[] = [
   {
@@ -369,7 +382,14 @@ const dashboardTableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       const verified = row.getValue("odometer_verified") as boolean;
       return (
-        <p className="truncate font-medium w-32">{verified ? "Sim" : "Não"}</p>
+        <Badge
+          variant="outline"
+          className={
+            odometerColors[String(verified) as keyof typeof odometerColors]
+          }
+        >
+          {odometerLabels[String(verified) as keyof typeof odometerLabels]}
+        </Badge>
       );
     },
   },

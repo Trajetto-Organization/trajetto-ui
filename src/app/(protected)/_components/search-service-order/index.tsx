@@ -74,8 +74,9 @@ const SearchServiceOrder = ({
       ? `(Veículo: ${serviceOrder.vehicle.description || ""} - Placa: ${serviceOrder.vehicle.license_plate})`
       : "";
 
-    // Combine ID and date for a unique display
-    return `OS#${serviceOrder.id.substring(0, 8)} - ${formattedDate} ${vehicleInfo}`;
+    // Use the last 12 characters from UUID for maximum uniqueness and randomness
+    // This avoids UUIDv7 timestamp conflicts and ensures true randomization
+    return `OS#${serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
   };
 
   return (

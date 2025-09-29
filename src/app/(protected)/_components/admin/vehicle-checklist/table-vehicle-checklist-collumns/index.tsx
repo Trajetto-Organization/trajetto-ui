@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
@@ -25,6 +26,19 @@ const formatCondition = (condition: string): string => {
     conditionMap[condition as keyof typeof conditionMap] ?? condition ?? "N/A"
   );
 };
+
+// Labels and colors for overall condition badges
+const overallConditionLabels = {
+  approved: "Aprovado",
+  approved_with_restrictions: "Aprovado c/ Restrições",
+  rejected: "Rejeitado",
+} as const;
+
+const overallConditionColors = {
+  approved: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  approved_with_restrictions: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+  rejected: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+} as const;
 
 const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
   {
@@ -85,6 +99,26 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     },
   },
   {
+    accessorKey: "overall_condition",
+    meta: {
+      title: "Condição geral",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Condição geral" />
+    ),
+    cell: ({ row }) => {
+      const condition = row.getValue("overall_condition") as keyof typeof overallConditionLabels;
+      return (
+        <Badge variant="outline" className={overallConditionColors[condition]}>
+          {overallConditionLabels[condition] || condition || "N/A"}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+  },
+  {
     accessorKey: "current_mileage",
     meta: {
       title: "Quilometragem",
@@ -99,26 +133,6 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
           {mileage ? `${mileage.toLocaleString()} km` : "N/A"}
         </p>
       );
-    },
-  },
-  {
-    accessorKey: "overall_condition",
-    meta: {
-      title: "Condição geral",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Condição geral" />
-    ),
-    cell: ({ row }) => {
-      const condition = row.getValue("overall_condition") as string;
-      return (
-        <p className="truncate font-medium w-24">
-          {formatCondition(condition)}
-        </p>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
     },
   },
   {

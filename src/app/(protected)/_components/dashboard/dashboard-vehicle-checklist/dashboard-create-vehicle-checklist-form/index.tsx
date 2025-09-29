@@ -1338,7 +1338,7 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
     >
       <TooltipProvider delayDuration={100}>
         <Tooltip>
-          <TooltipTrigger asChild>
+          <TooltipTrigger asChild data-tutorial="create-button">
             <div>
               <DialogTrigger
                 asChild

@@ -81,37 +81,72 @@ const shouldDisplayDashboardCard = (
     };
 
     const requiredPermission = permissionMap[cardType];
-    return requiredPermission ? hasPermission(userPermissions, requiredPermission) : false;
+    return requiredPermission
+      ? hasPermission(userPermissions, requiredPermission)
+      : false;
   }
 
   return true;
 };
 
 // Helper function to check if interactive cards section should be shown
-const shouldShowInteractiveCards = (userPermissions?: UserPermissions): boolean => {
+const shouldShowInteractiveCards = (
+  userPermissions?: UserPermissions,
+): boolean => {
   if (!userPermissions) return true;
-  if (userPermissions.role === "MASTER" || userPermissions.role === "BUSINESS_ADMIN") return true;
-  
+  if (
+    userPermissions.role === "MASTER" ||
+    userPermissions.role === "BUSINESS_ADMIN"
+  )
+    return true;
+
   if (userPermissions.role === "BUSINESS_USER") {
     // Check if user has at least one permission that would show a card
-    const cardTypes = ["vehicles", "drivers", "branches", "parts", "suppliers", "serviceOrders", "users", "fines"];
-    return cardTypes.some(cardType => shouldDisplayDashboardCard(userPermissions, cardType));
+    const cardTypes = [
+      "vehicles",
+      "drivers",
+      "branches",
+      "parts",
+      "suppliers",
+      "serviceOrders",
+      "users",
+      "fines",
+    ];
+    return cardTypes.some((cardType) =>
+      shouldDisplayDashboardCard(userPermissions, cardType),
+    );
   }
-  
+
   return true;
 };
 
 // Helper function to check if quick access section should be shown
 const shouldShowQuickAccess = (userPermissions?: UserPermissions): boolean => {
   if (!userPermissions) return true;
-  if (userPermissions.role === "MASTER" || userPermissions.role === "BUSINESS_ADMIN") return true;
-  
+  if (
+    userPermissions.role === "MASTER" ||
+    userPermissions.role === "BUSINESS_ADMIN"
+  )
+    return true;
+
   if (userPermissions.role === "BUSINESS_USER") {
     // Check if user has at least one permission that would show a quick link
-    const linkTypes = ["users", "vehicles", "businesses", "serviceOrders", "drivers", "branches", "parts", "suppliers", "fines"];
-    return linkTypes.some(linkType => shouldDisplayDashboardCard(userPermissions, linkType));
+    const linkTypes = [
+      "users",
+      "vehicles",
+      "businesses",
+      "serviceOrders",
+      "drivers",
+      "branches",
+      "parts",
+      "suppliers",
+      "fines",
+    ];
+    return linkTypes.some((linkType) =>
+      shouldDisplayDashboardCard(userPermissions, linkType),
+    );
   }
-  
+
   return true;
 };
 
@@ -186,7 +221,8 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize as métricas principais do sistema de forma clara e organizada, incluindo veículos cadastrados, ordens de serviço em andamento e muito mais.
       DICA: Os cartões coloridos indicam alterações percentuais em relação ao período anterior.`,
       placement: "bottom",
-      condition: (userPermissions) => shouldShowInteractiveCards(userPermissions),
+      condition: (userPermissions) =>
+        shouldShowInteractiveCards(userPermissions),
     },
     {
       target: "[role='table']",
@@ -1332,14 +1368,94 @@ const tutorialConfigs: TutorialConfig = {
       placement: "left",
     },
   ],
+  "/dashboard/vehicle-checklist": [
+    {
+      target: "[data-tutorial='welcome']",
+      title: "Central de Checklist Veicular 📋",
+      content: `Nesta página você gerencia todos os checklists veiculares realizados para sua frota de forma completa e organizada.
+      Registre inspeções veiculares detalhadas, monitore a condição dos veículos e mantenha histórico completo de verificações de segurança e conformidade.`,
+      placement: "center",
+    },
+    {
+      target: "[data-tutorial='create-button']",
+      title: "Criar Novo Checklist Veicular 🆕",
+      content: `Para registrar um novo checklist veicular no sistema, clique neste botão.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Veículos
+      • LEITURA em Gerenciar Filiais
+      • LEITURA em Gerenciar Motoristas
+      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
+      O processo é organizado em 3 etapas:
+      1. Seleção da filial responsável
+      2. Escolha do veículo e motorista para inspeção
+      3. Preenchimento completo do checklist com fotos obrigatórias`,
+      placement: "bottom",
+    },
+    {
+      target: "[placeholder='Procurar...']",
+      title: "Buscar Checklists 🔍",
+      content: `Encontre rapidamente checklists específicos digitando placa do veículo, nome do motorista, filial ou qualquer outra informação relacionada ao checklist realizado.
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "bottom",
+    },
+    {
+      target: "[role='table']",
+      title: "Painel de Checklists Veiculares 📋",
+      content: `Visualize todos os checklists veiculares registrados no sistema com informações completas e organizadas.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Veículos
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      A tabela apresenta informações essenciais como veículo inspecionado, motorista responsável, data do checklist, quilometragem registrada, condição geral do veículo e status da inspeção.
+      DICA VISUAL: As cores das linhas indicam a condição geral: Verde = Aprovado, Amarelo = Aprovado com Restrições, Vermelho = Reprovado.`,
+      placement: "bottom",
+      spotlightPadding: 20,
+    },
+    {
+      target: "[role='table'] th:last-child",
+      title: "Ações do Checklist ⚙️",
+      content: `Nesta coluna aparecem os botões de ação (três pontos ⋮) para gerenciar cada checklist veicular registrado.
+      IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Veículos
+      • LEITURA em Gerenciar Filiais
+      • LEITURA em Gerenciar Motoristas
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      Funcionalidades disponíveis:
+      • Visualizar detalhes completos do checklist e fotos anexadas
+      • Editar informações do checklist e substituir fotos
+      • Alterar condição geral e observações
+      • Excluir permanentemente do sistema
+      ATENÇÃO: A exclusão remove permanentemente o registro e todo histórico de inspeção do veículo.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      Esta ação é útil para verificar novos checklists registrados por outros usuários em tempo real.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Personalizar a visualização para focar apenas nas informações mais relevantes
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+  ],
 };
 
-export { 
-  tutorialConfigs, 
-  canViewAdvancedFeatures, 
-  shouldShowInteractiveCards, 
+export {
+  tutorialConfigs,
+  canViewAdvancedFeatures,
+  shouldShowInteractiveCards,
   shouldShowQuickAccess,
   shouldDisplayDashboardCard,
-  hasPermission 
+  hasPermission,
 };
 export type { TutorialStep };

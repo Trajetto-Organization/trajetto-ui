@@ -7,6 +7,7 @@ interface ServiceOrderPartProps {
   business_name?: string;
   vehicleLicensePlate: string;
   vehicleDescription: string;
+  serviceOrderDescription?: string;
   serviceOrderId: string;
   serviceOrderDate: string;
   partId: string;

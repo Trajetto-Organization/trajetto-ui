@@ -8,6 +8,7 @@ interface DashboardServiceOrderPartProps {
   vehicleLicensePlate: string;
   vehicleDescription: string;
   serviceOrderId: string;
+  serviceOrderDescription?: string;
   serviceOrderDate: string;
   partId: string;
   partDescription: string;

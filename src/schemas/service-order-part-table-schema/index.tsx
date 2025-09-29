@@ -8,6 +8,7 @@ export const serviceOrderPartTableSchema = z.object({
   businessId: z.string(),
   business_name: z.string().optional(),
   serviceOrderId: z.string(),
+  serviceOrderDescription: z.string().optional(),
   serviceOrderDate: z.string(),
   vehicleLicensePlate: z.string(),
   vehicleDescription: z.string(),

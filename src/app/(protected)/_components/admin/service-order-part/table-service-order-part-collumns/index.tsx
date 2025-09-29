@@ -165,6 +165,25 @@ const tableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSchema>[] =
       },
     },
     {
+      accessorKey: "serviceOrderDescription",
+      meta: {
+        title: "Nome da ordem de serviço",
+      },
+      header: ({ column }) => (
+        <DataTableColumnHeader
+          column={column}
+          title="Nome da ordem de serviço"
+        />
+      ),
+      cell: ({ row }) => {
+        return (
+          <p className="truncate font-medium w-48">
+            {row.getValue("serviceOrderDescription") ?? "N/A"}
+          </p>
+        );
+      },
+    },
+    {
       accessorKey: "serviceOrderDate",
       meta: {
         title: "Data da ordem de serviço",

@@ -10,8 +10,6 @@ import { DashboardUpdateServiceOrderPartFormState } from "../dto";
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
 
-import { formatDate } from "@/lib/format-values";
-
 interface UseDashboardUpdateServiceOrderPartFormProps {
   state: DashboardUpdateServiceOrderPartFormState | null;
   handleCloseUpdateServiceOrderPart: () => void;
@@ -33,25 +31,11 @@ function useDashboardUpdateServiceOrderPartForm({
     "select-service-order-part" | "update-service-order-part"
   >("select-service-order-part");
 
-  const formatServiceOrderDisplayString = (serviceOrderDate: string) => {
-    const formattedDate =
-      formatDate(serviceOrderDate, "pt-BR") || serviceOrderDate;
-
-    // Get vehicle info if available
-    const vehicleInfo = serviceOrderPartData.vehicleLicensePlate
-      ? `(Veículo: ${serviceOrderPartData.vehicleDescription || ""} - Placa: ${serviceOrderPartData.vehicleLicensePlate})`
-      : "";
-
-    // Combine ID and date for a unique display
-    return `OS#${serviceOrderPartData.serviceOrderId.substring(0, 8)} - ${formattedDate} ${vehicleInfo}`;
-  };
-
   const [commandServiceOrderInputValue, setCommandServiceOrderInputValue] =
     useState<CommandServiceOrderInputValue>({
       serviceOrderId: serviceOrderPartData.serviceOrderId,
-      searchServiceOrderInputValue: formatServiceOrderDisplayString(
-        serviceOrderPartData.serviceOrderDate,
-      ),
+      searchServiceOrderInputValue:
+        serviceOrderPartData.serviceOrderDescription as string,
     });
 
   const [commandPartInputValue, setCommandPartInputValue] =
@@ -65,9 +49,8 @@ function useDashboardUpdateServiceOrderPartForm({
     if (!isUpdateServiceOrderPartOpen) {
       setCommandServiceOrderInputValue({
         serviceOrderId: serviceOrderPartData.serviceOrderId,
-        searchServiceOrderInputValue: formatServiceOrderDisplayString(
-          serviceOrderPartData.serviceOrderDate,
-        ),
+        searchServiceOrderInputValue:
+          serviceOrderPartData.serviceOrderDescription as string,
       });
 
       setCommandPartInputValue({

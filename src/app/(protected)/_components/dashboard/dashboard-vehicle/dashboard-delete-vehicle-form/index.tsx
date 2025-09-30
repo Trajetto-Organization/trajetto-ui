@@ -49,6 +49,14 @@ const DashboardDeleteVehicleFormContainer = (): JSX.Element => {
                 <strong>Validação prévia:</strong> A exclusão falhará se houver
                 ordens de serviço associadas a este veículo
               </li>
+              <li>
+                <strong>Validação prévia:</strong> A exclusão falhará se houver
+                combustíveis associados a este veículo
+              </li>
+              <li>
+                <strong>Validação prévia:</strong> A exclusão falhará se houver
+                checklists associados a este veículo
+              </li>
               <li>Verifica se o veículo pertence à empresa antes de deletar</li>
               <li>
                 Caso passe nas validações, o veículo será excluído

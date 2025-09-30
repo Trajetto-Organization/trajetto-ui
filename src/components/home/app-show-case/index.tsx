@@ -21,27 +21,24 @@ const AppShowcase = (): JSX.Element => {
 
   const phoneScreens = [
     {
-      title: "Dashboard Completo",
+      title: "Selecione seu Veículo",
       description:
-        "Acesse métricas de veículos, combustível, manutenção e equipe em uma interface intuitiva e responsiva.",
-      image:
-        "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+        "Encontre rapidamente o veículo da frota, visualize o status dos veículos e escolha entre abastecimento ou checklist.",
+      image: "/mobile-app-dashboard.jpeg",
       color: "from-blue-500/20 to-purple-500/20",
     },
     {
-      title: "Gestão de Combustível",
+      title: "Abastecimento Inteligente",
       description:
-        "Registre abastecimentos, monitore custos por litro e acompanhe o consumo em tempo real pelo mobile.",
-      image:
-        "https://images.unsplash.com/photo-1596558450268-9c27524ba856?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+        "Registre abastecimentos em segundos com foto do odômetro, calcule custos automaticamente e mantenha seu controle em dia.",
+      image: "/mobile-app-fuel.jpeg",
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
-      title: "Controle Total",
+      title: "Checklist Completo",
       description:
-        "Gerencie ordens de serviço, multas, motoristas e permissões direto do seu smartphone.",
-      image:
-        "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+        "Realize inspeções veiculares detalhadas com fotos obrigatórias, garanta a segurança da frota e documente tudo no app.",
+      image: "/mobile-app-vehicle-checklist.jpeg",
       color: "from-green-500/20 to-blue-500/20",
     },
   ];
@@ -102,7 +99,7 @@ const AppShowcase = (): JSX.Element => {
       ref={sectionRef}
     >
       <div className="max-w-7xl mx-auto">
-        <div id="app" className="text-center mb-16">
+        <div id="app" className="text-center mb-20">
           <h2
             className="text-3xl md:text-5xl font-display 
             font-bold tracking-tight mb-6"
@@ -111,9 +108,9 @@ const AppShowcase = (): JSX.Element => {
           </h2>
 
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Aplicativo completo para gerenciar sua frota onde quer que você
-            esteja. Todas as funcionalidades do sistema desktop otimizadas para
-            mobile.
+            Aplicativo operacional para motoristas e equipe de campo. <br />{" "}
+            Registre abastecimentos e realize checklists veiculares direto do
+            smartphone.
           </p>
         </div>
 
@@ -151,7 +148,7 @@ const AppShowcase = (): JSX.Element => {
                 <div
                   className="phone-frame shadow-lg overflow-hidden 
                   rounded-[32px] border-[8px] border-gray-900 
-                  relative h-[500px]"
+                  relative h-full"
                 >
                   <Image
                     src={screen.image}

@@ -51,6 +51,13 @@ const DashboardDeleteBranchFormContainer = (): JSX.Element => {
                 excluídas
               </li>
               <li>
+                Todos os combustíveis registrados nesta filial serão excluídos
+              </li>
+              <li>
+                Todos os checklist veiculares registrados nesta filial serão
+                excluídos
+              </li>
+              <li>
                 Todos os registros financeiros (contas a pagar) da filial serão
                 removidos
               </li>

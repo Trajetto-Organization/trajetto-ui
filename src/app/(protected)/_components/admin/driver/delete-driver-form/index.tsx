@@ -42,6 +42,14 @@ const DeletePartFormContainer = (): JSX.Element => {
                 multas associadas a este motorista
               </li>
               <li>
+                <strong>Validação prévia:</strong> A exclusão falhará se houver
+                combustíveis associados a este motorista
+              </li>
+              <li>
+                <strong>Validação prévia:</strong> A exclusão falhará se houver
+                checklists associados a este motorista
+              </li>
+              <li>
                 Qualquer veículo atribuído a este motorista perderá sua
                 associação
               </li>

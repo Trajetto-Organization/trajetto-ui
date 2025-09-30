@@ -42,11 +42,12 @@ const DeleteFuelTypeFormContainer = (): JSX.Element => {
                 veículos utilizando este tipo de combustível
               </li>
               <li>
-                Verifica se o tipo de combustível pertence à empresa antes de
-                deletar
+                <strong>Validação prévia:</strong> A exclusão falhará se houver
+                abastecimentos associados a este tipo de combustível
               </li>
               <li>
-                Os registros de consumo de combustível permanecerão no sistema
+                Verifica se o tipo de combustível pertence à empresa antes de
+                deletar
               </li>
               <li>
                 Esta ação será registrada nos logs de atividade do sistema

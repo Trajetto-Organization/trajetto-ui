@@ -5,7 +5,10 @@ import { generateRandomPassword } from "@/lib/generate-random-password";
 import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
-import { CommandProfileAccessInputValue } from "@/app/(protected)/_components/dto";
+import {
+  CommandProfileAccessInputValue,
+  CommandDriverInputValue,
+} from "@/app/(protected)/_components/dto";
 
 import { queryClientProps } from "@/lib/query-client-props";
 
@@ -16,11 +19,19 @@ function useDashboardCreateUserForm(
   const toastShownRef = useRef(false);
 
   const [isCreateUserForm, setIsCreateUserForm] = useState<boolean>(false);
+  const [userType, setUserType] = useState<"employee" | "driver">("employee");
 
   const [commandProfileAccessInputValue, setCommandProfileAccessInputValue] =
     useState<CommandProfileAccessInputValue>({
       searchProfileAccessInputValue: "",
       profileAccessId: "",
+    });
+
+  const [commandDriverInputValue, setCommandDriverInputValue] =
+    useState<CommandDriverInputValue>({
+      searchDriverInputValue: "",
+      driverId: "",
+      driverCnh: "",
     });
 
   const handleUpdateSearchProfileAccessInputValue = ({
@@ -35,6 +46,19 @@ function useDashboardCreateUserForm(
     setCommandProfileAccessInputValue(updateCommandInputValue);
   };
 
+  const handleUpdateSearchDriverInputValue = ({
+    searchDriverInputValue,
+    driverId,
+    driverCnh,
+  }: CommandDriverInputValue) => {
+    const updateCommandInputValue =
+      commandDriverInputValue.driverId === driverId
+        ? { searchDriverInputValue: "", driverId: "", driverCnh: "" }
+        : { searchDriverInputValue, driverId, driverCnh };
+
+    setCommandDriverInputValue(updateCommandInputValue);
+  };
+
   const handleOpenCreateUserForm = () => {
     if (isCreateUserForm) {
       formRef.current?.reset();
@@ -43,6 +67,14 @@ function useDashboardCreateUserForm(
         profileAccessId: "",
         searchProfileAccessInputValue: "",
       });
+
+      setCommandDriverInputValue({
+        searchDriverInputValue: "",
+        driverId: "",
+        driverCnh: "",
+      });
+
+      setUserType("employee");
     }
 
     setIsCreateUserForm(!isCreateUserForm);
@@ -103,7 +135,11 @@ function useDashboardCreateUserForm(
     isCreateUserForm,
     handleOpenCreateUserForm,
     handleUpdateSearchProfileAccessInputValue,
+    handleUpdateSearchDriverInputValue,
     commandProfileAccessInputValue,
+    commandDriverInputValue,
+    userType,
+    setUserType,
     formRef,
   };
 }

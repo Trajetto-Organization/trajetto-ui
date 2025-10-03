@@ -33,7 +33,10 @@ import { roleLabels, UserBusinessRole } from "../../../dto";
 import { SearchBusiness } from "../../../search-business";
 import { SearchProfileAccess } from "../../../search-profile-access";
 
+import { SearchDriver } from "../../../search-driver";
+
 import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 interface UpdateUserProps {
   userData: UserRegistrationProps;
@@ -45,6 +48,7 @@ const UpdateUserFormContainer = ({
   state,
   handleUpdateSearchBussinessInputValue,
   handleUpdateSearchProfileAccessInputValue,
+  handleUpdateSearchDriverInputValue,
   handleUpdateUserEmail,
   handleUpdateUserName,
   handleUpdateUserRole,
@@ -56,7 +60,10 @@ const UpdateUserFormContainer = ({
     userRole,
     commandBusinnessInputValue: { searchBusinessInputValue, businessId },
     commandProfileAccessInputValue: { searchProfileAccessInputValue },
+    commandDriverInputValue: { searchDriverInputValue, driverId },
   },
+  userType,
+  setUserType,
 }: UpdateUserContainerProps) => {
   const { pending } = useFormStatus();
   const { handleGeneratePassword, handleChangePassword, password } =
@@ -157,7 +164,77 @@ const UpdateUserFormContainer = ({
           </Button>
         </div>
       </div>
+
+      {userRole === "BUSINESS_USER" && searchBusinessInputValue && (
+        <div
+          className="mt-6 p-4 border rounded-lg 
+          bg-gradient-to-br from-muted/40 to-muted/20"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="user-type-switch"
+                className="text-sm font-semibold"
+              >
+                Tipo de usuário
+              </Label>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {userType === "employee"
+                  ? "Colaborador administrativo com perfil de acesso"
+                  : "Motorista operacional"}
+              </p>
+            </div>
+            <div
+              className="flex items-center gap-3 bg-background 
+              px-4 py-2.5 rounded-md border shadow-sm"
+            >
+              <span
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  userType === "employee"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                Colaborador
+              </span>
+              <Switch
+                id="user-type-switch"
+                checked={userType === "driver"}
+                onCheckedChange={(checked) => {
+                  setUserType(checked ? "driver" : "employee");
+                  if (checked) {
+                    handleUpdateSearchProfileAccessInputValue({
+                      profileAccessId: "",
+                      searchProfileAccessInputValue: "",
+                    });
+                  } else {
+                    handleUpdateSearchDriverInputValue({
+                      driverId: "",
+                      searchDriverInputValue: "",
+                      driverCnh: "",
+                    });
+                  }
+                }}
+                disabled={pending}
+              />
+              <span
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  userType === "driver"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                Motorista
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {((userRole && searchProfileAccessInputValue) ||
+        (userRole && searchDriverInputValue) ||
         searchBusinessInputValue) && (
         <div className="grid grid-cols-2 gap-4 w-full mt-6">
           {searchBusinessInputValue && (
@@ -219,6 +296,41 @@ const UpdateUserFormContainer = ({
                 </Button>
               </div>
             )}
+
+          {userRole === "BUSINESS_USER" &&
+            userType === "driver" &&
+            searchDriverInputValue && (
+              <div
+                className="flex items-center 
+                gap-2 w-full ml-auto"
+              >
+                <div
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "border-dashed truncate h-8 text-left",
+                  )}
+                >
+                  <span>Motorista:</span>
+                  <span className="w-full truncate">
+                    {searchDriverInputValue}
+                  </span>
+                </div>
+
+                <Button
+                  className="h-8 w-4"
+                  variant="ghost"
+                  onClick={() =>
+                    handleUpdateSearchDriverInputValue({
+                      driverId: "",
+                      searchDriverInputValue: "",
+                      driverCnh: "",
+                    })
+                  }
+                >
+                  <X />
+                </Button>
+              </div>
+            )}
         </div>
       )}
 
@@ -237,16 +349,31 @@ const UpdateUserFormContainer = ({
           errorBusinessId={state.updateUserError?.businessId}
         />
 
-        {userRole !== "BUSINESS_ADMIN" && searchBusinessInputValue && (
-          <SearchProfileAccess
-            errorProfileAccessId={state.updateUserError?.profileAccessId}
-            searchProfileAccessInputValue={searchProfileAccessInputValue}
-            businessId={businessId}
-            handleUpdateSearchProfileAccessInputValue={
-              handleUpdateSearchProfileAccessInputValue
-            }
-          />
-        )}
+        {userRole === "BUSINESS_USER" &&
+          searchBusinessInputValue &&
+          userType === "employee" && (
+            <SearchProfileAccess
+              errorProfileAccessId={state.updateUserError?.profileAccessId}
+              searchProfileAccessInputValue={searchProfileAccessInputValue}
+              businessId={businessId}
+              handleUpdateSearchProfileAccessInputValue={
+                handleUpdateSearchProfileAccessInputValue
+              }
+            />
+          )}
+
+        {userRole === "BUSINESS_USER" &&
+          searchBusinessInputValue &&
+          userType === "driver" && (
+            <SearchDriver
+              errorDriverId={state.updateUserError?.driverId}
+              selectedDriverId={driverId}
+              businessId={businessId}
+              handleUpdateSearchDriverInputValue={
+                handleUpdateSearchDriverInputValue
+              }
+            />
+          )}
       </div>
 
       <div className="flex justify-end mt-8 gap-2">
@@ -278,14 +405,18 @@ const UpdateUserForm = ({
     formRef,
     handleUpdateSearchBussinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
+    handleUpdateSearchDriverInputValue,
     handleUpdateUserEmail,
     handleUpdateUserName,
     handleUpdateUserRole,
     commandBusinnessInputValue,
     commandProfileAccessInputValue,
+    commandDriverInputValue,
     userEmail,
     userName,
     userRole,
+    userType,
+    setUserType,
     isDirty,
   } = useUpdateUserForm({
     state,
@@ -310,10 +441,17 @@ const UpdateUserForm = ({
             profileAccessId: "",
           };
 
+          const resetDriverInputValue = {
+            searchDriverInputValue: "",
+            driverId: "",
+            driverCnh: "",
+          };
+
           handleUpdateSearchBussinessInputValue(resetBusinessInputValue);
           handleUpdateSearchProfileAccessInputValue(
             resetProfileAccessInputValue,
           );
+          handleUpdateSearchDriverInputValue(resetDriverInputValue);
         }
 
         handleOpenUpdateUser();
@@ -335,6 +473,8 @@ const UpdateUserForm = ({
             const extraData = {
               businessId: commandBusinnessInputValue.businessId,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
+              driverId: commandDriverInputValue.driverId,
+              userType: userType,
               userId: userData.id,
             };
 
@@ -354,6 +494,9 @@ const UpdateUserForm = ({
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
             }
+            handleUpdateSearchDriverInputValue={
+              handleUpdateSearchDriverInputValue
+            }
             isDirty={isDirty}
             userValues={{
               userEmail,
@@ -361,7 +504,10 @@ const UpdateUserForm = ({
               userRole,
               commandBusinnessInputValue,
               commandProfileAccessInputValue,
+              commandDriverInputValue,
             }}
+            userType={userType}
+            setUserType={setUserType}
           />
         </form>
       </DialogScrollContent>

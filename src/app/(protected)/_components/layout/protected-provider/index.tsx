@@ -22,6 +22,7 @@ const ProtectedProvider = async ({
     id: "", // Make sure to include these fields
     businessId: "",
     email: "",
+    avatar: "",
     name: "Usuário",
     role: "user" as UserRole,
     two_factor_enabled: false,
@@ -68,6 +69,7 @@ const ProtectedProvider = async ({
           businessId: data.user.businessId as string,
           email: data.user.email,
           name: data.user.name,
+          avatar: data.user.avatar as string,
           role: data.user.role,
           two_factor_enabled: data.user.two_factor_enabled as boolean,
           permissions: data.user.profileAccess?.permissions as [],

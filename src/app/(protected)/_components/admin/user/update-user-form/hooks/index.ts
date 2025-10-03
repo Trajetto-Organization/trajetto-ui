@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
+  CommandDriverInputValue,
 } from "../../../../dto";
 
 import { UpdateUserFormState } from "../dto";
@@ -28,6 +29,8 @@ function useUpdateUserForm({
     businessId,
     profileAccessId,
     profileAccess,
+    driverId,
+    driverName,
     corporate_reason,
     email,
     name,
@@ -55,6 +58,20 @@ function useUpdateUserForm({
       profileAccessId: profileAccess === "N/A" ? "" : profileAccessId,
     });
 
+  const [commandDriverInputValue, setCommandDriverInputValue] =
+    useState<CommandDriverInputValue>({
+      searchDriverInputValue:
+        driverName && driverName !== "N/A" ? driverName : "",
+      driverId: driverId && driverId !== "N/A" ? driverId : "",
+      driverCnh: "",
+    });
+
+  const [userType, setUserType] = useState<"employee" | "driver">(
+    driverId && driverId.trim() !== "" && driverId !== "N/A"
+      ? "driver"
+      : "employee",
+  );
+
   useEffect(() => {
     if (!isUpdateUser) {
       setUserName(name);
@@ -72,12 +89,27 @@ function useUpdateUserForm({
           profileAccess === "N/A" ? "" : profileAccess,
         profileAccessId: profileAccess === "N/A" ? "" : profileAccessId,
       });
+
+      setCommandDriverInputValue({
+        searchDriverInputValue:
+          driverName && driverName !== "N/A" ? driverName : "",
+        driverId: driverId && driverId !== "N/A" ? driverId : "",
+        driverCnh: "",
+      });
+
+      setUserType(
+        driverId && driverId.trim() !== "" && driverId !== "N/A"
+          ? "driver"
+          : "employee",
+      );
     }
   }, [
     corporate_reason,
     businessId,
     profileAccessId,
     profileAccess,
+    driverId,
+    driverName,
     isUpdateUser,
     name,
     email,
@@ -92,6 +124,12 @@ function useUpdateUserForm({
       setCommandProfileAccessInputValue({
         searchProfileAccessInputValue: "",
         profileAccessId: "",
+      });
+
+      setCommandDriverInputValue({
+        searchDriverInputValue: "",
+        driverId: "",
+        driverCnh: "",
       });
     }
 
@@ -125,6 +163,19 @@ function useUpdateUserForm({
         : { searchProfileAccessInputValue, profileAccessId };
 
     setCommandProfileAccessInputValue(updateCommandInputValue);
+  };
+
+  const handleUpdateSearchDriverInputValue = ({
+    searchDriverInputValue,
+    driverId,
+    driverCnh,
+  }: CommandDriverInputValue) => {
+    const updateCommandInputValue =
+      commandDriverInputValue.driverId === driverId
+        ? { searchDriverInputValue: "", driverId: "", driverCnh: "" }
+        : { searchDriverInputValue, driverId, driverCnh };
+
+    setCommandDriverInputValue(updateCommandInputValue);
   };
 
   useEffect(() => {
@@ -186,19 +237,26 @@ function useUpdateUserForm({
     profileAccess === "N/A"
       ? commandProfileAccessInputValue.profileAccessId !== ""
       : commandProfileAccessInputValue.profileAccessId !== profileAccessId,
+    driverId && driverId !== "N/A"
+      ? commandDriverInputValue.driverId !== driverId
+      : commandDriverInputValue.driverId !== "",
   ].some(Boolean);
 
   return {
     handleUpdateSearchBussinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
+    handleUpdateSearchDriverInputValue,
     commandProfileAccessInputValue,
     commandBusinnessInputValue,
+    commandDriverInputValue,
     handleUpdateUserName,
     handleUpdateUserEmail,
     handleUpdateUserRole,
     userName,
     userEmail,
     userRole,
+    userType,
+    setUserType,
     formRef,
     isDirty,
   };

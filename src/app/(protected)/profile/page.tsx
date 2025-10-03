@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ProtectedHeading } from "../_components/layout/protected-heading";
 import PageContainer from "../_components/layout/protected-page-container";
 
+import { AvatarUpload } from "../_components/profile/account/avatar-upload";
 import { UserNameForm } from "../_components/profile/account/user-name-form";
 import { UserPasswordForm } from "../_components/profile/account/user-password-form";
 
@@ -40,6 +41,7 @@ async function getProfileData() {
   let userLogged = {
     email: "",
     name: "Usuário",
+    avatar: null as string | null,
     role: "user" as UserRole,
     two_factor_enabled: false,
     email_notifications_enabled: true,
@@ -79,6 +81,7 @@ async function getProfileData() {
       userLogged = {
         email: data.user.email,
         name: data.user.name,
+        avatar: data.user.avatar || null,
         role: data.user.role,
         two_factor_enabled: data.user.two_factor_enabled as boolean,
         email_notifications_enabled:
@@ -165,6 +168,10 @@ const Profile = async (): Promise<JSX.Element> => {
           <TabsContent value="account" className="mt-6">
             <Card>
               <CardContent className="px-6">
+                <AvatarUpload
+                  userName={userLogged.name}
+                  avatarUrl={userLogged.avatar}
+                />
                 <div className="divide-y divide-muted">
                   <UserNameForm
                     userName={userLogged.name}

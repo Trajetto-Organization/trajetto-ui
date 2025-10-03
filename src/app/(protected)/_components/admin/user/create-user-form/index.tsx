@@ -25,7 +25,9 @@ import { handleCreateUser } from "@/actions/create-user";
 import { CreateUserContainerProps, CreateUserFormState } from "./dto";
 
 import { SearchProfileAccess } from "../../../search-profile-access";
+
 import { SearchBusiness } from "../../../search-business";
+import { SearchDriver } from "../../../search-driver";
 
 import {
   useCreateUserForm,
@@ -36,8 +38,10 @@ import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import { roleLabels, UserBusinessRole } from "../../../dto";
 
-import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+
+import { cn } from "@/lib/utils";
 
 const CreateUserFormContainer = ({
   state,
@@ -46,6 +50,10 @@ const CreateUserFormContainer = ({
   handleUpdateSearchBussinessInputValue,
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
   handleUpdateSearchProfileAccessInputValue,
+  commandDriverInputValue: { searchDriverInputValue, driverId },
+  handleUpdateSearchDriverInputValue,
+  userType,
+  setUserType,
 }: CreateUserContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { handleGeneratePassword, handleChangePassword, password } =
@@ -55,7 +63,10 @@ const CreateUserFormContainer = ({
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+      <div
+        className="grid grid-cols-1 
+        md:grid-cols-2 gap-4 mt-3"
+      >
         <FormInput
           label={"Email"}
           htmlfor={"email"}
@@ -148,9 +159,81 @@ const CreateUserFormContainer = ({
         </div>
       </div>
 
+      {selectedRole === "BUSINESS_USER" && searchBusinessInputValue && (
+        <div
+          className="mt-6 p-4 border rounded-lg 
+          bg-gradient-to-br from-muted/40 to-muted/20"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="user-type-switch"
+                className="text-sm font-semibold"
+              >
+                Tipo de usuário
+              </Label>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {userType === "employee"
+                  ? "Colaborador administrativo com perfil de acesso"
+                  : "Motorista operacional"}
+              </p>
+            </div>
+            <div
+              className="flex items-center gap-3 bg-background 
+              px-4 py-2.5 rounded-md border shadow-sm"
+            >
+              <span
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  userType === "employee"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                Colaborador
+              </span>
+              <Switch
+                id="user-type-switch"
+                checked={userType === "driver"}
+                onCheckedChange={(checked) => {
+                  setUserType(checked ? "driver" : "employee");
+                  if (checked) {
+                    handleUpdateSearchProfileAccessInputValue({
+                      profileAccessId: "",
+                      searchProfileAccessInputValue: "",
+                    });
+                  } else {
+                    handleUpdateSearchDriverInputValue({
+                      driverId: "",
+                      searchDriverInputValue: "",
+                      driverCnh: "",
+                    });
+                  }
+                }}
+                disabled={pending}
+              />
+              <span
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  userType === "driver"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                Motorista
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {((selectedRole && searchProfileAccessInputValue) ||
+        (selectedRole && searchDriverInputValue) ||
         searchBusinessInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full mt-6">
+        <div
+          className="grid grid-cols-2 
+          gap-4 w-full mt-6"
+        >
           {searchBusinessInputValue && (
             <div className="flex items-center gap-2">
               <div
@@ -182,7 +265,10 @@ const CreateUserFormContainer = ({
 
           {selectedRole !== "BUSINESS_ADMIN" &&
             searchProfileAccessInputValue && (
-              <div className="flex items-center gap-2 w-full ml-auto">
+              <div
+                className="flex items-center 
+                gap-2 w-full ml-auto"
+              >
                 <div
                   className={cn(
                     buttonVariants({ variant: "outline" }),
@@ -209,6 +295,38 @@ const CreateUserFormContainer = ({
                 </Button>
               </div>
             )}
+
+          {selectedRole === "BUSINESS_USER" &&
+            userType === "driver" &&
+            searchDriverInputValue && (
+              <div className="flex items-center gap-2 w-full ml-auto">
+                <div
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "border-dashed truncate h-8 text-left",
+                  )}
+                >
+                  <span>Motorista:</span>
+                  <span className="w-full truncate">
+                    {searchDriverInputValue}
+                  </span>
+                </div>
+
+                <Button
+                  className="h-8 w-4"
+                  variant="ghost"
+                  onClick={() =>
+                    handleUpdateSearchDriverInputValue({
+                      driverId: "",
+                      searchDriverInputValue: "",
+                      driverCnh: "",
+                    })
+                  }
+                >
+                  <X />
+                </Button>
+              </div>
+            )}
         </div>
       )}
 
@@ -228,16 +346,31 @@ const CreateUserFormContainer = ({
             errorBusinessId={state.createUserError?.businessId}
           />
 
-          {selectedRole !== "BUSINESS_ADMIN" && searchBusinessInputValue && (
-            <SearchProfileAccess
-              errorProfileAccessId={state.createUserError?.profileAccessId}
-              searchProfileAccessInputValue={searchProfileAccessInputValue}
-              businessId={businessId}
-              handleUpdateSearchProfileAccessInputValue={
-                handleUpdateSearchProfileAccessInputValue
-              }
-            />
-          )}
+          {selectedRole === "BUSINESS_USER" &&
+            searchBusinessInputValue &&
+            userType === "employee" && (
+              <SearchProfileAccess
+                errorProfileAccessId={state.createUserError?.profileAccessId}
+                searchProfileAccessInputValue={searchProfileAccessInputValue}
+                businessId={businessId}
+                handleUpdateSearchProfileAccessInputValue={
+                  handleUpdateSearchProfileAccessInputValue
+                }
+              />
+            )}
+
+          {selectedRole === "BUSINESS_USER" &&
+            searchBusinessInputValue &&
+            userType === "driver" && (
+              <SearchDriver
+                errorDriverId={state.createUserError?.driverId}
+                selectedDriverId={driverId}
+                businessId={businessId}
+                handleUpdateSearchDriverInputValue={
+                  handleUpdateSearchDriverInputValue
+                }
+              />
+            )}
         </div>
       )}
 
@@ -274,6 +407,10 @@ const CreateUserForm = (): JSX.Element => {
     handleUpdateSearchBussinessInputValue,
     commandProfileAccessInputValue,
     handleUpdateSearchProfileAccessInputValue,
+    commandDriverInputValue,
+    handleUpdateSearchDriverInputValue,
+    userType,
+    setUserType,
   } = useCreateUserForm(state);
 
   return (
@@ -299,6 +436,8 @@ const CreateUserForm = (): JSX.Element => {
             const extraData = {
               businessId: commandBusinnessInputValue.businessId,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
+              driverId: commandDriverInputValue.driverId,
+              userType: userType,
             };
 
             appendExtraDataToForm(formData, extraData);
@@ -314,8 +453,14 @@ const CreateUserForm = (): JSX.Element => {
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
             }
+            handleUpdateSearchDriverInputValue={
+              handleUpdateSearchDriverInputValue
+            }
             commandBusinnessInputValue={commandBusinnessInputValue}
             commandProfileAccessInputValue={commandProfileAccessInputValue}
+            commandDriverInputValue={commandDriverInputValue}
+            userType={userType}
+            setUserType={setUserType}
           />
         </form>
       </DialogScrollContent>

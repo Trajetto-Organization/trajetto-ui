@@ -32,6 +32,7 @@ interface UserLogged {
   email: string;
   name: string;
   role: UserRole;
+  avatar?: string | null;
 }
 
 interface ProtectedAccountSettingsProps {
@@ -108,7 +109,10 @@ const ProtectedAccountSettings = ({
           data-[state=open]:text-sidebar-accent-foreground"
         >
           <Avatar className="h-8 w-8 rounded-lg">
-            <AvatarImage src={""} alt={"avatar_image"} />
+            <AvatarImage
+              src={userLogged.avatar as string}
+              alt={"avatar_image"}
+            />
             <AvatarFallback className="rounded-lg">
               {userLogged.name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -133,7 +137,10 @@ const ProtectedAccountSettings = ({
             py-1.5 text-left text-sm"
           >
             <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage src={""} alt={""} />
+              <AvatarImage
+                src={userLogged.avatar as string}
+                alt={"avatar_image"}
+              />
               <AvatarFallback className="rounded-lg">
                 {userLogged.name.slice(0, 2).toUpperCase()}
               </AvatarFallback>

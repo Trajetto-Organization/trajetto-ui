@@ -1,6 +1,7 @@
 import {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
+  CommandDriverInputValue,
 } from "../../../../dto";
 
 interface CreateUserValidationError {
@@ -10,6 +11,7 @@ interface CreateUserValidationError {
   role?: string[];
   businessId?: string[];
   profileAccessId?: string[];
+  driverId?: string[];
   createUserErrorMessage?: string;
 }
 
@@ -27,8 +29,14 @@ interface CreateUserContainerProps {
   handleUpdateSearchProfileAccessInputValue: (
     profileAccessData: CommandProfileAccessInputValue,
   ) => void;
+  handleUpdateSearchDriverInputValue: (
+    driverData: CommandDriverInputValue,
+  ) => void;
   commandBusinnessInputValue: CommandBusinessInputValue;
   commandProfileAccessInputValue: CommandProfileAccessInputValue;
+  commandDriverInputValue: CommandDriverInputValue;
+  userType: "employee" | "driver";
+  setUserType: (type: "employee" | "driver") => void;
 }
 
 export type { CreateUserContainerProps, CreateUserFormState };

@@ -281,6 +281,43 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     },
   },
   {
+    accessorKey: "driverName",
+    meta: {
+      title: "Nome do motorista",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Nome do motorista" />
+    ),
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-72">
+        {row.getValue("driverName") ?? "N/A"}
+      </p>
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+  },
+  {
+    accessorKey: "driverId",
+    meta: {
+      title: "Identificador do motorista",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Identificador do motorista"
+      />
+    ),
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-72">
+        {row.getValue("driverId") ?? "N/A"}
+      </p>
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+  },
+  {
     accessorKey: "businessId",
     meta: {
       title: "Identificador da empresa",

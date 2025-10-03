@@ -43,6 +43,7 @@ import { SidebarWrapper } from "./protected-provider/sidebar-wrapper";
 interface UserLogged {
   id?: string;
   businessId?: string;
+  avatar?: string;
   email: string;
   name: string;
   role: UserRole;
@@ -76,7 +77,7 @@ const ProtectedLayout = ({
 }: ProtectedLayoutLayoutProps): JSX.Element => {
   const roleMapping = {
     BUSINESS_ADMIN: "Administrador 👑",
-    BUSINESS_USER: "Usuário ♦️",
+    BUSINESS_USER: "Colaborador ♦️",
     MASTER: "Master 👑",
   };
 

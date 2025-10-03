@@ -13,6 +13,8 @@ export const userTableSchema = z.object({
   businessId: z.string(),
   profileAccess: z.string(),
   profileAccessId: z.string(),
+  driverId: z.string(),
+  driverName: z.string(),
   whatsapp_phone: z.string().optional().nullable(),
   created_at: z.string(),
   updated_at: z.string(),

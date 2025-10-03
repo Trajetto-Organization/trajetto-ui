@@ -4,6 +4,7 @@ import { CreateUserFormState } from "../dto";
 import {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
+  CommandDriverInputValue,
 } from "../../../../dto";
 
 import { generateRandomPassword } from "@/lib/generate-random-password";
@@ -30,6 +31,15 @@ function useCreateUserForm(state: CreateUserFormState | null) {
       profileAccessId: "",
     });
 
+  const [commandDriverInputValue, setCommandDriverInputValue] =
+    useState<CommandDriverInputValue>({
+      searchDriverInputValue: "",
+      driverId: "",
+      driverCnh: "",
+    });
+
+  const [userType, setUserType] = useState<"employee" | "driver">("employee");
+
   const handleUpdateSearchBussinessInputValue = ({
     searchBusinessInputValue,
     businessId,
@@ -37,6 +47,12 @@ function useCreateUserForm(state: CreateUserFormState | null) {
     setCommandProfileAccessInputValue({
       searchProfileAccessInputValue: "",
       profileAccessId: "",
+    });
+
+    setCommandDriverInputValue({
+      searchDriverInputValue: "",
+      driverId: "",
+      driverCnh: "",
     });
 
     const updateCommandInputValue =
@@ -59,6 +75,19 @@ function useCreateUserForm(state: CreateUserFormState | null) {
     setCommandProfileAccessInputValue(updateCommandInputValue);
   };
 
+  const handleUpdateSearchDriverInputValue = ({
+    searchDriverInputValue,
+    driverId,
+    driverCnh,
+  }: CommandDriverInputValue) => {
+    const updateCommandInputValue =
+      commandDriverInputValue.driverId === driverId
+        ? { searchDriverInputValue: "", driverId: "", driverCnh: "" }
+        : { searchDriverInputValue, driverId, driverCnh };
+
+    setCommandDriverInputValue(updateCommandInputValue);
+  };
+
   const handleOpenCreateUserForm = () => {
     if (isCreateUserForm) {
       formRef.current?.reset();
@@ -72,6 +101,14 @@ function useCreateUserForm(state: CreateUserFormState | null) {
         profileAccessId: "",
         searchProfileAccessInputValue: "",
       });
+
+      setCommandDriverInputValue({
+        driverId: "",
+        searchDriverInputValue: "",
+        driverCnh: "",
+      });
+
+      setUserType("employee");
     }
 
     setIsCreateUserForm(!isCreateUserForm);
@@ -133,8 +170,12 @@ function useCreateUserForm(state: CreateUserFormState | null) {
     handleOpenCreateUserForm,
     handleUpdateSearchBussinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
+    handleUpdateSearchDriverInputValue,
     commandProfileAccessInputValue,
     commandBusinnessInputValue,
+    commandDriverInputValue,
+    userType,
+    setUserType,
     formRef,
   };
 }

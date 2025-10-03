@@ -51,9 +51,7 @@ const useAuthStore = create<AuthState>()(
             const decoded = parseJwt(token as string);
             set({
               id: decoded.sub,
-              businessId: decoded.businessId,
               role: decoded.role,
-              permissions: decoded.permissions,
               isLoaded: true,
             });
           } catch (error) {
@@ -69,9 +67,7 @@ const useAuthStore = create<AuthState>()(
       logout: async () => {
         set({
           id: null,
-          businessId: null,
           role: null,
-          permissions: [],
           isLoaded: false,
         });
         useAuthStore.persist.clearStorage();

@@ -21,6 +21,8 @@ import { Loader, X } from "lucide-react";
 import FormInput from "@/components/custom/form-input";
 import { Label } from "@/components/ui/label";
 
+import { Switch } from "@/components/ui/switch";
+
 import { DashboardUserRegistrationProps } from "../dto";
 import {
   useUpdateGenerateRandomPassword,
@@ -37,6 +39,7 @@ import {
 import { roleLabels, UserBusinessRole } from "../../../dto";
 
 import { SearchProfileAccess } from "../../../search-profile-access";
+import { SearchDriver } from "../../../search-driver";
 
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
@@ -50,16 +53,20 @@ interface UpdateUserProps {
 const DashboardUpdateUserFormContainer = ({
   state,
   handleUpdateSearchProfileAccessInputValue,
+  handleUpdateSearchDriverInputValue,
   handleUpdateUserEmail,
   handleUpdateUserName,
   handleUpdateUserRole,
   handleOpenUpdateUser,
   isDirty,
+  userType,
+  setUserType,
   userValues: {
     userEmail,
     userName,
     userRole,
     commandProfileAccessInputValue: { searchProfileAccessInputValue },
+    commandDriverInputValue: { searchDriverInputValue, driverId },
   },
 }: DashboardUpdateUserContainerProps) => {
   const { pending } = useFormStatus();
@@ -121,6 +128,12 @@ const DashboardUpdateUserFormContainer = ({
                 profileAccessId: "",
                 searchProfileAccessInputValue: "",
               });
+
+              handleUpdateSearchDriverInputValue({
+                driverId: "",
+                searchDriverInputValue: "",
+                driverCnh: "",
+              });
             }}
           >
             <SelectTrigger>
@@ -137,7 +150,7 @@ const DashboardUpdateUserFormContainer = ({
                   <SelectItem
                     key={roleItem}
                     value={roleItem}
-                    className="cursor-pointer 
+                    className="cursor-pointer
                     hover:bg-accent hover:text-accent-foreground"
                   >
                     {roleLabels[roleItem]}
@@ -176,7 +189,7 @@ const DashboardUpdateUserFormContainer = ({
 
         {!canSetCustomPassword && (
           <div
-            className="flex items-center justify-center 
+            className="flex items-center justify-center
             p-4 bg-muted/50 rounded-lg border border-dashed"
           >
             <p className="text-sm text-muted-foreground text-center">
@@ -187,50 +200,172 @@ const DashboardUpdateUserFormContainer = ({
         )}
       </div>
 
-      {userRole &&
-        searchProfileAccessInputValue &&
-        userRole !== "BUSINESS_ADMIN" &&
-        searchProfileAccessInputValue !== "N/A" && (
-          <div className="grid grid-cols-1 gap-4 w-full mt-6">
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
+      {userRole === "BUSINESS_USER" && (
+        <div
+          className="mt-6 p-4 border rounded-lg
+          bg-gradient-to-br from-muted/40 to-muted/20"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label
+                htmlFor="user-type-switch"
+                className="text-sm font-semibold"
+              >
+                Tipo de usuário
+              </Label>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {userType === "employee"
+                  ? "Colaborador administrativo com perfil de acesso"
+                  : "Motorista operacional"}
+              </p>
+            </div>
+            <div
+              className="flex items-center gap-3 bg-background
+              px-4 py-2.5 rounded-md border shadow-sm"
+            >
+              <span
                 className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
+                  "text-sm font-medium transition-colors",
+                  userType === "employee"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
                 )}
               >
-                <span>Perfil:</span>
-                <span className="w-full truncate">
-                  {searchProfileAccessInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchProfileAccessInputValue({
-                    profileAccessId: "",
-                    searchProfileAccessInputValue: "",
-                  })
-                }
+                Colaborador
+              </span>
+              <Switch
+                id="user-type-switch"
+                checked={userType === "driver"}
+                onCheckedChange={(checked) => {
+                  setUserType(checked ? "driver" : "employee");
+                  if (checked) {
+                    handleUpdateSearchProfileAccessInputValue({
+                      profileAccessId: "",
+                      searchProfileAccessInputValue: "",
+                    });
+                  } else {
+                    handleUpdateSearchDriverInputValue({
+                      driverId: "",
+                      searchDriverInputValue: "",
+                      driverCnh: "",
+                    });
+                  }
+                }}
+                disabled={pending}
+              />
+              <span
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  userType === "driver"
+                    ? "text-foreground"
+                    : "text-muted-foreground",
+                )}
               >
-                <X />
-              </Button>
+                Motorista
+              </span>
             </div>
           </div>
-        )}
+        </div>
+      )}
+
+      {((userRole &&
+        searchProfileAccessInputValue &&
+        userRole !== "BUSINESS_ADMIN" &&
+        searchProfileAccessInputValue !== "N/A") ||
+        (userRole === "BUSINESS_USER" &&
+          userType === "driver" &&
+          searchDriverInputValue &&
+          searchDriverInputValue !== "N/A")) && (
+        <div className="grid grid-cols-1 gap-4 w-full mt-6">
+          {userRole !== "BUSINESS_ADMIN" &&
+            searchProfileAccessInputValue &&
+            searchProfileAccessInputValue !== "N/A" && (
+              <div className="flex items-center gap-2 w-full ml-auto">
+                <div
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "border-dashed truncate h-8 text-left",
+                  )}
+                >
+                  <span>Perfil:</span>
+                  <span className="w-full truncate">
+                    {searchProfileAccessInputValue}
+                  </span>
+                </div>
+
+                <Button
+                  className="h-8 w-4"
+                  variant="ghost"
+                  onClick={() =>
+                    handleUpdateSearchProfileAccessInputValue({
+                      profileAccessId: "",
+                      searchProfileAccessInputValue: "",
+                    })
+                  }
+                >
+                  <X />
+                </Button>
+              </div>
+            )}
+
+          {userRole === "BUSINESS_USER" &&
+            userType === "driver" &&
+            searchDriverInputValue &&
+            searchDriverInputValue !== "N/A" && (
+              <div className="flex items-center gap-2 w-full ml-auto">
+                <div
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "border-dashed truncate h-8 text-left",
+                  )}
+                >
+                  <span>Motorista:</span>
+                  <span className="w-full truncate">
+                    {searchDriverInputValue}
+                  </span>
+                </div>
+
+                <Button
+                  className="h-8 w-4"
+                  variant="ghost"
+                  onClick={() =>
+                    handleUpdateSearchDriverInputValue({
+                      driverId: "",
+                      searchDriverInputValue: "",
+                      driverCnh: "",
+                    })
+                  }
+                >
+                  <X />
+                </Button>
+              </div>
+            )}
+        </div>
+      )}
 
       {userRole && userRole !== "BUSINESS_ADMIN" && (
         <div className="grid mt-4 grid-cols-1 gap-4">
-          <SearchProfileAccess
-            errorProfileAccessId={state.updateUserError?.profileAccessId}
-            searchProfileAccessInputValue={searchProfileAccessInputValue}
-            businessId={businessId as string}
-            handleUpdateSearchProfileAccessInputValue={
-              handleUpdateSearchProfileAccessInputValue
-            }
-          />
+          {userType === "employee" && (
+            <SearchProfileAccess
+              errorProfileAccessId={state.updateUserError?.profileAccessId}
+              searchProfileAccessInputValue={searchProfileAccessInputValue}
+              businessId={businessId as string}
+              handleUpdateSearchProfileAccessInputValue={
+                handleUpdateSearchProfileAccessInputValue
+              }
+            />
+          )}
+
+          {userType === "driver" && (
+            <SearchDriver
+              errorDriverId={state.updateUserError?.driverId}
+              selectedDriverId={driverId}
+              businessId={businessId as string}
+              handleUpdateSearchDriverInputValue={
+                handleUpdateSearchDriverInputValue
+              }
+            />
+          )}
         </div>
       )}
 
@@ -262,13 +397,17 @@ const DashboardUpdateUserForm = ({
   const {
     formRef,
     handleUpdateSearchProfileAccessInputValue,
+    handleUpdateSearchDriverInputValue,
     handleUpdateUserEmail,
     handleUpdateUserName,
     handleUpdateUserRole,
     commandProfileAccessInputValue,
+    commandDriverInputValue,
     userEmail,
     userName,
     userRole,
+    userType,
+    setUserType,
     isDirty,
   } = useDashboardUpdateUserForm({
     state,
@@ -290,9 +429,17 @@ const DashboardUpdateUserForm = ({
             profileAccessId: "",
           };
 
+          const resetDriverInputValue = {
+            searchDriverInputValue: "",
+            driverId: "",
+            driverCnh: "",
+          };
+
           handleUpdateSearchProfileAccessInputValue(
             resetProfileAccessInputValue,
           );
+
+          handleUpdateSearchDriverInputValue(resetDriverInputValue);
         }
 
         handleOpenUpdateUser();
@@ -314,7 +461,9 @@ const DashboardUpdateUserForm = ({
             const extraData = {
               businessId: businessId as string,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
+              driverId: commandDriverInputValue.driverId,
               userId: userData.id,
+              userType: userType,
             };
 
             appendExtraDataToForm(formData, extraData);
@@ -330,12 +479,18 @@ const DashboardUpdateUserForm = ({
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
             }
+            handleUpdateSearchDriverInputValue={
+              handleUpdateSearchDriverInputValue
+            }
             isDirty={isDirty}
+            userType={userType}
+            setUserType={setUserType}
             userValues={{
               userEmail,
               userName,
               userRole,
               commandProfileAccessInputValue,
+              commandDriverInputValue,
             }}
           />
         </form>

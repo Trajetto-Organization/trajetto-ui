@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { CommandProfileAccessInputValue } from "@/app/(protected)/_components/dto";
+import {
+  CommandProfileAccessInputValue,
+  CommandDriverInputValue,
+} from "@/app/(protected)/_components/dto";
 
 import { DashboardUpdateUserFormState } from "../dto";
 import { DashboardUserRegistrationProps } from "../../dto";
@@ -21,7 +24,16 @@ function useDashboardUpdateUserForm({
   state,
   handleOpenUpdateUser,
   isUpdateUser,
-  userValues: { businessId, profileAccessId, profileAccess, email, name, role },
+  userValues: {
+    businessId,
+    profileAccessId,
+    profileAccess,
+    driverId,
+    driverName,
+    email,
+    name,
+    role,
+  },
 }: UseDashboardUpdateUserFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
@@ -38,6 +50,20 @@ function useDashboardUpdateUserForm({
       profileAccessId: profileAccess === "N/A" ? "" : profileAccessId,
     });
 
+  const [commandDriverInputValue, setCommandDriverInputValue] =
+    useState<CommandDriverInputValue>({
+      searchDriverInputValue:
+        driverName && driverName !== "N/A" ? driverName : "",
+      driverId: driverId && driverId !== "N/A" ? driverId : "",
+      driverCnh: "",
+    });
+
+  const [userType, setUserType] = useState<"employee" | "driver">(
+    driverId && driverId.trim() !== "" && driverId !== "N/A"
+      ? "driver"
+      : "employee",
+  );
+
   useEffect(() => {
     if (!isUpdateUser) {
       setUserName(name);
@@ -50,11 +76,26 @@ function useDashboardUpdateUserForm({
           profileAccess === "N/A" ? "" : profileAccess,
         profileAccessId: profileAccess === "N/A" ? "" : profileAccessId,
       });
+
+      setCommandDriverInputValue({
+        searchDriverInputValue:
+          driverName && driverName !== "N/A" ? driverName : "",
+        driverId: driverId && driverId !== "N/A" ? driverId : "",
+        driverCnh: "",
+      });
+
+      setUserType(
+        driverId && driverId.trim() !== "" && driverId !== "N/A"
+          ? "driver"
+          : "employee",
+      );
     }
   }, [
     businessId,
     profileAccessId,
     profileAccess,
+    driverId,
+    driverName,
     isUpdateUser,
     name,
     email,
@@ -83,6 +124,19 @@ function useDashboardUpdateUserForm({
         : { searchProfileAccessInputValue, profileAccessId };
 
     setCommandProfileAccessInputValue(updateCommandInputValue);
+  };
+
+  const handleUpdateSearchDriverInputValue = ({
+    searchDriverInputValue,
+    driverId,
+    driverCnh,
+  }: CommandDriverInputValue) => {
+    const updateCommandInputValue =
+      commandDriverInputValue.driverId === driverId
+        ? { searchDriverInputValue: "", driverId: "", driverCnh: "" }
+        : { searchDriverInputValue, driverId, driverCnh };
+
+    setCommandDriverInputValue(updateCommandInputValue);
   };
 
   useEffect(() => {
@@ -143,17 +197,24 @@ function useDashboardUpdateUserForm({
     profileAccess === "N/A"
       ? commandProfileAccessInputValue.profileAccessId !== ""
       : commandProfileAccessInputValue.profileAccessId !== profileAccessId,
+    driverName === "N/A" || !driverName
+      ? commandDriverInputValue.driverId !== ""
+      : commandDriverInputValue.driverId !== driverId,
   ].some(Boolean);
 
   return {
     handleUpdateSearchProfileAccessInputValue,
+    handleUpdateSearchDriverInputValue,
     commandProfileAccessInputValue,
+    commandDriverInputValue,
     handleUpdateUserName,
     handleUpdateUserEmail,
     handleUpdateUserRole,
     userName,
     userEmail,
     userRole,
+    userType,
+    setUserType,
     formRef,
     isDirty,
   };

@@ -21,6 +21,11 @@ const useHasPermission = (
     return true;
   }
 
+  // Check if permissions array exists before using .find()
+  if (!permissions || !Array.isArray(permissions)) {
+    return false;
+  }
+
   const permission = permissions.find(
     (perm) => perm.permissionKey === requiredPermissionKey,
   );

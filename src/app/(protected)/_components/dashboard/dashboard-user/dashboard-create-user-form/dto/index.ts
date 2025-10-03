@@ -1,4 +1,7 @@
-import { CommandProfileAccessInputValue } from "@/app/(protected)/_components/dto";
+import {
+  CommandProfileAccessInputValue,
+  CommandDriverInputValue,
+} from "@/app/(protected)/_components/dto";
 
 interface DashboardCreateUserValidationError {
   email?: string[];
@@ -7,6 +10,7 @@ interface DashboardCreateUserValidationError {
   role?: string[];
   businessId?: string[];
   profileAccessId?: string[];
+  driverId?: string[];
   createUserErrorMessage?: string;
 }
 
@@ -21,7 +25,13 @@ interface DashboardCreateUserContainerProps {
   handleUpdateSearchProfileAccessInputValue: (
     profileAccessData: CommandProfileAccessInputValue,
   ) => void;
+  handleUpdateSearchDriverInputValue: (
+    driverData: CommandDriverInputValue,
+  ) => void;
   commandProfileAccessInputValue: CommandProfileAccessInputValue;
+  commandDriverInputValue: CommandDriverInputValue;
+  userType: "employee" | "driver";
+  setUserType: (type: "employee" | "driver") => void;
 }
 
 export type { DashboardCreateUserContainerProps, DashboardCreateUserFormState };

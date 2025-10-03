@@ -1,6 +1,7 @@
 import {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
+  CommandDriverInputValue,
 } from "../../../../dto";
 
 interface UpdateUserValidationError {
@@ -10,6 +11,7 @@ interface UpdateUserValidationError {
   role?: string[];
   businessId?: string[];
   profileAccessId?: string[];
+  driverId?: string[];
   updateUserErrorMessage?: string;
 }
 
@@ -31,6 +33,11 @@ interface UpdateUserContainerProps {
     searchProfileAccessInputValue,
     profileAccessId,
   }: CommandProfileAccessInputValue) => void;
+  handleUpdateSearchDriverInputValue: ({
+    searchDriverInputValue,
+    driverId,
+    driverCnh,
+  }: CommandDriverInputValue) => void;
   handleOpenUpdateUser: () => void;
   isDirty: boolean;
   userValues: {
@@ -39,7 +46,10 @@ interface UpdateUserContainerProps {
     userRole: string;
     commandProfileAccessInputValue: CommandProfileAccessInputValue;
     commandBusinnessInputValue: CommandBusinessInputValue;
+    commandDriverInputValue: CommandDriverInputValue;
   };
+  userType: "employee" | "driver";
+  setUserType: (type: "employee" | "driver") => void;
 }
 
 export type { UpdateUserFormState, UpdateUserContainerProps };

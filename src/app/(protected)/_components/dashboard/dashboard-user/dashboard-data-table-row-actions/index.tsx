@@ -77,6 +77,11 @@ export function DashboardDataTableUserRowActions<TData>({
       action: "read",
       label: getPermissionName(permissions.PROFILE_ACCESS_MANAGE),
     },
+    {
+      key: permissions.DRIVER_MANAGE,
+      action: "read",
+      label: getPermissionName(permissions.DRIVER_MANAGE),
+    },
   ]);
 
   // Check if current user is BUSINESS_ADMIN to show revoke access

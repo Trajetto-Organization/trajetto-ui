@@ -35,8 +35,8 @@ function useCheckMultiplePermissions(
         // Admin roles have all permissions
         if (role === "MASTER" || role === "BUSINESS_ADMIN") {
           hasPermission = true;
-        } else {
-          // Look for the specific permission
+        } else if (permissions && Array.isArray(permissions)) {
+          // Look for the specific permission only if permissions array exists
           const permission = permissions.find(
             (perm) => perm.permissionKey === key,
           );

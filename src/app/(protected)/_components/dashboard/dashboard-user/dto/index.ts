@@ -10,6 +10,8 @@ interface DashboardUserRegistrationProps {
   businessId: string;
   profileAccess: string;
   profileAccessId: string;
+  driverId?: string;
+  driverName?: string;
   whatsapp_phone?: string | null;
   created_at: string;
   updated_at: string;

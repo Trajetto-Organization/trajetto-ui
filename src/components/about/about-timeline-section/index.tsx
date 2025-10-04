@@ -12,49 +12,40 @@ const AboutTimelineSection = () => {
 
   const timelineItems = [
     {
-      year: "2015",
-      title: "Fundação",
+      year: "2024",
+      title: "Ideação e Planejamento",
       description:
-        "Trajetto é fundada com o objetivo de modernizar a gestão de frotas no Brasil.",
+        "Início do desenvolvimento da plataforma Trajetto com foco em resolver desafios reais da gestão de frotas.",
       color: "#0ea5e9", // Sky blue
-      icon: Truck,
-      achievement: "Primeiros 10 clientes conquistados",
-    },
-    {
-      year: "2017",
-      title: "Primeira Plataforma",
-      description:
-        "Lançamento da primeira versão da plataforma Trajetto para gestão de frotas.",
-      color: "#16a34a", // Green
       icon: Code,
-      achievement: "Mais de 50 empresas utilizando o sistema",
+      achievement: "Arquitetura moderna e escalável",
     },
     {
-      year: "2019",
-      title: "Expansão Regional",
+      year: "2025",
+      title: "Lançamento Beta",
       description:
-        "Início das operações em toda América Latina com clientes em 5 países.",
-      color: "#d81b60", // Pink
-      icon: Award,
-      achievement: "Reconhecimento como startup revelação",
+        "Versão beta disponibilizada para empresas parceiras com gestão completa de veículos e motoristas.",
+      color: "#16a34a", // Green
+      icon: Truck,
+      achievement: "Primeiros clientes conquistados",
     },
     {
-      year: "2021",
-      title: "Recursos de IA",
+      year: "2025",
+      title: "Versão Oficial",
       description:
-        "Implementação de algoritmos de inteligência artificial para otimização de rotas.",
+        "Lançamento da plataforma completa com recursos avançados de controle, relatórios e automações.",
       color: "#8b5cf6", // Purple
-      icon: TrendingUp,
-      achievement: "Redução média de 27% nos custos operacionais",
+      icon: Award,
+      achievement: "Plataforma estável e em produção",
     },
     {
-      year: "2023",
-      title: "Nova Geração",
+      year: "2026",
+      title: "Evolução Contínua",
       description:
-        "Lançamento da plataforma de nova geração com recursos completos de IoT.",
+        "Expansão de recursos e melhorias constantes baseadas no feedback de nossos clientes.",
       color: "#ea580c", // Orange
-      icon: BarChart,
-      achievement: "Mais de 30.000 veículos conectados à plataforma",
+      icon: TrendingUp,
+      achievement: "Compromisso com inovação e excelência",
     },
   ];
 
@@ -63,17 +54,17 @@ const AboutTimelineSection = () => {
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
           <h2
-            className="text-3xl 
+            className="text-3xl
             md:text-4xl font-bold mb-4"
           >
-            Nossa História
+            Nossa Jornada
           </h2>
           <p
-            className="text-xl 
-            text-muted-foreground 
+            className="text-xl
+            text-muted-foreground
             max-w-2xl mx-auto"
           >
-            Uma trajetória de crescimento, inovação e excelência
+            Do papel à plataforma: construindo a gestão de frotas do futuro
           </p>
         </div>
 
@@ -174,9 +165,7 @@ const AboutTimelineSection = () => {
               <motion.div
                 key={index}
                 className={`relative mb-20 ${
-                  index % 2 === 0
-                    ? "text-right pr-16 ml-auto"
-                    : "text-left pl-16"
+                  index % 2 === 0 ? "pr-16 ml-auto" : "pl-16"
                 } w-1/2`}
                 style={{
                   transform: isInView

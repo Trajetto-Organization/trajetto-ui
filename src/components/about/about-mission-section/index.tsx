@@ -193,15 +193,15 @@ const AboutMissionSection = () => {
             >
               <div
                 className="w-12 h-12 bg-gradient-to-br from-purple-400 
-                  to-[#f06292] rounded-lg flex items-center 
-                  justify-center text-white mb-4"
+                to-[#f06292] rounded-lg flex items-center 
+                justify-center text-white mb-4"
               >
                 <Clock className="h-6 w-6" />
               </div>
-              <h4 className="text-xl font-bold mb-2">Suporte 24/7</h4>
+              <h4 className="text-xl font-bold mb-2">Suporte Dedicado</h4>
               <p className="text-muted-foreground">
-                Equipe de suporte dedicada disponível 24 horas por dia, 7 dias
-                por semana, garantindo operações sem interrupções.
+                Equipe especializada disponível de segunda a sexta, das 09h às
+                18h, com atendimento rápido e personalizado.
               </p>
             </motion.div>
           </div>

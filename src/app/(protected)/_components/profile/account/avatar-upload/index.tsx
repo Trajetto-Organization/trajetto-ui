@@ -194,6 +194,19 @@ const AvatarUpload = ({
     });
   };
 
+  // Reset all states when modal closes
+  const handleModalChange = (open: boolean) => {
+    setShowModal(open);
+
+    if (!open) {
+      // Reset all states when modal closes
+      setIsCropping(false);
+      setCroppedBlob(null);
+
+      generateCropRef.current = null;
+    }
+  };
+
   return (
     <>
       <div
@@ -251,7 +264,7 @@ const AvatarUpload = ({
       </div>
 
       {/* Modal with FileUpload */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={handleModalChange}>
         <DialogContent
           className={`sm:max-w-[560px] max-h-[90vh]
           overflow-y-auto ${!isCropping ? "p-0" : ""}`}

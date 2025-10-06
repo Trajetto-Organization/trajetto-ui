@@ -8,8 +8,8 @@ export const metadata: Metadata = {
     Acesse dashboards, relatórios, monitore sua frota em tempo real e muito mais.
   `.trim(),
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
 
   // Canonical can point to homepage or be omitted for login pages

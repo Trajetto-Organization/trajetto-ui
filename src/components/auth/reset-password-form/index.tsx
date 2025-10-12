@@ -67,7 +67,7 @@ const ResetPasswordFormContainer = ({
           disabled={pending || Boolean(error)}
           className="w-full"
         >
-          Redefinir senha
+          Redefinir Senha
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />

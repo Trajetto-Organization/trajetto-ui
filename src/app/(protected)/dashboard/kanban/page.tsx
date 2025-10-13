@@ -7,7 +7,6 @@ import PageContainer from "@/app/(protected)/_components/layout/protected-page-c
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
 import { KanbanBoardProvider } from "../../_components/kanban/board-provider";
-import { parseJwt } from "@/lib/decode-jwt";
 
 export const metadata: Metadata = {
   title: "Kanban",
@@ -24,8 +23,6 @@ const DashboardKanban = async () => {
     redirect("/login");
   }
 
-  const decodeJwt = tokenAccess ? parseJwt(tokenAccess) : null;
-
   return (
     <PageContainer>
       <div className="space-y-4">
@@ -34,11 +31,7 @@ const DashboardKanban = async () => {
           description="Monitore e gerencie os boards Kanban de todas as empresas do sistema."
         />
 
-        <KanbanBoardProvider
-          mode="dashboard"
-          showBusinessSelector={false}
-          businessId={decodeJwt.businessId}
-        />
+        <KanbanBoardProvider mode="dashboard" showBusinessSelector={false} />
       </div>
     </PageContainer>
   );

@@ -89,7 +89,7 @@ const Card = ({ card, onClick, isDragging = false }: CardProps) => {
           id: card.assignedUserId,
           name: card.assignedUser?.name,
           email: card.assignedUser?.email,
-          avatar: null,
+          avatar: card.assignedUser?.avatar,
         }
       : null);
 

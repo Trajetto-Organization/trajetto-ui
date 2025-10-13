@@ -23,6 +23,8 @@ import { KanbanRevalidationButton } from "../revalidate-button";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
+import { useAuthStore } from "@/store/auth-store";
+
 interface KanbanBoardProviderProps {
   businessId?: string;
   initialSearch?: string;
@@ -31,13 +33,17 @@ interface KanbanBoardProviderProps {
 }
 
 const KanbanBoardProvider = ({
-  businessId,
+  businessId: businessIdProp,
   initialSearch = "",
   showBusinessSelector = true,
   mode = "admin",
 }: KanbanBoardProviderProps): JSX.Element => {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Get businessId from auth store if not provided via props (for dashboard mode)
+  const storeBusinessId = useAuthStore((state) => state.businessId);
+  const businessId = businessIdProp || storeBusinessId || undefined;
 
   const [searchValue, setSearchValue] = useState(initialSearch);
   const [debouncedSearchValue, setDebouncedSearchValue] =

@@ -41,8 +41,8 @@ const BusinessSelector = ({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  const [open, setOpen] = useState<boolean>(false);
+  const [searchValue, setSearchValue] = useState<string>("");
 
   const {
     business,
@@ -110,7 +110,9 @@ const BusinessSelector = ({
 
   return (
     <div className="flex items-center gap-2 w-full sm:w-[300px]">
-      <Building2 className="h-4 w-4 text-muted-foreground" />
+      {selectedBusiness && (
+        <Building2 className="h-4 w-4 text-muted-foreground" />
+      )}
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

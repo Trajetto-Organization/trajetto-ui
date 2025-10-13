@@ -278,8 +278,8 @@ const CardModalForm = ({
     <>
       <div className="space-y-4 mt-2">
         <div
-          className="flex items-center justify-between p-4 
-          bg-muted/30 rounded-lg border"
+          className="flex items-center justify-between
+          p-4 bg-muted/30 rounded-lg border"
         >
           <div className="flex items-center space-x-3">
             <CheckCircle2
@@ -313,7 +313,7 @@ const CardModalForm = ({
           value={title}
           errorName={errorState?.title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Ex: Implementar função de login"
+          placeholder="Ex: Ordem de serviço do veículo..."
           disabled={pending || !hasUserPermission}
         />
 
@@ -559,11 +559,19 @@ const CardModal = ({
 
   const { invalidateKanbanQueries } = useKanbanQueryClient();
 
+  const [isCopied, setIsCopied] = useState<boolean>(false);
+
   const handleCopyID = (cardId: string) => {
     navigator.clipboard
       .writeText(cardId)
       .then(() => {
+        setIsCopied(true);
         toast.success("ID do card copiado para a área de transferência!");
+
+        // Reset after 2 seconds
+        setTimeout(() => {
+          setIsCopied(false);
+        }, 2000);
       })
       .catch((err) => {
         toast.error("Erro ao copiar o ID: " + err);
@@ -616,9 +624,11 @@ const CardModal = ({
       <DialogScrollContent className="max-w-xl">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <div className="space-y-1.5">
-              <DialogTitle>{isEditing ? "Editar" : "Novo"} Card</DialogTitle>
-              <DialogDescription>
+            <div className="space-y-1.5 text-left">
+              <DialogTitle className="text-left">
+                {isEditing ? "Editar" : "Novo"} Card
+              </DialogTitle>
+              <DialogDescription className="text-left">
                 {isEditing
                   ? "Edite os detalhes do card existente"
                   : "Adicione um novo card à coluna"}
@@ -627,20 +637,39 @@ const CardModal = ({
             {isEditing && card && (
               <Button
                 type="button"
-                variant="outline"
+                variant={isCopied ? "default" : "outline"}
                 size="sm"
                 onClick={() => handleCopyID(card.id)}
-                className="flex items-center gap-2 text-xs"
+                className={cn(
+                  "flex items-center gap-2 text-xs transition-all duration-300",
+                  isCopied && "bg-green-500 hover:bg-green-600 text-white",
+                )}
+                disabled={isCopied}
               >
-                <Copy className="h-3 w-3" />
-                Copiar ID
+                {isCopied ? (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 animate-in zoom-in duration-200" />
+                    Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3" />
+                    Copiar ID
+                  </>
+                )}
               </Button>
             )}
           </div>
           {isEditing && card && (
-            <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/30 rounded-md">
+            <div
+              className="text-xs text-muted-foreground 
+              mt-2 p-2 bg-muted/30 rounded-md text-left"
+            >
               <span className="font-medium">ID do Card:</span>{" "}
-              <code className="font-mono text-[10px] bg-background px-1 py-0.5 rounded">
+              <code
+                className="font-mono text-[10px] 
+                bg-background px-1 py-0.5 rounded"
+              >
                 {card.id}
               </code>
             </div>

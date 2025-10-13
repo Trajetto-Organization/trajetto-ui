@@ -23,9 +23,15 @@ import { UserRole } from "../../../../dto";
 
 interface WhatsAppSettingsProps {
   userRole?: UserRole;
+  driverId?: string | null;
 }
 
-const WhatsAppSettings = ({ userRole }: WhatsAppSettingsProps): JSX.Element => {
+const WhatsAppSettings = ({
+  userRole,
+  driverId,
+}: WhatsAppSettingsProps): JSX.Element => {
+  // Verifica se é motorista
+  const isDriver = userRole === "BUSINESS_USER" && !!driverId;
   const { settings, updateSettings } = useWhatsAppContext();
 
   // Get status of active operations
@@ -177,9 +183,11 @@ const WhatsAppSettings = ({ userRole }: WhatsAppSettingsProps): JSX.Element => {
         <div className="space-y-0.5">
           <Label htmlFor="whatsapp-toggle">Notificações WhatsApp</Label>
           <p className="text-sm text-muted-foreground">
-            {userRole === "BUSINESS_USER"
-              ? "Ative para receber alertas de ordens de serviços e outras notificações importantes"
-              : "Ative para receber alertas de multas, ordens de serviços e outras notificações importantes"}
+            {isDriver
+              ? "Ative para receber notificações importantes do sistema"
+              : userRole === "BUSINESS_USER"
+                ? "Ative para receber alertas de ordens de serviços e outras notificações importantes"
+                : "Ative para receber alertas de multas, ordens de serviços e outras notificações importantes"}
           </p>
         </div>
 

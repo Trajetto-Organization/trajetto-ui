@@ -11,13 +11,17 @@ import {
   useMatches,
 } from "kbar";
 
-import { UserPermission, UserRole } from "../../dto";
+import { PermissionKey, UserPermission, UserRole } from "../../dto";
 import { useCommandBarActions } from "./hooks";
 
 interface ProtectedCommandBarProps extends HTMLAttributes<HTMLElement> {
   user: {
     role: UserRole;
-    permissions: UserPermission[];
+    permissions?: UserPermission[];
+    driverId?: string | null;
+    profileAccess?: {
+      permissions?: { permissionKey: PermissionKey }[];
+    } | null;
   };
 }
 

@@ -39,6 +39,8 @@ export default async function middleware(req: NextRequest) {
   const decodeJwt = accessToken ? parseJwt(accessToken) : null;
   const userRole = decodeJwt?.role || "";
 
+  const driverId = decodeJwt?.driverId || null;
+
   // Checks if the route is private, using the defined prefixes
   const isDashboard = pathname.startsWith(PRIVATE_ROUTES.dashboard);
   const isAdmin = pathname.startsWith(PRIVATE_ROUTES.admin);
@@ -51,9 +53,14 @@ export default async function middleware(req: NextRequest) {
   // If it is on a public route and authenticated, redirect if it is an authentication route
   if (isPublicRoute && accessToken) {
     if (AUTH_ROUTES.includes(pathname)) {
-      const redirectPath = userRole.startsWith("MASTER")
-        ? "/admin"
-        : "/dashboard";
+      let redirectPath = "/dashboard"; // Default para BUSINESS_USER/BUSINESS_ADMIN
+
+      if (userRole.startsWith("MASTER")) {
+        redirectPath = "/admin";
+      } else if (userRole === "BUSINESS_USER" && driverId) {
+        // If you are a driver (you have a driverId in the JWT) → go to /profile
+        redirectPath = "/profile";
+      }
 
       return NextResponse.redirect(new URL(redirectPath, req.url));
     }
@@ -76,8 +83,25 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (isPrivateRoute && accessToken) {
+    // BUSINESS_USER driver: check access with JWT driverId (NO REQUEST!)
+    if (userRole === "BUSINESS_USER" && driverId) {
+      // Driver can ONLY access /profile and /notifications
+      const allowedPaths = ["/profile", "/notifications"];
+      const isAllowedPath = allowedPaths.some((path) =>
+        pathname.startsWith(path),
+      );
+
+      if (!isAllowedPath) {
+        // Any other route → redirects to /profile
+        return NextResponse.redirect(new URL("/profile", req.url));
+      }
+
+      // If you are on a permitted route, continue (without making a request)
+      return NextResponse.next();
+    }
+
+    // For other users (non-drivers), request full validation
     try {
-      // Make a lightweight request to verify user exists
       const userCheckResponse = await fetch(
         `${process.env.HTTP_REQUEST}/user/me`,
         {
@@ -96,23 +120,21 @@ export default async function middleware(req: NextRequest) {
         return await handleLogout(req, "user_revoked");
       }
 
-      // GENERAL CHECK FOR BUSINESS_USER USERS:
-      // If the user is BUSINESS_USER, he must have an access profile and a permissions array filled in.
+      // BUSINESS_USER employee: check profileAccess
       if (userRole === "BUSINESS_USER") {
-        if (
-          !user.profileAccess ||
-          !user.profileAccess.permissions ||
-          user.profileAccess.permissions.length === 0
-        ) {
+        const hasProfileAccess =
+          user.profileAccess &&
+          user.profileAccess.permissions &&
+          user.profileAccess.permissions.length > 0;
+
+        // Employee MUST have profileAccess configured
+        if (!hasProfileAccess) {
           return handleLogout(req, "no_user_permission");
         }
-      }
 
-      // SPECIFIC CHECK FOR PAGES REQUIRING PERMISSION
-      const requiredPermission = PAGE_PERMISSIONS[pathname];
-      if (requiredPermission) {
-        // If the user is BUSINESS_USER, it must have the required permission.
-        if (userRole === "BUSINESS_USER") {
+        // SPECIFIC CHECK FOR PAGES REQUIRING PERMISSION
+        const requiredPermission = PAGE_PERMISSIONS[pathname];
+        if (requiredPermission) {
           const hasPermission = user.profileAccess.permissions.some(
             (perm: Permission) => perm.permissionKey === requiredPermission,
           );

@@ -31,8 +31,25 @@ import { permissions } from "@/lib/permissions";
 interface UseCommandBarActions {
   user: {
     role: UserRole;
-    permissions: UserPermission[];
+    permissions?: UserPermission[];
+    driverId?: string | null;
+    profileAccess?: {
+      permissions?: { permissionKey: PermissionKey }[];
+    } | null;
   };
+}
+
+/**
+ * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
+ */
+function isDriver(user: UseCommandBarActions["user"]): boolean {
+  if (user.role !== "BUSINESS_USER") return false;
+  const hasDriverId = !!user.driverId;
+  const hasProfileAccess =
+    user.profileAccess &&
+    user.profileAccess.permissions &&
+    user.profileAccess.permissions.length > 0;
+  return hasDriverId && !hasProfileAccess;
 }
 
 interface Action {
@@ -604,15 +621,24 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
   let roleActions = roleActionsMap[user.role] || [];
 
   if (user.role === "BUSINESS_USER") {
-    roleActions = roleActions.filter((action) => {
-      if (!action.requiredPermission) return true;
-      return user.permissions.some(
-        (perm) => perm.permissionKey === action.requiredPermission,
-      );
-    });
+    // If it is a driver, it has no permissions → returns an empty array
+    if (isDriver(user)) {
+      roleActions = [];
+    } else {
+      // If you are an employee, filter by permissions
+      roleActions = roleActions.filter((action) => {
+        if (!action.requiredPermission) return true;
+
+        // Employees must have array permissions
+        if (!user.permissions || user.permissions.length === 0) return false;
+        return user.permissions.some(
+          (perm) => perm.permissionKey === action.requiredPermission,
+        );
+      });
+    }
   }
 
-  // Merge common shares
+  // Merge common shares (all users can access /profile and /notifications)
   const actions = [...roleActions, ...commonActions];
   return { actions };
 }

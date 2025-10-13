@@ -27,13 +27,34 @@ import {
   protectedNavItemsByRole,
 } from "../protected-navbar-items";
 
+interface User {
+  role: UserRole;
+  permissions?: PermissionKey[];
+  driverId?: string | null;
+  profileAccess?: {
+    permissions?: { permissionKey: PermissionKey }[];
+  } | null;
+}
+
 interface ProtectedSidebarMenuItemsProps {
-  userRole: UserRole;
-  userPermissions: PermissionKey[];
+  user: User;
 }
 
 interface ProtectedNavItemsProps {
   items: ProtectedNavItem[];
+}
+
+/**
+ * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
+ */
+function isDriver(user: User): boolean {
+  if (user.role !== "BUSINESS_USER") return false;
+  const hasDriverId = !!user.driverId;
+  const hasProfileAccess =
+    user.profileAccess &&
+    user.profileAccess.permissions &&
+    user.profileAccess.permissions.length > 0;
+  return hasDriverId && !hasProfileAccess;
 }
 
 const filterNavItems = (
@@ -136,14 +157,24 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
 };
 
 const ProtectedSidebarMenuItems = ({
-  userRole,
-  userPermissions,
+  user,
 }: ProtectedSidebarMenuItemsProps): JSX.Element => {
   const items =
-    protectedNavItemsByRole[userRole] ||
+    protectedNavItemsByRole[user.role] ||
     protectedNavItemsByRole["BUSINESS_USER"];
 
-  const filteredItems = filterNavItems(items, userPermissions);
+  // If you are a driver, it does not display any sidebar items (you will only have access via direct routes)
+  if (isDriver(user)) {
+    return <ProtectedNavItems items={[]} />;
+  }
+
+  // If you are an employee but do not have permissions, it also returns empty.
+  if (user.role === "BUSINESS_USER" && !user.permissions) {
+    return <ProtectedNavItems items={[]} />;
+  }
+
+  // Filter items by employee permissions
+  const filteredItems = filterNavItems(items, user.permissions || []);
   return <ProtectedNavItems items={filteredItems} />;
 };
 

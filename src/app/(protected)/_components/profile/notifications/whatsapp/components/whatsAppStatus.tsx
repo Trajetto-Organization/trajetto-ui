@@ -17,10 +17,12 @@ import { UserRole } from "@/app/(protected)/_components/dto";
 
 interface WhatsAppStatusProps {
   userRole?: UserRole;
+  driverId?: string | null;
 }
 
 const WhatsAppStatus = ({
   userRole,
+  driverId,
 }: WhatsAppStatusProps): JSX.Element | null => {
   const {
     settings,
@@ -29,8 +31,16 @@ const WhatsAppStatus = ({
     showConnectionConfirmation,
   } = useWhatsAppContext();
 
+  // Verifica se é motorista
+  const isDriver = userRole === "BUSINESS_USER" && !!driverId;
+
   // Function to get notifications based on user role
   const getNotificationsList = (role?: UserRole) => {
+    // Motoristas não recebem lista de notificações
+    if (isDriver) {
+      return [];
+    }
+
     if (role === "BUSINESS_USER") {
       return ["Alertas de manutenção", "Atualizações importantes do sistema"];
     }
@@ -122,12 +132,19 @@ const WhatsAppStatus = ({
         <Alert>
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            WhatsApp conectado com sucesso! Você receberá notificações sobre:
-            <ul className="mt-2 ml-4 list-disc text-sm">
-              {getNotificationsList(userRole).map((notification, index) => (
-                <li key={index}>{notification}</li>
-              ))}
-            </ul>
+            {isDriver ? (
+              "WhatsApp conectado com sucesso!"
+            ) : (
+              <>
+                WhatsApp conectado com sucesso! Você receberá notificações
+                sobre:
+                <ul className="mt-2 ml-4 list-disc text-sm">
+                  {getNotificationsList(userRole).map((notification, index) => (
+                    <li key={index}>{notification}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </AlertDescription>
         </Alert>
       )}

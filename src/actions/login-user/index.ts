@@ -6,6 +6,9 @@ import { validateLoginUserFormSchema } from "@/schemas/login-schema";
 import { handleAuthenticateUser } from "../user-authentication";
 import { UserRole } from "@/app/(protected)/_components/dto";
 
+import { parseJwt } from "@/lib/decode-jwt";
+import { getCookies } from "../cookies";
+
 interface LogInUserProps {
   message?: string;
   token?: string;
@@ -93,10 +96,23 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
     };
   } finally {
     if (loggedIn) {
+      // MASTER users → /admin
       if (userLoggedRole.startsWith("MASTER")) {
         redirect(`/admin`);
       }
 
+      // BUSINESS_USER: check if driver using JWT
+      if (userLoggedRole === "BUSINESS_USER") {
+        const tokenCookie = await getCookies("tkey");
+        const decodedToken = tokenCookie ? parseJwt(tokenCookie) : null;
+
+        // If has driverId in JWT → driver → /profile
+        if (decodedToken?.driverId) {
+          redirect(`/profile`);
+        }
+      }
+
+      // Default redirect for employees and BUSINESS_ADMIN
       redirect(`/dashboard`);
     }
   }

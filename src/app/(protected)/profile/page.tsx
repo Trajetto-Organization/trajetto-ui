@@ -12,8 +12,8 @@ import PageContainer from "../_components/layout/protected-page-container";
 
 import { AvatarUpload } from "../_components/profile/account/avatar-upload";
 import { UserNameForm } from "../_components/profile/account/user-name-form";
-import { UserPasswordForm } from "../_components/profile/account/user-password-form";
 
+import { UserPasswordForm } from "../_components/profile/account/user-password-form";
 import { UserTwoFactorAuthentication } from "../_components/profile/account/user-two-factor-authentication";
 
 import { WhatsAppNotifications } from "../_components/profile/notifications/whatsapp/components/whatsAppNotifications";
@@ -46,6 +46,7 @@ async function getProfileData() {
     two_factor_enabled: false,
     email_notifications_enabled: true,
     activity_notifications_enabled: true,
+    driverId: null as string | null,
   };
 
   let userResponseError = false;
@@ -88,6 +89,7 @@ async function getProfileData() {
           data.user.email_notifications_enabled ?? true,
         activity_notifications_enabled:
           data.user.activity_notifications_enabled ?? true,
+        driverId: data.user.driverId || null,
       };
     }
   } catch (error) {
@@ -194,6 +196,7 @@ const Profile = async (): Promise<JSX.Element> => {
                   <WhatsAppNotifications
                     error={userResponseError}
                     userRole={userLogged.role}
+                    driverId={userLogged.driverId}
                   />
                 )}
 

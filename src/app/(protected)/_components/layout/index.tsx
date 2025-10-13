@@ -48,6 +48,10 @@ interface UserLogged {
   name: string;
   role: UserRole;
   permissions: Permission[];
+  driverId?: string | null;
+  profileAccess?: {
+    permissions?: Permission[];
+  } | null;
 }
 
 interface ProtectedLayoutLayoutProps {
@@ -75,6 +79,9 @@ const ProtectedLayout = ({
   notificationCount = 0,
   notificationError = false,
 }: ProtectedLayoutLayoutProps): JSX.Element => {
+  // Determine if you are a driver
+  const isDriver = userLogged.role === "BUSINESS_USER" && !!userLogged.driverId;
+
   const roleMapping = {
     BUSINESS_ADMIN: "Administrador 👑",
     BUSINESS_USER: "Colaborador ♦️",
@@ -84,7 +91,7 @@ const ProtectedLayout = ({
   const company = {
     name: "Trajetto",
     logo: TrajettoLogo,
-    plan: roleMapping[userLogged.role],
+    plan: isDriver ? "Motorista 🚗" : roleMapping[userLogged.role],
   };
 
   const userPermissions = userLogged.permissions?.map(
@@ -97,8 +104,62 @@ const ProtectedLayout = ({
     permissions: userLogged.permissions,
   };
 
+  // Prepare user object for sidebar (with driverId and profileAccess)
+  const sidebarUser = {
+    role: userLogged.role,
+    permissions: userPermissions,
+    driverId: userLogged.driverId,
+    profileAccess: userLogged.profileAccess,
+  };
+
   useProtectedLayout(userLogged, error, notificationError);
 
+  // If you are a driver, render a simplified layout without a sidebar
+  if (isDriver) {
+    return (
+      <QueryClientProvider client={queryClientProps}>
+        <SidebarWrapper>
+          <div
+            className="flex h-screen 
+            w-full flex-col"
+          >
+            <header
+              className="flex h-14 shrink-0 
+              items-center justify-between 
+              gap-2 border-b px-4"
+            >
+              <div className="flex items-center gap-3">
+                <company.logo className="h-7 w-auto" />
+                <div>
+                  <span className="font-semibold text-sm">{company.name}</span>
+                  <span
+                    className="text-xs ml-2 
+                    text-muted-foreground"
+                  >
+                    {company.plan}
+                  </span>
+                </div>
+              </div>
+              <div className="w-60">
+                <ProtectedAccountSettings
+                  userLogged={userLogged}
+                  notificationCount={notificationCount}
+                />
+              </div>
+            </header>
+            <main
+              className="flex-1 px-6
+              overflow-auto pt-6 mb-7"
+            >
+              {children}
+            </main>
+          </div>
+        </SidebarWrapper>
+      </QueryClientProvider>
+    );
+  }
+
+  // Normal layout with sidebar for other users
   return (
     <QueryClientProvider client={queryClientProps}>
       <TutorialProvider userPermissions={tutorialUserPermissions}>
@@ -107,18 +168,18 @@ const ProtectedLayout = ({
           <Sidebar collapsible="icon">
             <SidebarHeader>
               <div
-                className="flex gap-2 py-2 
+                className="flex gap-2 py-2
                 text-sidebar-accent-foreground"
               >
                 <div
-                  className="flex aspect-square size-8 
-                  items-center justify-center rounded-lg 
+                  className="flex aspect-square size-8
+                  items-center justify-center rounded-lg
                   bg-sidebar-primary text-sidebar-primary-foreground"
                 >
                   <company.logo className="size-4" />
                 </div>
                 <div
-                  className="grid flex-1 text-left 
+                  className="grid flex-1 text-left
                   text-sm leading-tight"
                 >
                   <span className="truncate font-semibold">{company.name}</span>
@@ -142,10 +203,7 @@ const ProtectedLayout = ({
                       ? "Administração"
                       : "Visão geral"}
                   </SidebarGroupLabel>
-                  <ProtectedSidebarMenuItems
-                    userRole={userLogged.role}
-                    userPermissions={userPermissions}
-                  />
+                  <ProtectedSidebarMenuItems user={sidebarUser} />
                 </SidebarGroup>
               </SidebarContent>
             </ScrollArea>

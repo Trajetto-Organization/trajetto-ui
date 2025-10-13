@@ -11,11 +11,13 @@ import { UserRole } from "../../../../dto";
 interface WhatsAppNotificationsProps {
   error: boolean;
   userRole?: UserRole;
+  driverId?: string | null;
 }
 
 const WhatsAppNotifications = ({
   error,
   userRole,
+  driverId,
 }: WhatsAppNotificationsProps): JSX.Element => {
   if (error) {
     return (
@@ -34,13 +36,13 @@ const WhatsAppNotifications = ({
       <CardContent className="p-6">
         <div className="space-y-6">
           {/* Basic Settings (Enable/Disable + Phone) */}
-          <WhatsAppSettings userRole={userRole} />
+          <WhatsAppSettings userRole={userRole} driverId={driverId} />
 
           {/* Connection buttons (QR Code + Pairing Code) */}
           <WhatsAppConnection />
 
           {/* Connection Status + Progress */}
-          <WhatsAppStatus userRole={userRole} />
+          <WhatsAppStatus userRole={userRole} driverId={driverId} />
         </div>
       </CardContent>
     </Card>

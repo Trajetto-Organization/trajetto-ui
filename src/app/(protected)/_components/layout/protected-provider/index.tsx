@@ -19,7 +19,7 @@ const ProtectedProvider = async ({
   }
 
   let userLogged = {
-    id: "", // Make sure to include these fields
+    id: "",
     businessId: "",
     email: "",
     avatar: "",
@@ -27,6 +27,8 @@ const ProtectedProvider = async ({
     role: "user" as UserRole,
     two_factor_enabled: false,
     permissions: [],
+    driverId: null as string | null,
+    profileAccess: null as { permissions?: any[] } | null,
   };
 
   let userResponseError = false;
@@ -73,6 +75,8 @@ const ProtectedProvider = async ({
           role: data.user.role,
           two_factor_enabled: data.user.two_factor_enabled as boolean,
           permissions: data.user.profileAccess?.permissions as [],
+          driverId: data.user.driverId || null,
+          profileAccess: data.user.profileAccess || null,
         };
 
         // A single call to fetch notifications and calculate count
@@ -118,6 +122,8 @@ const ProtectedProvider = async ({
       user={{
         role: userLogged.role,
         permissions: userLogged.permissions,
+        driverId: userLogged.driverId,
+        profileAccess: userLogged.profileAccess,
       }}
     >
       <SyncNotificationsProvider serverNotificationIds={serverNotificationIds}>

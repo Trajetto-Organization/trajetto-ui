@@ -4,7 +4,7 @@ import { Table } from "@tanstack/react-table";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { useSearch } from "@/lib/search-params";
 
@@ -17,14 +17,25 @@ import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalida
 interface DashboardDataTableToolbarProps<TData> {
   table: Table<TData>;
   error: boolean;
+  isLoading?: boolean;
+  setIsLoading?: (loading: boolean) => void;
 }
 
 export function DashboardProfileAccessToolbar<TData>({
   table,
   error,
+  isLoading,
+  setIsLoading,
 }: DashboardDataTableToolbarProps<TData>) {
-  const { handleSearch, searchParams } = useSearch();
+  const { handleSearch, searchParams, isPending } = useSearch();
   const isFiltered = table.getState().columnFilters.length > 0;
+
+  const handleSearchWithLoading = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsLoading?.(true);
+    handleSearch(event);
+  };
 
   const filters = [{ key: "name", title: "Nome do perfil" }];
 
@@ -37,12 +48,14 @@ export function DashboardProfileAccessToolbar<TData>({
         className="flex flex-wrap flex-1 
         items-center gap-2 w-full"
       >
-        <Input
+        <SearchInputWithLoading
           placeholder="Procurar..."
           defaultValue={searchParams.get("search") || ""}
-          onChange={handleSearch}
-          className="h-8 flex-grow min-w-[150px] sm:max-w-[250px]"
+          onChange={handleSearchWithLoading}
           disabled={error}
+          isLoading={isPending || isLoading}
+          wrapperClassName="w-full sm:w-auto 
+          sm:min-w-[270px] sm:max-w-[270px]"
         />
 
         {filters.map(({ key, title }) => {
@@ -67,7 +80,10 @@ export function DashboardProfileAccessToolbar<TData>({
         )}
 
         {!error && (
-          <div className="ml-auto flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
+          <div
+            className="ml-auto flex flex-col sm:w-auto
+            sm:flex-row gap-2 sm:gap-4 w-full"
+          >
             <DataTableRevalidate
               revalidateData="update-profile-access"
               rateLimit={{

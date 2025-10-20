@@ -15,6 +15,11 @@ import { DashboardVehicleChecklistToolbar } from "../../_components/dashboard/da
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { vehicleChecklistStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { VehicleChecklistActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -112,12 +117,29 @@ const VehicleChecklist = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalChecklists: meta.total,
+    goodCondition: vehicleChecklists.filter(
+      (vc) => vc.overall_condition === "approved",
+    ).length,
+    regularCondition: vehicleChecklists.filter(
+      (vc) => vc.overall_condition === "approved_with_restrictions",
+    ).length,
+    badCondition: vehicleChecklists.filter(
+      (vc) => vc.overall_condition === "rejected",
+    ).length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Checklist Veicular"}
         description="Gerencie os checklists veiculares cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <VehicleChecklistActions />
+      <PageStats stats={vehicleChecklistStats} data={statsData} columns={4} />
 
       <DataTable
         data={vehicleChecklists}

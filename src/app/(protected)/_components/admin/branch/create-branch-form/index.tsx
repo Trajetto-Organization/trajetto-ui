@@ -144,7 +144,7 @@ const CreateBranchForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateBranchForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Filial
         </Button>
       </DialogTrigger>

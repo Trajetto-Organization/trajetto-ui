@@ -15,6 +15,11 @@ import { DashboardFuelToolbar } from "../../_components/dashboard/dashboard-fuel
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { fuelStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { FuelActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -108,12 +113,47 @@ const Fuel = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalRefuelings: meta.total,
+    totalLiters:
+      fuel
+        .reduce((sum, f) => {
+          // liters_amount comes as string "10,500" - convert to number
+          const liters = parseFloat(f.liters_amount.replace(",", "."));
+          return sum + (isNaN(liters) ? 0 : liters);
+        }, 0)
+        .toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 3,
+        }) + " L",
+    totalAmount: fuel
+      .reduce((sum, f) => {
+        // total_amount is already formatted - remove formatting
+        const cleanValue = (f.total_amount || "0")
+          .replace(/[^\d,.-]/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+
+        const amount = parseFloat(cleanValue);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0)
+      .toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
+    verifiedOdometer: fuel.filter((f) => f.odometer_verified === true).length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Abastecimento"}
         description="Gerencie os abastecimentos cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <FuelActions hasData={fuel.length > 0} />
+      <PageStats stats={fuelStats} data={statsData} columns={4} />
 
       <DataTable
         data={fuel}

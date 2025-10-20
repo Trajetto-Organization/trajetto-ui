@@ -325,7 +325,7 @@ const CreateServiceOrderPartForm = (): JSX.Element => {
       onOpenChange={handleCloseDialog}
     >
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Ordem de Serviço por Peça
         </Button>
       </DialogTrigger>

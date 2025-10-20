@@ -665,7 +665,7 @@ const CreateVehicleForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateVehicleForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild data-tutorial="create-button">
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Veículo
         </Button>
       </DialogTrigger>

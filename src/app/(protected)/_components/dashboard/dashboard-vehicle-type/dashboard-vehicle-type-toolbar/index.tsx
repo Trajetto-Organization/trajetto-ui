@@ -1,7 +1,7 @@
 "use client";
 
 import { Table } from "@tanstack/react-table";
-import { Input } from "@/components/ui/input";
+import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { useSearch } from "@/lib/search-params";
 import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
@@ -12,13 +12,24 @@ import { DashboardCreateVehicleTypeForm } from "../dashboard-create-vehicle-type
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   error: boolean;
+  isLoading?: boolean;
+  setIsLoading?: (loading: boolean) => void;
 }
 
 export function DashboardVehicleTypeToolbar<TData>({
   table,
   error,
+  isLoading,
+  setIsLoading,
 }: DataTableToolbarProps<TData>) {
-  const { handleSearch, searchParams } = useSearch();
+  const { handleSearch, searchParams, isPending } = useSearch();
+
+  const handleSearchWithLoading = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsLoading?.(true);
+    handleSearch(event);
+  };
 
   return (
     <div
@@ -29,12 +40,14 @@ export function DashboardVehicleTypeToolbar<TData>({
         className="flex flex-wrap flex-1 
         items-center gap-2 w-full"
       >
-        <Input
+        <SearchInputWithLoading
           placeholder="Procurar..."
           defaultValue={searchParams.get("search") || ""}
-          onChange={handleSearch}
-          className="h-8 flex-grow min-w-[150px] sm:max-w-[250px]"
+          onChange={handleSearchWithLoading}
           disabled={error}
+          isLoading={isPending || isLoading}
+          wrapperClassName="w-full sm:w-auto 
+          sm:min-w-[270px] sm:max-w-[270px]"
         />
 
         {!error && (

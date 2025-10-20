@@ -81,7 +81,7 @@ const CreateBusinessForm = (): JSX.Element => {
       onOpenChange={handleOpenCreateBusinessForm}
     >
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Empresa
         </Button>
       </DialogTrigger>

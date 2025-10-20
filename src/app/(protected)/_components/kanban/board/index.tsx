@@ -102,10 +102,10 @@ const KanbanBoard = ({
 
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
 
-  // Ref para o observer do scroll infinito
+  // Ref for the infinite scroll observer
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Atualizar board quando receber novos dados
+  // Update board when receiving new data
   useEffect(() => {
     setBoard({
       ...initialBoard,
@@ -494,6 +494,7 @@ const KanbanBoard = ({
   const resetDragState = () => {
     setActiveCard(null);
     setActiveColumn(null);
+
     setDraggedItemType(null);
     setOriginalPositions({});
   };
@@ -501,6 +502,7 @@ const KanbanBoard = ({
   const handleCardClick = (card: KanbanCard) => {
     setSelectedCard(card);
     setSelectedColumnId(card.columnId);
+
     setIsCardModalOpen(true);
   };
 
@@ -537,7 +539,7 @@ const KanbanBoard = ({
               ))}
             </SortableContext>
 
-            {/* Trigger para carregar mais colunas */}
+            {/* Trigger to load more columns */}
             {hasMore && (
               <div
                 ref={lastElementRef}
@@ -545,7 +547,10 @@ const KanbanBoard = ({
                 items-center justify-center h-96"
               >
                 {loading && (
-                  <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader
+                    className="h-6 w-6 animate-spin 
+                    text-muted-foreground"
+                  />
                 )}
               </div>
             )}

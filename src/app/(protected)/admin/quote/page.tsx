@@ -15,6 +15,11 @@ import { QuoteToolbar } from "../../_components/admin/quote/quote-toolbar";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { quoteStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { QuoteActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -108,12 +113,23 @@ const Quote = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalQuotes: meta.total,
+    pendingQuotes: quotes.filter((q) => q.status === "PENDING").length,
+    contactedQuotes: quotes.filter((q) => q.status === "CONTACTED").length,
+    convertedQuotes: quotes.filter((q) => q.status === "CONVERTED").length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Orçamentos"}
         description="Gerencie todas as solicitações de orçamento e acompanhe o processo de vendas."
       />
+
+      <QuoteActions />
+      <PageStats stats={quoteStats} data={statsData} columns={4} />
 
       <DataTable
         data={quotes}

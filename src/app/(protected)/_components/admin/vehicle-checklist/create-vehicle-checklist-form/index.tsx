@@ -1356,7 +1356,7 @@ const CreateVehicleChecklistForm = (): JSX.Element => {
       onOpenChange={handleCloseDialog}
     >
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Checklist
         </Button>
       </DialogTrigger>

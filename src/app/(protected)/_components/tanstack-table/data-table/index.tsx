@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import {
   ColumnDef,
@@ -28,6 +29,8 @@ import { DataTablePagination } from "../data-table-pagination";
 import { useTable } from "../hooks";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
+import { TableLoadingOverlay } from "../table-loading-overlay";
+
 interface UserDataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
@@ -50,6 +53,22 @@ export function DataTable<TData, TValue>({
   responseError,
   toolbar,
 }: UserDataTableProps<TData, TValue>) {
+  const searchParams = useSearchParams();
+
+  const [isTableLoading, setIsTableLoading] = useState<boolean>(false);
+  const [prevParams, setPrevParams] = useState(searchParams.toString());
+
+  // Detect when search params change to show loading state
+  useEffect(() => {
+    const currentParams = searchParams.toString();
+
+    if (currentParams !== prevParams) {
+      // Params changed, data has arrived
+      setIsTableLoading(false);
+      setPrevParams(currentParams);
+    }
+  }, [searchParams, prevParams, data]);
+
   const {
     sorting,
     columnFilters,
@@ -95,11 +114,16 @@ export function DataTable<TData, TValue>({
         ? React.cloneElement(toolbar, {
             table,
             error: responseError.error,
+            isLoading: isTableLoading,
+            setIsLoading: setIsTableLoading,
           })
         : null}
 
       <ScrollArea className="rounded-md border">
         <div className="max-h-[600px] relative">
+          {isTableLoading && (
+            <TableLoadingOverlay columnCount={columns.length} rowCount={5} />
+          )}
           <UITable>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

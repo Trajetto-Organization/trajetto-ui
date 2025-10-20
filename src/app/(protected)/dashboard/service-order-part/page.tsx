@@ -16,6 +16,11 @@ import { DashboardServiceOrderPartProps } from "../../_components/dashboard/dash
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { serviceOrderPartStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { ServiceOrderPartActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -113,12 +118,52 @@ const ServiceOrderPart = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalItems: meta.total,
+    withDiscount: serviceOrderPart.filter(
+      (sop) => sop.discount_percentage !== "0%",
+    ).length,
+    totalValue: serviceOrderPart
+      .reduce((sum, sop) => {
+        const cleanValue = (sop.totalWithDiscount || "0")
+          .replace(/[^\d,.-]/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        const value = parseFloat(cleanValue);
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0)
+      .toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
+    averageValue: (() => {
+      if (serviceOrderPart.length === 0) return "R$ 0,00";
+      const total = serviceOrderPart.reduce((sum, sop) => {
+        const cleanValue = (sop.totalWithDiscount || "0")
+          .replace(/[^\d,.-]/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        const value = parseFloat(cleanValue);
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0);
+      const average = total / serviceOrderPart.length;
+      return average.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+    })(),
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Ordem de serviço por peça"}
         description="Gerencie as ordens de serviços das peças cadastradas, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <ServiceOrderPartActions />
+      <PageStats stats={serviceOrderPartStats} data={statsData} columns={4} />
 
       <DataTable
         data={serviceOrderPart}

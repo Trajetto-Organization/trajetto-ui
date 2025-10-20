@@ -15,6 +15,11 @@ import { BranchProps } from "../../_components/admin/branch/dto";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { branchStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { BranchActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -110,12 +115,28 @@ const Branch = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalBranches: meta.total,
+    withErpCode: branch.filter((b) => b.erp_code && b.erp_code !== "N/A")
+      .length,
+    withFantasyName: branch.filter(
+      (b) => b.fantasy_name && b.fantasy_name.trim() !== "",
+    ).length,
+    withComplement: branch.filter(
+      (b) => b.complement && b.complement.trim() !== "",
+    ).length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Filiais"}
         description="Controle centralizado de unidades regionais. Cadastre, monitore e gerencie suas filiais com precisão e eficiência."
       />
+
+      <BranchActions />
+      <PageStats stats={branchStats} data={statsData} columns={4} />
 
       <DataTable
         data={branch}

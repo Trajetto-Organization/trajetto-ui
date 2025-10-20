@@ -1,7 +1,7 @@
-import ProtectedTablePageLoading from "../../_components/loading-page/protected-table-page-loading";
+import { ProtectedStatsPageLoading } from "../../_components/loading-page/protected-stats-page-loading";
 
 const Loading = (): JSX.Element => {
-  return <ProtectedTablePageLoading />;
+  return <ProtectedStatsPageLoading />;
 };
 
 export default Loading;

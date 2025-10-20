@@ -4,18 +4,18 @@ import { Table } from "@tanstack/react-table";
 import { FileText, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { useSearch } from "@/lib/search-params";
 
 import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-faceted-filter";
 import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
 
-import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
-
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   error: boolean;
+  isLoading?: boolean;
+  setIsLoading?: (loading: boolean) => void;
 }
 
 const statusOptions = [
@@ -71,73 +71,70 @@ const fleetSizeOptions = [
 export function QuoteToolbar<TData>({
   table,
   error,
+  isLoading,
+  setIsLoading,
 }: DataTableToolbarProps<TData>) {
-  const { handleSearch, searchParams } = useSearch();
+  const { handleSearch, searchParams, isPending } = useSearch();
   const isFiltered = table.getState().columnFilters.length > 0;
 
+  const handleSearchWithLoading = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsLoading?.(true);
+    handleSearch(event);
+  };
+
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
-      <div className="flex flex-wrap flex-1 items-center gap-2 w-full">
-        <Input
-          placeholder="Buscar por nome, empresa, email..."
-          defaultValue={searchParams.get("search") || ""}
-          onChange={handleSearch}
-          className="h-8 flex-grow min-w-[150px] sm:max-w-[300px]"
-          disabled={error}
+    <div className="flex flex-wrap items-center gap-2 w-full">
+      <SearchInputWithLoading
+        placeholder="Procurar..."
+        defaultValue={searchParams.get("search") || ""}
+        onChange={handleSearchWithLoading}
+        disabled={error}
+        isLoading={isPending || isLoading}
+        wrapperClassName="w-full sm:w-auto 
+        sm:min-w-[270px] sm:max-w-[270px]"
+      />
+
+      {table.getColumn("status") && (
+        <DataTableFacetedFilter
+          column={table.getColumn("status")}
+          title="Status"
+          options={statusOptions}
         />
+      )}
 
-        {table.getColumn("status") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("status")}
-            title="Status"
-            options={statusOptions}
-          />
-        )}
+      {table.getColumn("fleet_size") && (
+        <DataTableFacetedFilter
+          column={table.getColumn("fleet_size")}
+          title="Tamanho da Frota"
+          options={fleetSizeOptions}
+        />
+      )}
 
-        {table.getColumn("fleet_size") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("fleet_size")}
-            title="Tamanho da Frota"
-            options={fleetSizeOptions}
-          />
-        )}
+      {table.getColumn("company") && (
+        <DataTableFacetedFilter
+          column={table.getColumn("company")}
+          title="Empresa"
+        />
+      )}
 
-        {table.getColumn("company") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("company")}
-            title="Empresa"
-          />
-        )}
+      {isFiltered && (
+        <Button
+          variant="ghost"
+          onClick={() => table.resetColumnFilters()}
+          className="h-8 px-2 lg:px-3 flex items-center gap-1"
+        >
+          Resetar
+          <X className="h-4 w-4" />
+        </Button>
+      )}
 
-        {isFiltered && (
-          <Button
-            variant="ghost"
-            onClick={() => table.resetColumnFilters()}
-            className="h-8 px-2 flex items-center gap-1 justify-center"
-          >
-            Resetar
-            <X width={17} />
-          </Button>
-        )}
-
-        {!error && (
-          <div
-            className="ml-auto flex flex-col sm:flex-row 
-            gap-2 sm:gap-4 w-full sm:w-auto"
-          >
-            <DataTableRevalidate
-              revalidateData="update-quote-status"
-              rateLimit={{
-                storageKey: "quote",
-                maxClicks: 3,
-                timeWindowMs: 30000,
-                cooldownTimeMs: 15000,
-              }}
-            />
-            <DataTableViewOptions table={table} />
-          </div>
-        )}
-      </div>
+      {!error && (
+        <div className="w-full sm:w-auto sm:ml-auto">
+          <DataTableViewOptions table={table} />
+        </div>
+      )}
     </div>
   );
 }

@@ -423,7 +423,7 @@ const CreateAccountPayableForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateAccountPayableForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Conta a Pagar
         </Button>
       </DialogTrigger>

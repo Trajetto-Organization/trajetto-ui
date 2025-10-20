@@ -15,6 +15,11 @@ import { VehicleToolbar } from "../../_components/admin/vehicle/vehicle-toolbar"
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { vehicleStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { VehicleActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -107,12 +112,25 @@ const Vehicle = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalVehicles: meta.total,
+    activeVehicles: vehicle.filter((v) => v.status === "ACTIVE").length,
+    inRoute: vehicle.filter((v) => v.status === "IN_ROUTE").length,
+    outOfOperation: vehicle.filter(
+      (v) => v.status === "INACTIVE" || v.status === "BLOCKED",
+    ).length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Veículos"}
         description="Gerencie os veículos cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <VehicleActions />
+      <PageStats stats={vehicleStats} data={statsData} columns={4} />
 
       <DataTable
         data={vehicle}

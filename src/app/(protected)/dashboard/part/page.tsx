@@ -15,6 +15,11 @@ import { DashboardPartToolbar } from "../../_components/dashboard/dashboard-part
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { partStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { PartActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -111,12 +116,50 @@ const Part = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalParts: meta.total,
+    withSupplier: part.filter((p) => p.supplierId !== null).length,
+    averagePrice: (() => {
+      if (part.length === 0) return "R$ 0,00";
+      const total = part.reduce((sum, p) => {
+        const cleanValue = (p.unit_price || "0")
+          .replace(/[^\d,.-]/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        const price = parseFloat(cleanValue);
+        return sum + (isNaN(price) ? 0 : price);
+      }, 0);
+      const average = total / part.length;
+      return average.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+    })(),
+    totalValue: part
+      .reduce((sum, p) => {
+        const cleanValue = (p.unit_price || "0")
+          .replace(/[^\d,.-]/g, "")
+          .replace(/\./g, "")
+          .replace(",", ".");
+        const price = parseFloat(cleanValue);
+        return sum + (isNaN(price) ? 0 : price);
+      }, 0)
+      .toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Peças"}
         description="Cadastre, monitore preços e gerencie todas as peças necessárias para manutenção eficiente da sua frota."
       />
+
+      <PartActions />
+      <PageStats stats={partStats} data={statsData} columns={4} />
 
       <DataTable
         data={part}

@@ -9,7 +9,10 @@ const Loading = (): JSX.Element => {
         <Skeleton className="h-4 w-96" />
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 mb-6">
+      <div
+        className="flex flex-wrap 
+        items-center gap-4 mb-6"
+      >
         <div
           className="w-full sm:max-w-md 
           flex items-center gap-2"
@@ -41,8 +44,14 @@ const Loading = (): JSX.Element => {
               bg-muted/30 rounded-lg"
             >
               <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2 flex-1">
+                <div
+                  className="flex items-center 
+                  justify-between mb-4"
+                >
+                  <div
+                    className="flex flex-1
+                    items-center gap-2"
+                  >
                     <Skeleton className="h-4 w-4" />
                     <Skeleton className="h-5 w-24" />
                     <Skeleton className="h-5 w-8 rounded-full" />{" "}
@@ -71,7 +80,10 @@ const Loading = (): JSX.Element => {
                         <Skeleton className="h-3 w-2/3" />
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      <div
+                        className="flex items-center 
+                        justify-between"
+                      >
                         <div className="flex gap-2">
                           <Skeleton className="h-5 w-16 rounded-full" />
                           <Skeleton className="h-5 w-20 rounded-full" />

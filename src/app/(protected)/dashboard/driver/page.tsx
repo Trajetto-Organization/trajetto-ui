@@ -15,6 +15,11 @@ import { DashboardDriverToolbar } from "../../_components/dashboard/dashboard-dr
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { driverStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { DriverActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -107,12 +112,23 @@ const Driver = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalDrivers: meta.total,
+    activeDrivers: driver.filter((d) => d.status === "ACTIVE").length,
+    inactiveDrivers: driver.filter((d) => d.status === "INACTIVE").length,
+    ownedDrivers: driver.filter((d) => d.contract_type === "OWNED").length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Motoristas"}
         description="Gerencie os motoristas cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <DriverActions />
+      <PageStats stats={driverStats} data={statsData} columns={4} />
 
       <DataTable
         data={driver}

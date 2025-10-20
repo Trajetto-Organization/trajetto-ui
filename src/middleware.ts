@@ -77,6 +77,14 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  // - /dashboard/activity: Only BUSINESS_ADMIN can access
+  if (
+    pathname.startsWith("/dashboard/activity") &&
+    userRole !== "BUSINESS_ADMIN"
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
   // If it is a private route and you are not authenticated, it redirects to login
   if (isPrivateRoute && !accessToken) {
     return NextResponse.redirect(new URL("/login", req.url));

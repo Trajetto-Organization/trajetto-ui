@@ -124,23 +124,39 @@ const ProtectedLayout = ({
             w-full flex-col"
           >
             <header
-              className="flex h-14 shrink-0 
-              items-center justify-between 
+              className="flex h-14 sm:h-14 shrink-0
+              items-center justify-between
               gap-2 border-b px-4"
             >
-              <div className="flex items-center gap-3">
-                <company.logo className="h-7 w-auto" />
-                <div>
-                  <span className="font-semibold text-sm">{company.name}</span>
-                  <span
-                    className="text-xs ml-2 
-                    text-muted-foreground"
+              <div
+                className="flex items-center 
+                gap-3 min-w-0 flex-1"
+              >
+                <div
+                  className="flex items-center 
+                  gap-2 sm:gap-3"
+                >
+                  <company.logo
+                    className="h-6 sm:h-7 
+                    w-auto flex-shrink-0"
+                  />
+                  <div
+                    className="flex flex-col sm:flex-row 
+                    sm:items-baseline sm:gap-2"
                   >
-                    {company.plan}
-                  </span>
+                    <span className="font-semibold text-xs">
+                      {company.name}
+                    </span>
+                    <span
+                      className="text-[10px] sm:text-xs 
+                      text-muted-foreground whitespace-nowrap"
+                    >
+                      {company.plan}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="w-60">
+              <div className="w-44 sm:w-56 flex-shrink-0">
                 <ProtectedAccountSettings
                   userLogged={userLogged}
                   notificationCount={notificationCount}

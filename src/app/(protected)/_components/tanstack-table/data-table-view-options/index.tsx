@@ -27,11 +27,11 @@ export function DataTableViewOptions<TData>({
         <Button
           variant="outline"
           size="sm"
-          className="h-8"
+          className="h-8 gap-2 w-full"
           data-tutorial="view-options"
         >
-          <Settings2 />
-          Visualizar
+          <Settings2 className="h-4 w-4" />
+          <span>Visualizar</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

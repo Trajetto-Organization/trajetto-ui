@@ -16,6 +16,11 @@ import { BusinessProps } from "../../_components/admin/business/dto";
 
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
+import { businessStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { BusinessActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -108,12 +113,53 @@ const Business = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalBusiness: meta.total,
+    withErpCode: business.filter((b) => b.erp_code && b.erp_code !== "N/A")
+      .length,
+    topStates: (() => {
+      const stateCount: Record<string, number> = {};
+      business.forEach((b) => {
+        if (b.uf && b.uf !== "N/A") {
+          stateCount[b.uf] = (stateCount[b.uf] || 0) + 1;
+        }
+      });
+
+      const sorted = Object.entries(stateCount)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
+
+      return sorted.length > 0
+        ? sorted.map(([uf, count]) => `${uf} (${count})`).join(", ")
+        : "N/A";
+    })(),
+    topCities: (() => {
+      const cityCount: Record<string, number> = {};
+      business.forEach((b) => {
+        if (b.city && b.city !== "N/A") {
+          cityCount[b.city] = (cityCount[b.city] || 0) + 1;
+        }
+      });
+
+      const sorted = Object.entries(cityCount)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
+      return sorted.length > 0
+        ? sorted.map(([city, count]) => `${city} (${count})`).join(", ")
+        : "N/A";
+    })(),
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Empresas"}
         description="Gerencie empresas cadastradas, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <BusinessActions />
+      <PageStats stats={businessStats} data={statsData} columns={4} />
 
       <DataTable
         data={business}

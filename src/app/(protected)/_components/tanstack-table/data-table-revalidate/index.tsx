@@ -43,7 +43,7 @@ const DataTableRevalidateContainer = ({
       type="submit"
       variant={"outline"}
       size="sm"
-      className="h-8"
+      className="h-8 w-full"
       disabled={isDisabled}
       data-revalidate
     >

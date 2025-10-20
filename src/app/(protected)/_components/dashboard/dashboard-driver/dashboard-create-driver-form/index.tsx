@@ -301,7 +301,7 @@ const DashboardCreateDriverForm = (): JSX.Element => {
         disabled={!hasUserPermission}
         data-tutorial="create-button"
       >
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Motorista
         </Button>
       </DialogTrigger>

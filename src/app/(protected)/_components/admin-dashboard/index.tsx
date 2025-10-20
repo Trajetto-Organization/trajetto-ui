@@ -47,6 +47,8 @@ import { ButtonRevalidation } from "../revalidation-button";
 import { Charts } from "./charts";
 import { useTabTutorial } from "./hooks/use-tab-tutorial";
 
+import { Button } from "@/components/ui/button";
+
 interface QuickLinkCardProps {
   title: string;
   href: string;
@@ -460,10 +462,26 @@ const AdminDashboard = ({
           {/* Recent Activity Table */}
           <Card className="shadow-md mt-6" role="table">
             <CardHeader>
-              <CardTitle>Atividades Recentes</CardTitle>
-              <CardDescription>
-                Últimas ações realizadas no sistema
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Atividades Recentes</CardTitle>
+                  <CardDescription className="mt-1">
+                    Últimas ações realizadas no sistema
+                  </CardDescription>
+                </div>
+
+                {/* View All Button - MASTER and BUSINESS_ADMIN Only */}
+                {!hasUserError &&
+                  (userLogged?.role === "MASTER" ||
+                    userLogged?.role === "BUSINESS_ADMIN") && (
+                    <Link href={`${basePath}/activity`}>
+                      <Button variant="outline" size="sm">
+                        <ChartArea className=" h-4 w-4" />
+                        Ver todas
+                      </Button>
+                    </Link>
+                  )}
+              </div>
             </CardHeader>
             <CardContent>
               {recentActivity && recentActivity.length > 0 ? (
@@ -553,7 +571,12 @@ const StatCard = ({ title, value, change, icon, color }: StatCardProps) => (
         </div>
         <div className="w-3/4">
           <CardHeader className="pb-2 pt-4">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <CardTitle
+              className="text-sm 
+              font-medium truncate"
+            >
+              {title}
+            </CardTitle>
           </CardHeader>
           <CardContent className="pb-4 pt-0">
             <div className="text-2xl font-bold">{value}</div>

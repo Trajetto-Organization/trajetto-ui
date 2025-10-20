@@ -15,6 +15,11 @@ import { DashboardAccountPayableProps } from "../../_components/dashboard/dashbo
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { accountPayableStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { AccountPayableActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -112,12 +117,32 @@ const AccountPayable = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalAccounts: meta.total,
+    paidAccounts: accountPayable.filter(
+      (ap) => ap.status === "Pago" || ap.status === "Pago com atraso",
+    ).length,
+    pendingAccounts: accountPayable.filter(
+      (ap) => ap.status === "Pendente" || ap.status === "Parcial",
+    ).length,
+    overdueAccounts: accountPayable.filter(
+      (ap) =>
+        ap.status === "Atrasado" ||
+        ap.status === "Pago com atraso" ||
+        ap.status === "Parcial com atraso",
+    ).length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Contas a pagar"}
         description="Cadastre, monitore e gerencie suas contas a pagar."
       />
+
+      <AccountPayableActions />
+      <PageStats stats={accountPayableStats} data={statsData} columns={4} />
 
       <DataTable
         data={accountPayable}

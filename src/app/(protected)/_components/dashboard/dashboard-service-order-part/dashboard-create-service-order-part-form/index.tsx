@@ -296,7 +296,11 @@ const DashboardCreateServiceOrderPartForm = (): JSX.Element => {
                 disabled={!permissionsRequired.hasAllPermissions}
                 data-tutorial="create-button"
               >
-                <Button size="sm" className="h-8" disabled={!permissionsRequired.hasAllPermissions}>
+                <Button
+                  size="sm"
+                  className="h-8 w-full"
+                  disabled={!permissionsRequired.hasAllPermissions}
+                >
                   Criar Ordem de Serviço por Peça
                 </Button>
               </DialogTrigger>

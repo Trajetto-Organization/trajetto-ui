@@ -15,6 +15,11 @@ import { DashboardFineToolbar } from "../../_components/dashboard/dashboard-fine
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { fineStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { FineActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -107,12 +112,23 @@ const Fine = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalFines: meta.total,
+    paidFines: fine.filter((f) => f.payment_date !== null).length,
+    pendingFines: fine.filter((f) => f.payment_date === null).length,
+    totalPoints: fine.reduce((sum, f) => sum + (f.points || 0), 0),
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Multas"}
         description="Gerencie as multas cadastradas, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <FineActions hasData={fine.length > 0} />
+      <PageStats stats={fineStats} data={statsData} columns={4} />
 
       <DataTable
         data={fine}

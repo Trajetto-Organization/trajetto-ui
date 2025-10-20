@@ -15,6 +15,11 @@ import { SupplierProps } from "../../_components/admin/supplier/dto";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { supplierStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { SupplierActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -110,12 +115,39 @@ const Supplier = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalSuppliers: meta.total,
+    withTelephone: supplier.filter((s) => s.telephone && s.telephone !== "N/A")
+      .length,
+    withEmail: supplier.filter((s) => s.email && s.email !== "N/A").length,
+    topStates: (() => {
+      const stateCount: Record<string, number> = {};
+      supplier.forEach((s) => {
+        if (s.uf && s.uf !== "N/A") {
+          stateCount[s.uf] = (stateCount[s.uf] || 0) + 1;
+        }
+      });
+
+      const sorted = Object.entries(stateCount)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3);
+
+      return sorted.length > 0
+        ? sorted.map(([uf, count]) => `${uf} (${count})`).join(", ")
+        : "N/A";
+    })(),
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Fornecedores"}
         description="Controle centralizado de parceiros comerciais. Cadastre, monitore e gerencie seus fornecedores."
       />
+
+      <SupplierActions />
+      <PageStats stats={supplierStats} data={statsData} columns={4} />
 
       <DataTable
         data={supplier}

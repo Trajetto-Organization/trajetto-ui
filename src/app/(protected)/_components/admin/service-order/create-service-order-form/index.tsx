@@ -780,7 +780,7 @@ const CreateServiceOrderForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateServiceOrderForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Ordem de Serviço
         </Button>
       </DialogTrigger>

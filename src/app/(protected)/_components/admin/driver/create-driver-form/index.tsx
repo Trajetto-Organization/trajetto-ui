@@ -341,7 +341,7 @@ const CreateDriverForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateDriverForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Motorista
         </Button>
       </DialogTrigger>

@@ -15,6 +15,11 @@ import { DashboardUserToolbar } from "../../_components/dashboard/dashboard-user
 import { DashboardUserRegistrationProps } from "../../_components/dashboard/dashboard-user/dto";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
+import { userRegistrationStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { UserRegistrationActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -114,12 +119,24 @@ const UserRegistration = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalUsers: meta.total,
+    activeUsers: users.filter((user) => user.access_revoked === false).length,
+    twoFactorEnabled: users.filter((user) => user.two_factor_enabled === true)
+      .length,
+    emailVerified: users.filter((user) => user.email_verified === true).length,
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Cadastro de usuário"}
         description="Gerencie o cadastro de usuários de forma simples e segura"
       />
+
+      <UserRegistrationActions />
+      <PageStats stats={userRegistrationStats} data={statsData} columns={4} />
 
       <DataTable
         data={users}

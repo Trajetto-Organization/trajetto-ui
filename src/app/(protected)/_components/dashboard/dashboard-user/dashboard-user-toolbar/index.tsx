@@ -4,13 +4,10 @@ import { Table } from "@tanstack/react-table";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-faceted-filter";
 import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
-
-import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
-import { DashboardCreateUserForm } from "../dashboard-create-user-form";
 
 import { useSearch } from "@/lib/search-params";
 import { emailVerified, twoFactor } from "../data";
@@ -18,14 +15,25 @@ import { emailVerified, twoFactor } from "../data";
 interface DashboardDataTableToolbarProps<TData> {
   table: Table<TData>;
   error: boolean;
+  isLoading?: boolean;
+  setIsLoading?: (loading: boolean) => void;
 }
 
 export function DashboardUserToolbar<TData>({
   table,
   error,
+  isLoading,
+  setIsLoading,
 }: DashboardDataTableToolbarProps<TData>) {
-  const { handleSearch, searchParams } = useSearch();
+  const { handleSearch, searchParams, isPending } = useSearch();
   const isFiltered = table.getState().columnFilters.length > 0;
+
+  const handleSearchWithLoading = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setIsLoading?.(true);
+    handleSearch(event);
+  };
 
   const filters = [
     { key: "name", title: "Nome do usuário" },
@@ -44,64 +52,51 @@ export function DashboardUserToolbar<TData>({
   ];
 
   return (
-    <div
-      className="flex flex-col sm:flex-row items-start
-      sm:items-center justify-between gap-4 w-full"
-    >
-      <div
-        className="flex flex-wrap flex-1 
-        items-center gap-2 w-full"
-      >
-        <Input
-          placeholder="Procurar..."
-          defaultValue={searchParams.get("search") || ""}
-          onChange={handleSearch}
-          className="h-8 flex-grow min-w-[150px] sm:max-w-[250px]"
-          disabled={error}
-        />
+    <div className="flex flex-wrap items-center gap-2 w-full">
+      <SearchInputWithLoading
+        placeholder="Procurar..."
+        defaultValue={searchParams.get("search") || ""}
+        onChange={handleSearchWithLoading}
+        disabled={error}
+        isLoading={isPending || isLoading}
+        wrapperClassName="w-full sm:w-auto
+        sm:min-w-[270px] sm:max-w-[270px]"
+      />
 
-        {filters.map(({ key, title, options }) => {
-          const column = table.getColumn(key);
-          if (!column) return null;
+      {filters.map(({ key, title, options }) => {
+        const column = table.getColumn(key);
+        if (!column) return null;
 
-          return (
-            <DataTableFacetedFilter
-              key={key}
-              column={column}
-              title={title}
-              options={options}
-            />
-          );
-        })}
+        return (
+          <DataTableFacetedFilter
+            key={key}
+            column={column}
+            title={title}
+            options={options}
+          />
+        );
+      })}
 
-        {isFiltered && (
-          <Button
-            variant="ghost"
-            onClick={() => table.resetColumnFilters()}
-            className="h-8 px-2 flex 
-            items-center gap-1 justify-center"
-          >
-            Resetar
-            <X width={17} />
-          </Button>
-        )}
+      {isFiltered && (
+        <Button
+          variant="ghost"
+          onClick={() => table.resetColumnFilters()}
+          className="h-8 px-2 lg:px-3
+          flex items-center gap-1"
+        >
+          Resetar
+          <X className="h-4 w-4" />
+        </Button>
+      )}
 
-        {!error && (
-          <div className="ml-auto flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-            <DataTableRevalidate
-              revalidateData="update-user-registration"
-              rateLimit={{
-                storageKey: "dashboard-user-registration",
-                maxClicks: 3,
-                timeWindowMs: 30000,
-                cooldownTimeMs: 15000,
-              }}
-            />
-            <DataTableViewOptions table={table} />
-            <DashboardCreateUserForm />
-          </div>
-        )}
-      </div>
+      {!error && (
+        <div
+          className="w-full
+          sm:w-auto sm:ml-auto"
+        >
+          <DataTableViewOptions table={table} />
+        </div>
+      )}
     </div>
   );
 }

@@ -817,7 +817,7 @@ const CreateFuelForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateFuelForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Abastecimento
         </Button>
       </DialogTrigger>

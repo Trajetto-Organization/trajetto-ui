@@ -27,7 +27,10 @@ const Loading = (): JSX.Element => {
         <Skeleton className="h-16 w-full rounded-md" />
 
         {/* Tabs skeleton */}
-        <div className="flex items-center justify-between mb-4">
+        <div
+          className="flex items-center 
+          justify-between mb-4"
+        >
           <Tabs>
             <TabsList className="w-auto">
               <TabsTrigger value="overview" className="flex items-center gap-2">
@@ -40,7 +43,10 @@ const Loading = (): JSX.Element => {
         </div>
 
         {/* Stat cards skeleton */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          className="grid grid-cols-1 gap-4 
+          sm:grid-cols-2 lg:grid-cols-4"
+        >
           {Array.from({ length: 8 }).map((_, index) => (
             <Card key={`stat-${index}`} className="overflow-hidden shadow-md">
               <div className="flex">
@@ -120,11 +126,21 @@ const Loading = (): JSX.Element => {
         </Card>
 
         {/* Quick access links skeleton */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div
+          className="grid grid-cols-2 
+          gap-4 md:grid-cols-4"
+        >
           {Array.from({ length: 8 }).map((_, index) => (
             <Card key={`link-${index}`} className="shadow-md">
-              <div className="flex h-full flex-col items-center justify-center p-6 text-center">
-                <Skeleton className="h-12 w-12 rounded-full mb-3" />{" "}
+              <div
+                className="flex h-full flex-col 
+                items-center justify-center 
+                p-6 text-center"
+              >
+                <Skeleton
+                  className="h-12 w-12 
+                  rounded-full mb-3"
+                />{" "}
                 {/* Icon */}
                 <Skeleton className="h-5 w-32" /> {/* Title */}
               </div>

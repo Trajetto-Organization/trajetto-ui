@@ -16,7 +16,8 @@ type RevalidateDataProps =
   | "update-quote-status"
   | "update-fine"
   | "update-fuel"
-  | "update-vehicle-checklist";
+  | "update-vehicle-checklist"
+  | "update-activity";
 
 const revalidateDataToQueryKeyMap: Record<RevalidateDataProps, string[]> = {
   "update-user-registration": ["user"],
@@ -34,6 +35,7 @@ const revalidateDataToQueryKeyMap: Record<RevalidateDataProps, string[]> = {
   "update-fine": ["update_fine"],
   "update-fuel": ["update_fuel"],
   "update-vehicle-checklist": ["vehicle_checklist"],
+  "update-activity": ["activity"],
   "update-service-order-part": [],
   "update-account-payable": [],
   "update-quote-status": [],

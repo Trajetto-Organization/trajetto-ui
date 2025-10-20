@@ -198,7 +198,7 @@ const CreatePartForm = (): JSX.Element => {
   return (
     <Dialog open={isCreatePartForm} onOpenChange={handleOpenCreatePartForm}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Peça
         </Button>
       </DialogTrigger>

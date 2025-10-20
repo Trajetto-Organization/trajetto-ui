@@ -519,7 +519,7 @@ const CreateFineForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateFineForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Multa
         </Button>
       </DialogTrigger>

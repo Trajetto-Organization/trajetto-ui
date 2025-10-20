@@ -218,7 +218,7 @@ const CreateSupplierForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateSupplierForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Fornecedor
         </Button>
       </DialogTrigger>

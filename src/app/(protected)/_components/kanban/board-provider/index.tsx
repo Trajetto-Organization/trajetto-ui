@@ -9,7 +9,7 @@ import { CreateColumnModal } from "../column/create-column-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Loader, Plus, Search, X } from "lucide-react";
+import { Loader, Loader2, Plus, Search, X } from "lucide-react";
 import { debounce } from "lodash";
 
 import { BusinessSelector } from "../business-selector";
@@ -18,6 +18,7 @@ import { useKanbanInfiniteScroll } from "./hooks/kanban-infinite-scroll";
 import { KanbanEmptyState } from "../empty-state";
 import { formatKanbanResults } from "./helpers";
 
+import { KanbanBoardSkeleton } from "../board-skeleton";
 import { KanbanRevalidationButton } from "../revalidate-button";
 
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -49,6 +50,7 @@ const KanbanBoardProvider = ({
   const [debouncedSearchValue, setDebouncedSearchValue] =
     useState(initialSearch);
 
+  const [isSearchPending, setIsSearchPending] = useState<boolean>(false);
   const [isCreateColumnModalOpen, setIsCreateColumnModalOpen] =
     useState<boolean>(false);
 
@@ -135,6 +137,7 @@ const KanbanBoardProvider = ({
 
   const handleSearch = (term: string) => {
     setSearchValue(term);
+    setIsSearchPending(true);
     if (debouncedSearch.current) {
       debouncedSearch.current(term);
     }
@@ -163,6 +166,13 @@ const KanbanBoardProvider = ({
       setDebouncedSearchValue(urlSearch);
     }
   }, [searchParams]);
+
+  // Clear search pending state when fetching completes
+  useEffect(() => {
+    if (!isFetching && !isLoading) {
+      setIsSearchPending(false);
+    }
+  }, [isFetching, isLoading]);
 
   // Check if businessId is not set (only relevant for admin mode)
   if (mode === "admin" && !businessId) {
@@ -223,11 +233,22 @@ const KanbanBoardProvider = ({
                 onChange={(e) => handleSearch(e.target.value)}
                 className="pl-10 pr-10 w-full"
               />
-              {searchValue && (
+              {isSearchPending && (
+                <div
+                  className="absolute right-3 top-1/2
+                  -translate-y-1/2 pointer-events-none"
+                >
+                  <Loader2
+                    className="h-4 w-4 animate-spin
+                    text-muted-foreground"
+                  />
+                </div>
+              )}
+              {searchValue && !isSearchPending && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-1/2 
+                  className="absolute right-1 top-1/2
                   transform -translate-y-1/2 h-6 w-6"
                   onClick={handleClearSearch}
                 >
@@ -282,12 +303,23 @@ const KanbanBoardProvider = ({
               className="pl-10 pr-10 w-full"
               disabled={isLoading && !columns}
             />
-            {searchValue && (
+            {isSearchPending && (
+              <div
+                className="absolute right-3 top-1/2
+                -translate-y-1/2 pointer-events-none"
+              >
+                <Loader2
+                  className="h-4 w-4 animate-spin
+                  text-muted-foreground"
+                />
+              </div>
+            )}
+            {searchValue && !isSearchPending && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute right-1 
-                top-1/2 transform -translate-y-1/2 
+                className="absolute right-1
+                top-1/2 transform -translate-y-1/2
                 h-6 w-6"
                 onClick={handleClearSearch}
                 disabled={isLoading && !columns}
@@ -363,11 +395,13 @@ const KanbanBoardProvider = ({
 
       {isLoading && !columns ? (
         <div
-          className="flex items-center 
+          className="flex items-center
           justify-center h-96"
         >
           <Loader className="h-8 w-8 animate-spin" />
         </div>
+      ) : isSearchPending ? (
+        <KanbanBoardSkeleton />
       ) : hasSearchResults ? (
         <div className="h-[calc(100vh-20rem)]">
           <KanbanBoard

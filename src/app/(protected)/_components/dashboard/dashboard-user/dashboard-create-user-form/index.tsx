@@ -432,7 +432,7 @@ const DashboardCreateUserForm = (): JSX.Element => {
               >
                 <Button
                   size="sm"
-                  className="h-8"
+                  className="h-8 w-full"
                   disabled={!permissionsRequired.hasAllPermissions}
                 >
                   Criar Usuário

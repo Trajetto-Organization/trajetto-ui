@@ -416,7 +416,7 @@ const CreateUserForm = (): JSX.Element => {
   return (
     <Dialog open={isCreateUserForm} onOpenChange={handleOpenCreateUserForm}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8">
+        <Button size="sm" className="h-8 w-full">
           Criar Usuário
         </Button>
       </DialogTrigger>

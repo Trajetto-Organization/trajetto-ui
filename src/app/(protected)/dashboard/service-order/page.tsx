@@ -15,6 +15,11 @@ import { DashboardServiceOrderToolbar } from "../../_components/dashboard/dashbo
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { getCookies } from "@/actions/cookies";
 
+import { serviceOrderStats } from "./stats-config";
+import { PageStats } from "../../_components/stats/page-stats";
+
+import { ServiceOrderActions } from "./page-actions";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -112,12 +117,41 @@ const ServiceOrder = async ({
     }
   }
 
+  // Calculates stats directly from the returned data
+  const statsData = {
+    totalServiceOrders: meta.total,
+    completedOrders: serviceOrder.filter(
+      (so) => so.completion_date !== null && so.completion_date !== undefined,
+    ).length,
+    pendingOrders: serviceOrder.filter(
+      (so) => so.completion_date === null || so.completion_date === undefined,
+    ).length,
+    totalAmount: serviceOrder
+      .reduce((sum, so) => {
+        // Remove formatting: "R$ 1,500.00" -> "1500.00"
+        const cleanValue = (so.total_amount || "0")
+          .replace(/[^\d,.-]/g, "") // Remove R$, spaces, etc.
+          .replace(/\./g, "") // Remove thousands separators
+          .replace(",", "."); // Replace decimal point with period
+
+        const amount = parseFloat(cleanValue);
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0)
+      .toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }),
+  };
+
   return (
     <PageContainer>
       <ProtectedHeading
         title={"Ordem de serviço"}
         description="Gerencie as ordens de serviços cadastradas, delete, edite e mantenha os dados sempre atualizados."
       />
+
+      <ServiceOrderActions />
+      <PageStats stats={serviceOrderStats} data={statsData} columns={4} />
 
       <DataTable
         data={serviceOrder}

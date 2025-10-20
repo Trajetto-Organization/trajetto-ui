@@ -90,7 +90,7 @@ const ExportExcelButton = ({
       size="sm"
       onClick={handleExportExcel}
       disabled={isExporting || !hasData}
-      className={`h-8 gap-1 ${className}`}
+      className={`h-8 w-full gap-1 ${className}`}
       data-tutorial="export-excel"
     >
       {isExporting ? (

@@ -384,7 +384,6 @@ const DashboardCreateFuelFormContainer = ({
     setDisplayPricePerLiter(formatToBrazilianCurrency(newNumericValue));
   };
 
-
   const [displayMileage, setDisplayMileage] = useState<string>("");
   const [displayLiters, setDisplayLiters] = useState<string>("");
 
@@ -392,9 +391,11 @@ const DashboardCreateFuelFormContainer = ({
   const mileageInputRef = useRef<HTMLInputElement>(null);
   const litersInputRef = useRef<HTMLInputElement>(null);
 
-  const handleMileageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleMileageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
     const rawValue = e.target.value;
-    const numbersOnly = rawValue.replace(/\D/g, '');
+    const numbersOnly = rawValue.replace(/\D/g, "");
     const formatted = formatMileage(numbersOnly);
 
     setDisplayMileage(formatted);
@@ -801,7 +802,7 @@ const DashboardCreateFuelForm = (): JSX.Element => {
               >
                 <Button
                   size="sm"
-                  className="h-8"
+                  className="h-8 w-full"
                   disabled={!permissionsRequired.hasAllPermissions}
                 >
                   Criar Abastecimento

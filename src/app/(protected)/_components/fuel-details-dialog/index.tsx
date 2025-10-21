@@ -182,7 +182,10 @@ const FuelDetailsDialog = ({
           {fuelData.notes && fuelData.notes !== "N/A" && (
             <>
               <div>
-                <h3 className="font-semibold flex items-center gap-2 mb-3">
+                <h3
+                  className="font-semibold flex 
+                  items-center gap-2 mb-3"
+                >
                   <FileText className="h-4 w-4" />
                   Observações
                 </h3>
@@ -196,7 +199,10 @@ const FuelDetailsDialog = ({
 
           {/* Odometer Status */}
           <div>
-            <h3 className="font-semibold flex items-center gap-2 mb-3">
+            <h3
+              className="font-semibold flex 
+              items-center gap-2 mb-3"
+            >
               <Camera className="h-4 w-4" />
               Status do Odômetro
             </h3>
@@ -231,7 +237,10 @@ const FuelDetailsDialog = ({
             </h3>
 
             {isLoading ? (
-              <div className="animate-pulse bg-muted/30 h-32 rounded-md flex items-center justify-center">
+              <div
+                className="animate-pulse bg-muted/30 h-32 
+                rounded-md flex items-center justify-center"
+              >
                 <span className="text-sm text-muted-foreground">
                   Carregando dados do veículo...
                 </span>
@@ -241,11 +250,13 @@ const FuelDetailsDialog = ({
                 liters={liters}
                 pricePerLiter={pricePerLiter}
                 currentMileage={fuelData.current_mileage}
-                lastFuelMileage={vehicleData.last_maintenance_mileage as number}
                 vehicleKmPerLiter={vehicleData.km_per_liter}
               />
             ) : (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 rounded-md p-4">
+              <div
+                className="bg-yellow-50 dark:bg-yellow-900/20 
+                border border-yellow-200 rounded-md p-4"
+              >
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
                   ⚠️ Não foi possível carregar os dados do veículo para análise
                   de eficiência.
@@ -256,10 +267,16 @@ const FuelDetailsDialog = ({
 
           {/* Technical Information */}
           <div>
-            <h3 className="font-semibold text-sm text-muted-foreground mb-2">
+            <h3
+              className="font-semibold text-sm 
+              text-muted-foreground mb-2"
+            >
               Informações Técnicas
             </h3>
-            <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
+            <div
+              className="grid grid-cols-2 gap-4 
+              text-xs text-muted-foreground"
+            >
               <div>ID: {fuelData.id}</div>
               <div>Criado: {fuelData.created_at}</div>
               <div>Veículo ID: {fuelData.vehicleId}</div>

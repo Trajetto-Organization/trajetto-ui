@@ -548,7 +548,7 @@ const UpdateServiceOrderContainer = ({
   const newMileageValue = parseFloat(newMileageAfterService) || 0;
 
   const isNewMileageValid =
-    !newMileageAfterService || newMileageValue >= currentVehicleMileage;
+    !newMileageAfterService || newMileageValue > currentVehicleMileage;
 
   // Check if snapshot values have changed
   const isSnapshotDirty =
@@ -812,7 +812,7 @@ const UpdateServiceOrderContainer = ({
             onChange={handleNewMileageChange}
             placeholder={
               isCurrentlyCompleted
-                ? `Digite a quilometragem após o serviço (deve ser ≥ ${currentVehicleMileage} km - valor atual do veículo)`
+                ? `Digite a quilometragem após o serviço (deve ser > ${currentVehicleMileage} km - valor atual do veículo)`
                 : "Disponível apenas ao finalizar a ordem de serviço"
             }
             disabled={pending || !isCurrentlyCompleted || isLoadingVehicle}
@@ -826,8 +826,8 @@ const UpdateServiceOrderContainer = ({
           {/* Visual validation feedback */}
           {newMileageAfterService && !isNewMileageValid && (
             <p className="text-sm text-red-600 mt-1">
-              ⚠️ A nova quilometragem deve ser maior ou igual a{" "}
-              {currentVehicleMileage} km (quilometragem atual do veículo)
+              ⚠️ A nova quilometragem deve ser maior que {currentVehicleMileage}{" "}
+              km (quilometragem atual do veículo)
             </p>
           )}
 

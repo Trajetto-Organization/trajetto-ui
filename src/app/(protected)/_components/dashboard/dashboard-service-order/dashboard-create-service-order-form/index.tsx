@@ -409,7 +409,7 @@ const DashboardCreateServiceOrderFormContainer = ({
     parseFloat(snapshotData.current_mileage_at_service) || 0;
   const newMileageValue = parseFloat(newMileageAfterService) || 0;
   const isNewMileageValid =
-    !newMileageAfterService || newMileageValue >= currentMileageSnapshot;
+    !newMileageAfterService || newMileageValue > currentMileageSnapshot;
 
   return (
     <>
@@ -579,7 +579,7 @@ const DashboardCreateServiceOrderFormContainer = ({
             onChange={handleNewMileageChange}
             placeholder={
               isCompleting
-                ? `Digite a quilometragem após o serviço (deve ser ≥ ${snapshotData.current_mileage_at_service} km)`
+                ? `Digite a quilometragem após o serviço (deve ser > ${snapshotData.current_mileage_at_service} km)`
                 : "Disponível apenas ao finalizar a ordem de serviço"
             }
             disabled={pending || isLoadingVehicle || !isCompleting}
@@ -592,7 +592,7 @@ const DashboardCreateServiceOrderFormContainer = ({
 
           {newMileageAfterService && !isNewMileageValid && (
             <p className="text-sm text-red-600 mt-1">
-              ⚠️ A nova quilometragem deve ser maior ou igual a{" "}
+              ⚠️ A nova quilometragem deve ser maior que{" "}
               {snapshotData.current_mileage_at_service} km
             </p>
           )}

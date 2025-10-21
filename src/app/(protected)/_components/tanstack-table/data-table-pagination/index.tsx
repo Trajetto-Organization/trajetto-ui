@@ -21,11 +21,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
   error: boolean;
+  isLoading?: boolean;
 }
 
 export function DataTablePagination<TData>({
   table,
   error,
+  isLoading = false,
 }: DataTablePaginationProps<TData>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -48,12 +50,12 @@ export function DataTablePagination<TData>({
 
   return (
     <div
-      className="flex flex-col items-center justify-between 
-      gap-4 px-2 sm:flex-row sm:gap-0"
+      className="flex flex-col items-center gap-4 
+      justify-between px-2 sm:flex-row sm:gap-0"
     >
       <div
-        className="text-sm text-muted-foreground w-full 
-        sm:w-auto text-center sm:text-left"
+        className="text-sm text-muted-foreground 
+        w-full sm:w-auto text-center sm:text-left"
       >
         {table.getFilteredSelectedRowModel().rows.length} de{" "}
         {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
@@ -64,8 +66,8 @@ export function DataTablePagination<TData>({
         gap-4 sm:w-auto sm:flex-row sm:gap-6 lg:gap-8"
       >
         <div
-          className="flex items-center justify-between 
-          space-x-2 w-full sm:w-auto"
+          className="flex items-center w-full 
+          justify-between space-x-2 sm:w-auto"
         >
           <p className="text-sm font-medium whitespace-nowrap">
             Linhas por página
@@ -76,7 +78,7 @@ export function DataTablePagination<TData>({
               table.setPageSize(Number(value));
               updateQueryParams({ pageSize: value, page: "1" });
             }}
-            disabled={error}
+            disabled={error || isLoading}
           >
             <SelectTrigger
               aria-label="Paginação"
@@ -99,8 +101,8 @@ export function DataTablePagination<TData>({
         </div>
 
         <div
-          className="flex flex-wrap items-center justify-center 
-          gap-2 sm:justify-start sm:flex-nowrap"
+          className="flex flex-wrap items-center gap-2 
+          justify-center sm:justify-start sm:flex-nowrap"
         >
           <Button
             variant="outline"
@@ -109,7 +111,7 @@ export function DataTablePagination<TData>({
               table.setPageIndex(0);
               updateQueryParams({ page: "1" });
             }}
-            disabled={!table.getCanPreviousPage() || error}
+            disabled={!table.getCanPreviousPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a primeira página</span>
             <ChevronsLeft className="w-4 h-4" />
@@ -125,7 +127,7 @@ export function DataTablePagination<TData>({
                 updateQueryParams({ page: `${currentIndex}` });
               }
             }}
-            disabled={!table.getCanPreviousPage() || error}
+            disabled={!table.getCanPreviousPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a página anterior</span>
             <ChevronLeft className="w-4 h-4" />
@@ -144,7 +146,7 @@ export function DataTablePagination<TData>({
               table.setPageIndex(currentIndex + 1);
               updateQueryParams({ page: `${currentIndex + 2}` });
             }}
-            disabled={!table.getCanNextPage() || error}
+            disabled={!table.getCanNextPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a próxima página</span>
             <ChevronRight className="w-4 h-4" />
@@ -158,7 +160,7 @@ export function DataTablePagination<TData>({
               table.setPageIndex(pageCount - 1);
               updateQueryParams({ page: pageCount.toString() });
             }}
-            disabled={!table.getCanNextPage() || error}
+            disabled={!table.getCanNextPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a última página</span>
             <ChevronsRight className="w-4 h-4" />

@@ -12,6 +12,7 @@ interface FuelInfoAlertProps {
   pricePerLiter?: number;
   currentMileage?: number;
   vehicleKmPerLiter?: number;
+  lastFuelMileage?: number | null;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ const FuelInfoAlert = ({
   pricePerLiter,
   currentMileage,
   vehicleKmPerLiter,
+  lastFuelMileage,
   className,
 }: FuelInfoAlertProps) => {
   // Calculate values
@@ -35,46 +37,50 @@ const FuelInfoAlert = ({
   const costPerKm = totalAmount && autonomy ? totalAmount / autonomy : null;
 
   // Calculate actual consumption if we have previous fuel data
-  // const kmTraveled =
-  //   currentMileage && lastFuelMileage ? currentMileage - lastFuelMileage : null;
-  // const actualConsumption =
-  //   kmTraveled && liters && kmTraveled > 0 ? kmTraveled / liters : null;
+  const kmTraveled =
+    currentMileage && lastFuelMileage ? currentMileage - lastFuelMileage : null;
+  const actualConsumption =
+    kmTraveled && liters && kmTraveled > 0 ? kmTraveled / liters : null;
 
   // Determine efficiency status
-  // const getEfficiencyStatus = () => {
-  //   if (!actualConsumption || !expectedConsumption) return null;
+  const getEfficiencyStatus = () => {
+    if (!actualConsumption || !expectedConsumption) return null;
 
-  //   const difference =
-  //     ((actualConsumption - expectedConsumption) / expectedConsumption) * 100;
+    const difference =
+      ((actualConsumption - expectedConsumption) / expectedConsumption) * 100;
 
-  //   if (difference >= 10) {
-  //     return {
-  //       status: "Excelente",
-  //       color: "text-green-700 dark:text-green-400",
-  //       bgColor: "bg-green-100 dark:bg-green-950/30",
-  //     };
-  //   } else if (difference >= 0) {
-  //     return {
-  //       status: "Bom",
-  //       color: "text-blue-700 dark:text-blue-400",
-  //       bgColor: "bg-blue-100 dark:bg-blue-950/30",
-  //     };
-  //   } else if (difference >= -10) {
-  //     return {
-  //       status: "Normal",
-  //       color: "text-yellow-700 dark:text-yellow-400",
-  //       bgColor: "bg-yellow-100 dark:bg-yellow-950/30",
-  //     };
-  //   } else {
-  //     return {
-  //       status: "Ruim",
-  //       color: "text-red-700 dark:text-red-400",
-  //       bgColor: "bg-red-100 dark:bg-red-950/30",
-  //     };
-  //   }
-  // };
+    if (difference >= 10) {
+      return {
+        status: "Excelente",
+        color: "text-green-700 dark:text-green-400",
+        bgColor: "bg-green-100 dark:bg-green-950/30",
+        borderColor: "border-green-200 dark:border-green-800",
+      };
+    } else if (difference >= 0) {
+      return {
+        status: "Bom",
+        color: "text-blue-700 dark:text-blue-400",
+        bgColor: "bg-blue-100 dark:bg-blue-950/30",
+        borderColor: "border-blue-200 dark:border-blue-800",
+      };
+    } else if (difference >= -10) {
+      return {
+        status: "Normal",
+        color: "text-yellow-700 dark:text-yellow-400",
+        bgColor: "bg-yellow-100 dark:bg-yellow-950/30",
+        borderColor: "border-yellow-200 dark:border-yellow-800",
+      };
+    } else {
+      return {
+        status: "Ruim",
+        color: "text-red-700 dark:text-red-400",
+        bgColor: "bg-red-100 dark:bg-red-950/30",
+        borderColor: "border-red-200 dark:border-red-800",
+      };
+    }
+  };
 
-  // const efficiencyStatus = getEfficiencyStatus();
+  const efficiencyStatus = getEfficiencyStatus();
 
   return (
     <Alert
@@ -82,7 +88,7 @@ const FuelInfoAlert = ({
     >
       <Info className="h-4 w-4 text-blue-600" />
       <AlertDescription
-        className="text-blue-700 
+        className="text-blue-700
         dark:text-blue-300 space-y-3"
       >
         <div>
@@ -114,8 +120,8 @@ const FuelInfoAlert = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Expected Consumption */}
               <div
-                className="p-2 rounded-md bg-white 
-                dark:bg-blue-900/20 border border-blue-200 
+                className="p-2 rounded-md bg-white
+                dark:bg-blue-900/20 border border-blue-200
                 dark:border-blue-800"
               >
                 <div className="text-xs font-medium mb-1">Consumo Esperado</div>
@@ -125,25 +131,33 @@ const FuelInfoAlert = ({
               </div>
 
               {/* Actual Consumption */}
-              {/* {actualConsumption && (
+              {actualConsumption && efficiencyStatus && (
                 <div
-                  className={`p-2 rounded-md border ${efficiencyStatus?.bgColor} ${efficiencyStatus?.color}`}
+                  className={`p-2 rounded-md border ${efficiencyStatus.bgColor} ${efficiencyStatus.borderColor}`}
                 >
-                  <div className="text-xs font-medium mb-1">Consumo Real</div>
-                  <div className="text-base font-bold">
+                  <div
+                    className={`text-xs font-medium mb-1 ${efficiencyStatus.color}`}
+                  >
+                    Consumo Real
+                  </div>
+                  <div
+                    className={`text-base font-bold ${efficiencyStatus.color}`}
+                  >
                     {actualConsumption.toFixed(2)} km/L
                   </div>
-                  <div className="text-xs mt-1">
-                    Status: {efficiencyStatus?.status}
+                  <div
+                    className={`text-xs mt-1 font-semibold ${efficiencyStatus.color}`}
+                  >
+                    Status: {efficiencyStatus.status}
                   </div>
                 </div>
-              )} */}
+              )}
 
               {/* Autonomy */}
               {autonomy && (
                 <div
-                  className="p-2 rounded-md bg-white 
-                  dark:bg-blue-900/20 border 
+                  className="p-2 rounded-md bg-white
+                  dark:bg-blue-900/20 border
                   border-blue-200 dark:border-blue-800"
                 >
                   <div className="text-xs font-medium mb-1">Autonomia</div>
@@ -157,8 +171,8 @@ const FuelInfoAlert = ({
               {/* Cost per Km */}
               {costPerKm && (
                 <div
-                  className="p-2 rounded-md bg-white 
-                  dark:bg-blue-900/20 border 
+                  className="p-2 rounded-md bg-white
+                  dark:bg-blue-900/20 border
                   border-blue-200 dark:border-blue-800"
                 >
                   <div className="text-xs font-medium mb-1">Custo por Km</div>
@@ -175,7 +189,7 @@ const FuelInfoAlert = ({
         )}
 
         <div
-          className="text-xs mt-2 border-t 
+          className="text-xs mt-2 border-t
           border-blue-200 pt-2"
         >
           <strong>💡 Dicas:</strong> Verifique se os dados estão corretos.

@@ -8,6 +8,8 @@ interface VehicleData {
   km_per_liter: number;
   license_plate?: string;
   description?: string;
+  last_fuel_mileage?: number | null;
+  last_fuel_date?: string | null;
 }
 
 interface FetchVehicleDataProps {
@@ -49,6 +51,8 @@ const fetchVehicleData = async ({
     km_per_liter: data.km_per_liter || 0,
     license_plate: data.license_plate || "",
     description: data.description || "",
+    last_fuel_mileage: data.last_fuel_mileage || null,
+    last_fuel_date: data.last_fuel_date || null,
   };
 };
 

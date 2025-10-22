@@ -53,6 +53,14 @@ function useDashboardDeleteFuelForm(
                 );
               },
             }),
+            queryClientProps.resetQueries({
+              predicate: (query) => {
+                return (
+                  Array.isArray(query.queryKey) &&
+                  query.queryKey[0] === "previousFuel"
+                );
+              },
+            }),
           ]);
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {

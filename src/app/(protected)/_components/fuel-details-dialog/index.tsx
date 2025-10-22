@@ -27,6 +27,8 @@ import { FuelInfoAlert } from "../fuel-info-alert";
 import { FuelDetailsDialogProps } from "./dto";
 
 import { useFetchVehicleData } from "../search-vehicle-by-id-business";
+import { useFetchPreviousFuel } from "../search-previous-fuel-by-vehicle";
+
 import { formatDate } from "@/lib/format-values";
 
 const FuelDetailsDialog = ({
@@ -39,6 +41,15 @@ const FuelDetailsDialog = ({
     vehicleId: fuelData.vehicleId,
     businessId: fuelData.businessId || "",
   });
+
+  // Fetch previous fuel record for this specific fuel
+  const { data: previousFuelData, isLoading: isLoadingPreviousFuel } =
+    useFetchPreviousFuel({
+      vehicleId: fuelData.vehicleId,
+      currentFuelDate: fuelData.refueling_date,
+      businessId: fuelData.businessId || "",
+      enabled: isOpen,
+    });
 
   // Conversions for calculations
   const liters = parseFloat(fuelData.liters_amount.replace(",", ".")) || 0;
@@ -231,18 +242,21 @@ const FuelDetailsDialog = ({
 
           {/* Efficiency Analysis */}
           <div>
-            <h3 className="font-semibold flex items-center gap-2 mb-3">
+            <h3
+              className="font-semibold flex 
+              items-center gap-2 mb-3"
+            >
               <TrendingUp className="h-4 w-4" />
               Análise de Eficiência
             </h3>
 
-            {isLoading ? (
+            {isLoading || isLoadingPreviousFuel ? (
               <div
-                className="animate-pulse bg-muted/30 h-32 
+                className="animate-pulse bg-muted/30 h-32
                 rounded-md flex items-center justify-center"
               >
                 <span className="text-sm text-muted-foreground">
-                  Carregando dados do veículo...
+                  Carregando dados de eficiência...
                 </span>
               </div>
             ) : vehicleData ? (
@@ -251,13 +265,17 @@ const FuelDetailsDialog = ({
                 pricePerLiter={pricePerLiter}
                 currentMileage={fuelData.current_mileage}
                 vehicleKmPerLiter={vehicleData.km_per_liter}
+                lastFuelMileage={previousFuelData?.current_mileage}
               />
             ) : (
               <div
                 className="bg-yellow-50 dark:bg-yellow-900/20 
                 border border-yellow-200 rounded-md p-4"
               >
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                <p
+                  className="text-sm text-yellow-700 
+                  dark:text-yellow-300"
+                >
                   ⚠️ Não foi possível carregar os dados do veículo para análise
                   de eficiência.
                 </p>

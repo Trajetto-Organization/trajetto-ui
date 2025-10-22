@@ -19,6 +19,7 @@ function StatsGrid({ children, columns = 4, className }: StatsGridProps) {
 
   return (
     <div
+      data-tutorial="data-page-stats"
       className={cn(
         "grid gap-4 mb-10 animate-in fade-in-50 duration-500",
         gridCols[columns],

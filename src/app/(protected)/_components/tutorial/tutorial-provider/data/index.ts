@@ -150,6 +150,21 @@ const shouldShowQuickAccess = (userPermissions?: UserPermissions): boolean => {
   return true;
 };
 
+// Helper function to create PageStats tutorial step (reusable)
+const createPageStatsTutorialStep = (): TutorialStep => ({
+  target: "[data-tutorial='data-page-stats']",
+  title: "Métricas da Página 📊",
+  content: `Visualize as estatísticas e métricas principais desta seção de forma clara e organizada através destes cartões informativos.
+
+  Os cartões exibem:
+  • Totais e quantidades relevantes
+  • Indicadores percentuais coloridos quando aplicável
+  • Status e tendências importantes
+
+  DICA: Os valores são atualizados automaticamente conforme os dados do sistema mudam.`,
+  placement: "bottom",
+});
+
 // Tutorial configurations rewritten elegantly - maintaining original structure
 const tutorialConfigs: TutorialConfig = {
   "/dashboard": [
@@ -313,6 +328,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Aqui você gerencia de forma centralizada todas as filiais cadastradas da sua empresa. Cada filial pode ter veículos específicos, motoristas dedicados e ordens de serviço associadas.`,
       placement: "center",
     },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
     {
       target: "[data-tutorial='create-button']",
       title: "Criar Nova Filial 📝",
@@ -338,7 +361,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Filiais
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       DICA: Clique nos cabeçalhos das colunas para ordenar os dados e utilize os filtros para refinar a visualização conforme suas necessidades.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -351,13 +374,6 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
       ATENÇÃO CRÍTICA: A exclusão de uma filial afetará todos os veículos, motoristas e ordens de serviço associados a ela. Esta ação deve ser realizada com extremo cuidado.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -378,6 +394,28 @@ const tutorialConfigs: TutorialConfig = {
       content: `Controle completo e inteligente de multas e infrações de trânsito da sua frota.
       DICA: Gerencie pagamentos, monitore pontuação na CNH e mantenha histórico completo de infrações.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-tutorial='export-excel']",
+      title: "Exportar Relatório de Multas 📊",
+      content: `Clique aqui para exportar um relatório completo de multas em formato Excel (.xlsx).
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Multas
+      O arquivo exportado contém todas as multas filtradas atualmente na tabela, com informações detalhadas como:
+      • Dados do veículo e motorista envolvidos
+      • Código de infração e valor da multa
+      • Datas de ocorrência e vencimento
+      • Status de pagamento e observações
+      IMPORTANTE: A exportação será realizada apenas se houver dados na tabela para exportar.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -403,27 +441,13 @@ const tutorialConfigs: TutorialConfig = {
       placement: "bottom",
     },
     {
-      target: "[data-tutorial='export-excel']",
-      title: "Exportar Relatório de Multas 📊",
-      content: `Clique aqui para exportar um relatório completo de multas em formato Excel (.xlsx).
-      PERMISSÕES NECESSÁRIAS:
-      • LEITURA em Gerenciar Multas
-      O arquivo exportado contém todas as multas filtradas atualmente na tabela, com informações detalhadas como:
-      • Dados do veículo e motorista envolvidos
-      • Código de infração e valor da multa
-      • Datas de ocorrência e vencimento
-      • Status de pagamento e observações
-      IMPORTANTE: A exportação será realizada apenas se houver dados na tabela para exportar.`,
-      placement: "bottom",
-    },
-    {
       target: "[role='table']",
       title: "Registro de Multas 📋",
       content: `Visualize todas as multas registradas no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Multas
       DICA: Use os filtros inteligentes por valor, código de infração ou filial específica para refinar sua visualização.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -444,13 +468,6 @@ const tutorialConfigs: TutorialConfig = {
       placement: "bottom",
     },
     {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
-    },
-    {
       target: "[data-tutorial='view-options']",
       title: "Opções de Visualização 👁️",
       content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
@@ -469,6 +486,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Nesta página você gerencia todos os motoristas cadastrados no sistema de forma organizada e eficiente.
       Mantenha informações sempre atualizadas sobre habilitação, documentos pessoais e histórico de condução de cada condutor da sua frota.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -497,7 +522,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Motoristas
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       Veja informações como status da CNH, categoria de habilitação e data de vencimento. O sistema alerta automaticamente sobre documentos próximos do vencimento.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -512,13 +537,6 @@ const tutorialConfigs: TutorialConfig = {
       placement: "bottom",
     },
     {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
-    },
-    {
       target: "[data-tutorial='view-options']",
       title: "Opções de Visualização 👁️",
       content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
@@ -530,7 +548,6 @@ const tutorialConfigs: TutorialConfig = {
       placement: "left",
     },
   ],
-
   "/dashboard/fuel-type": [
     {
       target: "[data-tutorial='welcome']",
@@ -597,7 +614,6 @@ const tutorialConfigs: TutorialConfig = {
       placement: "left",
     },
   ],
-
   "/dashboard/part": [
     {
       target: "[data-tutorial='welcome']",
@@ -605,6 +621,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Aqui você gerencia o cadastro completo de peças e componentes para manutenção da sua frota.
       Mantenha um registro detalhado e organizado de todas as peças utilizadas nos veículos para controle eficiente de estoque e custos.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -633,7 +657,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Peças
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta descrição detalhada, preço unitário atualizado, fornecedor associado e outras informações relevantes para gestão.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -647,13 +671,6 @@ const tutorialConfigs: TutorialConfig = {
       Ao editar, você pode atualizar a descrição, preço unitário e fornecedor associado.
       ATENÇÃO: A exclusão só é possível se a peça não estiver vinculada a ordens de serviço no sistema.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -810,6 +827,14 @@ const tutorialConfigs: TutorialConfig = {
       Controle precisamente quais peças foram utilizadas, quantidades consumidas e valores aplicados para um controle rigoroso de custos operacionais.`,
       placement: "center",
     },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
     {
       target: "[data-tutorial='create-button']",
       title: "Vincular Peça à Ordem 🆕",
@@ -837,7 +862,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Peças em Ordens de Serviço
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela mostra a ordem de serviço relacionada, peça utilizada, quantidade consumida, valor unitário e total calculado automaticamente.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -851,13 +876,6 @@ const tutorialConfigs: TutorialConfig = {
       Ao editar, você pode atualizar a quantidade utilizada ou substituir a peça selecionada.
       IMPORTANTE: A remoção de um registro afetará diretamente o valor total calculado da ordem de serviço.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -878,6 +896,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Aqui você gerencia todas as ordens de serviço da sua frota de forma centralizada e eficiente.
       Registre manutenções preventivas, corretivas e acompanhe detalhadamente o status de cada serviço para manter sua frota sempre operacional e segura.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -907,7 +933,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Ordens de Serviço
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações detalhadas como veículo relacionado, tipo de serviço, status atual, datas programadas e valores envolvidos.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -920,13 +946,6 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
       NOTA: Diferentes ações estarão disponíveis de acordo com o status atual da ordem de serviço (planejada, em andamento, concluída, etc.).`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -947,6 +966,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Nesta página você gerencia todos os fornecedores de peças, serviços e insumos para sua frota de forma estratégica.
       Mantenha um cadastro completo e atualizado para facilitar processos de compras, cotações e contratações de serviços especializados.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -973,7 +1000,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Fornecedores
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações essenciais como nome/razão social, CNPJ, contatos atualizados e localização geográfica.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -986,13 +1013,6 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
       ATENÇÃO: A exclusão só é possível se o fornecedor não estiver vinculado a peças cadastradas ou ordens de serviço no sistema.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -1013,6 +1033,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Aqui você gerencia todos os usuários que têm acesso ao sistema de forma centralizada e segura.
       Controle precisamente quem pode acessar a plataforma e quais funcionalidades cada usuário pode utilizar. Esta é uma área extremamente sensível do sistema!`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -1040,7 +1068,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Cadastros de Usuários
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações como nome completo, email de acesso, nível de acesso configurado, perfil atribuído e status de verificação da conta.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -1054,13 +1082,6 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
       A edição permite atualizar dados pessoais e alterar níveis de acesso e perfis atribuídos ao usuário.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -1148,6 +1169,15 @@ const tutorialConfigs: TutorialConfig = {
       Controle informações detalhadas, histórico de manutenções, status operacional e documentação completa de cada veículo para manter sua frota sempre operacional.`,
       placement: "center",
     },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      Esta ação é útil para verificar atualizações em tempo real dos status operacionais.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
     {
       target: "[data-tutorial='create-button']",
       title: "Cadastrar Novo Veículo 🆕",
@@ -1178,7 +1208,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Veículos
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações essenciais como placa, modelo, ano de fabricação, tipo de veículo, status operacional atual e filial associada.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -1192,14 +1222,6 @@ const tutorialConfigs: TutorialConfig = {
       • ESCRITA em Gerenciar Ordens de Serviço (para registrar manutenções)
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      Esta ação é útil para verificar atualizações em tempo real dos status operacionais.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -1220,6 +1242,15 @@ const tutorialConfigs: TutorialConfig = {
       content: `Nesta página você gerencia todas as despesas e contas a pagar da sua empresa de forma organizada e eficiente.
       Controle rigorosamente vencimentos, registre pagamentos e mantenha a saúde financeira sempre em dia com alertas automáticos.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      Esta ação é útil para verificar atualizações em tempo real dos status de pagamento e novos vencimentos.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -1250,7 +1281,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações essenciais como valor da conta, data de vencimento, data de pagamento, filial responsável e status atual.
       DICA VISUAL: As cores das linhas indicam status importantes: Verde = Conta Paga, Amarelo = Próximo do vencimento, Vermelho = Conta Vencida.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -1266,14 +1297,6 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Ordens de Serviço (para editar vinculação)
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      Esta ação é útil para verificar atualizações em tempo real dos status de pagamento e novos vencimentos.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",
@@ -1294,6 +1317,30 @@ const tutorialConfigs: TutorialConfig = {
       content: `Esta é sua central de controle completo de abastecimentos da frota.
       Registre e monitore todos os abastecimentos realizados, controle custos com combustível e acompanhe o consumo de cada veículo para otimizar a gestão operacional.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-tutorial='export-excel']",
+      title: "Exportar Relatório de Abastecimentos 📊",
+      content: `Clique aqui para exportar um relatório completo de abastecimentos em formato Excel (.xlsx).
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Abastecimento
+      O arquivo exportado contém todos os abastecimentos filtrados atualmente na tabela, com informações detalhadas como:
+      • Dados do veículo e motorista responsável
+      • Tipo de combustível utilizado
+      • Quantidade de litros e valor total
+      • Quilometragem registrada no odômetro
+      • Data do abastecimento
+      IMPORTANTE: A exportação será realizada apenas se houver dados na tabela para exportar.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      Esta ação é útil para verificar novos abastecimentos registrados por outros usuários em tempo real.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -1325,7 +1372,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações detalhadas como veículo abastecido, tipo de combustível, quantidade em litros, valor total, data/hora do abastecimento e localização do posto.
       DICA: Use os filtros para analisar consumo por período, veículo específico ou tipo de combustível.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -1349,14 +1396,6 @@ const tutorialConfigs: TutorialConfig = {
       placement: "bottom",
     },
     {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      Esta ação é útil para verificar novos abastecimentos registrados por outros usuários em tempo real.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
-    },
-    {
       target: "[data-tutorial='view-options']",
       title: "Opções de Visualização 👁️",
       content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
@@ -1375,6 +1414,15 @@ const tutorialConfigs: TutorialConfig = {
       content: `Nesta página você gerencia todos os checklists veiculares realizados para sua frota de forma completa e organizada.
       Registre inspeções veiculares detalhadas, monitore a condição dos veículos e mantenha histórico completo de verificações de segurança e conformidade.`,
       placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      Esta ação é útil para verificar novos checklists registrados por outros usuários em tempo real.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
     },
     {
       target: "[data-tutorial='create-button']",
@@ -1407,7 +1455,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações essenciais como veículo inspecionado, motorista responsável, data do checklist, quilometragem registrada, condição geral do veículo e status da inspeção.
       DICA VISUAL: As cores das linhas indicam a condição geral: Verde = Aprovado, Amarelo = Aprovado com Restrições, Vermelho = Reprovado.`,
-      placement: "bottom",
+      placement: "left",
       spotlightPadding: 20,
     },
     {
@@ -1427,14 +1475,6 @@ const tutorialConfigs: TutorialConfig = {
       • Excluir permanentemente do sistema
       ATENÇÃO: A exclusão remove permanentemente o registro e todo histórico de inspeção do veículo.`,
       placement: "bottom",
-    },
-    {
-      target: "[data-revalidate]",
-      title: "Atualização de Dados 🔄",
-      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
-      Esta ação é útil para verificar novos checklists registrados por outros usuários em tempo real.
-      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
-      placement: "left",
     },
     {
       target: "[data-tutorial='view-options']",

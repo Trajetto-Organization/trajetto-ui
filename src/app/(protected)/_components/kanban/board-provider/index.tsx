@@ -227,6 +227,8 @@ const KanbanBoardProvider = ({
                 -translate-y-1/2 text-muted-foreground h-4 w-4"
               />
               <Input
+                id="kanban-search"
+                name="kanban-search"
                 type="text"
                 placeholder="Buscar por ID, coluna, card, usuário ou prioridade..."
                 value={searchValue}
@@ -292,6 +294,8 @@ const KanbanBoardProvider = ({
               -translate-y-1/2 text-muted-foreground h-4 w-4"
             />
             <Input
+              id="kanban-search-main"
+              name="kanban-search-main"
               type="text"
               placeholder={
                 hasLimitedAccess

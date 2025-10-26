@@ -45,7 +45,7 @@ const nextConfig = {
       // Cloudflare R2 production storage
       {
         protocol: "https",
-        hostname: "pub-f064dc0579654bfaaf40ca021aa28dd7.r2.dev",
+        hostname: "assets.intrajetto.com",
       },
     ],
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",

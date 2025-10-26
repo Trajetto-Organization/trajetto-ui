@@ -101,10 +101,16 @@ const UserSelector = ({
   if (hasError && !users?.length) {
     return (
       <div className="space-y-2">
-        <Label className={errorMessage ? "text-red-500" : ""}>
+        <Label
+          htmlFor="user-selector-error"
+          className={errorMessage ? "text-red-500" : ""}
+        >
           {errorMessage ? errorMessage[0] : label}
         </Label>
-        <div className="flex items-center gap-2 p-3 border rounded-md bg-muted/30">
+        <div
+          id="user-selector-error"
+          className="flex items-center gap-2 p-3 border rounded-md bg-muted/30"
+        >
           <AlertCircle className="h-4 w-4 text-destructive" />
           <span className="text-sm text-destructive flex-1">
             {hookErrorMessage || "Erro ao carregar usuários"}
@@ -120,8 +126,8 @@ const UserSelector = ({
   return (
     <div className="space-y-2">
       <Label
+        htmlFor="user-selector-button"
         className={errorMessage ? "text-red-500" : ""}
-        htmlFor="assignedUserId"
       >
         {errorMessage ? errorMessage[0] : label}
       </Label>
@@ -129,6 +135,7 @@ const UserSelector = ({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id="user-selector-button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -283,6 +290,7 @@ const UserSelector = ({
 
       {/* Hidden input to maintain compatibility with forms */}
       <input
+        id="assignedUserId"
         type="hidden"
         name="assignedUserId"
         value={value === "none" ? "" : value}

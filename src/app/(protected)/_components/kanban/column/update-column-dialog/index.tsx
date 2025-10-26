@@ -111,6 +111,7 @@ const UpdateColumnForm = ({
 
         <div className="space-y-2">
           <Label
+            htmlFor="color"
             className={state.updateColumnError?.color ? "text-red-500" : ""}
           >
             {state.updateColumnError?.color
@@ -133,6 +134,7 @@ const UpdateColumnForm = ({
             ))}
           </div>
           <Input
+            id="color"
             type="color"
             name="color"
             value={color}

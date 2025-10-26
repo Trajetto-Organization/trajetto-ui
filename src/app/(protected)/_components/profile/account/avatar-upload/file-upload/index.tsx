@@ -242,7 +242,7 @@ const FileUpload = ({
           <motion.div
             onClick={handleClick}
             whileHover="animate"
-            className="py-14 px-6 group/file block rounded-lg 
+            className="pt-[3.1rem] pb-14 px-6 group/file block rounded-lg 
             cursor-pointer w-full relative overflow-hidden"
           >
             <input

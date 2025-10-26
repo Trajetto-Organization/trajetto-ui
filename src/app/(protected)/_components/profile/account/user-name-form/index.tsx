@@ -52,6 +52,7 @@ const UserNameContainer = ({
           onChange={(event) => handleUserName(event.target.value)}
           value={userNameValue}
           disabled={pending || error}
+          autoComplete="name"
         />
 
         <Button

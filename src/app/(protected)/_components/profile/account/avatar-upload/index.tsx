@@ -269,17 +269,17 @@ const AvatarUpload = ({
           className={`sm:max-w-[560px] max-h-[90vh]
           overflow-y-auto ${!isCropping ? "p-0" : ""}`}
         >
-          {/* Dialog Header - Only show when cropping */}
-          {isCropping && (
-            <DialogHeader>
-              <DialogTitle>
-                {avatarUrl ? "Alterar Avatar" : "Adicionar Avatar"}
-              </DialogTitle>
-              <DialogDescription>
-                Ajuste a posição e o zoom da sua imagem
-              </DialogDescription>
-            </DialogHeader>
-          )}
+          {/* Dialog Header - Always present for accessibility, hidden when not cropping */}
+          <DialogHeader className={!isCropping ? "sr-only" : ""}>
+            <DialogTitle>
+              {avatarUrl ? "Alterar Avatar" : "Adicionar Avatar"}
+            </DialogTitle>
+            <DialogDescription>
+              {isCropping
+                ? "Ajuste a posição e o zoom da sua imagem"
+                : "Selecione uma imagem para fazer upload"}
+            </DialogDescription>
+          </DialogHeader>
 
           <FileUpload
             singleFile={true}

@@ -289,7 +289,9 @@ const CardModalForm = ({
               )}
             />
             <div>
-              <Label className="text-sm font-medium">Status da Tarefa</Label>
+              <Label htmlFor="completed" className="text-sm font-medium">
+                Status da Tarefa
+              </Label>
               <p className="text-xs text-muted-foreground">
                 {completed ? "Tarefa concluída" : "Tarefa em andamento"}
               </p>
@@ -297,6 +299,7 @@ const CardModalForm = ({
           </div>
           <Checkbox
             id="completed"
+            name="completed-checkbox"
             checked={completed}
             onCheckedChange={handleCompletedChange}
             disabled={pending || !hasUserPermission}
@@ -372,14 +375,15 @@ const CardModalForm = ({
         {/* Expiration Date */}
         <div className="space-y-2">
           <Label
+            htmlFor="dueDate-button"
             className={errorState?.dueDate ? "text-red-500" : ""}
-            htmlFor="dueDate"
           >
             {errorState?.dueDate ? errorState.dueDate : "Data de Vencimento"}
           </Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
+                id="dueDate-button"
                 variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
@@ -408,6 +412,7 @@ const CardModalForm = ({
             </PopoverContent>
           </Popover>
           <input
+            id="dueDate"
             type="hidden"
             name="dueDate"
             value={dueDate ? dueDate.toISOString() : ""}
@@ -426,7 +431,12 @@ const CardModalForm = ({
         )}
 
         {/* ✅ Hidden input para o completed */}
-        <input type="hidden" name="completed" value={completed.toString()} />
+        <input
+          id="completed-hidden"
+          type="hidden"
+          name="completed"
+          value={completed.toString()}
+        />
       </div>
 
       {hasUserPermission && (

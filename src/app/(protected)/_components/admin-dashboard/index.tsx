@@ -462,8 +462,12 @@ const AdminDashboard = ({
           {/* Recent Activity Table */}
           <Card className="shadow-md mt-6" role="table">
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
+              <div
+                className="flex flex-col gap-3 
+                sm:flex-row sm:items-center 
+                sm:justify-between"
+              >
+                <div className="flex-1 min-w-0">
                   <CardTitle>Atividades Recentes</CardTitle>
                   <CardDescription className="mt-1">
                     Últimas ações realizadas no sistema
@@ -474,9 +478,16 @@ const AdminDashboard = ({
                 {!hasUserError &&
                   (userLogged?.role === "MASTER" ||
                     userLogged?.role === "BUSINESS_ADMIN") && (
-                    <Link href={`${basePath}/activity`}>
-                      <Button variant="outline" size="sm">
-                        <ChartArea className=" h-4 w-4" />
+                    <Link
+                      href={`${basePath}/activity`}
+                      className="flex-shrink-0"
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                      >
+                        <ChartArea className="h-4 w-4" />
                         Ver todas
                       </Button>
                     </Link>
@@ -487,9 +498,9 @@ const AdminDashboard = ({
               {recentActivity && recentActivity.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="truncate">
                       <TableHead>Tipo</TableHead>
-                      <TableHead className="w-[40%]">Descrição</TableHead>
+                      <TableHead>Descrição</TableHead>
                       <TableHead>Nome do usuário</TableHead>
                       <TableHead>E-mail do usuário</TableHead>
                       {!hasUserError && userLogged?.role === "MASTER" && (

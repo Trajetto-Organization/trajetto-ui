@@ -15,9 +15,9 @@ const Loading = (): JSX.Element => {
             <h2 className="text-lg font-semibold leading-none">
               <Skeleton className="h-7 w-48" />
             </h2>
-            <p className="text-balance text-sm text-muted-foreground">
+            <div className="text-balance text-sm text-muted-foreground">
               <Skeleton className="h-4 w-24" />
-            </p>
+            </div>
           </div>
           <div className="col-span-6">
             <div className="flex w-full items-center gap-2">
@@ -37,9 +37,9 @@ const Loading = (): JSX.Element => {
                 <h2 className="text-lg font-semibold leading-none">
                   <Skeleton className="h-7 w-48" />
                 </h2>
-                <p className="text-balance text-sm text-muted-foreground">
+                <div className="text-balance text-sm text-muted-foreground">
                   <Skeleton className="h-4 w-24" />
-                </p>
+                </div>
               </div>
 
               <div className="col-span-6">

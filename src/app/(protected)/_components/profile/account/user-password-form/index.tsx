@@ -48,6 +48,7 @@ const UpdatePasswordModalContainer = ({
         errorName={state.userPasswordError?.current_password}
         disabled={pending || error}
         className="pr-10"
+        autoComplete="current-password"
       />
 
       <FormInput
@@ -60,6 +61,7 @@ const UpdatePasswordModalContainer = ({
         errorName={state.userPasswordError?.new_password}
         disabled={pending || error}
         className="pr-10"
+        autoComplete="new-password"
       />
 
       <FormInput
@@ -72,6 +74,7 @@ const UpdatePasswordModalContainer = ({
         errorName={state.userPasswordError?.confirm_new_password}
         disabled={pending || error}
         className="pr-10"
+        autoComplete="new-password"
       />
 
       <Button type="submit" disabled={pending || error}>

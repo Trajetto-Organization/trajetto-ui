@@ -17,6 +17,7 @@ import { UserToolbar } from "../../_components/admin/user/user-toolbar";
 
 import { userRegistrationStats } from "./stats-config";
 import { PageStats } from "../../_components/stats/page-stats";
+
 import { UserRegistrationActions } from "./page-actions";
 
 interface MetaInfo {

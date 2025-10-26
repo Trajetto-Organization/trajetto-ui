@@ -81,7 +81,10 @@ const CreateColumnForm = ({
 
         {/* Cor */}
         <div className="space-y-2">
-          <Label className={state.createColumnError?.color && "text-red-500"}>
+          <Label
+            htmlFor="color"
+            className={state.createColumnError?.color && "text-red-500"}
+          >
             {state.createColumnError?.color
               ? state.createColumnError?.color
               : "Cor da Coluna"}
@@ -103,6 +106,7 @@ const CreateColumnForm = ({
           </div>
 
           <Input
+            id="color"
             type="color"
             name="color"
             value={color}

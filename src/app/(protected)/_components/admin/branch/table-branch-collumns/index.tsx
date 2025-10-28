@@ -16,6 +16,8 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-branches"
+        name="select-all-branches"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -27,6 +29,8 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-branch-${row.id}`}
+        name={`select-branch-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

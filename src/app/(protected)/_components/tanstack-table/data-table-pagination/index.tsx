@@ -73,6 +73,7 @@ export function DataTablePagination<TData>({
             Linhas por página
           </p>
           <Select
+            name="pageSize"
             value={`${paginationState.pageSize}`}
             onValueChange={(value) => {
               table.setPageSize(Number(value));
@@ -81,6 +82,7 @@ export function DataTablePagination<TData>({
             disabled={error || isLoading}
           >
             <SelectTrigger
+              id="pageSize"
               aria-label="Paginação"
               className="h-8 w-full sm:w-[80px] text-sm"
             >

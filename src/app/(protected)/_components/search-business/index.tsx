@@ -59,12 +59,16 @@ const SearchBusiness = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorBusinessId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-business-input"
+        className={errorBusinessId ? "text-red-500" : ""}
+      >
         {errorBusinessId ? errorBusinessId[0] : "Selecione a Empresa"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
+          id="search-business-input"
           placeholder="Buscar empresa..."
           autoFocus
           className="h-9"

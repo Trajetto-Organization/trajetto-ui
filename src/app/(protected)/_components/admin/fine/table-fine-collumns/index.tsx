@@ -17,6 +17,8 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-fines"
+        name="select-all-fines"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -28,6 +30,8 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-fine-${row.id}`}
+        name={`select-fine-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

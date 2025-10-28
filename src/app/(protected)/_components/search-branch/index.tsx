@@ -63,13 +63,13 @@ const SearchBranch = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorBranchId ? "text-red-500" : ""}>
+      <Label htmlFor="search-branch-input" className={errorBranchId ? "text-red-500" : ""}>
         {errorBranchId ? errorBranchId[0] : "Selecione a filial"}{" "}
         {isOptional && "(opcional)"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar filial..." className="h-9" />
+        <CommandInput id="search-branch-input" placeholder="Buscar filial..." className="h-9" />
 
         {!isLoadingBranches && !hasError && (
           <CommandEmpty>

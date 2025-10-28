@@ -41,6 +41,8 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-account-payables"
+        name="select-all-account-payables"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -52,6 +54,8 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-account-payable-${row.id}`}
+        name={`select-account-payable-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

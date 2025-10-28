@@ -5,6 +5,7 @@ import {
   DialogScrollContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +68,10 @@ export function ViewQuoteModal({
               {statusLabels[quote.status]}
             </Badge>
           </div>
+          <DialogDescription>
+            Visualize todas as informações detalhadas da solicitação de
+            orçamento.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -140,14 +145,14 @@ export function ViewQuoteModal({
               <div>
                 <h3
                   className="text-lg font-semibold mb-3 
-                    flex items-center gap-2"
+                  flex items-center gap-2"
                 >
                   <FileText className="h-4 w-4" />
                   Notas Internas
                 </h3>
                 <div
                   className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg 
-                    p-4 border border-blue-200 dark:border-blue-800"
+                  p-4 border border-blue-200 dark:border-blue-800"
                 >
                   <p className="text-sm whitespace-pre-wrap">{quote.notes}</p>
                 </div>

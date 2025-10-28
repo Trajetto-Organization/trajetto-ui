@@ -60,12 +60,12 @@ const SearchVehicle = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorVehicleId ? "text-red-500" : ""}>
+      <Label htmlFor="search-vehicle-input" className={errorVehicleId ? "text-red-500" : ""}>
         {errorVehicleId ? errorVehicleId[0] : "Selecione o veículo"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar veículo..." className="h-9" />
+        <CommandInput id="search-vehicle-input" placeholder="Buscar veículo..." className="h-9" />
 
         {!isLoadingVehicle && !hasError && (
           <CommandEmpty>

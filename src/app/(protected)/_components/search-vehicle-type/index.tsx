@@ -63,7 +63,7 @@ const SearchVehicleType = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorVehicleTypeId ? "text-red-500" : ""}>
+      <Label htmlFor="search-vehicle-type-input" className={errorVehicleTypeId ? "text-red-500" : ""}>
         {errorVehicleTypeId
           ? errorVehicleTypeId[0]
           : "Selecione o tipo de veículo"}{" "}
@@ -71,7 +71,7 @@ const SearchVehicleType = ({
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar tipo de veículo..." className="h-9" />
+        <CommandInput id="search-vehicle-type-input" placeholder="Buscar tipo de veículo..." className="h-9" />
 
         {!isLoadingVehicleTypes && !hasError && (
           <CommandEmpty>

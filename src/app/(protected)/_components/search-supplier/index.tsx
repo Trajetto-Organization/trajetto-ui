@@ -63,13 +63,13 @@ const SearchSupplier = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorSupplierId ? "text-red-500" : ""}>
+      <Label htmlFor="search-supplier-input" className={errorSupplierId ? "text-red-500" : ""}>
         {errorSupplierId ? errorSupplierId[0] : "Selecione o fornecedor"}{" "}
         {isOptional && "(opcional)"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar fornecedor..." className="h-9" />
+        <CommandInput id="search-supplier-input" placeholder="Buscar fornecedor..." className="h-9" />
 
         {!isLoadingSuppliers && !hasError && (
           <CommandEmpty>

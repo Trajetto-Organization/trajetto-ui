@@ -58,12 +58,12 @@ const SearchUser = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorUserId ? "text-red-500" : ""}>
+      <Label htmlFor="search-user-input" className={errorUserId ? "text-red-500" : ""}>
         {errorUserId ? errorUserId[0] : "Selecione o usuário"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar usuário..." className="h-9" />
+        <CommandInput id="search-user-input" placeholder="Buscar usuário..." className="h-9" />
 
         {!isLoadingUsers && !hasError && (
           <CommandEmpty>

@@ -61,12 +61,12 @@ const SearchFuelType = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorFuelTypeId ? "text-red-500" : ""}>
+      <Label htmlFor="search-fuel-type-input" className={errorFuelTypeId ? "text-red-500" : ""}>
         {errorFuelTypeId ? errorFuelTypeId[0] : "Selecione o combustível"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar combustível..." className="h-9" />
+        <CommandInput id="search-fuel-type-input" placeholder="Buscar combustível..." className="h-9" />
 
         {!isLoadingFuelTypes && !hasError && (
           <CommandEmpty>

@@ -81,7 +81,7 @@ const SearchServiceOrder = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorServiceOrderId ? "text-red-500" : ""}>
+      <Label htmlFor="search-service-order-input" className={errorServiceOrderId ? "text-red-500" : ""}>
         {errorServiceOrderId
           ? errorServiceOrderId[0]
           : "Selecione a ordem de serviço"}{" "}
@@ -90,6 +90,7 @@ const SearchServiceOrder = ({
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
+          id="search-service-order-input"
           placeholder="Buscar ordem de serviço..."
           className="h-9"
         />

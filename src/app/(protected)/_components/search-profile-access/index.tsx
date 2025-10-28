@@ -61,12 +61,12 @@ const SearchProfileAccess = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorProfileAccessId ? "text-red-500" : ""}>
+      <Label htmlFor="search-profile-access-input" className={errorProfileAccessId ? "text-red-500" : ""}>
         {errorProfileAccessId ? errorProfileAccessId[0] : "Selecione o Perfil"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar perfil..." className="h-9" />
+        <CommandInput id="search-profile-access-input" placeholder="Buscar perfil..." className="h-9" />
 
         {!isLoadingProfiles && !hasError && (
           <CommandEmpty>

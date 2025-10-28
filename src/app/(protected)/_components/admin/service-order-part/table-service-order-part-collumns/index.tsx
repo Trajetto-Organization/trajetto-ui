@@ -18,6 +18,8 @@ const tableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSchema>[] =
       },
       header: ({ table }) => (
         <Checkbox
+          id="select-all-service-order-parts"
+          name="select-all-service-order-parts"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -29,6 +31,8 @@ const tableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSchema>[] =
       ),
       cell: ({ row }) => (
         <Checkbox
+          id={`select-service-order-part-${row.id}`}
+          name={`select-service-order-part-${row.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"

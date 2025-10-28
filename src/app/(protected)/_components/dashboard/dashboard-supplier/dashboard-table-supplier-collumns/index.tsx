@@ -16,6 +16,8 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-dashboard-suppliers"
+        name="select-all-dashboard-suppliers"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -27,6 +29,8 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-dashboard-supplier-${row.id}`}
+        name={`select-dashboard-supplier-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

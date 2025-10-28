@@ -16,6 +16,8 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-business"
+        name="select-all-business"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -27,6 +29,8 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-business-${row.id}`}
+        name={`select-business-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

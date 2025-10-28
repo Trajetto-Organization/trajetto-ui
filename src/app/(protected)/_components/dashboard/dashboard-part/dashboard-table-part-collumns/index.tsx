@@ -16,6 +16,8 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-dashboard-parts"
+        name="select-all-dashboard-parts"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -27,6 +29,8 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-dashboard-part-${row.id}`}
+        name={`select-dashboard-part-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

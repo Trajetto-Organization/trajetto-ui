@@ -48,6 +48,8 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-vehicle-checklists"
+        name="select-all-vehicle-checklists"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -59,6 +61,8 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-vehicle-checklist-${row.id}`}
+        name={`select-vehicle-checklist-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

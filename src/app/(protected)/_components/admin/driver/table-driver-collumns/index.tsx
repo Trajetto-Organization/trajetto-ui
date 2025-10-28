@@ -30,6 +30,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-drivers"
+        name="select-all-drivers"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -41,6 +43,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-driver-${row.id}`}
+        name={`select-driver-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

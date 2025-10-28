@@ -32,6 +32,8 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-quotes"
+        name="select-all-quotes"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -43,6 +45,8 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-quote-${row.id}`}
+        name={`select-quote-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

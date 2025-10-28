@@ -76,7 +76,7 @@ const SearchTrafficViolationCode = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorTrafficViolationCodeId ? "text-red-500" : ""}>
+      <Label htmlFor="search-traffic-violation-code-input" className={errorTrafficViolationCodeId ? "text-red-500" : ""}>
         {errorTrafficViolationCodeId
           ? errorTrafficViolationCodeId[0]
           : "Selecione o código de infração de trânsito"}{" "}
@@ -85,6 +85,7 @@ const SearchTrafficViolationCode = ({
 
       <Command className="relative border rounded-md">
         <CommandInput
+          id="search-traffic-violation-code-input"
           placeholder="Buscar por código ou descrição..."
           className="h-9"
         />

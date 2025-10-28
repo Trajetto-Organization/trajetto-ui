@@ -16,6 +16,8 @@ const tableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-fuel-types"
+        name="select-all-fuel-types"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -27,6 +29,8 @@ const tableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-fuel-type-${row.id}`}
+        name={`select-fuel-type-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

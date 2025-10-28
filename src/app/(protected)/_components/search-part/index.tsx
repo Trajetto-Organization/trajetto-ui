@@ -59,12 +59,12 @@ const SearchPart = ({
 
   return (
     <div className="space-y-2">
-      <Label className={errorPartId ? "text-red-500" : ""}>
+      <Label htmlFor="search-part-input" className={errorPartId ? "text-red-500" : ""}>
         {errorPartId ? errorPartId[0] : "Selecione a peça"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput placeholder="Buscar peça..." className="h-9" />
+        <CommandInput id="search-part-input" placeholder="Buscar peça..." className="h-9" />
 
         {!isLoadingParts && !hasError && (
           <CommandEmpty>

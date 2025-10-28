@@ -30,6 +30,8 @@ const dashboardTablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-dashboard-permissions"
+        name="select-all-dashboard-permissions"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -41,6 +43,8 @@ const dashboardTablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-dashboard-permission-${row.id}`}
+        name={`select-dashboard-permission-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

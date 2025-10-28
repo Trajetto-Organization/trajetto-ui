@@ -17,6 +17,8 @@ const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[]
       },
       header: ({ table }) => (
         <Checkbox
+          id="select-all-dashboard-profile-access"
+          name="select-all-dashboard-profile-access"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -28,6 +30,8 @@ const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[]
       ),
       cell: ({ row }) => (
         <Checkbox
+          id={`select-dashboard-profile-access-${row.id}`}
+          name={`select-dashboard-profile-access-${row.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"

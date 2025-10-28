@@ -118,7 +118,11 @@ export function DataTableFacetedFilter<TData, TValue>({
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
-          <CommandInput placeholder={title} />
+          <CommandInput
+            id={title ? `filter-${title.replace(/\s+/g, '-').toLowerCase()}` : 'filter-input'}
+            name={title ? `filter-${title.replace(/\s+/g, '-').toLowerCase()}` : 'filter-input'}
+            placeholder={title}
+          />
           <CommandList
             className="max-h-[200px] [&::-webkit-scrollbar]:w-2 
             [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent 

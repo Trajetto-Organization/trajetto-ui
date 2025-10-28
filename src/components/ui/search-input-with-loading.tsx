@@ -59,6 +59,8 @@ const SearchInputWithLoading = React.forwardRef<
         )}
         onChange={handleChange}
         {...props}
+        id={props.id || "search-input"}
+        name={props.name || "search"}
       />
       {isLoading && (
         <div

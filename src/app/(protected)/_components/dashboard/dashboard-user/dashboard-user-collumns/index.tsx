@@ -52,6 +52,8 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     },
     header: ({ table }) => (
       <Checkbox
+        id="select-all-dashboard-users"
+        name="select-all-dashboard-users"
         checked={
           table.getIsAllPageRowsSelected() ||
           (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -63,6 +65,8 @@ const dashboardTableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <Checkbox
+        id={`select-dashboard-user-${row.id}`}
+        name={`select-dashboard-user-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"

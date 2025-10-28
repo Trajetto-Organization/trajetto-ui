@@ -43,6 +43,7 @@ const DashboardCreateProfileAccessFormContainer = ({
           name="name"
           type="text"
           errorName={state.createProfileAccessError?.name}
+          autoComplete="profile-access"
           placeholder={"Nome do perfil, ex: Admin"}
           disabled={pending}
         />

@@ -96,7 +96,7 @@ const DatePickerField: React.FC<FormFieldProps> = ({
         <Label htmlFor={htmlfor}>{label}</Label>
       )}
 
-      <input type="hidden" name={name} value={value || ""} />
+      <input type="hidden" id={htmlfor} name={name} value={value || ""} />
 
       <Popover>
         <PopoverTrigger asChild>
@@ -216,7 +216,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
         onValueChange={onChange}
         disabled={disabled}
       >
-        <SelectTrigger>
+        <SelectTrigger id={htmlfor}>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>

@@ -67,6 +67,7 @@ const CreateSupplierFormContainer = ({
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
       handleFieldChange("name", e.target.value),
     disabled: false,
+    autoComplete: "organization",
   };
 
   // Ensure that the CNPJ field is maintained, as it is important for suppliers

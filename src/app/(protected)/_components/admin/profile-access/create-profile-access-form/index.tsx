@@ -43,6 +43,7 @@ const CreateProfileAccessFormContainer = ({
           htmlfor={"name"}
           name="name"
           type="text"
+          autoComplete="profile-access"
           errorName={state.createProfileAccessError?.name}
           placeholder={"Nome do perfil, ex: Admin"}
           disabled={pending}

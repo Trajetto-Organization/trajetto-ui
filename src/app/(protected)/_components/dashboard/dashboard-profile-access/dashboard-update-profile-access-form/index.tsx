@@ -52,6 +52,7 @@ const DashboardUpdateProfileAccessFormContainer = ({
           }
           type="text"
           errorName={state.updateProfileAccessError?.name}
+          autoComplete="profile-access"
           placeholder={"Nome do perfil, ex: Admin"}
           disabled={pending}
           value={profileAccessName}

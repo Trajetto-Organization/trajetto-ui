@@ -88,6 +88,7 @@ const DashboardCreateUserFormContainer = ({
           htmlfor={"email"}
           name="email"
           type="email"
+          autoComplete="email"
           errorName={state?.createUserError?.email}
           placeholder={"E-mail"}
           disabled={pending}
@@ -98,6 +99,7 @@ const DashboardCreateUserFormContainer = ({
           htmlfor={"name"}
           name="name"
           type="text"
+          autoComplete="name"
           errorName={state?.createUserError?.name}
           placeholder={"Nome"}
           disabled={pending}
@@ -127,7 +129,7 @@ const DashboardCreateUserFormContainer = ({
               });
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger id="role">
               <SelectValue placeholder="Nível de acesso" />
             </SelectTrigger>
             <SelectContent>
@@ -159,6 +161,7 @@ const DashboardCreateUserFormContainer = ({
                 htmlfor="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 errorName={state?.createUserError?.password}
                 placeholder="Senha"
                 value={password}

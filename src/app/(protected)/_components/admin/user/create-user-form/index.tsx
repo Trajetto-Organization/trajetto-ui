@@ -73,6 +73,7 @@ const CreateUserFormContainer = ({
           id="email"
           name="email"
           type="email"
+          autoComplete="email"
           errorName={state?.createUserError?.email}
           placeholder={"E-mail"}
           disabled={pending}
@@ -84,6 +85,7 @@ const CreateUserFormContainer = ({
           id="name"
           name="name"
           type="text"
+          autoComplete="name"
           errorName={state?.createUserError?.name}
           placeholder={"Nome"}
           disabled={pending}
@@ -92,7 +94,6 @@ const CreateUserFormContainer = ({
         <div className="w-full flex flex-col gap-3">
           <Label
             htmlFor="role"
-            id="role"
             className={cn(
               state.createUserError?.role && "h-4 truncate text-red-500",
             )}
@@ -114,7 +115,7 @@ const CreateUserFormContainer = ({
               });
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger id="role">
               <SelectValue placeholder="Nível de acesso" />
             </SelectTrigger>
             <SelectContent>
@@ -122,7 +123,7 @@ const CreateUserFormContainer = ({
                 <SelectItem
                   key={role}
                   value={role}
-                  className="cursor-pointer 
+                  className="cursor-pointer
                   hover:bg-accent hover:text-accent-foreground"
                 >
                   {roleLabels[role]}
@@ -140,6 +141,7 @@ const CreateUserFormContainer = ({
               name="password"
               id="password"
               type="password"
+              autoComplete="new-password"
               errorName={state?.createUserError?.password}
               placeholder="Senha"
               value={password}

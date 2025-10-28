@@ -81,6 +81,7 @@ const DashboardUpdateSupplierFormContainer = ({
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
       handleFieldChange("name", e.target.value),
     disabled: false,
+    autoComplete: "organization",
   };
 
   const cnpjField = allFields.find((field) => field.name === "cnpj");

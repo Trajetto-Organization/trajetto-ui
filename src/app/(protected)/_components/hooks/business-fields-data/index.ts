@@ -7,6 +7,7 @@ interface FieldProps {
   mask?: string;
   maxLength?: number;
   disabled?: boolean;
+  autoComplete?: string;
   onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   value?: string;
@@ -19,6 +20,7 @@ const businessFieldsData: FieldProps[] = [
     name: "corporate_reason",
     type: "text",
     placeholder: "Razão social",
+    autoComplete: "organization",
   },
   {
     label: "Nome fantasia (opcional)",
@@ -26,6 +28,7 @@ const businessFieldsData: FieldProps[] = [
     name: "fantasy_name",
     type: "text",
     placeholder: "Nome fantasia",
+    autoComplete: "organization",
   },
   {
     label: "CNPJ",
@@ -34,6 +37,7 @@ const businessFieldsData: FieldProps[] = [
     type: "text",
     placeholder: "00.000.000/0000-00",
     mask: "99.999.999/9999-99",
+    autoComplete: "off",
   },
   {
     label: "CEP",
@@ -42,6 +46,7 @@ const businessFieldsData: FieldProps[] = [
     type: "text",
     placeholder: "00000-000",
     mask: "99999-999",
+    autoComplete: "postal-code",
   },
   {
     label: "Cidade",
@@ -49,6 +54,7 @@ const businessFieldsData: FieldProps[] = [
     name: "city",
     type: "text",
     placeholder: "Cidade",
+    autoComplete: "address-level2",
   },
   {
     label: "UF",
@@ -57,6 +63,7 @@ const businessFieldsData: FieldProps[] = [
     type: "text",
     placeholder: "UF",
     maxLength: 2,
+    autoComplete: "address-level1",
   },
   {
     label: "Rua",
@@ -64,6 +71,7 @@ const businessFieldsData: FieldProps[] = [
     name: "street",
     type: "text",
     placeholder: "Rua",
+    autoComplete: "street-address",
   },
   {
     label: "Número",
@@ -71,6 +79,7 @@ const businessFieldsData: FieldProps[] = [
     name: "address_number",
     type: "text",
     placeholder: "Número do endereço",
+    autoComplete: "off",
   },
   {
     label: "Complemento (opcional)",
@@ -78,6 +87,7 @@ const businessFieldsData: FieldProps[] = [
     name: "complement",
     type: "text",
     placeholder: "Complemento",
+    autoComplete: "off",
   },
   {
     label: "CNAE",
@@ -86,6 +96,7 @@ const businessFieldsData: FieldProps[] = [
     type: "text",
     placeholder: "CNAE",
     maxLength: 7,
+    autoComplete: "off",
   },
   {
     label: "Código ERP (opcional)",
@@ -93,6 +104,7 @@ const businessFieldsData: FieldProps[] = [
     name: "erp_code",
     type: "text",
     placeholder: "Código ERP",
+    autoComplete: "off",
   },
   {
     label: "Nome do responsável",
@@ -100,6 +112,7 @@ const businessFieldsData: FieldProps[] = [
     name: "responsible_name",
     type: "text",
     placeholder: "Nome do responsável",
+    autoComplete: "name",
   },
   {
     label: "Telefone",
@@ -108,6 +121,7 @@ const businessFieldsData: FieldProps[] = [
     type: "text",
     placeholder: "(00) 00000-0000",
     mask: "(99) 99999-9999",
+    autoComplete: "tel",
   },
   {
     label: "E-mail",
@@ -115,6 +129,7 @@ const businessFieldsData: FieldProps[] = [
     name: "email",
     type: "text",
     placeholder: "E-mail do responsável",
+    autoComplete: "email",
   },
 ];
 

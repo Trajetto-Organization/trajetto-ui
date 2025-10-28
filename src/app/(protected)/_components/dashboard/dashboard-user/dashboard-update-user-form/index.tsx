@@ -86,6 +86,7 @@ const DashboardUpdateUserFormContainer = ({
           htmlfor={"email"}
           name="email"
           type="email"
+          autoComplete="email"
           onChange={(event) => handleUpdateUserEmail(event.currentTarget.value)}
           errorName={state?.updateUserError?.email}
           placeholder={"E-mail"}
@@ -98,6 +99,7 @@ const DashboardUpdateUserFormContainer = ({
           htmlfor={"name"}
           name="name"
           type="text"
+          autoComplete="name"
           onChange={(event) => handleUpdateUserName(event.currentTarget.value)}
           errorName={state?.updateUserError?.name}
           placeholder={"Nome"}
@@ -136,7 +138,7 @@ const DashboardUpdateUserFormContainer = ({
               });
             }}
           >
-            <SelectTrigger>
+            <SelectTrigger id="role">
               <SelectValue placeholder="Nível de acesso" />
             </SelectTrigger>
             <SelectContent>
@@ -168,6 +170,7 @@ const DashboardUpdateUserFormContainer = ({
                 htmlfor="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 errorName={state?.updateUserError?.password}
                 placeholder="Senha"
                 value={password}

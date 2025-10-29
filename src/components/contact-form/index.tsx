@@ -147,7 +147,7 @@ const ContactForm = (): JSX.Element => {
                     </div>
                     <div>
                       <p className="text-sm text-white/70">Email</p>
-                      <p className="font-medium">intrajetto@gmail.com</p>
+                      <p className="font-medium">contato@intrajetto.com</p>
                     </div>
                   </div>
 

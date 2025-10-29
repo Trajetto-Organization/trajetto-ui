@@ -47,7 +47,7 @@ function useContact() {
       `Olá, meu nome é: ${firstName} ${lastName}\n\n${message}`,
     );
 
-    const mailtoLink = `mailto:intrajetto@gmail.com?subject=${subject}&body=${body}`;
+    const mailtoLink = `mailto:contato@intrajetto.com?subject=${subject}&body=${body}`;
 
     // Redirects to email client
     window.location.href = mailtoLink;

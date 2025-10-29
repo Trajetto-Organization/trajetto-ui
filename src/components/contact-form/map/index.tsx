@@ -74,7 +74,7 @@ const Map = (): JSX.Element => {
           <div className="text-center">
             <p className="font-medium">Email</p>
             <p className="text-sm text-muted-foreground">
-              intrajetto@gmail.com
+              contato@intrajetto.com
             </p>
           </div>
         </div>

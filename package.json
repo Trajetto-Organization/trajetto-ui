@@ -1,5 +1,5 @@
 {
-  "name": "router-engine",
+  "name": "trajetto-fleet-manager-ui",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,11 @@
     "dev:auto-tunnel": "node scripts/dev-with-tunnel.js",
     "services:up": "docker compose -f compose.local.yaml up -d",
     "services:down": "docker compose -f compose.local.yaml down",
-    "services:stop": "docker compose -f compose.local.yaml stop"
+    "services:stop": "docker compose -f compose.local.yaml stop",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",
@@ -85,6 +89,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.0.3",
+    "@playwright/test": "^1.56.1",
     "@types/leaflet": "^1.9.17",
     "@types/node": "^20",
     "@types/react": "^18",

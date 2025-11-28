@@ -113,7 +113,7 @@ const DashboardCreateBranchForm = (): JSX.Element => {
           ref={formRef}
           action={(formData) => {
             formData.append("businessId", businessId as string);
-            dispatch(formData);
+            return dispatch(formData);
           }}
         >
           <CreateBranchFormContainer

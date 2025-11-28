@@ -16,20 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useServiceOrderInfiniteScroll } from "./hooks/service-order-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandServiceOrderInputValue } from "../dto";
 import { cn } from "@/lib/utils";
 
 import { formatDate } from "@/lib/format-values";
-
-interface SearchServiceOrderProps {
-  errorServiceOrderId?: string[];
-  searchServiceOrderInputValue: string;
-  businessId: string;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  isOptional?: boolean;
-}
+import { SearchServiceOrderProps } from "./dto";
 
 const SearchServiceOrder = ({
   errorServiceOrderId,
@@ -81,7 +71,10 @@ const SearchServiceOrder = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-service-order-input" className={errorServiceOrderId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-service-order-input"
+        className={errorServiceOrderId ? "text-red-500" : ""}
+      >
         {errorServiceOrderId
           ? errorServiceOrderId[0]
           : "Selecione a ordem de serviço"}{" "}

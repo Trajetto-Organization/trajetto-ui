@@ -14,20 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useTrafficViolationCodeInfiniteScroll } from "./hooks/traffic-violation-code-infinite-scroll";
-
 import { Button } from "@/components/ui/button";
 
-import { CommandTrafficViolationCodeInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchTrafficViolationCodeProps {
-  errorTrafficViolationCodeId?: string[];
-  searchTrafficViolationCodeInputValue: string;
-  handleUpdateSearchTrafficViolationCodeInputValue: (
-    trafficViolationCodeData: CommandTrafficViolationCodeInputValue,
-  ) => void;
-  isOptional?: boolean;
-}
+import { SearchTrafficViolationCodeProps } from "./dto";
 
 const SearchTrafficViolationCode = ({
   errorTrafficViolationCodeId,
@@ -76,7 +66,10 @@ const SearchTrafficViolationCode = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-traffic-violation-code-input" className={errorTrafficViolationCodeId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-traffic-violation-code-input"
+        className={errorTrafficViolationCodeId ? "text-red-500" : ""}
+      >
         {errorTrafficViolationCodeId
           ? errorTrafficViolationCodeId[0]
           : "Selecione o código de infração de trânsito"}{" "}
@@ -180,13 +173,13 @@ const SearchTrafficViolationCode = ({
                         </p>
 
                         <div
-                          className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 
-                            text-xs text-muted-foreground"
+                          className="flex flex-col sm:flex-row sm:items-center 
+                          gap-1 sm:gap-3 text-xs text-muted-foreground"
                         >
                           <span className="inline-flex items-center truncate">
                             <span
                               className="w-1.5 h-1.5 bg-muted-foreground 
-                                rounded-full mr-1.5 shrink-0"
+                              rounded-full mr-1.5 shrink-0"
                             />
                             <span className="truncate">
                               {violationCode.violator_type}
@@ -194,8 +187,8 @@ const SearchTrafficViolationCode = ({
                           </span>
                           <span className="inline-flex items-center truncate">
                             <span
-                              className="w-1.5 h-1.5 
-                                bg-muted-foreground rounded-full mr-1.5 shrink-0"
+                              className="w-1.5 h-1.5 rounded-full 
+                              bg-muted-foreground mr-1.5 shrink-0"
                             />
                             <span className="truncate">
                               {violationCode.competent_agency}

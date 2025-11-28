@@ -16,17 +16,11 @@ import { Button } from "@/components/ui/button";
 import { handleDeleteKanbanColumn } from "@/actions/delete-kanban-column";
 import { useDeleteColumnDialog } from "./hooks";
 
-import { KanbanColumn } from "../../dto";
+import { DeleteColumnDialogProps } from "./dto";
 import { Loader } from "lucide-react";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
-
-interface DeleteColumnDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  column: KanbanColumn;
-}
 
 const DeleteColumnDialogForm = (): JSX.Element => {
   const { pending } = useFormStatus();

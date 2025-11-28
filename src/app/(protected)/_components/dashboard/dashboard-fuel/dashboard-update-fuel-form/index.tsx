@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 
 import { useDropzone } from "react-dropzone";
+
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import {
   Dialog,
@@ -62,6 +64,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
 import { useAuthStore } from "@/store/auth-store";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Branch
 const DashboardSelectBranchStep = ({
@@ -347,6 +362,11 @@ const DashboardUpdateFuelContainer = ({
   fileError,
   setFileError,
   setShowImageModal,
+  handleLocationChange,
+  handleLocationLoadingChange,
+  latitude,
+  longitude,
+  isLoadingLocation,
 }: DashboardUpdateFuelContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
@@ -564,7 +584,23 @@ const DashboardUpdateFuelContainer = ({
   };
 
   const hasFileChange = odometerFile !== null;
-  const hasAnyChange = isDirty || isBusinessAndEntityDirty || hasFileChange;
+
+  // 📍 Check if location has changed
+  const [hasLocationChanged, setHasLocationChanged] = useState<boolean>(false);
+
+  useEffect(() => {
+    const originalLat = fuelData.latitude ?? null;
+    const originalLng = fuelData.longitude ?? null;
+
+    // Check if location changed (compare with original fuelData values)
+    const latChanged = originalLat !== latitude;
+    const lngChanged = originalLng !== longitude;
+
+    setHasLocationChanged(latChanged || lngChanged);
+  }, [latitude, longitude, fuelData.latitude, fuelData.longitude]);
+
+  const hasAnyChange =
+    isDirty || isBusinessAndEntityDirty || hasFileChange || hasLocationChanged;
 
   return (
     <>
@@ -620,7 +656,7 @@ const DashboardUpdateFuelContainer = ({
         />
 
         {/* Notes */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="Observações (opcional)"
             htmlfor="notes"
@@ -635,7 +671,7 @@ const DashboardUpdateFuelContainer = ({
         </div>
 
         {/* Odometer Photo Upload */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <label
             className="block text-sm font-medium
             text-gray-700 dark:text-gray-300 mb-2"
@@ -653,7 +689,10 @@ const DashboardUpdateFuelContainer = ({
                 <div className="flex items-center space-x-3">
                   <ImageIcon className="h-8 w-8 text-blue-600" />
                   <div>
-                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    <p
+                      className="text-sm font-medium 
+                    text-blue-800 dark:text-blue-200"
+                    >
                       Imagem atual do odômetro
                     </p>
                     <p className="text-xs text-blue-600 dark:text-blue-400">
@@ -773,11 +812,32 @@ const DashboardUpdateFuelContainer = ({
           )}
         </div>
 
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.updateFuelError?.latitude?.[0] ||
+              state.updateFuelError?.longitude?.[0]
+            }
+          />
+        </div>
+
         {/* Information Alert */}
-        <div className="col-span-2 mt-4">
-          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+        <div className="col-span-1 md:col-span-2 mt-4">
+          <Alert
+            className="border-blue-200 
+            bg-blue-50 dark:bg-blue-950/20"
+          >
             <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-700 dark:text-blue-300">
+            <AlertDescription
+              className="text-blue-700 
+              dark:text-blue-300"
+            >
               <strong>ℹ️ Informações importantes:</strong>
               <br />
               • A quilometragem não pode ser menor que a atual do veículo
@@ -792,7 +852,7 @@ const DashboardUpdateFuelContainer = ({
         {/* Current Vehicle Info */}
         {data && (
           <div
-            className="col-span-2 mt-4 p-4 bg-green-50 
+            className="col-span-1 md:col-span-2 mt-4 p-4 bg-green-50 
             dark:bg-green-900/20 rounded-lg border border-green-200"
           >
             <p className="text-sm text-green-700 dark:text-green-300">
@@ -814,7 +874,7 @@ const DashboardUpdateFuelContainer = ({
         )}
 
         {/* History Information */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <div
             className="bg-purple-50 dark:bg-purple-900/20 
             p-4 rounded-lg border border-purple-200"
@@ -853,7 +913,9 @@ const DashboardUpdateFuelContainer = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || !hasAnyChange || isLoadingVehicle}
+          disabled={
+            pending || !hasAnyChange || isLoadingVehicle || isLoadingLocation
+          }
         >
           <span>Atualizar Abastecimento</span>
           {pending && (
@@ -881,6 +943,34 @@ const DashboardUpdateFuelForm = ({
   const [fileError, setFileError] = useState<string | null>(null);
 
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
+
+  // 📍 GEOLOCATION STATE - Initialize with existing fuelData location
+  const [latitude, setLatitude] = useState<number | null>(
+    fuelData.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    fuelData.longitude ?? null,
+  );
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
+
+  // Reset location state when fuelData changes
+  useEffect(() => {
+    if (isUpdateFuelOpen) {
+      setLatitude(fuelData.latitude ?? null);
+      setLongitude(fuelData.longitude ?? null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [fuelData, isUpdateFuelOpen]);
 
   const {
     formRef,
@@ -988,6 +1078,7 @@ const DashboardUpdateFuelForm = ({
                 // Remove points if still present
                 const numericValue = mileageInput.value.replace(/\./g, "");
                 mileageInput.value = numericValue;
+
                 formData.set("current_mileage", numericValue);
               }
 
@@ -1003,6 +1094,20 @@ const DashboardUpdateFuelForm = ({
               // Add the odometer photo file to FormData if provided
               if (odometerFile) {
                 formData.set("odometer_photo", odometerFile);
+              }
+
+              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+              // When null, send as empty string (backend will convert to null)
+              if (latitude === null) {
+                formData.append("latitude", "");
+              } else if (latitude !== undefined) {
+                formData.append("latitude", latitude.toString());
+              }
+
+              if (longitude === null) {
+                formData.append("longitude", "");
+              } else if (longitude !== undefined) {
+                formData.append("longitude", longitude.toString());
               }
 
               appendExtraDataToForm(formData, extraData);
@@ -1022,6 +1127,11 @@ const DashboardUpdateFuelForm = ({
               setFileError={setFileError}
               showImageModal={showImageModal}
               setShowImageModal={setShowImageModal}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

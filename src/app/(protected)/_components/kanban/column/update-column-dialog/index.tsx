@@ -21,25 +21,15 @@ import FormInput from "@/components/custom/form-input";
 import { handleUpdateKanbanColumn } from "@/actions/update-kanban-column";
 import { useUpdateColumnDialog } from "./hooks";
 
-import { KanbanColumn } from "../../dto";
 import { Input } from "@/components/ui/input";
-
-import { UpdateColumnDialogFormState } from "./dto";
+import {
+  UpdateColumnDialogFormState,
+  UpdateColumnDialogProps,
+  UpdateColumnFormProps,
+} from "./dto";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
-
-interface UpdateColumnDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  column: KanbanColumn;
-}
-
-interface UpdateColumnFormProps {
-  onClose: () => void;
-  state: UpdateColumnDialogFormState;
-  column: KanbanColumn;
-}
 
 const UpdateColumnForm = ({
   column,

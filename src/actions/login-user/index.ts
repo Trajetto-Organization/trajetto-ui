@@ -9,6 +9,8 @@ import { UserRole } from "@/app/(protected)/_components/dto";
 import { parseJwt } from "@/lib/decode-jwt";
 import { getCookies } from "../cookies";
 
+import { validateTurnstile } from "../validate-turnstile";
+
 interface LogInUserProps {
   message?: string;
   token?: string;
@@ -19,6 +21,19 @@ interface LogInUserProps {
 }
 
 const handleLoginUser = async (state: any, loginValues: FormData) => {
+  if (process.env.NODE_ENV === "production") {
+    const turnstileToken = loginValues.get("turnstileToken") as string;
+    const turnstileOk = await validateTurnstile(turnstileToken);
+
+    if (!turnstileOk) {
+      return {
+        loginError: {
+          loginErrorMessage: "Falha no desafio de segurança.",
+        },
+      };
+    }
+  }
+
   const userSession = `${process.env.HTTP_REQUEST}/user/session`;
 
   const loginValidation = validateLoginUserFormSchema.safeParse({

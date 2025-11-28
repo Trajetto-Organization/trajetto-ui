@@ -1,0 +1,72 @@
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+import { toast } from "sonner";
+import { ExportExcelButtonProps } from "../dto";
+
+function useExportExcelButton({
+  exportAction,
+  entityName,
+}: ExportExcelButtonProps) {
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const searchParams = useSearchParams();
+
+  async function handleExportExcel() {
+    setIsExporting(true);
+
+    try {
+      const search = searchParams.get("search") || "";
+      const result = await exportAction(search);
+
+      if (!result.success || !result.base64Data) {
+        toast.error(
+          result.message || `Erro ao exportar ${entityName}. Tente novamente.`,
+        );
+        return;
+      }
+
+      // Convert base64 to Blob
+      const byteCharacters = atob(result.base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      // Create temporary URL and download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.style.display = "none";
+      a.href = url;
+
+      a.download =
+        result.filename ||
+        `${entityName}-${new Date().toISOString().split("T")[0]}.xlsx`;
+      document.body.appendChild(a);
+
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success(result.message || `${entityName} exportado com sucesso!`);
+    } catch (error) {
+      toast.error(`Erro ao exportar ${entityName}. Tente novamente.`);
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  return {
+    isExporting,
+    handleExportExcel,
+  };
+}
+
+export { useExportExcelButton };

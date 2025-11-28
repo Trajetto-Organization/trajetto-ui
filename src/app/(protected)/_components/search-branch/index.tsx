@@ -16,18 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBranchInfiniteScroll } from "./hooks/branch-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandBranchInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchBranchProps {
-  errorBranchId?: string[];
-  searchBranchInputValue: string;
-  businessId: string;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  isOptional?: boolean;
-}
+import { SearchBranchProps } from "./dto";
 
 const SearchBranch = ({
   errorBranchId,
@@ -63,13 +53,20 @@ const SearchBranch = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-branch-input" className={errorBranchId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-branch-input"
+        className={errorBranchId ? "text-red-500" : ""}
+      >
         {errorBranchId ? errorBranchId[0] : "Selecione a filial"}{" "}
         {isOptional && "(opcional)"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-branch-input" placeholder="Buscar filial..." className="h-9" />
+        <CommandInput
+          id="search-branch-input"
+          placeholder="Buscar filial..."
+          className="h-9"
+        />
 
         {!isLoadingBranches && !hasError && (
           <CommandEmpty>

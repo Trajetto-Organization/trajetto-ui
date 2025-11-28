@@ -195,29 +195,29 @@ const formatNumericInput = (
 // Format mileage with thousands separator (Brazilian format)
 const formatMileage = (value: string): string => {
   // Remove tudo que não é número
-  const numbers = value.replace(/\D/g, '');
+  const numbers = value.replace(/\D/g, "");
 
   // Adiciona pontos como separadores de milhares
-  return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 };
 
 // Format liters input with Brazilian decimal format (natural approach)
 const formatLiters = (value: string): string => {
   // Remove caracteres inválidos, mantém apenas números, vírgula e ponto
-  let cleaned = value.replace(/[^\d,\.]/g, '');
+  let cleaned = value.replace(/[^\d,\.]/g, "");
 
   // Substitui ponto por vírgula (padrão brasileiro)
-  cleaned = cleaned.replace('.', ',');
+  cleaned = cleaned.replace(".", ",");
 
   // Permite apenas uma vírgula
-  const parts = cleaned.split(',');
+  const parts = cleaned.split(",");
   if (parts.length > 2) {
-    cleaned = parts[0] + ',' + parts.slice(1).join('');
+    cleaned = parts[0] + "," + parts.slice(1).join("");
   }
 
   // Limita a 3 casas decimais após a vírgula
   if (parts.length === 2 && parts[1].length > 3) {
-    cleaned = parts[0] + ',' + parts[1].substring(0, 3);
+    cleaned = parts[0] + "," + parts[1].substring(0, 3);
   }
 
   return cleaned;
@@ -225,12 +225,12 @@ const formatLiters = (value: string): string => {
 
 // Convert formatted mileage to numeric value for backend
 const mileageToNumber = (formattedMileage: string): string => {
-  return formattedMileage.replace(/\./g, '');
+  return formattedMileage.replace(/\./g, "");
 };
 
 // Convert formatted liters to numeric value for backend
 const litersToNumber = (formattedLiters: string): string => {
-  return formattedLiters.replace(',', '.');
+  return formattedLiters.replace(",", ".");
 };
 
 // Function to format phone number for display

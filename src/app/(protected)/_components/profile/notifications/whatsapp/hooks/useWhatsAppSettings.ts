@@ -3,29 +3,15 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
-import { WhatsAppSettings, UpdateWhatsAppSettingsRequest } from "../dto";
+import {
+  WhatsAppSettings,
+  UpdateWhatsAppSettingsRequest,
+  UseWhatsAppSettingsReturn,
+  UseWhatsAppSettingsProps,
+} from "../dto";
+
 import { updateWhatsAppSettings } from "@/actions/whatsapp/whatsapp-settings";
-
 import { useWhatsAppContext } from "../provider";
-
-interface UseWhatsAppSettingsReturn {
-  isUpdating: boolean;
-  phoneNumber: string;
-  isPhoneModified: boolean;
-  handlePhoneChange: (value: string) => void;
-  handleToggleNotifications: (
-    enabled: boolean,
-    onSuccess?: (data: WhatsAppSettings) => void,
-  ) => Promise<void>;
-  handleUpdatePhone: (
-    onSuccess?: (data: WhatsAppSettings) => void,
-  ) => Promise<void>;
-}
-
-interface UseWhatsAppSettingsProps {
-  initialSettings: WhatsAppSettings | null;
-  isAnyOperationActive?: boolean; // To disable during connection operations
-}
 
 function useWhatsAppSettings({
   initialSettings,

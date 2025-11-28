@@ -1,11 +1,25 @@
 "use server";
 
 import { validateForgotFormSchema } from "@/schemas/forgot-password-schema";
+import { validateTurnstile } from "../validate-turnstile";
 
 const handleForgotPassword = async (
   state: any,
   forgotPasswordValues: FormData,
 ) => {
+  if (process.env.NODE_ENV === "production") {
+    const turnstileToken = forgotPasswordValues.get("turnstileToken") as string;
+    const turnstileOk = await validateTurnstile(turnstileToken);
+
+    if (!turnstileOk) {
+      return {
+        forgotPasswordError: {
+          forgotPasswordErrorMessage: "Falha no desafio de segurança.",
+        },
+      };
+    }
+  }
+
   const forgotPassword = `${process.env.HTTP_REQUEST}/user/forgot/password`;
 
   const forgotPasswordValidation = validateForgotFormSchema.safeParse({

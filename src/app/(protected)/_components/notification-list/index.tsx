@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useFormState } from "react-dom";
+
 import {
   Card,
   CardContent,
@@ -13,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { Bell, Check, Loader, Trash2 } from "lucide-react";
+import { Bell } from "lucide-react";
 import {
   handleMarkNotificationAsRead,
   handleDeleteNotification,
@@ -41,173 +43,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { useFormState, useFormStatus } from "react-dom";
-
 import { useNotifications } from "./hooks";
-import { toast } from "sonner";
 
 import { useNotificationsContext } from "../layout/protected-provider/notifications-provider";
-import { formatNotificationDate } from "@/lib/format-values";
-
 import { ButtonRevalidation } from "../revalidation-button";
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  link?: string;
-  read: boolean;
-  created_at: string | Date;
-  type: string;
-}
+import { NotificationCardProps, NotificationListProps } from "./dto";
 
-interface NotificationData {
-  data: Notification[];
-  total: number;
-  unread: number;
-}
+import { DeleteNotificationButton } from "./components/delete-notification-button";
+import { MarkAllAsReadButton } from "./components/mark-all-read-button";
 
-interface NotificationListProps {
-  initialData: NotificationData;
-  responseError: {
-    error: boolean;
-    errorMessage: string;
-  };
-  currentLimit: number;
-  currentIncludeRead: boolean;
-}
-
-interface NotificationCardProps {
-  notification: Notification;
-}
-
-function useNotificationStatus() {
-  const [isClient, setIsClient] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState<
-    NotificationPermission | "unsupported"
-  >("default");
-
-  useEffect(() => {
-    setIsClient(true);
-
-    if (typeof window !== "undefined" && "Notification" in window) {
-      setPermissionStatus(Notification.permission);
-    } else {
-      setPermissionStatus("unsupported");
-    }
-  }, []);
-
-  const toggleNotifications = async () => {
-    if (!isClient || permissionStatus === "unsupported") return;
-
-    if (permissionStatus === "granted") {
-      toast.info(
-        "Para desativar as notificações, acesse as configurações do seu navegador",
-        { duration: 5000 },
-      );
-      return;
-    }
-
-    if (permissionStatus === "denied") {
-      toast.error(
-        "Permissão para notificações negada. Acesse as configurações do seu navegador para habilitá-lo.",
-        { duration: 5000 },
-      );
-
-      return;
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      setPermissionStatus(permission);
-
-      if (permission === "granted") {
-        toast.success("Notificações em tempo real ativadas com sucesso!");
-      } else if (permission === "denied") {
-        toast.error(
-          "Permissão para notificações negada. Acesse as configurações do seu navegador para habilitá-lo.",
-        );
-      }
-    } catch (error) {
-      toast.error("Não foi possível ativar as notificações.");
-    }
-  };
-
-  return { isClient, permissionStatus, toggleNotifications };
-}
-
-const MarkAllAsReadButton = ({ disabled }: { disabled: boolean }) => {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      type="submit"
-      disabled={disabled || pending}
-      className="whitespace-nowrap min-w-max"
-      onClick={(e) => {
-        if (disabled) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <Check className="h-4 w-4 mr-2 flex-shrink-0" />
-      <span className="hidden sm:inline">Marcar todas como lidas</span>
-      <span className="inline sm:hidden">Marcar lidas</span>
-      {pending && (
-        <div className="animate-spin ml-2 flex-shrink-0">
-          <Loader className="h-4 w-4" />
-        </div>
-      )}
-    </Button>
-  );
-};
-
-const MarkAsReadButton = () => {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button
-      size="sm"
-      variant="outline"
-      type="submit"
-      disabled={pending}
-      className="whitespace-nowrap"
-    >
-      <Check className="h-4 w-4 mr-2 flex-shrink-0" />
-      <span className="hidden sm:inline">Marcar como lida</span>
-      <span className="inline sm:hidden">Lida</span>
-      {pending && (
-        <div className="animate-spin ml-2 flex-shrink-0">
-          <Loader className="h-4 w-4" />
-        </div>
-      )}
-    </Button>
-  );
-};
-
-const DeleteNotificationButton = () => {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button
-      size="icon"
-      variant="ghost"
-      type="submit"
-      className="h-8 w-8 flex-shrink-0"
-      title="Excluir notificação"
-      disabled={pending}
-    >
-      <Trash2 className="h-4 w-4 text-destructive" />
-      {pending && (
-        <div className="animate-spin mr-1">
-          <Loader />
-        </div>
-      )}
-    </Button>
-  );
-};
+import { MarkAsReadButton } from "./components/mark-read-button";
+import { useNotificationStatus } from "./hooks/use-notification-status";
 
 const NotificationCard = ({
   notification,
@@ -233,7 +80,8 @@ const NotificationCard = ({
       const result = await handleDeleteNotification(notification.id);
 
       if (!result.deleteNotificationError) {
-        removeNotification(notification.id);
+        // Pass wasUnread parameter to properly update counter
+        removeNotification(notification.id, !notification.read);
 
         return {
           ...result,
@@ -267,11 +115,17 @@ const NotificationCard = ({
         <CardDescription>{formattedDate}</CardDescription>
       </CardHeader>
       <CardContent className="pb-4">
-        <p className="text-[0.9rem] text-muted-foreground">
+        <p
+          className="text-[0.9rem] 
+          text-muted-foreground"
+        >
           {notification.message}
         </p>
       </CardContent>
-      <CardFooter className="pt-0 flex flex-wrap justify-between gap-y-2">
+      <CardFooter
+        className="pt-0 flex flex-wrap 
+        justify-between gap-y-2"
+      >
         <div className="flex flex-wrap gap-2">
           {notification.link && (
             <Button
@@ -317,17 +171,33 @@ const NotificationList = ({
     realtimeNotifications,
     markAllNotificationsAsRead,
     deletedNotifications,
+    clearDeletedNotifications,
+    markedAsReadNotifications,
   } = useNotificationsContext();
 
   const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState<boolean>(false);
 
   // Combine bank and real-time notifications, removing duplicates and deleted notifications
+  // IMPORTANT: Respect the limit by only taking the first 'currentLimit' notifications
   const combinedNotifications = [...realtimeNotifications, ...initialData.data]
     .filter((notification) => !deletedNotifications.has(notification.id)) // Filter deleted notifications
     .filter(
       (notification, index, self) =>
         index === self.findIndex((n) => n.id === notification.id),
-    );
+    )
+    .map((notification) => {
+      // Apply "read" status from markedAsReadNotifications
+      // Only if the notification is not already read
+      if (
+        !notification.read &&
+        (markedAsReadNotifications.has("__ALL__") ||
+          markedAsReadNotifications.has(notification.id))
+      ) {
+        return { ...notification, read: true };
+      }
+      return notification;
+    })
+    .slice(0, currentLimit); // Respect the limit
 
   // Handle marking all as read
   const [markAllAsReadState, markAllAsReadDispatch] = useFormState(async () => {
@@ -345,6 +215,13 @@ const NotificationList = ({
       markAllNotificationsAsRead();
     }
   }, [isMarkingAllAsRead, markAllAsReadState, markAllNotificationsAsRead]);
+
+  // Clear deleted notifications when data is revalidated (page refreshes with new server data)
+  useEffect(() => {
+    // When initialData changes (revalidation), clear the deleted tracking
+    // This ensures consistency between UI and server state
+    clearDeletedNotifications();
+  }, [initialData, clearDeletedNotifications]);
 
   const updateFilterParams = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -385,8 +262,16 @@ const NotificationList = ({
     initialData.data.some((n) => n.id === id && !n.read),
   ).length;
 
-  // The adjusted unread count is the total minus deleted unread notifications
-  const adjustedUnreadCount = totalRealUnreadCount - deletedServerUnreadCount;
+  // Calculate how many server notifications were marked as read locally
+  const markedAsReadServerCount = markedAsReadNotifications.has("__ALL__")
+    ? serverUnreadCount // If ALL marked, subtract all server unread
+    : [...markedAsReadNotifications].filter((id) =>
+        initialData.data.some((n) => n.id === id && !n.read),
+      ).length;
+
+  // The adjusted unread count is the total minus deleted and marked as read
+  const adjustedUnreadCount =
+    totalRealUnreadCount - deletedServerUnreadCount - markedAsReadServerCount;
 
   const notificationText =
     adjustedUnreadCount === 0
@@ -456,8 +341,12 @@ const NotificationList = ({
             </TooltipProvider>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <form action={markAllAsReadDispatch}>
+        <div
+          className="flex flex-col sm:flex-row 
+          items-stretch sm:items-center gap-2 
+          w-full sm:w-auto"
+        >
+          <form action={markAllAsReadDispatch} className="w-full sm:w-auto">
             <MarkAllAsReadButton disabled={totalRealUnreadCount === 0} />
           </form>
 
@@ -486,7 +375,10 @@ const NotificationList = ({
         <TabsContent value="all" className="space-y-4 mt-4">
           {combinedNotifications.length === 0 ? (
             <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
+              <CardContent
+                className="pt-6 text-center 
+                text-muted-foreground"
+              >
                 Você não tem notificações.
               </CardContent>
             </Card>
@@ -528,7 +420,10 @@ const NotificationList = ({
           className="flex items-center justify-between 
           sm:justify-start gap-2 w-full sm:w-auto"
         >
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
+          <span
+            className="text-sm text-muted-foreground 
+            whitespace-nowrap"
+          >
             Status:
           </span>
           <Select
@@ -551,7 +446,10 @@ const NotificationList = ({
           className="flex items-center justify-between 
           sm:justify-start gap-2 w-full sm:w-auto"
         >
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
+          <span
+            className="text-sm text-muted-foreground 
+            whitespace-nowrap"
+          >
             Exibir:
           </span>
           <Select

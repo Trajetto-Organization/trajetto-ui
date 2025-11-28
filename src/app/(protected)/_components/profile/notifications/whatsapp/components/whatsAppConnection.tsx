@@ -23,9 +23,7 @@ import { useWhatsAppContext } from "../provider";
 import { useWhatsAppStatus } from "../hooks/useWhatsAppStatus";
 import { useWhatsAppGlobalEvents } from "../hooks/useWhatsAppGlobalEvents";
 
-interface RefreshStatusButtonProps {
-  isAnyOperationActive: boolean;
-}
+import { RefreshStatusButtonProps } from "../dto";
 
 const RefreshStatusButton = ({
   isAnyOperationActive,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, Phone, Mail, MapPin } from "lucide-react";
-import { StatConfig } from "../../_components/stats/page-stats";
+import { StatConfig } from "../../_components/stats/dto";
 
 /**
  * Statistics setup for the vendor page

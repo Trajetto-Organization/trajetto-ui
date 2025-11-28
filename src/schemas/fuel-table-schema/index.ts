@@ -24,6 +24,8 @@ export const fuelTableSchema = z.object({
   branch_name: z.string(),
   business_name: z.string().optional(),
   fuel_type_description: z.string().nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

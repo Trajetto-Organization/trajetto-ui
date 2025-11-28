@@ -1,6 +1,5 @@
 "use client";
 
-import { HTMLAttributes } from "react";
 import {
   KBarAnimator,
   KBarPortal,
@@ -11,19 +10,8 @@ import {
   useMatches,
 } from "kbar";
 
-import { PermissionKey, UserPermission, UserRole } from "../../dto";
 import { useCommandBarActions } from "./hooks";
-
-interface ProtectedCommandBarProps extends HTMLAttributes<HTMLElement> {
-  user: {
-    role: UserRole;
-    permissions?: UserPermission[];
-    driverId?: string | null;
-    profileAccess?: {
-      permissions?: { permissionKey: PermissionKey }[];
-    } | null;
-  };
-}
+import { ProtectedCommandBarProps } from "../dto";
 
 const ProtectedCommandBar = ({
   children,

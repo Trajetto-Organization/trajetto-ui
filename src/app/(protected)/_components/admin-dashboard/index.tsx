@@ -3,18 +3,10 @@
 import Link from "next/link";
 
 import {
-  Users,
-  Car,
-  Building2,
-  Briefcase,
-  Package,
-  FileText,
-  Container,
   AlertCircle,
   LineChart as LineChartIcon,
   Info,
   ChartArea,
-  Receipt,
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -35,59 +27,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-import { DashboardData, StatusBadgeProps } from "./dto";
+import { AdminDashboardProps, QuickLinkCardProps, StatCardProps } from "./dto";
 import { ButtonRevalidation } from "../revalidation-button";
 
 import { Charts } from "./charts";
 import { useTabTutorial } from "./hooks/use-tab-tutorial";
 
-import { Button } from "@/components/ui/button";
-
-interface QuickLinkCardProps {
-  title: string;
-  href: string;
-  color: string;
-  icon: JSX.Element;
-}
-
-interface StatCardProps {
-  title: string;
-  icon: JSX.Element;
-  color: string;
-  change: number;
-  value: number;
-}
-
-interface AdminDashboardProps {
-  initialData: DashboardData;
-  userLogged?: {
-    role: string;
-    name: string;
-    email: string;
-    profileAccess?: {
-      permissions?: Array<{
-        permissionKey: string;
-        canRead: boolean;
-        canWrite: boolean;
-      }>;
-    };
-  };
-  dashboardError?: {
-    error: boolean;
-    errorMessage: string;
-  };
-  userError?: {
-    error: boolean;
-    errorMessage: string;
-  };
-  basePath: string;
-}
+import { getStatusBadge } from "./status-badge";
+import { quickLinks, statCards } from "./data";
 
 const AdminDashboard = ({
   initialData,
@@ -155,201 +107,7 @@ const AdminDashboard = ({
     return userLogged.role === "MASTER" || userLogged.role === "BUSINESS_ADMIN";
   };
 
-  const getStatusBadge = (status: StatusBadgeProps) => {
-    switch (status) {
-      case "Ativo":
-        return (
-          <Badge variant="outline" className="bg-green-600 text-white">
-            {status}
-          </Badge>
-        );
-      case "Inativo":
-        return (
-          <Badge variant="outline" className="bg-slate-400 text-white">
-            {status}
-          </Badge>
-        );
-      case "Bloqueado":
-        return <Badge variant="destructive">{status}</Badge>;
-      case "Em Rota":
-        return (
-          <Badge variant="outline" className="bg-blue-500 text-white">
-            {status}
-          </Badge>
-        );
-      case "Completo":
-        return (
-          <Badge variant="outline" className="bg-emerald-500 text-white">
-            {status}
-          </Badge>
-        );
-      case "Pendente":
-        return (
-          <Badge variant="outline" className="bg-yellow-400 text-white">
-            {status}
-          </Badge>
-        );
-      case "Atualizado":
-        return (
-          <Badge variant="outline" className="bg-indigo-500 text-white">
-            {status}
-          </Badge>
-        );
-      case "Deletado":
-        return <Badge variant="destructive">{status}</Badge>;
-      case "Criado":
-        return (
-          <Badge variant="outline" className="bg-green-600 text-white">
-            {status}
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
   const hasUserError = userError?.error || !userLogged;
-
-  const statCards = [
-    {
-      type: "vehicles",
-      title: "Veículos",
-      value: counts?.vehicles?.value || 0,
-      change: counts?.vehicles?.change || 0,
-      icon: <Car className="h-4 w-4 text-white" />,
-      color: "#3b82f6",
-    },
-    {
-      type: "drivers",
-      title: "Motoristas",
-      value: counts?.drivers?.value || 0,
-      change: counts?.drivers?.change || 0,
-      icon: <Users className="h-4 w-4 text-white" />,
-      color: "#10b981",
-    },
-    {
-      type: "businesses",
-      title: "Empresas",
-      value: counts?.businesses?.value || 0,
-      change: counts?.businesses?.change || 0,
-      icon: <Briefcase className="h-4 w-4 text-white" />,
-      color: "#8b5cf6",
-    },
-    {
-      type: "branches",
-      title: "Filiais",
-      value: counts?.branches?.value || 0,
-      change: counts?.branches?.change || 0,
-      icon: <Building2 className="h-4 w-4 text-white" />,
-      color: "#f97316",
-    },
-    {
-      type: "parts",
-      title: "Peças",
-      value: counts?.parts?.value || 0,
-      change: counts?.parts?.change || 0,
-      icon: <Container className="h-4 w-4 text-white" />,
-      color: "#ec4899",
-    },
-    {
-      type: "suppliers",
-      title: "Fornecedores",
-      value: counts?.suppliers?.value || 0,
-      change: counts?.suppliers?.change || 0,
-      icon: <Package className="h-4 w-4 text-white" />,
-      color: "#6366f1",
-    },
-    {
-      type: "serviceOrders",
-      title: "Ordens de Serviço",
-      value: counts?.serviceOrders?.value || 0,
-      change: counts?.serviceOrders?.change || 0,
-      icon: <FileText className="h-4 w-4 text-white" />,
-      color: "#14b8a6",
-    },
-    {
-      type: "users",
-      title: "Usuários",
-      value: counts?.users?.value || 0,
-      change: counts?.users?.change || 0,
-      icon: <Users className="h-4 w-4 text-white" />,
-      color: "#f43f5e",
-    },
-    {
-      type: "fines",
-      title: "Multas",
-      value: counts?.fines?.value || 0,
-      change: counts?.fines?.change || 0,
-      icon: <Receipt className="h-4 w-4 text-white" />,
-      color: "#dc2626",
-    },
-  ];
-
-  const quickLinks = [
-    {
-      type: "users",
-      title: "Gerenciar Usuários",
-      path: "user-registration",
-      icon: <Users className="h-6 w-6" />,
-      color: "#3b82f6",
-    },
-    {
-      type: "vehicles",
-      title: "Veículos",
-      path: "vehicle",
-      icon: <Car className="h-6 w-6" />,
-      color: "#10b981",
-    },
-    {
-      type: "businesses",
-      title: "Empresas",
-      path: "business",
-      icon: <Briefcase className="h-6 w-6" />,
-      color: "#8b5cf6",
-    },
-    {
-      type: "serviceOrders",
-      title: "Ordens de Serviço",
-      path: "service-order",
-      icon: <FileText className="h-6 w-6" />,
-      color: "#f97316",
-    },
-    {
-      type: "drivers",
-      title: "Motoristas",
-      path: "driver",
-      icon: <Users className="h-6 w-6" />,
-      color: "#ec4899",
-    },
-    {
-      type: "branches",
-      title: "Filiais",
-      path: "branch",
-      icon: <Building2 className="h-6 w-6" />,
-      color: "#6366f1",
-    },
-    {
-      type: "parts",
-      title: "Peças",
-      path: "part",
-      icon: <Container className="h-6 w-6" />,
-      color: "#14b8a6",
-    },
-    {
-      type: "suppliers",
-      title: "Fornecedores",
-      path: "supplier",
-      icon: <Package className="h-6 w-6" />,
-      color: "#f43f5e",
-    },
-    {
-      type: "fines",
-      title: "Multas",
-      path: "fine",
-      icon: <Receipt className="h-6 w-6" />,
-      color: "#dc2626",
-    },
-  ];
 
   return (
     <div data-tutorial="welcome">
@@ -441,10 +199,11 @@ const AdminDashboard = ({
 
           {/* Count cards (statistics) */}
           <div
-            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            className="grid grid-cols-1 gap-4 
+            sm:grid-cols-2 lg:grid-cols-4"
             data-cards
           >
-            {statCards.map(
+            {statCards(counts).map(
               (card) =>
                 shouldDisplayCard(card.type) && (
                   <StatCard

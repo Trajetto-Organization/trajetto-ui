@@ -17,6 +17,8 @@ interface DashboardCreateFineValidationError {
   driverId?: string[];
   vehicleId?: string[];
   trafficViolationCodeId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   createFineErrorMessage?: string;
 }
 
@@ -28,6 +30,11 @@ interface DashboardCreateFineFormState {
 interface DashboardCreateFineContainerProps {
   state: DashboardCreateFineFormState;
   onBack: () => void;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface DashboardSelectBranchStepProps {

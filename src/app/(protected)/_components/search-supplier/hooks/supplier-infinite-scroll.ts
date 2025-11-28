@@ -4,11 +4,7 @@ import { useInfiniteQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
-interface FetchSupplierProps {
-  pageParam: number;
-  businessId: string;
-  signal?: AbortSignal;
-}
+import { FetchSupplierProps } from "../dto";
 
 const fetchSupplier = async ({
   pageParam,

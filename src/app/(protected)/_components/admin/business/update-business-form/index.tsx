@@ -15,7 +15,7 @@ import FormInput from "@/components/custom/form-input";
 import { UpdateBusinessContainerProps, UpdateBusinessFormState } from "./dto";
 import { handleUpdateBusiness } from "@/actions/update-business";
 
-import { BusinessProps } from "../dto";
+import { BusinessProps } from "../../../dto";
 
 import { useCepValidation } from "../../../hooks";
 import { useUpdateBusinessForm } from "./hooks";

@@ -16,12 +16,20 @@ const SearchInputWithLoading = React.forwardRef<
   HTMLInputElement,
   SearchInputProps
 >(({ className, wrapperClassName, isLoading, onChange, ...props }, ref) => {
-  const [internalValue, setInternalValue] = React.useState("");
+  const [internalValue, setInternalValue] = React.useState(
+    (props.defaultValue as string) || "",
+  );
   const internalRef = React.useRef<HTMLInputElement>(null);
 
   // Combine refs
   const inputRef =
     (ref as React.MutableRefObject<HTMLInputElement>) || internalRef;
+
+  // Sync internal value with defaultValue prop
+  React.useEffect(() => {
+    const defaultVal = (props.defaultValue as string) || "";
+    setInternalValue(defaultVal);
+  }, [props.defaultValue]);
 
   const showClearButton = internalValue && !isLoading;
 

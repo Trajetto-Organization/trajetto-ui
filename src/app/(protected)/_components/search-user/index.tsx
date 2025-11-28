@@ -16,14 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUserInfiniteScroll } from "./hooks/user-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandUserInputValue } from "../dto";
-
-interface SearchUserProps {
-  errorUserId?: string[];
-  selectedUserId?: string;
-  businessId: string;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-}
+import { SearchUserProps } from "./dto";
 
 const SearchUser = ({
   errorUserId,
@@ -58,12 +51,19 @@ const SearchUser = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-user-input" className={errorUserId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-user-input"
+        className={errorUserId ? "text-red-500" : ""}
+      >
         {errorUserId ? errorUserId[0] : "Selecione o usuário"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-user-input" placeholder="Buscar usuário..." className="h-9" />
+        <CommandInput
+          id="search-user-input"
+          placeholder="Buscar usuário..."
+          className="h-9"
+        />
 
         {!isLoadingUsers && !hasError && (
           <CommandEmpty>

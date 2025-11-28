@@ -1,17 +1,8 @@
-import { useAuthStore } from "@/store/auth-store";
 import { useEffect, useRef } from "react";
+import { useAuthStore } from "@/store/auth-store";
 
+import { UserLoggedData } from "../dto";
 import { toast } from "sonner";
-import { UserRole, Permission } from "../../dto";
-
-interface UserLoggedData {
-  id?: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  businessId?: string;
-  permissions: Permission[];
-}
 
 function useProtectedLayout(
   userLogged: UserLoggedData,

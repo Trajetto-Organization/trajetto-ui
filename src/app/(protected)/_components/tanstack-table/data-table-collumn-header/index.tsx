@@ -18,7 +18,7 @@ interface DataTableColumnHeaderProps<TData, TValue>
   title: string;
 }
 
-export function DataTableColumnHeader<TData, TValue>({
+function DataTableColumnHeader<TData, TValue>({
   column,
   title,
   className,
@@ -65,3 +65,5 @@ export function DataTableColumnHeader<TData, TValue>({
     </div>
   );
 }
+
+export { DataTableColumnHeader };

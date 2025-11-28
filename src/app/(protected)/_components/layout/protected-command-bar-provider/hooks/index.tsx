@@ -25,19 +25,10 @@ import {
   CalendarCheckIcon,
 } from "lucide-react";
 
-import { PermissionKey, UserPermission, UserRole } from "../../../dto";
-import { permissions } from "@/lib/permissions";
+import { UserRole } from "../../../dto";
+import { Action, UseCommandBarActions } from "../../dto";
 
-interface UseCommandBarActions {
-  user: {
-    role: UserRole;
-    permissions?: UserPermission[];
-    driverId?: string | null;
-    profileAccess?: {
-      permissions?: { permissionKey: PermissionKey }[];
-    } | null;
-  };
-}
+import { permissions } from "@/lib/permissions";
 
 /**
  * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
@@ -45,22 +36,13 @@ interface UseCommandBarActions {
 function isDriver(user: UseCommandBarActions["user"]): boolean {
   if (user.role !== "BUSINESS_USER") return false;
   const hasDriverId = !!user.driverId;
+
   const hasProfileAccess =
     user.profileAccess &&
     user.profileAccess.permissions &&
     user.profileAccess.permissions.length > 0;
-  return hasDriverId && !hasProfileAccess;
-}
 
-interface Action {
-  id: string;
-  name: string;
-  section: string;
-  shortcut: string[];
-  keywords: string;
-  icon?: JSX.Element;
-  perform: () => void;
-  requiredPermission?: PermissionKey;
+  return hasDriverId && !hasProfileAccess;
 }
 
 function useCommandBarActions({ user }: UseCommandBarActions) {

@@ -3,4 +3,9 @@ interface UserTwoFactorFormState {
   successMessage?: string;
 }
 
-export type { UserTwoFactorFormState };
+interface UserTwoFactorAuthenticationFormProps {
+  error: boolean;
+  isTwoFactorEnabled: boolean;
+}
+
+export type { UserTwoFactorFormState, UserTwoFactorAuthenticationFormProps };

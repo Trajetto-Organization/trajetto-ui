@@ -482,7 +482,10 @@ const BlogContent = async ({ params }: BlogPageProps) => {
           <Separator className="my-8" />
 
           {/* Article Content */}
-          <div className="prose prose-lg dark:prose-invert max-w-none">
+          <div
+            className="prose prose-lg 
+            dark:prose-invert max-w-none"
+          >
             {post.content && (
               <PortableText value={post.content} components={components} />
             )}
@@ -510,8 +513,11 @@ const BlogContent = async ({ params }: BlogPageProps) => {
           <Separator className="my-8" />
 
           {/* Author Bio */}
-          <div className="bg-muted/30 rounded-xl p-6">
-            <div className="flex items-start gap-4">
+          <div className="bg-muted/30 rounded-xl p-4 sm:p-6">
+            <div
+              className="flex flex-col 
+              sm:flex-row items-start gap-4"
+            >
               {post.author?.avatar ? (
                 <Image
                   src={
@@ -520,26 +526,29 @@ const BlogContent = async ({ params }: BlogPageProps) => {
                   alt={post.author.name}
                   width={80}
                   height={80}
-                  className="w-20 h-20 
-                  rounded-full object-cover"
+                  className="w-16 h-16 sm:w-20 sm:h-20
+                  rounded-full object-cover flex-shrink-0"
                 />
               ) : (
                 <div
-                  className="w-20 h-20 rounded-full bg-gradient-to-r 
-                  from-[#7c3aed] to-purple-500 flex items-center 
-                  justify-center text-white text-2xl font-bold flex-shrink-0"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r
+                  from-[#7c3aed] to-purple-500 flex items-center flex-shrink-0
+                  justify-center text-white text-xl sm:text-2xl font-bold"
                 >
                   {post.author?.name?.[0] || "?"}
                 </div>
               )}
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-1">
+              <div className="flex-1 min-w-0 w-full">
+                <h3
+                  className="font-semibold 
+                  text-base sm:text-lg mb-1"
+                >
                   {post.author?.name || "Autor"}
                 </h3>
                 {post.author?.bio && (
                   <p
-                    className="text-sm text-gray-600 
-                    dark:text-gray-400 mb-3"
+                    className="text-xs sm:text-sm text-gray-600
+                    dark:text-gray-400 mb-3 break-words"
                   >
                     {post.author.bio}
                   </p>
@@ -547,7 +556,7 @@ const BlogContent = async ({ params }: BlogPageProps) => {
 
                 {/* Social Links */}
                 {post.author?.socialLinks && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {Object.entries(post.author.socialLinks).map(
                       ([platform, url]) => {
                         if (!url) return null;
@@ -560,7 +569,7 @@ const BlogContent = async ({ params }: BlogPageProps) => {
                             href={url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-2 bg-background hover:bg-muted 
+                            className="p-2 bg-background hover:bg-muted
                             rounded-lg transition-colors"
                           >
                             {Icon ? (
@@ -581,25 +590,32 @@ const BlogContent = async ({ params }: BlogPageProps) => {
           {/* Navigation and Share */}
           <div className="mt-8">
             <div
-              className="flex items-center justify-between p-5 
-              bg-gradient-to-r from-gray-50 to-purple-50/40 
-            dark:from-gray-900/60 dark:to-purple-950/30 
-              rounded-xl border border-gray-200/70 
-            dark:border-gray-700/50 backdrop-blur-sm"
+              className="flex flex-col sm:flex-row items-start sm:items-center
+              justify-between gap-4 p-4 sm:p-5 bg-gradient-to-r 
+              from-gray-50 to-purple-50/40 dark:from-gray-900/60 
+              dark:to-purple-950/30 rounded-xl border border-gray-200/70
+              dark:border-gray-700/50 backdrop-blur-sm"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <div
-                  className="p-2.5 bg-white dark:bg-gray-800 rounded-lg 
-                  shadow-sm border border-gray-200/60 dark:border-gray-700/60"
+                  className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 rounded-lg
+                  shadow-sm border border-gray-200/60 dark:border-gray-700/60 flex-shrink-0"
                 >
-                  <Share2 className="w-5 h-5 text-[#7c3aed]" />
+                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#7c3aed]" />
                 </div>
 
-                <div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                <div className="min-w-0">
+                  <p
+                    className="text-xs sm:text-sm 
+                    font-semibold text-gray-900 
+                    dark:text-gray-100"
+                  >
                     Gostou do conteúdo?
                   </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
+                  <p
+                    className="text-[0.65rem] sm:text-xs 
+                    text-gray-600 dark:text-gray-400 mt-0.5 break-words"
+                  >
                     Compartilhe com quem pode se interessar
                   </p>
                 </div>
@@ -608,10 +624,11 @@ const BlogContent = async ({ params }: BlogPageProps) => {
               <ShareButton
                 title={post.title}
                 description={post.excerpt}
-                className="bg-[#7c3aed] text-white border-0 
-                px-6 py-2.5 rounded-lg text-sm font-medium 
-                transition-all duration-200 shadow-sm hover:shadow-md 
-                hover:shadow-[#7c3aed]/25 flex items-center gap-2"
+                className="bg-[#7c3aed] text-white border-0
+                px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium
+                transition-all duration-200 shadow-sm hover:shadow-md
+                hover:shadow-[#7c3aed]/25 flex items-center gap-2 w-full sm:w-auto
+                justify-center flex-shrink-0"
               />
             </div>
           </div>

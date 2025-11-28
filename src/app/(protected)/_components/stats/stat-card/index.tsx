@@ -3,24 +3,11 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { LucideIcon, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import { motion } from "framer-motion";
-
-export interface StatCardProps {
-  title: string;
-  value: string | number;
-  description?: string;
-  icon?: LucideIcon;
-  trend?: {
-    value: number;
-    label?: string;
-  };
-  variant?: "default" | "primary" | "success" | "warning" | "danger";
-  isLoading?: boolean;
-  onClick?: () => void;
-}
+import { StatCardProps } from "../dto";
 
 const variantStyles = {
   default: {
@@ -139,7 +126,10 @@ function StatCard({
             </div>
           )}
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col justify-between">
+        <CardContent
+          className="flex-1 flex flex-col 
+          justify-between"
+        >
           <div className={cn("text-2xl font-bold mb-2 truncate", styles.value)}>
             {value}
           </div>

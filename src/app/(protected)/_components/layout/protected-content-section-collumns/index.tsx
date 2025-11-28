@@ -1,10 +1,4 @@
-import { ReactNode } from "react";
-
-interface ProtectedSectionColumnsType {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}
+import { ProtectedSectionColumnsType } from "../dto";
 
 const ProtectedContentSectionColumns = ({
   title,

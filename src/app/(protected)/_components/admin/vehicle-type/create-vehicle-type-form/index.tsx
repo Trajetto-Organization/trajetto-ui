@@ -23,11 +23,10 @@ import {
 import { handleCreateVehicleType } from "@/actions/create-vehicle-type";
 import { useCreateVehicleTypeForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { formatNumericInput } from "@/lib/format-values";
 import { SearchBusiness } from "../../../search-business";
 
 import { cn } from "@/lib/utils";
-import { formatNumericInput } from "@/lib/format-values";
 
 const CreateVehicleTypeFormContainer = ({
   state,
@@ -156,11 +155,11 @@ const CreateVehicleTypeForm = (): JSX.Element => {
         <form
           ref={formRef}
           action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
-            };
+            formData.append(
+              "businessId",
+              commandBusinnessInputValue.businessId,
+            );
 
-            appendExtraDataToForm(formData, extraData);
             return dispatch(formData);
           }}
         >

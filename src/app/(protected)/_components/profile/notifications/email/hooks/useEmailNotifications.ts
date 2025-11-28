@@ -4,20 +4,11 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateEmailNotifications } from "@/actions/update-email-notifications";
-
-interface UseEmailNotificationsProps {
-  initialEnabled: boolean;
-}
-
-interface UseEmailNotificationsReturn {
-  isEnabled: boolean;
-  isUpdating: boolean;
-  handleToggle: (enabled: boolean) => Promise<void>;
-}
+import { EmailNotificationsProps, EmailNotificationsReturn } from "../dto";
 
 function useEmailNotifications({
   initialEnabled,
-}: UseEmailNotificationsProps): UseEmailNotificationsReturn {
+}: EmailNotificationsProps): EmailNotificationsReturn {
   const [isEnabled, setIsEnabled] = useState(initialEnabled);
   const [isPending, startTransition] = useTransition();
 

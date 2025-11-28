@@ -21,6 +21,8 @@ interface UpdateFineValidationError {
   vehicleId?: string[];
   businessId?: string[];
   trafficViolationCodeId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   updateFineErrorMessage?: string;
 }
 
@@ -36,6 +38,11 @@ interface UpdateFineContainerProps {
   isBusinessAndEntityDirty: boolean;
   isUpdateFineOpen: boolean;
   commandBusinessInputValue: CommandBusinessInputValue;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface SelectBusinessByStepProps {

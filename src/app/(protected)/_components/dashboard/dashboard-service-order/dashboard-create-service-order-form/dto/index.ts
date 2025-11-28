@@ -19,6 +19,8 @@ interface DashboardCreateServiceOrderValidationError {
   branchId?: string[];
   supplierId?: string[];
   businessId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   createServiceOrderErrorMessage?: string;
 }
 
@@ -32,6 +34,11 @@ interface DashboardCreateServiceOrderContainerProps {
   state: DashboardCreateServiceOrderFormState;
   commandVehicleInputValue: CommandVehicleInputValue;
   businessId: string;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface DashboardSelectBranchStepProps {

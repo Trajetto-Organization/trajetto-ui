@@ -1,16 +1,7 @@
 import { useQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 
-interface PreviousFuelData {
-  current_mileage: number;
-  refueling_date: string;
-}
-
-interface FetchPreviousFuelProps {
-  vehicleId: string;
-  currentFuelDate: string;
-  businessId: string;
-}
+import { FetchPreviousFuelProps, PreviousFuelData } from "./dto";
 
 const fetchPreviousFuel = async ({
   vehicleId,

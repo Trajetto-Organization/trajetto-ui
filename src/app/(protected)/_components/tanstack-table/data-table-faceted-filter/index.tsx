@@ -39,7 +39,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   Icon?: React.ComponentType<{ className?: string }>;
 }
 
-export function DataTableFacetedFilter<TData, TValue>({
+function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
   options,
@@ -119,8 +119,16 @@ export function DataTableFacetedFilter<TData, TValue>({
       <PopoverContent className="w-[200px] p-0" align="start">
         <Command>
           <CommandInput
-            id={title ? `filter-${title.replace(/\s+/g, '-').toLowerCase()}` : 'filter-input'}
-            name={title ? `filter-${title.replace(/\s+/g, '-').toLowerCase()}` : 'filter-input'}
+            id={
+              title
+                ? `filter-${title.replace(/\s+/g, "-").toLowerCase()}`
+                : "filter-input"
+            }
+            name={
+              title
+                ? `filter-${title.replace(/\s+/g, "-").toLowerCase()}`
+                : "filter-input"
+            }
             placeholder={title}
           />
           <CommandList
@@ -200,3 +208,5 @@ export function DataTableFacetedFilter<TData, TValue>({
     </Popover>
   );
 }
+
+export { DataTableFacetedFilter };

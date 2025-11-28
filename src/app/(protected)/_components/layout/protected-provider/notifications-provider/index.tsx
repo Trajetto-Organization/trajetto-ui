@@ -27,7 +27,7 @@ interface NotificationsContextType {
   realtimeNotifications: Notification[];
   unreadCount: number;
   clearNotifications: () => void;
-  removeNotification: (notificationId: string) => void;
+  removeNotification: (notificationId: string, wasUnread?: boolean) => void;
   markNotificationAsRead: (notificationId: string) => void;
   connected: boolean;
   syncWithServerData: (serverNotificationIds: string[]) => void;
@@ -37,6 +37,8 @@ interface NotificationsContextType {
     callback: (data: any) => void,
   ) => () => void;
   deletedNotifications: Set<string>;
+  clearDeletedNotifications: () => void;
+  markedAsReadNotifications: Set<string>;
 }
 
 const NotificationsContext = createContext<NotificationsContextType>(
@@ -56,6 +58,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const [deletedNotifications, setDeletedNotifications] = useState<Set<string>>(
     new Set(),
   );
+
+  const [markedAsReadNotifications, setMarkedAsReadNotifications] = useState<
+    Set<string>
+  >(new Set());
 
   const socketInitialized = useRef<boolean>(false);
   const notificationIdsReceived = useRef<Set<string>>(new Set());
@@ -381,7 +387,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
   }, []);
 
-  const removeNotification = (notificationId: string) => {
+  const removeNotification = (notificationId: string, wasUnread?: boolean) => {
     // Add to deleted notifications set (this will handle both realtime and server notifications)
     setDeletedNotifications((prev) => new Set([...prev, notificationId]));
 
@@ -403,10 +409,19 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Remove the set ID to allow future notifications with the same ID
       notificationIdsReceived.current.delete(notificationId);
+    } else {
+      // Notification is not in realtime list (it's from server/initialData)
+      // Use the wasUnread parameter to determine if we should decrement counter
+      if (wasUnread) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
     }
   };
 
   const markNotificationAsRead = (notificationId: string) => {
+    // Add to marked as read set (for server notifications)
+    setMarkedAsReadNotifications((prev) => new Set([...prev, notificationId]));
+
     // Check if notification is in real-time list
     setRealtimeNotifications((prev) => {
       // Find the notification index
@@ -432,9 +447,17 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const markAllNotificationsAsRead = useCallback(() => {
+    // Mark all realtime notifications as read
     setRealtimeNotifications((prev) =>
       prev.map((notification) => ({ ...notification, read: true })),
     );
+
+    // Mark ALL notifications as read (including server ones)
+    // We'll set a flag to mark everything
+    setMarkedAsReadNotifications(new Set(["__ALL__"]));
+
+    // Reset unread count to 0 since all notifications are now marked as read
+    setUnreadCount(0);
 
     // Clear deleted notifications when marking all as read
     setDeletedNotifications(new Set());
@@ -449,6 +472,14 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     notificationIdsReceived.current.clear();
   };
 
+  // Method to clear deleted notifications tracking
+  const clearDeletedNotifications = useCallback(() => {
+    setDeletedNotifications(new Set());
+    // NOTE: We don't clear markedAsReadNotifications here anymore
+    // It will be cleared automatically when the server data reflects the changes
+    // This prevents the UI from showing notifications as unread during revalidation
+  }, []);
+
   return (
     <NotificationsContext.Provider
       value={{
@@ -462,6 +493,8 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         markAllNotificationsAsRead,
         subscribeToWhatsAppEvents,
         deletedNotifications,
+        clearDeletedNotifications,
+        markedAsReadNotifications,
       }}
     >
       {children}

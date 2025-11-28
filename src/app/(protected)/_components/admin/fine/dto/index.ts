@@ -20,6 +20,9 @@ interface FineProps {
   driverCpf?: string;
   vehicleLicensePlate?: string;
   vehicleDescription?: string;
+  // 📍 GEOLOCATION
+  latitude?: number | null;
+  longitude?: number | null;
   violationCode?: string;
   violationDescription?: string;
 }

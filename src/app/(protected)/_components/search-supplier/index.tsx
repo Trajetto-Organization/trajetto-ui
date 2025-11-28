@@ -16,18 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSupplierInfiniteScroll } from "./hooks/supplier-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandSupplierInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchSupplierProps {
-  errorSupplierId?: string[];
-  searchSupplierInputValue: string;
-  businessId: string;
-  handleUpdateSearchSupplierInputValue: (
-    supplierData: CommandSupplierInputValue,
-  ) => void;
-  isOptional?: boolean;
-}
+import { SearchSupplierProps } from "./dto";
 
 const SearchSupplier = ({
   errorSupplierId,
@@ -63,13 +53,20 @@ const SearchSupplier = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-supplier-input" className={errorSupplierId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-supplier-input"
+        className={errorSupplierId ? "text-red-500" : ""}
+      >
         {errorSupplierId ? errorSupplierId[0] : "Selecione o fornecedor"}{" "}
         {isOptional && "(opcional)"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-supplier-input" placeholder="Buscar fornecedor..." className="h-9" />
+        <CommandInput
+          id="search-supplier-input"
+          placeholder="Buscar fornecedor..."
+          className="h-9"
+        />
 
         {!isLoadingSuppliers && !hasError && (
           <CommandEmpty>

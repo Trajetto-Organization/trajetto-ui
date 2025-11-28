@@ -20,40 +20,31 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-import { PermissionKey, UserRole } from "../../dto";
+import { PermissionKey } from "../../dto";
 import {
   protectedNavIcons,
   ProtectedNavItem,
   protectedNavItemsByRole,
 } from "../protected-navbar-items";
 
-interface User {
-  role: UserRole;
-  permissions?: PermissionKey[];
-  driverId?: string | null;
-  profileAccess?: {
-    permissions?: { permissionKey: PermissionKey }[];
-  } | null;
-}
-
-interface ProtectedSidebarMenuItemsProps {
-  user: User;
-}
-
-interface ProtectedNavItemsProps {
-  items: ProtectedNavItem[];
-}
+import {
+  ProtectedNavItemsProps,
+  ProtectedSidebarMenuItemsProps,
+  User,
+} from "../dto";
 
 /**
  * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
  */
 function isDriver(user: User): boolean {
   if (user.role !== "BUSINESS_USER") return false;
+
   const hasDriverId = !!user.driverId;
   const hasProfileAccess =
     user.profileAccess &&
     user.profileAccess.permissions &&
     user.profileAccess.permissions.length > 0;
+
   return hasDriverId && !hasProfileAccess;
 }
 

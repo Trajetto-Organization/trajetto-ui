@@ -4,10 +4,7 @@ import { useInfiniteQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
-interface FetchTrafficViolationCodeProps {
-  pageParam: number;
-  signal?: AbortSignal;
-}
+import { FetchTrafficViolationCodeProps } from "../dto";
 
 const fetchTrafficViolationCode = async ({
   pageParam,

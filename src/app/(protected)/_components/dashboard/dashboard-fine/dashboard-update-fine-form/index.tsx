@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader, X } from "lucide-react";
 
+import dynamic from "next/dynamic";
+
 import {
   Dialog,
   DialogScrollContent,
@@ -44,6 +46,19 @@ import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Branch
 const DashboardSelectBranchStep = ({
@@ -319,6 +334,11 @@ const DashboardUpdateFineContainer = ({
   fineData,
   isBusinessAndEntityDirty,
   isUpdateFineOpen,
+  handleLocationChange,
+  handleLocationLoadingChange,
+  latitude,
+  longitude,
+  isLoadingLocation,
 }: DashboardUpdateFineContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
 
@@ -410,6 +430,23 @@ const DashboardUpdateFineContainer = ({
     }
   }, [isUpdateFineOpen, fineData]);
 
+  // 📍 Check if location has changed
+  const [hasLocationChanged, setHasLocationChanged] = useState<boolean>(false);
+
+  useEffect(() => {
+    const originalLat = fineData.latitude ?? null;
+    const originalLng = fineData.longitude ?? null;
+
+    // Check if location changed (compare with original fineData values)
+    const latChanged = originalLat !== latitude;
+    const lngChanged = originalLng !== longitude;
+
+    setHasLocationChanged(latChanged || lngChanged);
+  }, [latitude, longitude, fineData.latitude, fineData.longitude]);
+
+  const hasAnyChange =
+    isDirty || isBusinessAndEntityDirty || hasLocationChanged;
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
@@ -489,7 +526,7 @@ const DashboardUpdateFineContainer = ({
           }}
         />
 
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="Observações (opcional)"
             htmlfor="observation"
@@ -505,6 +542,21 @@ const DashboardUpdateFineContainer = ({
             }}
           />
         </div>
+
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.updateFineError?.latitude?.[0] ||
+              state.updateFineError?.longitude?.[0]
+            }
+          />
+        </div>
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
@@ -513,7 +565,7 @@ const DashboardUpdateFineContainer = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || !(isDirty || isBusinessAndEntityDirty)}
+          disabled={pending || !hasAnyChange || isLoadingLocation}
         >
           <span>Atualizar Multa</span>
           {pending && (
@@ -534,6 +586,35 @@ const DashboardUpdateFineForm = ({
 }: DashboardUpdateFineFormProps): JSX.Element => {
   const defaultState: DashboardUpdateFineFormState = {};
   const [state, dispatch] = useFormState(handleUpdateFine, null);
+
+  // 📍 GEOLOCATION STATE - Initialize with existing fineData location
+  const [latitude, setLatitude] = useState<number | null>(
+    fineData.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    fineData.longitude ?? null,
+  );
+
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
+
+  // Reset location state when fineData changes
+  useEffect(() => {
+    if (isUpdateFineOpen) {
+      setLatitude(fineData.latitude ?? null);
+      setLongitude(fineData.longitude ?? null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [fineData, isUpdateFineOpen]);
 
   const {
     formRef,
@@ -634,6 +715,20 @@ const DashboardUpdateFineForm = ({
                   commandTrafficViolationCodeInputValue.trafficViolationCodeId,
               };
 
+              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+              // When null, send as empty string (backend will convert to null)
+              if (latitude === null) {
+                formData.append("latitude", "");
+              } else if (latitude !== undefined) {
+                formData.append("latitude", latitude.toString());
+              }
+
+              if (longitude === null) {
+                formData.append("longitude", "");
+              } else if (longitude !== undefined) {
+                formData.append("longitude", longitude.toString());
+              }
+
               appendExtraDataToForm(formData, extraData);
               return dispatch(formData);
             }}
@@ -644,6 +739,11 @@ const DashboardUpdateFineForm = ({
               fineData={fineData}
               isBusinessAndEntityDirty={isBusinessAndEntityDirty}
               isUpdateFineOpen={isUpdateFineOpen}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

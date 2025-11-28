@@ -3,15 +3,12 @@
 import { useEffect } from "react";
 import { useNotificationsContext } from "../notifications-provider";
 
-interface SyncNotificationsProviderProps {
-  children: React.ReactNode;
-  serverNotificationIds: string[];
-}
+import { SyncNotificationsProviderProps } from "../../dto";
 
 const SyncNotificationsProvider = ({
   children,
   serverNotificationIds,
-}: SyncNotificationsProviderProps) => {
+}: SyncNotificationsProviderProps): JSX.Element => {
   const { syncWithServerData } = useNotificationsContext();
 
   useEffect(() => {

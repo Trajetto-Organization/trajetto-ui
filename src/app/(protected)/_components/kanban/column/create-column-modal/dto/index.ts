@@ -9,4 +9,19 @@ interface CreateColumnModalFormState {
   successMessage?: string;
 }
 
-export type { CreateColumnModalFormState };
+interface CreateColumnModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  boardId: string;
+}
+
+interface CreateColumnFormProps {
+  onClose: () => void;
+  state: CreateColumnModalFormState;
+}
+
+export type {
+  CreateColumnModalFormState,
+  CreateColumnModalProps,
+  CreateColumnFormProps,
+};

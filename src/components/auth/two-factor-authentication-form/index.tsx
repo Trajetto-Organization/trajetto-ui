@@ -95,8 +95,9 @@ const TwoFactorAuthenticationFormContainer = ({
       <ErrorForm
         message={
           state.twoFactorError?.twoFactorErrorMessage ||
-          (state.twoFactorError?.code && Array.isArray(state.twoFactorError.code) 
-            ? state.twoFactorError.code[0] 
+          (state.twoFactorError?.code &&
+          Array.isArray(state.twoFactorError.code)
+            ? state.twoFactorError.code[0]
             : state.twoFactorError?.code?.toString())
         }
       />
@@ -118,7 +119,7 @@ const TwoFactorAuthenticationFormContainer = ({
         </Button>
       </div>
 
-      <hr className="mt-4" />
+      <hr className="mt-5" />
 
       <Terms />
     </motion.section>

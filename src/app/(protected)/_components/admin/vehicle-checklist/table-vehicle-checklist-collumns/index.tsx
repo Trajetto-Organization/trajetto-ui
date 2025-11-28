@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { Badge } from "@/components/ui/badge";
 
 import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
@@ -36,7 +37,8 @@ const overallConditionLabels = {
 
 const overallConditionColors = {
   approved: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
-  approved_with_restrictions: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+  approved_with_restrictions:
+    "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
   rejected: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
 } as const;
 
@@ -111,7 +113,9 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Condição geral" />
     ),
     cell: ({ row }) => {
-      const condition = row.getValue("overall_condition") as keyof typeof overallConditionLabels;
+      const condition = row.getValue(
+        "overall_condition",
+      ) as keyof typeof overallConditionLabels;
       return (
         <Badge variant="outline" className={overallConditionColors[condition]}>
           {overallConditionLabels[condition] || condition || "N/A"}

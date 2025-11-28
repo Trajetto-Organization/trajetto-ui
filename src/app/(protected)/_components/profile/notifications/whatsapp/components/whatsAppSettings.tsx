@@ -19,18 +19,13 @@ import { useWhatsAppContext } from "../provider";
 import { useWhatsAppConnection } from "../hooks/useWhatsAppConnection";
 import { useWhatsAppGlobalEvents } from "../hooks/useWhatsAppGlobalEvents";
 
-import { UserRole } from "../../../../dto";
-
-interface WhatsAppSettingsProps {
-  userRole?: UserRole;
-  driverId?: string | null;
-}
+import { WhatsAppSettingsProps } from "../dto";
 
 const WhatsAppSettings = ({
   userRole,
   driverId,
 }: WhatsAppSettingsProps): JSX.Element => {
-  // Verifica se é motorista
+  // Check if you are a driver
   const isDriver = userRole === "BUSINESS_USER" && !!driverId;
   const { settings, updateSettings } = useWhatsAppContext();
 
@@ -201,7 +196,10 @@ const WhatsAppSettings = ({
 
       {/* Notification when there are active operations */}
       {isAnyOperationActive && (
-        <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+        <Alert
+          className="bg-blue-50 border-blue-200 
+          dark:bg-blue-950/20 dark:border-blue-800"
+        >
           <Info className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800 dark:text-blue-200">
             <strong>Operação em andamento:</strong> Aguarde a conclusão para

@@ -340,7 +340,7 @@ const DashboardCreateDriverForm = (): JSX.Element => {
                 formData.append("branchId", commandBranchInputValue.branchId);
               }
 
-              dispatch(formData);
+              return dispatch(formData);
             }}
           >
             <DashboardCreateDriverFormContainer

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { CheckCircle, Info, Loader, X } from "lucide-react";
 
+import dynamic from "next/dynamic";
+
 import {
   Dialog,
   DialogScrollContent,
@@ -45,6 +47,20 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Business and Branch
 const SelectBusinessBranchStep = ({
@@ -363,6 +379,11 @@ const CreateServiceOrderFormContainer = ({
   onBack,
   commandBusinessInputValue,
   commandVehicleInputValue,
+  handleLocationChange,
+  handleLocationLoadingChange,
+  latitude,
+  longitude,
+  isLoadingLocation,
 }: CreateServiceOrderContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -514,7 +535,7 @@ const CreateServiceOrderFormContainer = ({
         />
 
         {/* ====== SECTION: VEHICLE DATA SNAPSHOT (EDITABLE FOR MASTER) ====== */}
-        <div className="col-span-2 mt-6">
+        <div className="col-span-1 md:col-span-2 mt-6">
           <Alert
             className="border-blue-200 bg-blue-50 
             dark:bg-blue-950/20"
@@ -589,7 +610,7 @@ const CreateServiceOrderFormContainer = ({
         />
 
         {/* ====== SECTION: NEW MILEAGE (EDITABLE ONLY ON COMPLETION) ====== */}
-        <div className="col-span-2 mt-6">
+        <div className="col-span-1 md:col-span-2 mt-6">
           <Alert
             className={cn(
               "border-2",
@@ -621,7 +642,7 @@ const CreateServiceOrderFormContainer = ({
         </div>
 
         {/* New Mileage - Editable only if finalizing */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="🔧 Nova quilometragem após o serviço"
             htmlfor="new_mileage_after_service"
@@ -662,8 +683,23 @@ const CreateServiceOrderFormContainer = ({
           )}
         </div>
 
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.createServiceOrderError?.latitude?.[0] ||
+              state.createServiceOrderError?.longitude?.[0]
+            }
+          />
+        </div>
+
         {/* Useful Information */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <div
             className="bg-blue-50 dark:bg-blue-900/20 
             p-4 rounded-lg border border-blue-200"
@@ -736,7 +772,12 @@ const CreateServiceOrderFormContainer = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || (isCompleting && !isNewMileageValid)}
+          disabled={
+            pending ||
+            isLoadingVehicle ||
+            isLoadingLocation ||
+            (isCompleting && !isNewMileageValid)
+          }
         >
           <span>Criar Ordem de Serviço</span>
           {pending && (
@@ -753,6 +794,21 @@ const CreateServiceOrderFormContainer = ({
 const CreateServiceOrderForm = (): JSX.Element => {
   const defaultState: CreateServiceOrderFormState = {};
   const [state, dispatch] = useFormState(handleCreateServiceOrder, null);
+
+  // 📍 GEOLOCATION STATE
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
 
   const {
     isCreateServiceOrderForm,
@@ -776,6 +832,26 @@ const CreateServiceOrderForm = (): JSX.Element => {
     handleBackToVehicleSupplierStep,
     handleBackToUserStep,
   } = useCreateServiceOrderForm(state);
+
+  // Reset geolocation states when modal closes or on success
+  useEffect(() => {
+    if (!isCreateServiceOrderForm) {
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [isCreateServiceOrderForm]);
+
+  // Reset geolocation states on successful creation
+  useEffect(() => {
+    if (state?.successMessage) {
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [state?.successMessage]);
 
   return (
     <Dialog open={isCreateServiceOrderForm} onOpenChange={handleCloseDialog}>
@@ -848,13 +924,14 @@ const CreateServiceOrderForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
-              // Add selected IDs to form data
-              formData.append(
-                "businessId",
-                commandBusinessInputValue.businessId,
-              );
-              formData.append("branchId", commandBranchInputValue.branchId);
-              formData.append("vehicleId", commandVehicleInputValue.vehicleId);
+              const extraData = {
+                businessId: commandBusinessInputValue.businessId,
+                branchId: commandBranchInputValue.branchId,
+                vehicleId: commandVehicleInputValue.vehicleId,
+                responsibleUserId: commandUserInputValue.userId,
+                latitude: latitude?.toString() as string, // Send as string or null
+                longitude: longitude?.toString() as string, // Send as string or null
+              };
 
               if (commandSupplierInputValue.supplierId) {
                 formData.append(
@@ -863,12 +940,8 @@ const CreateServiceOrderForm = (): JSX.Element => {
                 );
               }
 
-              formData.append(
-                "responsibleUserId",
-                commandUserInputValue.userId,
-              );
-
-              dispatch(formData);
+              appendExtraDataToForm(formData, extraData);
+              return dispatch(formData);
             }}
           >
             <CreateServiceOrderFormContainer
@@ -876,6 +949,11 @@ const CreateServiceOrderForm = (): JSX.Element => {
               onBack={handleBackToUserStep}
               commandBusinessInputValue={commandBusinessInputValue}
               commandVehicleInputValue={commandVehicleInputValue}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

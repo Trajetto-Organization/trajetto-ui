@@ -9,7 +9,7 @@ import { ProtectedHeading } from "../../_components/layout/protected-heading";
 import { DataTable } from "../../_components/tanstack-table/data-table";
 import { dashboardTableFuelColumns } from "../../_components/dashboard/dashboard-fuel/dashboard-table-fuel-collumns";
 
-import { DashboardFuelProps } from "../../_components/dashboard/dashboard-fuel/dto";
+import { FuelProps } from "../../_components/dto";
 import { DashboardFuelToolbar } from "../../_components/dashboard/dashboard-fuel/dashboard-fuel-toolbar";
 
 import { parseNDJSON } from "@/lib/parse-nd-json";
@@ -58,7 +58,7 @@ const Fuel = async ({
     errorMessage: "",
   };
 
-  let fuel: DashboardFuelProps[] = [];
+  let fuel: FuelProps[] = [];
   let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
 
   let response: Response | undefined;

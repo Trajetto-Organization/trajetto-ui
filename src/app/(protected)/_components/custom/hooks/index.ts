@@ -2,11 +2,7 @@ import { useState, useEffect } from "react";
 import { parseISO, isValid, format } from "date-fns";
 
 import { ptBR } from "date-fns/locale";
-
-interface DatePickerProps {
-  value?: string;
-  onChange?: (value: string) => void;
-}
+import { DatePickerProps } from "../dto";
 
 function useDatePicker({ value, onChange }: DatePickerProps) {
   // Try to parse the date, but add validation
@@ -18,6 +14,7 @@ function useDatePicker({ value, onChange }: DatePickerProps) {
 
     try {
       const parsed = parseISO(dateValue);
+
       // Check if the parsed date is valid
       return isValid(parsed) ? parsed : null;
     } catch (error) {
@@ -42,6 +39,7 @@ function useDatePicker({ value, onChange }: DatePickerProps) {
     if (parsedDate) {
       setSelectedDate(parsedDate);
       setDisplayMonth(parsedDate.getMonth());
+
       setDisplayYear(parsedDate.getFullYear());
     } else {
       setSelectedDate(null);

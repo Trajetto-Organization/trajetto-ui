@@ -6,13 +6,7 @@ import { WhatsAppConnection } from "./whatsAppConnection";
 import { WhatsAppStatus } from "./whatsAppStatus";
 
 import { WhatsAppSettings } from "./whatsAppSettings";
-import { UserRole } from "../../../../dto";
-
-interface WhatsAppNotificationsProps {
-  error: boolean;
-  userRole?: UserRole;
-  driverId?: string | null;
-}
+import { WhatsAppNotificationsProps } from "../dto";
 
 const WhatsAppNotifications = ({
   error,

@@ -23,6 +23,8 @@ export const serviceOrderTableSchema = z.object({
   business_name: z.string().optional(),
   supplierName: z.string().nullable().optional(),
   partsCount: z.number().nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

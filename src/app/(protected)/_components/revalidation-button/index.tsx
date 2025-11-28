@@ -6,9 +6,8 @@ import { useEffect, useState } from "react";
 import { handleRevalidateData } from "@/actions/revalidate-data";
 import { Button } from "@/components/ui/button";
 
-import { cn } from "@/lib/utils";
-
 import { useDataButtonRevalidation } from "../hooks/revalidation-button";
+import { cn } from "@/lib/utils";
 
 type RevalidateDataProps =
   | "update-notification"
@@ -93,7 +92,7 @@ const DataButtonRevalidationContainer = ({
 const ButtonRevalidation = ({
   revalidateData,
   rateLimit,
-  className, // Nova prop
+  className,
 }: DataButtonRevalidateProps) => {
   const [state, dispatch] = useFormState(
     async (prevState: any, formData: FormData) =>

@@ -2,25 +2,7 @@ import { useState, useCallback } from "react";
 import { getCookies } from "@/actions/cookies";
 
 import { toast } from "sonner";
-
-interface TrendsData {
-  activityTrends: Array<{
-    date: string;
-    vehicles: number;
-    drivers: number;
-    businesses: number;
-    branches: number;
-    parts: number;
-    suppliers: number;
-    serviceOrders: number;
-    users: number;
-  }>;
-  maintenanceCosts: Array<{
-    date: string;
-    preventive: number;
-    corrective: number;
-  }>;
-}
+import { TrendsData } from "../dto";
 
 function useDashboardData() {
   const [isLoadingTrends, setIsLoadingTrends] = useState<boolean>(false);

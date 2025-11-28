@@ -1,7 +1,7 @@
 "use client";
 
 import { FileText, Clock, Phone, CheckCircle2 } from "lucide-react";
-import { StatConfig } from "../../_components/stats/page-stats";
+import { StatConfig } from "../../_components/stats/dto";
 
 /**
  * Setting up statistics for the quotes page

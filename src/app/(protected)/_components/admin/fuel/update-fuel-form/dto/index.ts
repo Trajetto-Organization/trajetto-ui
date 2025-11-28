@@ -4,9 +4,8 @@ import {
   CommandDriverInputValue,
   CommandVehicleInputValue,
   CommandFuelTypeInputValue,
+  FuelProps,
 } from "@/app/(protected)/_components/dto";
-
-import { FuelProps } from "../../dto";
 
 interface UpdateFuelValidationError {
   current_mileage?: string[];
@@ -20,6 +19,8 @@ interface UpdateFuelValidationError {
   branchId?: string[];
   businessId?: string[];
   odometer_photo?: string[];
+  latitude?: string[];
+  longitude?: string[];
   updateFuelErrorMessage?: string;
 }
 
@@ -36,6 +37,11 @@ interface UpdateFuelContainerProps {
   isUpdateFuelOpen: boolean;
   commandBusinessInputValue: CommandBusinessInputValue;
   commandVehicleInputValue: CommandVehicleInputValue;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
   odometerFile: File | null;
   setOdometerFile: (file: File | null) => void;
   fileError: string | null;

@@ -19,6 +19,8 @@ interface CreateFineValidationError {
   vehicleId?: string[];
   trafficViolationCodeId?: string[];
   businessId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   createFineErrorMessage?: string;
 }
 
@@ -30,6 +32,11 @@ interface CreateFineFormState {
 interface CreateFineContainerProps {
   state: CreateFineFormState;
   onBack: () => void;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface SelectBusinessBranchStepProps {

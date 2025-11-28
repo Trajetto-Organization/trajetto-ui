@@ -27,6 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 interface NavbarContentProps {
   token: string;
   role: UserRole;
+  driverId?: string;
 }
 
 const navItems: { label: string; href: string }[] = [
@@ -37,9 +38,26 @@ const navItems: { label: string; href: string }[] = [
   { label: "Blog", href: "/blog" },
 ];
 
-const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
+const NavBarContent = ({
+  role,
+  token,
+  driverId,
+}: NavbarContentProps): JSX.Element => {
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
   const isMobile = useIsMobile();
+
+  // Determine if user is a driver
+  const isDriver = role === "BUSINESS_USER" && !!driverId;
+
+  // Determine navigation href and label
+  const getNavigation = () => {
+    if (isDriver) return { href: "/profile", label: "Perfil" };
+    if (role === "MASTER") return { href: "/admin", label: "Admin" };
+
+    return { href: "/dashboard", label: "Dashboard" };
+  };
+
+  const navigation = getNavigation();
 
   // Closes the Sheet when the screen is no longer mobile
   useEffect(() => {
@@ -123,7 +141,7 @@ const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
                 <div className="mt-4">
                   {token ? (
                     <Link
-                      href={role === "MASTER" ? "/admin" : "/dashboard"}
+                      href={navigation.href}
                       className={cn(
                         buttonVariants({
                           variant: "outline",
@@ -131,7 +149,7 @@ const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
                         }),
                       )}
                     >
-                      {role === "MASTER" ? "Admin" : "Dashboard"}
+                      {navigation.label}
                     </Link>
                   ) : (
                     <Link
@@ -157,7 +175,7 @@ const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
             <div className="ml-8">
               {token ? (
                 <Link
-                  href={role === "MASTER" ? "/admin" : "/dashboard"}
+                  href={navigation.href}
                   className={cn(
                     buttonVariants({
                       variant: "outline",
@@ -165,7 +183,7 @@ const NavBarContent = ({ role, token }: NavbarContentProps): JSX.Element => {
                     }),
                   )}
                 >
-                  {role === "MASTER" ? "Admin" : "Dashboard"}
+                  {navigation.label}
                 </Link>
               ) : (
                 <Link

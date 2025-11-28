@@ -1,4 +1,4 @@
-import { BusinessProps } from "../../dto";
+import { BusinessProps } from "@/app/(protected)/_components/dto";
 
 interface UpdateBusinessValidationError {
   corporate_reason?: string[];

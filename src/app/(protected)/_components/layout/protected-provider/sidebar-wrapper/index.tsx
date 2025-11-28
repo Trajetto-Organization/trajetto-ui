@@ -3,11 +3,11 @@
 import { useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
-interface SafeSidebarProviderProps {
-  children: React.ReactNode;
-}
+import { SafeSidebarProviderProps } from "../../dto";
 
-const SidebarWrapper = ({ children }: SafeSidebarProviderProps) => {
+const SidebarWrapper = ({
+  children,
+}: SafeSidebarProviderProps): JSX.Element => {
   useEffect(() => {
     // 🔧 Patch to prevent react-remove-scroll error
     const originalContains = Node.prototype.contains;

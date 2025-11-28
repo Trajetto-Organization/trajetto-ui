@@ -4,6 +4,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Info, Loader, X, Upload, Image as ImageIcon } from "lucide-react";
 
 import { useDropzone } from "react-dropzone";
+import dynamic from "next/dynamic";
 
 import {
   Dialog,
@@ -56,6 +57,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Business and Branch
 const SelectBusinessBranchStep = ({
@@ -384,6 +398,11 @@ const CreateFuelFormContainer = ({
   onBack,
   commandBusinessInputValue,
   commandVehicleInputValue,
+  handleLocationChange,
+  handleLocationLoadingChange,
+  latitude,
+  longitude,
+  isLoadingLocation,
   odometerFile,
   setOdometerFile,
   fileError,
@@ -580,8 +599,22 @@ const CreateFuelFormContainer = ({
           disabled={pending}
         />
 
+        {/* Notes */}
+        <div className="col-span-1 md:col-span-2">
+          <FormInput
+            label="Observações (opcional)"
+            htmlfor="notes"
+            name="notes"
+            type="text"
+            errorName={state.createFuelError?.notes}
+            placeholder="Digite observações sobre o abastecimento..."
+            disabled={pending}
+            maxLength={500}
+          />
+        </div>
+
         {/* Odometer Photo Upload */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           {fileError || state.createFuelError?.odometer_photo ? (
             <TooltipProvider delayDuration={300}>
               <Tooltip>
@@ -684,22 +717,23 @@ const CreateFuelFormContainer = ({
           )}
         </div>
 
-        {/* Notes */}
-        <div className="col-span-2">
-          <FormInput
-            label="Observações (opcional)"
-            htmlfor="notes"
-            name="notes"
-            type="text"
-            errorName={state.createFuelError?.notes}
-            placeholder="Digite observações sobre o abastecimento..."
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
             disabled={pending}
-            maxLength={500}
+            error={
+              state.createFuelError?.latitude?.[0] ||
+              state.createFuelError?.longitude?.[0]
+            }
           />
         </div>
 
         {/* Information Alert */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <Alert
             className="border-blue-200 
             bg-blue-50 dark:bg-blue-950/20"
@@ -725,9 +759,9 @@ const CreateFuelFormContainer = ({
         {/* Current Vehicle Info */}
         {data && (
           <div
-            className="col-span-2 mt-4 p-4 bg-green-50 
+            className="col-span-1 md:col-span-2 mt-4 p-4 
             dark:bg-green-900/20 rounded-lg border 
-            border-green-200"
+            bg-green-50 border-green-200"
           >
             <p
               className="text-sm text-green-700 
@@ -755,7 +789,10 @@ const CreateFuelFormContainer = ({
         <Button type="button" variant="outline" onClick={onBack}>
           Voltar
         </Button>
-        <Button type="submit" disabled={pending || isLoadingVehicle}>
+        <Button
+          type="submit"
+          disabled={pending || isLoadingVehicle || isLoadingLocation}
+        >
           <span>Criar Abastecimento</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -774,6 +811,21 @@ const CreateFuelForm = (): JSX.Element => {
 
   const [odometerFile, setOdometerFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+
+  // 📍 GEOLOCATION STATE
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
 
   const {
     isCreateFuelForm,
@@ -798,19 +850,29 @@ const CreateFuelForm = (): JSX.Element => {
     handleBackToFuelTypeStep,
   } = useCreateFuelForm(state);
 
-  // Reset file states when modal closes or on success
+  // Reset file and geolocation states when modal closes or on success
   useEffect(() => {
     if (!isCreateFuelForm) {
       setOdometerFile(null);
       setFileError(null);
+
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
     }
   }, [isCreateFuelForm]);
 
-  // Reset file states on successful creation
+  // Reset file and geolocation states on successful creation
   useEffect(() => {
     if (state?.successMessage) {
       setOdometerFile(null);
       setFileError(null);
+
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
     }
   }, [state?.successMessage]);
 
@@ -905,6 +967,8 @@ const CreateFuelForm = (): JSX.Element => {
                 vehicleId: commandVehicleInputValue.vehicleId,
                 driverId: commandDriverInputValue.driverId,
                 fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+                latitude: latitude?.toString() as string, // Send as string or null
+                longitude: longitude?.toString() as string, // Send as string or null
               };
 
               // Add the odometer photo file to FormData
@@ -921,6 +985,11 @@ const CreateFuelForm = (): JSX.Element => {
               onBack={handleBackToFuelTypeStep}
               commandBusinessInputValue={commandBusinessInputValue}
               commandVehicleInputValue={commandVehicleInputValue}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
               odometerFile={odometerFile}
               setOdometerFile={setOdometerFile}
               fileError={fileError}

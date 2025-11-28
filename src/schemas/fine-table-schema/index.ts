@@ -24,6 +24,8 @@ export const fineTableSchema = z.object({
   vehicleDescription: z.string().optional(),
   violationCode: z.string().optional(),
   violationDescription: z.string().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
 });
 
 export type fineTableSchema = z.infer<typeof fineTableSchema>;

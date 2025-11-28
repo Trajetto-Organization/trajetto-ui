@@ -6,19 +6,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-import { KanbanCard } from "../dto";
+import { CardProps } from "./dto";
 import { cn } from "@/lib/utils";
 
 import { AlertCircle, CalendarIcon, CheckCircle2, Tag } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface CardProps {
-  card: KanbanCard;
-  onClick?: () => void;
-  isDragging?: boolean;
-}
 
 const priorityColors = {
   low: "bg-blue-100 text-blue-600",

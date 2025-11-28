@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import { ProtectedProvider } from "./_components/layout/protected-provider";
-import { ProtectedPageLoading } from "./_components/loading-page/protected-page-loading";
+import { DynamicProtectedLoading } from "./_components/loading-page/dynamic-protected-loading";
 
 import { NotificationsProvider } from "./_components/layout/protected-provider/notifications-provider";
 
@@ -13,7 +13,7 @@ const RootProtectedLayout = ({
   children,
 }: RootProtectedLayoutProps): JSX.Element => {
   return (
-    <Suspense fallback={<ProtectedPageLoading />}>
+    <Suspense fallback={<DynamicProtectedLoading />}>
       <NotificationsProvider>
         <ProtectedProvider>{children}</ProtectedProvider>
       </NotificationsProvider>

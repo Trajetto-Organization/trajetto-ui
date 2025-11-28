@@ -24,7 +24,7 @@ interface DataTablePaginationProps<TData> {
   isLoading?: boolean;
 }
 
-export function DataTablePagination<TData>({
+function DataTablePagination<TData>({
   table,
   error,
   isLoading = false,
@@ -172,3 +172,5 @@ export function DataTablePagination<TData>({
     </div>
   );
 }
+
+export { DataTablePagination };

@@ -156,7 +156,7 @@ const DashboardCreateVehicleTypeForm = (): JSX.Element => {
           ref={formRef}
           action={(formData: FormData) => {
             formData.append("businessId", businessId as string);
-            dispatch(formData);
+            return dispatch(formData);
           }}
         >
           <DashboardCreateVehicleTypeFormContainer

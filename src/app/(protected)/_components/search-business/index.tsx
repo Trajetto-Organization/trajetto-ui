@@ -14,18 +14,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { cn } from "@/lib/utils";
-import { CommandBusinessInputValue } from "../dto";
 
 import { useBusinessInfiniteScroll } from "./hooks/business-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-interface SearchBusinessProps {
-  errorBusinessId?: string[];
-  searchBusinessInputValue: string;
-  handleUpdateSearchBussinessInputValue: (
-    searchBusinessData: CommandBusinessInputValue,
-  ) => void;
-}
+import { SearchBusinessProps } from "./dto";
 
 const SearchBusiness = ({
   errorBusinessId,

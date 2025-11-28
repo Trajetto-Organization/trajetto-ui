@@ -1,3 +1,5 @@
+import { KanbanColumn } from "../../../dto";
+
 interface UpdateColumnDialogValidationError {
   title?: string[];
   color?: string[];
@@ -9,4 +11,27 @@ interface UpdateColumnDialogFormState {
   successMessage?: string;
 }
 
-export type { UpdateColumnDialogFormState };
+interface UseUpdateColumnDialogProps {
+  state: UpdateColumnDialogFormState | null;
+  onClose: () => void;
+  businessId?: string;
+}
+
+interface UpdateColumnDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  column: KanbanColumn;
+}
+
+interface UpdateColumnFormProps {
+  onClose: () => void;
+  state: UpdateColumnDialogFormState;
+  column: KanbanColumn;
+}
+
+export type {
+  UpdateColumnDialogFormState,
+  UseUpdateColumnDialogProps,
+  UpdateColumnDialogProps,
+  UpdateColumnFormProps,
+};

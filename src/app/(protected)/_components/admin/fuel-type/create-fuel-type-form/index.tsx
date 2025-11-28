@@ -29,10 +29,8 @@ import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 import { CreateFuelTypeContainerProps, CreateFuelTypeFormState } from "./dto";
 import { useCreateFuelTypeForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
-import { SearchBusiness } from "../../../search-business";
-
 import { cn } from "@/lib/utils";
+import { SearchBusiness } from "../../../search-business";
 
 const CreateFuelTypeFormContainer = ({
   state,
@@ -165,11 +163,11 @@ const CreateFuelTypeForm = (): JSX.Element => {
         <form
           ref={formRef}
           action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
-            };
+            formData.append(
+              "businessId",
+              commandBusinnessInputValue.businessId,
+            );
 
-            appendExtraDataToForm(formData, extraData);
             return dispatch(formData);
           }}
         >

@@ -763,7 +763,7 @@ const CreateVehicleForm = (): JSX.Element => {
                 );
               }
 
-              dispatch(formData);
+              return dispatch(formData);
             }}
           >
             <CreateVehicleFormContainer

@@ -111,6 +111,8 @@ const robots = (): MetadataRoute.Robots => {
           "/",
           "/about",
           "/blog",
+          "/login",
+          "/forgot",
           "/blog/*",
           "/contact",
           "/quote",

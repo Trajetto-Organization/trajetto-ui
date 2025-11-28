@@ -15,4 +15,12 @@ interface UpdateUserPasswordContainerProps {
   error: boolean;
 }
 
-export type { UpdateUserPasswordContainerProps, UpdateUserPasswordFormState };
+interface UpdatePasswordProps {
+  error: boolean;
+}
+
+export type {
+  UpdateUserPasswordContainerProps,
+  UpdateUserPasswordFormState,
+  UpdatePasswordProps,
+};

@@ -20,7 +20,7 @@ const AboutMissionSection = () => {
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
   return (
-    <section className="py-20 bg-background" ref={ref}>
+    <section className="py-20 bg-background overflow-x-hidden" ref={ref}>
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Nossa Missão</h2>

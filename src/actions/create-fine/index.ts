@@ -29,6 +29,12 @@ const handleCreateFine = async (state: any, createFineValues: FormData) => {
 
   const fineData = createFineValidation.data;
 
+  // 🆕 Add record origin (WEB_DASHBOARD)
+  const fineDataWithOrigin = {
+    ...fineData,
+    created_from: "WEB_DASHBOARD",
+  };
+
   try {
     const response = await fetch(createFine, {
       credentials: "include",
@@ -37,7 +43,7 @@ const handleCreateFine = async (state: any, createFineValues: FormData) => {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(fineData),
+      body: JSON.stringify(fineDataWithOrigin),
     });
 
     const { message } = (await response.json()) as CreateFineProps;

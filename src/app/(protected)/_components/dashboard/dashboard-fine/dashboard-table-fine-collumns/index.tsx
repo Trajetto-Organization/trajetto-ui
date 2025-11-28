@@ -253,6 +253,38 @@ const dashboardTableFineColumns: ColumnDef<fineTableSchema>[] = [
     },
   },
   {
+    accessorKey: "latitude",
+    meta: {
+      title: "Latitude",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Latitude" />
+    ),
+    cell: ({ row }) => {
+      return (
+        <p className="truncate font-medium w-32">
+          {row.getValue("latitude") ?? "N/A"}
+        </p>
+      );
+    },
+  },
+  {
+    accessorKey: "longitude",
+    meta: {
+      title: "Longitude",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Longitude" />
+    ),
+    cell: ({ row }) => {
+      return (
+        <p className="truncate font-medium w-32">
+          {row.getValue("longitude") ?? "N/A"}
+        </p>
+      );
+    },
+  },
+  {
     accessorKey: "observation",
     meta: {
       title: "Observações",

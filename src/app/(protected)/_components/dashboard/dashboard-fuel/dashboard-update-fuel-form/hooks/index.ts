@@ -4,9 +4,9 @@ import {
   CommandDriverInputValue,
   CommandVehicleInputValue,
   CommandFuelTypeInputValue,
+  FuelProps,
 } from "@/app/(protected)/_components/dto";
 
-import { DashboardFuelProps } from "../../dto";
 import { DashboardUpdateFuelFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
@@ -17,7 +17,7 @@ import { queryClientProps } from "@/lib/query-client-props";
 interface UseDashboardUpdateFuelFormProps {
   state: DashboardUpdateFuelFormState | null;
   handleCloseUpdateFuel: () => void;
-  fuelData: DashboardFuelProps;
+  fuelData: FuelProps;
   isUpdateFuelOpen: boolean;
 }
 

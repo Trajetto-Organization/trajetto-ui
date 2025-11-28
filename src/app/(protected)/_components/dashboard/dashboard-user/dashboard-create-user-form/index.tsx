@@ -200,8 +200,8 @@ const DashboardCreateUserFormContainer = ({
           bg-gradient-to-br from-muted/40 to-muted/20"
         >
           <div
-            className="flex items-center 
-            justify-between gap-4"
+            className="flex flex-col sm:flex-row 
+            sm:items-center sm:justify-between gap-4"
           >
             <div className="flex flex-col gap-1.5">
               <Label
@@ -222,11 +222,12 @@ const DashboardCreateUserFormContainer = ({
             </div>
             <div
               className="flex items-center gap-3 bg-background
-              px-4 py-2.5 rounded-md border shadow-sm"
+              px-4 py-2.5 rounded-md border shadow-sm 
+              w-full sm:w-auto justify-center"
             >
               <span
                 className={cn(
-                  "text-sm font-medium transition-colors",
+                  "text-sm font-medium transition-colors whitespace-nowrap",
                   userType === "employee"
                     ? "text-foreground"
                     : "text-muted-foreground",
@@ -256,7 +257,7 @@ const DashboardCreateUserFormContainer = ({
               />
               <span
                 className={cn(
-                  "text-sm font-medium transition-colors",
+                  "text-sm font-medium transition-colors whitespace-nowrap",
                   userType === "driver"
                     ? "text-foreground"
                     : "text-muted-foreground",

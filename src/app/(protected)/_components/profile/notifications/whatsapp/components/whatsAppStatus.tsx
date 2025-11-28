@@ -11,14 +11,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 
 import { Separator } from "@/components/ui/separator";
-
-import { useWhatsAppContext } from "../provider";
 import { UserRole } from "@/app/(protected)/_components/dto";
 
-interface WhatsAppStatusProps {
-  userRole?: UserRole;
-  driverId?: string | null;
-}
+import { useWhatsAppContext } from "../provider";
+import { WhatsAppStatusProps } from "../dto";
 
 const WhatsAppStatus = ({
   userRole,
@@ -31,12 +27,12 @@ const WhatsAppStatus = ({
     showConnectionConfirmation,
   } = useWhatsAppContext();
 
-  // Verifica se é motorista
+  // Check if you are a driver
   const isDriver = userRole === "BUSINESS_USER" && !!driverId;
 
   // Function to get notifications based on user role
   const getNotificationsList = (role?: UserRole) => {
-    // Motoristas não recebem lista de notificações
+    // Drivers do not receive a list of notifications.
     if (isDriver) {
       return [];
     }

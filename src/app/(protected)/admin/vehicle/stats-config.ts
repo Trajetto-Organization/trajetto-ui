@@ -1,7 +1,7 @@
 "use client";
 
 import { Car, CheckCircle2, XCircle, Navigation } from "lucide-react";
-import { StatConfig } from "../../_components/stats/page-stats";
+import { StatConfig } from "../../_components/stats/dto";
 
 /**
  * Statistics setup for vehicle page

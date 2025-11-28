@@ -16,17 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useProfileInfiniteScroll } from "./hooks/profile-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandProfileAccessInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchProfileAccessProps {
-  errorProfileAccessId?: string[];
-  searchProfileAccessInputValue: string;
-  businessId: string;
-  handleUpdateSearchProfileAccessInputValue: (
-    profileAccessData: CommandProfileAccessInputValue,
-  ) => void;
-}
+import { SearchProfileAccessProps } from "./dto";
 
 const SearchProfileAccess = ({
   errorProfileAccessId,
@@ -61,12 +52,19 @@ const SearchProfileAccess = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-profile-access-input" className={errorProfileAccessId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-profile-access-input"
+        className={errorProfileAccessId ? "text-red-500" : ""}
+      >
         {errorProfileAccessId ? errorProfileAccessId[0] : "Selecione o Perfil"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-profile-access-input" placeholder="Buscar perfil..." className="h-9" />
+        <CommandInput
+          id="search-profile-access-input"
+          placeholder="Buscar perfil..."
+          className="h-9"
+        />
 
         {!isLoadingProfiles && !hasError && (
           <CommandEmpty>

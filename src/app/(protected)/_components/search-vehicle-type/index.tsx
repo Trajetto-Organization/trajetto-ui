@@ -16,18 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVehicleTypeInfiniteScroll } from "./hooks/vehicle-type-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandVehicleTypeInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchVehicleTypeProps {
-  errorVehicleTypeId?: string[];
-  searchVehicleTypeInputValue: string;
-  businessId: string;
-  handleUpdateSearchVehicleTypeInputValue: (
-    vehicleTypeData: CommandVehicleTypeInputValue,
-  ) => void;
-  isOptional?: boolean;
-}
+import { SearchVehicleTypeProps } from "./dto";
 
 const SearchVehicleType = ({
   errorVehicleTypeId,
@@ -63,7 +53,10 @@ const SearchVehicleType = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-vehicle-type-input" className={errorVehicleTypeId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-vehicle-type-input"
+        className={errorVehicleTypeId ? "text-red-500" : ""}
+      >
         {errorVehicleTypeId
           ? errorVehicleTypeId[0]
           : "Selecione o tipo de veículo"}{" "}
@@ -71,7 +64,11 @@ const SearchVehicleType = ({
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-vehicle-type-input" placeholder="Buscar tipo de veículo..." className="h-9" />
+        <CommandInput
+          id="search-vehicle-type-input"
+          placeholder="Buscar tipo de veículo..."
+          className="h-9"
+        />
 
         {!isLoadingVehicleTypes && !hasError && (
           <CommandEmpty>

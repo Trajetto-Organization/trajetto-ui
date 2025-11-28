@@ -6,7 +6,7 @@ import {
   DollarSign,
   CheckCircle2,
 } from "lucide-react";
-import { StatConfig } from "../../_components/stats/page-stats";
+import { StatConfig } from "../../_components/stats/dto";
 
 /**
  * Statistics configuration for the supply page

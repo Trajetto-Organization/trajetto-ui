@@ -21,22 +21,15 @@ import FormInput from "@/components/custom/form-input";
 import { handleCreateKanbanColumn } from "@/actions/create-kanban-column";
 import { useCreateColumnModal } from "./hooks";
 
-import { CreateColumnModalFormState } from "./dto";
+import {
+  CreateColumnFormProps,
+  CreateColumnModalFormState,
+  CreateColumnModalProps,
+} from "./dto";
 import { Input } from "@/components/ui/input";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
-
-interface CreateColumnModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  boardId: string;
-}
-
-interface CreateColumnFormProps {
-  onClose: () => void;
-  state: CreateColumnModalFormState;
-}
 
 const CreateColumnForm = ({
   onClose,
@@ -49,8 +42,8 @@ const CreateColumnForm = ({
     "write",
   );
 
-  const [title, setTitle] = useState("");
-  const [color, setColor] = useState("#64748b");
+  const [title, setTitle] = useState<string>("");
+  const [color, setColor] = useState<string>("#64748b");
 
   const predefinedColors = [
     "#64748b", // Slate

@@ -1,14 +1,8 @@
 import { useEffect, useRef } from "react";
-import { UpdateColumnDialogFormState } from "../dto";
+import { UseUpdateColumnDialogProps } from "../dto";
 
 import { useKanbanQueryClient } from "../../../hooks/use-query-client";
 import { toast } from "sonner";
-
-interface UseUpdateColumnDialogProps {
-  state: UpdateColumnDialogFormState | null;
-  onClose: () => void;
-  businessId?: string;
-}
 
 function useUpdateColumnDialog({
   state,

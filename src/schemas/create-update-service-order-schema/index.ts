@@ -157,6 +157,44 @@ const createUpdateServiceOrderSchema = z
         .optional()
         .nullable(),
     ),
+
+    // 📍 GEOLOCATION: Final location (edited or original)
+    latitude: z.preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          if (val.trim() === "") return null;
+          return parseFloat(val);
+        }
+
+        return val;
+      },
+      z
+        .number({
+          invalid_type_error: "A latitude deve ser um número válido.",
+        })
+        .min(-90, "A latitude deve estar entre -90 e 90.")
+        .max(90, "A latitude deve estar entre -90 e 90.")
+        .optional()
+        .nullable(),
+    ),
+    longitude: z.preprocess(
+      (val) => {
+        if (typeof val === "string") {
+          if (val.trim() === "") return null;
+          return parseFloat(val);
+        }
+
+        return val;
+      },
+      z
+        .number({
+          invalid_type_error: "A longitude deve ser um número válido.",
+        })
+        .min(-180, "A longitude deve estar entre -180 e 180.")
+        .max(180, "A longitude deve estar entre -180 e 180.")
+        .optional()
+        .nullable(),
+    ),
   })
   .refine(
     (data) => {

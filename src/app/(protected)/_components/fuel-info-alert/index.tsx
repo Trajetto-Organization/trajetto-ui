@@ -117,9 +117,9 @@ const FuelInfoAlert = ({
               <strong>⚡ Análise de Eficiência:</strong>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <main className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Expected Consumption */}
-              <div
+              <section
                 className="p-2 rounded-md bg-white
                 dark:bg-blue-900/20 border border-blue-200
                 dark:border-blue-800"
@@ -128,11 +128,11 @@ const FuelInfoAlert = ({
                 <div className="text-base font-bold">
                   {expectedConsumption?.toFixed(2)} km/L
                 </div>
-              </div>
+              </section>
 
               {/* Actual Consumption */}
               {actualConsumption && efficiencyStatus && (
-                <div
+                <section
                   className={`p-2 rounded-md border ${efficiencyStatus.bgColor} ${efficiencyStatus.borderColor}`}
                 >
                   <div
@@ -150,12 +150,12 @@ const FuelInfoAlert = ({
                   >
                     Status: {efficiencyStatus.status}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Autonomy */}
               {autonomy && (
-                <div
+                <section
                   className="p-2 rounded-md bg-white
                   dark:bg-blue-900/20 border
                   border-blue-200 dark:border-blue-800"
@@ -165,12 +165,12 @@ const FuelInfoAlert = ({
                     {autonomy.toFixed(1)} km
                   </div>
                   <div className="text-xs mt-1">Com este abastecimento</div>
-                </div>
+                </section>
               )}
 
               {/* Cost per Km */}
               {costPerKm && (
-                <div
+                <section
                   className="p-2 rounded-md bg-white
                   dark:bg-blue-900/20 border
                   border-blue-200 dark:border-blue-800"
@@ -182,19 +182,19 @@ const FuelInfoAlert = ({
                   <div className="text-xs mt-1">
                     Baseado neste abastecimento
                   </div>
-                </div>
+                </section>
               )}
-            </div>
+            </main>
           </>
         )}
 
-        <div
+        <footer
           className="text-xs mt-2 border-t
           border-blue-200 pt-2"
         >
           <strong>💡 Dicas:</strong> Verifique se os dados estão corretos.
           Eficiência muito baixa pode indicar problemas no veículo.
-        </div>
+        </footer>
       </AlertDescription>
     </Alert>
   );

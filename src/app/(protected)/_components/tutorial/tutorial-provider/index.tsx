@@ -12,35 +12,11 @@ import {
 import { usePathname } from "next/navigation";
 
 import { tutorialConfigs, TutorialStep, canViewAdvancedFeatures } from "./data";
-import { UserRole } from "../../dto";
-
-interface UserPermissions {
-  role: UserRole;
-  permissions?: Array<{
-    permissionKey: string;
-    canRead: boolean;
-    canWrite: boolean;
-  }>;
-}
-
-interface TutorialContextType {
-  isActive: boolean;
-  currentStep: number;
-  steps: TutorialStep[];
-  startTutorial: () => void;
-  nextStep: () => void;
-  prevStep: () => void;
-  skipTutorial: () => void;
-  completeTutorial: () => void;
-  resetTutorial: () => void;
-  setCurrentTab: (tab: string) => void;
-  currentTab: string;
-}
-
-interface TutorialProviderProps {
-  children: React.ReactNode;
-  userPermissions?: UserPermissions;
-}
+import {
+  TutorialContextType,
+  TutorialProviderProps,
+  UserPermissions,
+} from "./dto";
 
 const TutorialContext = createContext<TutorialContextType>(
   {} as TutorialContextType,
@@ -92,6 +68,7 @@ const getActiveTab = (): string => {
     );
     if (activeTabsTrigger) {
       const tutorialAttr = activeTabsTrigger.getAttribute("data-tutorial");
+
       if (tutorialAttr?.includes("overview")) return "overview";
       if (tutorialAttr?.includes("charts")) return "charts";
     }
@@ -163,11 +140,12 @@ const updateStepContent = (
   return step;
 };
 
-export const TutorialProvider: React.FC<TutorialProviderProps> = ({
+const TutorialProvider: React.FC<TutorialProviderProps> = ({
   children,
   userPermissions,
 }) => {
   const pathname = usePathname();
+
   const [isActive, setIsActive] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
 
@@ -242,6 +220,7 @@ export const TutorialProvider: React.FC<TutorialProviderProps> = ({
         if (!isActive) {
           const tutorialKey = getTutorialKey(pathname, detectedTab);
           const pageKey = `tutorial_${tutorialKey}`;
+
           const hasSeen = hasSeenTutorial(pageKey);
           const isMobile = isMobileScreen();
 
@@ -251,6 +230,7 @@ export const TutorialProvider: React.FC<TutorialProviderProps> = ({
             setTimeout(() => {
               setSteps(processedSteps);
               setIsActive(true);
+
               setCurrentStep(0);
             }, 300);
           }
@@ -402,7 +382,7 @@ export const TutorialProvider: React.FC<TutorialProviderProps> = ({
   );
 };
 
-export const useTutorial = () => {
+const useTutorial = () => {
   const context = useContext(TutorialContext);
 
   if (!context) {
@@ -411,3 +391,5 @@ export const useTutorial = () => {
 
   return context;
 };
+
+export { TutorialProvider, useTutorial };

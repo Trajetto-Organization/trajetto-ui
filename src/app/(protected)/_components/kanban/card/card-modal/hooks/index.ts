@@ -1,16 +1,8 @@
 import { useEffect, useRef } from "react";
-import { CardModalFormState } from "../dto";
+import { UseCardModalProps } from "../dto";
 
 import { useKanbanQueryClient } from "../../../hooks/use-query-client";
 import { toast } from "sonner";
-
-interface UseCardModalProps {
-  state: CardModalFormState | null;
-  onClose: () => void;
-  isEditing: boolean;
-  isDeleting?: boolean;
-  businessId?: string;
-}
 
 function useCardModal({
   state,

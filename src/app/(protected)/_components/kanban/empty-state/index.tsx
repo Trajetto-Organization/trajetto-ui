@@ -9,14 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-interface KanbanEmptyStateProps {
-  searchQuery?: string;
-  businessId?: string;
-  onOpenColumnModal?: () => void;
-  onSearchChange?: (query: string) => void;
-  updateUrl?: (updates: Record<string, string | null>) => void;
-  hasLimitedAccess?: boolean;
-}
+import { KanbanEmptyStateProps } from "../dto";
 
 const KanbanEmptyState = ({
   searchQuery,
@@ -240,4 +233,3 @@ const KanbanEmptyState = ({
 };
 
 export { KanbanEmptyState };
-export type { KanbanEmptyStateProps };

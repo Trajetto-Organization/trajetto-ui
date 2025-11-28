@@ -1,7 +1,7 @@
 "use client";
 
 import { Package, DollarSign, Percent, TrendingUp } from "lucide-react";
-import { StatConfig } from "../../_components/stats/page-stats";
+import { StatConfig } from "../../_components/stats/dto";
 
 /**
  * Setting up statistics for the parts by work order page

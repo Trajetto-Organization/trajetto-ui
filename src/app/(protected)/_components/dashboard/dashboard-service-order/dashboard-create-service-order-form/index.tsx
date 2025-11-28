@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { CheckCircle, Info, Loader, X } from "lucide-react";
 
+import dynamic from "next/dynamic";
+
 import {
   Dialog,
   DialogScrollContent,
@@ -59,6 +61,21 @@ import {
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Branch
 const DashboardSelectBranchStep = ({
@@ -327,6 +344,11 @@ const DashboardCreateServiceOrderFormContainer = ({
   onBack,
   businessId,
   commandVehicleInputValue,
+  handleLocationChange,
+  handleLocationLoadingChange,
+  latitude,
+  longitude,
+  isLoadingLocation,
 }: DashboardCreateServiceOrderContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -465,8 +487,11 @@ const DashboardCreateServiceOrderFormContainer = ({
         />
 
         {/* ====== SECTION: VEHICLE DATA SNAPSHOT (READ ONLY) ====== */}
-        <div className="col-span-2 mt-6">
-          <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+        <div className="col-span-1 md:col-span-2 mt-6">
+          <Alert
+            className="border-blue-200 
+            bg-blue-50 dark:bg-blue-950/20"
+          >
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-700 dark:text-blue-300">
               <strong>📸 Dados do Veículo (Snapshot Automático)</strong>
@@ -533,7 +558,7 @@ const DashboardCreateServiceOrderFormContainer = ({
         </div>
 
         {/* ====== SECTION: NEW MILEAGE (EDITABLE ONLY ON COMPLETION) ====== */}
-        <div className="col-span-2 mt-6">
+        <div className="col-span-1 md:col-span-2 mt-6">
           <Alert
             className={cn(
               "border-2",
@@ -565,7 +590,7 @@ const DashboardCreateServiceOrderFormContainer = ({
         </div>
 
         {/* New Mileage - Editable only if finalizing */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="🔧 Nova quilometragem após o serviço"
             htmlfor="new_mileage_after_service"
@@ -606,10 +631,25 @@ const DashboardCreateServiceOrderFormContainer = ({
           )}
         </div>
 
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.createServiceOrderError?.latitude?.[0] ||
+              state.createServiceOrderError?.longitude?.[0]
+            }
+          />
+        </div>
+
         {/* Useful Information */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <div
-            className="bg-blue-50 dark:bg-blue-900/20 
+            className="bg-blue-50 dark:bg-blue-900/20
             p-4 rounded-lg border border-blue-200"
           >
             <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-2">
@@ -674,7 +714,9 @@ const DashboardCreateServiceOrderFormContainer = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || (isCompleting && !isNewMileageValid)}
+          disabled={
+            pending || (isCompleting && !isNewMileageValid) || isLoadingLocation
+          }
         >
           <span>Criar Ordem de Serviço</span>
           {pending && (
@@ -691,6 +733,20 @@ const DashboardCreateServiceOrderFormContainer = ({
 const DashboardCreateServiceOrderForm = (): JSX.Element => {
   const defaultState: DashboardCreateServiceOrderFormState = {};
   const [state, dispatch] = useFormState(handleCreateServiceOrder, null);
+
+  // 📍 GEOLOCATION STATE
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
 
   const {
     isCreateServiceOrderForm,
@@ -736,6 +792,24 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
       label: getPermissionName(permissions.USER_REGISTRATION_MANAGE),
     },
   ]);
+
+  // Reset location states when modal closes or on success
+  useEffect(() => {
+    if (!isCreateServiceOrderForm) {
+      setLatitude(null);
+      setLongitude(null);
+      setIsLoadingLocation(false);
+    }
+  }, [isCreateServiceOrderForm]);
+
+  // Reset location states on successful creation
+  useEffect(() => {
+    if (state?.successMessage) {
+      setLatitude(null);
+      setLongitude(null);
+      setIsLoadingLocation(false);
+    }
+  }, [state?.successMessage]);
 
   return (
     <Dialog open={isCreateServiceOrderForm} onOpenChange={handleCloseDialog}>
@@ -826,11 +900,15 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
-              // Add selected IDs to form data
-              formData.append("businessId", businessId as string);
-              formData.append("branchId", commandBranchInputValue.branchId);
-
-              formData.append("vehicleId", commandVehicleInputValue.vehicleId);
+              // Add geolocation data
+              const extraData = {
+                businessId: businessId as string,
+                branchId: commandBranchInputValue.branchId,
+                vehicleId: commandVehicleInputValue.vehicleId,
+                responsibleUserId: commandUserInputValue.userId,
+                latitude: latitude?.toString() as string,
+                longitude: longitude?.toString() as string,
+              };
 
               if (commandSupplierInputValue.supplierId) {
                 formData.append(
@@ -839,12 +917,8 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
                 );
               }
 
-              formData.append(
-                "responsibleUserId",
-                commandUserInputValue.userId,
-              );
-
-              dispatch(formData);
+              appendExtraDataToForm(formData, extraData);
+              return dispatch(formData);
             }}
           >
             <DashboardCreateServiceOrderFormContainer
@@ -852,6 +926,11 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
               onBack={handleBackToUserStep}
               businessId={businessId as string}
               commandVehicleInputValue={commandVehicleInputValue}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

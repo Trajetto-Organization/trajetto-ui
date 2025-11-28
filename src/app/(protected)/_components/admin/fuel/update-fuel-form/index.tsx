@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 
 import { useDropzone } from "react-dropzone";
+
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import {
   Dialog,
@@ -62,6 +64,19 @@ import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Business and Branch
 const SelectBusinessBranchStep = ({
@@ -395,6 +410,11 @@ const UpdateFuelContainer = ({
   commandVehicleInputValue,
   odometerFile,
   setOdometerFile,
+  latitude,
+  longitude,
+  isLoadingLocation,
+  handleLocationChange,
+  handleLocationLoadingChange,
   fileError,
   setFileError,
   showImageModal,
@@ -618,8 +638,23 @@ const UpdateFuelContainer = ({
   // Check if there's a real file change (new file selected)
   const hasFileChange = odometerFile !== null;
 
+  // 📍 Check if location has changed
+  const [hasLocationChanged, setHasLocationChanged] = useState<boolean>(false);
+
+  useEffect(() => {
+    const originalLat = fuelData.latitude ?? null;
+    const originalLng = fuelData.longitude ?? null;
+
+    // Check if location changed (compare with original fuelData values)
+    const latChanged = originalLat !== latitude;
+    const lngChanged = originalLng !== longitude;
+
+    setHasLocationChanged(latChanged || lngChanged);
+  }, [latitude, longitude, fuelData.latitude, fuelData.longitude]);
+
   // Check if there are any changes in the form
-  const hasAnyChange = isDirty || isBusinessAndEntityDirty || hasFileChange;
+  const hasAnyChange =
+    isDirty || isBusinessAndEntityDirty || hasFileChange || hasLocationChanged;
 
   return (
     <>
@@ -675,7 +710,7 @@ const UpdateFuelContainer = ({
         />
 
         {/* Notes */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="Observações (opcional)"
             htmlfor="notes"
@@ -690,7 +725,7 @@ const UpdateFuelContainer = ({
         </div>
 
         {/* Odometer Photo Upload */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <label
             className="block text-sm font-medium 
             text-gray-700 dark:text-gray-300 mb-2"
@@ -839,8 +874,23 @@ const UpdateFuelContainer = ({
           )}
         </div>
 
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.updateFuelError?.latitude?.[0] ||
+              state.updateFuelError?.longitude?.[0]
+            }
+          />
+        </div>
+
         {/* Information Alert */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-700 dark:text-blue-300">
@@ -858,7 +908,7 @@ const UpdateFuelContainer = ({
         {/* Current Vehicle Info */}
         {data && (
           <div
-            className="col-span-2 mt-4 p-4 bg-green-50 
+            className="col-span-1 md:col-span-2 mt-4 p-4 bg-green-50 
             dark:bg-green-900/20 rounded-lg border border-green-200"
           >
             <p className="text-sm text-green-700 dark:text-green-300">
@@ -880,7 +930,7 @@ const UpdateFuelContainer = ({
         )}
 
         {/* History Information */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <div
             className="bg-purple-50 dark:bg-purple-900/20 
             p-4 rounded-lg border border-purple-200"
@@ -919,7 +969,9 @@ const UpdateFuelContainer = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || !hasAnyChange || isLoadingVehicle}
+          disabled={
+            pending || !hasAnyChange || isLoadingVehicle || isLoadingLocation
+          }
         >
           <span>Atualizar Abastecimento</span>
           {pending && (
@@ -969,6 +1021,34 @@ const UpdateFuelForm = ({
   const [fileError, setFileError] = useState<string | null>(null);
 
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
+
+  // 📍 GEOLOCATION STATE - Initialize with existing fuelData location
+  const [latitude, setLatitude] = useState<number | null>(
+    fuelData.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    fuelData.longitude ?? null,
+  );
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
+
+  // Reset location state when fuelData changes
+  useEffect(() => {
+    if (isUpdateFuelOpen) {
+      setLatitude(fuelData.latitude ?? null);
+      setLongitude(fuelData.longitude ?? null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [fuelData, isUpdateFuelOpen]);
 
   const {
     formRef,
@@ -1099,6 +1179,20 @@ const UpdateFuelForm = ({
                 formData.set("odometer_photo", odometerFile);
               }
 
+              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+              // When null, send as empty string (backend will convert to null)
+              if (latitude === null) {
+                formData.append("latitude", "");
+              } else if (latitude !== undefined) {
+                formData.append("latitude", latitude.toString());
+              }
+
+              if (longitude === null) {
+                formData.append("longitude", "");
+              } else if (longitude !== undefined) {
+                formData.append("longitude", longitude.toString());
+              }
+
               appendExtraDataToForm(formData, extraData);
               return dispatch(formData);
             }}
@@ -1111,6 +1205,11 @@ const UpdateFuelForm = ({
               isUpdateFuelOpen={isUpdateFuelOpen}
               commandVehicleInputValue={commandVehicleInputValue}
               commandBusinessInputValue={commandBusinessInputValue}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
               odometerFile={odometerFile}
               setOdometerFile={setOdometerFile}
               fileError={fileError}

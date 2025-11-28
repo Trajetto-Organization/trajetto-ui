@@ -1,20 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode, useRef } from "react";
+import { createContext, useContext, useState, useRef } from "react";
 
-import { WhatsAppSettings, SyncProgressData } from "../dto";
+import {
+  WhatsAppSettings,
+  SyncProgressData,
+  WhatsAppContextType,
+  WhatsAppProviderProps,
+} from "../dto";
 import { useWhatsAppGlobalEvents } from "../hooks/useWhatsAppGlobalEvents";
-
-interface WhatsAppContextType {
-  settings: WhatsAppSettings | null;
-  syncProgress: SyncProgressData | null;
-  showSyncProgress: boolean;
-  showConnectionConfirmation: boolean;
-  isUpdatingSettings: boolean;
-  updateSettings: (settings: WhatsAppSettings) => void;
-  clearSyncProgress: () => void;
-  setUpdatingSettings: (updating: boolean) => void;
-}
 
 const WhatsAppContext = createContext<WhatsAppContextType>({
   settings: null,
@@ -26,11 +20,6 @@ const WhatsAppContext = createContext<WhatsAppContextType>({
   clearSyncProgress: () => {},
   setUpdatingSettings: () => {},
 });
-
-interface WhatsAppProviderProps {
-  children: ReactNode;
-  initialSettings: WhatsAppSettings | null;
-}
 
 const WhatsAppProvider = ({
   children,

@@ -21,6 +21,9 @@ interface ServiceOrderProps {
   business_name?: string;
   supplierName?: string | null;
   partsCount?: number | null;
+  // 📍 GEOLOCATION
+  latitude?: number | null;
+  longitude?: number | null;
   created_at: string;
   updated_at: string;
 }

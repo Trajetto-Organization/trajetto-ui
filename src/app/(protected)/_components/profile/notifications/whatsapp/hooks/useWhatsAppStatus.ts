@@ -3,24 +3,19 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
-import { ConnectionInfo, WhatsAppSettings } from "../dto";
+import {
+  ConnectionInfo,
+  UseWhatsAppStatusReturn,
+  WhatsAppSettings,
+} from "../dto";
+
 import {
   getUpdatedWhatsAppSettings,
   refreshWhatsAppStatus,
 } from "@/actions/whatsapp/whatsapp-status";
 
-interface UseWhatsAppStatusReturn {
-  isRefreshing: boolean;
-  handleRefreshStatus: (
-    onSuccess?: (info: ConnectionInfo) => void,
-  ) => Promise<void>;
-  handleRefreshSettings: (
-    onSuccess?: (settings: WhatsAppSettings) => void,
-  ) => Promise<void>;
-}
-
 function useWhatsAppStatus(): UseWhatsAppStatusReturn {
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   /**
    * 🔄 Update connection status

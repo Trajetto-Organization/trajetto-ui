@@ -19,6 +19,8 @@ interface DashboardUpdateFineValidationError {
   driverId?: string[];
   vehicleId?: string[];
   trafficViolationCodeId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   updateFineErrorMessage?: string;
 }
 
@@ -33,6 +35,11 @@ interface DashboardUpdateFineContainerProps {
   fineData: DashboardFineProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateFineOpen: boolean;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface DashboardSelectBranchByStepProps {

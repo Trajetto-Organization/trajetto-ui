@@ -1,21 +1,11 @@
 import { useQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 
-interface VehicleData {
-  current_mileage: number;
-  maintenance_interval_km: number;
-  last_maintenance_mileage?: number | null;
-  km_per_liter: number;
-  license_plate?: string;
-  description?: string;
-  last_fuel_mileage?: number | null;
-  last_fuel_date?: string | null;
-}
-
-interface FetchVehicleDataProps {
-  vehicleId: string;
-  businessId: string;
-}
+import {
+  FetchVehicleDataProps,
+  UseFetchVehicleDataProps,
+  VehicleData,
+} from "./dto";
 
 const fetchVehicleData = async ({
   vehicleId,
@@ -55,11 +45,6 @@ const fetchVehicleData = async ({
     last_fuel_date: data.last_fuel_date || null,
   };
 };
-
-interface UseFetchVehicleDataProps {
-  vehicleId: string;
-  businessId: string;
-}
 
 function useFetchVehicleData({
   vehicleId,

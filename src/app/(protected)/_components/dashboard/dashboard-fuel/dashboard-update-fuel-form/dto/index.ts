@@ -3,9 +3,8 @@ import {
   CommandDriverInputValue,
   CommandVehicleInputValue,
   CommandFuelTypeInputValue,
+  FuelProps,
 } from "@/app/(protected)/_components/dto";
-
-import { DashboardFuelProps } from "../../dto";
 
 interface DashboardUpdateFuelValidationError {
   current_mileage?: string[];
@@ -19,6 +18,8 @@ interface DashboardUpdateFuelValidationError {
   branchId?: string[];
   businessId?: string[];
   odometer_photo?: string[];
+  latitude?: string[];
+  longitude?: string[];
   updateFuelErrorMessage?: string;
 }
 
@@ -30,7 +31,7 @@ interface DashboardUpdateFuelFormState {
 interface DashboardUpdateFuelContainerProps {
   state: DashboardUpdateFuelFormState;
   onBack: () => void;
-  fuelData: DashboardFuelProps;
+  fuelData: FuelProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateFuelOpen: boolean;
   commandVehicleInputValue: CommandVehicleInputValue;
@@ -40,6 +41,11 @@ interface DashboardUpdateFuelContainerProps {
   setFileError: (error: string | null) => void;
   showImageModal: boolean;
   setShowImageModal: (show: boolean) => void;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface DashboardSelectBranchStepProps {
@@ -79,7 +85,7 @@ interface DashboardSelectFuelTypeStepProps {
 }
 
 interface DashboardUpdateFuelFormProps {
-  fuelData: DashboardFuelProps;
+  fuelData: FuelProps;
   handleCloseUpdateFuel: () => void;
   isUpdateFuelOpen: boolean;
 }

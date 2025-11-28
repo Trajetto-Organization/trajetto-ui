@@ -1,6 +1,9 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
+import { useState } from "react";
+
+import Turnstile from "react-turnstile";
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
@@ -20,6 +23,7 @@ const ForgotPasswordContainer = ({
   state,
 }: ForgotPasswordContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
+  const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
 
   return (
     <motion.section
@@ -46,7 +50,14 @@ const ForgotPasswordContainer = ({
       <SuccessForm message={state.successMessage} />
 
       <div className="mt-6">
-        <Button className="w-full h-10" type="submit" disabled={pending}>
+        <Button
+          className="w-full h-10"
+          type="submit"
+          disabled={
+            (process.env.NODE_ENV === "production" && !isCaptchaValid) ||
+            pending
+          }
+        >
           Recuperar minha senha
           {pending && (
             <div className="ml-2 animate-spin">
@@ -56,7 +67,27 @@ const ForgotPasswordContainer = ({
         </Button>
       </div>
 
-      <hr className="mt-7" />
+      {process.env.NODE_ENV === "production" && (
+        <>
+          <Turnstile
+            sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            onSuccess={(token) => {
+              const input = document.getElementById(
+                "turnstile-token",
+              ) as HTMLInputElement;
+
+              if (input) input.value = token;
+              setIsCaptchaValid(true);
+            }}
+            theme="auto"
+            size="flexible"
+            className="mt-5"
+          />
+          <input id="turnstile-token" type="hidden" name="turnstileToken" />
+        </>
+      )}
+
+      <hr className="mt-5" />
 
       <Terms />
     </motion.section>

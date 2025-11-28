@@ -1,14 +1,9 @@
 import { useEffect, useRef } from "react";
-import { DeleteColumnDialogFormState } from "../dto";
 
 import { useKanbanQueryClient } from "../../../hooks/use-query-client";
-import { toast } from "sonner";
+import { UseDeleteColumnDialogProps } from "../dto";
 
-interface UseDeleteColumnDialogProps {
-  state: DeleteColumnDialogFormState | null;
-  onClose: () => void;
-  businessId?: string;
-}
+import { toast } from "sonner";
 
 function useDeleteColumnDialog({
   state,

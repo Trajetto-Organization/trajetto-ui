@@ -18,6 +18,8 @@ interface CreateFuelValidationError {
   branchId?: string[];
   businessId?: string[];
   odometer_photo?: string[];
+  latitude?: string[];
+  longitude?: string[];
   createFuelErrorMessage?: string;
 }
 
@@ -31,6 +33,11 @@ interface CreateFuelContainerProps {
   onBack: () => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   commandBusinessInputValue: CommandBusinessInputValue;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
   odometerFile: File | null;
   setOdometerFile: (file: File | null) => void;
   fileError: string | null;

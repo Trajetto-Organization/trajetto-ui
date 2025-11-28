@@ -3,6 +3,7 @@
 import { useFormStatus, useFormState } from "react-dom";
 
 import {
+  UpdatePasswordProps,
   UpdateUserPasswordContainerProps,
   UpdateUserPasswordFormState,
 } from "./dto";
@@ -24,11 +25,7 @@ import { handleUpdateUserPassword } from "@/actions/update-user-password";
 import FormInput from "@/components/custom/form-input";
 
 import { MdLockOutline } from "react-icons/md";
-import { useUpdatePasswordForm } from "./update-user-password";
-
-interface UpdatePasswordProps {
-  error: boolean;
-}
+import { useUpdatePasswordForm } from "./hooks";
 
 const UpdatePasswordModalContainer = ({
   state,

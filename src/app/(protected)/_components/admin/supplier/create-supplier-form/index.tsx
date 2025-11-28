@@ -252,7 +252,7 @@ const CreateSupplierForm = (): JSX.Element => {
             ref={formRef}
             action={(formData) => {
               formData.append("businessId", selectedBusiness.businessId);
-              dispatch(formData);
+              return dispatch(formData);
             }}
           >
             <CreateSupplierFormContainer

@@ -4,11 +4,7 @@ import { useInfiniteQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
-interface FetchUserProps {
-  pageParam: number;
-  businessId: string;
-  signal?: AbortSignal;
-}
+import { FetchUserProps } from "../dto";
 
 const fetchUser = async ({ pageParam, businessId, signal }: FetchUserProps) => {
   const MAX_USER_PAGE = 10;

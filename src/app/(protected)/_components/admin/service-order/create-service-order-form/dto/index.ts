@@ -20,6 +20,8 @@ interface CreateServiceOrderValidationError {
   branchId?: string[];
   supplierId?: string[];
   businessId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   createServiceOrderErrorMessage?: string;
 }
 
@@ -33,6 +35,11 @@ interface CreateServiceOrderContainerProps {
   onBack: () => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   commandBusinessInputValue: CommandBusinessInputValue;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface SelectBusinessBranchStepProps {

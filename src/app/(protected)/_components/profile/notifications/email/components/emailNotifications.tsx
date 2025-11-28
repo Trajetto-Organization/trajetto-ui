@@ -8,9 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useEmailNotifications } from "../hooks/useEmailNotifications";
 
-interface EmailNotificationsProps {
-  initialEnabled: boolean;
-}
+import { EmailNotificationsProps } from "../dto";
 
 const EmailNotifications = ({
   initialEnabled,
@@ -35,7 +33,8 @@ const EmailNotifications = ({
 
         {/* Status badge */}
         <div
-          className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${
+          className={`flex items-center gap-1 
+          rounded-md px-2 py-1 text-xs font-medium ${
             isEnabled
               ? "bg-green-600/10 dark:bg-green-600/10 dark:text-green-500 text-green-600"
               : "bg-red-600/10 dark:bg-red-500/10 dark:text-red-500 text-red-600"

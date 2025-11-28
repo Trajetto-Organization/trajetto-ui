@@ -16,15 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePartInfiniteScroll } from "./hooks/part-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandPartInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchPartProps {
-  errorPartId?: string[];
-  searchPartInputValue: string;
-  businessId: string;
-  handleUpdateSearchPartInputValue: (partData: CommandPartInputValue) => void;
-}
+import { SearchPartProps } from "./dto";
 
 const SearchPart = ({
   errorPartId,
@@ -59,12 +52,19 @@ const SearchPart = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-part-input" className={errorPartId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-part-input"
+        className={errorPartId ? "text-red-500" : ""}
+      >
         {errorPartId ? errorPartId[0] : "Selecione a peça"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-part-input" placeholder="Buscar peça..." className="h-9" />
+        <CommandInput
+          id="search-part-input"
+          placeholder="Buscar peça..."
+          className="h-9"
+        />
 
         {!isLoadingParts && !hasError && (
           <CommandEmpty>

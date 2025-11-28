@@ -1,6 +1,5 @@
 "use client";
 
-import { ReactNode } from "react";
 import Image from "next/image";
 
 import { QueryClientProvider } from "react-query";
@@ -31,7 +30,6 @@ import { ProtectedAccountSettings } from "./protected-account-settings";
 import { ProtectedGetAppButton } from "./protected-get-app-button";
 import { SearchInput } from "./protected-search-input";
 
-import { Permission, UserRole } from "../dto";
 import { useProtectedLayout } from "./hooks";
 
 import { TutorialProvider } from "../tutorial/tutorial-provider";
@@ -40,27 +38,7 @@ import TutorialComponent from "../tutorial/tutorial-component";
 import { TutorialMenuItem } from "../tutorial/tutorial-button";
 import { SidebarWrapper } from "./protected-provider/sidebar-wrapper";
 
-interface UserLogged {
-  id?: string;
-  businessId?: string;
-  avatar?: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  permissions: Permission[];
-  driverId?: string | null;
-  profileAccess?: {
-    permissions?: Permission[];
-  } | null;
-}
-
-interface ProtectedLayoutLayoutProps {
-  userLogged: UserLogged;
-  children: ReactNode;
-  error: boolean;
-  notificationCount: number;
-  notificationError: boolean;
-}
+import { ProtectedLayoutLayoutProps } from "./dto";
 
 const TrajettoLogo = ({ className }: { className?: string }) => (
   <Image
@@ -140,19 +118,9 @@ const ProtectedLayout = ({
                     className="h-6 sm:h-7 
                     w-auto flex-shrink-0"
                   />
-                  <div
-                    className="flex flex-col sm:flex-row 
-                    sm:items-baseline sm:gap-2"
-                  >
-                    <span className="font-semibold text-xs">
-                      {company.name}
-                    </span>
-                    <span
-                      className="text-[10px] sm:text-xs 
-                      text-muted-foreground whitespace-nowrap"
-                    >
-                      {company.plan}
-                    </span>
+                  {/* Search Bar - Responsive, takes available space */}
+                  <div className="flex-1 max-w-md mx-2 sm:mx-4">
+                    <SearchInput />
                   </div>
                 </div>
               </div>

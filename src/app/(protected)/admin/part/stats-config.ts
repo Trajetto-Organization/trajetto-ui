@@ -1,7 +1,7 @@
 "use client";
 
 import { Package, DollarSign, TrendingUp, Building2 } from "lucide-react";
-import { StatConfig } from "../../_components/stats/page-stats";
+import { StatConfig } from "../../_components/stats/dto";
 
 /**
  * Statistics setup for parts page

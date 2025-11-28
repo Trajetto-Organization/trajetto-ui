@@ -22,21 +22,10 @@ import {
   UserX2Icon,
 } from "lucide-react";
 
-import { PermissionKey, UserRole } from "@/app/(protected)/_components/dto";
+import { UserRole } from "@/app/(protected)/_components/dto";
 import { permissions } from "@/lib/permissions";
 
-interface ProtectedNavItem {
-  title: string;
-  url: string;
-  disabled?: boolean;
-  external?: boolean;
-  icon?: keyof typeof protectedNavIcons;
-  label?: string;
-  description?: string;
-  isActive?: boolean;
-  requiredPermission?: PermissionKey;
-  items?: ProtectedNavItem[];
-}
+import { ProtectedNavItem } from "../dto";
 
 const protectedNavIcons = {
   dashboard: LayoutDashboardIcon,

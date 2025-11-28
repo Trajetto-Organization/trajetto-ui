@@ -21,7 +21,7 @@ import {
   SelectBusinessStepProps,
 } from "./dto";
 
-import { BusinessProps } from "../../business/dto";
+import { BusinessProps } from "../../../dto";
 import { SupplierProps } from "../dto";
 
 import { useUpdateSupplierForm } from "./hooks";

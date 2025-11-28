@@ -9,7 +9,7 @@ import { ProtectedHeading } from "../../_components/layout/protected-heading";
 import { DataTable } from "../../_components/tanstack-table/data-table";
 import { tableFuelColumns } from "../../_components/admin/fuel/table-fuel-collumns";
 
-import { FuelProps } from "../../_components/admin/fuel/dto";
+import { FuelProps } from "../../_components/dto";
 import { FuelToolbar } from "../../_components/admin/fuel/fuel-toolbar";
 
 import { parseNDJSON } from "@/lib/parse-nd-json";

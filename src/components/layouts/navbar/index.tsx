@@ -10,7 +10,15 @@ const Navbar = async (): Promise<JSX.Element> => {
   const decodeJwt = parseJwt(token as string);
 
   const userRole = decodeJwt?.role as UserRole;
-  return <NavBarContent token={token as string} role={userRole} />;
+  const driverId = decodeJwt?.driverId as string | undefined;
+
+  return (
+    <NavBarContent
+      token={token as string}
+      role={userRole}
+      driverId={driverId}
+    />
+  );
 };
 
 export { Navbar };

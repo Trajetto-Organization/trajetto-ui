@@ -57,4 +57,31 @@ interface KanbanBoard {
   updated_at: string;
 }
 
-export type { KanbanBoard, KanbanColumn, KanbanCard, KanbanLabel, KanbanUser };
+interface UserSelectorProps {
+  businessId: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  disabled?: boolean;
+  label?: string;
+  placeholder?: string;
+  errorMessage?: string[];
+}
+
+interface KanbanEmptyStateProps {
+  searchQuery?: string;
+  businessId?: string;
+  onOpenColumnModal?: () => void;
+  onSearchChange?: (query: string) => void;
+  updateUrl?: (updates: Record<string, string | null>) => void;
+  hasLimitedAccess?: boolean;
+}
+
+export type {
+  KanbanBoard,
+  KanbanColumn,
+  KanbanCard,
+  KanbanLabel,
+  KanbanUser,
+  UserSelectorProps,
+  KanbanEmptyStateProps,
+};

@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { CheckCircle, Edit, Loader, X } from "lucide-react";
 
+import dynamic from "next/dynamic";
+
 import {
   Dialog,
   DialogScrollContent,
@@ -47,6 +49,19 @@ import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { useFetchVehicleData } from "../../../search-vehicle-by-id-business";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Business and Branch
 const SelectBusinessStep = ({
@@ -366,6 +381,11 @@ const UpdateServiceOrderContainer = ({
   isUpdateServiceOrderOpen,
   commandBusinessInputValue,
   commandVehicleInputValue,
+  latitude,
+  longitude,
+  isLoadingLocation,
+  handleLocationChange,
+  handleLocationLoadingChange,
 }: UpdateServiceOrderContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
 
@@ -594,9 +614,32 @@ const UpdateServiceOrderContainer = ({
     return true;
   })();
 
+  // 📍 Check if location has changed
+  const [hasLocationChanged, setHasLocationChanged] = useState<boolean>(false);
+
+  useEffect(() => {
+    const originalLat = serviceOrderData.latitude ?? null;
+    const originalLng = serviceOrderData.longitude ?? null;
+
+    // Check if location changed (compare with original serviceOrderData values)
+    const latChanged = originalLat !== latitude;
+    const lngChanged = originalLng !== longitude;
+
+    setHasLocationChanged(latChanged || lngChanged);
+  }, [
+    latitude,
+    longitude,
+    serviceOrderData.latitude,
+    serviceOrderData.longitude,
+  ]);
+
   // Check if there are any changes in the form
   const hasAnyChange =
-    isDirty || isBusinessAndEntityDirty || isSnapshotDirty || isNewMileageDirty;
+    isDirty ||
+    isBusinessAndEntityDirty ||
+    isSnapshotDirty ||
+    isNewMileageDirty ||
+    hasLocationChanged;
 
   return (
     <>
@@ -654,7 +697,7 @@ const UpdateServiceOrderContainer = ({
         />
 
         {/* ====== SECTION: HISTORICAL DATA SNAPSHOT ====== */}
-        <div className="col-span-2 mt-6">
+        <div className="col-span-1 md:col-span-2 mt-6">
           <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
             <Edit className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-700 dark:text-amber-300">
@@ -733,7 +776,7 @@ const UpdateServiceOrderContainer = ({
         {/* Current Vehicle Info */}
         {data && (
           <div
-            className="col-span-2 mt-4 p-4 bg-blue-50 
+            className="col-span-1 md:col-span-2 mt-4 p-4 bg-blue-50 
             dark:bg-blue-900/20 rounded-lg border border-blue-200"
           >
             <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -745,7 +788,7 @@ const UpdateServiceOrderContainer = ({
         )}
 
         {/* ====== SECTION: NEW MILEAGE (EDITABLE) ====== */}
-        <div className="col-span-2 mt-6">
+        <div className="col-span-1 md:col-span-2 mt-6">
           <Alert
             className={cn(
               "border-2",
@@ -798,7 +841,7 @@ const UpdateServiceOrderContainer = ({
         </div>
 
         {/* New Mileage - Editable only if finalizing or already finalized */}
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="🔧 Nova quilometragem após o serviço"
             htmlfor="new_mileage_after_service"
@@ -850,8 +893,23 @@ const UpdateServiceOrderContainer = ({
           )}
         </div>
 
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.updateServiceOrderError?.latitude?.[0] ||
+              state.updateServiceOrderError?.longitude?.[0]
+            }
+          />
+        </div>
+
         {/* History Information */}
-        <div className="col-span-2 mt-4">
+        <div className="col-span-1 md:col-span-2 mt-4">
           <div
             className="bg-purple-50 dark:bg-purple-900/20 
             p-4 rounded-lg border border-purple-200"
@@ -895,7 +953,13 @@ const UpdateServiceOrderContainer = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || !hasAnyChange || !isFormValid}
+          disabled={
+            pending ||
+            !hasAnyChange ||
+            !isFormValid ||
+            isLoadingVehicle ||
+            isLoadingLocation
+          }
         >
           <span>Atualizar Ordem de Serviço</span>
           {pending && (
@@ -916,6 +980,33 @@ const UpdateServiceOrderForm = ({
 }: UpdateServiceOrderFormProps): JSX.Element => {
   const defaultState: UpdateServiceOrderFormState = {};
   const [state, dispatch] = useFormState(handleUpdateServiceOrder, null);
+
+  // 📍 GEOLOCATION STATE - Initialize with existing serviceOrderData location
+  const [latitude, setLatitude] = useState<number | null>(
+    serviceOrderData.latitude ?? null,
+  );
+  const [longitude, setLongitude] = useState<number | null>(
+    serviceOrderData.longitude ?? null,
+  );
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
+
+  // Reset location state when serviceOrderData changes
+  useEffect(() => {
+    if (isUpdateServiceOrderOpen) {
+      setLatitude(serviceOrderData.latitude ?? null);
+      setLongitude(serviceOrderData.longitude ?? null);
+      setIsLoadingLocation(false);
+    }
+  }, [serviceOrderData, isUpdateServiceOrderOpen]);
 
   const {
     formRef,
@@ -1027,6 +1118,20 @@ const UpdateServiceOrderForm = ({
                 responsibleUserId: commandUserInputValue.userId,
               };
 
+              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+              // When null, send as empty string (backend will convert to null)
+              if (latitude === null) {
+                formData.append("latitude", "");
+              } else if (latitude !== undefined) {
+                formData.append("latitude", latitude.toString());
+              }
+
+              if (longitude === null) {
+                formData.append("longitude", "");
+              } else if (longitude !== undefined) {
+                formData.append("longitude", longitude.toString());
+              }
+
               appendExtraDataToForm(formData, extraData);
               return dispatch(formData);
             }}
@@ -1039,6 +1144,11 @@ const UpdateServiceOrderForm = ({
               isUpdateServiceOrderOpen={isUpdateServiceOrderOpen}
               commandVehicleInputValue={commandVehicleInputValue}
               commandBusinessInputValue={commandBusinessInputValue}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

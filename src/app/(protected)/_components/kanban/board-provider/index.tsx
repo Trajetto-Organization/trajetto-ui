@@ -25,13 +25,7 @@ import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
 import { useAuthStore } from "@/store/auth-store";
-
-interface KanbanBoardProviderProps {
-  businessId?: string;
-  initialSearch?: string;
-  showBusinessSelector?: boolean;
-  mode?: "admin" | "dashboard";
-}
+import { KanbanBoardProviderProps } from "./dto";
 
 const KanbanBoardProvider = ({
   businessId: businessIdProp,

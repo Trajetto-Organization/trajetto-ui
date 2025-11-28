@@ -16,17 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFuelTypeInfiniteScroll } from "./hooks/fuel-type-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandFuelTypeInputValue } from "../dto";
 import { cn } from "@/lib/utils";
-
-interface SearchFuelTypeProps {
-  errorFuelTypeId?: string[];
-  searchFuelTypeInputValue: string;
-  businessId: string;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-}
+import { SearchFuelTypeProps } from "./dto";
 
 const SearchFuelType = ({
   errorFuelTypeId,
@@ -61,12 +52,19 @@ const SearchFuelType = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-fuel-type-input" className={errorFuelTypeId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-fuel-type-input"
+        className={errorFuelTypeId ? "text-red-500" : ""}
+      >
         {errorFuelTypeId ? errorFuelTypeId[0] : "Selecione o combustível"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-fuel-type-input" placeholder="Buscar combustível..." className="h-9" />
+        <CommandInput
+          id="search-fuel-type-input"
+          placeholder="Buscar combustível..."
+          className="h-9"
+        />
 
         {!isLoadingFuelTypes && !hasError && (
           <CommandEmpty>

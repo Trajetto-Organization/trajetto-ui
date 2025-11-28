@@ -1,13 +1,9 @@
 "use client";
 
-import { useNotificationsContext } from "@/app/(protected)/_components/layout/protected-provider/notifications-provider";
 import { useEffect, useRef } from "react";
+import { useNotificationsContext } from "@/app/(protected)/_components/layout/protected-provider/notifications-provider";
 
-interface UseWhatsAppGlobalEventsProps {
-  onConnectionUpdate?: (isConnected: boolean, data?: any) => void;
-  onWhatsAppDisabled?: (data?: any) => void;
-  onModalShouldClose?: () => void;
-}
+import { UseWhatsAppGlobalEventsProps } from "../dto";
 
 function useWhatsAppGlobalEvents({
   onConnectionUpdate,

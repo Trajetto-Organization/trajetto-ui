@@ -1,30 +1,4 @@
-import { UserRole } from "../../../dto";
-
-interface TutorialStep {
-  target: string;
-  title: string;
-  content: string;
-  placement?: "top" | "bottom" | "left" | "right" | "center";
-  spotlightPadding?: number;
-  disableInteraction?: boolean;
-  condition?: (
-    userPermissions?: UserPermissions,
-    currentTab?: string,
-  ) => boolean;
-}
-
-interface TutorialConfig {
-  [key: string]: TutorialStep[];
-}
-
-interface UserPermissions {
-  role: UserRole;
-  permissions?: Array<{
-    permissionKey: string;
-    canRead: boolean;
-    canWrite: boolean;
-  }>;
-}
+import { TutorialConfig, TutorialStep, UserPermissions } from "../dto";
 
 // Helper functions for permission checks
 const canViewAdvancedFeatures = (

@@ -146,6 +146,57 @@ interface CommandServiceOrderInputValue {
   searchServiceOrderInputValue: string;
 }
 
+interface FuelProps {
+  id: string;
+  current_mileage: number;
+  liters_amount: string;
+  price_per_liter: string;
+  total_amount: string;
+  odometer_photo: string;
+  odometer_verified: boolean;
+  notes?: string | null;
+  refueling_date: string;
+  businessId?: string;
+  branchId: string;
+  vehicleId: string;
+  driverId: string;
+  fuelTypeId: string;
+  vehicle_license_plate?: string | null;
+  vehicle_description?: string | null;
+  vehicle_brand?: string | null;
+  vehicle_model?: string | null;
+  driver_name?: string | null;
+  driver_cnh?: string | null;
+  branch_name: string;
+  business_name?: string;
+  fuel_type_description?: string | null;
+  // 📍 GEOLOCATION
+  latitude?: number | null;
+  longitude?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BusinessProps {
+  id: string;
+  corporate_reason: string;
+  fantasy_name?: string | null;
+  cep: string;
+  city: string;
+  uf: string;
+  street: string;
+  address_number: string;
+  cnpj: string;
+  complement?: string | null;
+  cnae: string;
+  erp_code?: string | null;
+  responsible_name: string;
+  telephone: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
@@ -164,6 +215,8 @@ export type {
   UserPermission,
   CommandBranchInputValue,
   CommandTrafficViolationCodeInputValue,
+  FuelProps,
+  BusinessProps,
 };
 
 export { UserBusinessRole, roleLabels, EnumPermissionKey };

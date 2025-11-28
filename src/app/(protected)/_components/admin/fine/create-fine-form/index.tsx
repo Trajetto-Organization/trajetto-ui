@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader, X } from "lucide-react";
 
+import dynamic from "next/dynamic";
+
 import {
   Dialog,
   DialogScrollContent,
@@ -32,8 +34,6 @@ import { SearchDriver } from "../../../search-driver";
 import { SearchTrafficViolationCode } from "../../../search-traffic-violation-code";
 import { useCreateFineForm } from "./hooks";
 
-import { cn } from "@/lib/utils";
-
 import {
   CreateFineFormState,
   CreateFineContainerProps,
@@ -41,6 +41,22 @@ import {
   SelectVehicleDriverStepProps,
   SelectViolationCodeStepProps,
 } from "./dto";
+
+import { cn } from "@/lib/utils";
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Business and Branch
 const SelectBusinessBranchStep = ({
@@ -364,6 +380,11 @@ const SelectViolationCodeStep = ({
 const CreateFineContainer = ({
   state,
   onBack,
+  latitude,
+  longitude,
+  isLoadingLocation,
+  handleLocationChange,
+  handleLocationLoadingChange,
 }: CreateFineContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -459,7 +480,7 @@ const CreateFineContainer = ({
           disabled={pending}
         />
 
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="Observações (opcional)"
             htmlfor="observation"
@@ -470,13 +491,28 @@ const CreateFineContainer = ({
             disabled={pending}
           />
         </div>
+
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.createFineError?.latitude?.[0] ||
+              state.createFineError?.longitude?.[0]
+            }
+          />
+        </div>
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
         <Button type="button" variant="outline" onClick={onBack}>
           Voltar
         </Button>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || isLoadingLocation}>
           <span>Criar Multa</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -492,6 +528,21 @@ const CreateFineContainer = ({
 const CreateFineForm = (): JSX.Element => {
   const defaultState: CreateFineFormState = {};
   const [state, dispatch] = useFormState(handleCreateFine, null);
+
+  // 📍 GEOLOCATION STATE - Initialize with null for create forms
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
 
   const {
     isCreateFineForm,
@@ -524,7 +575,7 @@ const CreateFineForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -590,26 +641,29 @@ const CreateFineForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
-              formData.append(
-                "businessId",
-                commandBusinessInputValue.businessId,
-              );
+              const extraData = {
+                businessId: commandBusinessInputValue.businessId,
+                branchId: commandBranchInputValue.branchId,
+                vehicleId: commandVehicleInputValue.vehicleId,
+                driverId: commandDriverInputValue.driverId,
+                trafficViolationCodeId:
+                  commandTrafficViolationCodeInputValue.trafficViolationCodeId,
+                latitude: latitude?.toString() as string, // Send as string or null
+                longitude: longitude?.toString() as string, // Send as string or null
+              };
 
-              formData.append("branchId", commandBranchInputValue.branchId);
-              formData.append("vehicleId", commandVehicleInputValue.vehicleId);
-
-              formData.append("driverId", commandDriverInputValue.driverId);
-              formData.append(
-                "trafficViolationCodeId",
-                commandTrafficViolationCodeInputValue.trafficViolationCodeId,
-              );
-
-              dispatch(formData);
+              appendExtraDataToForm(formData, extraData);
+              return dispatch(formData);
             }}
           >
             <CreateFineContainer
               state={state ?? defaultState}
               onBack={handleBackToViolationCodeStep}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

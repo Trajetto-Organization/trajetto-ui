@@ -16,16 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useVehicleInfiniteScroll } from "./hooks/vehicle-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandVehicleInputValue } from "../dto";
-
-interface SearchVehicleProps {
-  errorVehicleId?: string[];
-  selectedVehicleId?: string;
-  businessId: string;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-}
+import { SearchVehicleProps } from "./dto";
 
 const SearchVehicle = ({
   errorVehicleId,
@@ -60,12 +51,19 @@ const SearchVehicle = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-vehicle-input" className={errorVehicleId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-vehicle-input"
+        className={errorVehicleId ? "text-red-500" : ""}
+      >
         {errorVehicleId ? errorVehicleId[0] : "Selecione o veículo"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-vehicle-input" placeholder="Buscar veículo..." className="h-9" />
+        <CommandInput
+          id="search-vehicle-input"
+          placeholder="Buscar veículo..."
+          className="h-9"
+        />
 
         {!isLoadingVehicle && !hasError && (
           <CommandEmpty>

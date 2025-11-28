@@ -11,6 +11,7 @@ const emptyStringToNull = (value: any) => {
   if (typeof value === "string" && value.trim() === "") {
     return null;
   }
+
   return value;
 };
 
@@ -134,6 +135,43 @@ const createUpdateFuelSchema = z.object({
     .string()
     .uuid("O ID do tipo de combustível deve ser um UUID válido."),
   branchId: z.string().uuid("O ID da filial deve ser um UUID válido."),
+
+  // 📍 GEOLOCATION: Final location (edited or original)
+  latitude: z.preprocess(
+    (val) => {
+      if (typeof val === "string") {
+        if (val.trim() === "") return null;
+        return parseFloat(val);
+      }
+
+      return val;
+    },
+    z
+      .number({
+        invalid_type_error: "A latitude deve ser um número válido.",
+      })
+      .min(-90, "A latitude deve estar entre -90 e 90.")
+      .max(90, "A latitude deve estar entre -90 e 90.")
+      .optional()
+      .nullable(),
+  ),
+  longitude: z.preprocess(
+    (val) => {
+      if (typeof val === "string") {
+        if (val.trim() === "") return null;
+        return parseFloat(val);
+      }
+      return val;
+    },
+    z
+      .number({
+        invalid_type_error: "A longitude deve ser um número válido.",
+      })
+      .min(-180, "A longitude deve estar entre -180 e 180.")
+      .max(180, "A longitude deve estar entre -180 e 180.")
+      .optional()
+      .nullable(),
+  ),
 });
 
 export { createUpdateFuelSchema };

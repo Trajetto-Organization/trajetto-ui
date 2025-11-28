@@ -4,20 +4,14 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { updateActivityNotifications } from "@/actions/update-activity-notifications";
-
-interface UseActivityNotificationsProps {
-  initialEnabled: boolean;
-}
-
-interface UseActivityNotificationsReturn {
-  isEnabled: boolean;
-  isUpdating: boolean;
-  handleToggle: (enabled: boolean) => Promise<void>;
-}
+import {
+  ActivityNotificationsProps,
+  ActivityNotificationsReturn,
+} from "../dto";
 
 function useActivityNotifications({
   initialEnabled,
-}: UseActivityNotificationsProps): UseActivityNotificationsReturn {
+}: ActivityNotificationsProps): ActivityNotificationsReturn {
   const [isEnabled, setIsEnabled] = useState(initialEnabled);
   const [isPending, startTransition] = useTransition();
 

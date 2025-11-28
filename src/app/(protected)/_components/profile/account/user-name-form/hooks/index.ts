@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-
-import { UserNameFormState } from "../dto";
 import { toast } from "sonner";
 
-interface UseUserNameForm {
-  state: UserNameFormState | null;
-  initialUserName: string;
-  error: boolean;
-}
+import { UseUserNameForm } from "../dto";
 
 function useUserNameForm({ state, initialUserName, error }: UseUserNameForm) {
   const [userNameValue, setUserNameValue] = useState<string>(initialUserName);

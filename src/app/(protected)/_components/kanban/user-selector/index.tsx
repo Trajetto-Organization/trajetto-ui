@@ -31,17 +31,9 @@ import {
 } from "lucide-react";
 
 import { useUserInfiniteScroll } from "../../search-user/hooks/user-infinite-scroll";
-import { cn } from "@/lib/utils";
+import { UserSelectorProps } from "../dto";
 
-interface UserSelectorProps {
-  businessId: string;
-  value: string;
-  onValueChange: (value: string) => void;
-  disabled?: boolean;
-  label?: string;
-  placeholder?: string;
-  errorMessage?: string[];
-}
+import { cn } from "@/lib/utils";
 
 const UserSelector = ({
   businessId,
@@ -52,8 +44,8 @@ const UserSelector = ({
   placeholder = "Selecione um usuário",
   errorMessage,
 }: UserSelectorProps): JSX.Element => {
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  const [open, setOpen] = useState<boolean>(false);
+  const [searchValue, setSearchValue] = useState<string>("");
 
   const {
     users,

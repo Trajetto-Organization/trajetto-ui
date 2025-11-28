@@ -77,6 +77,9 @@ const handleCreateFuel = async (state: any, createFuelValues: FormData) => {
       });
     }
 
+    // 🆕 Add record origin (WEB_DASHBOARD)
+    formData.append("created_from", "WEB_DASHBOARD");
+
     // Add the file
     formData.append("odometer_photo", odometerPhoto);
 

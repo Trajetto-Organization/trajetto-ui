@@ -21,7 +21,7 @@ import {
 } from "./dto";
 
 import { DashboardSupplierProps } from "../dto";
-import { BusinessProps } from "../../../admin/business/dto";
+import { BusinessProps } from "../../../dto";
 
 import { useDashboardUpdateSupplierForm } from "./hooks";
 import { useCepValidation } from "../../../hooks";

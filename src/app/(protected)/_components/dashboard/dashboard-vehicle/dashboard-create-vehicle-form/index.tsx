@@ -753,7 +753,7 @@ const DashboardCreateVehicleForm = (): JSX.Element => {
                 );
               }
 
-              dispatch(formData);
+              return dispatch(formData);
             }}
           >
             <DashboardCreateVehicleFormContainer

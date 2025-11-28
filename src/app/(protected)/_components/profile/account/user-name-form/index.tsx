@@ -12,17 +12,7 @@ import { Loader } from "lucide-react";
 import { ProtectedContentSectionColumns } from "../../../layout/protected-content-section-collumns";
 import { useUserNameForm } from "./hooks";
 
-interface UserNameProps {
-  userName: string;
-  error: boolean;
-}
-
-interface UserNameContainerProps {
-  isUpdated: boolean;
-  handleUserName: (updatedUserName: string) => void;
-  userNameValue: string;
-  error: boolean;
-}
+import { UserNameContainerProps, UserNameProps } from "./dto";
 
 const UserNameContainer = ({
   userNameValue,

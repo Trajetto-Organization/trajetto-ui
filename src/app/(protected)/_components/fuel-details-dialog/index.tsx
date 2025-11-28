@@ -26,41 +26,29 @@ import {
 import { FuelInfoAlert } from "../fuel-info-alert";
 import { FuelDetailsDialogProps } from "./dto";
 
-import { useFetchVehicleData } from "../search-vehicle-by-id-business";
-import { useFetchPreviousFuel } from "../search-previous-fuel-by-vehicle";
-
 import { formatDate } from "@/lib/format-values";
+import { useFuelTechnicalDetails } from "./hooks/use-fuel-technical-details";
 
 const FuelDetailsDialog = ({
   fuelData,
   isOpen,
   onOpenChange,
 }: FuelDetailsDialogProps) => {
-  // Fetch vehicle data for efficiency calculations
-  const { data: vehicleData, isLoading } = useFetchVehicleData({
-    vehicleId: fuelData.vehicleId,
-    businessId: fuelData.businessId || "",
-  });
-
-  // Fetch previous fuel record for this specific fuel
-  const { data: previousFuelData, isLoading: isLoadingPreviousFuel } =
-    useFetchPreviousFuel({
-      vehicleId: fuelData.vehicleId,
-      currentFuelDate: fuelData.refueling_date,
-      businessId: fuelData.businessId || "",
-      enabled: isOpen,
-    });
-
-  // Conversions for calculations
-  const liters = parseFloat(fuelData.liters_amount.replace(",", ".")) || 0;
-  const pricePerLiter =
-    parseFloat(
-      fuelData.price_per_liter.replace(/[^\d,]/g, "").replace(",", "."),
-    ) || 0;
+  const {
+    vehicleData,
+    isLoading,
+    previousFuelData,
+    isLoadingPreviousFuel,
+    liters,
+    pricePerLiter,
+  } = useFuelTechnicalDetails(fuelData, isOpen);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogScrollContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-4xl 
+        max-h-[90vh] overflow-y-auto"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FuelIcon className="h-5 w-5" />
@@ -73,16 +61,26 @@ const FuelDetailsDialog = ({
 
         <div className="space-y-6">
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div
+            className="grid grid-cols-1 
+            md:grid-cols-2 gap-4"
+          >
             <div className="space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
+              <h3
+                className="font-semibold flex 
+                items-center gap-2"
+              >
                 <FuelIcon className="h-4 w-4" />
                 Dados do Abastecimento
               </h3>
 
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Calendar
+                    className="h-4 w-4 
+                    text-muted-foreground"
+                  />
+
                   <span className="text-sm">Data:</span>
                   <Badge variant="outline">
                     {formatDate(fuelData.refueling_date, "pt-BR") || "N/A"}
@@ -90,20 +88,32 @@ const FuelDetailsDialog = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <FuelIcon className="h-4 w-4 text-muted-foreground" />
+                  <FuelIcon
+                    className="h-4 w-4 
+                    text-muted-foreground"
+                  />
+
                   <span className="text-sm">Litros:</span>
                   <Badge variant="secondary">{fuelData.liters_amount}L</Badge>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <DollarSign
+                    className="h-4 w-4 
+                    text-muted-foreground"
+                  />
+
                   <span className="text-sm">Preço/L:</span>
                   <Badge variant="secondary">{fuelData.price_per_liter}</Badge>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <DollarSign
+                    className="h-4 w-4 
+                    text-muted-foreground"
+                  />
                   <span className="text-sm font-medium">Total:</span>
+
                   <Badge
                     variant="default"
                     className="bg-green-100 text-green-800 
@@ -116,6 +126,7 @@ const FuelDetailsDialog = ({
                 <div className="flex items-center gap-2">
                   <Gauge className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Quilometragem:</span>
+
                   <Badge variant="outline">
                     {fuelData.current_mileage.toLocaleString()} km
                   </Badge>
@@ -124,7 +135,10 @@ const FuelDetailsDialog = ({
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
+              <h3
+                className="font-semibold flex 
+                items-center gap-2"
+              >
                 <Building2 className="h-4 w-4" />
                 Informações Relacionadas
               </h3>
@@ -133,6 +147,7 @@ const FuelDetailsDialog = ({
                 <div className="flex items-center gap-2">
                   <Car className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Veículo:</span>
+
                   <div className="flex gap-2">
                     <Badge variant="outline">
                       {fuelData.vehicle_description || "N/A"}
@@ -149,6 +164,7 @@ const FuelDetailsDialog = ({
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Motorista:</span>
+
                   <div className="flex gap-2">
                     <Badge variant="outline">
                       {fuelData.driver_name || "N/A"}
@@ -165,6 +181,7 @@ const FuelDetailsDialog = ({
                 <div className="flex items-center gap-2">
                   <FuelIcon className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Combustível:</span>
+
                   <Badge variant="outline">
                     {fuelData.fuel_type_description || "N/A"}
                   </Badge>
@@ -173,12 +190,14 @@ const FuelDetailsDialog = ({
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Filial:</span>
+
                   <Badge variant="outline">{fuelData.branch_name}</Badge>
                 </div>
 
                 {fuelData.business_name && (
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
+
                     <span className="text-sm">Empresa:</span>
                     <Badge variant="outline">{fuelData.business_name}</Badge>
                   </div>

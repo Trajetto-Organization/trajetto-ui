@@ -21,6 +21,8 @@ interface DashboardUpdateServiceOrderValidationError {
   branchId?: string[];
   supplierId?: string[];
   businessId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   updateServiceOrderErrorMessage?: string;
 }
 
@@ -35,6 +37,11 @@ interface DashboardUpdateServiceOrderContainerProps {
   serviceOrderData: DashboardServiceOrderProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateServiceOrderOpen: boolean;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface DashboardSelectBranchByStepProps {

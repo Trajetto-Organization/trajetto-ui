@@ -19,26 +19,13 @@ import { Bell, ChevronsUpDown, User, Loader, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { handleLogoutUser } from "@/actions/logout-user";
-import { UserRole } from "../../dto";
-
 import { useProtectedAccountSettings } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useNotificationsContext } from "../protected-provider/notifications-provider";
 
 import { disconnectSocket } from "@/socket";
-
-interface UserLogged {
-  email: string;
-  name: string;
-  role: UserRole;
-  avatar?: string | null;
-}
-
-interface ProtectedAccountSettingsProps {
-  userLogged: UserLogged;
-  notificationCount: number;
-}
+import { ProtectedAccountSettingsProps } from "../dto";
 
 const LogOutUserContainer = (): JSX.Element => {
   const { pending } = useFormStatus();
@@ -89,13 +76,17 @@ const ProtectedAccountSettings = ({
   // Get real-time notification count and deleted notifications
   const { unreadCount, deletedNotifications } = useNotificationsContext();
 
-  // Calculate how many deleted notifications were unread from server
-  const deletedUnreadCount = deletedNotifications.size;
+  // Calculate how many of the deleted notifications were from server (unread)
+  // We need to subtract these from the server count
+  const deletedUnreadFromServerCount = deletedNotifications.size;
 
-  // Adjust total count: server count + realtime count - deleted count
+  // Calculate total count properly:
+  // 1. Start with server unread count
+  // 2. Add new realtime unread notifications
+  // 3. Subtract deleted notifications (these are unread notifications deleted locally)
   const totalNotificationCount = Math.max(
     0,
-    notificationCount + unreadCount - deletedUnreadCount,
+    notificationCount + unreadCount - deletedUnreadFromServerCount,
   );
 
   useProtectedAccountSettings(state);

@@ -4,10 +4,7 @@ import { useInfiniteQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
-interface FetchBusinessProps {
-  pageParam: number;
-  signal?: AbortSignal;
-}
+import { FetchBusinessProps } from "../dto";
 
 const fetchBusiness = async ({ pageParam, signal }: FetchBusinessProps) => {
   const MAX_BUSINESS_PAGE = 10;

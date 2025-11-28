@@ -9,6 +9,18 @@ type StatusBadgeProps =
   | "Em Rota"
   | "Inativo";
 
+interface DashboardCountData {
+  vehicles: { value: number; change: number };
+  drivers: { value: number; change: number };
+  businesses: { value: number; change: number };
+  branches: { value: number; change: number };
+  parts: { value: number; change: number };
+  suppliers: { value: number; change: number };
+  serviceOrders: { value: number; change: number };
+  users: { value: number; change: number };
+  fines: { value: number; change: number };
+}
+
 interface DashboardData {
   counts: {
     vehicles: { value: number; change: number };
@@ -67,4 +79,51 @@ interface DashboardData {
   }[];
 }
 
-export type { DashboardData, StatusBadgeProps };
+interface QuickLinkCardProps {
+  title: string;
+  href: string;
+  color: string;
+  icon: JSX.Element;
+}
+
+interface StatCardProps {
+  title: string;
+  icon: JSX.Element;
+  color: string;
+  change: number;
+  value: number;
+}
+
+interface AdminDashboardProps {
+  initialData: DashboardData;
+  userLogged?: {
+    role: string;
+    name: string;
+    email: string;
+    profileAccess?: {
+      permissions?: Array<{
+        permissionKey: string;
+        canRead: boolean;
+        canWrite: boolean;
+      }>;
+    };
+  };
+  dashboardError?: {
+    error: boolean;
+    errorMessage: string;
+  };
+  userError?: {
+    error: boolean;
+    errorMessage: string;
+  };
+  basePath: string;
+}
+
+export type {
+  DashboardData,
+  StatusBadgeProps,
+  DashboardCountData,
+  QuickLinkCardProps,
+  StatCardProps,
+  AdminDashboardProps,
+};

@@ -46,7 +46,7 @@ interface UserDataTableProps<TData, TValue> {
   toolbar?: React.ReactElement;
 }
 
-export function DataTable<TData, TValue>({
+function DataTable<TData, TValue>({
   columns,
   data,
   meta,
@@ -244,3 +244,5 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
+
+export { DataTable };

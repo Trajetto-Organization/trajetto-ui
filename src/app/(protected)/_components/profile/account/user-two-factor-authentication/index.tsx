@@ -20,11 +20,7 @@ import { ProtectedContentSectionColumns } from "../../../layout/protected-conten
 import { handleUpdateTwoFactorAuthentication } from "@/actions/update-two-factor-authentication";
 
 import { useTwoFactorAuthenticationForm } from "./hooks";
-
-interface UserTwoFactorAuthenticationFormProps {
-  error: boolean;
-  isTwoFactorEnabled: boolean;
-}
+import { UserTwoFactorAuthenticationFormProps } from "./dto";
 
 const UserTwoFactorAuthenticationContainer = ({
   error,

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useTutorial } from "../../tutorial/tutorial-provider";
 
-export function useTabTutorial() {
+function useTabTutorial() {
   const { setCurrentTab } = useTutorial();
 
   useEffect(() => {
@@ -55,3 +55,5 @@ export function useTabTutorial() {
     };
   }, [setCurrentTab]);
 }
+
+export { useTabTutorial };

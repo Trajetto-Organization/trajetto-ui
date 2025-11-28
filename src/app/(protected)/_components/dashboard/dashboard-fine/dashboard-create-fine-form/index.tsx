@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader, X } from "lucide-react";
+
+import dynamic from "next/dynamic";
 
 import {
   Dialog,
@@ -54,6 +56,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+// Dynamic import for LocationPicker (client-side only)
+const LocationPicker = dynamic(
+  () => import("../../../custom/location-picker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[300px] flex items-center justify-center">
+        Carregando mapa...
+      </div>
+    ),
+  },
+);
 
 // Step 1: Select Branch
 const DashboardSelectBranchStep = ({
@@ -328,6 +345,11 @@ const DashboardSelectViolationCodeStep = ({
 const DashboardCreateFineContainer = ({
   state,
   onBack,
+  handleLocationChange,
+  handleLocationLoadingChange,
+  latitude,
+  longitude,
+  isLoadingLocation,
 }: DashboardCreateFineContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -340,6 +362,7 @@ const DashboardCreateFineContainer = ({
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     let inputValue = e.target.value;
+
     inputValue = inputValue.replace(/[^\d,.]/g, "");
     setDisplayAmount(inputValue);
   };
@@ -423,7 +446,7 @@ const DashboardCreateFineContainer = ({
           disabled={pending}
         />
 
-        <div className="col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <FormInput
             label="Observações (opcional)"
             htmlfor="observation"
@@ -434,13 +457,28 @@ const DashboardCreateFineContainer = ({
             disabled={pending}
           />
         </div>
+
+        {/* 📍 GEOLOCATION: Location Picker */}
+        <div className="col-span-1 md:col-span-2">
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            onLocationChange={handleLocationChange}
+            onLoadingChange={handleLocationLoadingChange}
+            disabled={pending}
+            error={
+              state.createFineError?.latitude?.[0] ||
+              state.createFineError?.longitude?.[0]
+            }
+          />
+        </div>
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
         <Button type="button" variant="outline" onClick={onBack}>
           Voltar
         </Button>
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || isLoadingLocation}>
           <span>Criar Multa</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -456,6 +494,21 @@ const DashboardCreateFineContainer = ({
 const DashboardCreateFineForm = (): JSX.Element => {
   const defaultState: DashboardCreateFineFormState = {};
   const [state, dispatch] = useFormState(handleCreateFine, null);
+
+  // 📍 GEOLOCATION STATE
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
+
+  const handleLocationChange = (lat: number, lon: number) => {
+    setLatitude(lat);
+    setLongitude(lon);
+  };
+
+  const handleLocationLoadingChange = (isLoading: boolean) => {
+    setIsLoadingLocation(isLoading);
+  };
 
   const {
     isCreateFineForm,
@@ -501,6 +554,26 @@ const DashboardCreateFineForm = (): JSX.Element => {
       label: getPermissionName(permissions.DRIVER_MANAGE),
     },
   ]);
+
+  // Reset location states when modal closes or on success
+  useEffect(() => {
+    if (!isCreateFineForm) {
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [isCreateFineForm]);
+
+  // Reset location states on successful creation
+  useEffect(() => {
+    if (state?.successMessage) {
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [state?.successMessage]);
 
   return (
     <Dialog open={isCreateFineForm} onOpenChange={handleCloseDialog}>
@@ -594,23 +667,30 @@ const DashboardCreateFineForm = (): JSX.Element => {
           <form
             ref={formRef}
             action={(formData) => {
-              formData.append("businessId", businessId as string);
-              formData.append("branchId", commandBranchInputValue.branchId);
+              // Add geolocation data
+              const extraData = {
+                businessId: businessId as string,
+                branchId: commandBranchInputValue.branchId,
+                vehicleId: commandVehicleInputValue.vehicleId,
+                driverId: commandDriverInputValue.driverId,
+                trafficViolationCodeId:
+                  commandTrafficViolationCodeInputValue.trafficViolationCodeId,
+                latitude: latitude?.toString() as string,
+                longitude: longitude?.toString() as string,
+              };
 
-              formData.append("vehicleId", commandVehicleInputValue.vehicleId);
-              formData.append("driverId", commandDriverInputValue.driverId);
-
-              formData.append(
-                "trafficViolationCodeId",
-                commandTrafficViolationCodeInputValue.trafficViolationCodeId,
-              );
-
-              dispatch(formData);
+              appendExtraDataToForm(formData, extraData);
+              return dispatch(formData);
             }}
           >
             <DashboardCreateFineContainer
               state={state ?? defaultState}
               onBack={handleBackToViolationCodeStep}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
+              latitude={latitude}
+              longitude={longitude}
+              isLoadingLocation={isLoadingLocation}
             />
           </form>
         )}

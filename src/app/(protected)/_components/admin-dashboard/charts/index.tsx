@@ -3,15 +3,10 @@
 import { ChartArea } from "./area-chart";
 import { ChartBar } from "./bar-chart";
 
-import { DashboardData } from "../dto";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 import { Info } from "lucide-react";
 
-interface ChartsProps {
-  dashboardData: DashboardData;
-  userRole?: string;
-}
+import { ChartsProps } from "./dto";
 
 const Charts = ({ dashboardData, userRole }: ChartsProps): JSX.Element => {
   if (userRole === "BUSINESS_USER") {

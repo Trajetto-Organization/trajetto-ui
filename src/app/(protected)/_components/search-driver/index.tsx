@@ -16,17 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDriverInfiniteScroll } from "./hooks/driver-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
-import { CommandDriverInputValue } from "../dto";
-
-interface SearchDriverProps {
-  errorDriverId?: string[];
-  selectedDriverId?: string;
-  businessId: string;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  isOptional?: boolean;
-}
+import { SearchDriverProps } from "./dto";
 
 const SearchDriver = ({
   errorDriverId,
@@ -62,13 +52,20 @@ const SearchDriver = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="search-driver-input" className={errorDriverId ? "text-red-500" : ""}>
+      <Label
+        htmlFor="search-driver-input"
+        className={errorDriverId ? "text-red-500" : ""}
+      >
         {errorDriverId ? errorDriverId[0] : "Selecione o motorista"}{" "}
         {isOptional && "(opcional)"}
       </Label>
 
       <Command className="h-[320px] relative border rounded-md">
-        <CommandInput id="search-driver-input" placeholder="Buscar motorista..." className="h-9" />
+        <CommandInput
+          id="search-driver-input"
+          placeholder="Buscar motorista..."
+          className="h-9"
+        />
 
         {!isLoadingDrivers && !hasError && (
           <CommandEmpty>

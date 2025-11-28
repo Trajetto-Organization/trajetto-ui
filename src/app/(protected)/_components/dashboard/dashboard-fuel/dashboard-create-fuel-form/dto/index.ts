@@ -17,6 +17,8 @@ interface DashboardCreateFuelValidationError {
   branchId?: string[];
   businessId?: string[];
   odometer_photo?: string[];
+  latitude?: string[];
+  longitude?: string[];
   createFuelErrorMessage?: string;
 }
 
@@ -34,6 +36,11 @@ interface DashboardCreateFuelContainerProps {
   setOdometerFile: (file: File | null) => void;
   fileError: string | null;
   setFileError: (error: string | null) => void;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface DashboardSelectBranchStepProps {

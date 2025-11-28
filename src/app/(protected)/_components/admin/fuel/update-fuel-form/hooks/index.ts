@@ -5,9 +5,9 @@ import {
   CommandDriverInputValue,
   CommandVehicleInputValue,
   CommandFuelTypeInputValue,
+  FuelProps,
 } from "@/app/(protected)/_components/dto";
 
-import { FuelProps } from "../../dto";
 import { UpdateFuelFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";

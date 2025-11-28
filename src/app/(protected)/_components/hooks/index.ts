@@ -4,12 +4,7 @@ import { useQuery } from "react-query";
 import { toast } from "sonner";
 
 import { FieldProps, businessFieldsData } from "./business-fields-data";
-import { BusinessProps } from "../admin/business/dto";
-
-interface UseCepValidationProps {
-  initialData?: Partial<BusinessProps>;
-  isOpen: boolean;
-}
+import { UseCepValidationProps } from "./dto";
 
 const applyMask = (value: string, mask: string): string => {
   let masked = "";

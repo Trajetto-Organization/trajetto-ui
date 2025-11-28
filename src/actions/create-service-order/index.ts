@@ -37,6 +37,12 @@ const handleCreateServiceOrder = async (
 
   const serviceOrderData = createServiceOrderValidation.data;
 
+  // 🆕 Add record origin (WEB_DASHBOARD)
+  const serviceOrderDataWithOrigin = {
+    ...serviceOrderData,
+    created_from: "WEB_DASHBOARD",
+  };
+
   try {
     const response = await fetch(createServiceOrder, {
       credentials: "include",
@@ -45,7 +51,7 @@ const handleCreateServiceOrder = async (
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(serviceOrderData),
+      body: JSON.stringify(serviceOrderDataWithOrigin),
     });
 
     const { message } = (await response.json()) as CreateServiceOrderProps;

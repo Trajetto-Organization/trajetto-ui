@@ -1,13 +1,7 @@
 "use client";
 
-import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
-interface StatsGridProps {
-  children: ReactNode;
-  columns?: 1 | 2 | 3 | 4;
-  className?: string;
-}
+import { StatsGridProps } from "../dto";
 
 function StatsGrid({ children, columns = 4, className }: StatsGridProps) {
   const gridCols = {

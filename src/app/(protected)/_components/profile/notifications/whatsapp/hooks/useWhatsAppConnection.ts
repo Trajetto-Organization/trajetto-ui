@@ -3,24 +3,8 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
-import { QRCodeData } from "../dto";
+import { QRCodeData, UseWhatsAppConnectionReturn } from "../dto";
 import { getWhatsAppQRCode } from "@/actions/whatsapp/whatsapp-connection";
-
-interface UseWhatsAppConnectionReturn {
-  // Connection States
-  isConnecting: boolean;
-  isLoadingQR: boolean;
-  showConnectionDialog: boolean;
-
-  // Connection data
-  qrCodeData: QRCodeData | null;
-
-  // Handlers
-  handleGetQRCode: () => Promise<void>;
-  handleCloseDialog: () => void;
-  setShowConnectionDialog: (show: boolean) => void;
-  isAnyOperationActive: boolean;
-}
 
 function useWhatsAppConnection(): UseWhatsAppConnectionReturn {
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
@@ -95,7 +79,7 @@ function useWhatsAppConnection(): UseWhatsAppConnectionReturn {
           toast.success("QR Code gerado com sucesso!");
         } else {
           toast.error(
-            result?.message || "Erro ao gerar QR Code. Tente novamente."
+            result?.message || "Erro ao gerar QR Code. Tente novamente.",
           );
 
           setIsConnecting(false);

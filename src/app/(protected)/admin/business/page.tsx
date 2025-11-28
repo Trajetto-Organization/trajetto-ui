@@ -12,8 +12,8 @@ import { BusinessToolbar } from "../../_components/admin/business/business-toolb
 import { tableBusinessCollumns } from "../../_components/admin/business/table-business-collumns";
 
 import { getCookies } from "@/actions/cookies";
-import { BusinessProps } from "../../_components/admin/business/dto";
 
+import { BusinessProps } from "../../_components/dto";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import { businessStats } from "./stats-config";

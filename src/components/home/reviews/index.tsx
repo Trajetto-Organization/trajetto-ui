@@ -6,7 +6,7 @@ const Reviews = (): JSX.Element => {
       className="pt-24 bg-gradient-to-b 
       from-background to-background/50"
     >
-      <div className="text-center space-y-4 mb-16">
+      <div className="text-center space-y-4 mb-8">
         <h2
           className="text-3xl font-bold tracking-tight 
           sm:text-4xl md:text-5xl"

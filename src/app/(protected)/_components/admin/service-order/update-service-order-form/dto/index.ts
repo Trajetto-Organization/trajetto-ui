@@ -22,6 +22,8 @@ interface UpdateServiceOrderValidationError {
   branchId?: string[];
   supplierId?: string[];
   businessId?: string[];
+  latitude?: string[];
+  longitude?: string[];
   updateServiceOrderErrorMessage?: string;
 }
 
@@ -38,6 +40,11 @@ interface UpdateServiceOrderContainerProps {
   isUpdateServiceOrderOpen: boolean;
   commandBusinessInputValue: CommandBusinessInputValue;
   commandVehicleInputValue: CommandVehicleInputValue;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
+  latitude: number | null;
+  longitude: number | null;
+  isLoadingLocation: boolean;
 }
 
 interface SelectBusinessByStepProps {

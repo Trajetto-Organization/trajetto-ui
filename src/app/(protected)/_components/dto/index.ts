@@ -15,7 +15,8 @@ type PermissionKey =
   | "account_payable_manage"
   | "kanban_manage"
   | "fine_manage"
-  | "fuel_manage";
+  | "fuel_manage"
+  | "vehicle_checklist_manage";
 
 enum EnumPermissionKey {
   BRANCH_MANAGE = "branch_manage",
@@ -34,6 +35,7 @@ enum EnumPermissionKey {
   KANBAN_MANAGE = "kanban_manage",
   FINE_MANAGE = "fine_manage",
   FUEL_MANAGE = "fuel_manage",
+  VEHICLE_CHECKLIST_MANAGE = "vehicle_checklist_manage",
 }
 
 enum UserBusinessRole {
@@ -72,8 +74,13 @@ interface UserLoggedProps {
     avatar?: string | null;
     profileAccess?: ProfileAccess | null;
     driverId?: string | null;
+    driver?: {
+      id: string;
+      status: string;
+    } | null;
     email_notifications_enabled?: boolean;
     activity_notifications_enabled?: boolean;
+    access_revoked?: boolean;
   };
 }
 

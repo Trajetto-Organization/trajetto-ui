@@ -102,6 +102,7 @@ function getPermissionName(permissionKey: PermissionKey): string {
     kanban_manage: "Gerenciar Kanban",
     fine_manage: "Gerenciar Multas",
     fuel_manage: "Gerenciar Abastecimentos",
+    vehicle_checklist_manage: "Gerenciar Checklist dos Veículos",
   };
 
   return permissionNames[permissionKey] || permissionKey;

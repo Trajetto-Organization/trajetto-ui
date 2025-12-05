@@ -21,6 +21,7 @@ const PRIVATE_ROUTES = {
   admin: "/admin",
   profile: "/profile",
   notifications: "/notifications",
+  driver: "/driver",
 };
 
 const PAGE_PERMISSIONS: Record<string, PermissionKey> = {};
@@ -46,8 +47,9 @@ export default async function middleware(req: NextRequest) {
   const isAdmin = pathname.startsWith(PRIVATE_ROUTES.admin);
 
   const isProfile = pathname.startsWith(PRIVATE_ROUTES.profile);
+  const isDriver = pathname.startsWith(PRIVATE_ROUTES.driver);
 
-  const isPrivateRoute = isDashboard || isAdmin || isProfile;
+  const isPrivateRoute = isDashboard || isAdmin || isProfile || isDriver;
   const isPublicRoute = !isPrivateRoute;
 
   // If it is on a public route and authenticated, redirect if it is an authentication route
@@ -91,24 +93,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (isPrivateRoute && accessToken) {
-    // BUSINESS_USER driver: check access with JWT driverId (NO REQUEST!)
-    if (userRole === "BUSINESS_USER" && driverId) {
-      // Driver can ONLY access /profile and /notifications
-      const allowedPaths = ["/profile", "/notifications"];
-      const isAllowedPath = allowedPaths.some((path) =>
-        pathname.startsWith(path),
-      );
-
-      if (!isAllowedPath) {
-        // Any other route → redirects to /profile
-        return NextResponse.redirect(new URL("/profile", req.url));
-      }
-
-      // If you are on a permitted route, continue (without making a request)
-      return NextResponse.next();
-    }
-
-    // For other users (non-drivers), request full validation
+    // For ALL users (including drivers), request full validation
     try {
       const userCheckResponse = await fetch(
         `${process.env.HTTP_REQUEST}/user/me`,
@@ -122,10 +107,46 @@ export default async function middleware(req: NextRequest) {
         },
       );
 
+      // Check for specific error status codes BEFORE parsing JSON
+      if (userCheckResponse.status === 403) {
+        // 403 can be access_revoked or driver_inactive
+        const errorData = await userCheckResponse.json();
+        const errorMessage = errorData.message || "";
+
+        // Check which specific error it is based on the message
+        if (errorMessage.includes("acesso foi revogado")) {
+          return await handleLogout(req, "user_revoked");
+        }
+
+        if (errorMessage.includes("motorista está inativo")) {
+          return await handleLogout(req, "driver_inactive");
+        }
+      }
+
+      if (
+        userCheckResponse.status === 404 ||
+        userCheckResponse.status === 401
+      ) {
+        return handleLogout(req, "access_denied");
+      }
+
       const { user } = await userCheckResponse.json();
 
-      if (user.access_revoked) {
-        return await handleLogout(req, "user_revoked");
+      // BUSINESS_USER driver: check allowed paths AFTER validation
+      if (userRole === "BUSINESS_USER" && driverId) {
+        // Driver can ONLY access /profile, /notifications, and /driver routes
+        const allowedPaths = ["/profile", "/notifications", "/driver"];
+        const isAllowedPath = allowedPaths.some((path) =>
+          pathname.startsWith(path),
+        );
+
+        if (!isAllowedPath) {
+          // Any other route → redirects to /profile
+          return NextResponse.redirect(new URL("/profile", req.url));
+        }
+
+        // If you are on a permitted route, continue
+        return NextResponse.next();
       }
 
       // BUSINESS_USER employee: check profileAccess
@@ -151,14 +172,6 @@ export default async function middleware(req: NextRequest) {
             return NextResponse.redirect(new URL("/dashboard", req.url));
           }
         }
-      }
-
-      // If user doesn't exist (404) or unauthorized (401), log them out
-      if (
-        userCheckResponse.status === 404 ||
-        userCheckResponse.status === 401
-      ) {
-        return handleLogout(req, "user_deleted");
       }
     } catch (error) {
       return await handleLogout(req, "session_not_renewed");

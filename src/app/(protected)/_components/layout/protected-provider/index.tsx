@@ -7,6 +7,8 @@ import { ProtectedCommandBar } from "../protected-command-bar-provider";
 import { UserRole, UserLoggedProps } from "../../dto";
 import { SyncNotificationsProvider } from "./sync-notifications-wrapper";
 
+import { parseJwt } from "@/lib/decode-jwt";
+
 const ProtectedProvider = async ({
   children,
 }: {
@@ -18,16 +20,22 @@ const ProtectedProvider = async ({
     redirect("/login");
   }
 
+  // Decode JWT to get role and driverId (for fallback when there's an error)
+  const decodedJwt = tokenAccess ? parseJwt(tokenAccess) : null;
+  const jwtRole = decodedJwt?.role || "user";
+
+  const jwtDriverId = decodedJwt?.driverId || null;
+
   let userLogged = {
     id: "",
     businessId: "",
     email: "",
     avatar: "",
     name: "Usuário",
-    role: "user" as UserRole,
+    role: jwtRole as UserRole,
     two_factor_enabled: false,
     permissions: [],
-    driverId: null as string | null,
+    driverId: jwtDriverId as string | null,
     profileAccess: null as { permissions?: any[] } | null,
   };
 

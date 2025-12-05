@@ -121,10 +121,16 @@ const ServiceOrder = async ({
   const statsData = {
     totalServiceOrders: meta.total,
     completedOrders: serviceOrder.filter(
-      (so) => so.completion_date !== null && so.completion_date !== undefined,
+      (so) =>
+        so.completion_date !== null &&
+        so.completion_date !== undefined &&
+        so.completion_date !== "N/A",
     ).length,
     pendingOrders: serviceOrder.filter(
-      (so) => so.completion_date === null || so.completion_date === undefined,
+      (so) =>
+        so.completion_date === null ||
+        so.completion_date === undefined ||
+        so.completion_date === "N/A",
     ).length,
     totalAmount: serviceOrder
       .reduce((sum, so) => {

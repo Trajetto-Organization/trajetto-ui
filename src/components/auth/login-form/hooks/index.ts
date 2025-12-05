@@ -26,12 +26,16 @@ const messages: Record<string, MessageInfo> = {
     text: "Usuário sem perfil de acesso ou permissões configuradas! Por favor, contate o administrador.",
     type: "error",
   },
-  user_deleted: {
-    text: "Sua conta foi excluída ou não está autorizada. Por favor, entre em contato com o administrador.",
-    type: "error",
-  },
   user_revoked: {
     text: "Seu acesso foi revogado! Para acessar a plataforma novamente, por favor contate o administrador.",
+    type: "error",
+  },
+  driver_inactive: {
+    text: "Seu cadastro como motorista está inativo! Para acessar a plataforma novamente, por favor contate o administrador.",
+    type: "error",
+  },
+  access_denied: {
+    text: "Sua conta foi excluída ou não está autorizada. Por favor, entre em contato com o administrador.",
     type: "error",
   },
 };

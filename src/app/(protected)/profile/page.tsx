@@ -71,7 +71,7 @@ async function getProfileData() {
 
     if (!response.ok) {
       if (response.status === 401) {
-        redirect("/login?error=auth_not_authorized");
+        redirect("/login");
       }
       userResponseError = true;
     }

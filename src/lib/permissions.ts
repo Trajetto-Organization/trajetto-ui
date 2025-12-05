@@ -15,6 +15,7 @@ const permissions = {
   KANBAN_MANAGE: "kanban_manage",
   FINE_MANAGE: "fine_manage",
   FUEL_MANAGE: "fuel_manage",
+  VEHICLE_CHECKLIST_MANAGE: "vehicle_checklist_manage",
 } as const;
 
 const permissionLabels = {
@@ -35,6 +36,7 @@ const permissionLabels = {
   [permissions.KANBAN_MANAGE]: "Gerenciar Kanban",
   [permissions.FINE_MANAGE]: "Gerenciar Multas",
   [permissions.FUEL_MANAGE]: "Gerenciar Abastecimentos",
+  [permissions.VEHICLE_CHECKLIST_MANAGE]: "Gerenciar Checklist dos Veículos",
 };
 
 export { permissionLabels, permissions };

@@ -503,7 +503,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "checklist",
         icon: <CalendarCheckIcon className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle-checklist"),
-        requiredPermission: permissions.VEHICLE_MANAGE,
+        requiredPermission: permissions.VEHICLE_CHECKLIST_MANAGE,
       },
       {
         id: "driver",
@@ -603,9 +603,37 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
   let roleActions = roleActionsMap[user.role] || [];
 
   if (user.role === "BUSINESS_USER") {
-    // If it is a driver, it has no permissions → returns an empty array
+    // If it is a driver, show driver-specific actions
     if (isDriver(user)) {
-      roleActions = [];
+      roleActions = [
+        {
+          id: "driver_kanban",
+          name: "Kanban",
+          section: "navegação",
+          shortcut: ["k", "b"],
+          keywords: "kanban",
+          icon: <Kanban className="w-5 h-5" />,
+          perform: () => router.push("/driver/kanban"),
+        },
+        {
+          id: "driver_vehicles",
+          name: "Meus Veículos",
+          section: "motorista",
+          shortcut: ["v", "c"],
+          keywords: "veículos motorista",
+          icon: <Truck className="w-5 h-5" />,
+          perform: () => router.push("/driver/vehicles"),
+        },
+        {
+          id: "driver_account_payable",
+          name: "Contas a pagar",
+          section: "ordens",
+          shortcut: ["c", "p"],
+          keywords: "contas a pagar",
+          icon: <Wallet className="w-5 h-5" />,
+          perform: () => router.push("/driver/account-payable"),
+        },
+      ];
     } else {
       // If you are an employee, filter by permissions
       roleActions = roleActions.filter((action) => {

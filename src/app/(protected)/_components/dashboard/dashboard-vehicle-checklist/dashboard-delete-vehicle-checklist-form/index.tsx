@@ -98,7 +98,7 @@ const DashboardDeleteVehicleChecklistForm = ({
     useDashboardDeleteVehicleChecklistForm(state);
 
   const hasUserPermission = useHasPermission(
-    permissions.VEHICLE_MANAGE,
+    permissions.VEHICLE_CHECKLIST_MANAGE,
     "write",
   );
 

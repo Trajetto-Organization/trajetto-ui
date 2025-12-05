@@ -125,7 +125,7 @@ const appRoutes: AppRoute[] = [
   {
     path: "/dashboard/vehicle-checklist",
     title: "Checklist",
-    requiredPermission: "vehicle_manage",
+    requiredPermission: "vehicle_checklist_manage",
   },
 
   // Other routes

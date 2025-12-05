@@ -361,6 +361,7 @@ const UpdateAccountPayableContainer = ({
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     let inputValue = e.target.value;
     inputValue = inputValue.replace(/[^\d,.]/g, "");
+
     setDisplayAmount(inputValue);
 
     const isAmountPaidChanged =

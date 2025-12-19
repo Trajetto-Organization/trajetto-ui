@@ -1,11 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandBusinessInputValue,
-  CommandDriverInputValue,
-  CommandFuelTypeInputValue,
-  CommandVehicleTypeInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { VehicleProps } from "../../dto";
 
 interface UpdateVehicleValidationError {
@@ -40,51 +32,12 @@ interface UpdateVehicleFormState {
   successMessage?: string;
 }
 
-interface UpdateVehicleContainerProps {
+interface UpdateVehicleFormSubmitProps {
   state: UpdateVehicleFormState;
   onBack: () => void;
   vehicleData: VehicleProps;
   isBusinessAndBranchDirty: boolean;
   isUpdateVehicleOpen: boolean;
-}
-
-interface SelectBusinessByStepProps {
-  state: UpdateVehicleFormState;
-  commandBusinnessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBussinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectDriverVehicleTypeStepProps {
-  state: UpdateVehicleFormState;
-  businessId: string;
-  commandDriverInputValue: CommandDriverInputValue;
-  commandVehicleTypeInputValue: CommandVehicleTypeInputValue;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  handleUpdateSearchVehicleTypeInputValue: (
-    vehicleTypeData: CommandVehicleTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectFuelTypeStepProps {
-  state: UpdateVehicleFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
 }
 
 interface UpdateVehicleFormProps {
@@ -96,8 +49,5 @@ interface UpdateVehicleFormProps {
 export type {
   UpdateVehicleFormState,
   UpdateVehicleFormProps,
-  UpdateVehicleContainerProps,
-  SelectBusinessByStepProps,
-  SelectDriverVehicleTypeStepProps,
-  SelectFuelTypeStepProps,
+  UpdateVehicleFormSubmitProps,
 };

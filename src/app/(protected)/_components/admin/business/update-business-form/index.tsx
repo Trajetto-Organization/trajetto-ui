@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { UpdateBusinessContainerProps, UpdateBusinessFormState } from "./dto";
+import { UpdateBusinessFormSubmitProps, UpdateBusinessFormState } from "./dto";
 import { handleUpdateBusiness } from "@/actions/update-business";
 
 import { BusinessProps } from "../../../dto";
@@ -26,12 +26,12 @@ interface UpdateBusinessProps {
   isUpdateBusinessOpen: boolean;
 }
 
-const UpdateBusinessFormContainer = ({
+const UpdateBusinessFormSubmit = ({
   state,
   handleCloseUpdateBusiness,
   businessData,
   isUpdateBusinessOpen,
-}: UpdateBusinessContainerProps): JSX.Element => {
+}: UpdateBusinessFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, isDirty, cepLoading } = useCepValidation({
     initialData: businessData,
@@ -82,7 +82,10 @@ const UpdateBusinessForm = ({
   isUpdateBusinessOpen,
 }: UpdateBusinessProps): JSX.Element => {
   const defaultState: UpdateBusinessFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateBusiness, null);
+  const [state, dispatch] = useFormState<UpdateBusinessFormState, FormData>(
+    handleUpdateBusiness,
+    defaultState,
+  );
 
   const { formRef } = useUpdateBusinessForm({
     state,
@@ -116,8 +119,8 @@ const UpdateBusinessForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateBusinessFormContainer
-            state={state ?? defaultState}
+          <UpdateBusinessFormSubmit
+            state={state}
             handleCloseUpdateBusiness={handleCloseUpdateBusiness}
             businessData={businessData}
             isUpdateBusinessOpen={isUpdateBusinessOpen}

@@ -1,9 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandServiceOrderInputValue,
-  CommandUserInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface DashboardCreateAccountPayableValidationError {
   issue_date?: string[];
   due_date?: string[];
@@ -22,7 +16,7 @@ interface DashboardCreateAccountPayableFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateAccountPayableContainerProps {
+interface DashboardCreateAccountPayableFormSubmitProps {
   state: DashboardCreateAccountPayableFormState;
   onBack: () => void;
   displayAmount: string;
@@ -33,40 +27,7 @@ interface DashboardCreateAccountPayableContainerProps {
   handleAmountPaidBlur: () => void;
 }
 
-interface DashboardSelectBusinessBranchStepProps {
-  state: DashboardCreateAccountPayableFormState;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-  businessId: string;
-}
-
-interface DashboardSelectServiceOrderStepProps {
-  state: DashboardCreateAccountPayableFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectUserStepProps {
-  state: DashboardCreateAccountPayableFormState;
-  businessId: string;
-  commandUserInputValue: CommandUserInputValue;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 export type {
   DashboardCreateAccountPayableFormState,
-  DashboardCreateAccountPayableContainerProps,
-  DashboardSelectBusinessBranchStepProps,
-  DashboardSelectServiceOrderStepProps,
-  DashboardSelectUserStepProps,
+  DashboardCreateAccountPayableFormSubmitProps,
 };

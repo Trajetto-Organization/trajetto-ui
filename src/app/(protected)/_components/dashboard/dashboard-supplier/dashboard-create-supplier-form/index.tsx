@@ -15,7 +15,7 @@ import FormInput from "@/components/custom/form-input";
 
 import { handleCreateSupplier } from "@/actions/create-supplier";
 import {
-  DashboardCreateSupplierContainerProps,
+  DashboardCreateSupplierFormSubmitProps,
   DashboardCreateSupplierFormState,
 } from "./dto";
 
@@ -27,11 +27,11 @@ import { permissions } from "@/lib/permissions";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 
-const CreateSupplierFormContainer = ({
+const CreateSupplierFormSubmit = ({
   state,
   isCreateSupplierForm,
   handleOpenCreateSupplierForm,
-}: DashboardCreateSupplierContainerProps): JSX.Element => {
+}: DashboardCreateSupplierFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
     updatedFields: allFields,
@@ -152,7 +152,10 @@ const CreateSupplierFormContainer = ({
 
 const DashboardCreateSupplierForm = (): JSX.Element => {
   const defaultState: DashboardCreateSupplierFormState = {};
-  const [state, dispatch] = useFormState(handleCreateSupplier, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateSupplierFormState,
+    FormData
+  >(handleCreateSupplier, defaultState);
 
   const {
     isCreateSupplierForm,
@@ -195,10 +198,10 @@ const DashboardCreateSupplierForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreateSupplierFormContainer
+          <CreateSupplierFormSubmit
             isCreateSupplierForm={isCreateSupplierForm}
             handleOpenCreateSupplierForm={handleOpenCreateSupplierForm}
-            state={state ?? defaultState}
+            state={state}
           />
         </form>
       </DialogScrollContent>

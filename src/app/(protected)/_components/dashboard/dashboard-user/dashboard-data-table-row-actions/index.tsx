@@ -100,10 +100,6 @@ export function DashboardDataTableUserRowActions<TData>({
       label: "Copiar ID",
       onClick: () => handleCopyID(collumnRowAction.id),
     },
-    {
-      label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(collumnRowAction.businessId),
-    },
     ...(collumnRowAction.profileAccessId !== "N/A"
       ? [
           {

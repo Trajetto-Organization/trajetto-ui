@@ -18,13 +18,13 @@ import { handleCreateBusiness } from "@/actions/create-business";
 import { useCreateBusinessForm } from "./hooks";
 import { useCepValidation } from "../../../hooks";
 
-import { CreateBusinessContainerProps, CreateBusinessFormState } from "./dto";
+import { CreateBusinessSubmitProps, CreateBusinessFormState } from "./dto";
 
-const CreateBusinessFormContainer = ({
+const CreateBusinessFormSubmit = ({
   state,
   handleOpenCreateBusinessForm,
   isCreateBusinessForm,
-}: CreateBusinessContainerProps): JSX.Element => {
+}: CreateBusinessSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, cepLoading } = useCepValidation({
     isOpen: isCreateBusinessForm,
@@ -70,7 +70,10 @@ const CreateBusinessFormContainer = ({
 
 const CreateBusinessForm = (): JSX.Element => {
   const defaultState: CreateBusinessFormState = {};
-  const [state, dispatch] = useFormState(handleCreateBusiness, null);
+  const [state, dispatch] = useFormState<CreateBusinessFormState, FormData>(
+    handleCreateBusiness,
+    defaultState,
+  );
 
   const { isCreateBusinessForm, handleOpenCreateBusinessForm, formRef } =
     useCreateBusinessForm(state);
@@ -96,10 +99,10 @@ const CreateBusinessForm = (): JSX.Element => {
         </DialogHeader>
 
         <form ref={formRef} action={dispatch}>
-          <CreateBusinessFormContainer
+          <CreateBusinessFormSubmit
             handleOpenCreateBusinessForm={handleOpenCreateBusinessForm}
             isCreateBusinessForm={isCreateBusinessForm}
-            state={state ?? defaultState}
+            state={state}
           />
         </form>
       </DialogScrollContent>

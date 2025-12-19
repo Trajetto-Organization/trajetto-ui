@@ -10,8 +10,6 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -24,7 +22,7 @@ import { handleUpdateFuelType } from "@/actions/update-fuel-type";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import {
-  UpdateFuelTypeContainerProps,
+  UpdateFuelTypeFormSubmitProps,
   UpdateFuelTypeFormState,
   UpdateFuelTypeFormProps,
 } from "./dto";
@@ -35,7 +33,7 @@ import { cn } from "@/lib/utils";
 
 import { SearchBusiness } from "../../../search-business";
 
-const UpdateFuelTypeFormContainer = ({
+const UpdateFuelTypeFormSubmit = ({
   state,
   handleCloseUpdateFuelType,
   handleUpdateDescription,
@@ -43,16 +41,16 @@ const UpdateFuelTypeFormContainer = ({
   fuelTypeValues: { description },
   commandBusinessInputValue,
   handleUpdateSearchBusinessInputValue,
-}: UpdateFuelTypeContainerProps): JSX.Element => {
+}: UpdateFuelTypeFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { searchBusinessInputValue } = commandBusinessInputValue;
 
   return (
     <div className="space-y-6 mt-2">
       <div className="w-full flex flex-col gap-3">
-        <Label
-          htmlFor="description"
+        <div
           className={cn(
+            "text-sm font-medium",
             state.updateFuelTypeError?.description &&
               "h-4 truncate text-red-500",
           )}
@@ -60,14 +58,14 @@ const UpdateFuelTypeFormContainer = ({
           {state.updateFuelTypeError?.description
             ? state.updateFuelTypeError?.description
             : "Combustível"}
-        </Label>
+        </div>
         <Select
           name="description"
           disabled={pending}
           value={description}
           onValueChange={(value: string) => handleUpdateDescription(value)}
         >
-          <SelectTrigger>
+          <SelectTrigger aria-label="Tipo do combustível">
             <SelectValue placeholder="Tipo do combustível" />
           </SelectTrigger>
           <SelectContent>
@@ -75,7 +73,7 @@ const UpdateFuelTypeFormContainer = ({
               <SelectItem
                 key={fuel}
                 value={fuel}
-                className="cursor-pointer hover:bg-accent 
+                className="cursor-pointer hover:bg-accent
                 hover:text-accent-foreground"
               >
                 {fuel}
@@ -125,6 +123,7 @@ const UpdateFuelTypeFormContainer = ({
           type="button"
           variant="outline"
           onClick={handleCloseUpdateFuelType}
+          className="flex-1"
         >
           Cancelar
         </Button>
@@ -133,8 +132,9 @@ const UpdateFuelTypeFormContainer = ({
           disabled={
             pending || !isDirty || !commandBusinessInputValue.businessId
           }
+          className="flex-1"
         >
-          <span>Editar Tipo do Combustível</span>
+          <span>Editar Combustível</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -152,7 +152,10 @@ const UpdateFuelTypeForm = ({
   isUpdateFuelTypeOpen,
 }: UpdateFuelTypeFormProps): JSX.Element => {
   const defaultState: UpdateFuelTypeFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateFuelType, null);
+  const [state, dispatch] = useFormState<UpdateFuelTypeFormState, FormData>(
+    handleUpdateFuelType,
+    defaultState,
+  );
 
   const {
     formRef,
@@ -202,8 +205,8 @@ const UpdateFuelTypeForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateFuelTypeFormContainer
-            state={state ?? defaultState}
+          <UpdateFuelTypeFormSubmit
+            state={state}
             handleCloseUpdateFuelType={handleCloseUpdateFuelType}
             handleUpdateDescription={handleUpdateDescription}
             isDirty={isDirty}

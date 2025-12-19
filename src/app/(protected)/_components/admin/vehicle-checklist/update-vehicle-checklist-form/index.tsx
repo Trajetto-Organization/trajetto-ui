@@ -1,7 +1,5 @@
 import { useState } from "react";
-
 import { useFormState } from "react-dom";
-import { X } from "lucide-react";
 
 import {
   Dialog,
@@ -11,278 +9,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
 import { handleUpdateVehicleChecklist } from "@/actions/update-vehicle-checklist";
-
 import { useUpdateVehicleChecklistForm } from "./hooks";
-import { cn } from "@/lib/utils";
-
-import { SearchBusiness } from "../../../search-business";
-import { SearchBranch } from "../../../search-branch";
-
-import { SearchVehicle } from "../../../search-vehicle";
-import { SearchDriver } from "../../../search-driver";
-
-import {
-  UpdateVehicleChecklistFormState,
-  SelectBusinessBranchStepProps,
-  UpdateVehicleChecklistFormProps,
-  SelectVehicleDriverStepProps,
-} from "./dto";
 
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
-import { UpdateChecklistContainer } from "./components/update-checklist-container";
+import { UpdateChecklistFormSubmit } from "./update-vehicle-checklist-form-submit";
 
 import { validateUpdatePhotoRequirements } from "../create-vehicle-checklist-form/utils/photo-requirements";
 
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+
+import {
+  UpdateVehicleChecklistFormState,
+  UpdateVehicleChecklistFormProps,
+} from "./dto";
 import { toast } from "sonner";
-
-// Step 1: Select Business and Branch
-const SelectBusinessBranchStep = ({
-  state,
-  handleUpdateSearchBusinessInputValue,
-  handleUpdateSearchBranchInputValue,
-  commandBusinessInputValue: { searchBusinessInputValue, businessId },
-  commandBranchInputValue: { searchBranchInputValue, branchId },
-  onContinue,
-}: SelectBusinessBranchStepProps) => {
-  return (
-    <div className="space-y-6">
-      {(searchBranchInputValue || searchBusinessInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {searchBusinessInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Empresa:</span>
-                <span className="w-full truncate">
-                  {searchBusinessInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBusinessInputValue({
-                    businessId: "",
-                    searchBusinessInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div
-        className={`grid ${
-          searchBusinessInputValue
-            ? "grid-cols-1 md:grid-cols-2"
-            : "grid-cols-1"
-        } gap-4`}
-      >
-        <SearchBusiness
-          handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBusinessInputValue
-          }
-          searchBusinessInputValue={searchBusinessInputValue}
-          errorBusinessId={state.updateVehicleChecklistError?.businessId}
-        />
-
-        {searchBusinessInputValue && (
-          <SearchBranch
-            errorBranchId={state.updateVehicleChecklistError?.branchId}
-            searchBranchInputValue={searchBranchInputValue}
-            businessId={businessId}
-            handleUpdateSearchBranchInputValue={
-              handleUpdateSearchBranchInputValue
-            }
-          />
-        )}
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue || !branchId}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Select Vehicle and Driver
-const SelectVehicleDriverStep = ({
-  state,
-  businessId,
-  commandVehicleInputValue,
-  commandDriverInputValue,
-  handleUpdateSearchVehicleInputValue,
-  handleUpdateSearchDriverInputValue,
-  onContinue,
-  onBack,
-}: SelectVehicleDriverStepProps) => {
-  return (
-    <div className="space-y-6">
-      {/* Show selected vehicle and driver if any */}
-      {(commandVehicleInputValue.searchVehicleInputValue ||
-        commandDriverInputValue.searchDriverInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {/* Display selected Vehicle if any */}
-          {commandVehicleInputValue.searchVehicleInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Veículo:</span>
-                <span className="w-full truncate">
-                  {commandVehicleInputValue.searchVehicleInputValue}{" "}
-                  {commandVehicleInputValue.vehicleLicensePlate && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (Placa: {commandVehicleInputValue.vehicleLicensePlate})
-                    </span>
-                  )}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchVehicleInputValue({
-                    vehicleId: "",
-                    searchVehicleInputValue: "",
-                    vehicleLicensePlate: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {/* Display selected Driver if any */}
-          {commandDriverInputValue.searchDriverInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Motorista:</span>
-                <span className="w-full truncate">
-                  {commandDriverInputValue.searchDriverInputValue}{" "}
-                  {commandDriverInputValue.driverCnh && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (CNH: {commandDriverInputValue.driverCnh})
-                    </span>
-                  )}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchDriverInputValue({
-                    driverId: "",
-                    searchDriverInputValue: "",
-                    driverCnh: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Vehicle Selection (Required) */}
-        <div>
-          <SearchVehicle
-            errorVehicleId={state.updateVehicleChecklistError?.vehicleId}
-            selectedVehicleId={commandVehicleInputValue.vehicleId}
-            businessId={businessId}
-            handleUpdateSearchVehicleInputValue={
-              handleUpdateSearchVehicleInputValue
-            }
-          />
-        </div>
-
-        {/* Driver Selection (Required) */}
-        <div>
-          <SearchDriver
-            errorDriverId={state.updateVehicleChecklistError?.driverId}
-            selectedDriverId={commandDriverInputValue.driverId}
-            businessId={businessId}
-            handleUpdateSearchDriverInputValue={
-              handleUpdateSearchDriverInputValue
-            }
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={
-            !commandVehicleInputValue.vehicleId ||
-            !commandDriverInputValue.driverId
-          }
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 const UpdateVehicleChecklistForm = ({
   checklistData,
@@ -290,7 +32,10 @@ const UpdateVehicleChecklistForm = ({
   isUpdateChecklistOpen,
 }: UpdateVehicleChecklistFormProps): JSX.Element => {
   const defaultState: UpdateVehicleChecklistFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateVehicleChecklist, null);
+  const [state, dispatch] = useFormState<
+    UpdateVehicleChecklistFormState,
+    FormData
+  >(handleUpdateVehicleChecklist, defaultState);
 
   const [checklistFiles, setChecklistFiles] = useState<Record<string, File[]>>(
     {},
@@ -354,7 +99,6 @@ const UpdateVehicleChecklistForm = ({
 
         {currentStep === "select-business-branch" ? (
           <SelectBusinessBranchStep
-            state={state ?? defaultState}
             handleUpdateSearchBusinessInputValue={
               handleUpdateSearchBusinessInputValue
             }
@@ -364,10 +108,11 @@ const UpdateVehicleChecklistForm = ({
             onContinue={handleBusinessBranchStepContinue}
             commandBusinessInputValue={commandBusinessInputValue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state?.updateVehicleChecklistError?.branchId}
+            errorBusinessId={state.updateVehicleChecklistError?.businessId}
           />
         ) : currentStep === "select-vehicle-driver" ? (
           <SelectVehicleDriverStep
-            state={state ?? defaultState}
             businessId={commandBusinessInputValue.businessId}
             commandVehicleInputValue={commandVehicleInputValue}
             commandDriverInputValue={commandDriverInputValue}
@@ -379,6 +124,8 @@ const UpdateVehicleChecklistForm = ({
             }
             onContinue={handleVehicleDriverStepContinue}
             onBack={handleBackToBusinessBranchStep}
+            errorDriverId={state.updateVehicleChecklistError?.driverId}
+            errorVehicleId={state.updateVehicleChecklistError?.vehicleId}
           />
         ) : (
           <form
@@ -484,8 +231,8 @@ const UpdateVehicleChecklistForm = ({
               return dispatch(formData);
             }}
           >
-            <UpdateChecklistContainer
-              state={state ?? defaultState}
+            <UpdateChecklistFormSubmit
+              state={state}
               onBack={handleBackToVehicleDriverStep}
               checklistData={checklistData}
               isBusinessAndEntityDirty={isBusinessAndEntityDirty}

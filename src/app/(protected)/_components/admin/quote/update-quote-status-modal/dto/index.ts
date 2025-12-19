@@ -11,7 +11,7 @@ interface UpdateQuoteFormState {
   successMessage?: string;
 }
 
-interface UpdateQuoteContainerProps {
+interface UpdateQuoteFormSubmitProps {
   state: UpdateQuoteFormState;
   status: QuoteStatus;
   notes: string | null | undefined;
@@ -21,4 +21,4 @@ interface UpdateQuoteContainerProps {
   isQuoteStatusDirty: boolean;
 }
 
-export type { UpdateQuoteContainerProps, UpdateQuoteFormState };
+export type { UpdateQuoteFormSubmitProps, UpdateQuoteFormState };

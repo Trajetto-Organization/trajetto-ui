@@ -18,10 +18,10 @@ interface CreatePermissionFormState {
   successMessage?: string;
 }
 
-interface CreatePermissionContainerProps {
+interface CreatePermissionFormSubmitProps {
   state: CreatePermissionFormState;
   handleOpenCreatePermissionForm: () => void;
-  handleUpdateSearchBussinessInputValue: ({
+  handleUpdateSearchBusinessInputValue: ({
     businessId,
     searchBusinessInputValue,
   }: CommandBusinessInputValue) => void;
@@ -29,8 +29,8 @@ interface CreatePermissionContainerProps {
     profileAccessId,
     searchProfileAccessInputValue,
   }: CommandProfileAccessInputValue) => void;
-  commandBusinnessInputValue: CommandBusinessInputValue;
+  commandBusinessInputValue: CommandBusinessInputValue;
   commandProfileAccessInputValue: CommandProfileAccessInputValue;
 }
 
-export type { CreatePermissionContainerProps, CreatePermissionFormState };
+export type { CreatePermissionFormSubmitProps, CreatePermissionFormState };

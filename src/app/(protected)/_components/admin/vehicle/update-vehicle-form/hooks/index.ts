@@ -50,14 +50,14 @@ function useUpdateVehicleForm({
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
-    | "select-business"
+    | "select-business-branch"
     | "select-driver-vehicle-type"
     | "select-fuel-type"
     | "update-vehicle"
-  >("select-business");
+  >("select-business-branch");
 
   // Initialize form values from vehicle data with sanitized values
-  const [commandBusinnessInputValue, setCommandBusinnessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: vehicleData.businessId as string,
       searchBusinessInputValue: vehicleData.business_name as string,
@@ -96,7 +96,7 @@ function useUpdateVehicleForm({
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateVehicleOpen) {
-      setCommandBusinnessInputValue({
+      setCommandBusinessInputValue({
         businessId: vehicleData.businessId as string,
         searchBusinessInputValue: vehicleData.business_name as string,
       });
@@ -127,7 +127,7 @@ function useUpdateVehicleForm({
         searchFuelTypeInputValue: vehicleData.fuelTypeDescription,
       });
 
-      setCurrentStep("select-business");
+      setCurrentStep("select-business-branch");
     }
   }, [
     isUpdateVehicleOpen,
@@ -138,16 +138,16 @@ function useUpdateVehicleForm({
   ]);
 
   // Handle business and branch selection updates
-  const handleUpdateSearchBusinnessInputValue = (
+  const handleUpdateSearchBusinessInputValue = (
     data: CommandBusinessInputValue,
   ) => {
     const updateBusinessData =
-      data.businessId === commandBusinnessInputValue.businessId
+      data.businessId === commandBusinessInputValue.businessId
         ? { businessId: "", searchBusinessInputValue: "" }
         : data;
 
     if (
-      updateBusinessData.businessId !== commandBusinnessInputValue.businessId
+      updateBusinessData.businessId !== commandBusinessInputValue.businessId
     ) {
       setCommandBranchInputValue({
         branchId: "",
@@ -168,7 +168,7 @@ function useUpdateVehicleForm({
       });
     }
 
-    setCommandBusinnessInputValue(updateBusinessData);
+    setCommandBusinessInputValue(updateBusinessData);
   };
 
   const handleUpdateSearchBranchInputValue = (
@@ -229,7 +229,7 @@ function useUpdateVehicleForm({
   };
 
   const handleBackToBusinessStep = () => {
-    setCurrentStep("select-business");
+    setCurrentStep("select-business-branch");
   };
 
   const handleBackToDriverVehicleTypeStep = () => {
@@ -319,7 +319,7 @@ function useUpdateVehicleForm({
       : "";
 
   const isBusinessAndBranchDirty = [
-    commandBusinnessInputValue.businessId !== vehicleData.businessId,
+    commandBusinessInputValue.businessId !== vehicleData.businessId,
     commandBranchInputValue.branchId !== originalBranchId,
     commandDriverInputValue.driverId !== originalDriverId,
     commandVehicleTypeInputValue.vehicleTypeId !== originalVehicleTypeId,
@@ -329,7 +329,7 @@ function useUpdateVehicleForm({
   return {
     formRef,
     currentStep,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     commandDriverInputValue,
     commandVehicleTypeInputValue,
@@ -340,7 +340,7 @@ function useUpdateVehicleForm({
     handleBackToBusinessStep,
     handleBackToDriverVehicleTypeStep,
     handleBackToFuelTypeStep,
-    handleUpdateSearchBusinnessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateSearchVehicleTypeInputValue,

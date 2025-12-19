@@ -1,5 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -9,17 +9,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleUpdateSupplier } from "@/actions/update-supplier";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
-import {
-  UpdateSupplierContainerProps,
-  UpdateSupplierFormState,
-  SelectBusinessStepProps,
-} from "./dto";
+import { UpdateSupplierFormSubmitProps, UpdateSupplierFormState } from "./dto";
 
 import { BusinessProps } from "../../../dto";
 import { SupplierProps } from "../dto";
@@ -27,8 +23,7 @@ import { SupplierProps } from "../dto";
 import { useUpdateSupplierForm } from "./hooks";
 import { useCepValidation } from "../../../hooks";
 
-import { SearchBusiness } from "../../../search-business";
-import { cn } from "@/lib/utils";
+import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
 
 interface UpdateSupplierProps {
   supplierData: SupplierProps;
@@ -36,69 +31,13 @@ interface UpdateSupplierProps {
   isUpdateSupplierOpen: boolean;
 }
 
-// Step 1: Select Business
-const SelectBusinessStep = ({
-  searchBusinessInputValue,
-  handleUpdateSearchBusinessInputValue,
-  onContinue,
-  errorBusinessId,
-}: SelectBusinessStepProps) => {
-  return (
-    <div className="space-y-6">
-      {searchBusinessInputValue && (
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "border-dashed truncate h-8 text-center max-w-96 block leading-4",
-            )}
-          >
-            {searchBusinessInputValue}
-          </div>
-          <Button
-            className="h-8 w-4"
-            variant="ghost"
-            onClick={() =>
-              handleUpdateSearchBusinessInputValue({
-                businessId: "",
-                searchBusinessInputValue: "",
-              })
-            }
-          >
-            <X />
-          </Button>
-        </div>
-      )}
-
-      <SearchBusiness
-        errorBusinessId={errorBusinessId}
-        searchBusinessInputValue={searchBusinessInputValue}
-        handleUpdateSearchBussinessInputValue={
-          handleUpdateSearchBusinessInputValue
-        }
-      />
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Update Supplier Form
-const UpdateSupplierFormContainer = ({
+const UpdateSupplierFormSubmit = ({
   state,
   handleCloseUpdateSupplier,
   supplierData,
   isUpdateSupplierOpen,
   isDirty,
-}: UpdateSupplierContainerProps): JSX.Element => {
+}: UpdateSupplierFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
     updatedFields: allFields,
@@ -226,7 +165,10 @@ const UpdateSupplierForm = ({
   isUpdateSupplierOpen,
 }: UpdateSupplierProps): JSX.Element => {
   const defaultState: UpdateSupplierFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateSupplier, null);
+  const [state, dispatch] = useFormState<UpdateSupplierFormState, FormData>(
+    handleUpdateSupplier,
+    defaultState,
+  );
 
   const {
     formRef,
@@ -271,7 +213,7 @@ const UpdateSupplierForm = ({
 
         {currentStep === "select-business" ? (
           <SelectBusinessStep
-            searchBusinessInputValue={selectedBusiness.searchBusinessInputValue}
+            commandBusinessInputValue={selectedBusiness}
             handleUpdateSearchBusinessInputValue={
               handleUpdateSearchBusinessInputValue
             }
@@ -291,8 +233,8 @@ const UpdateSupplierForm = ({
               return dispatch(formData);
             }}
           >
-            <UpdateSupplierFormContainer
-              state={state ?? defaultState}
+            <UpdateSupplierFormSubmit
+              state={state}
               handleCloseUpdateSupplier={handleBack}
               supplierData={supplierData}
               isUpdateSupplierOpen={isUpdateSupplierOpen}

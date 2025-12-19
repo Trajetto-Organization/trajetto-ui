@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -11,151 +11,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleUpdateDriver } from "@/actions/update-driver";
-import { cn } from "@/lib/utils";
 
 import { useCepValidation } from "../../../hooks";
 import { useUpdateDriverForm } from "./hooks";
 
-import { SearchBusiness } from "../../../search-business";
-import { SearchBranch } from "../../../search-branch";
-
 import {
   UpdateDriverFormProps,
-  UpdateDriverContainerProps,
+  UpdateDriverFormSubmitProps,
   UpdateDriverFormState,
-  SelectBusinessForUpdateProps,
 } from "./dto";
 
-import { DatePickerField, SelectField } from "../../../custom";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 
+import { DatePickerField, SelectField } from "../../../custom";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
 import { DriverProps } from "../dto";
 
-const SelectBusinessForUpdate = ({
-  state,
-  handleUpdateSearchBusinnessInputValue,
-  handleUpdateSearchBranchInputValue,
-  commandBusinnessInputValue: { searchBusinessInputValue, businessId },
-  commandBranchInputValue: { searchBranchInputValue },
-  onContinue,
-}: SelectBusinessForUpdateProps) => {
-  return (
-    <div className="space-y-6">
-      {(searchBranchInputValue || searchBusinessInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {searchBusinessInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Empresa:</span>
-                <span className="w-full truncate">
-                  {searchBusinessInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBusinnessInputValue({
-                    businessId: "",
-                    searchBusinessInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div
-        className={`grid ${
-          searchBusinessInputValue
-            ? "grid-cols-1 md:grid-cols-2"
-            : "grid-cols-1"
-        } gap-4`}
-      >
-        <SearchBusiness
-          handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBusinnessInputValue
-          }
-          searchBusinessInputValue={searchBusinessInputValue}
-          errorBusinessId={state.updateDriverError?.businessId}
-        />
-
-        {searchBusinessInputValue && (
-          <SearchBranch
-            errorBranchId={state.updateDriverError?.branchId}
-            searchBranchInputValue={searchBranchInputValue}
-            businessId={businessId}
-            handleUpdateSearchBranchInputValue={
-              handleUpdateSearchBranchInputValue
-            }
-            isOptional={true}
-          />
-        )}
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Second step component: Update driver form fields
-const UpdateDriverFormContainer = ({
+const UpdateDriverFormSubmit = ({
   state,
   driverData,
   isBusinessAndBranchDirty,
   isUpdateDriverOpen,
   onBack,
-}: UpdateDriverContainerProps): JSX.Element => {
+}: UpdateDriverFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
     updatedFields: allFields,
@@ -280,6 +163,7 @@ const UpdateDriverFormContainer = ({
             ]
           }
           disabled={pending}
+          autoComplete="name"
         />
 
         {/* Date of Birth */}
@@ -449,16 +333,19 @@ const UpdateDriverForm = ({
   isUpdateDriverOpen,
 }: UpdateDriverFormProps): JSX.Element => {
   const defaultState: UpdateDriverFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateDriver, null);
+  const [state, dispatch] = useFormState<UpdateDriverFormState, FormData>(
+    handleUpdateDriver,
+    defaultState,
+  );
 
   const {
     formRef,
     currentStep,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     handleBack,
     handleContinue,
-    handleUpdateSearchBusinnessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     isBusinessAndBranchDirty,
   } = useUpdateDriverForm({
@@ -473,36 +360,38 @@ const UpdateDriverForm = ({
       <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business"
+            {currentStep === "select-business-branch"
               ? "Selecionar Empresa"
               : "Editar Motorista"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business"
+            {currentStep === "select-business-branch"
               ? "Selecione a empresa para a qual deseja editar um motorista (obrigatório) e opcionalmente uma filial."
               : "Atualize as informações do motorista conforme necessário."}
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business" ? (
-          <SelectBusinessForUpdate
-            state={state ?? defaultState}
-            handleUpdateSearchBusinnessInputValue={
-              handleUpdateSearchBusinnessInputValue
+        {currentStep === "select-business-branch" ? (
+          <SelectBusinessBranchStep
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
             onContinue={handleContinue}
-            commandBusinnessInputValue={commandBusinnessInputValue}
+            commandBusinessInputValue={commandBusinessInputValue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state.updateDriverError?.branchId}
+            errorBusinessId={state.updateDriverError?.businessId}
+            searchBranchIsOptional={true}
           />
         ) : (
           <form
             ref={formRef}
             action={(formData) => {
               const extraData = {
-                businessId: commandBusinnessInputValue.businessId,
+                businessId: commandBusinessInputValue.businessId,
                 branchId: commandBranchInputValue.branchId,
                 driverId: driverData.id,
               };
@@ -511,10 +400,10 @@ const UpdateDriverForm = ({
               return dispatch(formData);
             }}
           >
-            <UpdateDriverFormContainer
+            <UpdateDriverFormSubmit
               isUpdateDriverOpen={isUpdateDriverOpen}
               isBusinessAndBranchDirty={isBusinessAndBranchDirty}
-              state={state ?? defaultState}
+              state={state}
               driverData={driverData}
               onBack={handleBack}
             />

@@ -192,7 +192,7 @@ export function ViewQuoteModal({
           <div className="pt-4 border-t">
             <div
               className="flex items-center gap-3 
-                text-xs text-muted-foreground"
+              text-xs text-muted-foreground"
             >
               <span>ID do Orçamento:</span>
               <code

@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
 import {
   Dialog,
@@ -27,7 +26,7 @@ import { handleCreateFuelType } from "@/actions/create-fuel-type";
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 
 import {
-  DashboardCreateFuelTypeContainerProps,
+  DashboardCreateFuelTypeSubmitProps,
   DashboardCreateFuelTypeFormState,
 } from "./dto";
 import { useDashboardCreateFuelTypeForm } from "./hooks";
@@ -38,18 +37,18 @@ import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-const DashboardCreateFuelTypeFormContainer = ({
+const DashboardCreateFuelTypeFormSubmit = ({
   state,
   handleOpenCreateFuelTypeForm,
-}: DashboardCreateFuelTypeContainerProps) => {
+}: DashboardCreateFuelTypeSubmitProps) => {
   const { pending } = useFormStatus();
 
   return (
     <div className="space-y-6 mt-2">
       <div className="w-full flex flex-col gap-3">
-        <Label
-          htmlFor="description"
+        <div
           className={cn(
+            "text-sm font-medium",
             state.createFuelTypeError?.description &&
               "h-4 truncate text-red-500",
           )}
@@ -57,9 +56,9 @@ const DashboardCreateFuelTypeFormContainer = ({
           {state.createFuelTypeError?.description
             ? state.createFuelTypeError?.description
             : "Combustível"}
-        </Label>
+        </div>
         <Select name="description" disabled={pending}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Tipo do combustível">
             <SelectValue placeholder="Tipo do combustível" />
           </SelectTrigger>
           <SelectContent>
@@ -67,7 +66,7 @@ const DashboardCreateFuelTypeFormContainer = ({
               <SelectItem
                 key={fuel}
                 value={fuel}
-                className="cursor-pointer hover:bg-accent 
+                className="cursor-pointer hover:bg-accent
                 hover:text-accent-foreground"
               >
                 {fuel}
@@ -101,7 +100,10 @@ const DashboardCreateFuelTypeFormContainer = ({
 
 const DashboardCreateFuelTypeForm = (): JSX.Element => {
   const defaultState: DashboardCreateFuelTypeFormState = {};
-  const [state, dispatch] = useFormState(handleCreateFuelType, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateFuelTypeFormState,
+    FormData
+  >(handleCreateFuelType, defaultState);
 
   const { isCreateFuelTypeForm, handleOpenCreateFuelTypeForm, formRef } =
     useDashboardCreateFuelTypeForm(state);
@@ -143,8 +145,8 @@ const DashboardCreateFuelTypeForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <DashboardCreateFuelTypeFormContainer
-            state={state ?? defaultState}
+          <DashboardCreateFuelTypeFormSubmit
+            state={state}
             handleOpenCreateFuelTypeForm={handleOpenCreateFuelTypeForm}
           />
         </form>

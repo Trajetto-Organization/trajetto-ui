@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -130,17 +131,17 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <label
-                  className="block text-sm font-medium 
+                <div
+                  className="block text-sm font-medium
                   text-red-500 mb-2 h-5 truncate"
                 >
                   📷 {label}
                   {isRequired && <span className="text-red-500"> *</span>}
-                </label>
+                </div>
               </TooltipTrigger>
               <TooltipContent
                 align="start"
-                className="max-w-[300px] 
+                className="max-w-[300px]
                 whitespace-normal break-words p-2"
               >
                 {error || validationError}
@@ -148,13 +149,13 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <label
-            className="text-sm font-medium 
+          <div
+            className="text-sm font-medium
             text-gray-700 dark:text-gray-300"
           >
             📷 {label}
             {isRequired && <span className="text-red-500"> *</span>}
-          </label>
+          </div>
         )}
         {reason && <span className="text-xs text-gray-500">{reason}</span>}
       </div>
@@ -279,7 +280,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
               : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
         } ${pending ? "opacity-50 cursor-not-allowed" : ""}`}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} aria-label={label} />
         <div className="flex flex-col items-center space-y-2">
           <Upload
             className={`h-6 w-6 ${
@@ -321,6 +322,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Visualizar Foto - {label}</DialogTitle>
+            <DialogDescription>Foto do checklist do veículo</DialogDescription>
           </DialogHeader>
           <div className="flex justify-center">
             {imageModalOpen && (

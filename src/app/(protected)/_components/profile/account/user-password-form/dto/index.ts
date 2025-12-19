@@ -10,7 +10,7 @@ interface UpdateUserPasswordFormState {
   successMessage?: string;
 }
 
-interface UpdateUserPasswordContainerProps {
+interface UpdateUserPasswordFormSubmitProps {
   state: UpdateUserPasswordFormState;
   error: boolean;
 }
@@ -20,7 +20,7 @@ interface UpdatePasswordProps {
 }
 
 export type {
-  UpdateUserPasswordContainerProps,
+  UpdateUserPasswordFormSubmitProps,
   UpdateUserPasswordFormState,
   UpdatePasswordProps,
 };

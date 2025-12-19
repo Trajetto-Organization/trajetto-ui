@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import {
-  DashboardCreateVehicleTypeContainerProps,
+  DashboardCreateVehicleTypeFormSubmitProps,
   DashboardCreateVehicleTypeFormState,
 } from "./dto";
 
@@ -30,10 +30,10 @@ import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-const DashboardCreateVehicleTypeFormContainer = ({
+const DashboardCreateVehicleTypeFormSubmit = ({
   state,
   handleOpenCreateVehicleTypeForm,
-}: DashboardCreateVehicleTypeContainerProps) => {
+}: DashboardCreateVehicleTypeFormSubmitProps) => {
   const { pending } = useFormStatus();
 
   const handleNumberOfAxles = (event: FormEvent<HTMLInputElement>) => {
@@ -114,7 +114,10 @@ const DashboardCreateVehicleTypeFormContainer = ({
 
 const DashboardCreateVehicleTypeForm = (): JSX.Element => {
   const defaultState: DashboardCreateVehicleTypeFormState = {};
-  const [state, dispatch] = useFormState(handleCreateVehicleType, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateVehicleTypeFormState,
+    FormData
+  >(handleCreateVehicleType, defaultState);
 
   const {
     isCreateCreateVehicleTypeForm,
@@ -159,8 +162,8 @@ const DashboardCreateVehicleTypeForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <DashboardCreateVehicleTypeFormContainer
-            state={state ?? defaultState}
+          <DashboardCreateVehicleTypeFormSubmit
+            state={state}
             handleOpenCreateVehicleTypeForm={handleOpenCreateVehicleTypeForm}
           />
         </form>

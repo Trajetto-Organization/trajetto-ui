@@ -107,10 +107,6 @@ export function DashboardDataTableFuelRowActions<TData>({
       onClick: () => handleCopyID(columnRowAction.id),
     },
     {
-      label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(columnRowAction.businessId as string),
-    },
-    {
       label: "Copiar ID da filial",
       onClick: () => handleCopyID(columnRowAction.branchId as string),
     },

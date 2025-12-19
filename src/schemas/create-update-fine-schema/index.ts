@@ -8,6 +8,9 @@ const emptyStringToNull = (value: any) => {
   return value;
 };
 
+const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
+const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
+
 // Helper function to clean and convert currency to number
 const currencyToNumber = (value: any) => {
   if (typeof value === "string") {
@@ -102,22 +105,75 @@ const createUpdateFineSchema = z.object({
         return !isNaN(number) && number >= 0 && number <= 20;
       }, "A pontuação deve ser um número entre 0 e 20"),
   ),
-  location: z.preprocess(
-    emptyStringToNull,
-    z
-      .string()
-      .max(200, "Local da infração deve ter no máximo 200 caracteres")
-      .nullable()
-      .optional(),
-  ),
-  observation: z.preprocess(
-    emptyStringToNull,
-    z
-      .string()
-      .max(500, "Observações devem ter no máximo 500 caracteres")
-      .nullable()
-      .optional(),
-  ),
+  location: z
+    .string()
+    .max(200, "Local da infração deve ter no máximo 200 caracteres")
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined || value === "") {
+        return;
+      }
+
+      if (hasConsecutiveSpaces(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome do local da infração não deve conter espaços consecutivos.",
+        });
+        return;
+      }
+
+      if (hasSpaceAtEdges(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome do local da infração não pode começar ou terminar com espaço em branco.",
+        });
+        return;
+      }
+
+      if (!/^[\p{L}0-9]+(?:[ \-][\p{L}0-9]+)*$/u.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome do local da infração deve conter apenas letras (inclusive acentos), números, espaços e traços, sem outros caracteres.",
+        });
+      }
+    }),
+  observation: z
+    .string()
+    .max(500, "Observações devem ter no máximo 500 caracteres")
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined || value === "") {
+        return;
+      }
+
+      if (hasConsecutiveSpaces(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome da observação não deve conter espaços consecutivos.",
+        });
+        return;
+      }
+
+      if (hasSpaceAtEdges(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome da observação não pode começar ou terminar com espaço em branco.",
+        });
+        return;
+      }
+
+      if (!/^[\p{L}0-9]+(?:[ \-][\p{L}0-9]+)*$/u.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome da observação deve conter apenas letras (inclusive acentos), números, espaços e traços, sem outros caracteres.",
+        });
+      }
+    }),
   branchId: z.string().uuid("ID da filial deve ser um UUID válido"),
   driverId: z.string().uuid("ID do motorista deve ser um UUID válido"),
   vehicleId: z.string().uuid("ID do veículo deve ser um UUID válido"),

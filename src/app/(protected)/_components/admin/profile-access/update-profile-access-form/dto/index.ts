@@ -11,16 +11,19 @@ interface UpdateProfileAccessFormState {
   successMessage?: string;
 }
 
-interface UpdateProfileAccessContainerProps {
+interface UpdateProfileAccessFormSubmitProps {
   state: UpdateProfileAccessFormState;
   handleCloseUpdateProfileAccess: () => void;
   handleUpdateProfileAccessName: (updatedName: string) => void;
-  commandBusinnessInputValue: CommandBusinessInputValue;
-  handleUpdateSearchBussinessInputValue: (
+  commandBusinessInputValue: CommandBusinessInputValue;
+  handleUpdateSearchBusinessInputValue: (
     businessSearchData: CommandBusinessInputValue,
   ) => void;
   profileAccessName: string;
   isDirty: boolean;
 }
 
-export type { UpdateProfileAccessContainerProps, UpdateProfileAccessFormState };
+export type {
+  UpdateProfileAccessFormSubmitProps,
+  UpdateProfileAccessFormState,
+};

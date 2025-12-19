@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -11,158 +11,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleUpdateServiceOrderPart } from "@/actions/update-service-order-part";
-
-import { cn } from "@/lib/utils";
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
 
 import { useDashboardUpdateServiceOrderPartForm } from "./hooks";
-import { SearchServiceOrder } from "../../../search-service-order";
-
-import { SearchPart } from "../../../search-part";
-
 import {
   DashboardUpdateServiceOrderPartFormState,
   DashboardUpdateServiceOrderPartFormProps,
-  DashboardSelectServiceOrderPartStepProps,
-  DashboardUpdateServiceOrderPartContainerProps,
+  DashboardUpdateServiceOrderPartFormSubmitProps,
 } from "./dto";
 
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
-// Step 1: Select Service Order and Part
-const SelectServiceOrderPartStep = ({
-  state,
-  businessId,
-  commandServiceOrderInputValue,
-  commandPartInputValue,
-  handleUpdateSearchServiceOrderInputValue,
-  handleUpdateSearchPartInputValue,
-  onContinue,
-}: DashboardSelectServiceOrderPartStepProps) => {
-  return (
-    <div className="space-y-6">
-      {/* Display selected items */}
-      {(commandServiceOrderInputValue.searchServiceOrderInputValue ||
-        commandPartInputValue.searchPartInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {commandServiceOrderInputValue.searchServiceOrderInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Ordem de Serviço:</span>
-                <span className="w-full truncate">
-                  {commandServiceOrderInputValue.searchServiceOrderInputValue}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchServiceOrderInputValue({
-                    serviceOrderId: "",
-                    searchServiceOrderInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
+import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/steps/select-service-order-part-step";
 
-          {commandPartInputValue.searchPartInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Peça:</span>
-                <span className="w-full truncate">
-                  {commandPartInputValue.searchPartInputValue}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchPartInputValue({
-                    partId: "",
-                    searchPartInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Service Order Selection */}
-        <div>
-          <SearchServiceOrder
-            errorServiceOrderId={
-              state.updateServiceOrderPartError?.serviceOrderId
-            }
-            searchServiceOrderInputValue={
-              commandServiceOrderInputValue.searchServiceOrderInputValue
-            }
-            businessId={businessId}
-            handleUpdateSearchServiceOrderInputValue={
-              handleUpdateSearchServiceOrderInputValue
-            }
-          />
-        </div>
-
-        {/* Part Selection */}
-        <div>
-          <SearchPart
-            errorPartId={state.updateServiceOrderPartError?.partId}
-            searchPartInputValue={commandPartInputValue.searchPartInputValue}
-            businessId={businessId}
-            handleUpdateSearchPartInputValue={handleUpdateSearchPartInputValue}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={
-            !commandServiceOrderInputValue.serviceOrderId ||
-            !commandPartInputValue.partId
-          }
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Update Service Order Part Form
-const UpdateServiceOrderPartContainer = ({
+const UpdateServiceOrderPartSubmit = ({
   state,
   onBack,
   serviceOrderPartData,
   isBusinessAndEntityDirty,
   isUpdateServiceOrderPartOpen,
-}: DashboardUpdateServiceOrderPartContainerProps): JSX.Element => {
+}: DashboardUpdateServiceOrderPartFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   const [originalValues, setOriginalValues] = useState<
@@ -468,7 +344,10 @@ const DashboardUpdateServiceOrderPartForm = ({
   isUpdateServiceOrderPartOpen,
 }: DashboardUpdateServiceOrderPartFormProps): JSX.Element => {
   const defaultState: DashboardUpdateServiceOrderPartFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateServiceOrderPart, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateServiceOrderPartFormState,
+    FormData
+  >(handleUpdateServiceOrderPart, defaultState);
 
   const {
     formRef,
@@ -515,7 +394,6 @@ const DashboardUpdateServiceOrderPartForm = ({
 
         {currentStep === "select-service-order-part" ? (
           <SelectServiceOrderPartStep
-            state={state ?? defaultState}
             businessId={businessId as string}
             commandServiceOrderInputValue={commandServiceOrderInputValue}
             commandPartInputValue={commandPartInputValue}
@@ -524,6 +402,10 @@ const DashboardUpdateServiceOrderPartForm = ({
             }
             handleUpdateSearchPartInputValue={handleUpdateSearchPartInputValue}
             onContinue={handleServiceOrderPartStepContinue}
+            errorPartId={state.updateServiceOrderPartError?.partId}
+            errorServiceOrderId={
+              state.updateServiceOrderPartError?.serviceOrderId
+            }
           />
         ) : (
           <form
@@ -540,8 +422,8 @@ const DashboardUpdateServiceOrderPartForm = ({
               return dispatch(formData);
             }}
           >
-            <UpdateServiceOrderPartContainer
-              state={state ?? defaultState}
+            <UpdateServiceOrderPartSubmit
+              state={state}
               onBack={handleBackToServiceOrderPartStep}
               serviceOrderPartData={serviceOrderPartData}
               isBusinessAndEntityDirty={isBusinessAndEntityDirty}

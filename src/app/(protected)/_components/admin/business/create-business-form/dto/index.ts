@@ -20,10 +20,10 @@ interface CreateBusinessFormState {
   successMessage?: string;
 }
 
-interface CreateBusinessContainerProps {
+interface CreateBusinessSubmitProps {
   state: CreateBusinessFormState;
   handleOpenCreateBusinessForm: () => void;
   isCreateBusinessForm: boolean;
 }
 
-export type { CreateBusinessContainerProps, CreateBusinessFormState };
+export type { CreateBusinessSubmitProps, CreateBusinessFormState };

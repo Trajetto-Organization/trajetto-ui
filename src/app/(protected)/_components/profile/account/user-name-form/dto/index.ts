@@ -8,7 +8,7 @@ interface UserNameProps {
   error: boolean;
 }
 
-interface UserNameContainerProps {
+interface UserNameFormSubmitProps {
   isUpdated: boolean;
   handleUserName: (updatedUserName: string) => void;
   userNameValue: string;
@@ -24,6 +24,6 @@ interface UseUserNameForm {
 export type {
   UserNameFormState,
   UserNameProps,
-  UserNameContainerProps,
+  UserNameFormSubmitProps,
   UseUserNameForm,
 };

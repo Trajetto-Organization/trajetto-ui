@@ -22,7 +22,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateUser } from "@/actions/create-user";
-import { CreateUserContainerProps, CreateUserFormState } from "./dto";
+import { CreateUserFormSubmitProps, CreateUserFormState } from "./dto";
 
 import { SearchProfileAccess } from "../../../search-profile-access";
 
@@ -34,8 +34,8 @@ import {
   useGenerateRandomPassword,
   useSelectUserRole,
 } from "./hooks";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
+import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { roleLabels, UserBusinessRole } from "../../../dto";
 
 import { Label } from "@/components/ui/label";
@@ -43,18 +43,18 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/utils";
 
-const CreateUserFormContainer = ({
+const CreateUserFormSubmit = ({
   state,
   handleOpenCreateUserForm,
-  commandBusinnessInputValue: { searchBusinessInputValue, businessId },
-  handleUpdateSearchBussinessInputValue,
+  commandBusinessInputValue: { searchBusinessInputValue, businessId },
+  handleUpdateSearchBusinessInputValue,
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
   handleUpdateSearchProfileAccessInputValue,
   commandDriverInputValue: { searchDriverInputValue, driverId },
   handleUpdateSearchDriverInputValue,
   userType,
   setUserType,
-}: CreateUserContainerProps): JSX.Element => {
+}: CreateUserFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { handleGeneratePassword, handleChangePassword, password } =
     useGenerateRandomPassword();
@@ -109,7 +109,7 @@ const CreateUserFormContainer = ({
             onValueChange={(value) => {
               setSelectedRole(value);
 
-              handleUpdateSearchBussinessInputValue({
+              handleUpdateSearchBusinessInputValue({
                 businessId: "",
                 searchBusinessInputValue: "",
               });
@@ -258,7 +258,7 @@ const CreateUserFormContainer = ({
                 className="h-8 w-4"
                 variant="ghost"
                 onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
+                  handleUpdateSearchBusinessInputValue({
                     businessId: "",
                     searchBusinessInputValue: "",
                   })
@@ -346,7 +346,7 @@ const CreateUserFormContainer = ({
         >
           <SearchBusiness
             handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+              handleUpdateSearchBusinessInputValue
             }
             searchBusinessInputValue={searchBusinessInputValue}
             errorBusinessId={state.createUserError?.businessId}
@@ -403,14 +403,17 @@ const CreateUserFormContainer = ({
 
 const CreateUserForm = (): JSX.Element => {
   const defaultState: CreateUserFormState = {};
+  const [state, dispatch] = useFormState<CreateUserFormState, FormData>(
+    handleCreateUser,
+    defaultState,
+  );
 
-  const [state, dispatch] = useFormState(handleCreateUser, null);
   const {
     isCreateUserForm,
     handleOpenCreateUserForm,
     formRef,
-    commandBusinnessInputValue,
-    handleUpdateSearchBussinessInputValue,
+    commandBusinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     commandProfileAccessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     commandDriverInputValue,
@@ -440,7 +443,7 @@ const CreateUserForm = (): JSX.Element => {
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
               driverId: commandDriverInputValue.driverId,
               userType: userType,
@@ -450,11 +453,11 @@ const CreateUserForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreateUserFormContainer
-            state={state ?? defaultState}
+          <CreateUserFormSubmit
+            state={state}
             handleOpenCreateUserForm={handleOpenCreateUserForm}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
@@ -462,7 +465,7 @@ const CreateUserForm = (): JSX.Element => {
             handleUpdateSearchDriverInputValue={
               handleUpdateSearchDriverInputValue
             }
-            commandBusinnessInputValue={commandBusinnessInputValue}
+            commandBusinessInputValue={commandBusinessInputValue}
             commandProfileAccessInputValue={commandProfileAccessInputValue}
             commandDriverInputValue={commandDriverInputValue}
             userType={userType}

@@ -20,7 +20,7 @@ interface DashboardUpdateSupplierFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateSupplierContainerProps {
+interface DashboardUpdateSupplierSubmitProps {
   state: DashboardUpdateSupplierFormState;
   handleCloseUpdateSupplier: () => void;
   supplierData: DashboardSupplierProps;
@@ -28,6 +28,6 @@ interface DashboardUpdateSupplierContainerProps {
 }
 
 export type {
-  DashboardUpdateSupplierContainerProps,
+  DashboardUpdateSupplierSubmitProps,
   DashboardUpdateSupplierFormState,
 };

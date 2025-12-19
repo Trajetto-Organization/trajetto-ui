@@ -10,9 +10,7 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-
 import { cn } from "@/lib/utils";
 
 import { useBusinessInfiniteScroll } from "./hooks/business-infinite-scroll";
@@ -52,19 +50,18 @@ const SearchBusiness = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-business-input"
-        className={errorBusinessId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorBusinessId ? "text-red-500" : ""}`}
       >
         {errorBusinessId ? errorBusinessId[0] : "Selecione a Empresa"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-business-input"
           placeholder="Buscar empresa..."
           autoFocus
           className="h-9"
+          aria-label="Buscar empresa"
         />
 
         {!isLoadingBusiness && !hasError && (

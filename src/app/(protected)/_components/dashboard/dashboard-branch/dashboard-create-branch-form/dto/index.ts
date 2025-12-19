@@ -21,13 +21,13 @@ interface DashboardCreateBranchFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateBranchContainerProps {
+interface DashboardCreateBranchFormSubmitProps {
   state: DashboardCreateBranchFormState;
   isCreateBranchForm: boolean;
   handleOpenCreateBranchForm: () => void;
 }
 
 export type {
-  DashboardCreateBranchContainerProps,
+  DashboardCreateBranchFormSubmitProps,
   DashboardCreateBranchFormState,
 };

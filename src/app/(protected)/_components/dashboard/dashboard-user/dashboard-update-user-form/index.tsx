@@ -33,7 +33,7 @@ import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { handleUpdateUserRegistration } from "@/actions/update-user-registration";
 
 import {
-  DashboardUpdateUserContainerProps,
+  DashboardUpdateUserFormSubmitProps,
   DashboardUpdateUserFormState,
 } from "./dto";
 import { roleLabels, UserBusinessRole } from "../../../dto";
@@ -50,7 +50,7 @@ interface UpdateUserProps {
   isUpdateUser: boolean;
 }
 
-const DashboardUpdateUserFormContainer = ({
+const DashboardUpdateUserFormSubmit = ({
   state,
   handleUpdateSearchProfileAccessInputValue,
   handleUpdateSearchDriverInputValue,
@@ -68,7 +68,7 @@ const DashboardUpdateUserFormContainer = ({
     commandProfileAccessInputValue: { searchProfileAccessInputValue },
     commandDriverInputValue: { searchDriverInputValue, driverId },
   },
-}: DashboardUpdateUserContainerProps) => {
+}: DashboardUpdateUserFormSubmitProps) => {
   const { pending } = useFormStatus();
   const { handleGeneratePassword, handleChangePassword, password } =
     useUpdateGenerateRandomPassword();
@@ -399,7 +399,10 @@ const DashboardUpdateUserForm = ({
   isUpdateUser,
 }: UpdateUserProps): JSX.Element => {
   const defaultState: DashboardUpdateUserFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateUserRegistration, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateUserFormState,
+    FormData
+  >(handleUpdateUserRegistration, defaultState);
 
   const {
     formRef,
@@ -477,8 +480,8 @@ const DashboardUpdateUserForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdateUserFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdateUserFormSubmit
+            state={state}
             handleOpenUpdateUser={handleOpenUpdateUser}
             handleUpdateUserEmail={handleUpdateUserEmail}
             handleUpdateUserName={handleUpdateUserName}

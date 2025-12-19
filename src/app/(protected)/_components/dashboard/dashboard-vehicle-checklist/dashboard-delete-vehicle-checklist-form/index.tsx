@@ -26,7 +26,7 @@ interface DashboardDeleteVehicleChecklistProps {
   checklistId: string;
 }
 
-const DashboardDeleteVehicleChecklistFormContainer = (): JSX.Element => {
+const DashboardDeleteVehicleChecklistFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -119,7 +119,7 @@ const DashboardDeleteVehicleChecklistForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeleteVehicleChecklistFormContainer />
+          <DashboardDeleteVehicleChecklistFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

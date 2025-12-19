@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -11,22 +11,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleUpdateDriver } from "@/actions/update-driver";
-import { cn } from "@/lib/utils";
 
 import { useCepValidation } from "../../../hooks";
 import { useDashboardUpdateDriverForm } from "./hooks";
 
-import { SearchBranch } from "../../../search-branch";
-
 import {
   DashboardUpdateDriverFormProps,
-  DashboardUpdateDriverContainerProps,
+  DashboardUpdateDriverSubmitProps,
   DashboardUpdateDriverFormState,
-  DashboardSelectBranchForUpdateProps,
 } from "./dto";
 
 import { DatePickerField, SelectField } from "../../../custom";
@@ -34,79 +30,16 @@ import { DatePickerField, SelectField } from "../../../custom";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { DashboardDriverProps } from "../dto";
 
+import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
 import { useAuthStore } from "@/store/auth-store";
 
-const DashboardSelectBranchForUpdate = ({
-  state,
-  businessId,
-  handleUpdateSearchBranchInputValue,
-  commandBranchInputValue: { searchBranchInputValue },
-  onContinue,
-}: DashboardSelectBranchForUpdateProps) => {
-  return (
-    <div className="space-y-6">
-      {searchBranchInputValue && (
-        <div className="grid grid-cols-1 gap-4 w-full">
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className={`grid grid-cols-1 gap-4`}>
-        <SearchBranch
-          errorBranchId={state.updateDriverError?.branchId}
-          searchBranchInputValue={searchBranchInputValue}
-          businessId={businessId}
-          handleUpdateSearchBranchInputValue={
-            handleUpdateSearchBranchInputValue
-          }
-          isOptional={true}
-        />
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button type="button" onClick={onContinue}>
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Second step component: Update driver form fields
-const DashboardUpdateDriverFormContainer = ({
+const DashboardUpdateDriverFormSubmit = ({
   state,
   driverData,
   isBranchDirty,
   isUpdateDriverOpen,
   onBack,
-}: DashboardUpdateDriverContainerProps): JSX.Element => {
+}: DashboardUpdateDriverSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
     updatedFields: allFields,
@@ -231,6 +164,7 @@ const DashboardUpdateDriverFormContainer = ({
             ]
           }
           disabled={pending}
+          autoComplete="name"
         />
 
         {/* Date of Birth */}
@@ -398,7 +332,10 @@ const DashboardUpdateDriverForm = ({
   isUpdateDriverOpen,
 }: DashboardUpdateDriverFormProps): JSX.Element => {
   const defaultState: DashboardUpdateDriverFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateDriver, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateDriverFormState,
+    FormData
+  >(handleUpdateDriver, defaultState);
 
   const {
     formRef,
@@ -434,14 +371,15 @@ const DashboardUpdateDriverForm = ({
         </DialogHeader>
 
         {currentStep === "select-branch" ? (
-          <DashboardSelectBranchForUpdate
-            state={state ?? defaultState}
+          <SelectBranchStep
             businessId={businessId as string}
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
             onContinue={handleContinue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state.updateDriverError?.branchId}
+            searchBranchIsOptional={true}
           />
         ) : (
           <form
@@ -457,10 +395,10 @@ const DashboardUpdateDriverForm = ({
               return dispatch(formData);
             }}
           >
-            <DashboardUpdateDriverFormContainer
+            <DashboardUpdateDriverFormSubmit
               isUpdateDriverOpen={isUpdateDriverOpen}
               isBranchDirty={isBranchDirty}
-              state={state ?? defaultState}
+              state={state}
               driverData={driverData}
               onBack={handleBack}
             />

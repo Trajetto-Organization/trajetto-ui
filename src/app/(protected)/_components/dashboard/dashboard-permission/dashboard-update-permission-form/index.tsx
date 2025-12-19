@@ -11,7 +11,7 @@ import {
 
 import { DashboardPermissionProps } from "../dto";
 import {
-  DashboardUpdatePermissionContainerProps,
+  DashboardUpdatePermissionFormSubmitProps,
   DashboardUpdatePermissionFormState,
 } from "./dto";
 
@@ -34,7 +34,7 @@ interface DashboardUpdatePermissionProps {
   isUpdatePermission: boolean;
 }
 
-const DashboardUpdatePermissionFormContainer = ({
+const DashboardUpdatePermissionFormSubmit = ({
   state,
   handleCloseUpdatePermission,
   handleUpdatePermissionName,
@@ -50,7 +50,7 @@ const DashboardUpdatePermissionFormContainer = ({
     canWrite,
     commandProfileAccessInputValue: { searchProfileAccessInputValue },
   },
-}: DashboardUpdatePermissionContainerProps): JSX.Element => {
+}: DashboardUpdatePermissionFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 
@@ -140,7 +140,10 @@ const DashboardUpdatePermissionForm = ({
   isUpdatePermission,
 }: DashboardUpdatePermissionProps): JSX.Element => {
   const defaultState: DashboardUpdatePermissionFormState = {};
-  const [state, dispatch] = useFormState(handleUpdatePermission, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdatePermissionFormState,
+    FormData
+  >(handleUpdatePermission, defaultState);
 
   const {
     handleUpdatePermissionName,
@@ -212,8 +215,8 @@ const DashboardUpdatePermissionForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdatePermissionFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdatePermissionFormSubmit
+            state={state}
             handleCloseUpdatePermission={handleOpenUpdatePermission}
             handleUpdatePermissionName={handleUpdatePermissionName}
             handleUpdatePermissionKeyName={handleUpdatePermissionKeyName}

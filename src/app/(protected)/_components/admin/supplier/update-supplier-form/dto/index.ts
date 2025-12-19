@@ -1,5 +1,4 @@
 import { SupplierProps } from "../../dto";
-import { CommandBusinessInputValue } from "../../../../dto";
 
 interface UpdateSupplierValidationError {
   name?: string[];
@@ -21,7 +20,7 @@ interface UpdateSupplierFormState {
   successMessage?: string;
 }
 
-interface UpdateSupplierContainerProps {
+interface UpdateSupplierFormSubmitProps {
   state: UpdateSupplierFormState;
   handleCloseUpdateSupplier: () => void;
   supplierData: SupplierProps;
@@ -29,17 +28,4 @@ interface UpdateSupplierContainerProps {
   isDirty: boolean;
 }
 
-interface SelectBusinessStepProps {
-  searchBusinessInputValue: string;
-  handleUpdateSearchBusinessInputValue: (
-    data: CommandBusinessInputValue,
-  ) => void;
-  onContinue: () => void;
-  errorBusinessId?: string[];
-}
-
-export type {
-  UpdateSupplierContainerProps,
-  UpdateSupplierFormState,
-  SelectBusinessStepProps,
-};
+export type { UpdateSupplierFormSubmitProps, UpdateSupplierFormState };

@@ -1,9 +1,3 @@
-import {
-  CommandBusinessInputValue,
-  CommandPartInputValue,
-  CommandServiceOrderInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface CreateServiceOrderPartValidationError {
   unit_price?: string[];
   quantity?: string[];
@@ -19,7 +13,7 @@ interface CreateServiceOrderPartFormState {
   successMessage?: string;
 }
 
-interface CreateServiceOrderPartContainerProps {
+interface CreateServiceOrderPartFormSubmitProps {
   state: CreateServiceOrderPartFormState;
   onBack: () => void;
   quantityInputValue: string;
@@ -35,31 +29,7 @@ interface CreateServiceOrderPartContainerProps {
   handleQuantityBlur: () => void;
 }
 
-interface SelectBusinessStepProps {
-  state: CreateServiceOrderPartFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectServiceOrderPartStepProps {
-  state: CreateServiceOrderPartFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  commandPartInputValue: CommandPartInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  handleUpdateSearchPartInputValue: (partData: CommandPartInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 export type {
   CreateServiceOrderPartFormState,
-  CreateServiceOrderPartContainerProps,
-  SelectBusinessStepProps,
-  SelectServiceOrderPartStepProps,
+  CreateServiceOrderPartFormSubmitProps,
 };

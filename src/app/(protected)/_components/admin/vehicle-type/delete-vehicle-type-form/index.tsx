@@ -22,7 +22,7 @@ interface DeleteVehicleTypeProps {
   vehicleTypeId: string;
 }
 
-const DeleteVehicleTypeFormContainer = (): JSX.Element => {
+const DeleteVehicleTypeFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -107,7 +107,7 @@ const DeleteVehicleTypeForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteVehicleTypeFormContainer />
+          <DeleteVehicleTypeFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

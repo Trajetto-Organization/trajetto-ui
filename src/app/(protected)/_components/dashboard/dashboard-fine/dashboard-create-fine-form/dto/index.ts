@@ -1,10 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandTrafficViolationCodeInputValue,
-  CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface DashboardCreateFineValidationError {
   violation_date?: string[];
   due_date?: string[];
@@ -27,7 +20,7 @@ interface DashboardCreateFineFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateFineContainerProps {
+interface DashboardCreateFineFormSubmitProps {
   state: DashboardCreateFineFormState;
   onBack: () => void;
   handleLocationChange: (lat: number, lon: number) => void;
@@ -37,45 +30,7 @@ interface DashboardCreateFineContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface DashboardSelectBranchStepProps {
-  state: DashboardCreateFineFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleDriverStepProps {
-  state: DashboardCreateFineFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectViolationCodeStepProps {
-  state: DashboardCreateFineFormState;
-  commandTrafficViolationCodeInputValue: CommandTrafficViolationCodeInputValue;
-  handleUpdateSearchTrafficViolationCodeInputValue: (
-    trafficViolationCodeData: CommandTrafficViolationCodeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 export type {
   DashboardCreateFineFormState,
-  DashboardCreateFineContainerProps,
-  DashboardSelectBranchStepProps,
-  DashboardSelectVehicleDriverStepProps,
-  DashboardSelectViolationCodeStepProps,
+  DashboardCreateFineFormSubmitProps,
 };

@@ -15,7 +15,7 @@ import FormInput from "@/components/custom/form-input";
 import { handleUpdateBranch } from "@/actions/update-branch";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
-import { UpdateBranchContainerProps, UpdateBranchFormState } from "./dto";
+import { UpdateBranchFormSubmitProps, UpdateBranchFormState } from "./dto";
 import { BranchProps } from "../dto";
 
 import { useCepValidation } from "../../../hooks";
@@ -27,12 +27,12 @@ interface UpdateBranchProps {
   isUpdateBranchOpen: boolean;
 }
 
-const UpdateBranchFormContainer = ({
+const UpdateBranchFormSubmit = ({
   state,
   handleCloseUpdateBranch,
   branchData,
   isUpdateBranchOpen,
-}: UpdateBranchContainerProps): JSX.Element => {
+}: UpdateBranchFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, isDirty, cepLoading } = useCepValidation({
     initialData: branchData,
@@ -83,7 +83,10 @@ const UpdateBranchForm = ({
   isUpdateBranchOpen,
 }: UpdateBranchProps): JSX.Element => {
   const defaultState: UpdateBranchFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateBranch, null);
+  const [state, dispatch] = useFormState<UpdateBranchFormState, FormData>(
+    handleUpdateBranch,
+    defaultState,
+  );
 
   const { formRef } = useUpdateBranchForm({
     state,
@@ -122,8 +125,8 @@ const UpdateBranchForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateBranchFormContainer
-            state={state ?? defaultState}
+          <UpdateBranchFormSubmit
+            state={state}
             handleCloseUpdateBranch={handleCloseUpdateBranch}
             branchData={branchData}
             isUpdateBranchOpen={isUpdateBranchOpen}

@@ -27,29 +27,15 @@ interface CreateDriverFormState {
   successMessage?: string;
 }
 
-interface CreateDriverContainerProps {
+interface CreateDriverFormSubmitProps {
   state: CreateDriverFormState;
   isCreateDriverForm: boolean;
   onBack: () => void;
 }
 
-interface SelectBusinessByStepProps {
-  state: CreateDriverFormState;
-  commandBusinnessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBussinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
 export type {
   CreateDriverFormState,
-  CreateDriverContainerProps,
-  SelectBusinessByStepProps,
+  CreateDriverFormSubmitProps,
   CommandBusinessInputValue,
   CommandBranchInputValue,
 };

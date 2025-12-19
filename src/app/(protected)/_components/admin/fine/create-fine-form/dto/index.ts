@@ -1,11 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandBusinessInputValue,
-  CommandDriverInputValue,
-  CommandTrafficViolationCodeInputValue,
-  CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface CreateFineValidationError {
   violation_date?: string[];
   due_date?: string[];
@@ -29,7 +21,7 @@ interface CreateFineFormState {
   successMessage?: string;
 }
 
-interface CreateFineContainerProps {
+interface CreateFineFormSubmitProps {
   state: CreateFineFormState;
   onBack: () => void;
   handleLocationChange: (lat: number, lon: number) => void;
@@ -39,48 +31,4 @@ interface CreateFineContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface SelectBusinessBranchStepProps {
-  state: CreateFineFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectVehicleDriverStepProps {
-  state: CreateFineFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectViolationCodeStepProps {
-  state: CreateFineFormState;
-  commandTrafficViolationCodeInputValue: CommandTrafficViolationCodeInputValue;
-  handleUpdateSearchTrafficViolationCodeInputValue: (
-    trafficViolationCodeData: CommandTrafficViolationCodeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-export type {
-  CreateFineFormState,
-  CreateFineContainerProps,
-  SelectBusinessBranchStepProps,
-  SelectVehicleDriverStepProps,
-  SelectViolationCodeStepProps,
-};
+export type { CreateFineFormState, CreateFineFormSubmitProps };

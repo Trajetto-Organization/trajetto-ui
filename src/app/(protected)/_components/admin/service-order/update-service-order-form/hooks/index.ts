@@ -56,11 +56,11 @@ function useUpdateServiceOrderForm({
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
-    | "select-business"
+    | "select-business-branch"
     | "select-vehicle-supplier"
     | "select-user"
     | "update-service-order"
-  >("select-business");
+  >("select-business-branch");
 
   // Initialize form values from service order data with sanitized values
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
@@ -149,7 +149,7 @@ function useUpdateServiceOrderForm({
             : "",
       });
 
-      setCurrentStep("select-business");
+      setCurrentStep("select-business-branch");
     }
   }, [
     isUpdateServiceOrderOpen,
@@ -254,8 +254,8 @@ function useUpdateServiceOrderForm({
     setCurrentStep("update-service-order");
   };
 
-  const handleBackToBusinessStep = () => {
-    setCurrentStep("select-business");
+  const handleBackToBusinessBranchStep = () => {
+    setCurrentStep("select-business-branch");
   };
 
   const handleBackToVehicleSupplierStep = () => {
@@ -362,7 +362,7 @@ function useUpdateServiceOrderForm({
     handleBusinessStepContinue,
     handleVehicleSupplierStepContinue,
     handleUserStepContinue,
-    handleBackToBusinessStep,
+    handleBackToBusinessBranchStep,
     handleBackToVehicleSupplierStep,
     handleBackToUserStep,
     handleUpdateSearchBusinessInputValue,

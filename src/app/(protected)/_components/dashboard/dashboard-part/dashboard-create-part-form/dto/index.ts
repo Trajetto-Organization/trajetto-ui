@@ -13,7 +13,7 @@ interface DashboardCreatePartFormState {
   successMessage?: string;
 }
 
-interface DashboardCreatePartContainerProps {
+interface DashboardCreatePartSubmitProps {
   state: DashboardCreatePartFormState;
   handleOpenCreatePartForm: () => void;
   handleUnitPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -26,4 +26,4 @@ interface DashboardCreatePartContainerProps {
   displayUnitPrice: string;
 }
 
-export type { DashboardCreatePartContainerProps, DashboardCreatePartFormState };
+export type { DashboardCreatePartSubmitProps, DashboardCreatePartFormState };

@@ -16,22 +16,22 @@ function useCreateProfileAccessForm(
   const [isCreateCreateProfileAccessForm, setIsCreateCreateProfileAccessForm] =
     useState<boolean>(false);
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: "",
       businessId: "",
     });
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleOpenCreateProfileAccessForm = () => {
@@ -45,7 +45,7 @@ function useCreateProfileAccessForm(
         businessId: "",
       };
 
-      setCommandBussinessInputValue(resetCommandInputValue);
+      setCommandBusinessInputValue(resetCommandInputValue);
     }
   };
 
@@ -106,8 +106,8 @@ function useCreateProfileAccessForm(
   return {
     isCreateCreateProfileAccessForm,
     handleOpenCreateProfileAccessForm,
-    handleUpdateSearchBussinessInputValue,
-    commandBusinnessInputValue,
+    handleUpdateSearchBusinessInputValue,
+    commandBusinessInputValue,
     formRef,
   };
 }

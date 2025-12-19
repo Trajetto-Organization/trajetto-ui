@@ -24,7 +24,7 @@ interface DashboardDeleteUserProps {
   userId: string;
 }
 
-const DashboardDeleteUserFormContainer = (): JSX.Element => {
+const DashboardDeleteUserFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -130,7 +130,7 @@ const DashboardDeleteUserForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeleteUserFormContainer />
+          <DashboardDeleteUserFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

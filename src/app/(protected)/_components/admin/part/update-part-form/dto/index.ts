@@ -16,14 +16,14 @@ interface UpdatePartFormState {
   successMessage?: string;
 }
 
-interface UpdatePartContainerProps {
+interface UpdatePartFormSubmitProps {
   state: UpdatePartFormState;
   handleCloseUpdatePart: () => void;
   handleUpdateDescription: (updatedDescription: string) => void;
   handleUnitPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleUnitPriceBlur: () => void;
   isDirty: boolean;
-  handleUpdateSearchBussinessInputValue: ({
+  handleUpdateSearchBusinessInputValue: ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => void;
@@ -34,9 +34,9 @@ interface UpdatePartContainerProps {
   partValues: {
     description: string;
     displayUnitPrice: string;
-    commandBusinnessInputValue: CommandBusinessInputValue;
+    commandBusinessInputValue: CommandBusinessInputValue;
     commandSupplierInputValue: CommandSupplierInputValue;
   };
 }
 
-export type { UpdatePartContainerProps, UpdatePartFormState };
+export type { UpdatePartFormSubmitProps, UpdatePartFormState };

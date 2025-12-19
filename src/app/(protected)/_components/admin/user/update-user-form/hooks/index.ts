@@ -45,7 +45,7 @@ function useUpdateUserForm({
 
   const [userRole, setUserRole] = useState<string>(role);
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: corporate_reason as string,
       businessId,
@@ -79,7 +79,7 @@ function useUpdateUserForm({
 
       setUserRole(role);
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         searchBusinessInputValue: corporate_reason as string,
         businessId,
       });
@@ -116,7 +116,7 @@ function useUpdateUserForm({
     role,
   ]);
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
@@ -134,11 +134,11 @@ function useUpdateUserForm({
     }
 
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateUserName = (updatedUserName: string): void => {
@@ -233,7 +233,7 @@ function useUpdateUserForm({
     userName !== name,
     userEmail !== email,
     userRole !== role,
-    commandBusinnessInputValue.businessId !== businessId,
+    commandBusinessInputValue.businessId !== businessId,
     profileAccess === "N/A"
       ? commandProfileAccessInputValue.profileAccessId !== ""
       : commandProfileAccessInputValue.profileAccessId !== profileAccessId,
@@ -243,11 +243,11 @@ function useUpdateUserForm({
   ].some(Boolean);
 
   return {
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     handleUpdateSearchDriverInputValue,
     commandProfileAccessInputValue,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandDriverInputValue,
     handleUpdateUserName,
     handleUpdateUserEmail,

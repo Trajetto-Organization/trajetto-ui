@@ -11,6 +11,7 @@ interface SearchPartProps {
   searchPartInputValue: string;
   businessId: string;
   handleUpdateSearchPartInputValue: (partData: CommandPartInputValue) => void;
+  isOptional?: boolean;
 }
 
 export type { FetchPartProps, SearchPartProps };

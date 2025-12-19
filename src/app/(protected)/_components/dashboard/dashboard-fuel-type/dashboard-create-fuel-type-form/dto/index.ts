@@ -9,12 +9,12 @@ interface DashboardCreateFuelTypeFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateFuelTypeContainerProps {
+interface DashboardCreateFuelTypeSubmitProps {
   state: DashboardCreateFuelTypeFormState;
   handleOpenCreateFuelTypeForm: () => void;
 }
 
 export type {
-  DashboardCreateFuelTypeContainerProps,
+  DashboardCreateFuelTypeSubmitProps,
   DashboardCreateFuelTypeFormState,
 };

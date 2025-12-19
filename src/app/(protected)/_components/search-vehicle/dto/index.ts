@@ -13,6 +13,7 @@ interface SearchVehicleProps {
   handleUpdateSearchVehicleInputValue: (
     vehicleData: CommandVehicleInputValue,
   ) => void;
+  isOptional?: boolean;
 }
 
 export type { FetchVehicleProps, SearchVehicleProps };

@@ -1,10 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandTrafficViolationCodeInputValue,
-  CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { DashboardFineProps } from "../../dto";
 
 interface DashboardUpdateFineValidationError {
@@ -29,7 +22,7 @@ interface DashboardUpdateFineFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateFineContainerProps {
+interface DashboardUpdateFineFormSubmitProps {
   state: DashboardUpdateFineFormState;
   onBack: () => void;
   fineData: DashboardFineProps;
@@ -42,41 +35,6 @@ interface DashboardUpdateFineContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface DashboardSelectBranchByStepProps {
-  state: DashboardUpdateFineFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleDriverStepProps {
-  state: DashboardUpdateFineFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectViolationCodeStepProps {
-  state: DashboardUpdateFineFormState;
-  commandTrafficViolationCodeInputValue: CommandTrafficViolationCodeInputValue;
-  handleUpdateSearchTrafficViolationCodeInputValue: (
-    trafficViolationCodeData: CommandTrafficViolationCodeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface DashboardUpdateFineFormProps {
   fineData: DashboardFineProps;
   handleCloseUpdateFine: () => void;
@@ -86,8 +44,5 @@ interface DashboardUpdateFineFormProps {
 export type {
   DashboardUpdateFineFormState,
   DashboardUpdateFineFormProps,
-  DashboardUpdateFineContainerProps,
-  DashboardSelectBranchByStepProps,
-  DashboardSelectVehicleDriverStepProps,
-  DashboardSelectViolationCodeStepProps,
+  DashboardUpdateFineFormSubmitProps,
 };

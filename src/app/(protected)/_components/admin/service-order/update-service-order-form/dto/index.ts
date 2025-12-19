@@ -1,8 +1,5 @@
 import {
-  CommandBranchInputValue,
   CommandBusinessInputValue,
-  CommandSupplierInputValue,
-  CommandUserInputValue,
   CommandVehicleInputValue,
 } from "@/app/(protected)/_components/dto";
 
@@ -32,7 +29,7 @@ interface UpdateServiceOrderFormState {
   successMessage?: string;
 }
 
-interface UpdateServiceOrderContainerProps {
+interface UpdateServiceOrderFormSubmitProps {
   state: UpdateServiceOrderFormState;
   onBack: () => void;
   serviceOrderData: ServiceOrderProps;
@@ -47,43 +44,6 @@ interface UpdateServiceOrderContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface SelectBusinessByStepProps {
-  state: UpdateServiceOrderFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectVehicleSupplierStepProps {
-  state: UpdateServiceOrderFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandSupplierInputValue: CommandSupplierInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchSupplierInputValue: (
-    supplierData: CommandSupplierInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectUserStepProps {
-  state: UpdateServiceOrderFormState;
-  businessId: string;
-  commandUserInputValue: CommandUserInputValue;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface UpdateServiceOrderFormProps {
   serviceOrderData: ServiceOrderProps;
   handleCloseUpdateServiceOrder: () => void;
@@ -93,8 +53,5 @@ interface UpdateServiceOrderFormProps {
 export type {
   UpdateServiceOrderFormState,
   UpdateServiceOrderFormProps,
-  UpdateServiceOrderContainerProps,
-  SelectBusinessByStepProps,
-  SelectVehicleSupplierStepProps,
-  SelectUserStepProps,
+  UpdateServiceOrderFormSubmitProps,
 };

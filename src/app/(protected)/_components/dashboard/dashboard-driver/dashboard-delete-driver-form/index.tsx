@@ -26,7 +26,7 @@ interface DashboardDeleteDriverProps {
   driverId: string;
 }
 
-const DashboardDeletePartFormContainer = (): JSX.Element => {
+const DashboardDeleteDriverFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -127,7 +127,7 @@ const DashboardDeleteDriverForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeletePartFormContainer />
+          <DashboardDeleteDriverFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

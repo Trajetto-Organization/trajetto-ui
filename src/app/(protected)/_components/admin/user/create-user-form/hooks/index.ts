@@ -19,7 +19,7 @@ function useCreateUserForm(state: CreateUserFormState | null) {
 
   const [isCreateUserForm, setIsCreateUserForm] = useState<boolean>(false);
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: "",
       businessId: "",
@@ -40,7 +40,7 @@ function useCreateUserForm(state: CreateUserFormState | null) {
 
   const [userType, setUserType] = useState<"employee" | "driver">("employee");
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
@@ -56,11 +56,11 @@ function useCreateUserForm(state: CreateUserFormState | null) {
     });
 
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateSearchProfileAccessInputValue = ({
@@ -92,7 +92,7 @@ function useCreateUserForm(state: CreateUserFormState | null) {
     if (isCreateUserForm) {
       formRef.current?.reset();
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         businessId: "",
         searchBusinessInputValue: "",
       });
@@ -168,11 +168,11 @@ function useCreateUserForm(state: CreateUserFormState | null) {
   return {
     isCreateUserForm,
     handleOpenCreateUserForm,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     handleUpdateSearchDriverInputValue,
     commandProfileAccessInputValue,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandDriverInputValue,
     userType,
     setUserType,

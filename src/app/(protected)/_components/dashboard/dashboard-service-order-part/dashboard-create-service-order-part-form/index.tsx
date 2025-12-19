@@ -1,5 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -10,22 +10,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateServiceOrderPart } from "@/actions/create-service-order-part";
 
 import {
   DashboardCreateServiceOrderPartFormState,
-  DashboardCreateServiceOrderPartContainerProps,
-  DashboardSelectServiceOrderPartStepProps,
+  DashboardCreateServiceOrderPartFormSubmitProps,
 } from "./dto";
 
 import { useDashboardCreateServiceOrderPartForm } from "./hooks";
-import { cn } from "@/lib/utils";
-
-import { SearchServiceOrder } from "../../../search-service-order";
-import { SearchPart } from "../../../search-part";
 
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { useAuthStore } from "@/store/auth-store";
@@ -42,127 +37,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/steps/select-service-order-part-step";
 
-// Step 1: Select Service Order and Part
-const SelectServiceOrderPartStep = ({
-  state,
-  businessId,
-  commandServiceOrderInputValue,
-  commandPartInputValue,
-  handleUpdateSearchServiceOrderInputValue,
-  handleUpdateSearchPartInputValue,
-  onContinue,
-}: DashboardSelectServiceOrderPartStepProps) => {
-  return (
-    <div className="space-y-6">
-      {/* Display selected items */}
-      {(commandServiceOrderInputValue.searchServiceOrderInputValue ||
-        commandPartInputValue.searchPartInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {commandServiceOrderInputValue.searchServiceOrderInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Ordem de Serviço:</span>
-                <span className="w-full truncate">
-                  {commandServiceOrderInputValue.searchServiceOrderInputValue}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchServiceOrderInputValue({
-                    serviceOrderId: "",
-                    searchServiceOrderInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {commandPartInputValue.searchPartInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Peça:</span>
-                <span className="w-full truncate">
-                  {commandPartInputValue.searchPartInputValue}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchPartInputValue({
-                    partId: "",
-                    searchPartInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Service Order Selection */}
-        <div>
-          <SearchServiceOrder
-            errorServiceOrderId={
-              state.createServiceOrderPartError?.serviceOrderId
-            }
-            searchServiceOrderInputValue={
-              commandServiceOrderInputValue.searchServiceOrderInputValue
-            }
-            businessId={businessId}
-            handleUpdateSearchServiceOrderInputValue={
-              handleUpdateSearchServiceOrderInputValue
-            }
-          />
-        </div>
-
-        {/* Part Selection */}
-        <div>
-          <SearchPart
-            errorPartId={state.createServiceOrderPartError?.partId}
-            searchPartInputValue={commandPartInputValue.searchPartInputValue}
-            businessId={businessId}
-            handleUpdateSearchPartInputValue={handleUpdateSearchPartInputValue}
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={
-            !commandServiceOrderInputValue.serviceOrderId ||
-            !commandPartInputValue.partId
-          }
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Create Service Order Part Form
-const CreateServiceOrderPartFormContainer = ({
+const CreateServiceOrderPartFormSubmit = ({
   state,
   onBack,
   quantityInputValue,
@@ -174,7 +51,7 @@ const CreateServiceOrderPartFormContainer = ({
   handleDiscountPercentageChange,
   handleDiscountPercentageBlur,
   handleQuantityBlur,
-}: DashboardCreateServiceOrderPartContainerProps): JSX.Element => {
+}: DashboardCreateServiceOrderPartFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -239,7 +116,10 @@ const CreateServiceOrderPartFormContainer = ({
 
 const DashboardCreateServiceOrderPartForm = (): JSX.Element => {
   const defaultState: DashboardCreateServiceOrderPartFormState = {};
-  const [state, dispatch] = useFormState(handleCreateServiceOrderPart, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateServiceOrderPartFormState,
+    FormData
+  >(handleCreateServiceOrderPart, defaultState);
 
   const {
     isCreateServiceOrderPartForm,
@@ -330,7 +210,6 @@ const DashboardCreateServiceOrderPartForm = (): JSX.Element => {
 
         {currentStep === "select-service-order-part" ? (
           <SelectServiceOrderPartStep
-            state={state ?? defaultState}
             businessId={businessId as string}
             commandServiceOrderInputValue={commandServiceOrderInputValue}
             commandPartInputValue={commandPartInputValue}
@@ -339,6 +218,10 @@ const DashboardCreateServiceOrderPartForm = (): JSX.Element => {
             }
             handleUpdateSearchPartInputValue={handleUpdateSearchPartInputValue}
             onContinue={handleServiceOrderPartStepContinue}
+            errorPartId={state.createServiceOrderPartError?.partId}
+            errorServiceOrderId={
+              state.createServiceOrderPartError?.serviceOrderId
+            }
           />
         ) : (
           <form
@@ -354,8 +237,8 @@ const DashboardCreateServiceOrderPartForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <CreateServiceOrderPartFormContainer
-              state={state ?? defaultState}
+            <CreateServiceOrderPartFormSubmit
+              state={state}
               onBack={handleBackToServiceOrderPartStep}
               quantityInputValue={quantityInputValue}
               displayUnitPrice={displayUnitPrice}

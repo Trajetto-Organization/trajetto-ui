@@ -23,7 +23,7 @@ interface DashboardDeleteProfileAccessProps {
   profileAccessId: string;
 }
 
-const DashboardDeleteProfileAccessFormContainer = (): JSX.Element => {
+const DashboardDeleteProfileAccessFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -118,7 +118,7 @@ const DashboardDeleteProfileAccessForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeleteProfileAccessFormContainer />
+          <DashboardDeleteProfileAccessFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

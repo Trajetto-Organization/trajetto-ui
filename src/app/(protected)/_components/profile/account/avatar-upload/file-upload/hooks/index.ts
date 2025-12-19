@@ -21,7 +21,6 @@ function useFileUpload({
   onBackToUpload,
 }: FileUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Crop states

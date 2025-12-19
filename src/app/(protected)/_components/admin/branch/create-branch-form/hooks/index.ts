@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { CommandBusinessInputValue, CreateBranchFormState } from "../dto";
+
+import { CommandBusinessInputValue } from "@/app/(protected)/_components/dto";
+import { CreateBranchFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";

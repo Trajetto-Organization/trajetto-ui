@@ -28,7 +28,7 @@ function useUpdateProfileAccessForm({
   const [profileAccessName, setProfileAccessName] =
     useState<string>(profileName);
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: "",
       businessId: "",
@@ -37,7 +37,7 @@ function useUpdateProfileAccessForm({
   useEffect(() => {
     if (isUpdateProfileAccess) {
       setProfileAccessName(profileName);
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         businessId: profileBusiness.businessId,
         searchBusinessInputValue: profileBusiness.searchBusinessInputValue,
       });
@@ -49,16 +49,16 @@ function useUpdateProfileAccessForm({
     profileBusiness.businessId,
   ]);
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateProfileAccessName = (updatedName: string) => {
@@ -121,15 +121,15 @@ function useUpdateProfileAccessForm({
 
   const isDirty = [
     profileAccessName !== profileName,
-    commandBusinnessInputValue.businessId !== profileBusiness.businessId,
-    commandBusinnessInputValue.searchBusinessInputValue !==
+    commandBusinessInputValue.businessId !== profileBusiness.businessId,
+    commandBusinessInputValue.searchBusinessInputValue !==
       profileBusiness.searchBusinessInputValue,
   ].some(Boolean);
 
   return {
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateProfileAccessName,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     profileAccessName,
     setProfileAccessName,
     isDirty,

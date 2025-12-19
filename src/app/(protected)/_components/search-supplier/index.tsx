@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useSupplierInfiniteScroll } from "./hooks/supplier-infinite-scroll";
@@ -53,19 +52,18 @@ const SearchSupplier = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-supplier-input"
-        className={errorSupplierId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorSupplierId ? "text-red-500" : ""}`}
       >
         {errorSupplierId ? errorSupplierId[0] : "Selecione o fornecedor"}{" "}
         {isOptional && "(opcional)"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-supplier-input"
           placeholder="Buscar fornecedor..."
           className="h-9"
+          aria-label="Buscar fornecedor"
         />
 
         {!isLoadingSuppliers && !hasError && (

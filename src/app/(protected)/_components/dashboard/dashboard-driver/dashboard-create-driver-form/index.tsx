@@ -1,5 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -11,12 +11,11 @@ import {
 } from "@/components/ui/dialog";
 
 import {
-  DashboardCreateDriverContainerProps,
+  DashboardCreateDriverFormSubmitProps,
   DashboardCreateDriverFormState,
-  DashboardSelectBranchByStepProps,
 } from "./dto";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateDriver } from "@/actions/create-driver";
@@ -24,83 +23,19 @@ import { handleCreateDriver } from "@/actions/create-driver";
 import { useCepValidation } from "../../../hooks";
 import { useDashboardCreateDriverForm } from "./hooks";
 
-import { SearchBranch } from "../../../search-branch";
 import { DatePickerField, SelectField } from "../../../custom";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 
 import { permissions } from "@/lib/permissions";
-import { cn } from "@/lib/utils";
+import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
 
-const DashboardSelectBranchStep = ({
-  state,
-  handleUpdateSearchBranchInputValue,
-  commandBranchInputValue: { searchBranchInputValue },
-  businessId,
-  onContinue,
-}: DashboardSelectBranchByStepProps) => {
-  return (
-    <div className="space-y-6">
-      {searchBranchInputValue && (
-        <div className="grid grid-cols-1 gap-4 w-full">
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className={`grid grid-cols-1 gap-4`}>
-        <SearchBranch
-          errorBranchId={state.createDriverError?.branchId}
-          searchBranchInputValue={searchBranchInputValue}
-          businessId={businessId}
-          handleUpdateSearchBranchInputValue={
-            handleUpdateSearchBranchInputValue
-          }
-          isOptional={true}
-        />
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button type="button" onClick={onContinue}>
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const DashboardCreateDriverFormContainer = ({
+const DashboardCreateDriverFormSubmit = ({
   state,
   isCreateDriverForm,
   onBack,
-}: DashboardCreateDriverContainerProps): JSX.Element => {
+}: DashboardCreateDriverFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, cepLoading, formValues, handleFieldChange } =
     useCepValidation({
@@ -138,6 +73,7 @@ const DashboardCreateDriverFormContainer = ({
             ]
           }
           disabled={pending}
+          autoComplete="name"
         />
 
         {/* Date of Birth Field (Custom Component) */}
@@ -275,7 +211,10 @@ const DashboardCreateDriverFormContainer = ({
 
 const DashboardCreateDriverForm = (): JSX.Element => {
   const defaultState: DashboardCreateDriverFormState = {};
-  const [state, dispatch] = useFormState(handleCreateDriver, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateDriverFormState,
+    FormData
+  >(handleCreateDriver, defaultState);
 
   const {
     isCreateDriverForm,
@@ -321,14 +260,15 @@ const DashboardCreateDriverForm = (): JSX.Element => {
         </DialogHeader>
 
         {currentStep === "select-branch" ? (
-          <DashboardSelectBranchStep
-            state={state ?? defaultState}
+          <SelectBranchStep
             businessId={businessId as string}
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
             onContinue={handleContinue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state.createDriverError?.branchId}
+            searchBranchIsOptional={true}
           />
         ) : (
           <form
@@ -343,9 +283,9 @@ const DashboardCreateDriverForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <DashboardCreateDriverFormContainer
+            <DashboardCreateDriverFormSubmit
               isCreateDriverForm={isCreateDriverForm}
-              state={state ?? defaultState}
+              state={state}
               onBack={handleBack}
             />
           </form>

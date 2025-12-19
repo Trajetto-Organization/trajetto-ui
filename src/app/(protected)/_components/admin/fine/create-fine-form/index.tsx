@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import dynamic from "next/dynamic";
 
@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateFine } from "@/actions/create-fine";
@@ -23,31 +23,21 @@ import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
+
 import { DatePickerField } from "../../../custom";
-
-import { SearchBusiness } from "../../../search-business";
-import { SearchBranch } from "../../../search-branch";
-
-import { SearchVehicle } from "../../../search-vehicle";
-import { SearchDriver } from "../../../search-driver";
-
-import { SearchTrafficViolationCode } from "../../../search-traffic-violation-code";
 import { useCreateFineForm } from "./hooks";
 
-import {
-  CreateFineFormState,
-  CreateFineContainerProps,
-  SelectBusinessBranchStepProps,
-  SelectVehicleDriverStepProps,
-  SelectViolationCodeStepProps,
-} from "./dto";
-
-import { cn } from "@/lib/utils";
+import { CreateFineFormState, CreateFineFormSubmitProps } from "./dto";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+
+import { SelectViolationCodeStep } from "@/app/(protected)/_components/steps/select-violation-code-step";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("../../../custom/location-picker"),
+  () => import("@/app/(protected)/_components/custom/location-picker"),
   {
     ssr: false,
     loading: () => (
@@ -58,326 +48,7 @@ const LocationPicker = dynamic(
   },
 );
 
-// Step 1: Select Business and Branch
-const SelectBusinessBranchStep = ({
-  state,
-  handleUpdateSearchBusinessInputValue,
-  handleUpdateSearchBranchInputValue,
-  commandBusinessInputValue: { searchBusinessInputValue, businessId },
-  commandBranchInputValue: { searchBranchInputValue, branchId },
-  onContinue,
-}: SelectBusinessBranchStepProps) => {
-  return (
-    <div className="space-y-6">
-      {(searchBranchInputValue || searchBusinessInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {searchBusinessInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Empresa:</span>
-                <span className="w-full truncate">
-                  {searchBusinessInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBusinessInputValue({
-                    businessId: "",
-                    searchBusinessInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div
-        className={`grid ${
-          searchBusinessInputValue
-            ? "grid-cols-1 md:grid-cols-2"
-            : "grid-cols-1"
-        } gap-4`}
-      >
-        <div>
-          <SearchBusiness
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBusinessInputValue
-            }
-            searchBusinessInputValue={searchBusinessInputValue}
-            errorBusinessId={state.createFineError?.businessId}
-          />
-        </div>
-
-        {searchBusinessInputValue && (
-          <div>
-            <SearchBranch
-              errorBranchId={state.createFineError?.branchId}
-              searchBranchInputValue={searchBranchInputValue}
-              businessId={businessId}
-              handleUpdateSearchBranchInputValue={
-                handleUpdateSearchBranchInputValue
-              }
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue || !branchId}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Select Vehicle and Driver
-const SelectVehicleDriverStep = ({
-  state,
-  businessId,
-  commandVehicleInputValue,
-  commandDriverInputValue,
-  handleUpdateSearchVehicleInputValue,
-  handleUpdateSearchDriverInputValue,
-  onContinue,
-  onBack,
-}: SelectVehicleDriverStepProps) => {
-  return (
-    <div className="space-y-6">
-      {(commandVehicleInputValue.searchVehicleInputValue ||
-        commandDriverInputValue.searchDriverInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {commandVehicleInputValue.searchVehicleInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Veículo:</span>
-                <span className="w-full truncate">
-                  {commandVehicleInputValue.searchVehicleInputValue}{" "}
-                  {commandVehicleInputValue.vehicleLicensePlate && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (Placa: {commandVehicleInputValue.vehicleLicensePlate})
-                    </span>
-                  )}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchVehicleInputValue({
-                    vehicleId: "",
-                    searchVehicleInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {commandDriverInputValue.searchDriverInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Motorista:</span>
-                <span className="w-full truncate">
-                  {commandDriverInputValue.searchDriverInputValue}{" "}
-                  {commandDriverInputValue.driverCnh && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (CNH: {commandDriverInputValue.driverCnh})
-                    </span>
-                  )}
-                </span>
-              </div>
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchDriverInputValue({
-                    driverId: "",
-                    searchDriverInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <SearchVehicle
-            errorVehicleId={state.createFineError?.vehicleId}
-            selectedVehicleId={commandVehicleInputValue.vehicleId}
-            businessId={businessId}
-            handleUpdateSearchVehicleInputValue={
-              handleUpdateSearchVehicleInputValue
-            }
-          />
-        </div>
-
-        <div>
-          <SearchDriver
-            errorDriverId={state.createFineError?.driverId}
-            selectedDriverId={commandDriverInputValue.driverId}
-            businessId={businessId}
-            handleUpdateSearchDriverInputValue={
-              handleUpdateSearchDriverInputValue
-            }
-          />
-        </div>
-      </div>
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={
-            !commandVehicleInputValue.vehicleId ||
-            !commandDriverInputValue.driverId
-          }
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 3: Select Traffic Violation Code
-const SelectViolationCodeStep = ({
-  state,
-  commandTrafficViolationCodeInputValue,
-  handleUpdateSearchTrafficViolationCodeInputValue,
-  onContinue,
-  onBack,
-}: SelectViolationCodeStepProps) => {
-  return (
-    <div className="space-y-6">
-      {commandTrafficViolationCodeInputValue.searchTrafficViolationCodeInputValue && (
-        <div className="grid grid-cols-1 w-full">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "border-dashed truncate h-8 text-left",
-              )}
-            >
-              <span>Código de Infração:</span>
-              <span className="w-full truncate">
-                <span className="text-xs text-muted-foreground ml-1">
-                  {
-                    commandTrafficViolationCodeInputValue.searchTrafficViolationCodeInputValue
-                  }
-                </span>
-              </span>
-            </div>
-            <Button
-              className="h-8 w-4"
-              variant="ghost"
-              onClick={() =>
-                handleUpdateSearchTrafficViolationCodeInputValue({
-                  trafficViolationCodeId: "",
-                  searchTrafficViolationCodeInputValue: "",
-                })
-              }
-            >
-              <X />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <SearchTrafficViolationCode
-        errorTrafficViolationCodeId={
-          state.createFineError?.trafficViolationCodeId
-        }
-        searchTrafficViolationCodeInputValue={
-          commandTrafficViolationCodeInputValue.searchTrafficViolationCodeInputValue
-        }
-        handleUpdateSearchTrafficViolationCodeInputValue={
-          handleUpdateSearchTrafficViolationCodeInputValue
-        }
-      />
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={
-            !commandTrafficViolationCodeInputValue.trafficViolationCodeId
-          }
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 4: Create Fine Form
-const CreateFineContainer = ({
+const CreateFineFormSubmit = ({
   state,
   onBack,
   latitude,
@@ -385,7 +56,7 @@ const CreateFineContainer = ({
   isLoadingLocation,
   handleLocationChange,
   handleLocationLoadingChange,
-}: CreateFineContainerProps): JSX.Element => {
+}: CreateFineFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
@@ -397,6 +68,7 @@ const CreateFineContainer = ({
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     let inputValue = e.target.value;
+
     inputValue = inputValue.replace(/[^\d,.]/g, "");
     setDisplayAmount(inputValue);
   };
@@ -527,7 +199,10 @@ const CreateFineContainer = ({
 
 const CreateFineForm = (): JSX.Element => {
   const defaultState: CreateFineFormState = {};
-  const [state, dispatch] = useFormState(handleCreateFine, null);
+  const [state, dispatch] = useFormState<CreateFineFormState, FormData>(
+    handleCreateFine,
+    defaultState,
+  );
 
   // 📍 GEOLOCATION STATE - Initialize with null for create forms
   const [latitude, setLatitude] = useState<number | null>(null);
@@ -599,7 +274,6 @@ const CreateFineForm = (): JSX.Element => {
 
         {currentStep === "select-business-branch" ? (
           <SelectBusinessBranchStep
-            state={state ?? defaultState}
             handleUpdateSearchBusinessInputValue={
               handleUpdateSearchBusinessInputValue
             }
@@ -609,10 +283,11 @@ const CreateFineForm = (): JSX.Element => {
             onContinue={handleBusinessBranchStepContinue}
             commandBusinessInputValue={commandBusinessInputValue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state.createFineError?.branchId}
+            errorBusinessId={state.createFineError?.businessId}
           />
         ) : currentStep === "select-vehicle-driver" ? (
           <SelectVehicleDriverStep
-            state={state ?? defaultState}
             businessId={commandBusinessInputValue.businessId}
             commandVehicleInputValue={commandVehicleInputValue}
             commandDriverInputValue={commandDriverInputValue}
@@ -624,10 +299,11 @@ const CreateFineForm = (): JSX.Element => {
             }
             onContinue={handleVehicleDriverStepContinue}
             onBack={handleBackToBusinessBranchStep}
+            errorDriverId={state.createFineError?.driverId}
+            errorVehicleId={state.createFineError?.vehicleId}
           />
         ) : currentStep === "select-violation-code" ? (
           <SelectViolationCodeStep
-            state={state ?? defaultState}
             commandTrafficViolationCodeInputValue={
               commandTrafficViolationCodeInputValue
             }
@@ -636,6 +312,9 @@ const CreateFineForm = (): JSX.Element => {
             }
             onContinue={handleViolationCodeStepContinue}
             onBack={handleBackToVehicleDriverStep}
+            errorTrafficViolationCodeId={
+              state.createFineError?.trafficViolationCodeId
+            }
           />
         ) : (
           <form
@@ -656,8 +335,8 @@ const CreateFineForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <CreateFineContainer
-              state={state ?? defaultState}
+            <CreateFineFormSubmit
+              state={state}
               onBack={handleBackToViolationCodeStep}
               handleLocationChange={handleLocationChange}
               handleLocationLoadingChange={handleLocationLoadingChange}

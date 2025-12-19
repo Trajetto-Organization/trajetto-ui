@@ -13,7 +13,7 @@ interface DashboardUpdatePartFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdatePartContainerProps {
+interface DashboardUpdatePartFormSubmitProps {
   state: DashboardUpdatePartFormState;
   handleCloseUpdatePart: () => void;
   handleUpdateDescription: (updatedDescription: string) => void;
@@ -31,4 +31,7 @@ interface DashboardUpdatePartContainerProps {
   };
 }
 
-export type { DashboardUpdatePartContainerProps, DashboardUpdatePartFormState };
+export type {
+  DashboardUpdatePartFormSubmitProps,
+  DashboardUpdatePartFormState,
+};

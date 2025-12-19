@@ -59,7 +59,7 @@ function useUpdatePartForm({
   // Treat "N/A" for supplier
   const actualSupplierName = supplierName === "N/A" ? "" : supplierName;
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: business_name as string,
       businessId: businessId as string,
@@ -71,7 +71,7 @@ function useUpdatePartForm({
       supplierId: supplierName === "N/A" ? "" : (supplierId as string),
     });
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
@@ -81,11 +81,11 @@ function useUpdatePartForm({
     });
 
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateSearchSupplierInputValue = ({
@@ -112,7 +112,7 @@ function useUpdatePartForm({
 
       setDisplayUnitPrice(formatToBrazilianCurrency(numericPrice));
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         searchBusinessInputValue: business_name as string,
         businessId: businessId as string,
       });
@@ -229,15 +229,15 @@ function useUpdatePartForm({
   const isDirty = [
     description !== partDescription,
     Math.abs(numericUnitPrice - originalNumericPrice) > 0.001, // Comparing with tolerance for float
-    commandBusinnessInputValue.businessId !== businessId,
+    commandBusinessInputValue.businessId !== businessId,
     (supplierName === "N/A" ? "" : supplierName) !==
       commandSupplierInputValue.searchSupplierInputValue,
   ].some(Boolean);
 
   return {
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchSupplierInputValue,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandSupplierInputValue,
     handleUpdateDescription,
     handleUnitPriceChange,

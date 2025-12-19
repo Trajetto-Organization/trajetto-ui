@@ -15,7 +15,7 @@ import { handleUpdatePart } from "@/actions/update-part";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import {
-  DashboardUpdatePartContainerProps,
+  DashboardUpdatePartFormSubmitProps,
   DashboardUpdatePartFormState,
 } from "./dto";
 
@@ -35,7 +35,7 @@ interface DashboardUpdatePartProps {
   isUpdatePartOpen: boolean;
 }
 
-const DashboardUpdatePartFormContainer = ({
+const DashboardUpdatePartFormSubmit = ({
   state,
   handleCloseUpdatePart,
   handleUpdateDescription,
@@ -48,7 +48,7 @@ const DashboardUpdatePartFormContainer = ({
     displayUnitPrice,
     commandSupplierInputValue: { searchSupplierInputValue },
   },
-}: DashboardUpdatePartContainerProps): JSX.Element => {
+}: DashboardUpdatePartFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 
@@ -131,10 +131,15 @@ const DashboardUpdatePartFormContainer = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={handleCloseUpdatePart}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleCloseUpdatePart}
+          className="flex-1"
+        >
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || !isDirty}>
+        <Button type="submit" disabled={pending || !isDirty} className="flex-1">
           <span>Editar Peça</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -153,7 +158,10 @@ const DashboardUpdatePartForm = ({
   isUpdatePartOpen,
 }: DashboardUpdatePartProps): JSX.Element => {
   const defaultState: DashboardUpdatePartFormState = {};
-  const [state, dispatch] = useFormState(handleUpdatePart, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdatePartFormState,
+    FormData
+  >(handleUpdatePart, defaultState);
 
   const {
     formRef,
@@ -215,8 +223,8 @@ const DashboardUpdatePartForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdatePartFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdatePartFormSubmit
+            state={state}
             handleCloseUpdatePart={handleCloseUpdatePart}
             handleUpdateDescription={handleUpdateDescription}
             handleUnitPriceChange={handleUnitPriceChange}

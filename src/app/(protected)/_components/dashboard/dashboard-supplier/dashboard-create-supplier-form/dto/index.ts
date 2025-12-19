@@ -18,13 +18,13 @@ interface DashboardCreateSupplierFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateSupplierContainerProps {
+interface DashboardCreateSupplierFormSubmitProps {
   state: DashboardCreateSupplierFormState;
   handleOpenCreateSupplierForm: () => void;
   isCreateSupplierForm: boolean;
 }
 
 export type {
-  DashboardCreateSupplierContainerProps,
+  DashboardCreateSupplierFormSubmitProps,
   DashboardCreateSupplierFormState,
 };

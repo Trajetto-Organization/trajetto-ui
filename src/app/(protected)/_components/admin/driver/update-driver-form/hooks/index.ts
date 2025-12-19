@@ -30,14 +30,14 @@ function useUpdateDriverForm({
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
-    "select-business" | "update-driver"
-  >("select-business");
+    "select-business-branch" | "update-driver"
+  >("select-business-branch");
 
   const sanitizedBranchName =
     branchName && branchName !== "N/A" ? branchName : "";
 
   // Initialize business and branch input values from driver data
-  const [commandBusinnessInputValue, setCommandBusinnessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: businessId as string,
       searchBusinessInputValue: business_name as string,
@@ -51,7 +51,7 @@ function useUpdateDriverForm({
 
   useEffect(() => {
     if (!isUpdateDriverOpen) {
-      setCommandBusinnessInputValue({
+      setCommandBusinessInputValue({
         businessId: businessId as string,
         searchBusinessInputValue: business_name as string,
       });
@@ -63,7 +63,7 @@ function useUpdateDriverForm({
     }
   }, [
     isUpdateDriverOpen,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     businessId,
     branchId,
@@ -73,16 +73,16 @@ function useUpdateDriverForm({
   ]);
 
   // Handle business and branch selection updates
-  const handleUpdateSearchBusinnessInputValue = (
+  const handleUpdateSearchBusinessInputValue = (
     data: CommandBusinessInputValue,
   ) => {
     const updateBusinessData =
-      data.businessId === commandBusinnessInputValue.businessId
+      data.businessId === commandBusinessInputValue.businessId
         ? { businessId: "", searchBusinessInputValue: "" }
         : data;
 
     if (
-      updateBusinessData.businessId !== commandBusinnessInputValue.businessId
+      updateBusinessData.businessId !== commandBusinessInputValue.businessId
     ) {
       setCommandBranchInputValue({
         branchId: "",
@@ -90,7 +90,7 @@ function useUpdateDriverForm({
       });
     }
 
-    setCommandBusinnessInputValue(updateBusinessData);
+    setCommandBusinessInputValue(updateBusinessData);
   };
 
   const handleUpdateSearchBranchInputValue = (
@@ -110,7 +110,7 @@ function useUpdateDriverForm({
   };
 
   const handleBack = () => {
-    setCurrentStep("select-business");
+    setCurrentStep("select-business-branch");
   };
 
   useEffect(() => {
@@ -166,18 +166,18 @@ function useUpdateDriverForm({
   }, [state]);
 
   const isBusinessAndBranchDirty = [
-    commandBusinnessInputValue.businessId !== businessId,
+    commandBusinessInputValue.businessId !== businessId,
     commandBranchInputValue.branchId !== (branchId ?? ""),
   ].some(Boolean);
 
   return {
     formRef,
     currentStep,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     handleBack,
     handleContinue,
-    handleUpdateSearchBusinnessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     isBusinessAndBranchDirty,
   };

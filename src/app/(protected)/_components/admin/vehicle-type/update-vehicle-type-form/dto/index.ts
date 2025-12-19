@@ -12,7 +12,7 @@ interface UpdateVehicleTypeFormState {
   successMessage?: string;
 }
 
-interface UpdateVehicleTypeContainerProps {
+interface UpdateVehicleTypeFormSubmitProps {
   state: UpdateVehicleTypeFormState;
   handleCloseUpdateVehicleType: () => void;
   handleUpdateDescription: (updatedDescription: string) => void;
@@ -28,4 +28,4 @@ interface UpdateVehicleTypeContainerProps {
   ) => void;
 }
 
-export type { UpdateVehicleTypeContainerProps, UpdateVehicleTypeFormState };
+export type { UpdateVehicleTypeFormSubmitProps, UpdateVehicleTypeFormState };

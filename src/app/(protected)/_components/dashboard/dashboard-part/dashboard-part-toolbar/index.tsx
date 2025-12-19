@@ -1,7 +1,7 @@
 "use client";
 
 import { Table } from "@tanstack/react-table";
-import { Building2, Container, X } from "lucide-react";
+import { Container, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
@@ -37,11 +37,6 @@ export function DashboardPartToolbar<TData>({
   const filters = [
     { key: "description", title: "Descrição da peça" },
     { key: "unit_price", title: "Preço unitário" },
-    {
-      key: "business_name",
-      title: "Nome da empresa",
-      dynamicOptionIcon: Building2,
-    },
     {
       key: "supplierName",
       title: "Nome do fornecedor",

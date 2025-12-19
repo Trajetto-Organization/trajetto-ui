@@ -20,12 +20,12 @@ interface UpdateUserFormState {
   successMessage?: string;
 }
 
-interface UpdateUserContainerProps {
+interface UpdateUserFormSubmitProps {
   state: UpdateUserFormState;
   handleUpdateUserEmail: (updatedUserName: string) => void;
   handleUpdateUserName: (updatedUserEmail: string) => void;
   handleUpdateUserRole: (updatedUserRole: string) => void;
-  handleUpdateSearchBussinessInputValue: ({
+  handleUpdateSearchBusinessInputValue: ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => void;
@@ -45,11 +45,11 @@ interface UpdateUserContainerProps {
     userName: string;
     userRole: string;
     commandProfileAccessInputValue: CommandProfileAccessInputValue;
-    commandBusinnessInputValue: CommandBusinessInputValue;
+    commandBusinessInputValue: CommandBusinessInputValue;
     commandDriverInputValue: CommandDriverInputValue;
   };
   userType: "employee" | "driver";
   setUserType: (type: "employee" | "driver") => void;
 }
 
-export type { UpdateUserFormState, UpdateUserContainerProps };
+export type { UpdateUserFormState, UpdateUserFormSubmitProps };

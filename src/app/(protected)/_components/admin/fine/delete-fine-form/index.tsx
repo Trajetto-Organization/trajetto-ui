@@ -21,7 +21,7 @@ interface DeleteFineProps {
   fineId: string;
 }
 
-const DeleteFineFormContainer = (): JSX.Element => {
+const DeleteFineFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -103,7 +103,7 @@ const DeleteFineForm = ({ fineId }: DeleteFineProps): JSX.Element => {
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteFineFormContainer />
+          <DeleteFineFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

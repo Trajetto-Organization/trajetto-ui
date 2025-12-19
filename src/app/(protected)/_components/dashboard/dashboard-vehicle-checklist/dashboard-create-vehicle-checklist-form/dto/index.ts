@@ -1,6 +1,5 @@
 import {
   CommandBranchInputValue,
-  CommandDriverInputValue,
   CommandVehicleInputValue,
 } from "@/app/(protected)/_components/dto";
 import { Dispatch, SetStateAction } from "react";
@@ -50,28 +49,7 @@ interface DashboardCreateVehicleChecklistFormState {
   successMessage?: string;
 }
 
-interface DashboardSelectBranchStepProps {
-  state: DashboardCreateVehicleChecklistFormState;
-  businessId: string;
-  handleUpdateSearchBranchInputValue: (values: CommandBranchInputValue) => void;
-  commandBranchInputValue: CommandBranchInputValue;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleDriverStepProps {
-  state: DashboardCreateVehicleChecklistFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    values: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (values: CommandDriverInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardCreateVehicleChecklistContainerProps {
+interface DashboardCreateVehicleChecklistSubmitProps {
   state: DashboardCreateVehicleChecklistFormState;
   onBack: () => void;
   commandBranchInputValue: CommandBranchInputValue;
@@ -85,7 +63,5 @@ interface DashboardCreateVehicleChecklistContainerProps {
 
 export type {
   DashboardCreateVehicleChecklistFormState,
-  DashboardSelectBranchStepProps,
-  DashboardSelectVehicleDriverStepProps,
-  DashboardCreateVehicleChecklistContainerProps,
+  DashboardCreateVehicleChecklistSubmitProps,
 };

@@ -20,10 +20,10 @@ interface CreateUserFormState {
   successMessage?: string;
 }
 
-interface CreateUserContainerProps {
+interface CreateUserFormSubmitProps {
   state: CreateUserFormState;
   handleOpenCreateUserForm: () => void;
-  handleUpdateSearchBussinessInputValue: (
+  handleUpdateSearchBusinessInputValue: (
     businessSearchData: CommandBusinessInputValue,
   ) => void;
   handleUpdateSearchProfileAccessInputValue: (
@@ -32,11 +32,11 @@ interface CreateUserContainerProps {
   handleUpdateSearchDriverInputValue: (
     driverData: CommandDriverInputValue,
   ) => void;
-  commandBusinnessInputValue: CommandBusinessInputValue;
+  commandBusinessInputValue: CommandBusinessInputValue;
   commandProfileAccessInputValue: CommandProfileAccessInputValue;
   commandDriverInputValue: CommandDriverInputValue;
   userType: "employee" | "driver";
   setUserType: (type: "employee" | "driver") => void;
 }
 
-export type { CreateUserContainerProps, CreateUserFormState };
+export type { CreateUserFormSubmitProps, CreateUserFormState };

@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
-import { Label } from "@/components/ui/label";
 import { MapPin, Locate, Info, Search, X, Loader2, Check } from "lucide-react";
 
 import {
@@ -78,7 +77,7 @@ const LocationPicker = ({
       >
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4" />
-          <Label>Localização (Opcional)</Label>
+          <div className="text-sm font-medium">Localização (Opcional)</div>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -113,14 +112,15 @@ const LocationPicker = ({
 
       {/* 🔍 Address Search Field */}
       <div className="space-y-2">
-        <Label htmlFor="address-search">Buscar Endereço</Label>
+        <div className="text-sm font-medium">Buscar Endereço</div>
         <Popover open={openSearch} onOpenChange={handleOpenSearchChange}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               role="combobox"
               aria-expanded={openSearch}
-              className="w-full justify-between 
+              aria-label="Buscar Endereço"
+              className="w-full justify-between
               h-auto min-h-[40px] py-2 px-3"
               disabled={disabled}
             >
@@ -137,22 +137,30 @@ const LocationPicker = ({
                 </span>
               </div>
               {selectedAddress && (
-                <button
-                  type="button"
-                  className="shrink-0 rounded-sm opacity-50 
-                  hover:opacity-100 focus:outline-none focus:ring-2 
-                  focus:ring-ring focus:ring-offset-2 ml-2"
+                <span
+                  role="button"
+                  className="shrink-0 rounded-sm opacity-50
+                  hover:opacity-100 focus:outline-none focus:ring-2
+                  focus:ring-ring focus:ring-offset-2 ml-2 cursor-pointer"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
 
                     handleClearLocation();
                   }}
-                  tabIndex={-1}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleClearLocation();
+                    }
+                  }}
+                  tabIndex={0}
+                  aria-label="Limpar localização"
                 >
                   <X className="h-4 w-4" />
                   <span className="sr-only">Limpar localização</span>
-                </button>
+                </span>
               )}
             </Button>
           </PopoverTrigger>

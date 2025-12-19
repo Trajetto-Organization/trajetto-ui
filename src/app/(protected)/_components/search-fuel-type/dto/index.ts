@@ -13,6 +13,7 @@ interface SearchFuelTypeProps {
   handleUpdateSearchFuelTypeInputValue: (
     fuelTypeData: CommandFuelTypeInputValue,
   ) => void;
+  isOptional?: boolean;
 }
 
 export type { FetchFuelTypeProps, SearchFuelTypeProps };

@@ -1,11 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandBusinessInputValue,
-  CommandDriverInputValue,
-  CommandFuelTypeInputValue,
-  CommandVehicleTypeInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface CreateVehicleValidationError {
   description?: string[];
   license_plate?: string[];
@@ -38,59 +30,9 @@ interface CreateVehicleFormState {
   successMessage?: string;
 }
 
-interface CreateVehicleContainerProps {
+interface CreateVehicleFormSubmitProps {
   state: CreateVehicleFormState;
   onBack: () => void;
 }
 
-interface SelectBusinessByStepProps {
-  state: CreateVehicleFormState;
-  commandBusinnessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinnessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectDriverVehicleTypeStepProps {
-  state: CreateVehicleFormState;
-  businessId: string;
-  commandDriverInputValue: CommandDriverInputValue;
-  commandVehicleTypeInputValue: CommandVehicleTypeInputValue;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  handleUpdateSearchVehicleTypeInputValue: (
-    vehicleTypeData: CommandVehicleTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectFuelTypeStepProps {
-  state: CreateVehicleFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-export type {
-  CreateVehicleFormState,
-  CreateVehicleContainerProps,
-  SelectBusinessByStepProps,
-  SelectDriverVehicleTypeStepProps,
-  SelectFuelTypeStepProps,
-  CommandBusinessInputValue,
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandVehicleTypeInputValue,
-  CommandFuelTypeInputValue,
-};
+export type { CreateVehicleFormState, CreateVehicleFormSubmitProps };

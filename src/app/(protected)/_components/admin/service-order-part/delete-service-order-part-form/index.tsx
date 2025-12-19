@@ -23,7 +23,7 @@ interface DeleteServiceOrderPartProps {
   serviceOrderId: string;
 }
 
-const DeleteServiceOrderPartFormContainer = (): JSX.Element => {
+const DeleteServiceOrderPartFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -122,7 +122,7 @@ const DeleteServiceOrderPartForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteServiceOrderPartFormContainer />
+          <DeleteServiceOrderPartFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

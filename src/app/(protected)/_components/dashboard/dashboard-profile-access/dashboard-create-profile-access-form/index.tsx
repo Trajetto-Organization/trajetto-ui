@@ -17,7 +17,7 @@ import FormInput from "@/components/custom/form-input";
 
 import {
   DashboardCreateProfileAccessFormState,
-  DashboardCreateProfileAccessContainerProps,
+  DashboardCreateProfileAccessFormSubmitProps,
 } from "./dto";
 
 import { handleCreateProfileAccess } from "@/actions/create-profile-access";
@@ -28,10 +28,10 @@ import { useHasPermission } from "@/lib/user-has-permission";
 
 import { permissions } from "@/lib/permissions";
 
-const DashboardCreateProfileAccessFormContainer = ({
+const DashboardCreateProfileAccessFormSubmit = ({
   state,
   handleOpenCreateProfileAccessForm,
-}: DashboardCreateProfileAccessContainerProps): JSX.Element => {
+}: DashboardCreateProfileAccessFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -73,7 +73,10 @@ const DashboardCreateProfileAccessFormContainer = ({
 
 const DashboardCreateProfileAccessForm = (): JSX.Element => {
   const defaultState: DashboardCreateProfileAccessFormState = {};
-  const [state, dispatch] = useFormState(handleCreateProfileAccess, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateProfileAccessFormState,
+    FormData
+  >(handleCreateProfileAccess, defaultState);
 
   const {
     isCreateCreateProfileAccessForm,
@@ -119,7 +122,7 @@ const DashboardCreateProfileAccessForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <DashboardCreateProfileAccessFormContainer
+          <DashboardCreateProfileAccessFormSubmit
             handleOpenCreateProfileAccessForm={
               handleOpenCreateProfileAccessForm
             }

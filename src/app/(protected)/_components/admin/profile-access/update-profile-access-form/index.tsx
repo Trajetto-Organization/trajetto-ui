@@ -13,7 +13,7 @@ import { Loader, X } from "lucide-react";
 import { ProfileAccessProps } from "../dto";
 
 import {
-  UpdateProfileAccessContainerProps,
+  UpdateProfileAccessFormSubmitProps,
   UpdateProfileAccessFormState,
 } from "./dto";
 
@@ -33,15 +33,15 @@ interface UpdateProfileAccessProps {
   isUpdateProfileAccess: boolean;
 }
 
-const UpdateProfileAccessFormContainer = ({
+const UpdateProfileAccessFormSubmit = ({
   state,
   handleCloseUpdateProfileAccess,
   profileAccessName,
   handleUpdateProfileAccessName,
-  handleUpdateSearchBussinessInputValue,
-  commandBusinnessInputValue: { searchBusinessInputValue },
+  handleUpdateSearchBusinessInputValue,
+  commandBusinessInputValue: { searchBusinessInputValue },
   isDirty,
-}: UpdateProfileAccessContainerProps): JSX.Element => {
+}: UpdateProfileAccessFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -76,7 +76,7 @@ const UpdateProfileAccessFormContainer = ({
               className="h-8 w-4"
               variant="ghost"
               onClick={() =>
-                handleUpdateSearchBussinessInputValue({
+                handleUpdateSearchBusinessInputValue({
                   businessId: "",
                   searchBusinessInputValue: "",
                 })
@@ -89,7 +89,7 @@ const UpdateProfileAccessFormContainer = ({
 
         <SearchBusiness
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
           errorBusinessId={state.updateProfileAccessError?.businessId}
@@ -101,11 +101,12 @@ const UpdateProfileAccessFormContainer = ({
           type="button"
           variant="outline"
           onClick={handleCloseUpdateProfileAccess}
+          className="flex-1"
         >
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || !isDirty}>
-          <span>Editar Empresa</span>
+        <Button type="submit" disabled={pending || !isDirty} className="flex-1">
+          <span>Editar Perfil</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -123,11 +124,14 @@ const UpdateProfileAccessForm = ({
   isUpdateProfileAccess,
 }: UpdateProfileAccessProps): JSX.Element => {
   const defaultState: UpdateProfileAccessFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateProfileAccess, null);
+  const [state, dispatch] = useFormState<
+    UpdateProfileAccessFormState,
+    FormData
+  >(handleUpdateProfileAccess, defaultState);
 
   const {
-    commandBusinnessInputValue,
-    handleUpdateSearchBussinessInputValue,
+    commandBusinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateProfileAccessName,
     profileAccessName,
     setProfileAccessName,
@@ -155,7 +159,7 @@ const UpdateProfileAccessForm = ({
             businessId: "",
           };
 
-          handleUpdateSearchBussinessInputValue(resetCommandInputValue);
+          handleUpdateSearchBusinessInputValue(resetCommandInputValue);
           setProfileAccessName("");
         }
 
@@ -176,7 +180,7 @@ const UpdateProfileAccessForm = ({
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               profileAccessId: profileAccessData.id,
             };
 
@@ -184,14 +188,14 @@ const UpdateProfileAccessForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateProfileAccessFormContainer
-            state={state ?? defaultState}
+          <UpdateProfileAccessFormSubmit
+            state={state}
             handleCloseUpdateProfileAccess={handleCloseUpdateProfileAccess}
             profileAccessName={profileAccessName}
             handleUpdateProfileAccessName={handleUpdateProfileAccessName}
-            commandBusinnessInputValue={commandBusinnessInputValue}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            commandBusinessInputValue={commandBusinessInputValue}
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             isDirty={isDirty}
           />

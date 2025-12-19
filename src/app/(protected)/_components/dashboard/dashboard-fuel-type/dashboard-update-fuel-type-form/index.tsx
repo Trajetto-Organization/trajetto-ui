@@ -10,8 +10,6 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -24,7 +22,7 @@ import { handleUpdateFuelType } from "@/actions/update-fuel-type";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import {
-  DashboardUpdateFuelTypeContainerProps,
+  DashboardUpdateFuelTypeFormSubmitProps,
   DashboardUpdateFuelTypeFormState,
 } from "./dto";
 
@@ -42,21 +40,21 @@ interface DashboardUpdateFuelTypeProps {
   isUpdateFuelTypeOpen: boolean;
 }
 
-const DashboardUpdateFuelTypeFormContainer = ({
+const DashboardUpdateFuelTypeFormSubmit = ({
   state,
   handleCloseUpdateFuelType,
   handleUpdateDescription,
   isDirty,
   fuelTypeValues: { description },
-}: DashboardUpdateFuelTypeContainerProps): JSX.Element => {
+}: DashboardUpdateFuelTypeFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
     <div className="space-y-6 mt-2">
       <div className="w-full flex flex-col gap-3">
-        <Label
-          htmlFor="description"
+        <div
           className={cn(
+            "text-sm font-medium",
             state.updateFuelTypeError?.description &&
               "h-4 truncate text-red-500",
           )}
@@ -64,14 +62,14 @@ const DashboardUpdateFuelTypeFormContainer = ({
           {state.updateFuelTypeError?.description
             ? state.updateFuelTypeError?.description
             : "Combustível"}
-        </Label>
+        </div>
         <Select
           name="description"
           disabled={pending}
           value={description}
           onValueChange={(value: string) => handleUpdateDescription(value)}
         >
-          <SelectTrigger>
+          <SelectTrigger aria-label="Tipo do combustível">
             <SelectValue placeholder="Tipo do combustível" />
           </SelectTrigger>
           <SelectContent>
@@ -79,7 +77,7 @@ const DashboardUpdateFuelTypeFormContainer = ({
               <SelectItem
                 key={fuel}
                 value={fuel}
-                className="cursor-pointer hover:bg-accent 
+                className="cursor-pointer hover:bg-accent
                 hover:text-accent-foreground"
               >
                 {fuel}
@@ -94,11 +92,12 @@ const DashboardUpdateFuelTypeFormContainer = ({
           type="button"
           variant="outline"
           onClick={handleCloseUpdateFuelType}
+          className="flex-1"
         >
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || !isDirty}>
-          <span>Editar Tipo do Veículo</span>
+        <Button type="submit" disabled={pending || !isDirty} className="flex-1">
+          <span>Editar Combustível</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -116,7 +115,10 @@ const DashboardUpdateFuelTypeForm = ({
   isUpdateFuelTypeOpen,
 }: DashboardUpdateFuelTypeProps): JSX.Element => {
   const defaultState: DashboardUpdateFuelTypeFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateFuelType, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateFuelTypeFormState,
+    FormData
+  >(handleUpdateFuelType, defaultState);
 
   const { formRef, description, isDirty, handleUpdateDescription } =
     useDashboardUpdateFuelTypeForm({
@@ -164,8 +166,8 @@ const DashboardUpdateFuelTypeForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdateFuelTypeFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdateFuelTypeFormSubmit
+            state={state}
             handleCloseUpdateFuelType={handleCloseUpdateFuelType}
             handleUpdateDescription={handleUpdateDescription}
             isDirty={isDirty}

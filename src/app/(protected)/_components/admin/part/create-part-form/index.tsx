@@ -15,7 +15,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { handleCreatePart } from "@/actions/create-part";
 
-import { CreatePartFormState, CreatePartContainerProps } from "./dto";
+import { CreatePartFormState, CreatePartFormSubmitProps } from "./dto";
 import { useCreatePartForm } from "./hooks";
 
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
@@ -26,17 +26,17 @@ import FormInput from "@/components/custom/form-input";
 import { SearchBusiness } from "../../../search-business";
 import { SearchSupplier } from "../../../search-supplier";
 
-const CreatePartFormContainer = ({
+const CreatePartFormSubmit = ({
   state,
   handleOpenCreatePartForm,
   handleUnitPriceChange,
   handleUnitPriceBlur,
   displayUnitPrice,
-  handleUpdateSearchBussinessInputValue,
+  handleUpdateSearchBusinessInputValue,
   commandBusinnessInputValue: { searchBusinessInputValue, businessId },
   commandSupplierInputValue: { searchSupplierInputValue },
   handleUpdateSearchSupplierInputValue,
-}: CreatePartContainerProps) => {
+}: CreatePartFormSubmitProps) => {
   const { pending } = useFormStatus();
 
   return (
@@ -86,7 +86,7 @@ const CreatePartFormContainer = ({
                 className="h-8 w-4"
                 variant="ghost"
                 onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
+                  handleUpdateSearchBusinessInputValue({
                     businessId: "",
                     searchBusinessInputValue: "",
                   })
@@ -137,7 +137,7 @@ const CreatePartFormContainer = ({
       >
         <SearchBusiness
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
           errorBusinessId={state.createPartError?.businessId}
@@ -180,14 +180,17 @@ const CreatePartFormContainer = ({
 
 const CreatePartForm = (): JSX.Element => {
   const defaultState: CreatePartFormState = {};
-  const [state, dispatch] = useFormState(handleCreatePart, null);
+  const [state, dispatch] = useFormState<CreatePartFormState, FormData>(
+    handleCreatePart,
+    defaultState,
+  );
 
   const {
     isCreatePartForm,
     handleOpenCreatePartForm,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandSupplierInputValue,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchSupplierInputValue,
     displayUnitPrice,
     handleUnitPriceChange,
@@ -216,7 +219,7 @@ const CreatePartForm = (): JSX.Element => {
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               supplierId: commandSupplierInputValue.supplierId,
             };
 
@@ -224,19 +227,19 @@ const CreatePartForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreatePartFormContainer
-            state={state ?? defaultState}
+          <CreatePartFormSubmit
+            state={state}
             handleOpenCreatePartForm={handleOpenCreatePartForm}
             handleUnitPriceChange={handleUnitPriceChange}
             handleUnitPriceBlur={handleUnitPriceBlur}
             displayUnitPrice={displayUnitPrice}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchSupplierInputValue={
               handleUpdateSearchSupplierInputValue
             }
-            commandBusinnessInputValue={commandBusinnessInputValue}
+            commandBusinnessInputValue={commandBusinessInputValue}
             commandSupplierInputValue={commandSupplierInputValue}
           />
         </form>

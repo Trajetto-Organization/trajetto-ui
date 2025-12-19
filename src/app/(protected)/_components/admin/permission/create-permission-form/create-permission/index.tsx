@@ -42,9 +42,9 @@ const CreatePermission = ({ state }: PermissionCheckboxProps): JSX.Element => {
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        <Label
-          htmlFor="permissionKey"
+        <div
           className={cn(
+            "text-sm font-medium",
             state.createPermissionError?.permissionKey &&
               "h-4 truncate text-red-500",
           )}
@@ -52,9 +52,9 @@ const CreatePermission = ({ state }: PermissionCheckboxProps): JSX.Element => {
           {state.createPermissionError?.permissionKey
             ? state.createPermissionError?.permissionKey
             : "Permissão"}
-        </Label>
+        </div>
         <Select name="permissionKey" disabled={pending}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Permissão de acesso">
             <SelectValue placeholder="Permissão de acesso" />
           </SelectTrigger>
           <SelectContent>

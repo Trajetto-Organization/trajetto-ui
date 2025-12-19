@@ -18,7 +18,7 @@ import { handleUpdateVehicleType } from "@/actions/update-vehicle-type";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import {
-  DashboardUpdateVehicleTypeContainerProps,
+  DashboardUpdateVehicleTypeFormSubmitProps,
   DashboardUpdateVehicleTypeFormState,
 } from "./dto";
 
@@ -33,14 +33,14 @@ interface DashboardUpdateVehicleTypeProps {
   isUpdateVehicleTypeOpen: boolean;
 }
 
-const UpdateVehicleTypeFormContainer = ({
+const UpdateVehicleTypeFormSubmit = ({
   state,
   handleCloseUpdateVehicleType,
   handleUpdateNumberOfAxles,
   handleUpdateDescription,
   isDirty,
   vehicleTypeValues: { number_of_axles, description },
-}: DashboardUpdateVehicleTypeContainerProps): JSX.Element => {
+}: DashboardUpdateVehicleTypeFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   const handleNumberOfAxles = (event: FormEvent<HTMLInputElement>) => {
@@ -110,10 +110,11 @@ const UpdateVehicleTypeFormContainer = ({
           type="button"
           variant="outline"
           onClick={handleCloseUpdateVehicleType}
+          className="flex-1"
         >
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || !isDirty}>
+        <Button type="submit" disabled={pending || !isDirty} className="flex-1">
           <span>Editar Tipo do Veículo</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -132,7 +133,10 @@ const UpdateVehicleTypeForm = ({
   isUpdateVehicleTypeOpen,
 }: DashboardUpdateVehicleTypeProps): JSX.Element => {
   const defaultState: DashboardUpdateVehicleTypeFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateVehicleType, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateVehicleTypeFormState,
+    FormData
+  >(handleUpdateVehicleType, defaultState);
 
   const {
     formRef,
@@ -185,8 +189,8 @@ const UpdateVehicleTypeForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateVehicleTypeFormContainer
-            state={state ?? defaultState}
+          <UpdateVehicleTypeFormSubmit
+            state={state}
             handleCloseUpdateVehicleType={handleCloseUpdateVehicleType}
             handleUpdateNumberOfAxles={handleUpdateNumberOfAxles}
             handleUpdateDescription={handleUpdateDescription}

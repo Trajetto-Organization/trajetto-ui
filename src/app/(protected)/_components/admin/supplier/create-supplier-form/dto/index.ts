@@ -23,24 +23,14 @@ interface CommandBusinessInputValue {
   searchBusinessInputValue: string;
 }
 
-interface CreateSupplierContainerProps {
+interface CreateSupplierFormSubmitProps {
   state: CreateSupplierFormState;
   isCreateSupplierForm: boolean;
   onBack: () => void;
 }
 
-interface SelectBusinessByStepProps {
-  searchBusinessInputValue: string;
-  handleUpdateSearchBussinessInputValue: (
-    data: CommandBusinessInputValue,
-  ) => void;
-  onContinue: () => void;
-  errorBusinessId?: string[];
-}
-
 export type {
-  CreateSupplierContainerProps,
+  CreateSupplierFormSubmitProps,
   CreateSupplierFormState,
   CommandBusinessInputValue,
-  SelectBusinessByStepProps,
 };

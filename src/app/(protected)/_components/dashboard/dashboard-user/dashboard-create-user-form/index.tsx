@@ -24,7 +24,7 @@ import FormInput from "@/components/custom/form-input";
 import { handleCreateUser } from "@/actions/create-user";
 
 import {
-  DashboardCreateUserContainerProps,
+  DashboardCreateUserFormSubmitProps,
   DashboardCreateUserFormState,
 } from "./dto";
 import { roleLabels, UserBusinessRole } from "../../../dto";
@@ -60,7 +60,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const DashboardCreateUserFormContainer = ({
+const DashboardCreateUserFormSubmit = ({
   state,
   handleOpenCreateUserForm,
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
@@ -69,7 +69,7 @@ const DashboardCreateUserFormContainer = ({
   handleUpdateSearchDriverInputValue,
   userType,
   setUserType,
-}: DashboardCreateUserContainerProps): JSX.Element => {
+}: DashboardCreateUserFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { handleGeneratePassword, handleChangePassword, password } =
     useGenerateRandomPassword();
@@ -389,8 +389,11 @@ const DashboardCreateUserFormContainer = ({
 
 const DashboardCreateUserForm = (): JSX.Element => {
   const defaultState: DashboardCreateUserFormState = {};
+  const [state, dispatch] = useFormState<
+    DashboardCreateUserFormState,
+    FormData
+  >(handleCreateUser, defaultState);
 
-  const [state, dispatch] = useFormState(handleCreateUser, null);
   const {
     isCreateUserForm,
     handleOpenCreateUserForm,
@@ -475,8 +478,8 @@ const DashboardCreateUserForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <DashboardCreateUserFormContainer
-            state={state ?? defaultState}
+          <DashboardCreateUserFormSubmit
+            state={state}
             handleOpenCreateUserForm={handleOpenCreateUserForm}
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue

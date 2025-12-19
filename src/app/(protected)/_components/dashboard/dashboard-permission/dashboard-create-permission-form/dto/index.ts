@@ -15,7 +15,7 @@ interface DashboardCreatePermissionFormState {
   successMessage?: string;
 }
 
-interface DashboardCreatePermissionContainerProps {
+interface DashboardCreatePermissionFormSubmitProps {
   state: DashboardCreatePermissionFormState;
   handleOpenCreatePermissionForm: () => void;
   handleUpdateSearchProfileAccessInputValue: ({
@@ -26,6 +26,6 @@ interface DashboardCreatePermissionContainerProps {
 }
 
 export type {
-  DashboardCreatePermissionContainerProps,
+  DashboardCreatePermissionFormSubmitProps,
   DashboardCreatePermissionFormState,
 };

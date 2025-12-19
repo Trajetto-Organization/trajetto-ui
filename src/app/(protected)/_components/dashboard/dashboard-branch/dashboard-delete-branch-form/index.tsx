@@ -25,7 +25,7 @@ interface DashboardDeleteBranchProps {
   branchId: string;
 }
 
-const DashboardDeleteBranchFormContainer = (): JSX.Element => {
+const DashboardDeleteBranchFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -125,7 +125,7 @@ const DashboardDeleteBranchForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeleteBranchFormContainer />
+          <DashboardDeleteBranchFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

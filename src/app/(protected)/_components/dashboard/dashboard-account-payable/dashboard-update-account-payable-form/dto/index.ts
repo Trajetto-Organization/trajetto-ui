@@ -1,9 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandServiceOrderInputValue,
-  CommandUserInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { DashboardAccountPayableProps } from "../../dto";
 
 interface DashboardUpdateAccountPayableValidationError {
@@ -24,42 +18,12 @@ interface DashboardUpdateAccountPayableFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateAccountPayableContainerProps {
+interface DashboardUpdateAccountPayableFormSubmitProps {
   state: DashboardUpdateAccountPayableFormState;
   onBack: () => void;
   accountPayableData: DashboardAccountPayableProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateAccountPayableOpen: boolean;
-}
-
-interface DashboardSelectBusinessBranchStepProps {
-  state: DashboardUpdateAccountPayableFormState;
-  commandBranchInputValue: CommandBranchInputValue;
-  businessId: string;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectServiceOrderStepProps {
-  state: DashboardUpdateAccountPayableFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectUserStepProps {
-  state: DashboardUpdateAccountPayableFormState;
-  businessId: string;
-  commandUserInputValue: CommandUserInputValue;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
 }
 
 interface DashboardUpdateAccountPayableFormProps {
@@ -71,8 +35,5 @@ interface DashboardUpdateAccountPayableFormProps {
 export type {
   DashboardUpdateAccountPayableFormState,
   DashboardUpdateAccountPayableFormProps,
-  DashboardUpdateAccountPayableContainerProps,
-  DashboardSelectBusinessBranchStepProps,
-  DashboardSelectServiceOrderStepProps,
-  DashboardSelectUserStepProps,
+  DashboardUpdateAccountPayableFormSubmitProps,
 };

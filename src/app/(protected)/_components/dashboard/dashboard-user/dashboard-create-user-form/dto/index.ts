@@ -19,7 +19,7 @@ interface DashboardCreateUserFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateUserContainerProps {
+interface DashboardCreateUserFormSubmitProps {
   state: DashboardCreateUserFormState;
   handleOpenCreateUserForm: () => void;
   handleUpdateSearchProfileAccessInputValue: (
@@ -34,4 +34,7 @@ interface DashboardCreateUserContainerProps {
   setUserType: (type: "employee" | "driver") => void;
 }
 
-export type { DashboardCreateUserContainerProps, DashboardCreateUserFormState };
+export type {
+  DashboardCreateUserFormSubmitProps,
+  DashboardCreateUserFormState,
+};

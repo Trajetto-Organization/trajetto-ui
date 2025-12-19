@@ -15,7 +15,7 @@ interface DashboardUpdatePermissionFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdatePermissionContainerProps {
+interface DashboardUpdatePermissionFormSubmitProps {
   state: DashboardUpdatePermissionFormState;
   handleCloseUpdatePermission: () => void;
   handleUpdatePermissionName: (updatedName: string) => void;
@@ -37,6 +37,6 @@ interface DashboardUpdatePermissionContainerProps {
 }
 
 export type {
-  DashboardUpdatePermissionContainerProps,
+  DashboardUpdatePermissionFormSubmitProps,
   DashboardUpdatePermissionFormState,
 };

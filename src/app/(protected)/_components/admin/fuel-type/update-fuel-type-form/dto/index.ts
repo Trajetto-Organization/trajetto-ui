@@ -12,7 +12,7 @@ interface UpdateFuelTypeFormState {
   successMessage?: string;
 }
 
-interface UpdateFuelTypeContainerProps {
+interface UpdateFuelTypeFormSubmitProps {
   state: UpdateFuelTypeFormState;
   handleCloseUpdateFuelType: () => void;
   handleUpdateDescription: (updatedDescription: string) => void;
@@ -33,7 +33,7 @@ interface UpdateFuelTypeFormProps {
 }
 
 export type {
-  UpdateFuelTypeContainerProps,
+  UpdateFuelTypeFormSubmitProps,
   UpdateFuelTypeFormState,
   UpdateFuelTypeFormProps,
 };

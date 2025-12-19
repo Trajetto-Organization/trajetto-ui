@@ -41,6 +41,7 @@ const ForgotPasswordContainer = ({
         placeholder={"E-mail"}
         icon={<MailIcon className="h-4 w-4 text-gray-500" />}
         disabled={pending}
+        autoComplete="email"
       />
 
       <ErrorForm

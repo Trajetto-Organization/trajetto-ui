@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useTrafficViolationCodeInfiniteScroll } from "./hooks/traffic-violation-code-infinite-scroll";
@@ -66,21 +65,20 @@ const SearchTrafficViolationCode = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-traffic-violation-code-input"
-        className={errorTrafficViolationCodeId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorTrafficViolationCodeId ? "text-red-500" : ""}`}
       >
         {errorTrafficViolationCodeId
           ? errorTrafficViolationCodeId[0]
           : "Selecione o código de infração de trânsito"}{" "}
         {isOptional && "(opcional)"}
-      </Label>
+      </div>
 
       <Command className="relative border rounded-md">
         <CommandInput
-          id="search-traffic-violation-code-input"
           placeholder="Buscar por código ou descrição..."
           className="h-9"
+          aria-label="Buscar código de infração de trânsito"
         />
 
         {!isLoadingTrafficViolationCodes && !hasError && (

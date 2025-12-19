@@ -16,12 +16,12 @@ interface CreatePartFormState {
   successMessage?: string;
 }
 
-interface CreatePartContainerProps {
+interface CreatePartFormSubmitProps {
   state: CreatePartFormState;
   handleOpenCreatePartForm: () => void;
   handleUnitPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleUnitPriceBlur: () => void;
-  handleUpdateSearchBussinessInputValue: ({
+  handleUpdateSearchBusinessInputValue: ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => void;
@@ -34,4 +34,4 @@ interface CreatePartContainerProps {
   displayUnitPrice: string;
 }
 
-export type { CreatePartContainerProps, CreatePartFormState };
+export type { CreatePartFormSubmitProps, CreatePartFormState };

@@ -17,7 +17,7 @@ import { handleCreatePart } from "@/actions/create-part";
 
 import {
   DashboardCreatePartFormState,
-  DashboardCreatePartContainerProps,
+  DashboardCreatePartSubmitProps,
 } from "./dto";
 import { useDashboardCreatePartForm } from "./hooks";
 
@@ -32,7 +32,7 @@ import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-const DashboardCreatePartFormContainer = ({
+const DashboardCreatePartFormSubmit = ({
   state,
   handleOpenCreatePartForm,
   handleUnitPriceChange,
@@ -40,7 +40,7 @@ const DashboardCreatePartFormContainer = ({
   displayUnitPrice,
   commandSupplierInputValue: { searchSupplierInputValue },
   handleUpdateSearchSupplierInputValue,
-}: DashboardCreatePartContainerProps) => {
+}: DashboardCreatePartSubmitProps) => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 
@@ -140,7 +140,10 @@ const DashboardCreatePartFormContainer = ({
 
 const DashboardCreatePartForm = (): JSX.Element => {
   const defaultState: DashboardCreatePartFormState = {};
-  const [state, dispatch] = useFormState(handleCreatePart, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreatePartFormState,
+    FormData
+  >(handleCreatePart, defaultState);
 
   const {
     isCreatePartForm,
@@ -189,8 +192,8 @@ const DashboardCreatePartForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <DashboardCreatePartFormContainer
-            state={state ?? defaultState}
+          <DashboardCreatePartFormSubmit
+            state={state}
             handleOpenCreatePartForm={handleOpenCreatePartForm}
             handleUnitPriceChange={handleUnitPriceChange}
             handleUnitPriceBlur={handleUnitPriceBlur}

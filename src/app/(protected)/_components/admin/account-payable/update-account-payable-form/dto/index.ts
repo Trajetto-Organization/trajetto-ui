@@ -1,10 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandBusinessInputValue,
-  CommandServiceOrderInputValue,
-  CommandUserInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { AccountPayableProps } from "../../dto";
 
 interface UpdateAccountPayableValidationError {
@@ -25,45 +18,12 @@ interface UpdateAccountPayableFormState {
   successMessage?: string;
 }
 
-interface UpdateAccountPayableContainerProps {
+interface UpdateAccountPayableFormSubmitProps {
   state: UpdateAccountPayableFormState;
   onBack: () => void;
   accountPayableData: AccountPayableProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateAccountPayableOpen: boolean;
-}
-
-interface SelectBusinessBranchStepProps {
-  state: UpdateAccountPayableFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectServiceOrderStepProps {
-  state: UpdateAccountPayableFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectUserStepProps {
-  state: UpdateAccountPayableFormState;
-  businessId: string;
-  commandUserInputValue: CommandUserInputValue;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
 }
 
 interface UpdateAccountPayableFormProps {
@@ -75,8 +35,5 @@ interface UpdateAccountPayableFormProps {
 export type {
   UpdateAccountPayableFormState,
   UpdateAccountPayableFormProps,
-  UpdateAccountPayableContainerProps,
-  SelectBusinessBranchStepProps,
-  SelectServiceOrderStepProps,
-  SelectUserStepProps,
+  UpdateAccountPayableFormSubmitProps,
 };

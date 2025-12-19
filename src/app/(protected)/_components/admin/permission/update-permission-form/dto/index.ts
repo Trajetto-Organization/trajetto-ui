@@ -18,14 +18,14 @@ interface UpdatePermissionFormState {
   successMessage?: string;
 }
 
-interface UpdatePermissionContainerProps {
+interface UpdatePermissionFormSubmitProps {
   state: UpdatePermissionFormState;
   handleCloseUpdatePermission: () => void;
   handleUpdatePermissionName: (updatedName: string) => void;
   handleUpdatePermissionKeyName: (updatedPermissionKeyName: string) => void;
   handleUpdateCanReadPermission: (updatedCanReadPermission: boolean) => void;
   handleUpdateCanWritePermission: (updatedCanWritePermission: boolean) => void;
-  handleUpdateSearchBussinessInputValue: ({
+  handleUpdateSearchBusinessInputValue: ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => void;
@@ -40,8 +40,8 @@ interface UpdatePermissionContainerProps {
     canRead: boolean;
     canWrite: boolean;
     commandProfileAccessInputValue: CommandProfileAccessInputValue;
-    commandBusinnessInputValue: CommandBusinessInputValue;
+    commandBusinessInputValue: CommandBusinessInputValue;
   };
 }
 
-export type { UpdatePermissionContainerProps, UpdatePermissionFormState };
+export type { UpdatePermissionFormSubmitProps, UpdatePermissionFormState };

@@ -16,7 +16,7 @@ import { handleUpdateVehicleType } from "@/actions/update-vehicle-type";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import {
-  UpdateVehicleTypeContainerProps,
+  UpdateVehicleTypeFormSubmitProps,
   UpdateVehicleTypeFormState,
 } from "./dto";
 
@@ -34,7 +34,7 @@ interface UpdateVehicleTypeProps {
   isUpdateVehicleTypeOpen: boolean;
 }
 
-const UpdateVehicleTypeFormContainer = ({
+const UpdateVehicleTypeFormSubmit = ({
   state,
   handleCloseUpdateVehicleType,
   handleUpdateNumberOfAxles,
@@ -43,7 +43,7 @@ const UpdateVehicleTypeFormContainer = ({
   vehicleTypeValues: { number_of_axles, description },
   commandBusinessInputValue,
   handleUpdateSearchBusinessInputValue,
-}: UpdateVehicleTypeContainerProps): JSX.Element => {
+}: UpdateVehicleTypeFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { searchBusinessInputValue } = commandBusinessInputValue;
 
@@ -124,6 +124,7 @@ const UpdateVehicleTypeFormContainer = ({
           type="button"
           variant="outline"
           onClick={handleCloseUpdateVehicleType}
+          className="flex-1"
         >
           Cancelar
         </Button>
@@ -132,6 +133,7 @@ const UpdateVehicleTypeFormContainer = ({
           disabled={
             pending || !isDirty || !commandBusinessInputValue.businessId
           }
+          className="flex-1"
         >
           <span>Editar Tipo do Veículo</span>
           {pending && (
@@ -151,7 +153,10 @@ const UpdateVehicleTypeForm = ({
   isUpdateVehicleTypeOpen,
 }: UpdateVehicleTypeProps): JSX.Element => {
   const defaultState: UpdateVehicleTypeFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateVehicleType, null);
+  const [state, dispatch] = useFormState<UpdateVehicleTypeFormState, FormData>(
+    handleUpdateVehicleType,
+    defaultState,
+  );
 
   const {
     formRef,
@@ -201,8 +206,8 @@ const UpdateVehicleTypeForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateVehicleTypeFormContainer
-            state={state ?? defaultState}
+          <UpdateVehicleTypeFormSubmit
+            state={state}
             handleCloseUpdateVehicleType={handleCloseUpdateVehicleType}
             handleUpdateNumberOfAxles={handleUpdateNumberOfAxles}
             handleUpdateDescription={handleUpdateDescription}

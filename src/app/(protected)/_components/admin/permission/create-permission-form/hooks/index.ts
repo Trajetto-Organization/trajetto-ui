@@ -16,7 +16,7 @@ function useCreatePermissionForm(state: CreatePermissionFormState | null) {
   const [isCreatePermissionForm, setIsCreatePermissionForm] =
     useState<boolean>(false);
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: "",
       businessId: "",
@@ -28,7 +28,7 @@ function useCreatePermissionForm(state: CreatePermissionFormState | null) {
       profileAccessId: "",
     });
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
@@ -38,11 +38,11 @@ function useCreatePermissionForm(state: CreatePermissionFormState | null) {
     });
 
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateSearchProfileAccessInputValue = ({
@@ -63,7 +63,7 @@ function useCreatePermissionForm(state: CreatePermissionFormState | null) {
     if (isCreatePermissionForm) {
       formRef.current?.reset();
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         businessId: "",
         searchBusinessInputValue: "",
       });
@@ -115,9 +115,9 @@ function useCreatePermissionForm(state: CreatePermissionFormState | null) {
   return {
     isCreatePermissionForm,
     handleOpenCreatePermissionForm,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandProfileAccessInputValue,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     formRef,
   };

@@ -40,11 +40,6 @@ export function DashboardBranchToolbar<TData>({
       title: "Razão Social",
       dynamicOptionIcon: BookUser,
     },
-    {
-      key: "business_name",
-      title: "Nome da Empresa",
-      dynamicOptionIcon: BookUser,
-    },
     { key: "email", title: "E-mail" },
     { key: "erp_code", title: "Código ERP" },
     { key: "city", title: "Cidade", dynamicOptionIcon: Building2 },

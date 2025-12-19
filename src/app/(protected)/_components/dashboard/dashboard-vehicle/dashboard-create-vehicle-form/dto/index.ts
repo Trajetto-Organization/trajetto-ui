@@ -1,10 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandFuelTypeInputValue,
-  CommandVehicleTypeInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface DashboardCreateVehicleValidationError {
   description?: string[];
   license_plate?: string[];
@@ -37,55 +30,12 @@ interface DashboardCreateVehicleFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateVehicleContainerProps {
+interface DashboardCreateVehicleFormSubmitProps {
   state: DashboardCreateVehicleFormState;
-  onBack: () => void;
-}
-
-interface DashboardSelectBranchByStepProps {
-  state: DashboardCreateVehicleFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectDriverVehicleTypeStepProps {
-  state: DashboardCreateVehicleFormState;
-  businessId: string;
-  commandDriverInputValue: CommandDriverInputValue;
-  commandVehicleTypeInputValue: CommandVehicleTypeInputValue;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  handleUpdateSearchVehicleTypeInputValue: (
-    vehicleTypeData: CommandVehicleTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectFuelTypeStepProps {
-  state: DashboardCreateVehicleFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
   onBack: () => void;
 }
 
 export type {
   DashboardCreateVehicleFormState,
-  DashboardCreateVehicleContainerProps,
-  DashboardSelectBranchByStepProps,
-  DashboardSelectDriverVehicleTypeStepProps,
-  DashboardSelectFuelTypeStepProps,
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandVehicleTypeInputValue,
-  CommandFuelTypeInputValue,
+  DashboardCreateVehicleFormSubmitProps,
 };

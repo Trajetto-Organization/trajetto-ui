@@ -4,7 +4,7 @@ import { useFormStatus, useFormState } from "react-dom";
 
 import {
   UpdatePasswordProps,
-  UpdateUserPasswordContainerProps,
+  UpdateUserPasswordFormSubmitProps,
   UpdateUserPasswordFormState,
 } from "./dto";
 
@@ -27,10 +27,10 @@ import FormInput from "@/components/custom/form-input";
 import { MdLockOutline } from "react-icons/md";
 import { useUpdatePasswordForm } from "./hooks";
 
-const UpdatePasswordModalContainer = ({
+const UpdatePasswordFormSubmit = ({
   state,
   error,
-}: UpdateUserPasswordContainerProps): JSX.Element => {
+}: UpdateUserPasswordFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -88,7 +88,10 @@ const UpdatePasswordModalContainer = ({
 
 const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
   const defaultState: UpdateUserPasswordFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateUserPassword, null);
+  const [state, dispatch] = useFormState<UpdateUserPasswordFormState, FormData>(
+    handleUpdateUserPassword,
+    defaultState,
+  );
 
   const { handleOpenUpdatePasswordModal, isUpdatePasswordModalOpen } =
     useUpdatePasswordForm(state);
@@ -149,10 +152,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
                 className="flex flex-col space-y-6 border-t
                 bg-accent/35 px-4 py-8 text-left sm:px-10"
               >
-                <UpdatePasswordModalContainer
-                  state={state ?? defaultState}
-                  error={error}
-                />
+                <UpdatePasswordFormSubmit state={state} error={error} />
               </form>
             </DialogContent>
           </Dialog>

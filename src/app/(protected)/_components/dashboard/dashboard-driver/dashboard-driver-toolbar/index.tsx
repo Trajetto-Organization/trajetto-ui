@@ -38,11 +38,6 @@ export function DashboardDriverToolbar<TData>({
     { key: "cnh", title: "CNH" },
     { key: "cpf", title: "CPF" },
     {
-      key: "business_name",
-      title: "Nome da empresa",
-      dynamicOptionIcon: Building2,
-    },
-    {
       key: "branchName",
       title: "Nome da filial",
       dynamicOptionIcon: Building2,

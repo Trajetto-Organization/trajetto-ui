@@ -1,10 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandSupplierInputValue,
-  CommandUserInputValue,
-  CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { DashboardServiceOrderProps } from "../../dto";
 
 interface DashboardUpdateServiceOrderValidationError {
@@ -31,7 +24,7 @@ interface DashboardUpdateServiceOrderFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateServiceOrderContainerProps {
+interface DashboardUpdateServiceOrderFormSubmitProps {
   state: DashboardUpdateServiceOrderFormState;
   onBack: () => void;
   serviceOrderData: DashboardServiceOrderProps;
@@ -44,40 +37,6 @@ interface DashboardUpdateServiceOrderContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface DashboardSelectBranchByStepProps {
-  state: DashboardUpdateServiceOrderFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleSupplierStepProps {
-  state: DashboardUpdateServiceOrderFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandSupplierInputValue: CommandSupplierInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchSupplierInputValue: (
-    supplierData: CommandSupplierInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectUserStepProps {
-  state: DashboardUpdateServiceOrderFormState;
-  businessId: string;
-  commandUserInputValue: CommandUserInputValue;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface DashboardUpdateServiceOrderFormProps {
   serviceOrderData: DashboardServiceOrderProps;
   handleCloseUpdateServiceOrder: () => void;
@@ -87,8 +46,5 @@ interface DashboardUpdateServiceOrderFormProps {
 export type {
   DashboardUpdateServiceOrderFormState,
   DashboardUpdateServiceOrderFormProps,
-  DashboardUpdateServiceOrderContainerProps,
-  DashboardSelectBranchByStepProps,
-  DashboardSelectVehicleSupplierStepProps,
-  DashboardSelectUserStepProps,
+  DashboardUpdateServiceOrderFormSubmitProps,
 };

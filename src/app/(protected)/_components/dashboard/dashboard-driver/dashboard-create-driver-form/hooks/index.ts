@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  CommandBranchInputValue,
-  DashboardCreateDriverFormState,
-} from "../dto";
+
+import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
+import { DashboardCreateDriverFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";

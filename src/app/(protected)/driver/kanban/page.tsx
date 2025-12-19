@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   `,
 };
 
-const DashboardKanban = async () => {
+const DriverKanban = async () => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -40,4 +40,4 @@ const DashboardKanban = async () => {
   );
 };
 
-export default DashboardKanban;
+export default DriverKanban;

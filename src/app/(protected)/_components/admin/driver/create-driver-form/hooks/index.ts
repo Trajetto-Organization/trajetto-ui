@@ -17,10 +17,10 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
   const [isCreateDriverForm, setIsCreateDriverForm] = useState<boolean>(false);
 
   const [currentStep, setCurrentStep] = useState<
-    "select-business" | "create-branch"
-  >("select-business");
+    "select-business-branch" | "create-branch"
+  >("select-business-branch");
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: "",
       searchBusinessInputValue: "",
@@ -42,7 +42,7 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
     if (isCreateDriverForm) {
       formRef.current?.reset();
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         businessId: "",
         searchBusinessInputValue: "",
       });
@@ -56,16 +56,16 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
     setIsCreateDriverForm(!isCreateDriverForm);
   };
 
-  const handleUpdateSearchBussinessInputValue = (
+  const handleUpdateSearchBusinessInputValue = (
     data: CommandBusinessInputValue,
   ) => {
     const updateBusinessData =
-      data.businessId === commandBusinnessInputValue.businessId
+      data.businessId === commandBusinessInputValue.businessId
         ? { businessId: "", searchBusinessInputValue: "" }
         : data;
 
     if (
-      updateBusinessData.businessId !== commandBusinnessInputValue.businessId
+      updateBusinessData.businessId !== commandBusinessInputValue.businessId
     ) {
       setCommandBranchInputValue({
         branchId: "",
@@ -73,7 +73,7 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
       });
     }
 
-    setCommandBussinessInputValue(updateBusinessData);
+    setCommandBusinessInputValue(updateBusinessData);
   };
 
   const handleUpdateSearchBranchInputValue = (
@@ -92,14 +92,14 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
   };
 
   const handleBack = () => {
-    setCurrentStep("select-business");
+    setCurrentStep("select-business-branch");
   };
 
   const handleCloseDialog = () => {
     handleOpenCreateDriverForm();
-    setCurrentStep("select-business");
+    setCurrentStep("select-business-branch");
 
-    setCommandBussinessInputValue({
+    setCommandBusinessInputValue({
       businessId: "",
       searchBusinessInputValue: "",
     });
@@ -164,12 +164,12 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
 
   return {
     isCreateDriverForm,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleContinue,
     handleCloseDialog,
     currentStep,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     handleBack,
     formRef,

@@ -1,7 +1,6 @@
 "use client";
 
 import { Loader } from "lucide-react";
-
 import {
   Dialog,
   DialogScrollContent,
@@ -23,13 +22,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { Textarea } from "@/components/ui/textarea";
-
 import { handleUpdateQuoteStatus } from "@/actions/update-quote-status";
 
 import { QuoteProps, QuoteStatus } from "../dto";
 import { useFormState, useFormStatus } from "react-dom";
 
-import { UpdateQuoteContainerProps, UpdateQuoteFormState } from "./dto";
+import { UpdateQuoteFormSubmitProps, UpdateQuoteFormState } from "./dto";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import { useQuoteFormStatus } from "./hooks";
@@ -59,7 +57,7 @@ const statusOptions: Record<
   CONVERTED: [],
 };
 
-const UpdateQuoteStatusModalFormContainer = ({
+const UpdateQuoteStatusModalFormSubmit = ({
   originalStatus,
   state,
   notes,
@@ -68,7 +66,7 @@ const UpdateQuoteStatusModalFormContainer = ({
   handleUpdateNotes,
   handleUpdateStatus,
   isQuoteStatusDirty,
-}: UpdateQuoteContainerProps & {
+}: UpdateQuoteFormSubmitProps & {
   originalStatus: QuoteStatus;
 }): JSX.Element => {
   const { pending } = useFormStatus();
@@ -156,7 +154,10 @@ const UpdateQuoteStatusModal = ({
   onClose,
 }: UpdateQuoteStatusModalProps): JSX.Element => {
   const defaultState: UpdateQuoteFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateQuoteStatus, null);
+  const [state, dispatch] = useFormState<UpdateQuoteFormState, FormData>(
+    handleUpdateQuoteStatus,
+    defaultState,
+  );
 
   const {
     formRef,
@@ -203,9 +204,9 @@ const UpdateQuoteStatusModal = ({
             return dispatch(formData);
           }}
         >
-          <UpdateQuoteStatusModalFormContainer
+          <UpdateQuoteStatusModalFormSubmit
             originalStatus={quote.status}
-            state={state ?? defaultState}
+            state={state}
             notes={notes}
             status={status}
             onClose={onClose}

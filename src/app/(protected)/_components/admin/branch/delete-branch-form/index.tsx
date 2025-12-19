@@ -22,7 +22,7 @@ interface DeleteBranchProps {
   branchId: string;
 }
 
-const DeleteBranchFormContainer = (): JSX.Element => {
+const DeleteBranchFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -117,7 +117,7 @@ const DeleteBranchForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteBranchFormContainer />
+          <DeleteBranchFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

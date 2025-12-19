@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
   CommandDriverInputValue,
   CommandFuelTypeInputValue,
   CommandVehicleTypeInputValue,
-  CreateVehicleFormState,
-} from "../dto";
+} from "@/app/(protected)/_components/dto";
+import { CreateVehicleFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
@@ -21,13 +22,13 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
     useState<boolean>(false);
 
   const [currentStep, setCurrentStep] = useState<
-    | "select-business"
+    | "select-business-branch"
     | "select-driver-vehicle-type"
     | "select-fuel-type"
     | "create-vehicle"
-  >("select-business");
+  >("select-business-branch");
 
-  const [commandBusinnessInputValue, setCommandBusinnessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: "",
       searchBusinessInputValue: "",
@@ -68,7 +69,7 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
     if (isCreateVehicleForm) {
       formRef.current?.reset();
 
-      setCommandBusinnessInputValue({
+      setCommandBusinessInputValue({
         businessId: "",
         searchBusinessInputValue: "",
       });
@@ -97,16 +98,16 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
     setIsCreateVehicleForm(!isCreateVehicleForm);
   };
 
-  const handleUpdateSearchBusinnessInputValue = (
+  const handleUpdateSearchBusinessInputValue = (
     data: CommandBusinessInputValue,
   ) => {
     const updateBusinessData =
-      data.businessId === commandBusinnessInputValue.businessId
+      data.businessId === commandBusinessInputValue.businessId
         ? { businessId: "", searchBusinessInputValue: "" }
         : data;
 
     if (
-      updateBusinessData.businessId !== commandBusinnessInputValue.businessId
+      updateBusinessData.businessId !== commandBusinessInputValue.businessId
     ) {
       setCommandBranchInputValue({
         branchId: "",
@@ -129,7 +130,7 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
       });
     }
 
-    setCommandBusinnessInputValue(updateBusinessData);
+    setCommandBusinessInputValue(updateBusinessData);
   };
 
   const handleUpdateSearchBranchInputValue = (
@@ -189,7 +190,7 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
   };
 
   const handleBackToBusinessStep = () => {
-    setCurrentStep("select-business");
+    setCurrentStep("select-business-branch");
   };
 
   const handleBackToDriverVehicleTypeStep = () => {
@@ -202,10 +203,10 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
 
   const handleCloseDialog = () => {
     handleOpenCreateVehicleForm();
-    setCurrentStep("select-business");
+    setCurrentStep("select-business-branch");
 
     // Reset all form values
-    setCommandBusinnessInputValue({
+    setCommandBusinessInputValue({
       businessId: "",
       searchBusinessInputValue: "",
     });
@@ -293,7 +294,7 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
 
   return {
     isCreateVehicleForm,
-    handleUpdateSearchBusinnessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateSearchVehicleTypeInputValue,
@@ -306,7 +307,7 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
     handleBackToFuelTypeStep,
     handleCloseDialog,
     currentStep,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     commandDriverInputValue,
     commandVehicleTypeInputValue,

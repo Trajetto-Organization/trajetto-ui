@@ -53,6 +53,7 @@ const TwoFactorAuthenticationFormContainer = ({
         maxLength={6}
         name="code"
         value={otpCode}
+        disabled={pending}
         onChange={(value) => handleOTPChange(value)}
         containerClassName="w-full justify-center"
       >

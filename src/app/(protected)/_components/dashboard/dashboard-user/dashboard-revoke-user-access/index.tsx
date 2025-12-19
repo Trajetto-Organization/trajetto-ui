@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { useDashboardDeleteUserForm } from "./hooks";
 import { handleRevokeUserAccess } from "@/actions/revoke-user-access";
 
-interface DashboardRevokeUserFormContainerProps {
+interface DashboardRevokeUserFormSubmitProps {
   access_revoked: boolean;
 }
 
@@ -26,9 +26,9 @@ interface DashboardRevokeUserAccessProps {
   userId: string;
 }
 
-const DashboardRevokeUserFormContainer = ({
+const DashboardRevokeUserFormSubmit = ({
   access_revoked,
-}: DashboardRevokeUserFormContainerProps): JSX.Element => {
+}: DashboardRevokeUserFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -165,7 +165,7 @@ const DashboardRevokeUserAccessForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardRevokeUserFormContainer access_revoked={access_revoked} />
+          <DashboardRevokeUserFormSubmit access_revoked={access_revoked} />
         </form>
       </AlertDialogContent>
     </AlertDialog>

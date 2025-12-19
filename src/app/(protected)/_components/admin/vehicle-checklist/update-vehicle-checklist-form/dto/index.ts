@@ -4,7 +4,6 @@ import {
   CommandDriverInputValue,
   CommandVehicleInputValue,
 } from "@/app/(protected)/_components/dto";
-
 import { VehicleChecklistProps } from "../../dto";
 
 interface UpdateVehicleChecklistValidationError {
@@ -48,7 +47,7 @@ interface UpdateVehicleChecklistFormState {
   successMessage?: string;
 }
 
-interface UpdateVehicleChecklistContainerProps {
+interface UpdateVehicleChecklistFormSubmitProps {
   state: UpdateVehicleChecklistFormState;
   onBack: () => void;
   checklistData: VehicleChecklistProps;
@@ -70,34 +69,6 @@ interface UpdateVehicleChecklistContainerProps {
   setPhotosToRemove: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-interface SelectBusinessBranchStepProps {
-  state: UpdateVehicleChecklistFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectVehicleDriverStepProps {
-  state: UpdateVehicleChecklistFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface UpdateVehicleChecklistFormProps {
   checklistData: VehicleChecklistProps;
   handleCloseUpdateChecklist: () => void;
@@ -106,8 +77,6 @@ interface UpdateVehicleChecklistFormProps {
 
 export type {
   UpdateVehicleChecklistFormState,
-  UpdateVehicleChecklistContainerProps,
-  SelectBusinessBranchStepProps,
-  SelectVehicleDriverStepProps,
+  UpdateVehicleChecklistFormSubmitProps,
   UpdateVehicleChecklistFormProps,
 };

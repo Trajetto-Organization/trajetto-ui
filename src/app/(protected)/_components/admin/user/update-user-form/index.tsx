@@ -27,7 +27,7 @@ import { useUpdateGenerateRandomPassword, useUpdateUserForm } from "./hooks";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 import { handleUpdateUserRegistration } from "@/actions/update-user-registration";
 
-import { UpdateUserContainerProps, UpdateUserFormState } from "./dto";
+import { UpdateUserFormSubmitProps, UpdateUserFormState } from "./dto";
 import { roleLabels, UserBusinessRole } from "../../../dto";
 
 import { SearchBusiness } from "../../../search-business";
@@ -44,9 +44,9 @@ interface UpdateUserProps {
   isUpdateUser: boolean;
 }
 
-const UpdateUserFormContainer = ({
+const UpdateUserFormSubmit = ({
   state,
-  handleUpdateSearchBussinessInputValue,
+  handleUpdateSearchBusinessInputValue,
   handleUpdateSearchProfileAccessInputValue,
   handleUpdateSearchDriverInputValue,
   handleUpdateUserEmail,
@@ -58,13 +58,13 @@ const UpdateUserFormContainer = ({
     userEmail,
     userName,
     userRole,
-    commandBusinnessInputValue: { searchBusinessInputValue, businessId },
+    commandBusinessInputValue: { searchBusinessInputValue, businessId },
     commandProfileAccessInputValue: { searchProfileAccessInputValue },
     commandDriverInputValue: { searchDriverInputValue, driverId },
   },
   userType,
   setUserType,
-}: UpdateUserContainerProps) => {
+}: UpdateUserFormSubmitProps) => {
   const { pending } = useFormStatus();
   const { handleGeneratePassword, handleChangePassword, password } =
     useUpdateGenerateRandomPassword();
@@ -116,8 +116,7 @@ const UpdateUserFormContainer = ({
             value={userRole}
             onValueChange={(value) => {
               handleUpdateUserRole(value);
-
-              handleUpdateSearchBussinessInputValue({
+              handleUpdateSearchBusinessInputValue({
                 businessId: "",
                 searchBusinessInputValue: "",
               });
@@ -262,7 +261,7 @@ const UpdateUserFormContainer = ({
                 className="h-8 w-4"
                 variant="ghost"
                 onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
+                  handleUpdateSearchBusinessInputValue({
                     businessId: "",
                     searchBusinessInputValue: "",
                   })
@@ -350,7 +349,7 @@ const UpdateUserFormContainer = ({
       >
         <SearchBusiness
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
           errorBusinessId={state.updateUserError?.businessId}
@@ -406,17 +405,20 @@ const UpdateUserForm = ({
   isUpdateUser,
 }: UpdateUserProps): JSX.Element => {
   const defaultState: UpdateUserFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateUserRegistration, null);
+  const [state, dispatch] = useFormState<UpdateUserFormState, FormData>(
+    handleUpdateUserRegistration,
+    defaultState,
+  );
 
   const {
     formRef,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateUserEmail,
     handleUpdateUserName,
     handleUpdateUserRole,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandProfileAccessInputValue,
     commandDriverInputValue,
     userEmail,
@@ -454,7 +456,7 @@ const UpdateUserForm = ({
             driverCnh: "",
           };
 
-          handleUpdateSearchBussinessInputValue(resetBusinessInputValue);
+          handleUpdateSearchBusinessInputValue(resetBusinessInputValue);
           handleUpdateSearchProfileAccessInputValue(
             resetProfileAccessInputValue,
           );
@@ -478,7 +480,7 @@ const UpdateUserForm = ({
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
               driverId: commandDriverInputValue.driverId,
               userType: userType,
@@ -489,14 +491,14 @@ const UpdateUserForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdateUserFormContainer
-            state={state ?? defaultState}
+          <UpdateUserFormSubmit
+            state={state}
             handleOpenUpdateUser={handleOpenUpdateUser}
             handleUpdateUserEmail={handleUpdateUserEmail}
             handleUpdateUserName={handleUpdateUserName}
             handleUpdateUserRole={handleUpdateUserRole}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
@@ -509,7 +511,7 @@ const UpdateUserForm = ({
               userEmail,
               userName,
               userRole,
-              commandBusinnessInputValue,
+              commandBusinessInputValue,
               commandProfileAccessInputValue,
               commandDriverInputValue,
             }}

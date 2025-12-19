@@ -1403,7 +1403,8 @@ const tutorialConfigs: TutorialConfig = {
       title: "Criar Novo Checklist Veicular 🆕",
       content: `Para registrar um novo checklist veicular no sistema, clique neste botão.
       PERMISSÕES NECESSÁRIAS:
-      • ESCRITA em Gerenciar Veículos
+      • ESCRITA em Gerenciar Checklist dos Veículos
+      • LEITURA em Gerenciar Veículos
       • LEITURA em Gerenciar Filiais
       • LEITURA em Gerenciar Motoristas
       IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
@@ -1425,7 +1426,7 @@ const tutorialConfigs: TutorialConfig = {
       title: "Painel de Checklists Veiculares 📋",
       content: `Visualize todos os checklists veiculares registrados no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
-      • LEITURA em Gerenciar Veículos
+      • LEITURA em Gerenciar Checklist dos Veículos
       IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
       A tabela apresenta informações essenciais como veículo inspecionado, motorista responsável, data do checklist, quilometragem registrada, condição geral do veículo e status da inspeção.
       DICA VISUAL: As cores das linhas indicam a condição geral: Verde = Aprovado, Amarelo = Aprovado com Restrições, Vermelho = Reprovado.`,
@@ -1438,7 +1439,8 @@ const tutorialConfigs: TutorialConfig = {
       content: `Nesta coluna aparecem os botões de ação (três pontos ⋮) para gerenciar cada checklist veicular registrado.
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
-      • ESCRITA em Gerenciar Veículos
+      • ESCRITA em Gerenciar Checklist dos Veículos
+      • LEITURA em Gerenciar Veículos
       • LEITURA em Gerenciar Filiais
       • LEITURA em Gerenciar Motoristas
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.

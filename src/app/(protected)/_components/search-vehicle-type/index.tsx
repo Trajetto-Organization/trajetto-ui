@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useVehicleTypeInfiniteScroll } from "./hooks/vehicle-type-infinite-scroll";
@@ -53,21 +52,20 @@ const SearchVehicleType = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-vehicle-type-input"
-        className={errorVehicleTypeId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorVehicleTypeId ? "text-red-500" : ""}`}
       >
         {errorVehicleTypeId
           ? errorVehicleTypeId[0]
           : "Selecione o tipo de veículo"}{" "}
         {isOptional && "(opcional)"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-vehicle-type-input"
           placeholder="Buscar tipo de veículo..."
           className="h-9"
+          aria-label="Buscar tipo de veículo"
         />
 
         {!isLoadingVehicleTypes && !hasError && (

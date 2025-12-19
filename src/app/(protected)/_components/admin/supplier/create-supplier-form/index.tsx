@@ -1,5 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -10,82 +10,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateSupplier } from "@/actions/create-supplier";
-import {
-  CreateSupplierContainerProps,
-  CreateSupplierFormState,
-  SelectBusinessByStepProps,
-} from "./dto";
+import { CreateSupplierFormSubmitProps, CreateSupplierFormState } from "./dto";
 
 import { useCreateSupplierForm } from "./hooks";
-
-import { SearchBusiness } from "../../../search-business";
 import { useCepValidation } from "../../../hooks";
 
-import { cn } from "@/lib/utils";
+import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
 
-const SelectBusinessStep = ({
-  searchBusinessInputValue,
-  handleUpdateSearchBussinessInputValue,
-  onContinue,
-  errorBusinessId,
-}: SelectBusinessByStepProps) => {
-  return (
-    <div className="space-y-6">
-      {searchBusinessInputValue && (
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "border-dashed truncate h-8 text-center max-w-96 block leading-4",
-            )}
-          >
-            {searchBusinessInputValue}
-          </div>
-          <Button
-            className="h-8 w-4"
-            variant="ghost"
-            onClick={() =>
-              handleUpdateSearchBussinessInputValue({
-                businessId: "",
-                searchBusinessInputValue: "",
-              })
-            }
-          >
-            <X />
-          </Button>
-        </div>
-      )}
-
-      <SearchBusiness
-        errorBusinessId={errorBusinessId}
-        searchBusinessInputValue={searchBusinessInputValue}
-        handleUpdateSearchBussinessInputValue={
-          handleUpdateSearchBussinessInputValue
-        }
-      />
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const CreateSupplierFormContainer = ({
+const CreateSupplierFormSubmit = ({
   state,
   isCreateSupplierForm,
   onBack,
-}: CreateSupplierContainerProps): JSX.Element => {
+}: CreateSupplierFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
     updatedFields: allFields,
@@ -202,7 +142,10 @@ const CreateSupplierFormContainer = ({
 
 const CreateSupplierForm = (): JSX.Element => {
   const defaultState: CreateSupplierFormState = {};
-  const [state, dispatch] = useFormState(handleCreateSupplier, null);
+  const [state, dispatch] = useFormState<CreateSupplierFormState, FormData>(
+    handleCreateSupplier,
+    defaultState,
+  );
 
   const {
     isCreateSupplierForm,
@@ -212,7 +155,7 @@ const CreateSupplierForm = (): JSX.Element => {
     currentStep,
     selectedBusiness,
     handleBack,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleContinue,
   } = useCreateSupplierForm(state);
 
@@ -240,9 +183,9 @@ const CreateSupplierForm = (): JSX.Element => {
 
         {currentStep === "select-business" ? (
           <SelectBusinessStep
-            searchBusinessInputValue={selectedBusiness.searchBusinessInputValue}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            commandBusinessInputValue={selectedBusiness}
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             onContinue={handleContinue}
             errorBusinessId={getBusinessIdError()}
@@ -255,9 +198,9 @@ const CreateSupplierForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <CreateSupplierFormContainer
+            <CreateSupplierFormSubmit
               isCreateSupplierForm={isCreateSupplierForm}
-              state={state ?? defaultState}
+              state={state}
               onBack={handleBack}
             />
           </form>

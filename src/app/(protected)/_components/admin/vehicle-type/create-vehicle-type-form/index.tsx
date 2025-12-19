@@ -16,7 +16,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import {
-  CreateVehicleTypeContainerProps,
+  CreateVehicleTypeFormSubmitProps,
   CreateVehicleTypeFormState,
 } from "./dto";
 
@@ -28,12 +28,12 @@ import { SearchBusiness } from "../../../search-business";
 
 import { cn } from "@/lib/utils";
 
-const CreateVehicleTypeFormContainer = ({
+const CreateVehicleTypeFormSubmit = ({
   state,
   handleOpenCreateVehicleTypeForm,
   handleUpdateSearchBussinessInputValue,
   commandBusinnessInputValue: { searchBusinessInputValue },
-}: CreateVehicleTypeContainerProps) => {
+}: CreateVehicleTypeFormSubmitProps) => {
   const { pending } = useFormStatus();
 
   return (
@@ -122,7 +122,10 @@ const CreateVehicleTypeFormContainer = ({
 
 const CreateVehicleTypeForm = (): JSX.Element => {
   const defaultState: CreateVehicleTypeFormState = {};
-  const [state, dispatch] = useFormState(handleCreateVehicleType, null);
+  const [state, dispatch] = useFormState<CreateVehicleTypeFormState, FormData>(
+    handleCreateVehicleType,
+    defaultState,
+  );
 
   const {
     isCreateCreateVehicleTypeForm,
@@ -163,8 +166,8 @@ const CreateVehicleTypeForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreateVehicleTypeFormContainer
-            state={state ?? defaultState}
+          <CreateVehicleTypeFormSubmit
+            state={state}
             handleOpenCreateVehicleTypeForm={handleOpenCreateVehicleTypeForm}
             handleUpdateSearchBussinessInputValue={
               handleUpdateSearchBussinessInputValue

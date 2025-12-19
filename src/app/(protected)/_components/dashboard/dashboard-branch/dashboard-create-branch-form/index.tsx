@@ -15,7 +15,7 @@ import FormInput from "@/components/custom/form-input";
 
 import { handleCreateBranch } from "@/actions/create-branch";
 import {
-  DashboardCreateBranchContainerProps,
+  DashboardCreateBranchFormSubmitProps,
   DashboardCreateBranchFormState,
 } from "./dto";
 
@@ -27,11 +27,11 @@ import { useCepValidation } from "../../../hooks";
 import { permissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth-store";
 
-const CreateBranchFormContainer = ({
+const CreateBranchFormSubmit = ({
   state,
   isCreateBranchForm,
   handleOpenCreateBranchForm,
-}: DashboardCreateBranchContainerProps): JSX.Element => {
+}: DashboardCreateBranchFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, cepLoading } = useCepValidation({
     isOpen: isCreateBranchForm,
@@ -77,7 +77,10 @@ const CreateBranchFormContainer = ({
 
 const DashboardCreateBranchForm = (): JSX.Element => {
   const defaultState: DashboardCreateBranchFormState = {};
-  const [state, dispatch] = useFormState(handleCreateBranch, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreateBranchFormState,
+    FormData
+  >(handleCreateBranch, defaultState);
 
   const { isCreateBranchForm, formRef, handleOpenCreateBranchForm } =
     useDashboardCreateBusinessForm(state);
@@ -116,9 +119,9 @@ const DashboardCreateBranchForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreateBranchFormContainer
+          <CreateBranchFormSubmit
             isCreateBranchForm={isCreateBranchForm}
-            state={state ?? defaultState}
+            state={state}
             handleOpenCreateBranchForm={handleOpenCreateBranchForm}
           />
         </form>

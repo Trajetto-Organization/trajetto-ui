@@ -22,7 +22,7 @@ import { handleUpdateTwoFactorAuthentication } from "@/actions/update-two-factor
 import { useTwoFactorAuthenticationForm } from "./hooks";
 import { UserTwoFactorAuthenticationFormProps } from "./dto";
 
-const UserTwoFactorAuthenticationContainer = ({
+const UserTwoFactorAuthenticationFormSubmit = ({
   error,
   isTwoFactorEnabled,
 }: UserTwoFactorAuthenticationFormProps): JSX.Element => {
@@ -157,7 +157,7 @@ const UserTwoFactorAuthentication = ({
             </AlertDialogTrigger>
             <AlertDialogContent className="bg-white dark:bg-[#121214]">
               <form action={dispatch}>
-                <UserTwoFactorAuthenticationContainer
+                <UserTwoFactorAuthenticationFormSubmit
                   error={error}
                   isTwoFactorEnabled={isTwoFactorEnabled}
                 />

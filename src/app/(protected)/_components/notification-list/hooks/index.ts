@@ -35,7 +35,6 @@ function useNotifications(state: NotificationState | null | undefined) {
 
     // Note: removeNotification is now called directly in NotificationCard
     // before the action completes, so we don't need to call it here
-
     if (state?.successMessage && !processedStatesRef.current.has(stateKey)) {
       processedStatesRef.current.add(stateKey);
       toast.success(state.successMessage);

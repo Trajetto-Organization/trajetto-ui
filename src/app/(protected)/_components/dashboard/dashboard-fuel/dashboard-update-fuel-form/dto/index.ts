@@ -1,8 +1,5 @@
 import {
-  CommandBranchInputValue,
-  CommandDriverInputValue,
   CommandVehicleInputValue,
-  CommandFuelTypeInputValue,
   FuelProps,
 } from "@/app/(protected)/_components/dto";
 
@@ -28,7 +25,7 @@ interface DashboardUpdateFuelFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateFuelContainerProps {
+interface DashboardUpdateFuelFormSubmitProps {
   state: DashboardUpdateFuelFormState;
   onBack: () => void;
   fuelData: FuelProps;
@@ -48,42 +45,6 @@ interface DashboardUpdateFuelContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface DashboardSelectBranchStepProps {
-  state: DashboardUpdateFuelFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleDriverStepProps {
-  state: DashboardUpdateFuelFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectFuelTypeStepProps {
-  state: DashboardUpdateFuelFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface DashboardUpdateFuelFormProps {
   fuelData: FuelProps;
   handleCloseUpdateFuel: () => void;
@@ -93,8 +54,5 @@ interface DashboardUpdateFuelFormProps {
 export type {
   DashboardUpdateFuelFormState,
   DashboardUpdateFuelFormProps,
-  DashboardUpdateFuelContainerProps,
-  DashboardSelectBranchStepProps,
-  DashboardSelectVehicleDriverStepProps,
-  DashboardSelectFuelTypeStepProps,
+  DashboardUpdateFuelFormSubmitProps,
 };

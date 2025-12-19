@@ -21,7 +21,7 @@ interface DeleteUserProps {
   userId: string;
 }
 
-const DeleteUserFormContainer = (): JSX.Element => {
+const DeleteUserFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -120,7 +120,7 @@ const DeleteUserForm = ({ userId }: DeleteUserProps): JSX.Element => {
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteUserFormContainer />
+          <DeleteUserFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

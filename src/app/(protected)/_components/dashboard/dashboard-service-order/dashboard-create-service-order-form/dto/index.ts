@@ -1,9 +1,4 @@
-import {
-  CommandBranchInputValue,
-  CommandSupplierInputValue,
-  CommandUserInputValue,
-  CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
+import { CommandVehicleInputValue } from "@/app/(protected)/_components/dto";
 
 interface DashboardCreateServiceOrderValidationError {
   date?: string[];
@@ -29,7 +24,7 @@ interface DashboardCreateServiceOrderFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateServiceOrderContainerProps {
+interface DashboardCreateServiceOrderFormSubmitProps {
   onBack: () => void;
   state: DashboardCreateServiceOrderFormState;
   commandVehicleInputValue: CommandVehicleInputValue;
@@ -41,44 +36,7 @@ interface DashboardCreateServiceOrderContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface DashboardSelectBranchStepProps {
-  state: DashboardCreateServiceOrderFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleSupplierStepProps {
-  state: DashboardCreateServiceOrderFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandSupplierInputValue: CommandSupplierInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchSupplierInputValue: (
-    supplierData: CommandSupplierInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectUserStepProps {
-  state: DashboardCreateServiceOrderFormState;
-  businessId: string;
-  commandUserInputValue: CommandUserInputValue;
-  handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 export type {
   DashboardCreateServiceOrderFormState,
-  DashboardCreateServiceOrderContainerProps,
-  DashboardSelectBranchStepProps,
-  DashboardSelectVehicleSupplierStepProps,
-  DashboardSelectUserStepProps,
+  DashboardCreateServiceOrderFormSubmitProps,
 };

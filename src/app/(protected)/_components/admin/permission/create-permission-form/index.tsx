@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-
 import {
-  CreatePermissionContainerProps,
+  CreatePermissionFormSubmitProps,
   CreatePermissionFormState,
 } from "./dto";
 
@@ -30,14 +29,14 @@ import { SearchProfileAccess } from "../../../search-profile-access";
 
 import { cn } from "@/lib/utils";
 
-const CreatePermissionFormContainer = ({
+const CreatePermissionFormSubmit = ({
   state,
   handleOpenCreatePermissionForm,
-  handleUpdateSearchBussinessInputValue,
+  handleUpdateSearchBusinessInputValue,
   handleUpdateSearchProfileAccessInputValue,
-  commandBusinnessInputValue: { searchBusinessInputValue, businessId },
+  commandBusinessInputValue: { searchBusinessInputValue, businessId },
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
-}: CreatePermissionContainerProps) => {
+}: CreatePermissionFormSubmitProps) => {
   const { pending } = useFormStatus();
 
   return (
@@ -64,7 +63,7 @@ const CreatePermissionFormContainer = ({
                 className="h-8 w-4"
                 variant="ghost"
                 onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
+                  handleUpdateSearchBusinessInputValue({
                     businessId: "",
                     searchBusinessInputValue: "",
                   })
@@ -115,7 +114,7 @@ const CreatePermissionFormContainer = ({
       >
         <SearchBusiness
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
           errorBusinessId={state.createPermissionError?.businessId}
@@ -157,14 +156,17 @@ const CreatePermissionFormContainer = ({
 
 const CreatePermissionForm = (): JSX.Element => {
   const defaultState: CreatePermissionFormState = {};
-  const [state, dispatch] = useFormState(handleCreatePermission, null);
+  const [state, dispatch] = useFormState<CreatePermissionFormState, FormData>(
+    handleCreatePermission,
+    defaultState,
+  );
 
   const {
     isCreatePermissionForm,
     handleOpenCreatePermissionForm,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandProfileAccessInputValue,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     formRef,
   } = useCreatePermissionForm(state);
@@ -193,7 +195,7 @@ const CreatePermissionForm = (): JSX.Element => {
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
             };
 
@@ -201,16 +203,16 @@ const CreatePermissionForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreatePermissionFormContainer
-            state={state ?? defaultState}
+          <CreatePermissionFormSubmit
+            state={state}
             handleOpenCreatePermissionForm={handleOpenCreatePermissionForm}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
             }
-            commandBusinnessInputValue={commandBusinnessInputValue}
+            commandBusinessInputValue={commandBusinessInputValue}
             commandProfileAccessInputValue={commandProfileAccessInputValue}
           />
         </form>

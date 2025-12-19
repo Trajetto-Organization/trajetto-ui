@@ -11,8 +11,8 @@ import { formatMileage } from "@/lib/format-values";
 import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
 import { DatePickerField } from "../../../../custom";
 
-import { UpdateVehicleChecklistContainerProps } from "../dto";
-import { getPhotoRequirements } from "../../create-vehicle-checklist-form/utils/photo-requirements";
+import { DashboardUpdateVehicleChecklistFormSubmitProps } from "../dto";
+import { getPhotoRequirements } from "../../dashboard-create-vehicle-checklist-form/utils/photo-requirements";
 
 import {
   Select,
@@ -22,17 +22,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { Label } from "@/components/ui/label";
-import { PhotoUpload } from "./photo-upload";
+import { DashboardPhotoUpload } from "../components/dashboard-photo-upload";
+import { useAuthStore } from "@/store/auth-store";
 
-// Step 3: Update Vehicle Checklist Form - Following CREATE layout
-const UpdateChecklistContainer = ({
+const DashboardUpdateChecklistFormSubmit = ({
   state,
   onBack,
   checklistData,
-  isBusinessAndEntityDirty,
+  isEntityDirty,
   isUpdateChecklistOpen,
-  commandBusinessInputValue,
   commandBranchInputValue,
   commandVehicleInputValue,
   commandDriverInputValue,
@@ -42,15 +40,14 @@ const UpdateChecklistContainer = ({
   setFileErrors,
   photosToRemove,
   setPhotosToRemove,
-}: UpdateVehicleChecklistContainerProps): JSX.Element => {
+}: DashboardUpdateVehicleChecklistFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+  const { businessId } = useAuthStore();
 
   // Fetch current vehicle data for validation
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
     vehicleId: commandVehicleInputValue.vehicleId || checklistData.vehicleId,
-    businessId:
-      commandBusinessInputValue.businessId ||
-      (checklistData.businessId as string),
+    businessId: businessId as string,
   });
 
   // Initialize form values immediately with useMemo for stability
@@ -266,7 +263,7 @@ const UpdateChecklistContainer = ({
     const isRequired = requirement?.required;
 
     return (
-      <PhotoUpload
+      <DashboardPhotoUpload
         fieldName={fieldName}
         label={label}
         isRequired={isRequired}
@@ -292,7 +289,7 @@ const UpdateChecklistContainer = ({
   );
   const hasPhotoRemoval = photosToRemove.length > 0;
   const hasAnyChange =
-    isDirty || isBusinessAndEntityDirty || hasFileChange || hasPhotoRemoval;
+    isDirty || isEntityDirty || hasFileChange || hasPhotoRemoval;
 
   return (
     <>
@@ -474,7 +471,7 @@ const UpdateChecklistContainer = ({
 
           {/* Tires Condition */}
           <div className="space-y-2">
-            <Label htmlFor="tires_condition">Condição dos Pneus *</Label>
+            <div className="text-sm font-medium">Condição dos Pneus *</div>
             <Select
               name="tires_condition"
               disabled={pending}
@@ -483,7 +480,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("tires_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Condição dos Pneus">
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -506,9 +503,9 @@ const UpdateChecklistContainer = ({
 
           {/* Fuel Level */}
           <div className="space-y-2">
-            <Label htmlFor="fuel_level_adequate">
+            <div className="text-sm font-medium">
               Nível de Combustível Adequado *
-            </Label>
+            </div>
             <Select
               name="fuel_level_adequate"
               disabled={pending}
@@ -517,7 +514,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("fuel_level_adequate", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Nível de Combustível Adequado"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -540,7 +540,7 @@ const UpdateChecklistContainer = ({
 
           {/* Headlights */}
           <div className="space-y-2">
-            <Label htmlFor="headlights_working">Faróis Funcionando *</Label>
+            <div className="text-sm font-medium">Faróis Funcionando *</div>
             <Select
               name="headlights_working"
               disabled={pending}
@@ -549,7 +549,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("headlights_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Faróis Funcionando">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -569,9 +569,9 @@ const UpdateChecklistContainer = ({
 
           {/* Taillights */}
           <div className="space-y-2">
-            <Label htmlFor="taillights_working">
+            <div className="text-sm font-medium">
               Lanternas Traseiras Funcionando *
-            </Label>
+            </div>
             <Select
               name="taillights_working"
               disabled={pending}
@@ -580,7 +580,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("taillights_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Lanternas Traseiras Funcionando"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -603,7 +606,7 @@ const UpdateChecklistContainer = ({
 
           {/* Turn Signals */}
           <div className="space-y-2">
-            <Label htmlFor="turn_signals_working">Setas Funcionando *</Label>
+            <div className="text-sm font-medium">Setas Funcionando *</div>
             <Select
               name="turn_signals_working"
               disabled={pending}
@@ -612,7 +615,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("turn_signals_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Setas Funcionando">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -632,9 +635,9 @@ const UpdateChecklistContainer = ({
 
           {/* Bumpers Condition */}
           <div className="space-y-2">
-            <Label htmlFor="bumpers_condition">
+            <div className="text-sm font-medium">
               Condição dos Para-choques *
-            </Label>
+            </div>
             <Select
               name="bumpers_condition"
               disabled={pending}
@@ -643,7 +646,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("bumpers_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Condição dos Para-choques"
+              >
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -664,9 +670,7 @@ const UpdateChecklistContainer = ({
 
           {/* Windshield Condition */}
           <div className="space-y-2">
-            <Label htmlFor="windshield_condition">
-              Condição do Para-brisa *
-            </Label>
+            <div className="text-sm font-medium">Condição do Para-brisa *</div>
             <Select
               name="windshield_condition"
               disabled={pending}
@@ -675,7 +679,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("windshield_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Condição do Para-brisa"
+              >
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -696,9 +703,9 @@ const UpdateChecklistContainer = ({
 
           {/* Mirrors Condition */}
           <div className="space-y-2">
-            <Label htmlFor="mirrors_condition">
+            <div className="text-sm font-medium">
               Condição dos Retrovisores *
-            </Label>
+            </div>
             <Select
               name="mirrors_condition"
               disabled={pending}
@@ -707,7 +714,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("mirrors_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Condição dos Retrovisores"
+              >
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -728,9 +738,9 @@ const UpdateChecklistContainer = ({
 
           {/* Seatbelts Working */}
           <div className="space-y-2">
-            <Label htmlFor="seatbelts_working">
+            <div className="text-sm font-medium">
               Cintos de Segurança Funcionando *
-            </Label>
+            </div>
             <Select
               name="seatbelts_working"
               disabled={pending}
@@ -739,7 +749,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("seatbelts_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Cintos de Segurança Funcionando"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -760,7 +773,7 @@ const UpdateChecklistContainer = ({
 
           {/* Dashboard Working */}
           <div className="space-y-2">
-            <Label htmlFor="dashboard_working">Painel Funcionando *</Label>
+            <div className="text-sm font-medium">Painel Funcionando *</div>
             <Select
               name="dashboard_working"
               disabled={pending}
@@ -769,7 +782,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("dashboard_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Painel Funcionando">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -787,7 +800,7 @@ const UpdateChecklistContainer = ({
 
           {/* Brakes */}
           <div className="space-y-2">
-            <Label htmlFor="brakes_working">Freios Funcionando *</Label>
+            <div className="text-sm font-medium">Freios Funcionando *</div>
             <Select
               name="brakes_working"
               disabled={pending}
@@ -796,7 +809,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("brakes_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Freios Funcionando">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -814,7 +827,7 @@ const UpdateChecklistContainer = ({
 
           {/* Clutch Working */}
           <div className="space-y-2">
-            <Label htmlFor="clutch_working">Embreagem Funcionando *</Label>
+            <div className="text-sm font-medium">Embreagem Funcionando *</div>
             <Select
               name="clutch_working"
               disabled={pending}
@@ -823,7 +836,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("clutch_working", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Embreagem Funcionando"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -841,7 +857,7 @@ const UpdateChecklistContainer = ({
 
           {/* Oil Level Adequate */}
           <div className="space-y-2">
-            <Label htmlFor="oil_level_adequate">Nível de Óleo Adequado *</Label>
+            <div className="text-sm font-medium">Nível de Óleo Adequado *</div>
             <Select
               name="oil_level_adequate"
               disabled={pending}
@@ -850,7 +866,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("oil_level_adequate", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Nível de Óleo Adequado"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -868,9 +887,9 @@ const UpdateChecklistContainer = ({
 
           {/* Radiator Water Adequate */}
           <div className="space-y-2">
-            <Label htmlFor="radiator_water_adequate">
+            <div className="text-sm font-medium">
               Água do Radiador Adequada *
-            </Label>
+            </div>
             <Select
               name="radiator_water_adequate"
               disabled={pending}
@@ -882,7 +901,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("radiator_water_adequate", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Água do Radiador Adequada"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -903,9 +925,9 @@ const UpdateChecklistContainer = ({
 
           {/* Brake Fluid Adequate */}
           <div className="space-y-2">
-            <Label htmlFor="brake_fluid_adequate">
+            <div className="text-sm font-medium">
               Fluido de Freio Adequado *
-            </Label>
+            </div>
             <Select
               name="brake_fluid_adequate"
               disabled={pending}
@@ -914,7 +936,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("brake_fluid_adequate", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Fluido de Freio Adequado"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -935,9 +960,7 @@ const UpdateChecklistContainer = ({
 
           {/* Steering Wheel Condition */}
           <div className="space-y-2">
-            <Label htmlFor="steering_wheel_condition">
-              Condição do Volante *
-            </Label>
+            <div className="text-sm font-medium">Condição do Volante *</div>
             <Select
               name="steering_wheel_condition"
               disabled={pending}
@@ -946,7 +969,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("steering_wheel_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Condição do Volante"
+              >
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -967,7 +993,7 @@ const UpdateChecklistContainer = ({
 
           {/* Battery Condition */}
           <div className="space-y-2">
-            <Label htmlFor="battery_condition">Condição da Bateria *</Label>
+            <div className="text-sm font-medium">Condição da Bateria *</div>
             <Select
               name="battery_condition"
               disabled={pending}
@@ -976,7 +1002,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("battery_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Condição da Bateria"
+              >
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -997,7 +1026,7 @@ const UpdateChecklistContainer = ({
 
           {/* Driver License Valid */}
           <div className="space-y-2">
-            <Label htmlFor="driver_license_valid">CNH Válida *</Label>
+            <div className="text-sm font-medium">CNH Válida *</div>
             <Select
               name="driver_license_valid"
               disabled={pending}
@@ -1006,7 +1035,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("driver_license_valid", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="CNH Válida">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -1023,9 +1052,9 @@ const UpdateChecklistContainer = ({
 
           {/* Vehicle Documents Valid */}
           <div className="space-y-2">
-            <Label htmlFor="vehicle_documents_valid">
+            <div className="text-sm font-medium">
               Documentos do Veículo Válidos *
-            </Label>
+            </div>
             <Select
               name="vehicle_documents_valid"
               disabled={pending}
@@ -1037,7 +1066,10 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("vehicle_documents_valid", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger
+                className="w-full"
+                aria-label="Documentos do Veículo Válidos"
+              >
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -1054,7 +1086,7 @@ const UpdateChecklistContainer = ({
 
           {/* Insurance Valid */}
           <div className="space-y-2">
-            <Label htmlFor="insurance_valid">Seguro Válido *</Label>
+            <div className="text-sm font-medium">Seguro Válido *</div>
             <Select
               name="insurance_valid"
               disabled={pending}
@@ -1063,7 +1095,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("insurance_valid", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Seguro Válido">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -1080,7 +1112,7 @@ const UpdateChecklistContainer = ({
 
           {/* Fire Extinguisher Valid */}
           <div className="space-y-2">
-            <Label htmlFor="fire_extinguisher_valid">Extintor Válido *</Label>
+            <div className="text-sm font-medium">Extintor Válido *</div>
             <Select
               name="fire_extinguisher_valid"
               disabled={pending}
@@ -1092,7 +1124,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("fire_extinguisher_valid", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Extintor Válido">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -1109,9 +1141,7 @@ const UpdateChecklistContainer = ({
 
           {/* Warning Triangle Present */}
           <div className="space-y-2">
-            <Label htmlFor="warning_triangle_present">
-              Triângulo Presente *
-            </Label>
+            <div className="text-sm font-medium">Triângulo Presente *</div>
             <Select
               name="warning_triangle_present"
               disabled={pending}
@@ -1123,7 +1153,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("warning_triangle_present", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Triângulo Presente">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -1140,7 +1170,7 @@ const UpdateChecklistContainer = ({
 
           {/* Jack Present */}
           <div className="space-y-2">
-            <Label htmlFor="jack_present">Macaco Presente *</Label>
+            <div className="text-sm font-medium">Macaco Presente *</div>
             <Select
               name="jack_present"
               disabled={pending}
@@ -1149,7 +1179,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("jack_present", value === "true")
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Macaco Presente">
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
@@ -1166,7 +1196,7 @@ const UpdateChecklistContainer = ({
 
           {/* Spare Tire Condition */}
           <div className="space-y-2">
-            <Label htmlFor="spare_tire_condition">Condição do Estepe *</Label>
+            <div className="text-sm font-medium">Condição do Estepe *</div>
             <Select
               name="spare_tire_condition"
               disabled={pending}
@@ -1175,7 +1205,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("spare_tire_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Condição do Estepe">
                 <SelectValue placeholder="Selecione a condição" />
               </SelectTrigger>
               <SelectContent>
@@ -1196,7 +1226,7 @@ const UpdateChecklistContainer = ({
 
           {/* Overall Condition */}
           <div className="space-y-2">
-            <Label htmlFor="overall_condition">Condição Geral *</Label>
+            <div className="text-sm font-medium">Condição Geral *</div>
             <Select
               name="overall_condition"
               disabled={pending}
@@ -1205,7 +1235,7 @@ const UpdateChecklistContainer = ({
                 handleFieldChange("overall_condition", value)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Condição Geral">
                 <SelectValue placeholder="Selecione a condição geral" />
               </SelectTrigger>
               <SelectContent>
@@ -1262,4 +1292,4 @@ const UpdateChecklistContainer = ({
   );
 };
 
-export { UpdateChecklistContainer };
+export { DashboardUpdateChecklistFormSubmit };

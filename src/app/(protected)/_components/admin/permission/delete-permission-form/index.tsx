@@ -21,7 +21,7 @@ interface DeletePermissionProps {
   permissionId: string;
 }
 
-const DeletePermissionFormContainer = (): JSX.Element => {
+const DeletePermissionFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -112,7 +112,7 @@ const DeletePermissionForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeletePermissionFormContainer />
+          <DeletePermissionFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

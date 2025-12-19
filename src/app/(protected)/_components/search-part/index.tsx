@@ -10,7 +10,6 @@ import {
 
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { usePartInfiniteScroll } from "./hooks/part-infinite-scroll";
@@ -24,6 +23,7 @@ const SearchPart = ({
   searchPartInputValue,
   businessId,
   handleUpdateSearchPartInputValue,
+  isOptional,
 }: SearchPartProps): JSX.Element => {
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
 
@@ -52,18 +52,18 @@ const SearchPart = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-part-input"
-        className={errorPartId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorPartId ? "text-red-500" : ""}`}
       >
-        {errorPartId ? errorPartId[0] : "Selecione a peça"}
-      </Label>
+        {errorPartId ? errorPartId[0] : "Selecione a peça"}{" "}
+        {isOptional && "(opcional)"}
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-part-input"
           placeholder="Buscar peça..."
           className="h-9"
+          aria-label="Buscar peça"
         />
 
         {!isLoadingParts && !hasError && (

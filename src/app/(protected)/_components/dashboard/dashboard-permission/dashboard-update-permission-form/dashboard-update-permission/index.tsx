@@ -61,9 +61,9 @@ const DashboardUpdatePermission = ({
       </div>
 
       <div className="w-full flex flex-col gap-3">
-        <Label
-          htmlFor="permissionKey"
+        <div
           className={cn(
+            "text-sm font-medium",
             state.updatePermissionError?.permissionKey &&
               "h-4 truncate text-red-500",
           )}
@@ -71,7 +71,7 @@ const DashboardUpdatePermission = ({
           {state.updatePermissionError?.permissionKey
             ? state.updatePermissionError?.permissionKey
             : "Permissão"}
-        </Label>
+        </div>
         <Select
           name="permissionKey"
           disabled={pending}
@@ -80,7 +80,7 @@ const DashboardUpdatePermission = ({
             handleUpdatePermissionKeyName(value)
           }
         >
-          <SelectTrigger>
+          <SelectTrigger aria-label="Permissão de acesso">
             <SelectValue placeholder="Permissão de acesso" />
           </SelectTrigger>
           <SelectContent>

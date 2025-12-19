@@ -357,15 +357,17 @@ const TutorialComponent = (): JSX.Element | null => {
 
             {/* Skip button */}
             {currentStep === 0 && (
-              <button
-                onClick={skipTutorial}
-                className="tutorial-skip-hover text-xs 
-                text-muted-foreground hover:text-foreground 
-                transition-colors w-full text-center pt-1.5"
-              >
-                Pular tutorial • Pressione{" "}
-                <span className="tutorial-keyboard-hint">ESC</span> para sair
-              </button>
+              <div className="w-full text-center pt-1.5">
+                <button
+                  onClick={skipTutorial}
+                  className="tutorial-skip-hover text-xs
+                  text-muted-foreground hover:text-foreground
+                  transition-colors inline-block"
+                >
+                  Pular tutorial • Pressione{" "}
+                  <span className="tutorial-keyboard-hint">ESC</span> para sair
+                </button>
+              </div>
             )}
           </div>
         </motion.div>

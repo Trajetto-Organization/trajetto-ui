@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
-import { Loader, X } from "lucide-react";
-
 import {
   Dialog,
   DialogScrollContent,
@@ -12,295 +10,27 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  CreateAccountPayableContainerProps,
-  CreateAccountPayableFormState,
-  SelectBusinessBranchStepProps,
-  SelectServiceOrderStepProps,
-  SelectUserStepProps,
-} from "./dto";
-
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateAccountPayable } from "@/actions/create-account-payable";
-
-import { cn } from "@/lib/utils";
+import { Loader } from "lucide-react";
 import { DatePickerField } from "../../../custom";
 
-import { SearchBusiness } from "../../../search-business";
-import { SearchBranch } from "../../../search-branch";
-
-import { SearchServiceOrder } from "../../../search-service-order";
-import { SearchUser } from "../../../search-user";
+import {
+  CreateAccountPayableFormState,
+  CreateAccountPayableFormSubmitProps,
+} from "./dto";
+import { handleCreateAccountPayable } from "@/actions/create-account-payable";
 
 import { useCreateAccountPayableForm } from "./hooks";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
-// Step 1: Select Business and Branch
-const SelectBusinessBranchStep = ({
-  state,
-  handleUpdateSearchBusinessInputValue,
-  handleUpdateSearchBranchInputValue,
-  commandBusinessInputValue: { searchBusinessInputValue, businessId },
-  commandBranchInputValue: { searchBranchInputValue, branchId },
-  onContinue,
-}: SelectBusinessBranchStepProps) => {
-  return (
-    <div className="space-y-6">
-      {(searchBranchInputValue || searchBusinessInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {searchBusinessInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Empresa:</span>
-                <span className="w-full truncate">
-                  {searchBusinessInputValue}
-                </span>
-              </div>
+import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBusinessInputValue({
-                    businessId: "",
-                    searchBusinessInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
+import { SelectServiceOrderStep } from "@/app/(protected)/_components/steps/select-service-order-step";
 
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div
-        className={`grid ${
-          searchBusinessInputValue
-            ? "grid-cols-1 md:grid-cols-2"
-            : "grid-cols-1"
-        } gap-4`}
-      >
-        <SearchBusiness
-          handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBusinessInputValue
-          }
-          searchBusinessInputValue={searchBusinessInputValue}
-          errorBusinessId={state.createAccountPayableError?.businessId}
-        />
-
-        {searchBusinessInputValue && (
-          <SearchBranch
-            errorBranchId={state.createAccountPayableError?.branchId}
-            searchBranchInputValue={searchBranchInputValue}
-            businessId={businessId}
-            handleUpdateSearchBranchInputValue={
-              handleUpdateSearchBranchInputValue
-            }
-          />
-        )}
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue || !branchId}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 2: Select Service Order (Optional)
-const SelectServiceOrderStep = ({
-  state,
-  businessId,
-  commandServiceOrderInputValue,
-  handleUpdateSearchServiceOrderInputValue,
-  onContinue,
-  onBack,
-}: SelectServiceOrderStepProps) => {
-  return (
-    <div className="space-y-6">
-      {/* Display selected Service Order if any */}
-      {commandServiceOrderInputValue.searchServiceOrderInputValue && (
-        <div className="grid grid-cols-1 w-full">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "border-dashed truncate h-8 text-left",
-              )}
-            >
-              <span>Ordem de Serviço:</span>
-              <span className="w-full truncate">
-                {commandServiceOrderInputValue.searchServiceOrderInputValue}
-              </span>
-            </div>
-            <Button
-              className="h-8 w-4"
-              variant="ghost"
-              onClick={() =>
-                handleUpdateSearchServiceOrderInputValue({
-                  serviceOrderId: "",
-                  searchServiceOrderInputValue: "",
-                })
-              }
-            >
-              <X />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-4">
-        {/* Service Order Selection (Optional) */}
-        <div>
-          <SearchServiceOrder
-            errorServiceOrderId={
-              state.createAccountPayableError?.serviceOrderId
-            }
-            searchServiceOrderInputValue={
-              commandServiceOrderInputValue.searchServiceOrderInputValue
-            }
-            businessId={businessId}
-            handleUpdateSearchServiceOrderInputValue={
-              handleUpdateSearchServiceOrderInputValue
-            }
-            isOptional={true}
-          />
-          <p className="text-sm text-muted-foreground mt-2">
-            Este campo é opcional. Você pode prosseguir sem selecionar uma ordem
-            de serviço.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
-        <Button type="button" onClick={onContinue}>
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 3: Select User
-const SelectUserStep = ({
-  state,
-  businessId,
-  commandUserInputValue,
-  handleUpdateSearchUserInputValue,
-  onContinue,
-  onBack,
-}: SelectUserStepProps) => {
-  return (
-    <div className="space-y-6">
-      {/* Display selected User if any */}
-      {commandUserInputValue.searchUserInputValue && (
-        <div className="grid grid-cols-1 w-full">
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                "border-dashed truncate h-8 text-left",
-              )}
-            >
-              <span>Usuário Responsável:</span>
-              <span className="w-full truncate">
-                {commandUserInputValue.searchUserInputValue}{" "}
-                {commandUserInputValue.responsibleUserEmail && (
-                  <span className="text-xs text-muted-foreground ml-2">
-                    (E-mail: {commandUserInputValue.responsibleUserEmail})
-                  </span>
-                )}
-              </span>
-            </div>
-            <Button
-              className="h-8 w-4"
-              variant="ghost"
-              onClick={() =>
-                handleUpdateSearchUserInputValue({
-                  userId: "",
-                  searchUserInputValue: "",
-                  responsibleUserEmail: "",
-                })
-              }
-            >
-              <X />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* User Selection (Required) */}
-      <SearchUser
-        errorUserId={state.createAccountPayableError?.registrationUserId}
-        selectedUserId={commandUserInputValue.userId}
-        businessId={businessId}
-        handleUpdateSearchUserInputValue={handleUpdateSearchUserInputValue}
-      />
-
-      <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Voltar
-        </Button>
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!commandUserInputValue.userId}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Step 4: Create Account Payable Form
-const CreateAccountPayableFormContainer = ({
+const CreateAccountPayableFormSubmit = ({
   state,
   onBack,
   displayAmount,
@@ -309,7 +39,7 @@ const CreateAccountPayableFormContainer = ({
   handleAmountBlur,
   handleAmountPaidChange,
   handleAmountPaidBlur,
-}: CreateAccountPayableContainerProps): JSX.Element => {
+}: CreateAccountPayableFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
@@ -391,7 +121,10 @@ const CreateAccountPayableFormContainer = ({
 
 const CreateAccountPayableForm = (): JSX.Element => {
   const defaultState: CreateAccountPayableFormState = {};
-  const [state, dispatch] = useFormState(handleCreateAccountPayable, null);
+  const [state, dispatch] = useFormState<
+    CreateAccountPayableFormState,
+    FormData
+  >(handleCreateAccountPayable, defaultState);
 
   const {
     isCreateAccountPayableForm,
@@ -452,7 +185,6 @@ const CreateAccountPayableForm = (): JSX.Element => {
 
         {currentStep === "select-business-branch" ? (
           <SelectBusinessBranchStep
-            state={state ?? defaultState}
             handleUpdateSearchBusinessInputValue={
               handleUpdateSearchBusinessInputValue
             }
@@ -462,10 +194,11 @@ const CreateAccountPayableForm = (): JSX.Element => {
             onContinue={handleBusinessBranchStepContinue}
             commandBusinessInputValue={commandBusinessInputValue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBusinessId={state?.createAccountPayableError?.businessId}
+            errorBranchId={state?.createAccountPayableError?.branchId}
           />
         ) : currentStep === "select-service-order" ? (
           <SelectServiceOrderStep
-            state={state ?? defaultState}
             businessId={commandBusinessInputValue.businessId}
             commandServiceOrderInputValue={commandServiceOrderInputValue}
             handleUpdateSearchServiceOrderInputValue={
@@ -473,15 +206,19 @@ const CreateAccountPayableForm = (): JSX.Element => {
             }
             onContinue={handleServiceOrderStepContinue}
             onBack={handleBackToBusinessBranchStep}
+            errorServiceOrderId={
+              state?.createAccountPayableError?.serviceOrderId
+            }
+            searchServiceOrderIsOptional={true}
           />
         ) : currentStep === "select-user" ? (
           <SelectUserStep
-            state={state ?? defaultState}
             businessId={commandBusinessInputValue.businessId}
             commandUserInputValue={commandUserInputValue}
             handleUpdateSearchUserInputValue={handleUpdateSearchUserInputValue}
             onContinue={handleUserStepContinue}
             onBack={handleBackToServiceOrderStep}
+            errorUserId={state?.createAccountPayableError?.registrationUserId}
           />
         ) : (
           <form
@@ -498,8 +235,8 @@ const CreateAccountPayableForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <CreateAccountPayableFormContainer
-              state={state ?? defaultState}
+            <CreateAccountPayableFormSubmit
+              state={state}
               onBack={handleBackToUserStep}
               displayAmount={displayAmount}
               displayAmountPaid={displayAmountPaid}

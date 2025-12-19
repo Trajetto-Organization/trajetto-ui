@@ -13,7 +13,7 @@ import { Loader } from "lucide-react";
 import { DashboardProfileAccessProps } from "../dto";
 
 import {
-  DashboardUpdateProfileAccessContainerProps,
+  DashboardUpdateProfileAccessFormSubmitProps,
   DashboardUpdateProfileAccessFormState,
 } from "./dto";
 
@@ -31,13 +31,13 @@ interface DashboardUpdateProfileAccessProps {
   isUpdateProfileAccess: boolean;
 }
 
-const DashboardUpdateProfileAccessFormContainer = ({
+const DashboardUpdateProfileAccessFormSubmit = ({
   state,
   handleCloseUpdateProfileAccess,
   profileAccessName,
   handleUpdateProfileAccessName,
   isDirty,
-}: DashboardUpdateProfileAccessContainerProps): JSX.Element => {
+}: DashboardUpdateProfileAccessFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -64,11 +64,12 @@ const DashboardUpdateProfileAccessFormContainer = ({
           type="button"
           variant="outline"
           onClick={handleCloseUpdateProfileAccess}
+          className="flex-1"
         >
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || !isDirty}>
-          <span>Editar Empresa</span>
+        <Button type="submit" disabled={pending || !isDirty} className="flex-1">
+          <span>Editar Perfil</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -86,7 +87,10 @@ const DashboardUpdateProfileAccessForm = ({
   isUpdateProfileAccess,
 }: DashboardUpdateProfileAccessProps): JSX.Element => {
   const defaultState: DashboardUpdateProfileAccessFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateProfileAccess, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateProfileAccessFormState,
+    FormData
+  >(handleUpdateProfileAccess, defaultState);
 
   const {
     handleUpdateProfileAccessName,
@@ -136,8 +140,8 @@ const DashboardUpdateProfileAccessForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdateProfileAccessFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdateProfileAccessFormSubmit
+            state={state}
             handleCloseUpdateProfileAccess={handleCloseUpdateProfileAccess}
             profileAccessName={profileAccessName}
             handleUpdateProfileAccessName={handleUpdateProfileAccessName}

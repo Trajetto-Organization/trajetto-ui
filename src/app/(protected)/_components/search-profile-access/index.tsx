@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useProfileInfiniteScroll } from "./hooks/profile-infinite-scroll";
@@ -52,18 +51,17 @@ const SearchProfileAccess = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-profile-access-input"
-        className={errorProfileAccessId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorProfileAccessId ? "text-red-500" : ""}`}
       >
         {errorProfileAccessId ? errorProfileAccessId[0] : "Selecione o Perfil"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-profile-access-input"
           placeholder="Buscar perfil..."
           className="h-9"
+          aria-label="Buscar perfil"
         />
 
         {!isLoadingProfiles && !hasError && (

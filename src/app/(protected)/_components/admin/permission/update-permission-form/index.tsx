@@ -11,7 +11,7 @@ import {
 
 import { PermissionProps } from "../dto";
 import {
-  UpdatePermissionContainerProps,
+  UpdatePermissionFormSubmitProps,
   UpdatePermissionFormState,
 } from "./dto";
 
@@ -34,13 +34,13 @@ interface UpdatePermissionProps {
   isUpdatePermission: boolean;
 }
 
-const UpdatePermissionFormContainer = ({
+const UpdatePermissionFormSubmit = ({
   state,
   handleCloseUpdatePermission,
   handleUpdatePermissionName,
   handleUpdateCanReadPermission,
   handleUpdateCanWritePermission,
-  handleUpdateSearchBussinessInputValue,
+  handleUpdateSearchBusinessInputValue,
   handleUpdateSearchProfileAccessInputValue,
   handleUpdatePermissionKeyName,
   isDirty,
@@ -49,10 +49,10 @@ const UpdatePermissionFormContainer = ({
     permissionKeyName,
     canRead,
     canWrite,
-    commandBusinnessInputValue: { searchBusinessInputValue, businessId },
+    commandBusinessInputValue: { searchBusinessInputValue, businessId },
     commandProfileAccessInputValue: { searchProfileAccessInputValue },
   },
-}: UpdatePermissionContainerProps): JSX.Element => {
+}: UpdatePermissionFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -89,7 +89,7 @@ const UpdatePermissionFormContainer = ({
                 className="h-8 w-4"
                 variant="ghost"
                 onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
+                  handleUpdateSearchBusinessInputValue({
                     businessId: "",
                     searchBusinessInputValue: "",
                   })
@@ -141,7 +141,7 @@ const UpdatePermissionFormContainer = ({
         <SearchBusiness
           errorBusinessId={state.updatePermissionError?.businessId}
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
         />
@@ -186,7 +186,10 @@ const UpdatePermissionForm = ({
   isUpdatePermission,
 }: UpdatePermissionProps): JSX.Element => {
   const defaultState: UpdatePermissionFormState = {};
-  const [state, dispatch] = useFormState(handleUpdatePermission, null);
+  const [state, dispatch] = useFormState<UpdatePermissionFormState, FormData>(
+    handleUpdatePermission,
+    defaultState,
+  );
 
   const {
     handleUpdatePermissionName,
@@ -197,9 +200,9 @@ const UpdatePermissionForm = ({
     canWrite,
     handleUpdateCanReadPermission,
     handleUpdateCanWritePermission,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandProfileAccessInputValue,
     isDirty,
     formRef,
@@ -226,7 +229,7 @@ const UpdatePermissionForm = ({
             profileAccessId: "",
           };
 
-          handleUpdateSearchBussinessInputValue(resetBusinessInputValue);
+          handleUpdateSearchBusinessInputValue(resetBusinessInputValue);
           handleUpdateSearchProfileAccessInputValue(
             resetProfileAccessInputValue,
           );
@@ -255,7 +258,7 @@ const UpdatePermissionForm = ({
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               profileAccessId: commandProfileAccessInputValue.profileAccessId,
               permissionId: permissionData.id,
             };
@@ -264,15 +267,15 @@ const UpdatePermissionForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdatePermissionFormContainer
-            state={state ?? defaultState}
+          <UpdatePermissionFormSubmit
+            state={state}
             handleCloseUpdatePermission={handleOpenUpdatePermission}
             handleUpdatePermissionName={handleUpdatePermissionName}
             handleUpdatePermissionKeyName={handleUpdatePermissionKeyName}
             handleUpdateCanReadPermission={handleUpdateCanReadPermission}
             handleUpdateCanWritePermission={handleUpdateCanWritePermission}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue
@@ -284,7 +287,7 @@ const UpdatePermissionForm = ({
               permissionName: permission,
               permissionKeyName: permissionKey,
               commandProfileAccessInputValue,
-              commandBusinnessInputValue,
+              commandBusinessInputValue,
             }}
           />
         </form>

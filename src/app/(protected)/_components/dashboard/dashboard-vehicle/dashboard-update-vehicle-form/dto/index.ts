@@ -1,10 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandFuelTypeInputValue,
-  CommandVehicleTypeInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { DashboardVehicleProps } from "../../dto";
 
 interface DashboardUpdateVehicleValidationError {
@@ -39,48 +32,12 @@ interface DashboardUpdateVehicleFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateVehicleContainerProps {
+interface DashboardUpdateVehicleFormSubmitProps {
   state: DashboardUpdateVehicleFormState;
   onBack: () => void;
   vehicleData: DashboardVehicleProps;
   isBranchDirty: boolean;
   isUpdateVehicleOpen: boolean;
-}
-
-interface DashboardSelectBranchByStepProps {
-  state: DashboardUpdateVehicleFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectDriverVehicleTypeStepProps {
-  state: DashboardUpdateVehicleFormState;
-  businessId: string;
-  commandDriverInputValue: CommandDriverInputValue;
-  commandVehicleTypeInputValue: CommandVehicleTypeInputValue;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  handleUpdateSearchVehicleTypeInputValue: (
-    vehicleTypeData: CommandVehicleTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectFuelTypeStepProps {
-  state: DashboardUpdateVehicleFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
 }
 
 interface DashboardUpdateVehicleFormProps {
@@ -92,8 +49,5 @@ interface DashboardUpdateVehicleFormProps {
 export type {
   DashboardUpdateVehicleFormState,
   DashboardUpdateVehicleFormProps,
-  DashboardUpdateVehicleContainerProps,
-  DashboardSelectBranchByStepProps,
-  DashboardSelectDriverVehicleTypeStepProps,
-  DashboardSelectFuelTypeStepProps,
+  DashboardUpdateVehicleFormSubmitProps,
 };

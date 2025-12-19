@@ -30,7 +30,7 @@ interface DashboardUpdateBranchProps {
   isUpdateBranchOpen: boolean;
 }
 
-const DashboardUpdateBranchFormContainer = ({
+const DashboardUpdateBranchFormSubmit = ({
   state,
   handleCloseUpdateBranch,
   branchData,
@@ -86,7 +86,10 @@ const DashboardUpdateBranchForm = ({
   isUpdateBranchOpen,
 }: DashboardUpdateBranchProps): JSX.Element => {
   const defaultState: DashboardUpdateBranchFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateBranch, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateBranchFormState,
+    FormData
+  >(handleUpdateBranch, defaultState);
 
   const { formRef } = useUpdateBranchForm({
     state,
@@ -125,8 +128,8 @@ const DashboardUpdateBranchForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdateBranchFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdateBranchFormSubmit
+            state={state}
             handleCloseUpdateBranch={handleCloseUpdateBranch}
             branchData={branchData}
             isUpdateBranchOpen={isUpdateBranchOpen}

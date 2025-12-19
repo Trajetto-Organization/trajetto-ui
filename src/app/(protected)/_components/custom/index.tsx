@@ -60,12 +60,12 @@ const DatePickerField: React.FC<FormFieldProps> = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Label htmlFor={htmlfor} className="text-red-500">
+              <div className="text-sm font-medium text-red-500">
                 {errorName[0]}
-              </Label>
+              </div>
             </TooltipTrigger>
             <TooltipContent
-              className="max-w-[300px] whitespace-normal 
+              className="max-w-[300px] whitespace-normal
               break-words p-2"
             >
               {errorName[0]}
@@ -73,7 +73,7 @@ const DatePickerField: React.FC<FormFieldProps> = ({
           </Tooltip>
         </TooltipProvider>
       ) : (
-        <Label htmlFor={htmlfor}>{label}</Label>
+        <div className="text-sm font-medium">{label}</div>
       )}
 
       <input type="hidden" id={htmlfor} name={name} value={value || ""} />
@@ -88,6 +88,7 @@ const DatePickerField: React.FC<FormFieldProps> = ({
               disabled && "opacity-50 cursor-not-allowed",
             )}
             disabled={disabled}
+            aria-label={label}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {formatted || "Selecione uma data"}

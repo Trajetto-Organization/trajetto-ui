@@ -20,7 +20,7 @@ interface DeleteProfileAccessProps {
   profileAccessId: string;
 }
 
-const DeleteProfileAccessFormContainer = (): JSX.Element => {
+const DeleteProfileAccessFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -110,7 +110,7 @@ const DeleteProfileAccessForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteProfileAccessFormContainer />
+          <DeleteProfileAccessFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

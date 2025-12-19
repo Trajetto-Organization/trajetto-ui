@@ -26,7 +26,7 @@ interface DashboardDeleteSupplierProps {
   supplierId: string;
 }
 
-const DashboardDeleteSupplierFormContainer = (): JSX.Element => {
+const DashboardDeleteSupplierFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -123,7 +123,7 @@ const DashboardDeleteSupplierForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeleteSupplierFormContainer />
+          <DashboardDeleteSupplierFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

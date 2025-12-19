@@ -16,7 +16,7 @@ import { handleUpdateSupplier } from "@/actions/update-supplier";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
 import {
-  DashboardUpdateSupplierContainerProps,
+  DashboardUpdateSupplierSubmitProps,
   DashboardUpdateSupplierFormState,
 } from "./dto";
 
@@ -34,12 +34,12 @@ interface DashboardUpdateSupplierProps {
   isUpdateSupplierOpen: boolean;
 }
 
-const DashboardUpdateSupplierFormContainer = ({
+const DashboardUpdateSupplierFormSubmit = ({
   state,
   handleCloseUpdateSupplier,
   supplierData,
   isUpdateSupplierOpen,
-}: DashboardUpdateSupplierContainerProps): JSX.Element => {
+}: DashboardUpdateSupplierSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
     updatedFields: allFields,
@@ -164,7 +164,10 @@ const DashboardUpdateSupplierForm = ({
   isUpdateSupplierOpen,
 }: DashboardUpdateSupplierProps): JSX.Element => {
   const defaultState: DashboardUpdateSupplierFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateSupplier, null);
+  const [state, dispatch] = useFormState<
+    DashboardUpdateSupplierFormState,
+    FormData
+  >(handleUpdateSupplier, defaultState);
 
   const { formRef } = useDashboardUpdateSupplierForm({
     state,
@@ -205,8 +208,8 @@ const DashboardUpdateSupplierForm = ({
             return dispatch(formData);
           }}
         >
-          <DashboardUpdateSupplierFormContainer
-            state={state ?? defaultState}
+          <DashboardUpdateSupplierFormSubmit
+            state={state}
             handleCloseUpdateSupplier={handleCloseUpdateSupplier}
             supplierData={supplierData}
             isUpdateSupplierOpen={isUpdateSupplierOpen}

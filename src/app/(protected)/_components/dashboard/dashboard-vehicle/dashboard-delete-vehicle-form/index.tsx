@@ -26,7 +26,7 @@ interface DashboardDeleteVehicleProps {
   vehicleId: string;
 }
 
-const DashboardDeleteVehicleFormContainer = (): JSX.Element => {
+const DashboardDeleteVehicleFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -129,7 +129,7 @@ const DashboardDeleteVehicleForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DashboardDeleteVehicleFormContainer />
+          <DashboardDeleteVehicleFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

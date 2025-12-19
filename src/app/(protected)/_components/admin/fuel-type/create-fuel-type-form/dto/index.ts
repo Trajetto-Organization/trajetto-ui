@@ -11,7 +11,7 @@ interface CreateFuelTypeFormState {
   successMessage?: string;
 }
 
-interface CreateFuelTypeContainerProps {
+interface CreateFuelTypeFormSubmitProps {
   state: CreateFuelTypeFormState;
   handleOpenCreateFuelTypeForm: () => void;
   handleUpdateSearchBussinessInputValue: ({
@@ -20,4 +20,4 @@ interface CreateFuelTypeContainerProps {
   commandBusinnessInputValue: CommandBusinessInputValue;
 }
 
-export type { CreateFuelTypeContainerProps, CreateFuelTypeFormState };
+export type { CreateFuelTypeFormSubmitProps, CreateFuelTypeFormState };

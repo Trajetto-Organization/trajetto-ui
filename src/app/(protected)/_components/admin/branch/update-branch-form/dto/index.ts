@@ -23,11 +23,11 @@ interface UpdateBranchFormState {
   successMessage?: string;
 }
 
-interface UpdateBranchContainerProps {
+interface UpdateBranchFormSubmitProps {
   state: UpdateBranchFormState;
   handleCloseUpdateBranch: () => void;
   branchData: BranchProps;
   isUpdateBranchOpen: boolean;
 }
 
-export type { UpdateBranchContainerProps, UpdateBranchFormState };
+export type { UpdateBranchFormSubmitProps, UpdateBranchFormState };

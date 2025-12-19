@@ -65,10 +65,6 @@ export function DataTableFuelTypeRowActions<TData>({
       label: "Copiar ID",
       onClick: () => handleCopyID(collumnRowAction.id),
     },
-    {
-      label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(collumnRowAction.businessId as string),
-    },
   ];
 
   return (

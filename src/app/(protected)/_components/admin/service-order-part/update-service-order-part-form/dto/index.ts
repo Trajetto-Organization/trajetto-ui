@@ -1,9 +1,3 @@
-import {
-  CommandBusinessInputValue,
-  CommandPartInputValue,
-  CommandServiceOrderInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { ServiceOrderPartProps } from "../../dto";
 
 interface UpdateServiceOrderPartValidationError {
@@ -21,34 +15,12 @@ interface UpdateServiceOrderPartFormState {
   successMessage?: string;
 }
 
-interface UpdateServiceOrderPartContainerProps {
+interface UpdateServiceOrderPartFormSubmitProps {
   state: UpdateServiceOrderPartFormState;
   onBack: () => void;
   serviceOrderPartData: ServiceOrderPartProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateServiceOrderPartOpen: boolean;
-}
-
-interface SelectBusinessStepProps {
-  state: UpdateServiceOrderPartFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectServiceOrderPartStepProps {
-  state: UpdateServiceOrderPartFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  commandPartInputValue: CommandPartInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  handleUpdateSearchPartInputValue: (partData: CommandPartInputValue) => void;
-  onContinue: () => void;
-  onBack: () => void;
 }
 
 interface UpdateServiceOrderPartFormProps {
@@ -60,7 +32,5 @@ interface UpdateServiceOrderPartFormProps {
 export type {
   UpdateServiceOrderPartFormState,
   UpdateServiceOrderPartFormProps,
-  UpdateServiceOrderPartContainerProps,
-  SelectBusinessStepProps,
-  SelectServiceOrderPartStepProps,
+  UpdateServiceOrderPartFormSubmitProps,
 };

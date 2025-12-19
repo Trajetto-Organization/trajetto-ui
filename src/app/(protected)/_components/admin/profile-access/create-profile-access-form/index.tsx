@@ -17,22 +17,21 @@ import FormInput from "@/components/custom/form-input";
 
 import {
   CreateProfileAccessFormState,
-  CreateProfileAccessContainerProps,
+  CreateProfileAccessFormSubmitProps,
 } from "./dto";
 
 import { handleCreateProfileAccess } from "@/actions/create-profile-access";
-
 import { useCreateProfileAccessForm } from "./hooks";
 
 import { cn } from "@/lib/utils";
 import { SearchBusiness } from "../../../search-business";
 
-const CreateProfileAccessFormContainer = ({
+const CreateProfileAccessFormSubmit = ({
   state,
   handleOpenCreateProfileAccessForm,
-  handleUpdateSearchBussinessInputValue,
-  commandBusinnessInputValue: { searchBusinessInputValue },
-}: CreateProfileAccessContainerProps): JSX.Element => {
+  handleUpdateSearchBusinessInputValue,
+  commandBusinessInputValue: { searchBusinessInputValue },
+}: CreateProfileAccessFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -63,7 +62,7 @@ const CreateProfileAccessFormContainer = ({
               className="h-8 w-4"
               variant="ghost"
               onClick={() =>
-                handleUpdateSearchBussinessInputValue({
+                handleUpdateSearchBusinessInputValue({
                   businessId: "",
                   searchBusinessInputValue: "",
                 })
@@ -76,7 +75,7 @@ const CreateProfileAccessFormContainer = ({
 
         <SearchBusiness
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
           errorBusinessId={state.createProfileAccessError?.businessId}
@@ -107,13 +106,16 @@ const CreateProfileAccessFormContainer = ({
 
 const CreateProfileAccessForm = (): JSX.Element => {
   const defaultState: CreateProfileAccessFormState = {};
-  const [state, dispatch] = useFormState(handleCreateProfileAccess, null);
+  const [state, dispatch] = useFormState<
+    CreateProfileAccessFormState,
+    FormData
+  >(handleCreateProfileAccess, defaultState);
 
   const {
     isCreateCreateProfileAccessForm,
     handleOpenCreateProfileAccessForm,
-    handleUpdateSearchBussinessInputValue,
-    commandBusinnessInputValue,
+    handleUpdateSearchBusinessInputValue,
+    commandBusinessInputValue,
     formRef,
   } = useCreateProfileAccessForm(state);
 
@@ -140,23 +142,19 @@ const CreateProfileAccessForm = (): JSX.Element => {
         <form
           ref={formRef}
           action={(formData: FormData) => {
-            formData.append(
-              "businessId",
-              commandBusinnessInputValue.businessId,
-            );
-
+            formData.append("businessId", commandBusinessInputValue.businessId);
             return dispatch(formData);
           }}
         >
-          <CreateProfileAccessFormContainer
+          <CreateProfileAccessFormSubmit
             handleOpenCreateProfileAccessForm={
               handleOpenCreateProfileAccessForm
             }
-            state={state ?? defaultState}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            state={state}
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
-            commandBusinnessInputValue={commandBusinnessInputValue}
+            commandBusinessInputValue={commandBusinessInputValue}
           />
         </form>
       </DialogScrollContent>

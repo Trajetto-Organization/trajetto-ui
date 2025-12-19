@@ -45,7 +45,10 @@ function useDashboardUpdateAccountPayableForm({
     useState<CommandServiceOrderInputValue>({
       serviceOrderId: accountPayableData.serviceOrderId || "",
       searchServiceOrderInputValue:
-        accountPayableData.serviceOrderDescription || "",
+        accountPayableData.serviceOrderDescription &&
+        accountPayableData.serviceOrderDescription !== "N/A"
+          ? accountPayableData.serviceOrderDescription
+          : "",
     });
 
   const [commandUserInputValue, setCommandUserInputValue] =
@@ -66,7 +69,10 @@ function useDashboardUpdateAccountPayableForm({
       setCommandServiceOrderInputValue({
         serviceOrderId: accountPayableData.serviceOrderId || "",
         searchServiceOrderInputValue:
-          accountPayableData.serviceOrderDescription || "",
+          accountPayableData.serviceOrderDescription &&
+          accountPayableData.serviceOrderDescription !== "N/A"
+            ? accountPayableData.serviceOrderDescription
+            : "",
       });
 
       setCommandUserInputValue({
@@ -177,7 +183,7 @@ function useDashboardUpdateAccountPayableForm({
   const isBusinessAndEntityDirty = [
     commandBranchInputValue.branchId !== accountPayableData.branchId,
     commandServiceOrderInputValue.serviceOrderId !==
-      accountPayableData.serviceOrderId,
+      (accountPayableData.serviceOrderId || ""),
     commandUserInputValue.userId !== accountPayableData.registrationUserId,
   ].some(Boolean);
 

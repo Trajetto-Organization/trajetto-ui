@@ -3,8 +3,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "react-query";
 import { toast } from "sonner";
 
-import { FieldProps, businessFieldsData } from "./business-fields-data";
-import { UseCepValidationProps } from "./dto";
+import { businessFieldsData } from "./business-fields-data";
+import { FieldProps, UseCepValidationProps } from "./dto";
 
 const applyMask = (value: string, mask: string): string => {
   let masked = "";

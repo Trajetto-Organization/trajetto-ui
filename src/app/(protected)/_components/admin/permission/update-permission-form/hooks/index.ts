@@ -41,7 +41,7 @@ function useUpdatePermissionForm({
   const [canRead, setCanRead] = useState<boolean>(canReadPermission);
   const [canWrite, setCanWrite] = useState<boolean>(canWritePermission);
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: corporate_reason as string,
       businessId,
@@ -61,7 +61,7 @@ function useUpdatePermissionForm({
       setCanRead(canReadPermission);
       setCanWrite(canWritePermission);
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         searchBusinessInputValue: corporate_reason as string,
         businessId,
       });
@@ -93,7 +93,7 @@ function useUpdatePermissionForm({
     setPermissionKey(updatedPermissionKeyName);
   };
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
@@ -103,11 +103,11 @@ function useUpdatePermissionForm({
     });
 
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateSearchProfileAccessInputValue = ({
@@ -176,7 +176,7 @@ function useUpdatePermissionForm({
     canRead !== canReadPermission,
     permissionKey !== permissionKeyName,
     canWrite !== canWritePermission,
-    commandBusinnessInputValue.businessId !== businessId,
+    commandBusinessInputValue.businessId !== businessId,
     commandProfileAccessInputValue.profileAccessId !== profileAccessId,
   ].some(Boolean);
 
@@ -184,11 +184,11 @@ function useUpdatePermissionForm({
     handleUpdatePermissionName,
     handleUpdateCanReadPermission,
     handleUpdateCanWritePermission,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchProfileAccessInputValue,
     commandProfileAccessInputValue,
     handleUpdatePermissionKeyName,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     permissionKey,
     permission,
     canRead,

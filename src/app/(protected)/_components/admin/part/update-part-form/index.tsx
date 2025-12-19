@@ -14,7 +14,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { handleUpdatePart } from "@/actions/update-part";
 import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
 
-import { UpdatePartContainerProps, UpdatePartFormState } from "./dto";
+import { UpdatePartFormSubmitProps, UpdatePartFormState } from "./dto";
 
 import { PartProps } from "../dto";
 import { useUpdatePartForm } from "./hooks";
@@ -23,7 +23,6 @@ import { SearchBusiness } from "../../../search-business";
 import { SearchSupplier } from "../../../search-supplier";
 
 import FormInput from "@/components/custom/form-input";
-
 import { cn } from "@/lib/utils";
 
 interface UpdatePartProps {
@@ -32,22 +31,22 @@ interface UpdatePartProps {
   isUpdatePartOpen: boolean;
 }
 
-const UpdatePartFormContainer = ({
+const UpdatePartFormSubmit = ({
   state,
   handleCloseUpdatePart,
   handleUpdateDescription,
   handleUnitPriceChange,
   handleUnitPriceBlur,
   isDirty,
-  handleUpdateSearchBussinessInputValue,
+  handleUpdateSearchBusinessInputValue,
   handleUpdateSearchSupplierInputValue,
   partValues: {
     description,
     displayUnitPrice,
-    commandBusinnessInputValue: { searchBusinessInputValue, businessId },
+    commandBusinessInputValue: { searchBusinessInputValue, businessId },
     commandSupplierInputValue: { searchSupplierInputValue },
   },
-}: UpdatePartContainerProps): JSX.Element => {
+}: UpdatePartFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -102,7 +101,7 @@ const UpdatePartFormContainer = ({
                 className="h-8 w-4"
                 variant="ghost"
                 onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
+                  handleUpdateSearchBusinessInputValue({
                     businessId: "",
                     searchBusinessInputValue: "",
                   })
@@ -153,7 +152,7 @@ const UpdatePartFormContainer = ({
       >
         <SearchBusiness
           handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue
           }
           searchBusinessInputValue={searchBusinessInputValue}
           errorBusinessId={state.updatePartError?.businessId}
@@ -174,11 +173,16 @@ const UpdatePartFormContainer = ({
         )}
       </div>
 
-      <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={handleCloseUpdatePart}>
+      <div className="flex gap-2 mt-6">
+        <Button
+          variant="outline"
+          type="button"
+          onClick={handleCloseUpdatePart}
+          className="flex-1"
+        >
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || !isDirty}>
+        <Button type="submit" disabled={pending || !isDirty} className="flex-1">
           <span>Editar Peça</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -190,13 +194,17 @@ const UpdatePartFormContainer = ({
     </div>
   );
 };
+
 const UpdatePartForm = ({
   partData,
   handleCloseUpdatePart,
   isUpdatePartOpen,
 }: UpdatePartProps): JSX.Element => {
   const defaultState: UpdatePartFormState = {};
-  const [state, dispatch] = useFormState(handleUpdatePart, null);
+  const [state, dispatch] = useFormState<UpdatePartFormState, FormData>(
+    handleUpdatePart,
+    defaultState,
+  );
 
   const {
     formRef,
@@ -206,9 +214,9 @@ const UpdatePartForm = ({
     handleUpdateDescription,
     handleUnitPriceChange,
     handleUnitPriceBlur,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandSupplierInputValue,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchSupplierInputValue,
   } = useUpdatePartForm({
     state,
@@ -233,7 +241,7 @@ const UpdatePartForm = ({
             supplierId: "",
           };
 
-          handleUpdateSearchBussinessInputValue(resetBusinessInputValue);
+          handleUpdateSearchBusinessInputValue(resetBusinessInputValue);
           handleUpdateSearchSupplierInputValue(resetProfileAccessInputValue);
 
           handleUpdateDescription("");
@@ -256,7 +264,7 @@ const UpdatePartForm = ({
           ref={formRef}
           action={(formData: FormData) => {
             const extraData = {
-              businessId: commandBusinnessInputValue.businessId,
+              businessId: commandBusinessInputValue.businessId,
               supplierId: commandSupplierInputValue.supplierId,
               partId: partData.id,
             };
@@ -265,14 +273,14 @@ const UpdatePartForm = ({
             return dispatch(formData);
           }}
         >
-          <UpdatePartFormContainer
-            state={state ?? defaultState}
+          <UpdatePartFormSubmit
+            state={state}
             handleCloseUpdatePart={handleCloseUpdatePart}
             handleUpdateDescription={handleUpdateDescription}
             handleUnitPriceChange={handleUnitPriceChange}
             handleUnitPriceBlur={handleUnitPriceBlur}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchSupplierInputValue={
               handleUpdateSearchSupplierInputValue
@@ -281,7 +289,7 @@ const UpdatePartForm = ({
             partValues={{
               description,
               displayUnitPrice,
-              commandBusinnessInputValue,
+              commandBusinessInputValue,
               commandSupplierInputValue,
             }}
           />

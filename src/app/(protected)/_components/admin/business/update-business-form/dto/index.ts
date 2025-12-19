@@ -22,11 +22,11 @@ interface UpdateBusinessFormState {
   successMessage?: string;
 }
 
-interface UpdateBusinessContainerProps {
+interface UpdateBusinessFormSubmitProps {
   state: UpdateBusinessFormState;
   handleCloseUpdateBusiness: () => void;
   businessData: BusinessProps;
   isUpdateBusinessOpen: boolean;
 }
 
-export type { UpdateBusinessContainerProps, UpdateBusinessFormState };
+export type { UpdateBusinessFormSubmitProps, UpdateBusinessFormState };

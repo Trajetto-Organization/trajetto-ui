@@ -1,9 +1,4 @@
-import {
-  CommandBranchInputValue,
-  CommandDriverInputValue,
-  CommandVehicleInputValue,
-  CommandFuelTypeInputValue,
-} from "@/app/(protected)/_components/dto";
+import { CommandVehicleInputValue } from "@/app/(protected)/_components/dto";
 
 interface DashboardCreateFuelValidationError {
   current_mileage?: string[];
@@ -27,7 +22,7 @@ interface DashboardCreateFuelFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateFuelContainerProps {
+interface DashboardCreateFuelFormSubmitProps {
   onBack: () => void;
   state: DashboardCreateFuelFormState;
   commandVehicleInputValue: CommandVehicleInputValue;
@@ -43,46 +38,7 @@ interface DashboardCreateFuelContainerProps {
   isLoadingLocation: boolean;
 }
 
-interface DashboardSelectBranchStepProps {
-  state: DashboardCreateFuelFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleDriverStepProps {
-  state: DashboardCreateFuelFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface DashboardSelectFuelTypeStepProps {
-  state: DashboardCreateFuelFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 export type {
   DashboardCreateFuelFormState,
-  DashboardCreateFuelContainerProps,
-  DashboardSelectBranchStepProps,
-  DashboardSelectVehicleDriverStepProps,
-  DashboardSelectFuelTypeStepProps,
+  DashboardCreateFuelFormSubmitProps,
 };

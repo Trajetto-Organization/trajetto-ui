@@ -11,13 +11,16 @@ interface CreateProfileAccessFormState {
   successMessage?: string;
 }
 
-interface CreateProfileAccessContainerProps {
+interface CreateProfileAccessFormSubmitProps {
   state: CreateProfileAccessFormState;
   handleOpenCreateProfileAccessForm: () => void;
-  commandBusinnessInputValue: CommandBusinessInputValue;
-  handleUpdateSearchBussinessInputValue: (
+  commandBusinessInputValue: CommandBusinessInputValue;
+  handleUpdateSearchBusinessInputValue: (
     businessSearchData: CommandBusinessInputValue,
   ) => void;
 }
 
-export type { CreateProfileAccessContainerProps, CreateProfileAccessFormState };
+export type {
+  CreateProfileAccessFormSubmitProps,
+  CreateProfileAccessFormState,
+};

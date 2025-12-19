@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
 import {
   Dialog,
@@ -26,26 +25,26 @@ import { handleCreateFuelType } from "@/actions/create-fuel-type";
 
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 
-import { CreateFuelTypeContainerProps, CreateFuelTypeFormState } from "./dto";
+import { CreateFuelTypeFormSubmitProps, CreateFuelTypeFormState } from "./dto";
 import { useCreateFuelTypeForm } from "./hooks";
 
 import { cn } from "@/lib/utils";
 import { SearchBusiness } from "../../../search-business";
 
-const CreateFuelTypeFormContainer = ({
+const CreateFuelTypeFormSubmit = ({
   state,
   handleOpenCreateFuelTypeForm,
   handleUpdateSearchBussinessInputValue,
   commandBusinnessInputValue: { searchBusinessInputValue },
-}: CreateFuelTypeContainerProps) => {
+}: CreateFuelTypeFormSubmitProps) => {
   const { pending } = useFormStatus();
 
   return (
     <div className="space-y-6 mt-2">
       <div className="w-full flex flex-col gap-3">
-        <Label
-          htmlFor="description"
+        <div
           className={cn(
+            "text-sm font-medium",
             state.createFuelTypeError?.description &&
               "h-4 truncate text-red-500",
           )}
@@ -53,9 +52,9 @@ const CreateFuelTypeFormContainer = ({
           {state.createFuelTypeError?.description
             ? state.createFuelTypeError?.description
             : "Combustível"}
-        </Label>
+        </div>
         <Select name="description" disabled={pending}>
-          <SelectTrigger>
+          <SelectTrigger aria-label="Tipo do combustível">
             <SelectValue placeholder="Tipo do combustível" />
           </SelectTrigger>
           <SelectContent>
@@ -63,7 +62,7 @@ const CreateFuelTypeFormContainer = ({
               <SelectItem
                 key={fuel}
                 value={fuel}
-                className="cursor-pointer hover:bg-accent 
+                className="cursor-pointer hover:bg-accent
                 hover:text-accent-foreground"
               >
                 {fuel}
@@ -130,7 +129,10 @@ const CreateFuelTypeFormContainer = ({
 
 const CreateFuelTypeForm = (): JSX.Element => {
   const defaultState: CreateFuelTypeFormState = {};
-  const [state, dispatch] = useFormState(handleCreateFuelType, null);
+  const [state, dispatch] = useFormState<CreateFuelTypeFormState, FormData>(
+    handleCreateFuelType,
+    defaultState,
+  );
 
   const {
     isCreateFuelTypeForm,
@@ -171,8 +173,8 @@ const CreateFuelTypeForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <CreateFuelTypeFormContainer
-            state={state ?? defaultState}
+          <CreateFuelTypeFormSubmit
+            state={state}
             handleOpenCreateFuelTypeForm={handleOpenCreateFuelTypeForm}
             handleUpdateSearchBussinessInputValue={
               handleUpdateSearchBussinessInputValue

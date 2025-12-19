@@ -10,12 +10,12 @@ interface DashboardCreateVehicleTypeFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateVehicleTypeContainerProps {
+interface DashboardCreateVehicleTypeFormSubmitProps {
   state: DashboardCreateVehicleTypeFormState;
   handleOpenCreateVehicleTypeForm: () => void;
 }
 
 export type {
-  DashboardCreateVehicleTypeContainerProps,
+  DashboardCreateVehicleTypeFormSubmitProps,
   DashboardCreateVehicleTypeFormState,
 };

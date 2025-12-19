@@ -19,7 +19,7 @@ interface DashboardUpdateUserFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateUserContainerProps {
+interface DashboardUpdateUserFormSubmitProps {
   state: DashboardUpdateUserFormState;
   handleUpdateUserEmail: (updatedUserName: string) => void;
   handleUpdateUserName: (updatedUserEmail: string) => void;
@@ -46,4 +46,7 @@ interface DashboardUpdateUserContainerProps {
   setUserType: (type: "employee" | "driver") => void;
 }
 
-export type { DashboardUpdateUserContainerProps, DashboardUpdateUserFormState };
+export type {
+  DashboardUpdateUserFormSubmitProps,
+  DashboardUpdateUserFormState,
+};

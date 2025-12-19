@@ -48,7 +48,7 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
     setIsCreateSupplierForm(!isCreateSupplierForm);
   };
 
-  const handleUpdateSearchBussinessInputValue = (
+  const handleUpdateSearchBusinessInputValue = (
     data: CommandBusinessInputValue,
   ) => {
     const { businessId, searchBusinessInputValue } = data;
@@ -148,7 +148,7 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
 
   return {
     isCreateSupplierForm,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     getBusinessIdError,
     handleContinue,
     handleCloseDialog,

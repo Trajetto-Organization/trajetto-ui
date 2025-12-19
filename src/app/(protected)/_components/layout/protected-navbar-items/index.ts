@@ -441,7 +441,7 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           title: "Checklist veicular",
           url: "/dashboard/vehicle-checklist",
           icon: "check",
-          requiredPermission: permissions.VEHICLE_MANAGE,
+          requiredPermission: permissions.VEHICLE_CHECKLIST_MANAGE,
         },
       ],
     },

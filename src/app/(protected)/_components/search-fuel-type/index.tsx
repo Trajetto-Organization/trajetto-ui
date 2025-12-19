@@ -10,7 +10,6 @@ import {
 
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useFuelTypeInfiniteScroll } from "./hooks/fuel-type-infinite-scroll";
@@ -24,6 +23,7 @@ const SearchFuelType = ({
   searchFuelTypeInputValue,
   businessId,
   handleUpdateSearchFuelTypeInputValue,
+  isOptional,
 }: SearchFuelTypeProps): JSX.Element => {
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
 
@@ -52,18 +52,18 @@ const SearchFuelType = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-fuel-type-input"
-        className={errorFuelTypeId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorFuelTypeId ? "text-red-500" : ""}`}
       >
-        {errorFuelTypeId ? errorFuelTypeId[0] : "Selecione o combustível"}
-      </Label>
+        {errorFuelTypeId ? errorFuelTypeId[0] : "Selecione o combustível"}{" "}
+        {isOptional && "(opcional)"}
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-fuel-type-input"
           placeholder="Buscar combustível..."
           className="h-9"
+          aria-label="Buscar combustível"
         />
 
         {!isLoadingFuelTypes && !hasError && (

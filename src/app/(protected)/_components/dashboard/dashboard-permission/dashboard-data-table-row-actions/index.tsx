@@ -87,10 +87,6 @@ export function DashboardDataTablePermissionRowActions<TData>({
       onClick: () => handleCopyID(collumnRowAction.id),
     },
     {
-      label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(collumnRowAction.businessId),
-    },
-    {
       label: "Copiar ID do perfil",
       onClick: () => handleCopyID(collumnRowAction.profileAccessId),
     },

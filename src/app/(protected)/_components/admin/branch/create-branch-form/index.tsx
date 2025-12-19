@@ -1,5 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -10,82 +10,22 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateBranch } from "@/actions/create-branch";
-import {
-  CreateBranchContainerProps,
-  CreateBranchFormState,
-  SelectBusinessByStepProps,
-} from "./dto";
+import { CreateBranchFormSubmitProps, CreateBranchFormState } from "./dto";
 
 import { useCreateBusinessForm } from "./hooks";
-
-import { SearchBusiness } from "../../../search-business";
 import { useCepValidation } from "../../../hooks";
 
-import { cn } from "@/lib/utils";
+import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
 
-const SelectBusinessStep = ({
-  searchBusinessInputValue,
-  handleUpdateSearchBussinessInputValue,
-  onContinue,
-  errorBusinessId,
-}: SelectBusinessByStepProps) => {
-  return (
-    <div className="space-y-6">
-      {searchBusinessInputValue && (
-        <div className="flex items-center gap-2">
-          <div
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "border-dashed truncate h-8 text-center max-w-96 block leading-4",
-            )}
-          >
-            {searchBusinessInputValue}
-          </div>
-          <Button
-            className="h-8 w-4"
-            variant="ghost"
-            onClick={() =>
-              handleUpdateSearchBussinessInputValue({
-                businessId: "",
-                searchBusinessInputValue: "",
-              })
-            }
-          >
-            <X />
-          </Button>
-        </div>
-      )}
-
-      <SearchBusiness
-        errorBusinessId={errorBusinessId}
-        searchBusinessInputValue={searchBusinessInputValue}
-        handleUpdateSearchBussinessInputValue={
-          handleUpdateSearchBussinessInputValue
-        }
-      />
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const CreateBranchFormContainer = ({
+const CreateBranchFormSubmit = ({
   state,
   isCreateBranchForm,
   onBack,
-}: CreateBranchContainerProps): JSX.Element => {
+}: CreateBranchFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, cepLoading } = useCepValidation({
     isOpen: isCreateBranchForm,
@@ -127,7 +67,10 @@ const CreateBranchFormContainer = ({
 
 const CreateBranchForm = (): JSX.Element => {
   const defaultState: CreateBranchFormState = {};
-  const [state, dispatch] = useFormState(handleCreateBranch, null);
+  const [state, dispatch] = useFormState<CreateBranchFormState, FormData>(
+    handleCreateBranch,
+    defaultState,
+  );
 
   const {
     isCreateBranchForm,
@@ -165,8 +108,8 @@ const CreateBranchForm = (): JSX.Element => {
 
         {currentStep === "select-business" ? (
           <SelectBusinessStep
-            searchBusinessInputValue={selectedBusiness.searchBusinessInputValue}
-            handleUpdateSearchBussinessInputValue={
+            commandBusinessInputValue={selectedBusiness}
+            handleUpdateSearchBusinessInputValue={
               handleUpdateSearchBussinessInputValue
             }
             onContinue={handleContinue}
@@ -180,9 +123,9 @@ const CreateBranchForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <CreateBranchFormContainer
+            <CreateBranchFormSubmit
               isCreateBranchForm={isCreateBranchForm}
-              state={state ?? defaultState}
+              state={state}
               onBack={handleBack}
             />
           </form>

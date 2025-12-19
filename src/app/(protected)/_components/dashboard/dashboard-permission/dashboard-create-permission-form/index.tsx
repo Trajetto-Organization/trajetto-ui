@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-
 import {
-  DashboardCreatePermissionContainerProps,
+  DashboardCreatePermissionFormSubmitProps,
   DashboardCreatePermissionFormState,
 } from "./dto";
 
@@ -43,12 +42,12 @@ import {
 
 import { cn } from "@/lib/utils";
 
-const DashboardCreatePermissionFormContainer = ({
+const DashboardCreatePermissionFormSubmit = ({
   state,
   handleOpenCreatePermissionForm,
   handleUpdateSearchProfileAccessInputValue,
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
-}: DashboardCreatePermissionContainerProps) => {
+}: DashboardCreatePermissionFormSubmitProps) => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 
@@ -124,7 +123,10 @@ const DashboardCreatePermissionFormContainer = ({
 
 const DashboardCreatePermissionForm = (): JSX.Element => {
   const defaultState: DashboardCreatePermissionFormState = {};
-  const [state, dispatch] = useFormState(handleCreatePermission, null);
+  const [state, dispatch] = useFormState<
+    DashboardCreatePermissionFormState,
+    FormData
+  >(handleCreatePermission, defaultState);
 
   const {
     isCreatePermissionForm,
@@ -201,8 +203,8 @@ const DashboardCreatePermissionForm = (): JSX.Element => {
             return dispatch(formData);
           }}
         >
-          <DashboardCreatePermissionFormContainer
-            state={state ?? defaultState}
+          <DashboardCreatePermissionFormSubmit
+            state={state}
             handleOpenCreatePermissionForm={handleOpenCreatePermissionForm}
             handleUpdateSearchProfileAccessInputValue={
               handleUpdateSearchProfileAccessInputValue

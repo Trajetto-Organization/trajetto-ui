@@ -22,7 +22,7 @@ interface DeletePartProps {
   partId: string;
 }
 
-const DeletePartFormContainer = (): JSX.Element => {
+const DeletePartFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -107,7 +107,7 @@ const DeletePartForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeletePartFormContainer />
+          <DeletePartFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

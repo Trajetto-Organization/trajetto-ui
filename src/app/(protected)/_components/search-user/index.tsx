@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useUserInfiniteScroll } from "./hooks/user-infinite-scroll";
@@ -23,6 +22,7 @@ const SearchUser = ({
   selectedUserId,
   businessId,
   handleUpdateSearchUserInputValue,
+  isOptional,
 }: SearchUserProps): JSX.Element => {
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
 
@@ -51,18 +51,18 @@ const SearchUser = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-user-input"
-        className={errorUserId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorUserId ? "text-red-500" : ""}`}
       >
-        {errorUserId ? errorUserId[0] : "Selecione o usuário"}
-      </Label>
+        {errorUserId ? errorUserId[0] : "Selecione o usuário"}{" "}
+        {isOptional && "(opcional)"}
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-user-input"
           placeholder="Buscar usuário..."
           className="h-9"
+          aria-label="Buscar usuário"
         />
 
         {!isLoadingUsers && !hasError && (

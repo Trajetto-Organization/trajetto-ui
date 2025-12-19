@@ -1,9 +1,6 @@
 import {
-  CommandBranchInputValue,
   CommandBusinessInputValue,
-  CommandDriverInputValue,
   CommandVehicleInputValue,
-  CommandFuelTypeInputValue,
   FuelProps,
 } from "@/app/(protected)/_components/dto";
 
@@ -29,7 +26,7 @@ interface UpdateFuelFormState {
   successMessage?: string;
 }
 
-interface UpdateFuelContainerProps {
+interface UpdateFuelFormSubmitProps {
   state: UpdateFuelFormState;
   onBack: () => void;
   fuelData: FuelProps;
@@ -50,45 +47,6 @@ interface UpdateFuelContainerProps {
   setShowImageModal: (show: boolean) => void;
 }
 
-interface SelectBusinessBranchStepProps {
-  state: UpdateFuelFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectVehicleDriverStepProps {
-  state: UpdateFuelFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectFuelTypeStepProps {
-  state: UpdateFuelFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface UpdateFuelFormProps {
   fuelData: FuelProps;
   handleCloseUpdateFuel: () => void;
@@ -98,8 +56,5 @@ interface UpdateFuelFormProps {
 export type {
   UpdateFuelFormState,
   UpdateFuelFormProps,
-  UpdateFuelContainerProps,
-  SelectBusinessBranchStepProps,
-  SelectVehicleDriverStepProps,
-  SelectFuelTypeStepProps,
+  UpdateFuelFormSubmitProps,
 };

@@ -91,10 +91,6 @@ export function DashboardDataTableServiceOrderPartRowActions<TData>({
       onClick: () => handleCopyID(collumnRowAction.id),
     },
     {
-      label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(collumnRowAction.businessId),
-    },
-    {
       label: "Copiar ID da ordem de serviço",
       onClick: () => handleCopyID(collumnRowAction.serviceOrderId),
     },

@@ -12,14 +12,14 @@ import { Loader } from "lucide-react";
 import { ProtectedContentSectionColumns } from "../../../layout/protected-content-section-collumns";
 import { useUserNameForm } from "./hooks";
 
-import { UserNameContainerProps, UserNameProps } from "./dto";
+import { UserNameFormSubmitProps, UserNameProps } from "./dto";
 
-const UserNameContainer = ({
+const UserNameFormSubmit = ({
   userNameValue,
   handleUserName,
   isUpdated,
   error,
-}: UserNameContainerProps): JSX.Element => {
+}: UserNameFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -77,7 +77,7 @@ const UserNameForm = ({ userName, error }: UserNameProps): JSX.Element => {
 
   return (
     <form action={dispatch}>
-      <UserNameContainer
+      <UserNameFormSubmit
         isUpdated={isUpdated}
         handleUserName={handleUserName}
         userNameValue={userNameValue}

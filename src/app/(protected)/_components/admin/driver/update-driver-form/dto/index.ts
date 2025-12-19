@@ -1,8 +1,3 @@
-import {
-  CommandBranchInputValue,
-  CommandBusinessInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { DriverProps } from "../../dto";
 
 interface UpdateDriverValidationError {
@@ -35,7 +30,7 @@ interface UpdateDriverFormProps {
   isUpdateDriverOpen: boolean;
 }
 
-interface UpdateDriverContainerProps {
+interface UpdateDriverFormSubmitProps {
   state: UpdateDriverFormState;
   driverData: DriverProps;
   isBusinessAndBranchDirty: boolean;
@@ -43,22 +38,8 @@ interface UpdateDriverContainerProps {
   onBack: () => void;
 }
 
-interface SelectBusinessForUpdateProps {
-  state: UpdateDriverFormState;
-  commandBusinnessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinnessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
 export type {
   UpdateDriverFormState,
   UpdateDriverFormProps,
-  UpdateDriverContainerProps,
-  SelectBusinessForUpdateProps,
+  UpdateDriverFormSubmitProps,
 };

@@ -1,4 +1,3 @@
-import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
 import { DashboardDriverProps } from "../../dto";
 
 interface DashboardUpdateDriverValidationError {
@@ -31,7 +30,7 @@ interface DashboardUpdateDriverFormProps {
   isUpdateDriverOpen: boolean;
 }
 
-interface DashboardUpdateDriverContainerProps {
+interface DashboardUpdateDriverSubmitProps {
   state: DashboardUpdateDriverFormState;
   driverData: DashboardDriverProps;
   isBranchDirty: boolean;
@@ -39,19 +38,8 @@ interface DashboardUpdateDriverContainerProps {
   onBack: () => void;
 }
 
-interface DashboardSelectBranchForUpdateProps {
-  state: DashboardUpdateDriverFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
 export type {
   DashboardUpdateDriverFormState,
   DashboardUpdateDriverFormProps,
-  DashboardUpdateDriverContainerProps,
-  DashboardSelectBranchForUpdateProps,
+  DashboardUpdateDriverSubmitProps,
 };

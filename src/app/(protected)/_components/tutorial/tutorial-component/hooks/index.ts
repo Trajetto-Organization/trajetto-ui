@@ -325,9 +325,11 @@ function useTutorialComponent() {
       sidebarUpdateTimer = setTimeout(updatePositions, 300);
     }
 
-    // Only add listeners for non-center placements
+    // Add resize listener for all placements (including center)
+    window.addEventListener("resize", updatePositions);
+
+    // Only add scroll listener for non-center placements
     if (currentStepData.placement !== "center") {
-      window.addEventListener("resize", updatePositions);
       window.addEventListener("scroll", updatePositions);
     }
 
@@ -343,8 +345,11 @@ function useTutorialComponent() {
         clearTimeout(sidebarUpdateTimer);
       }
 
+      // Remove resize listener for all placements
+      window.removeEventListener("resize", updatePositions);
+
+      // Remove scroll listener only if it was added
       if (currentStepData.placement !== "center") {
-        window.removeEventListener("resize", updatePositions);
         window.removeEventListener("scroll", updatePositions);
       }
     };

@@ -9,7 +9,7 @@ interface DashboardUpdateProfileAccessFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateProfileAccessContainerProps {
+interface DashboardUpdateProfileAccessFormSubmitProps {
   state: DashboardUpdateProfileAccessFormState;
   handleCloseUpdateProfileAccess: () => void;
   handleUpdateProfileAccessName: (updatedName: string) => void;
@@ -18,6 +18,6 @@ interface DashboardUpdateProfileAccessContainerProps {
 }
 
 export type {
-  DashboardUpdateProfileAccessContainerProps,
+  DashboardUpdateProfileAccessFormSubmitProps,
   DashboardUpdateProfileAccessFormState,
 };

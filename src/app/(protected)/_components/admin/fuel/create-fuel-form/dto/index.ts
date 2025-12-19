@@ -1,9 +1,6 @@
 import {
-  CommandBranchInputValue,
   CommandBusinessInputValue,
-  CommandDriverInputValue,
   CommandVehicleInputValue,
-  CommandFuelTypeInputValue,
 } from "@/app/(protected)/_components/dto";
 
 interface CreateFuelValidationError {
@@ -28,7 +25,7 @@ interface CreateFuelFormState {
   successMessage?: string;
 }
 
-interface CreateFuelContainerProps {
+interface CreateFuelFormSubmitProps {
   state: CreateFuelFormState;
   onBack: () => void;
   commandVehicleInputValue: CommandVehicleInputValue;
@@ -44,49 +41,4 @@ interface CreateFuelContainerProps {
   setFileError: (error: string | null) => void;
 }
 
-interface SelectBusinessBranchStepProps {
-  state: CreateFuelFormState;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBusinessInputValue: (
-    businessData: CommandBusinessInputValue,
-  ) => void;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface SelectVehicleDriverStepProps {
-  state: CreateFuelFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-interface SelectFuelTypeStepProps {
-  state: CreateFuelFormState;
-  businessId: string;
-  commandFuelTypeInputValue: CommandFuelTypeInputValue;
-  handleUpdateSearchFuelTypeInputValue: (
-    fuelTypeData: CommandFuelTypeInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
-export type {
-  CreateFuelFormState,
-  CreateFuelContainerProps,
-  SelectBusinessBranchStepProps,
-  SelectVehicleDriverStepProps,
-  SelectFuelTypeStepProps,
-};
+export type { CreateFuelFormState, CreateFuelFormSubmitProps };

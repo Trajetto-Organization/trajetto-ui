@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+
 import {
   CommandBranchInputValue,
   CommandDriverInputValue,
   CommandFuelTypeInputValue,
   CommandVehicleTypeInputValue,
-  DashboardCreateVehicleFormState,
-} from "../dto";
+} from "@/app/(protected)/_components/dto";
+import { DashboardCreateVehicleFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";

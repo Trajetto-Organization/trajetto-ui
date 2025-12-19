@@ -29,7 +29,7 @@ interface DeleteQuoteModalButton {
   quote: QuoteProps;
 }
 
-const DeleteQuoteModalFormContainer = ({ quote }: DeleteQuoteModalButton) => {
+const DeleteQuoteModalFormSubmit = ({ quote }: DeleteQuoteModalButton) => {
   const { pending } = useFormStatus();
 
   const statusLabels = {
@@ -110,7 +110,7 @@ const DeleteQuoteModal = ({
         dark:bg-[#121214]"
       >
         <form action={dispatch}>
-          <DeleteQuoteModalFormContainer quote={quote} />
+          <DeleteQuoteModalFormSubmit quote={quote} />
         </form>
       </AlertDialogContent>
     </AlertDialog>

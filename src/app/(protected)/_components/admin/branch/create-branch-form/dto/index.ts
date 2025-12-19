@@ -1,5 +1,3 @@
-import { CommandBusinessInputValue } from "@/app/(protected)/_components/dto";
-
 interface CreateBranchValidationError {
   cep?: string[];
   city?: string[];
@@ -23,24 +21,10 @@ interface CreateBranchFormState {
   successMessage?: string;
 }
 
-interface CreateBranchContainerProps {
+interface CreateBranchFormSubmitProps {
   state: CreateBranchFormState;
   isCreateBranchForm: boolean;
   onBack: () => void;
 }
 
-interface SelectBusinessByStepProps {
-  searchBusinessInputValue: string;
-  handleUpdateSearchBussinessInputValue: (
-    data: CommandBusinessInputValue,
-  ) => void;
-  onContinue: () => void;
-  errorBusinessId?: string[];
-}
-
-export type {
-  CreateBranchContainerProps,
-  CreateBranchFormState,
-  CommandBusinessInputValue,
-  SelectBusinessByStepProps,
-};
+export type { CreateBranchFormSubmitProps, CreateBranchFormState };

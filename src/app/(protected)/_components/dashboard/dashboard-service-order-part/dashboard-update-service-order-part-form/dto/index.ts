@@ -1,8 +1,3 @@
-import {
-  CommandPartInputValue,
-  CommandServiceOrderInputValue,
-} from "@/app/(protected)/_components/dto";
-
 import { DashboardServiceOrderPartProps } from "../../dto";
 
 interface DashboardUpdateServiceOrderPartValidationError {
@@ -20,24 +15,12 @@ interface DashboardUpdateServiceOrderPartFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateServiceOrderPartContainerProps {
+interface DashboardUpdateServiceOrderPartFormSubmitProps {
   state: DashboardUpdateServiceOrderPartFormState;
   onBack: () => void;
   serviceOrderPartData: DashboardServiceOrderPartProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateServiceOrderPartOpen: boolean;
-}
-
-interface DashboardSelectServiceOrderPartStepProps {
-  state: DashboardUpdateServiceOrderPartFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  commandPartInputValue: CommandPartInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  handleUpdateSearchPartInputValue: (partData: CommandPartInputValue) => void;
-  onContinue: () => void;
 }
 
 interface DashboardUpdateServiceOrderPartFormProps {
@@ -49,6 +32,5 @@ interface DashboardUpdateServiceOrderPartFormProps {
 export type {
   DashboardUpdateServiceOrderPartFormState,
   DashboardUpdateServiceOrderPartFormProps,
-  DashboardUpdateServiceOrderPartContainerProps,
-  DashboardSelectServiceOrderPartStepProps,
+  DashboardUpdateServiceOrderPartFormSubmitProps,
 };

@@ -9,7 +9,7 @@ interface DashboardUpdateFuelTypeFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateFuelTypeContainerProps {
+interface DashboardUpdateFuelTypeFormSubmitProps {
   state: DashboardUpdateFuelTypeFormState;
   handleCloseUpdateFuelType: () => void;
   handleUpdateDescription: (updatedDescription: string) => void;
@@ -20,6 +20,6 @@ interface DashboardUpdateFuelTypeContainerProps {
 }
 
 export type {
-  DashboardUpdateFuelTypeContainerProps,
+  DashboardUpdateFuelTypeFormSubmitProps,
   DashboardUpdateFuelTypeFormState,
 };

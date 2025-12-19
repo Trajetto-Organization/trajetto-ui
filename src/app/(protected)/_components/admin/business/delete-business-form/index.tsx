@@ -21,7 +21,7 @@ interface DeleteBusinessProps {
   bussinessId: string;
 }
 
-const DeleteBusinessFormContainer = (): JSX.Element => {
+const DeleteBusinessFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -118,7 +118,7 @@ const DeleteBusinessForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteBusinessFormContainer />
+          <DeleteBusinessFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

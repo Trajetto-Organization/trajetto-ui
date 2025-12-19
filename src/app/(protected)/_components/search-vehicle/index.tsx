@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useVehicleInfiniteScroll } from "./hooks/vehicle-infinite-scroll";
@@ -23,6 +22,7 @@ const SearchVehicle = ({
   selectedVehicleId,
   businessId,
   handleUpdateSearchVehicleInputValue,
+  isOptional,
 }: SearchVehicleProps): JSX.Element => {
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
 
@@ -51,18 +51,18 @@ const SearchVehicle = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-vehicle-input"
-        className={errorVehicleId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorVehicleId ? "text-red-500" : ""}`}
       >
-        {errorVehicleId ? errorVehicleId[0] : "Selecione o veículo"}
-      </Label>
+        {errorVehicleId ? errorVehicleId[0] : "Selecione o veículo"}{" "}
+        {isOptional && "(opcional)"}
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-vehicle-input"
           placeholder="Buscar veículo..."
           className="h-9"
+          aria-label="Buscar veículo"
         />
 
         {!isLoadingVehicle && !hasError && (

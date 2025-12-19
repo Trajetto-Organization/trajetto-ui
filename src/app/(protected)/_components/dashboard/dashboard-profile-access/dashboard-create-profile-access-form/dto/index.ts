@@ -9,12 +9,12 @@ interface DashboardCreateProfileAccessFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateProfileAccessContainerProps {
+interface DashboardCreateProfileAccessFormSubmitProps {
   state: DashboardCreateProfileAccessFormState;
   handleOpenCreateProfileAccessForm: () => void;
 }
 
 export type {
-  DashboardCreateProfileAccessContainerProps,
+  DashboardCreateProfileAccessFormSubmitProps,
   DashboardCreateProfileAccessFormState,
 };

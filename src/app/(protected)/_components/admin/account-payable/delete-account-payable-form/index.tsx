@@ -22,7 +22,7 @@ interface DeleteAccountPayableProps {
   accountPayableId: string;
 }
 
-const DeleteAccountPayableFormContainer = (): JSX.Element => {
+const DeleteAccountPayableFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (
@@ -106,7 +106,7 @@ const DeleteAccountPayableForm = ({
       </AlertDialogTrigger>
       <AlertDialogContent className="bg-white dark:bg-[#121214]">
         <form action={dispatch}>
-          <DeleteAccountPayableFormContainer />
+          <DeleteAccountPayableFormSubmit />
         </form>
       </AlertDialogContent>
     </AlertDialog>

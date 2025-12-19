@@ -22,7 +22,7 @@ function useCreatePartForm(state: CreatePartFormState | null) {
   const [isCreatePartForm, setIsCreatePartForm] = useState<boolean>(false);
   const [displayUnitPrice, setDisplayUnitPrice] = useState<string>("");
 
-  const [commandBusinnessInputValue, setCommandBussinessInputValue] =
+  const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       searchBusinessInputValue: "",
       businessId: "",
@@ -61,7 +61,7 @@ function useCreatePartForm(state: CreatePartFormState | null) {
     setDisplayUnitPrice(formatToBrazilianCurrency(newNumericValue));
   };
 
-  const handleUpdateSearchBussinessInputValue = ({
+  const handleUpdateSearchBusinessInputValue = ({
     searchBusinessInputValue,
     businessId,
   }: CommandBusinessInputValue) => {
@@ -71,11 +71,11 @@ function useCreatePartForm(state: CreatePartFormState | null) {
     });
 
     const updateCommandInputValue =
-      commandBusinnessInputValue.businessId === businessId
+      commandBusinessInputValue.businessId === businessId
         ? { searchBusinessInputValue: "", businessId: "" }
         : { searchBusinessInputValue, businessId };
 
-    setCommandBussinessInputValue(updateCommandInputValue);
+    setCommandBusinessInputValue(updateCommandInputValue);
   };
 
   const handleUpdateSearchSupplierInputValue = ({
@@ -96,7 +96,7 @@ function useCreatePartForm(state: CreatePartFormState | null) {
     if (isCreatePartForm) {
       formRef.current?.reset();
 
-      setCommandBussinessInputValue({
+      setCommandBusinessInputValue({
         businessId: "",
         searchBusinessInputValue: "",
       });
@@ -164,9 +164,9 @@ function useCreatePartForm(state: CreatePartFormState | null) {
   return {
     isCreatePartForm,
     handleOpenCreatePartForm,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandSupplierInputValue,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchSupplierInputValue,
     formRef,
     displayUnitPrice,

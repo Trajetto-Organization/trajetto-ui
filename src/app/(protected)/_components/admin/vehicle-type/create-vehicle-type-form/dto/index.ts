@@ -12,7 +12,7 @@ interface CreateVehicleTypeFormState {
   successMessage?: string;
 }
 
-interface CreateVehicleTypeContainerProps {
+interface CreateVehicleTypeFormSubmitProps {
   state: CreateVehicleTypeFormState;
   handleOpenCreateVehicleTypeForm: () => void;
   handleUpdateSearchBussinessInputValue: ({
@@ -21,4 +21,4 @@ interface CreateVehicleTypeContainerProps {
   commandBusinnessInputValue: CommandBusinessInputValue;
 }
 
-export type { CreateVehicleTypeContainerProps, CreateVehicleTypeFormState };
+export type { CreateVehicleTypeFormSubmitProps, CreateVehicleTypeFormState };

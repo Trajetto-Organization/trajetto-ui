@@ -1,8 +1,3 @@
-import {
-  CommandPartInputValue,
-  CommandServiceOrderInputValue,
-} from "@/app/(protected)/_components/dto";
-
 interface DashboardCreateServiceOrderPartValidationError {
   unit_price?: string[];
   quantity?: string[];
@@ -18,7 +13,7 @@ interface DashboardCreateServiceOrderPartFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateServiceOrderPartContainerProps {
+interface DashboardCreateServiceOrderPartFormSubmitProps {
   state: DashboardCreateServiceOrderPartFormState;
   onBack: () => void;
   quantityInputValue: string;
@@ -34,20 +29,7 @@ interface DashboardCreateServiceOrderPartContainerProps {
   handleQuantityBlur: () => void;
 }
 
-interface DashboardSelectServiceOrderPartStepProps {
-  state: DashboardCreateServiceOrderPartFormState;
-  businessId: string;
-  commandServiceOrderInputValue: CommandServiceOrderInputValue;
-  commandPartInputValue: CommandPartInputValue;
-  handleUpdateSearchServiceOrderInputValue: (
-    serviceOrderData: CommandServiceOrderInputValue,
-  ) => void;
-  handleUpdateSearchPartInputValue: (partData: CommandPartInputValue) => void;
-  onContinue: () => void;
-}
-
 export type {
   DashboardCreateServiceOrderPartFormState,
-  DashboardCreateServiceOrderPartContainerProps,
-  DashboardSelectServiceOrderPartStepProps,
+  DashboardCreateServiceOrderPartFormSubmitProps,
 };

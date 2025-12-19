@@ -121,4 +121,3 @@ const businessFieldsData: FieldProps[] = [
 ];
 
 export { businessFieldsData };
-export type { FieldProps };

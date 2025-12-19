@@ -47,7 +47,7 @@ interface DashboardUpdateVehicleChecklistFormState {
   successMessage?: string;
 }
 
-interface DashboardUpdateVehicleChecklistContainerProps {
+interface DashboardUpdateVehicleChecklistFormSubmitProps {
   state: DashboardUpdateVehicleChecklistFormState;
   onBack: () => void;
   checklistData: DashboardVehicleChecklistProps;
@@ -68,31 +68,6 @@ interface DashboardUpdateVehicleChecklistContainerProps {
   setPhotosToRemove: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-interface DashboardSelectBranchStepProps {
-  businessId: string;
-  state: DashboardUpdateVehicleChecklistFormState;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
-interface DashboardSelectVehicleDriverStepProps {
-  state: DashboardUpdateVehicleChecklistFormState;
-  businessId: string;
-  commandVehicleInputValue: CommandVehicleInputValue;
-  commandDriverInputValue: CommandDriverInputValue;
-  handleUpdateSearchVehicleInputValue: (
-    vehicleData: CommandVehicleInputValue,
-  ) => void;
-  handleUpdateSearchDriverInputValue: (
-    driverData: CommandDriverInputValue,
-  ) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}
-
 interface DashboardUpdateVehicleChecklistFormProps {
   checklistData: DashboardVehicleChecklistProps;
   handleCloseUpdateChecklist: () => void;
@@ -101,8 +76,6 @@ interface DashboardUpdateVehicleChecklistFormProps {
 
 export type {
   DashboardUpdateVehicleChecklistFormState,
-  DashboardUpdateVehicleChecklistContainerProps,
-  DashboardSelectBranchStepProps,
-  DashboardSelectVehicleDriverStepProps,
+  DashboardUpdateVehicleChecklistFormSubmitProps,
   DashboardUpdateVehicleChecklistFormProps,
 };

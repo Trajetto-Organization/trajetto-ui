@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useDriverInfiniteScroll } from "./hooks/driver-infinite-scroll";
@@ -52,19 +51,18 @@ const SearchDriver = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-driver-input"
-        className={errorDriverId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorDriverId ? "text-red-500" : ""}`}
       >
         {errorDriverId ? errorDriverId[0] : "Selecione o motorista"}{" "}
         {isOptional && "(opcional)"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-driver-input"
           placeholder="Buscar motorista..."
           className="h-9"
+          aria-label="Buscar motorista"
         />
 
         {!isLoadingDrivers && !hasError && (

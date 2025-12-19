@@ -11,6 +11,7 @@ interface SearchUserProps {
   selectedUserId?: string;
   businessId: string;
   handleUpdateSearchUserInputValue: (userData: CommandUserInputValue) => void;
+  isOptional?: boolean;
 }
 
 export type { FetchUserProps, SearchUserProps };

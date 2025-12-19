@@ -8,9 +8,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
+import { Check, Loader } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useBranchInfiniteScroll } from "./hooks/branch-infinite-scroll";
@@ -53,19 +52,18 @@ const SearchBranch = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-branch-input"
-        className={errorBranchId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorBranchId ? "text-red-500" : ""}`}
       >
         {errorBranchId ? errorBranchId[0] : "Selecione a filial"}{" "}
         {isOptional && "(opcional)"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-branch-input"
           placeholder="Buscar filial..."
           className="h-9"
+          aria-label="Buscar filial"
         />
 
         {!isLoadingBranches && !hasError && (

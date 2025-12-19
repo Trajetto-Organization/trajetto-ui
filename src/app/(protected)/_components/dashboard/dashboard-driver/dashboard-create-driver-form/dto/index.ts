@@ -1,5 +1,3 @@
-import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
-
 interface DashboardCreateSupplierValidationError {
   name?: string[];
   birth_date?: string[];
@@ -24,25 +22,13 @@ interface DashboardCreateDriverFormState {
   successMessage?: string;
 }
 
-interface DashboardCreateDriverContainerProps {
+interface DashboardCreateDriverFormSubmitProps {
   state: DashboardCreateDriverFormState;
   isCreateDriverForm: boolean;
   onBack: () => void;
 }
 
-interface DashboardSelectBranchByStepProps {
-  state: DashboardCreateDriverFormState;
-  businessId: string;
-  commandBranchInputValue: CommandBranchInputValue;
-  handleUpdateSearchBranchInputValue: (
-    branchData: CommandBranchInputValue,
-  ) => void;
-  onContinue: () => void;
-}
-
 export type {
   DashboardCreateDriverFormState,
-  DashboardCreateDriverContainerProps,
-  DashboardSelectBranchByStepProps,
-  CommandBranchInputValue,
+  DashboardCreateDriverFormSubmitProps,
 };

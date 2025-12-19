@@ -278,45 +278,41 @@ const createUpdateDriverSchema = z.object({
       /^\d+[A-Za-z]?$/,
       "O número do endereço deve conter apenas números e letras.",
     ),
-  complement: z.preprocess(
-    emptyStringToNull,
-    z
-      .string()
-      .max(50, "O complemento deve ter no máximo 50 caracteres.")
-      .superRefine((value, ctx) => {
-        if (value === undefined || value === "") {
-          return;
-        }
+  complement: z
+    .string()
+    .max(50, "O complemento deve ter no máximo 50 caracteres.")
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined || value === "") {
+        return;
+      }
 
-        if (hasConsecutiveSpaces(value)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message:
-              "O nome do complemento não deve conter espaços consecutivos.",
-          });
-          return;
-        }
+      if (hasConsecutiveSpaces(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome do complemento não deve conter espaços consecutivos.",
+        });
+        return;
+      }
 
-        if (hasSpaceAtEdges(value)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message:
-              "O nome do complemento não pode começar ou terminar com espaço em branco.",
-          });
-          return;
-        }
+      if (hasSpaceAtEdges(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome do complemento não pode começar ou terminar com espaço em branco.",
+        });
+        return;
+      }
 
-        if (!/^[\p{L}0-9]+(?:[ \-][\p{L}0-9]+)*$/u.test(value)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message:
-              "O nome do complemento deve conter apenas letras (inclusive acentos), números, espaços e traços, sem outros caracteres.",
-          });
-        }
-      })
-      .nullable()
-      .optional(),
-  ),
+      if (!/^[\p{L}0-9]+(?:[ \-][\p{L}0-9]+)*$/u.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome do complemento deve conter apenas letras (inclusive acentos), números, espaços e traços, sem outros caracteres.",
+        });
+      }
+    }),
   status: z.enum(["ACTIVE", "INACTIVE"], {
     errorMap: () => ({
       message: "O status deve ser 'Ativo' ou 'Inativo'",

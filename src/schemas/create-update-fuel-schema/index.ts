@@ -72,36 +72,38 @@ const createUpdateFuelSchema = z.object({
     z
       .string()
       .max(500, "As observações devem ter no máximo 500 caracteres.")
-      .optional()
-      .nullable()
       .superRefine((value, ctx) => {
-        if (value && typeof value === "string") {
-          if (isEmptyOrWhitespace(value)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "As observações não podem conter apenas espaços.",
-            });
-            return;
-          }
-
-          if (hasConsecutiveSpaces(value)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message: "As observações não devem conter espaços consecutivos.",
-            });
-            return;
-          }
-
-          if (hasSpaceAtEdges(value)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              message:
-                "As observações não podem começar ou terminar com espaço em branco.",
-            });
-            return;
-          }
+        if (!value || value === "") {
+          return;
         }
-      }),
+
+        if (isEmptyOrWhitespace(value)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "As observações não podem conter apenas espaços.",
+          });
+          return;
+        }
+
+        if (hasConsecutiveSpaces(value)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "As observações não devem conter espaços consecutivos.",
+          });
+          return;
+        }
+
+        if (hasSpaceAtEdges(value)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message:
+              "As observações não podem começar ou terminar com espaço em branco.",
+          });
+          return;
+        }
+      })
+      .optional()
+      .nullable(),
   ),
   refueling_date: z
     .string()

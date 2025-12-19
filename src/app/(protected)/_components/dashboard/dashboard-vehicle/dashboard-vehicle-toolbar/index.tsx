@@ -37,11 +37,6 @@ export function DashboardVehicleToolbar<TData>({
 
   const filters = [
     {
-      key: "business_name",
-      title: "Nome da empresa",
-      dynamicOptionIcon: Building2,
-    },
-    {
       key: "branchName",
       title: "Nome da filial",
       dynamicOptionIcon: Building2,

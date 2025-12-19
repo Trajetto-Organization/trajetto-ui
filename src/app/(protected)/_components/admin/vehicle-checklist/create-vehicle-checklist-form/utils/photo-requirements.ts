@@ -153,11 +153,13 @@ export const validateUpdatePhotoRequirements = (
 
   const missingPhotos = requiredPhotoFields.filter((field) => {
     // Check if field has new photos
-    const hasNewPhotos = checklistFiles[field] && checklistFiles[field].length > 0;
+    const hasNewPhotos =
+      checklistFiles[field] && checklistFiles[field].length > 0;
 
     // Check if field has existing photos that won't be removed
-    const existingFieldPhotos = existingPhotos.filter(photoUrl =>
-      photoUrl.includes(field) && !photosToRemove.includes(photoUrl)
+    const existingFieldPhotos = existingPhotos.filter(
+      (photoUrl) =>
+        photoUrl.includes(field) && !photosToRemove.includes(photoUrl),
     );
     const hasRemainingExistingPhotos = existingFieldPhotos.length > 0;
 

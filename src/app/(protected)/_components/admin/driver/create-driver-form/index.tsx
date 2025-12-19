@@ -1,5 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader, X } from "lucide-react";
+import { Loader } from "lucide-react";
 
 import {
   Dialog,
@@ -10,13 +10,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  CreateDriverContainerProps,
-  CreateDriverFormState,
-  SelectBusinessByStepProps,
-} from "./dto";
+import { CreateDriverFormSubmitProps, CreateDriverFormState } from "./dto";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { handleCreateDriver } from "@/actions/create-driver";
@@ -24,131 +20,14 @@ import { handleCreateDriver } from "@/actions/create-driver";
 import { useCepValidation } from "../../../hooks";
 import { useCreateDriverForm } from "./hooks";
 
-import { SearchBusiness } from "../../../search-business";
-
-import { SearchBranch } from "../../../search-branch";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 import { DatePickerField, SelectField } from "../../../custom";
 
-import { cn } from "@/lib/utils";
-
-const SelectBusinessStep = ({
-  state,
-  handleUpdateSearchBussinessInputValue,
-  handleUpdateSearchBranchInputValue,
-  commandBusinnessInputValue: { searchBusinessInputValue, businessId },
-  commandBranchInputValue: { searchBranchInputValue },
-  onContinue,
-}: SelectBusinessByStepProps) => {
-  return (
-    <div className="space-y-6">
-      {(searchBranchInputValue || searchBusinessInputValue) && (
-        <div className="grid grid-cols-2 gap-4 w-full">
-          {searchBusinessInputValue && (
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Empresa:</span>
-                <span className="w-full truncate">
-                  {searchBusinessInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBussinessInputValue({
-                    businessId: "",
-                    searchBusinessInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-
-          {searchBranchInputValue && (
-            <div className="flex items-center gap-2 w-full ml-auto">
-              <div
-                className={cn(
-                  buttonVariants({ variant: "outline" }),
-                  "border-dashed truncate h-8 text-left",
-                )}
-              >
-                <span>Filial:</span>
-                <span className="w-full truncate">
-                  {searchBranchInputValue}
-                </span>
-              </div>
-
-              <Button
-                className="h-8 w-4"
-                variant="ghost"
-                onClick={() =>
-                  handleUpdateSearchBranchInputValue({
-                    branchId: "",
-                    searchBranchInputValue: "",
-                  })
-                }
-              >
-                <X />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div
-        className={`grid ${
-          searchBusinessInputValue
-            ? "grid-cols-1 md:grid-cols-2"
-            : "grid-cols-1"
-        } gap-4`}
-      >
-        <SearchBusiness
-          handleUpdateSearchBussinessInputValue={
-            handleUpdateSearchBussinessInputValue
-          }
-          searchBusinessInputValue={searchBusinessInputValue}
-          errorBusinessId={state.createDriverError?.businessId}
-        />
-
-        {searchBusinessInputValue && (
-          <SearchBranch
-            errorBranchId={state.createDriverError?.branchId}
-            searchBranchInputValue={searchBranchInputValue}
-            businessId={businessId}
-            handleUpdateSearchBranchInputValue={
-              handleUpdateSearchBranchInputValue
-            }
-            isOptional={true}
-          />
-        )}
-      </div>
-
-      <div className="flex justify-end mt-6">
-        <Button
-          type="button"
-          onClick={onContinue}
-          disabled={!searchBusinessInputValue}
-        >
-          Prosseguir
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const CreateDriverFormContainer = ({
+const CreateDriverFormSubmit = ({
   state,
   isCreateDriverForm,
   onBack,
-}: CreateDriverContainerProps): JSX.Element => {
+}: CreateDriverFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, cepLoading, formValues, handleFieldChange } =
     useCepValidation({
@@ -186,6 +65,7 @@ const CreateDriverFormContainer = ({
             ]
           }
           disabled={pending}
+          autoComplete="name"
         />
 
         {/* Date of Birth Field (Custom Component) */}
@@ -323,17 +203,20 @@ const CreateDriverFormContainer = ({
 
 const CreateDriverForm = (): JSX.Element => {
   const defaultState: CreateDriverFormState = {};
-  const [state, dispatch] = useFormState(handleCreateDriver, null);
+  const [state, dispatch] = useFormState<CreateDriverFormState, FormData>(
+    handleCreateDriver,
+    defaultState,
+  );
 
   const {
     isCreateDriverForm,
     formRef,
     handleCloseDialog,
     currentStep,
-    commandBusinnessInputValue,
+    commandBusinessInputValue,
     commandBranchInputValue,
     handleBack,
-    handleUpdateSearchBussinessInputValue,
+    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleContinue,
   } = useCreateDriverForm(state);
@@ -349,29 +232,31 @@ const CreateDriverForm = (): JSX.Element => {
       <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business"
+            {currentStep === "select-business-branch"
               ? "Selecionar Empresa"
               : "Criar Novo Motorista"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business"
+            {currentStep === "select-business-branch"
               ? "Selecione a empresa para a qual deseja criar um motorista (obrigatório) e opcionalmente uma filial."
               : "Insira as informações solicitadas abaixo para concluir a criação do motorista."}
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business" ? (
-          <SelectBusinessStep
-            state={state ?? defaultState}
-            handleUpdateSearchBussinessInputValue={
-              handleUpdateSearchBussinessInputValue
+        {currentStep === "select-business-branch" ? (
+          <SelectBusinessBranchStep
+            handleUpdateSearchBusinessInputValue={
+              handleUpdateSearchBusinessInputValue
             }
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
             onContinue={handleContinue}
-            commandBusinnessInputValue={commandBusinnessInputValue}
+            commandBusinessInputValue={commandBusinessInputValue}
             commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state?.createDriverError?.branchId}
+            errorBusinessId={state.createDriverError?.businessId}
+            searchBranchIsOptional={true}
           />
         ) : (
           <form
@@ -379,7 +264,7 @@ const CreateDriverForm = (): JSX.Element => {
             action={(formData) => {
               formData.append(
                 "businessId",
-                commandBusinnessInputValue.businessId,
+                commandBusinessInputValue.businessId,
               );
 
               if (commandBranchInputValue.branchId) {
@@ -389,9 +274,9 @@ const CreateDriverForm = (): JSX.Element => {
               return dispatch(formData);
             }}
           >
-            <CreateDriverFormContainer
+            <CreateDriverFormSubmit
               isCreateDriverForm={isCreateDriverForm}
-              state={state ?? defaultState}
+              state={state}
               onBack={handleBack}
             />
           </form>

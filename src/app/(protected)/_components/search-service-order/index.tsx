@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/command";
 import { Check, Loader } from "lucide-react";
 
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { useServiceOrderInfiniteScroll } from "./hooks/service-order-infinite-scroll";
@@ -71,21 +70,20 @@ const SearchServiceOrder = ({
 
   return (
     <div className="space-y-2">
-      <Label
-        htmlFor="search-service-order-input"
-        className={errorServiceOrderId ? "text-red-500" : ""}
+      <div
+        className={`text-sm font-medium ${errorServiceOrderId ? "text-red-500" : ""}`}
       >
         {errorServiceOrderId
           ? errorServiceOrderId[0]
           : "Selecione a ordem de serviço"}{" "}
         {isOptional && "(opcional)"}
-      </Label>
+      </div>
 
       <Command className="h-[320px] relative border rounded-md">
         <CommandInput
-          id="search-service-order-input"
           placeholder="Buscar ordem de serviço..."
           className="h-9"
+          aria-label="Buscar ordem de serviço"
         />
 
         {!isLoadingServiceOrders && !hasError && (

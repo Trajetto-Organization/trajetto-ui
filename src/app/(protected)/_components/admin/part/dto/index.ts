@@ -2,7 +2,7 @@ interface PartProps {
   id: string;
   description: string;
   unit_price: string | number;
-  businessId?: string | null;
+  businessId?: string;
   supplierId?: string | null;
   business?: {
     corporate_reason: string;

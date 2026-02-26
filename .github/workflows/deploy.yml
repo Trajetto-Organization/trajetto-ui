@@ -46,6 +46,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
+            METADATA_BASE=${{ secrets.METADATA_BASE }}
             NEXT_PUBLIC_HTTP_REQUEST=${{ secrets.NEXT_PUBLIC_HTTP_REQUEST }}
             NEXT_PUBLIC_TURNSTILE_SITE_KEY=${{ secrets.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
             NEXT_PUBLIC_SANITY_PROJECT_ID=${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}

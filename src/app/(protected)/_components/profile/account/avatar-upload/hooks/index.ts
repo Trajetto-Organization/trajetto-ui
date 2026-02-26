@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, TransitionStartFunction } from "react";
-import { handleUploadAvatar } from "@/actions/upload-avatar";
+import { handleUploadAvatar } from "@/actions/user/upload-avatar";
 
 import { toast } from "sonner";
 

@@ -16,7 +16,13 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -118,7 +124,23 @@ const NavBarContent = ({
               </Button>
             </SheetTrigger>
             <SheetContent className="flex flex-col items-start">
-              <Link href="/" className="font-bold text-xl">
+              <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+              <SheetDescription className="sr-only">
+                Navegue pelas páginas do site Trajetto
+              </SheetDescription>
+              <Link
+                href="/"
+                className="font-bold text-xl 
+                flex items-center"
+              >
+                <Image
+                  src="/trajetto-logo.png"
+                  alt="Trajetto Logo"
+                  width={120}
+                  height={32}
+                  className="h-10 w-auto"
+                  priority
+                />
                 Trajetto
               </Link>
               <Separator className="mt-1" />

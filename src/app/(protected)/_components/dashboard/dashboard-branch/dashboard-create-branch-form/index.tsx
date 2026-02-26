@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateBranch } from "@/actions/create-branch";
+import { handleCreateBranch } from "@/actions/branch/create-branch";
 import {
   DashboardCreateBranchFormSubmitProps,
   DashboardCreateBranchFormState,
@@ -27,7 +27,7 @@ import { useCepValidation } from "../../../hooks";
 import { permissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth-store";
 
-const CreateBranchFormSubmit = ({
+const DashboardCreateBranchFormSubmit = ({
   state,
   isCreateBranchForm,
   handleOpenCreateBranchForm,
@@ -91,6 +91,11 @@ const DashboardCreateBranchForm = (): JSX.Element => {
     "write",
   );
 
+  const createBranchForm = (branchFormData: FormData) => {
+    branchFormData.append("businessId", businessId as string);
+    return dispatch(branchFormData);
+  };
+
   return (
     <Dialog open={isCreateBranchForm} onOpenChange={handleOpenCreateBranchForm}>
       <DialogTrigger
@@ -103,7 +108,10 @@ const DashboardCreateBranchForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Nova Filial</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -112,14 +120,8 @@ const DashboardCreateBranchForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData) => {
-            formData.append("businessId", businessId as string);
-            return dispatch(formData);
-          }}
-        >
-          <CreateBranchFormSubmit
+        <form ref={formRef} action={createBranchForm}>
+          <DashboardCreateBranchFormSubmit
             isCreateBranchForm={isCreateBranchForm}
             state={state}
             handleOpenCreateBranchForm={handleOpenCreateBranchForm}

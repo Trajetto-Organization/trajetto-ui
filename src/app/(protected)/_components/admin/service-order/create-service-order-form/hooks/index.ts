@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
@@ -60,6 +60,19 @@ function useCreateServiceOrderForm(state: CreateServiceOrderFormState | null) {
       responsibleUserEmail: "",
     });
 
+  // Persisted form values for the last step
+  const [serviceOrderFormValues, setServiceOrderFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setServiceOrderFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateServiceOrderForm) {
       toast.dismiss();
@@ -96,6 +109,8 @@ function useCreateServiceOrderForm(state: CreateServiceOrderFormState | null) {
         searchUserInputValue: "",
         responsibleUserEmail: "",
       });
+
+      setServiceOrderFormValues({});
     }
 
     setIsCreateServiceOrderForm(!isCreateServiceOrderForm);
@@ -239,6 +254,8 @@ function useCreateServiceOrderForm(state: CreateServiceOrderFormState | null) {
       searchUserInputValue: "",
       responsibleUserEmail: "",
     });
+
+    setServiceOrderFormValues({});
   };
 
   useEffect(() => {
@@ -321,6 +338,8 @@ function useCreateServiceOrderForm(state: CreateServiceOrderFormState | null) {
     commandSupplierInputValue,
     commandUserInputValue,
     formRef,
+    serviceOrderFormValues,
+    handleFormValuesChange,
   };
 }
 

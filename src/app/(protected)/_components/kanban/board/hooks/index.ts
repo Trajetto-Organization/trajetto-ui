@@ -15,8 +15,8 @@ import {
 
 import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 
-import { handleReorderKanbanColumns } from "@/actions/reorder-kanban-columns";
-import { handleReorderKanbanCards } from "@/actions/reorder-kanban-cards";
+import { handleReorderKanbanColumns } from "@/actions/kanban/reorder-kanban-columns";
+import { handleReorderKanbanCards } from "@/actions/kanban/reorder-kanban-cards";
 
 import { KanbanCard, KanbanColumn } from "../../dto";
 import {

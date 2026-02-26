@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { CommandBusinessInputValue, CreateSupplierFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
@@ -27,6 +27,19 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
       searchBusinessInputValue: "",
     });
 
+  // Persisted form values for the last step
+  const [supplierFormValues, setSupplierFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setSupplierFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateSupplierForm) {
       toast.dismiss();
@@ -43,6 +56,7 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
       });
 
       setBusinessNotSelected(undefined);
+      setSupplierFormValues({});
     }
 
     setIsCreateSupplierForm(!isCreateSupplierForm);
@@ -59,6 +73,7 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
         : { businessId, searchBusinessInputValue };
 
     setSelectedBusiness(updateSelectedBusiness);
+
     if (updateSelectedBusiness.businessId) {
       setBusinessNotSelected(undefined);
     }
@@ -88,6 +103,7 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
     });
 
     setBusinessNotSelected(undefined);
+    setSupplierFormValues({});
   };
 
   useEffect(() => {
@@ -156,6 +172,8 @@ function useCreateSupplierForm(state: CreateSupplierFormState | null) {
     selectedBusiness,
     handleBack,
     formRef,
+    supplierFormValues,
+    handleFormValuesChange,
   };
 }
 

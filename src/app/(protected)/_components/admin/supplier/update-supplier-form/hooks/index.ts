@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import { CommandBusinessInputValue } from "../../../../dto";
 import { UpdateSupplierFormState } from "../dto";
@@ -25,6 +25,7 @@ function useUpdateSupplierForm({
 }: UseUpdateSupplierFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
+
   const businessNotSelectedRef = useRef<string[] | undefined>(undefined);
 
   // Step-based state
@@ -36,23 +37,39 @@ function useUpdateSupplierForm({
   const [selectedBusiness, setSelectedBusiness] =
     useState<CommandBusinessInputValue>({
       businessId: supplierData.businessId || "",
-      searchBusinessInputValue: supplierData.business_name || "",
+      searchBusinessInputValue: supplierData.business?.corporate_reason || "",
     });
+
+  // Persisted form values for the last step
+  const [supplierFormValues, setSupplierFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setSupplierFormValues(values);
+    },
+    [],
+  );
 
   // Reset state when dialog closes
   useEffect(() => {
     if (!isUpdateSupplierOpen) {
       setCurrentStep("select-business");
+
       setSelectedBusiness({
         businessId: supplierData.businessId || "",
-        searchBusinessInputValue: supplierData.business_name || "",
+        searchBusinessInputValue: supplierData.business?.corporate_reason || "",
       });
+
       businessNotSelectedRef.current = undefined;
+      setSupplierFormValues({});
     }
   }, [
     isUpdateSupplierOpen,
     supplierData.businessId,
-    supplierData.business_name,
+    supplierData.business?.corporate_reason,
   ]);
 
   useEffect(() => {
@@ -156,6 +173,8 @@ function useUpdateSupplierForm({
     handleBack,
     isDirty,
     getBusinessIdError,
+    supplierFormValues,
+    handleFormValuesChange,
   };
 }
 

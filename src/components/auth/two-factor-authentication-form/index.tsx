@@ -19,7 +19,7 @@ import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import { handleTwoFactorAuthenticationUser } from "@/actions/two-factor-authentication-user";
+import { handleTwoFactorAuthenticationUser } from "@/actions/user/two-factor-authentication-user";
 import { ErrorForm } from "../error-form";
 
 import { useTwoFactorForm } from "./hooks";

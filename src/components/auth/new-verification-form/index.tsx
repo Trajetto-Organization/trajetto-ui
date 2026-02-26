@@ -37,22 +37,10 @@ const NewVerificationForm = (): JSX.Element => {
         className="w-full flex justify-center"
       >
         <Card className="w-full max-w-[27rem] p-3">
-          <CardHeader className="space-y-5 flex items-center justify-center">
+          <CardHeader className="space-y-3 flex items-center justify-center">
             <CardTitle className="flex justify-center items-center">
               <Lock size={45} />
             </CardTitle>
-
-            {success && countdown !== null && (
-              <CardDescription className="text-lg animate-pulse text-center">
-                Redirecionando para a página de login em{" "}
-                <h1
-                  className="text-center text-3xl font-bold 
-                  tracking-[-0.02em] [text-wrap:balance] mt-3"
-                >
-                  {countdown}
-                </h1>
-              </CardDescription>
-            )}
 
             {!success && !error && (
               <CardDescription className="text-lg animate-pulse">
@@ -66,13 +54,21 @@ const NewVerificationForm = (): JSX.Element => {
             items-center w-full my-2 text-center"
           >
             {!success && !error && <Loader color="#f50057" size={18} />}
-
             <SuccessForm message={success} />
 
             {!success && <ErrorForm message={error} />}
           </div>
         </Card>
       </motion.div>
+
+      {(success || error) && countdown !== null && (
+        <p
+          className="text-sm text-muted-foreground 
+          text-center animate-pulse mt-4"
+        >
+          Redirecionando para o login em {countdown}...
+        </p>
+      )}
     </>
   );
 };

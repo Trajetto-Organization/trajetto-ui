@@ -118,13 +118,13 @@ const Supplier = async ({
   // Calculates stats directly from the returned data
   const statsData = {
     totalSuppliers: meta.total,
-    withTelephone: supplier.filter((s) => s.telephone && s.telephone !== "N/A")
+    withTelephone: supplier.filter((s) => s.telephone && s.telephone !== null)
       .length,
-    withEmail: supplier.filter((s) => s.email && s.email !== "N/A").length,
+    withEmail: supplier.filter((s) => s.email && s.email !== null).length,
     topStates: (() => {
       const stateCount: Record<string, number> = {};
       supplier.forEach((s) => {
-        if (s.uf && s.uf !== "N/A") {
+        if (s.uf && s.uf !== null) {
           stateCount[s.uf] = (stateCount[s.uf] || 0) + 1;
         }
       });

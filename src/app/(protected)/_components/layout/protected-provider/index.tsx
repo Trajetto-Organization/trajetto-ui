@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+
 import { getCookies } from "@/actions/cookies";
 
 import { ProtectedLayout } from "@/app/(protected)/_components/layout";
@@ -8,6 +10,9 @@ import { UserRole, UserLoggedProps } from "../../dto";
 import { SyncNotificationsProvider } from "./sync-notifications-wrapper";
 
 import { parseJwt } from "@/lib/decode-jwt";
+
+import { handleUserResponseError, validateUserAccess } from "./security-checks";
+import { fetchNotifications } from "./fetch-notifications";
 
 const ProtectedProvider = async ({
   children,
@@ -26,6 +31,10 @@ const ProtectedProvider = async ({
 
   const jwtDriverId = decodedJwt?.driverId || null;
 
+  // Get pathname from middleware header (for page-level permission check)
+  const headersList = headers();
+  const pathname = headersList.get("x-pathname") || "";
+
   let userLogged = {
     id: "",
     businessId: "",
@@ -42,12 +51,21 @@ const ProtectedProvider = async ({
   let userResponseError = false;
   let notificationResponseError = false;
 
-  let response: Response | undefined;
-  let notificationCount = 0;
+  let serverNotifications: {
+    id: string;
+    title: string;
+    message: string;
+    link?: string;
+    type: string;
+    read: boolean;
+    created_at: string | Date;
+  }[] = [];
 
   let serverNotificationIds: string[] = [];
 
-  // Tries to run fetch and catches network errors
+  // Fetch user data
+  let response: Response | undefined;
+
   try {
     response = await fetch(`${process.env.HTTP_REQUEST}/user/me`, {
       headers: {
@@ -65,15 +83,19 @@ const ProtectedProvider = async ({
 
   if (response) {
     if (!response.ok) {
-      if (response.status === 401) {
-        redirect("/login");
-      }
-
+      await handleUserResponseError(response);
       userResponseError = true;
     } else {
       const data: UserLoggedProps = await response.json();
 
       if (data?.user) {
+        validateUserAccess({
+          user: data.user,
+          jwtRole,
+          jwtDriverId,
+          pathname,
+        });
+
         userLogged = {
           id: data.user.id,
           businessId: data.user.businessId as string,
@@ -87,40 +109,12 @@ const ProtectedProvider = async ({
           profileAccess: data.user.profileAccess || null,
         };
 
-        // A single call to fetch notifications and calculate count
-        try {
-          const notificationResponse = await fetch(
-            `${process.env.HTTP_REQUEST}/notification/list?limit=50&includeRead=true`,
-            {
-              headers: {
-                Authorization: `Bearer ${tokenAccess}`,
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-              next: { tags: ["update-notification"] },
-            },
-          );
+        const notificationResult = await fetchNotifications(tokenAccess);
 
-          if (notificationResponse.ok) {
-            const notificationData = await notificationResponse.json();
+        serverNotifications = notificationResult.notifications;
+        serverNotificationIds = notificationResult.notificationIds;
 
-            // ✅ Calculate count of unread messages in the frontend
-            notificationCount =
-              notificationData.data?.filter(
-                (notification: any) => !notification.read,
-              ).length || 0;
-
-            // ✅ Extract IDs for synchronization
-            serverNotificationIds =
-              notificationData.data?.map(
-                (notification: any) => notification.id,
-              ) || [];
-          } else {
-            notificationResponseError = true;
-          }
-        } catch (error) {
-          notificationResponseError = true;
-        }
+        notificationResponseError = notificationResult.error;
       }
     }
   }
@@ -134,11 +128,13 @@ const ProtectedProvider = async ({
         profileAccess: userLogged.profileAccess,
       }}
     >
-      <SyncNotificationsProvider serverNotificationIds={serverNotificationIds}>
+      <SyncNotificationsProvider
+        serverNotifications={serverNotifications}
+        serverNotificationIds={serverNotificationIds}
+      >
         <ProtectedLayout
           userLogged={userLogged}
           error={userResponseError}
-          notificationCount={notificationCount}
           notificationError={notificationResponseError}
         >
           {children}

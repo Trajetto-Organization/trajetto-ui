@@ -62,14 +62,14 @@ export function DataTableVehicleChecklistRowActions<TData>({
 
   const permissionsRequired = useCheckMultiplePermissions([
     {
-      key: permissions.VEHICLE_MANAGE,
-      action: "read",
-      label: getPermissionName(permissions.VEHICLE_MANAGE),
-    },
-    {
       key: permissions.VEHICLE_CHECKLIST_MANAGE,
       action: "write",
       label: getPermissionName(permissions.VEHICLE_CHECKLIST_MANAGE),
+    },
+    {
+      key: permissions.VEHICLE_MANAGE,
+      action: "read",
+      label: getPermissionName(permissions.VEHICLE_MANAGE),
     },
     {
       key: permissions.BRANCH_MANAGE,

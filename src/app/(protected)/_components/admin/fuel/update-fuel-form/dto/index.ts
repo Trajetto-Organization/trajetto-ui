@@ -1,5 +1,4 @@
 import {
-  CommandBusinessInputValue,
   CommandVehicleInputValue,
   FuelProps,
 } from "@/app/(protected)/_components/dto";
@@ -30,9 +29,9 @@ interface UpdateFuelFormSubmitProps {
   state: UpdateFuelFormState;
   onBack: () => void;
   fuelData: FuelProps;
-  isBusinessAndEntityDirty: boolean;
-  isUpdateFuelOpen: boolean;
-  commandBusinessInputValue: CommandBusinessInputValue;
+  isEntityDirty: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   handleLocationChange: (lat: number, lon: number) => void;
   handleLocationLoadingChange: (isLoading: boolean) => void;

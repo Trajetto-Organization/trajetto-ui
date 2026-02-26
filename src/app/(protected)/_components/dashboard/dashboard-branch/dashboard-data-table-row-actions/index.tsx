@@ -65,10 +65,6 @@ export function DashboardDataTableBranchRowActions<TData>({
       label: "Copiar ID",
       onClick: () => handleCopyID(collumnRowAction.id),
     },
-    {
-      label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(collumnRowAction.businessId),
-    },
   ];
 
   return (

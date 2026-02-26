@@ -1,7 +1,9 @@
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
+
+import { useFormState, useFormStatus } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 
@@ -18,7 +20,7 @@ import {
 import { Bell, ChevronsUpDown, User, Loader, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { handleLogoutUser } from "@/actions/logout-user";
+import { handleLogoutUser } from "@/actions/user/logout-user";
 import { useProtectedAccountSettings } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -27,8 +29,20 @@ import { useNotificationsContext } from "../protected-provider/notifications-pro
 import { disconnectSocket } from "@/socket";
 import { ProtectedAccountSettingsProps } from "../dto";
 
-const LogOutUserContainer = (): JSX.Element => {
+const LogOutUserContainer = ({
+  onPendingChange,
+}: {
+  onPendingChange: (pending: boolean) => void;
+}): JSX.Element => {
   const { pending } = useFormStatus();
+  const prevPendingRef = useRef(pending);
+
+  useEffect(() => {
+    if (prevPendingRef.current !== pending) {
+      onPendingChange(pending);
+      prevPendingRef.current = pending;
+    }
+  }, [pending, onPendingChange]);
 
   return (
     <DropdownMenuItem
@@ -39,8 +53,9 @@ const LogOutUserContainer = (): JSX.Element => {
     >
       <button
         type="submit"
-        className="w-full flex items-center justify-start 
+        className="w-full flex items-center justify-start
         cursor-pointer disabled:cursor-not-allowed"
+        disabled={pending}
       >
         {pending ? (
           <div className="animate-spin mr-3">
@@ -57,47 +72,43 @@ const LogOutUserContainer = (): JSX.Element => {
 
 const ProtectedAccountSettings = ({
   userLogged,
-  notificationCount = 0,
 }: ProtectedAccountSettingsProps): JSX.Element => {
-  const [state, dispatch] = useFormState(async () => {
-    // IMMEDIATE logout - don't wait for anything
-    useAuthStore.getState().logout();
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
-    // Fire and forget operations (no waiting to complete)
-    Promise.resolve().then(() => {
-      disconnectSocket();
-      handleLogoutUser().catch(() => {}); // Ignores errors
-    });
+  const [state, dispatch] = useFormState(async () => {
+    // Disconnect socket immediately
+    disconnectSocket();
+
+    // CRITICAL: Wait for logout to complete before redirecting
+    await handleLogoutUser();
+
+    // Clear local state after server logout completes
+    useAuthStore.getState().logout();
 
     // Redirects immediately
     return null;
   }, null);
 
-  // Get real-time notification count and deleted notifications
-  const { unreadCount, deletedNotifications } = useNotificationsContext();
+  const handlePendingChange = (pending: boolean) => {
+    setIsLoggingOut(pending);
+  };
 
-  // Calculate how many of the deleted notifications were from server (unread)
-  // We need to subtract these from the server count
-  const deletedUnreadFromServerCount = deletedNotifications.size;
-
-  // Calculate total count properly:
-  // 1. Start with server unread count
-  // 2. Add new realtime unread notifications
-  // 3. Subtract deleted notifications (these are unread notifications deleted locally)
-  const totalNotificationCount = Math.max(
-    0,
-    notificationCount + unreadCount - deletedUnreadFromServerCount,
-  );
-
+  // Get notification count directly from context (single source of truth)
+  const { unreadCount } = useNotificationsContext();
   useProtectedAccountSettings(state);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild data-tutorial="account">
+    <DropdownMenu open={isLoggingOut ? true : undefined}>
+      <DropdownMenuTrigger
+        asChild
+        data-tutorial="account"
+        disabled={isLoggingOut}
+      >
         <SidebarMenuButton
           size="lg"
-          className="data-[state=open]:bg-sidebar-accent 
+          className="data-[state=open]:bg-sidebar-accent
           data-[state=open]:text-sidebar-accent-foreground"
+          disabled={isLoggingOut}
         >
           <Avatar className="h-8 w-8 rounded-lg">
             <AvatarImage
@@ -116,7 +127,7 @@ const ProtectedAccountSettings = ({
         </SidebarMenuButton>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-[--radix-dropdown-menu-trigger-width] 
+        className="w-[--radix-dropdown-menu-trigger-width]
         min-w-56 rounded-lg"
         side="bottom"
         align="end"
@@ -124,7 +135,7 @@ const ProtectedAccountSettings = ({
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div
-            className="flex items-center gap-2 px-1 
+            className="flex items-center gap-2 px-1
             py-1.5 text-left text-sm"
           >
             <Avatar className="h-8 w-8 rounded-lg">
@@ -144,23 +155,31 @@ const ProtectedAccountSettings = ({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem asChild className="cursor-pointer">
+          <DropdownMenuItem
+            asChild
+            className="cursor-pointer"
+            disabled={isLoggingOut}
+          >
             <Link href="/profile">
               <User className="mr-3" />
               Minha Conta
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild className="cursor-pointer relative">
+          <DropdownMenuItem
+            asChild
+            className="cursor-pointer relative"
+            disabled={isLoggingOut}
+          >
             <Link href="/notifications">
               <Bell className="mr-3" />
               Notificações
-              {totalNotificationCount > 0 && (
+              {unreadCount > 0 && (
                 <span
-                  className="absolute right-2 top-1/2 -translate-y-1/2 
-                  flex h-5 min-w-5 px-1.5 items-center justify-center 
+                  className="absolute right-2 top-1/2 -translate-y-1/2
+                  flex h-5 min-w-5 px-1.5 items-center justify-center
                   rounded-full bg-[#f50057] text-xs text-white"
                 >
-                  {totalNotificationCount > 9 ? "9+" : totalNotificationCount}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </Link>
@@ -168,7 +187,7 @@ const ProtectedAccountSettings = ({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <form action={dispatch}>
-          <LogOutUserContainer />
+          <LogOutUserContainer onPendingChange={handlePendingChange} />
         </form>
       </DropdownMenuContent>
     </DropdownMenu>

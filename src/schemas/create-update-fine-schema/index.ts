@@ -1,15 +1,9 @@
 import { z } from "zod";
-
-// Helper function to convert empty strings to null
-const emptyStringToNull = (value: any) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-  return value;
-};
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
+import {
+  emptyStringToNull,
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
+} from "@/lib/format-values";
 
 // Helper function to clean and convert currency to number
 const currencyToNumber = (value: any) => {
@@ -92,18 +86,24 @@ const createUpdateFineSchema = z.object({
   ),
   points: z.preprocess(
     (val) => {
-      if (typeof val === "string" && val.trim() === "") {
-        return "";
+      if (typeof val === "string") {
+        if (val.trim() === "") {
+          return undefined;
+        }
+
+        const parsed = parseInt(val, 10);
+        return isNaN(parsed) ? undefined : parsed;
       }
+
       return val;
     },
     z
-      .string()
-      .min(1, "A pontuação é obrigatória")
-      .refine((val) => {
-        const number = parseInt(val, 10);
-        return !isNaN(number) && number >= 0 && number <= 20;
-      }, "A pontuação deve ser um número entre 0 e 20"),
+      .number({
+        required_error: "A pontuação é obrigatória",
+        invalid_type_error: "A pontuação deve ser um número válido",
+      })
+      .min(1, "A pontuação não pode ser negativa")
+      .max(20, "A pontuação não pode exceder 20 pontos"),
   ),
   location: z
     .string()
@@ -120,6 +120,7 @@ const createUpdateFineSchema = z.object({
           message:
             "O nome do local da infração não deve conter espaços consecutivos.",
         });
+
         return;
       }
 
@@ -129,6 +130,7 @@ const createUpdateFineSchema = z.object({
           message:
             "O nome do local da infração não pode começar ou terminar com espaço em branco.",
         });
+
         return;
       }
 
@@ -154,6 +156,7 @@ const createUpdateFineSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome da observação não deve conter espaços consecutivos.",
         });
+
         return;
       }
 
@@ -163,6 +166,7 @@ const createUpdateFineSchema = z.object({
           message:
             "O nome da observação não pode começar ou terminar com espaço em branco.",
         });
+
         return;
       }
 
@@ -188,6 +192,7 @@ const createUpdateFineSchema = z.object({
         if (val.trim() === "") return null;
         return parseFloat(val);
       }
+
       return val;
     },
     z
@@ -205,6 +210,7 @@ const createUpdateFineSchema = z.object({
         if (val.trim() === "") return null;
         return parseFloat(val);
       }
+
       return val;
     },
     z

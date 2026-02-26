@@ -1,23 +1,15 @@
 import { useFormStatus } from "react-dom";
 
 import FormInput from "@/components/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/custom";
 
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { CreatePermissionFormState } from "../dto";
 import { useCheckBox } from "./hooks";
 
 import { Label } from "@/components/ui/label";
 import { permissionLabels, permissions } from "@/lib/permissions";
-
-import { cn } from "@/lib/utils";
 
 interface PermissionCheckboxProps {
   state: CreatePermissionFormState;
@@ -27,11 +19,16 @@ const CreatePermission = ({ state }: PermissionCheckboxProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { canRead, canWrite, setCanWrite, setCanRead } = useCheckBox();
 
+  const permissionOptions = Object.values(permissions).map((permKey) => ({
+    value: permKey,
+    label: permissionLabels[permKey],
+  }));
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <FormInput
-          label={"Nome da Permissão"}
+          label={"Nome da Permissão *"}
           htmlfor={"action"}
           name="action"
           type="text"
@@ -41,35 +38,15 @@ const CreatePermission = ({ state }: PermissionCheckboxProps): JSX.Element => {
         />
       </div>
 
-      <div className="w-full flex flex-col gap-3">
-        <div
-          className={cn(
-            "text-sm font-medium",
-            state.createPermissionError?.permissionKey &&
-              "h-4 truncate text-red-500",
-          )}
-        >
-          {state.createPermissionError?.permissionKey
-            ? state.createPermissionError?.permissionKey
-            : "Permissão"}
-        </div>
-        <Select name="permissionKey" disabled={pending}>
-          <SelectTrigger aria-label="Permissão de acesso">
-            <SelectValue placeholder="Permissão de acesso" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(permissions).map((permKey) => (
-              <SelectItem
-                key={permKey}
-                value={permKey}
-                className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
-              >
-                {permissionLabels[permKey]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SelectField
+        label="Permissão *"
+        htmlfor="permissionKey"
+        name="permissionKey"
+        placeholder="Permissão de acesso"
+        errorName={state.createPermissionError?.permissionKey}
+        options={permissionOptions}
+        disabled={pending}
+      />
 
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">

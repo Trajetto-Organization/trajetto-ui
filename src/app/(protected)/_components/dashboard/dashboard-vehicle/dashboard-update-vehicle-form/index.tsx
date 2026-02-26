@@ -7,10 +7,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { handleUpdateVehicle } from "@/actions/update-vehicle";
+import { handleUpdateVehicle } from "@/actions/vehicle/update-vehicle";
 import { useDashboardUpdateVehicleForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
 import {
@@ -42,7 +42,7 @@ const DashboardUpdateVehicleForm = ({
     commandDriverInputValue,
     commandVehicleTypeInputValue,
     commandFuelTypeInputValue,
-    handleBusinessStepContinue,
+    handleStepContinue,
     handleDriverVehicleTypeStepContinue,
     handleFuelTypeStepContinue,
     handleBackToBranchStep,
@@ -53,6 +53,8 @@ const DashboardUpdateVehicleForm = ({
     handleUpdateSearchVehicleTypeInputValue,
     handleUpdateSearchFuelTypeInputValue,
     isBranchDirty,
+    vehicleFormValues,
+    handleFormValuesChange,
   } = useDashboardUpdateVehicleForm({
     state,
     handleCloseUpdateVehicle,
@@ -61,6 +63,20 @@ const DashboardUpdateVehicleForm = ({
   });
 
   const { businessId } = useAuthStore();
+
+  const updateVehicleForm = (vehicleFormData: FormData) => {
+    const updateVehicleData = {
+      vehicleId: vehicleData.id,
+      businessId: businessId as string,
+      branchId: commandBranchInputValue.branchId,
+      driverId: commandDriverInputValue.driverId,
+      vehicleTypeId: commandVehicleTypeInputValue.vehicleTypeId,
+      fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+    };
+
+    appendDataToForm(vehicleFormData, updateVehicleData);
+    return dispatch(vehicleFormData);
+  };
 
   return (
     <Dialog
@@ -72,7 +88,10 @@ const DashboardUpdateVehicleForm = ({
         handleCloseUpdateVehicle();
       }}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -81,7 +100,7 @@ const DashboardUpdateVehicleForm = ({
                 ? "Selecionar Motorista e Tipo de Veículo (Opcional)"
                 : currentStep === "select-fuel-type"
                   ? "Selecionar Combustível"
-                  : "Atualizar Veículo"}
+                  : "Editar Veículo"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             {currentStep === "select-branch"
@@ -100,7 +119,7 @@ const DashboardUpdateVehicleForm = ({
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
-            onContinue={handleBusinessStepContinue}
+            onContinue={handleStepContinue}
             commandBranchInputValue={commandBranchInputValue}
             errorBranchId={state.updateVehicleError?.branchId}
             searchBranchIsOptional={true}
@@ -135,28 +154,14 @@ const DashboardUpdateVehicleForm = ({
             errorFuelTypeId={state.updateVehicleError?.fuelTypeId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                vehicleId: vehicleData.id,
-                businessId: businessId as string,
-                branchId: commandBranchInputValue.branchId,
-                driverId: commandDriverInputValue.driverId,
-                vehicleTypeId: commandVehicleTypeInputValue.vehicleTypeId,
-                fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateVehicleForm}>
             <DashboardUpdateVehicleFormSubmit
               state={state}
               onBack={handleBackToFuelTypeStep}
               vehicleData={vehicleData}
               isBranchDirty={isBranchDirty}
-              isUpdateVehicleOpen={isUpdateVehicleOpen}
+              initialFormValues={vehicleFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

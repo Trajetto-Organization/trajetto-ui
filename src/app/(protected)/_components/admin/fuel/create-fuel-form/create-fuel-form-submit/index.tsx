@@ -46,6 +46,8 @@ const LocationPicker = dynamic(
 const CreateFuelFormSubmit = ({
   state,
   onBack,
+  initialFormValues,
+  onFormValuesChange,
   commandBusinessInputValue,
   commandVehicleInputValue,
   handleLocationChange,
@@ -59,25 +61,43 @@ const CreateFuelFormSubmit = ({
   setFileError,
 }: CreateFuelFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
     vehicleId: commandVehicleInputValue.vehicleId,
     businessId: commandBusinessInputValue.businessId,
   });
 
-  // Remove automatic mileage setting - user will input manually
-  // Function to handle changes in custom fields (datepicker)
-  const handleCustomFieldChange = (fieldName: string) => (value: string) => {
-    setFormValues((prev) => ({ ...prev, [fieldName]: value }));
-  };
+  // Form field states with lazy initializers
+  const [refuelingDate, setRefuelingDate] = useState<string>(
+    () => initialFormValues.refueling_date || "",
+  );
 
-  const [displayPricePerLiter, setDisplayPricePerLiter] = useState<string>("");
+  const [displayPricePerLiter, setDisplayPricePerLiter] = useState<string>(
+    () => initialFormValues.price_per_liter || "",
+  );
+
+  const [displayMileage, setDisplayMileage] = useState<string>(
+    () => initialFormValues.current_mileage || "",
+  );
+
+  const [displayLiters, setDisplayLiters] = useState<string>(
+    () => initialFormValues.liters_amount || "",
+  );
+
+  const [notes, setNotes] = useState<string>(
+    () => initialFormValues.notes || "",
+  );
+
+  // Date handler
+  const handleRefuelingDateChange = (value: string): void => {
+    setRefuelingDate(value);
+  };
 
   const handlePricePerLiterChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ): void => {
     let inputValue = e.target.value;
+
     inputValue = inputValue.replace(/[^\d,.]/g, "");
     setDisplayPricePerLiter(inputValue);
   };
@@ -95,9 +115,6 @@ const CreateFuelFormSubmit = ({
     const newNumericValue = formatCurrencyToNumber(displayPricePerLiter);
     setDisplayPricePerLiter(formatToBrazilianCurrency(newNumericValue));
   };
-
-  const [displayMileage, setDisplayMileage] = useState<string>("");
-  const [displayLiters, setDisplayLiters] = useState<string>("");
 
   const handleMileageChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -194,23 +211,37 @@ const CreateFuelFormSubmit = ({
     setFileError(null);
   };
 
+  // Function to save form values and go back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      refueling_date: refuelingDate,
+      current_mileage: displayMileage,
+      liters_amount: displayLiters,
+      price_per_liter: displayPricePerLiter,
+      notes: notes,
+    };
+
+    onFormValuesChange(allFormValues);
+    onBack();
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Refueling Date */}
         <DatePickerField
-          label="Data do abastecimento"
+          label="Data do abastecimento *"
           htmlfor="refueling_date"
           name="refueling_date"
-          value={formValues.refueling_date || ""}
-          onChange={handleCustomFieldChange("refueling_date")}
+          value={refuelingDate}
+          onChange={handleRefuelingDateChange}
           errorName={state.createFuelError?.refueling_date}
           disabled={pending}
         />
 
         {/* Current Mileage (user input) */}
         <FormInput
-          label="Quilometragem"
+          label="Quilometragem *"
           htmlfor="current_mileage"
           name="current_mileage"
           type="text"
@@ -223,7 +254,7 @@ const CreateFuelFormSubmit = ({
 
         {/* Liters Amount */}
         <FormInput
-          label="Quantidade de litros"
+          label="Quantidade de litros *"
           htmlfor="liters_amount"
           name="liters_amount"
           type="text"
@@ -237,7 +268,7 @@ const CreateFuelFormSubmit = ({
 
         {/* Price per Liter */}
         <FormInput
-          label="Preço por litro"
+          label="Preço por litro *"
           htmlfor="price_per_liter"
           name="price_per_liter"
           type="text"
@@ -256,6 +287,8 @@ const CreateFuelFormSubmit = ({
             htmlfor="notes"
             name="notes"
             type="text"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             errorName={state.createFuelError?.notes}
             placeholder="Digite observações sobre o abastecimento..."
             disabled={pending}
@@ -271,7 +304,7 @@ const CreateFuelFormSubmit = ({
                 <TooltipTrigger asChild>
                   <div
                     className="block text-sm font-medium
-                  text-red-500 mb-2 h-5 truncate"
+                  text-red-500 mb-2 h-5 truncate cursor-default"
                   >
                     {fileError || state.createFuelError?.odometer_photo?.[0]}
                   </div>
@@ -440,7 +473,12 @@ const CreateFuelFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || isLoadingVehicle || isLoadingLocation}
+        >
           Voltar
         </Button>
         <Button

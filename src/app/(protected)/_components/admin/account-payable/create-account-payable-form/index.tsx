@@ -20,32 +20,108 @@ import {
   CreateAccountPayableFormState,
   CreateAccountPayableFormSubmitProps,
 } from "./dto";
-import { handleCreateAccountPayable } from "@/actions/create-account-payable";
+import { handleCreateAccountPayable } from "@/actions/account-payable/create-account-payable";
 
 import { useCreateAccountPayableForm } from "./hooks";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
 import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 
 import { SelectServiceOrderStep } from "@/app/(protected)/_components/steps/select-service-order-step";
 
+import {
+  formatCurrencyToNumber,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
+
 const CreateAccountPayableFormSubmit = ({
   state,
   onBack,
-  displayAmount,
-  displayAmountPaid,
-  handleAmountChange,
-  handleAmountBlur,
-  handleAmountPaidChange,
-  handleAmountPaidBlur,
+  initialFormValues,
+  onFormValuesChange,
 }: CreateAccountPayableFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
-  // Function to handle changes in custom fields (datepicker)
-  const handleCustomFieldChange = (fieldName: string) => (value: string) => {
-    setFormValues((prev) => ({ ...prev, [fieldName]: value }));
+  // Form field states with lazy initializers
+  const [displayAmount, setDisplayAmount] = useState<string>(
+    () => initialFormValues.amount || "",
+  );
+
+  const [displayAmountPaid, setDisplayAmountPaid] = useState<string>(
+    () => initialFormValues.amount_paid || "",
+  );
+
+  const [dueDate, setDueDate] = useState<string>(
+    () => initialFormValues.due_date || "",
+  );
+
+  const [paymentDate, setPaymentDate] = useState<string>(
+    () => initialFormValues.payment_date || "",
+  );
+
+  // Amount handlers
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    let inputValue = e.target.value;
+    inputValue = inputValue.replace(/[^\d,.]/g, "");
+
+    setDisplayAmount(inputValue);
+  };
+
+  const handleAmountBlur = (): void => {
+    if (!displayAmount || displayAmount === "," || displayAmount === ".") {
+      setDisplayAmount("");
+      return;
+    }
+
+    const newNumericValue = formatCurrencyToNumber(displayAmount);
+    setDisplayAmount(formatToBrazilianCurrency(newNumericValue));
+  };
+
+  // Amount paid handlers
+  const handleAmountPaidChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    let inputValue = e.target.value;
+    inputValue = inputValue.replace(/[^\d,.]/g, "");
+
+    setDisplayAmountPaid(inputValue);
+  };
+
+  const handleAmountPaidBlur = (): void => {
+    if (
+      !displayAmountPaid ||
+      displayAmountPaid === "," ||
+      displayAmountPaid === "."
+    ) {
+      setDisplayAmountPaid("");
+      return;
+    }
+
+    const newNumericValue = formatCurrencyToNumber(displayAmountPaid);
+    setDisplayAmountPaid(formatToBrazilianCurrency(newNumericValue));
+  };
+
+  // Date handlers
+  const handleDueDateChange = (value: string): void => {
+    setDueDate(value);
+  };
+
+  const handlePaymentDateChange = (value: string): void => {
+    setPaymentDate(value);
+  };
+
+  // Function to save form values and go back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      amount: displayAmount,
+      amount_paid: displayAmountPaid,
+      due_date: dueDate,
+      payment_date: paymentDate,
+    };
+
+    onFormValuesChange(allFormValues);
+    onBack();
   };
 
   return (
@@ -53,12 +129,13 @@ const CreateAccountPayableFormSubmit = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Due Date */}
         <DatePickerField
-          label="Data de vencimento"
+          label="Data de vencimento *"
           htmlfor="due_date"
           name="due_date"
-          value={formValues.due_date || ""}
-          onChange={handleCustomFieldChange("due_date")}
+          value={dueDate}
+          onChange={handleDueDateChange}
           errorName={state.createAccountPayableError?.due_date}
+          allowFutureDates={true}
           disabled={pending}
         />
 
@@ -67,15 +144,16 @@ const CreateAccountPayableFormSubmit = ({
           label="Data de pagamento (opcional)"
           htmlfor="payment_date"
           name="payment_date"
-          value={formValues.payment_date || ""}
-          onChange={handleCustomFieldChange("payment_date")}
+          value={paymentDate}
+          onChange={handlePaymentDateChange}
           errorName={state.createAccountPayableError?.payment_date}
+          allowFutureDates={true}
           disabled={pending}
         />
 
         {/* Amount */}
         <FormInput
-          label="Valor total"
+          label="Valor total *"
           htmlfor="amount"
           name="amount"
           type="text"
@@ -103,7 +181,12 @@ const CreateAccountPayableFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending}
+        >
           Voltar
         </Button>
         <Button type="submit" disabled={pending}>
@@ -145,13 +228,21 @@ const CreateAccountPayableForm = (): JSX.Element => {
     handleBackToBusinessBranchStep,
     handleBackToServiceOrderStep,
     handleBackToUserStep,
-    displayAmount,
-    displayAmountPaid,
-    handleAmountChange,
-    handleAmountBlur,
-    handleAmountPaidChange,
-    handleAmountPaidBlur,
+    accountPayableFormValues,
+    handleFormValuesChange,
   } = useCreateAccountPayableForm(state);
+
+  const createAccountPayableForm = (accountPayableFormData: FormData) => {
+    const accountPayableData = {
+      businessId: commandBusinessInputValue.businessId,
+      branchId: commandBranchInputValue.branchId,
+      serviceOrderId: commandServiceOrderInputValue.serviceOrderId,
+      registrationUserId: commandUserInputValue.userId,
+    };
+
+    appendDataToForm(accountPayableFormData, accountPayableData);
+    return dispatch(accountPayableFormData);
+  };
 
   return (
     <Dialog open={isCreateAccountPayableForm} onOpenChange={handleCloseDialog}>
@@ -161,7 +252,10 @@ const CreateAccountPayableForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -221,29 +315,12 @@ const CreateAccountPayableForm = (): JSX.Element => {
             errorUserId={state?.createAccountPayableError?.registrationUserId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                serviceOrderId: commandServiceOrderInputValue.serviceOrderId,
-                registrationUserId: commandUserInputValue.userId,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createAccountPayableForm}>
             <CreateAccountPayableFormSubmit
               state={state}
               onBack={handleBackToUserStep}
-              displayAmount={displayAmount}
-              displayAmountPaid={displayAmountPaid}
-              handleAmountChange={handleAmountChange}
-              handleAmountBlur={handleAmountBlur}
-              handleAmountPaidChange={handleAmountPaidChange}
-              handleAmountPaidBlur={handleAmountPaidBlur}
+              initialFormValues={accountPayableFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

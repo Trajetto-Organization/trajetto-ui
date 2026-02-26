@@ -37,7 +37,8 @@ interface DashboardUpdateVehicleFormSubmitProps {
   onBack: () => void;
   vehicleData: DashboardVehicleProps;
   isBranchDirty: boolean;
-  isUpdateVehicleOpen: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface DashboardUpdateVehicleFormProps {

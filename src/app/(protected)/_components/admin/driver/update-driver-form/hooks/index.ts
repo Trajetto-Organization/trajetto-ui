@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 import {
@@ -23,7 +23,7 @@ function useUpdateDriverForm({
   state,
   handleCloseUpdateDriver,
   isUpdateDriverOpen,
-  driverData: { business_name, branchName, businessId, branchId },
+  driverData,
 }: UseUpdateDriverFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
@@ -33,44 +33,60 @@ function useUpdateDriverForm({
     "select-business-branch" | "update-driver"
   >("select-business-branch");
 
-  const sanitizedBranchName =
-    branchName && branchName !== "N/A" ? branchName : "";
+  // Extract values from nested objects - memoized to prevent unnecessary re-renders
+  const businessName = useMemo(
+    () => driverData.business?.corporate_reason || "",
+    [driverData.business?.corporate_reason],
+  );
+
+  const branchName = useMemo(
+    () => driverData.branch?.corporate_reason || "",
+    [driverData.branch?.corporate_reason],
+  );
+
+  const { businessId, branchId } = driverData;
 
   // Initialize business and branch input values from driver data
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: businessId as string,
-      searchBusinessInputValue: business_name as string,
+      searchBusinessInputValue: businessName,
     });
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
-      searchBranchInputValue: sanitizedBranchName,
-      branchId: sanitizedBranchName ? branchId! : "",
+      searchBranchInputValue: branchName,
+      branchId: branchName ? branchId! : "",
     });
+
+  // Persisted form values for the last step
+  const [driverFormValues, setDriverFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setDriverFormValues(values);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isUpdateDriverOpen) {
       setCommandBusinessInputValue({
         businessId: businessId as string,
-        searchBusinessInputValue: business_name as string,
+        searchBusinessInputValue: businessName,
       });
 
       setCommandBranchInputValue({
-        searchBranchInputValue: sanitizedBranchName,
-        branchId: sanitizedBranchName ? branchId! : "",
+        searchBranchInputValue: branchName,
+        branchId: branchName ? branchId! : "",
       });
+
+      setDriverFormValues({});
     }
-  }, [
-    isUpdateDriverOpen,
-    commandBusinessInputValue,
-    commandBranchInputValue,
-    businessId,
-    branchId,
-    branchName,
-    business_name,
-    sanitizedBranchName,
-  ]);
+  }, [isUpdateDriverOpen, businessId, branchId, businessName, branchName]);
 
   // Handle business and branch selection updates
   const handleUpdateSearchBusinessInputValue = (
@@ -180,6 +196,8 @@ function useUpdateDriverForm({
     handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     isBusinessAndBranchDirty,
+    driverFormValues,
+    handleFormValuesChange,
   };
 }
 

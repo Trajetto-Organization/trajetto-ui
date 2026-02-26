@@ -4,7 +4,7 @@ import { DataTableRevalidate } from "../../_components/tanstack-table/data-table
 import { DashboardCreateFineForm } from "../../_components/dashboard/dashboard-fine/dashboard-create-fine-form";
 
 import { ExportExcelButton } from "../../_components/custom/export-excel-button";
-import { handleExportFineExcel } from "@/actions/export-fine-excel";
+import { handleExportFineExcel } from "@/actions/fine/export-fine-excel";
 
 interface FineActionsProps {
   hasData: boolean;
@@ -13,7 +13,7 @@ interface FineActionsProps {
 const FineActions = ({ hasData }: FineActionsProps) => {
   return (
     <div
-      className="flex flex-col sm:flex-row
+      className="flex flex-col sm:flex-row sm:flex-wrap
       items-stretch sm:items-center gap-3
       sm:gap-2 justify-end mt-6 mb-6"
     >

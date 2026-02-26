@@ -9,8 +9,8 @@ import { SearchInputWithLoading } from "@/components/ui/search-input-with-loadin
 import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-faceted-filter";
 import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
 
-import { emailVerified, twoFactor } from "../data";
 import { useSearch } from "@/lib/search-params";
+import { twoFactor } from "../data";
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -36,6 +36,8 @@ export function UserToolbar<TData>({
   };
 
   const filters = [
+    { key: "business_name", title: "Empresa" },
+    { key: "profileAccess", title: "Perfil de acesso" },
     { key: "name", title: "Nome do usuário" },
     { key: "email", title: "E-mail" },
     {
@@ -43,13 +45,6 @@ export function UserToolbar<TData>({
       title: "Verificação (2FA)",
       options: twoFactor,
     },
-    {
-      key: "email_verified",
-      title: "E-mail verificado",
-      options: emailVerified,
-    },
-    { key: "corporate_reason", title: "Empresa" },
-    { key: "profileAccess", title: "Perfil de acesso" },
   ];
 
   return (

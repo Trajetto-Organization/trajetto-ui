@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Dialog,
   DialogScrollContent,
@@ -23,6 +24,7 @@ import {
   FileText,
   Contact,
 } from "lucide-react";
+import { formatNotificationDate } from "@/lib/format-values";
 
 interface ViewQuoteModalProps {
   quote: QuoteProps;
@@ -60,7 +62,7 @@ export function ViewQuoteModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent className="max-w-2xl max-h-[90vh]">
+      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">Detalhes do Orçamento</DialogTitle>
@@ -81,39 +83,44 @@ export function ViewQuoteModal({
               Informações do Cliente
             </h3>
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-muted-foreground" />
+
                 <span className="text-sm font-medium">Empresa:</span>
                 <span className="text-sm">{quote.company}</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Contact className="h-4 w-4 text-muted-foreground" />
+
                 <span className="text-sm font-medium">Contato:</span>
                 <span className="text-sm">{quote.name}</span>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">E-mail:</span>
-                <a
+
+                <Link
                   href={`mailto:${quote.email}`}
                   className="text-sm text-blue-600 hover:underline"
                 >
                   {quote.email}
-                </a>
+                </Link>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Telefone:</span>
-                <a
+
+                <Link
                   href={`tel:${quote.telephone}`}
                   className="text-sm text-blue-600 hover:underline"
                 >
                   {quote.telephone}
-                </a>
+                </Link>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Car className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">Tamanho da Frota:</span>
+
                 <span className="text-sm">
                   {fleetLabels[quote.fleet_size] || quote.fleet_size}
                 </span>
@@ -171,19 +178,25 @@ export function ViewQuoteModal({
               Informações de Tempo
             </h3>
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Criado em:</span>
-                <span className="text-sm">{quote.created_at}</span>
+                <span className="text-sm">
+                  {formatNotificationDate(quote.created_at)}
+                </span>
               </div>
               {quote.contacted_at && (
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Contatado em:</span>
-                  <span className="text-sm">{quote.contacted_at}</span>
+                  <span className="text-sm">
+                    {formatNotificationDate(quote.contacted_at)}
+                  </span>
                 </div>
               )}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Última atualização:</span>
-                <span className="text-sm">{quote.updated_at}</span>
+                <span className="text-sm">
+                  {formatNotificationDate(quote.updated_at)}
+                </span>
               </div>
             </div>
           </div>
@@ -191,13 +204,13 @@ export function ViewQuoteModal({
           {/* Budget ID */}
           <div className="pt-4 border-t">
             <div
-              className="flex items-center gap-3 
+              className="flex items-center gap-2 
               text-xs text-muted-foreground"
             >
               <span>ID do Orçamento:</span>
               <code
                 className="px-2 py-1 
-                  bg-muted rounded"
+                bg-muted rounded"
               >
                 {quote.id}
               </code>

@@ -1,9 +1,13 @@
-import { useState, useEffect } from "react";
-
+import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader } from "lucide-react";
 
+import { Loader } from "lucide-react";
 import dynamic from "next/dynamic";
+
+import {
+  formatCurrencyToNumber,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
 
 import {
   Dialog,
@@ -22,12 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateFine } from "@/actions/create-fine";
-
-import {
-  formatCurrencyToNumber,
-  formatToBrazilianCurrency,
-} from "@/lib/format-values";
+import { handleCreateFine } from "@/actions/fine/create-fine";
 
 import { DatePickerField } from "../../../custom";
 import { useDashboardCreateFineForm } from "./hooks";
@@ -46,7 +45,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
 
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
@@ -68,25 +67,63 @@ const LocationPicker = dynamic(
 const DashboardCreateFineFormSubmit = ({
   state,
   onBack,
-  handleLocationChange,
-  handleLocationLoadingChange,
+  initialFormValues,
+  onFormValuesChange,
   latitude,
   longitude,
   isLoadingLocation,
+  handleLocationChange,
+  handleLocationLoadingChange,
 }: DashboardCreateFineFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
 
-  const handleCustomFieldChange = (fieldName: string) => (value: string) => {
-    setFormValues((prev) => ({ ...prev, [fieldName]: value }));
+  // Form field states with lazy initializers
+  const [violationDate, setViolationDate] = useState<string>(
+    () => initialFormValues.violation_date || "",
+  );
+
+  const [dueDate, setDueDate] = useState<string>(
+    () => initialFormValues.due_date || "",
+  );
+
+  const [paymentDate, setPaymentDate] = useState<string>(
+    () => initialFormValues.payment_date || "",
+  );
+
+  const [displayAmount, setDisplayAmount] = useState<string>(
+    () => initialFormValues.amount || "",
+  );
+
+  const [points, setPoints] = useState<string>(
+    () => initialFormValues.points || "",
+  );
+
+  const [location, setLocation] = useState<string>(
+    () => initialFormValues.location || "",
+  );
+
+  const [observation, setObservation] = useState<string>(
+    () => initialFormValues.observation || "",
+  );
+
+  // Date handlers
+  const handleViolationDateChange = (value: string): void => {
+    setViolationDate(value);
   };
 
-  const [displayAmount, setDisplayAmount] = useState<string>("");
+  const handleDueDateChange = (value: string): void => {
+    setDueDate(value);
+  };
 
+  const handlePaymentDateChange = (value: string): void => {
+    setPaymentDate(value);
+  };
+
+  // Amount handlers
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     let inputValue = e.target.value;
-
     inputValue = inputValue.replace(/[^\d,.]/g, "");
+
     setDisplayAmount(inputValue);
   };
 
@@ -100,25 +137,58 @@ const DashboardCreateFineFormSubmit = ({
     setDisplayAmount(formatToBrazilianCurrency(newNumericValue));
   };
 
+  // Other field handlers
+  const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setPoints(e.target.value);
+  };
+
+  const handleLocationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    setLocation(e.target.value);
+  };
+
+  const handleObservationChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    setObservation(e.target.value);
+  };
+
+  // Function to save form values and go back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      violation_date: violationDate,
+      due_date: dueDate,
+      payment_date: paymentDate,
+      amount: displayAmount,
+      points: points,
+      location: location,
+      observation: observation,
+    };
+
+    onFormValuesChange(allFormValues);
+    onBack();
+  };
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         <DatePickerField
-          label="Data da infração"
+          label="Data da infração *"
           htmlfor="violation_date"
           name="violation_date"
-          value={formValues.violation_date || ""}
-          onChange={handleCustomFieldChange("violation_date")}
+          value={violationDate}
+          onChange={handleViolationDateChange}
           errorName={state.createFineError?.violation_date}
           disabled={pending}
         />
 
         <DatePickerField
-          label="Data de vencimento"
+          label="Data de vencimento *"
           htmlfor="due_date"
           name="due_date"
-          value={formValues.due_date || ""}
-          onChange={handleCustomFieldChange("due_date")}
+          value={dueDate}
+          onChange={handleDueDateChange}
           errorName={state.createFineError?.due_date}
           disabled={pending}
           allowFutureDates={true}
@@ -128,14 +198,14 @@ const DashboardCreateFineFormSubmit = ({
           label="Data de pagamento (opcional)"
           htmlfor="payment_date"
           name="payment_date"
-          value={formValues.payment_date || ""}
-          onChange={handleCustomFieldChange("payment_date")}
+          value={paymentDate}
+          onChange={handlePaymentDateChange}
           errorName={state.createFineError?.payment_date}
           disabled={pending}
         />
 
         <FormInput
-          label="Valor da multa"
+          label="Valor da multa *"
           htmlfor="amount"
           name="amount"
           type="text"
@@ -148,12 +218,14 @@ const DashboardCreateFineFormSubmit = ({
         />
 
         <FormInput
-          label="Pontos na carteira"
+          label="Pontos na carteira *"
           htmlfor="points"
           name="points"
           type="number"
           min="0"
           max="20"
+          value={points}
+          onChange={handlePointsChange}
           errorName={state.createFineError?.points}
           placeholder="Digite a pontuação"
           disabled={pending}
@@ -164,6 +236,8 @@ const DashboardCreateFineFormSubmit = ({
           htmlfor="location"
           name="location"
           type="text"
+          value={location}
+          onChange={handleLocationInputChange}
           errorName={state.createFineError?.location}
           placeholder="Digite o local da infração"
           disabled={pending}
@@ -175,6 +249,8 @@ const DashboardCreateFineFormSubmit = ({
             htmlfor="observation"
             name="observation"
             type="text"
+            value={observation}
+            onChange={handleObservationChange}
             errorName={state.createFineError?.observation}
             placeholder="Digite observações sobre a multa"
             disabled={pending}
@@ -198,7 +274,12 @@ const DashboardCreateFineFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || isLoadingLocation}
+        >
           Voltar
         </Button>
         <Button type="submit" disabled={pending || isLoadingLocation}>
@@ -255,7 +336,29 @@ const DashboardCreateFineForm = (): JSX.Element => {
     handleBackToBranchStep,
     handleBackToVehicleDriverStep,
     handleBackToViolationCodeStep,
+    fineFormValues,
+    handleFormValuesChange,
   } = useDashboardCreateFineForm(state);
+
+  // Reset geolocation states when modal closes
+  useEffect(() => {
+    if (!isCreateFineForm) {
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [isCreateFineForm]);
+
+  // Reset geolocation states on successful creation
+  useEffect(() => {
+    if (state?.successMessage) {
+      setLatitude(null);
+      setLongitude(null);
+
+      setIsLoadingLocation(false);
+    }
+  }, [state?.successMessage]);
 
   const { businessId } = useAuthStore();
   const permissionsRequired = useCheckMultiplePermissions([
@@ -281,25 +384,21 @@ const DashboardCreateFineForm = (): JSX.Element => {
     },
   ]);
 
-  // Reset location states when modal closes or on success
-  useEffect(() => {
-    if (!isCreateFineForm) {
-      setLatitude(null);
-      setLongitude(null);
+  const createFineForm = (fineFormData: FormData) => {
+    const fineData = {
+      businessId: businessId as string,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      driverId: commandDriverInputValue.driverId,
+      trafficViolationCodeId:
+        commandTrafficViolationCodeInputValue.trafficViolationCodeId,
+      latitude: latitude?.toString() as string,
+      longitude: longitude?.toString() as string,
+    };
 
-      setIsLoadingLocation(false);
-    }
-  }, [isCreateFineForm]);
-
-  // Reset location states on successful creation
-  useEffect(() => {
-    if (state?.successMessage) {
-      setLatitude(null);
-      setLongitude(null);
-
-      setIsLoadingLocation(false);
-    }
-  }, [state?.successMessage]);
+    appendDataToForm(fineFormData, fineData);
+    return dispatch(fineFormData);
+  };
 
   return (
     <Dialog open={isCreateFineForm} onOpenChange={handleCloseDialog}>
@@ -330,7 +429,10 @@ const DashboardCreateFineForm = (): JSX.Element => {
         </Tooltip>
       </TooltipProvider>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -393,33 +495,17 @@ const DashboardCreateFineForm = (): JSX.Element => {
             }
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Add geolocation data
-              const extraData = {
-                businessId: businessId as string,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                driverId: commandDriverInputValue.driverId,
-                trafficViolationCodeId:
-                  commandTrafficViolationCodeInputValue.trafficViolationCodeId,
-                latitude: latitude?.toString() as string,
-                longitude: longitude?.toString() as string,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createFineForm}>
             <DashboardCreateFineFormSubmit
               state={state}
               onBack={handleBackToViolationCodeStep}
-              handleLocationChange={handleLocationChange}
-              handleLocationLoadingChange={handleLocationLoadingChange}
+              initialFormValues={fineFormValues}
+              onFormValuesChange={handleFormValuesChange}
               latitude={latitude}
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
             />
           </form>
         )}

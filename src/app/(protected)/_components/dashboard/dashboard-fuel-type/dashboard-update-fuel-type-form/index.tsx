@@ -10,16 +10,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectField } from "@/app/(protected)/_components/custom";
 
-import { handleUpdateFuelType } from "@/actions/update-fuel-type";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateFuelType } from "@/actions/fuel-type/update-fuel-type";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import {
   DashboardUpdateFuelTypeFormSubmitProps,
@@ -31,8 +25,6 @@ import { useDashboardUpdateFuelTypeForm } from "./hooks";
 
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 import { useAuthStore } from "@/store/auth-store";
-
-import { cn } from "@/lib/utils";
 
 interface DashboardUpdateFuelTypeProps {
   fuelTypeData: DashboardFuelTypeProps;
@@ -51,41 +43,20 @@ const DashboardUpdateFuelTypeFormSubmit = ({
 
   return (
     <div className="space-y-6 mt-2">
-      <div className="w-full flex flex-col gap-3">
-        <div
-          className={cn(
-            "text-sm font-medium",
-            state.updateFuelTypeError?.description &&
-              "h-4 truncate text-red-500",
-          )}
-        >
-          {state.updateFuelTypeError?.description
-            ? state.updateFuelTypeError?.description
-            : "Combustível"}
-        </div>
-        <Select
-          name="description"
-          disabled={pending}
-          value={description}
-          onValueChange={(value: string) => handleUpdateDescription(value)}
-        >
-          <SelectTrigger aria-label="Tipo do combustível">
-            <SelectValue placeholder="Tipo do combustível" />
-          </SelectTrigger>
-          <SelectContent>
-            {allowedFuelTypes.map((fuel) => (
-              <SelectItem
-                key={fuel}
-                value={fuel}
-                className="cursor-pointer hover:bg-accent
-                hover:text-accent-foreground"
-              >
-                {fuel}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SelectField
+        name="description"
+        label="Combustível *"
+        placeholder="Tipo do combustível"
+        htmlfor="description"
+        options={allowedFuelTypes.map((fuel) => ({
+          label: fuel,
+          value: fuel,
+        }))}
+        disabled={pending}
+        value={description}
+        onChange={(value: string) => handleUpdateDescription(value)}
+        errorName={state.updateFuelTypeError?.description}
+      />
 
       <div className="flex justify-end mt-6 gap-2">
         <Button
@@ -130,6 +101,16 @@ const DashboardUpdateFuelTypeForm = ({
 
   const { businessId } = useAuthStore();
 
+  const updateFuelTypeForm = (fuelTypeFormData: FormData) => {
+    const updateFuelTypeData = {
+      businessId: businessId as string,
+      fuelTypeId: fuelTypeData.id,
+    };
+
+    appendDataToForm(fuelTypeFormData, updateFuelTypeData);
+    return dispatch(fuelTypeFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -143,7 +124,10 @@ const DashboardUpdateFuelTypeForm = ({
       }}
       open={isUpdateFuelTypeOpen}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             Editar Tipo do Combustível
@@ -154,18 +138,7 @@ const DashboardUpdateFuelTypeForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              fuelTypeId: fuelTypeData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateFuelTypeForm}>
           <DashboardUpdateFuelTypeFormSubmit
             state={state}
             handleCloseUpdateFuelType={handleCloseUpdateFuelType}

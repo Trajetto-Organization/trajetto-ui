@@ -24,6 +24,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader } from "lucide-react";
 import { VehicleActionModal } from "./vehicle-action-modal";
 
+import { displayValue } from "@/lib/format-values";
+
 interface SelectedVehicleProps {
   id: string;
   brand: string;
@@ -100,24 +102,20 @@ const DriverVehiclesList = (): JSX.Element => {
     }
   };
 
-  const formatMileage = (mileage: number) => {
+  const formatMileage = (mileage: number | null | undefined) => {
+    if (mileage === null || mileage === undefined) return null;
     return mileage.toLocaleString("pt-BR") + " km";
   };
 
-  const getYearFromDate = (dateString: string) => {
-    if (!dateString || dateString === "N/A") return "N/A";
+  const getYearFromDate = (dateString: string | Date | null | undefined) => {
+    if (!dateString) return null;
 
     try {
       const year = new Date(dateString).getFullYear();
-      return isNaN(year) ? "N/A" : year.toString();
+      return isNaN(year) ? null : year.toString();
     } catch {
-      return "N/A";
+      return null;
     }
-  };
-
-  const safeString = (value: any) => {
-    if (value === null || value === undefined) return "N/A";
-    return String(value);
   };
 
   return (
@@ -189,12 +187,14 @@ const DriverVehiclesList = (): JSX.Element => {
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1">
                             <h3 className="text-lg font-bold text-gray-900">
-                              {safeString(vehicle.brand)}{" "}
-                              {safeString(vehicle.model)}
+                              {displayValue(vehicle.brand)} |{" "}
+                              {displayValue(vehicle.model)}
                             </h3>
                             <p className="text-sm text-gray-600">
-                              {getYearFromDate(vehicle.model_year)} •{" "}
-                              {safeString(vehicle.description)}
+                              {displayValue(
+                                getYearFromDate(vehicle.model_year),
+                              )}{" "}
+                              • {displayValue(vehicle.description)}
                             </p>
                           </div>
                           <Badge
@@ -211,13 +211,13 @@ const DriverVehiclesList = (): JSX.Element => {
                         {/* License Plate */}
                         <div className="mb-3">
                           <p
-                            className="text-xs text-gray-500 
+                            className="text-xs text-gray-500
                             uppercase tracking-wide mb-1"
                           >
                             Placa
                           </p>
                           <p className="text-base font-semibold text-gray-900">
-                            {safeString(vehicle.license_plate)}
+                            {displayValue(vehicle.license_plate)}
                           </p>
                         </div>
 
@@ -225,25 +225,27 @@ const DriverVehiclesList = (): JSX.Element => {
                         <div className="flex justify-between items-end">
                           <div>
                             <p
-                              className="text-xs text-gray-500 
+                              className="text-xs text-gray-500
                               uppercase tracking-wide mb-1"
                             >
                               Quilometragem Atual
                             </p>
                             <p className="text-base font-semibold text-gray-900">
-                              {formatMileage(vehicle.current_mileage)}
+                              {displayValue(
+                                formatMileage(vehicle.current_mileage),
+                              )}
                             </p>
                           </div>
 
                           <div className="text-right">
                             <p
-                              className="text-xs text-gray-500 
+                              className="text-xs text-gray-500
                               uppercase tracking-wide mb-1"
                             >
                               Combustível
                             </p>
                             <p className="text-sm font-medium text-gray-700">
-                              {vehicle.fuelTypeDescription}
+                              {displayValue(vehicle.fuelType?.description)}
                             </p>
                           </div>
                         </div>
@@ -254,26 +256,32 @@ const DriverVehiclesList = (): JSX.Element => {
                           <div className="flex justify-between">
                             <div>
                               <p
-                                className="text-xs text-gray-500 
+                                className="text-xs text-gray-500
                                 uppercase tracking-wide mb-1"
                               >
                                 Última Manutenção
                               </p>
                               <p className="text-sm text-gray-700">
-                                {formatMileage(
-                                  vehicle.last_maintenance_mileage,
+                                {displayValue(
+                                  formatMileage(
+                                    vehicle.last_maintenance_mileage,
+                                  ),
                                 )}
                               </p>
                             </div>
                             <div className="text-right">
                               <p
-                                className="text-xs text-gray-500 
+                                className="text-xs text-gray-500
                                 uppercase tracking-wide mb-1"
                               >
                                 Intervalo
                               </p>
                               <p className="text-sm text-gray-700">
-                                {formatMileage(vehicle.maintenance_interval_km)}
+                                {displayValue(
+                                  formatMileage(
+                                    vehicle.maintenance_interval_km,
+                                  ),
+                                )}
                               </p>
                             </div>
                           </div>

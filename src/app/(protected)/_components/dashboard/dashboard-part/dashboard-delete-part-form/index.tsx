@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDashboardDeletePartForm } from "./hooks";
-import { handleDeletePart } from "@/actions/delete-part";
+import { handleDeletePart } from "@/actions/part/delete-part";
 
 import { permissions } from "@/lib/permissions";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -28,6 +28,23 @@ interface DashboardDeletePartProps {
 
 const DashboardDeletePartFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deletePartList = [
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver ordens de serviço utilizando esta peça`,
+    },
+    {
+      data: "Verifique se a peça pertence à empresa antes de deletar",
+    },
+    {
+      data: "Todas as referências desta peça em ordens de serviço devem ser removidas primeiro",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -41,26 +58,15 @@ const DashboardDeletePartFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                ordens de serviço utilizando esta peça
-              </li>
-              <li>Verifica se a peça pertence à empresa antes de deletar</li>
-              <li>
-                Todas as referências desta peça em ordens de serviço devem ser
-                removidas primeiro
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deletePartList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

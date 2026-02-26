@@ -217,11 +217,11 @@ const HeroDashboardShowcase = (): JSX.Element => {
   };
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
+    <div className="relative w-full max-w-4xl mx-auto mt-9">
       <motion.div
         className="relative overflow-hidden rounded-xl border bg-gradient-to-br
         from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800
-        p-4 sm:p-5 md:p-6 shadow-2xl lg:h-[400px] flex flex-col"
+        p-4 sm:p-5 md:p-6 shadow-2xl lg:h-[440px] flex flex-col"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -340,7 +340,7 @@ const HeroDashboardShowcase = (): JSX.Element => {
             </span>
           </div>
           <div
-            className="h-[120px] overflow-hidden
+            className="h-[150px] sm:h-[170px] overflow-hidden
             [mask-image:linear-gradient(to_bottom,#000_70%,transparent_100%)]"
           >
             <DashboardAnimatedList delay={2500} maxItems={3}>

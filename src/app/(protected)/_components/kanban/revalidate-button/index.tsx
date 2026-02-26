@@ -28,8 +28,8 @@ const KanbanRevalidationButton = ({
     storageKey: "kanban-revalidation",
   },
 }: KanbanRevalidationButtonProps): JSX.Element => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
 
   const { invalidateKanbanQueries } = useKanbanQueryClient();
 

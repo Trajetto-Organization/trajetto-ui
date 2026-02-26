@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandServiceOrderInputValue,
@@ -9,11 +9,6 @@ import { DashboardCreateAccountPayableFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
-
-import {
-  formatCurrencyToNumber,
-  formatToBrazilianCurrency,
-} from "@/lib/format-values";
 
 function useDashboardCreateAccountPayableForm(
   state: DashboardCreateAccountPayableFormState | null,
@@ -50,9 +45,17 @@ function useDashboardCreateAccountPayableForm(
       responsibleUserEmail: "",
     });
 
-  // Form field states for the last step
-  const [displayAmount, setDisplayAmount] = useState<string>("");
-  const [displayAmountPaid, setDisplayAmountPaid] = useState<string>("");
+  // Form values state with callback pattern
+  const [accountPayableFormValues, setAccountPayableFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setAccountPayableFormValues(values);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isCreateAccountPayableForm) {
@@ -80,8 +83,7 @@ function useDashboardCreateAccountPayableForm(
         responsibleUserEmail: "",
       });
 
-      setDisplayAmount("");
-      setDisplayAmountPaid("");
+      setAccountPayableFormValues({});
     }
 
     setIsCreateAccountPayableForm(!isCreateAccountPayableForm);
@@ -117,44 +119,6 @@ function useDashboardCreateAccountPayableForm(
         : data;
 
     setCommandUserInputValue(updateUserData);
-  };
-
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    let inputValue = e.target.value;
-    inputValue = inputValue.replace(/[^\d,.]/g, "");
-    setDisplayAmount(inputValue);
-  };
-
-  const handleAmountBlur = (): void => {
-    if (!displayAmount || displayAmount === "," || displayAmount === ".") {
-      setDisplayAmount("");
-      return;
-    }
-
-    const newNumericValue = formatCurrencyToNumber(displayAmount);
-    setDisplayAmount(formatToBrazilianCurrency(newNumericValue));
-  };
-
-  const handleAmountPaidChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ): void => {
-    let inputValue = e.target.value;
-    inputValue = inputValue.replace(/[^\d,.]/g, "");
-    setDisplayAmountPaid(inputValue);
-  };
-
-  const handleAmountPaidBlur = (): void => {
-    if (
-      !displayAmountPaid ||
-      displayAmountPaid === "," ||
-      displayAmountPaid === "."
-    ) {
-      setDisplayAmountPaid("");
-      return;
-    }
-
-    const newNumericValue = formatCurrencyToNumber(displayAmountPaid);
-    setDisplayAmountPaid(formatToBrazilianCurrency(newNumericValue));
   };
 
   const handleBranchStepContinue = () => {
@@ -241,12 +205,8 @@ function useDashboardCreateAccountPayableForm(
     handleBackToServiceOrderStep,
     handleBackToUserStep,
     handleCloseDialog,
-    displayAmount,
-    displayAmountPaid,
-    handleAmountChange,
-    handleAmountBlur,
-    handleAmountPaidChange,
-    handleAmountPaidBlur,
+    accountPayableFormValues,
+    handleFormValuesChange,
     formRef,
   };
 }

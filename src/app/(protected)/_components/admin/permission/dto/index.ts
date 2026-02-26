@@ -1,13 +1,18 @@
 interface PermissionProps {
   id: string;
   action: string;
-  permission: string;
+  permissionKey: string;
   canRead: boolean;
   canWrite: boolean;
   businessId: string;
   profileAccessId: string;
-  corporate_reason?: string;
-  profile_name: string;
+  profileAccess: {
+    name: string;
+  };
+  business?: {
+    id: string;
+    corporate_reason: string;
+  };
   created_at: string;
   updated_at: string;
 }

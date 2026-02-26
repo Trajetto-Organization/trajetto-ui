@@ -1,25 +1,6 @@
 import { useState, useEffect } from "react";
 import { UseCardModalFormProps, PriorityProps } from "../dto";
 
-// Function to convert date string (DD/MM/YYYY or ISO) to Date - same logic as Card
-const parseCardDate = (dateStr: string): Date | null => {
-  if (!dateStr) return null;
-
-  try {
-    // If it is in DD/MM/YYYY format
-    if (dateStr.includes("/")) {
-      const [day, month, year] = dateStr.split("/");
-      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    }
-
-    // If it is in ISO format or another valid format
-    const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? null : date;
-  } catch {
-    return null;
-  }
-};
-
 function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const [isDirty, setIsDirty] = useState<boolean>(false);
@@ -35,10 +16,8 @@ function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
 
   const [completed, setCompleted] = useState<boolean>(card?.completed || false);
 
-  // Use the parseCardDate function to ensure the date is interpreted correctly
-  const [dueDate, setDueDate] = useState<Date | undefined>(
-    card?.dueDate ? parseCardDate(card.dueDate) || undefined : undefined,
-  );
+  // Store dueDate as ISO string to work with DatePickerField custom component
+  const [dueDate, setDueDate] = useState<string>(card?.dueDate || "");
 
   const [assignedUserId, setAssignedUserId] = useState<string>(
     card?.assignedUserId || "none",
@@ -49,7 +28,7 @@ function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
     title: string;
     description: string;
     priority: string;
-    dueDate: Date | undefined;
+    dueDate: string;
     assignedUserId: string;
     completed: boolean;
   }) => {
@@ -60,16 +39,13 @@ function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
     }
 
     // For editing, compare with original values
-    const originalDueDate = card.dueDate
-      ? parseCardDate(card.dueDate)
-      : undefined;
     const originalAssignedUserId = card.assignedUserId || "none";
 
     const hasChanges = [
       newValues.title !== card.title,
       newValues.description !== (card.description || ""),
       newValues.priority !== card.priority,
-      newValues.dueDate?.toDateString() !== originalDueDate?.toDateString(),
+      newValues.dueDate !== (card.dueDate || ""),
       newValues.assignedUserId !== originalAssignedUserId,
       newValues.completed !== (card.completed || false),
     ].some(Boolean);
@@ -114,7 +90,7 @@ function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
     });
   };
 
-  const handleDueDateChange = (value: Date | undefined) => {
+  const handleDueDateChange = (value: string) => {
     setDueDate(value);
     checkIfDirty({
       title,

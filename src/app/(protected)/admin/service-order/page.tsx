@@ -121,26 +121,28 @@ const ServiceOrder = async ({
   const statsData = {
     totalServiceOrders: meta.total,
     completedOrders: serviceOrder.filter(
-      (so) =>
-        so.completion_date !== null &&
-        so.completion_date !== undefined &&
-        so.completion_date !== "N/A",
+      (so) => so.completion_date !== null && so.completion_date !== undefined,
     ).length,
     pendingOrders: serviceOrder.filter(
-      (so) =>
-        so.completion_date === null ||
-        so.completion_date === undefined ||
-        so.completion_date === "N/A",
+      (so) => so.completion_date === null || so.completion_date === undefined,
     ).length,
     totalAmount: serviceOrder
       .reduce((sum, so) => {
-        // Remove formatting: "R$ 1,500.00" -> "1500.00"
-        const cleanValue = (so.total_amount || "0")
-          .replace(/[^\d,.-]/g, "") // Remove R$, spaces, etc.
-          .replace(/\./g, "") // Remove thousands separators
-          .replace(",", "."); // Replace decimal point with period
+        // Handle both number and string types for compatibility
+        let amount: number = 0;
 
-        const amount = parseFloat(cleanValue);
+        if (typeof so.total_amount === "string") {
+          // Remove formatting: "R$ 1,500.00" -> "1500.00"
+          const cleanValue = (so.total_amount as string)
+            .replace(/[^\d,.-]/g, "") // Remove R$, spaces, etc.
+            .replace(/\./g, "") // Remove thousands separators
+            .replace(",", "."); // Replace decimal point with period
+          amount = parseFloat(cleanValue);
+        } else if (typeof so.total_amount === "number") {
+          // Already a number, use directly
+          amount = so.total_amount;
+        }
+
         return sum + (isNaN(amount) ? 0 : amount);
       }, 0)
       .toLocaleString("pt-BR", {

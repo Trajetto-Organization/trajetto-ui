@@ -33,6 +33,8 @@ interface CreateVehicleFormState {
 interface CreateVehicleFormSubmitProps {
   state: CreateVehicleFormState;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type { CreateVehicleFormState, CreateVehicleFormSubmitProps };

@@ -63,7 +63,14 @@ const FormInput = ({
         </TooltipProvider>
       ) : (
         <Label className="h-4 truncate" htmlFor={htmlfor}>
-          {label}
+          {label.includes("*") ? (
+            <>
+              {label.replace("*", "")}
+              <span className="text-red-500 ml-0.5">*</span>
+            </>
+          ) : (
+            label
+          )}
         </Label>
       )}
 

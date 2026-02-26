@@ -59,13 +59,22 @@ interface DashboardData {
   recentActivity: {
     id: string;
     type: string;
+    action: string;
+    entityId: string;
     description: string;
-    userEmail: string;
-    userName: string;
-    userRole: string;
-    business_name?: string;
-    date: string;
     status: StatusBadgeProps;
+    performedBy: string;
+    businessId: string | null;
+    user?: {
+      email: string;
+      role: string;
+      name: string;
+    };
+    business?: {
+      corporate_reason: string;
+    };
+    created_at: string | Date;
+    updated_at: string | Date;
   }[];
   vehiclesByType: {
     name: string;

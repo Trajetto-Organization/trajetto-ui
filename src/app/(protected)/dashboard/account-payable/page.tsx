@@ -20,6 +20,67 @@ import { PageStats } from "../../_components/stats/page-stats";
 
 import { AccountPayableActions } from "./page-actions";
 
+// Helper function to calculate account payable status
+type AccountPayableStatus =
+  | "PENDING"
+  | "PAID"
+  | "PARTIAL"
+  | "LATE"
+  | "PARTIAL_LATE"
+  | "OVERDUE";
+
+function calculateAccountPayableStatus(
+  amount: number,
+  amountPaid: number | null,
+  dueDate: Date | string,
+  paymentDate: Date | string | null,
+): AccountPayableStatus {
+  let status: AccountPayableStatus = "PENDING";
+
+  const currentDate = new Date();
+  const dueDateObj = new Date(dueDate);
+
+  const isOverdue = currentDate > dueDateObj;
+
+  if (paymentDate) {
+    const paid = amountPaid || 0;
+
+    const paymentDateObj = new Date(paymentDate);
+    const isPaidLate = paymentDateObj > dueDateObj;
+
+    if (paid >= amount) {
+      // Full payment
+      status = isPaidLate ? "LATE" : "PAID";
+    } else if (paid > 0) {
+      // Partial payment
+      if (isPaidLate) {
+        status = "PARTIAL_LATE";
+      } else if (isOverdue) {
+        status = "PARTIAL_LATE";
+      } else {
+        status = "PARTIAL";
+      }
+    }
+  } else {
+    // No payment date
+    status = isOverdue ? "OVERDUE" : "PENDING";
+  }
+
+  return status;
+}
+
+function translateAccountPayableStatus(status: AccountPayableStatus): string {
+  const translations: Record<AccountPayableStatus, string> = {
+    PENDING: "Pendente",
+    PAID: "Pago",
+    PARTIAL: "Parcial",
+    LATE: "Pago com atraso",
+    PARTIAL_LATE: "Parcial com atraso",
+    OVERDUE: "Vencido",
+  };
+  return translations[status];
+}
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -120,18 +181,45 @@ const AccountPayable = async ({
   // Calculates stats directly from the returned data
   const statsData = {
     totalAccounts: meta.total,
-    paidAccounts: accountPayable.filter(
-      (ap) => ap.status === "Pago" || ap.status === "Pago com atraso",
-    ).length,
-    pendingAccounts: accountPayable.filter(
-      (ap) => ap.status === "Pendente" || ap.status === "Parcial",
-    ).length,
-    overdueAccounts: accountPayable.filter(
-      (ap) =>
-        ap.status === "Atrasado" ||
-        ap.status === "Pago com atraso" ||
-        ap.status === "Parcial com atraso",
-    ).length,
+    paidAccounts: accountPayable.filter((ap) => {
+      const status = calculateAccountPayableStatus(
+        ap.amount,
+        ap.amount_paid,
+        ap.due_date,
+        ap.payment_date,
+      );
+
+      const translatedStatus = translateAccountPayableStatus(status);
+      return (
+        translatedStatus === "Pago" || translatedStatus === "Pago com atraso"
+      );
+    }).length,
+    pendingAccounts: accountPayable.filter((ap) => {
+      const status = calculateAccountPayableStatus(
+        ap.amount,
+        ap.amount_paid,
+        ap.due_date,
+        ap.payment_date,
+      );
+
+      const translatedStatus = translateAccountPayableStatus(status);
+      return translatedStatus === "Pendente" || translatedStatus === "Parcial";
+    }).length,
+    overdueAccounts: accountPayable.filter((ap) => {
+      const status = calculateAccountPayableStatus(
+        ap.amount,
+        ap.amount_paid,
+        ap.due_date,
+        ap.payment_date,
+      );
+
+      const translatedStatus = translateAccountPayableStatus(status);
+      return (
+        translatedStatus === "Vencido" ||
+        translatedStatus === "Pago com atraso" ||
+        translatedStatus === "Parcial com atraso"
+      );
+    }).length,
   };
 
   return (

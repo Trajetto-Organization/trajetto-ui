@@ -20,6 +20,7 @@ const useTooltipPosition = (
     left: "50%",
     top: "",
   });
+
   const [arrowConfig, setArrowConfig] = useState<ArrowConfig>({
     position: "-bottom-2",
     border: "border-t-[8px] border-t-[#d81b60]",
@@ -44,6 +45,7 @@ const useTooltipPosition = (
     // Get consistent positioning using getBoundingClientRect for both elements
     const targetRect = target.getBoundingClientRect();
     const mainRect = mainRef.current.getBoundingClientRect();
+
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
 
     // Calculate relative positions within the main container
@@ -64,6 +66,7 @@ const useTooltipPosition = (
     const spaceBelow =
       mainRef.current.clientHeight -
       (targetRelative.top + targetRelative.height);
+
     const spaceLeft = targetRelative.left;
     const spaceRight =
       mainRef.current.clientWidth -

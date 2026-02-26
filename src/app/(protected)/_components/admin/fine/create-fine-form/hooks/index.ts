@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
@@ -61,6 +61,18 @@ function useCreateFineForm(state: CreateFineFormState | null) {
     searchTrafficViolationCodeInputValue: "",
   });
 
+  // Form values state with callback pattern
+  const [fineFormValues, setFineFormValues] = useState<Record<string, string>>(
+    {},
+  );
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setFineFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateFineForm) {
       toast.dismiss();
@@ -97,6 +109,9 @@ function useCreateFineForm(state: CreateFineFormState | null) {
         trafficViolationCodeId: "",
         searchTrafficViolationCodeInputValue: "",
       });
+
+      // Reset form values
+      setFineFormValues({});
     }
 
     setIsCreateFineForm(!isCreateFineForm);
@@ -246,6 +261,8 @@ function useCreateFineForm(state: CreateFineFormState | null) {
       trafficViolationCodeId: "",
       searchTrafficViolationCodeInputValue: "",
     });
+
+    setFineFormValues({});
   };
 
   useEffect(() => {
@@ -319,6 +336,8 @@ function useCreateFineForm(state: CreateFineFormState | null) {
     commandDriverInputValue,
     commandTrafficViolationCodeInputValue,
     formRef,
+    fineFormValues,
+    handleFormValuesChange,
   };
 }
 

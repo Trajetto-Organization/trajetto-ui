@@ -9,18 +9,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { handleUpdateFuel } from "@/actions/update-fuel";
+import { handleUpdateFuel } from "@/actions/fuel/update-fuel";
 import { useUpdateFuelForm } from "./hooks";
 
 import { UpdateFuelFormState, UpdateFuelFormProps } from "./dto";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { UpdateFuelFormSubmit } from "./update-fuel-form-submit";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
 
 import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectBranchStep } from "../../../steps/select-branch-step";
 
 const UpdateFuelForm = ({
   fuelData,
@@ -69,29 +69,75 @@ const UpdateFuelForm = ({
   const {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,
     commandFuelTypeInputValue,
-    handleBusinessBranchStepContinue,
+    handleBranchStepContinue,
     handleVehicleDriverStepContinue,
     handleFuelTypeStepContinue,
-    handleBackToBusinessBranchStep,
+    handleBackToBranchStep,
     handleBackToVehicleDriverStep,
     handleBackToFuelTypeStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateSearchFuelTypeInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    fuelFormValues,
+    handleFormValuesChange,
   } = useUpdateFuelForm({
     state,
     handleCloseUpdateFuel,
     fuelData,
     isUpdateFuelOpen,
   });
+
+  const updateFuelForm = (fuelFormData: FormData) => {
+    // Ensure mileage is sent unformatted
+    const mileageInput = document.querySelector(
+      'input[name="current_mileage"]',
+    ) as HTMLInputElement;
+
+    if (mileageInput && mileageInput.value.includes(".")) {
+      // Remove points if still present
+      const numericValue = mileageInput.value.replace(/\./g, "");
+      mileageInput.value = numericValue;
+
+      fuelFormData.set("current_mileage", numericValue);
+    }
+
+    const updateFuelData = {
+      fuelId: fuelData.id,
+      businessId: fuelData.businessId,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      driverId: commandDriverInputValue.driverId,
+      fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+    };
+
+    // Add the odometer photo file to FormData if selected
+    if (odometerFile) {
+      fuelFormData.set("odometer_photo", odometerFile);
+    }
+
+    // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+    // When null, send as empty string (backend will convert to null)
+    if (latitude === null) {
+      fuelFormData.append("latitude", "");
+    } else if (latitude !== undefined) {
+      fuelFormData.append("latitude", latitude.toString());
+    }
+
+    if (longitude === null) {
+      fuelFormData.append("longitude", "");
+    } else if (longitude !== undefined) {
+      fuelFormData.append("longitude", longitude.toString());
+    }
+
+    appendDataToForm(fuelFormData, updateFuelData);
+    return dispatch(fuelFormData);
+  };
 
   return (
     <Dialog
@@ -104,20 +150,23 @@ const UpdateFuelForm = ({
         handleCloseUpdateFuel();
       }}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business-branch"
-              ? "Selecionar Empresa e Filial"
+            {currentStep === "select-branch"
+              ? "Selecionar Filial"
               : currentStep === "select-vehicle-driver"
                 ? "Selecionar Veículo e Motorista"
                 : currentStep === "select-fuel-type"
                   ? "Selecionar Tipo de Combustível"
-                  : "Atualizar Abastecimento"}
+                  : "Editar Abastecimento"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business-branch"
-              ? "Selecione a empresa e filial para a qual deseja atualizar o abastecimento."
+            {currentStep === "select-branch"
+              ? "Selecione a filial para qual deseja atualizar o abastecimento."
               : currentStep === "select-vehicle-driver"
                 ? "Selecione o veículo e motorista para o abastecimento."
                 : currentStep === "select-fuel-type"
@@ -126,23 +175,19 @@ const UpdateFuelForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business-branch" ? (
-          <SelectBusinessBranchStep
-            handleUpdateSearchBusinessInputValue={
-              handleUpdateSearchBusinessInputValue
-            }
+        {currentStep === "select-branch" ? (
+          <SelectBranchStep
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
-            onContinue={handleBusinessBranchStepContinue}
-            commandBusinessInputValue={commandBusinessInputValue}
+            onContinue={handleBranchStepContinue}
             commandBranchInputValue={commandBranchInputValue}
             errorBranchId={state.updateFuelError?.branchId}
-            errorBusinessId={state.updateFuelError?.businessId}
+            businessId={fuelData.businessId}
           />
         ) : currentStep === "select-vehicle-driver" ? (
           <SelectVehicleDriverStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={fuelData.businessId}
             commandVehicleInputValue={commandVehicleInputValue}
             commandDriverInputValue={commandDriverInputValue}
             handleUpdateSearchVehicleInputValue={
@@ -152,13 +197,13 @@ const UpdateFuelForm = ({
               handleUpdateSearchDriverInputValue
             }
             onContinue={handleVehicleDriverStepContinue}
-            onBack={handleBackToBusinessBranchStep}
+            onBack={handleBackToBranchStep}
             errorDriverId={state.updateFuelError?.driverId}
             errorVehicleId={state.updateFuelError?.vehicleId}
           />
         ) : currentStep === "select-fuel-type" ? (
           <SelectFuelTypeStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={fuelData.businessId}
             commandFuelTypeInputValue={commandFuelTypeInputValue}
             handleUpdateSearchFuelTypeInputValue={
               handleUpdateSearchFuelTypeInputValue
@@ -168,61 +213,15 @@ const UpdateFuelForm = ({
             errorFuelTypeId={state.updateFuelError?.fuelTypeId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Ensure mileage is sent unformatted
-              const mileageInput = document.querySelector(
-                'input[name="current_mileage"]',
-              ) as HTMLInputElement;
-              if (mileageInput && mileageInput.value.includes(".")) {
-                // Remove points if still present
-                const numericValue = mileageInput.value.replace(/\./g, "");
-                mileageInput.value = numericValue;
-
-                formData.set("current_mileage", numericValue);
-              }
-
-              const extraData = {
-                fuelId: fuelData.id,
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                driverId: commandDriverInputValue.driverId,
-                fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
-              };
-
-              // Add the odometer photo file to FormData if selected
-              if (odometerFile) {
-                formData.set("odometer_photo", odometerFile);
-              }
-
-              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
-              // When null, send as empty string (backend will convert to null)
-              if (latitude === null) {
-                formData.append("latitude", "");
-              } else if (latitude !== undefined) {
-                formData.append("latitude", latitude.toString());
-              }
-
-              if (longitude === null) {
-                formData.append("longitude", "");
-              } else if (longitude !== undefined) {
-                formData.append("longitude", longitude.toString());
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateFuelForm}>
             <UpdateFuelFormSubmit
               state={state}
               onBack={handleBackToFuelTypeStep}
               fuelData={fuelData}
-              isBusinessAndEntityDirty={isBusinessAndEntityDirty}
-              isUpdateFuelOpen={isUpdateFuelOpen}
+              isEntityDirty={isEntityDirty}
+              initialFormValues={fuelFormValues}
+              onFormValuesChange={handleFormValuesChange}
               commandVehicleInputValue={commandVehicleInputValue}
-              commandBusinessInputValue={commandBusinessInputValue}
               handleLocationChange={handleLocationChange}
               handleLocationLoadingChange={handleLocationLoadingChange}
               latitude={latitude}

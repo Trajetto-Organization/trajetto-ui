@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   CommandBranchInputValue,
-  CommandBusinessInputValue,
   CommandDriverInputValue,
   CommandTrafficViolationCodeInputValue,
   CommandVehicleInputValue,
@@ -31,176 +30,145 @@ function useUpdateFineForm({
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
 
-  // Sanitize optional fields that might contain "N/A"
-  const sanitizedBranchName =
-    fineData.branchName && fineData.branchName !== "N/A"
-      ? fineData.branchName
-      : "";
+  const branchName = useMemo(
+    () => fineData.branch?.corporate_reason || "",
+    [fineData.branch?.corporate_reason],
+  );
 
-  const sanitizedDriverName =
-    fineData.driverName && fineData.driverName !== "N/A"
-      ? fineData.driverName
-      : "";
+  const driverName = useMemo(
+    () => fineData.driver?.name || "",
+    [fineData.driver?.name],
+  );
 
-  const sanitizedVehicleDescription =
-    fineData.vehicleDescription && fineData.vehicleDescription !== "N/A"
-      ? fineData.vehicleDescription
-      : "";
+  const vehicleDescription = useMemo(
+    () => fineData.vehicle?.description || "",
+    [fineData.vehicle?.description],
+  );
 
-  const sanitizedViolationDescription =
-    fineData.violationDescription && fineData.violationDescription !== "N/A"
-      ? fineData.violationDescription
-      : "";
+  const violationDescription = useMemo(
+    () => fineData.trafficViolationCode?.description || "",
+    [fineData.trafficViolationCode?.description],
+  );
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
-    | "select-business"
+    | "select-branch"
     | "select-vehicle-driver"
     | "select-violation-code"
     | "update-fine"
-  >("select-business");
-
-  // Initialize form values from fine data with sanitized values
-  const [commandBusinessInputValue, setCommandBusinessInputValue] =
-    useState<CommandBusinessInputValue>({
-      businessId: fineData.businessId as string,
-      searchBusinessInputValue: fineData.businessName as string,
-    });
+  >("select-branch");
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
-      branchId: sanitizedBranchName ? fineData.branchId || "" : "",
-      searchBranchInputValue: sanitizedBranchName,
+      branchId: branchName ? fineData.branchId || "" : "",
+      searchBranchInputValue: branchName,
     });
 
   const [commandVehicleInputValue, setCommandVehicleInputValue] =
     useState<CommandVehicleInputValue>({
-      vehicleId: sanitizedVehicleDescription ? fineData.vehicleId || "" : "",
-      searchVehicleInputValue: sanitizedVehicleDescription,
+      vehicleId: vehicleDescription ? fineData.vehicleId || "" : "",
+      searchVehicleInputValue: vehicleDescription,
       vehicleLicensePlate:
-        sanitizedVehicleDescription && fineData.vehicleLicensePlate
-          ? fineData.vehicleLicensePlate
+        vehicleDescription && fineData.vehicle.license_plate
+          ? fineData.vehicle.license_plate
           : "",
     });
 
   const [commandDriverInputValue, setCommandDriverInputValue] =
     useState<CommandDriverInputValue>({
-      driverId: sanitizedDriverName ? fineData.driverId || "" : "",
-      searchDriverInputValue: sanitizedDriverName,
+      driverId: driverName ? fineData.driverId || "" : "",
+      searchDriverInputValue: driverName,
       driverCnh:
-        sanitizedDriverName && fineData.driverCpf
-          ? fineData.driverCpf.slice(-4)
-          : "",
+        driverName && fineData.driver.cpf ? fineData.driver.cpf.slice(-4) : "",
     });
 
   // Create the complete display text for traffic violation code (same format as SearchTrafficViolationCode)
   const getViolationDisplayText = () => {
-    if (sanitizedViolationDescription && fineData.violationCode) {
-      return `${fineData.violationCode} - ${sanitizedViolationDescription}`;
+    if (
+      violationDescription &&
+      fineData.trafficViolationCode.code &&
+      fineData.trafficViolationCode.sub_code !== undefined &&
+      fineData.trafficViolationCode.sub_code !== null
+    ) {
+      return `${fineData.trafficViolationCode.code}-${fineData.trafficViolationCode.sub_code} - ${violationDescription}`;
     }
-    return sanitizedViolationDescription;
+
+    return violationDescription;
   };
 
   const [
     commandTrafficViolationCodeInputValue,
     setCommandTrafficViolationCodeInputValue,
   ] = useState<CommandTrafficViolationCodeInputValue>({
-    trafficViolationCodeId: sanitizedViolationDescription
+    trafficViolationCodeId: violationDescription
       ? fineData.trafficViolationCodeId || ""
       : "",
     searchTrafficViolationCodeInputValue: getViolationDisplayText(),
     violationCode:
-      sanitizedViolationDescription && fineData.violationCode
-        ? fineData.violationCode
+      violationDescription && fineData.trafficViolationCode.code
+        ? fineData.trafficViolationCode.code
         : "",
   });
+
+  // Form values state with callback pattern
+  const [fineFormValues, setFineFormValues] = useState<Record<string, string>>(
+    {},
+  );
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setFineFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateFineOpen) {
-      setCommandBusinessInputValue({
-        businessId: fineData.businessId as string,
-        searchBusinessInputValue: fineData.businessName as string,
-      });
-
       setCommandBranchInputValue({
-        branchId: sanitizedBranchName ? fineData.branchId || "" : "",
-        searchBranchInputValue: sanitizedBranchName,
+        branchId: branchName ? fineData.branchId || "" : "",
+        searchBranchInputValue: branchName,
       });
 
       setCommandVehicleInputValue({
-        vehicleId: sanitizedVehicleDescription ? fineData.vehicleId || "" : "",
-        searchVehicleInputValue: sanitizedVehicleDescription,
+        vehicleId: vehicleDescription ? fineData.vehicleId || "" : "",
+        searchVehicleInputValue: vehicleDescription,
         vehicleLicensePlate:
-          sanitizedVehicleDescription && fineData.vehicleLicensePlate
-            ? fineData.vehicleLicensePlate
+          vehicleDescription && fineData.vehicle.license_plate
+            ? fineData.vehicle.license_plate
             : "",
       });
 
       setCommandDriverInputValue({
-        driverId: sanitizedDriverName ? fineData.driverId || "" : "",
-        searchDriverInputValue: sanitizedDriverName,
-        driverCnh:
-          sanitizedDriverName && fineData.driverCpf ? fineData.driverCpf : "",
+        driverId: driverName ? fineData.driverId || "" : "",
+        searchDriverInputValue: driverName,
+        driverCnh: driverName && fineData.driver.cpf ? fineData.driver.cpf : "",
       });
 
       setCommandTrafficViolationCodeInputValue({
-        trafficViolationCodeId: sanitizedViolationDescription
+        trafficViolationCodeId: violationDescription
           ? fineData.trafficViolationCodeId || ""
           : "",
-        searchTrafficViolationCodeInputValue: sanitizedViolationDescription,
+        searchTrafficViolationCodeInputValue: violationDescription,
         violationCode:
-          sanitizedViolationDescription && fineData.violationCode
-            ? fineData.violationCode
+          violationDescription && fineData.trafficViolationCode.code
+            ? fineData.trafficViolationCode.code
             : "",
       });
 
-      setCurrentStep("select-business");
+      setCurrentStep("select-branch");
+
+      // Reset form values
+      setFineFormValues({});
     }
   }, [
     isUpdateFineOpen,
-    sanitizedBranchName,
-    sanitizedDriverName,
-    sanitizedVehicleDescription,
-    sanitizedViolationDescription,
+    branchName,
+    driverName,
+    vehicleDescription,
+    violationDescription,
     fineData,
   ]);
-
-  // Handle business and branch selection updates
-  const handleUpdateSearchBusinessInputValue = (
-    data: CommandBusinessInputValue,
-  ) => {
-    const updateBusinessData =
-      data.businessId === commandBusinessInputValue.businessId
-        ? { businessId: "", searchBusinessInputValue: "" }
-        : data;
-
-    if (
-      updateBusinessData.businessId !== commandBusinessInputValue.businessId
-    ) {
-      setCommandBranchInputValue({
-        branchId: "",
-        searchBranchInputValue: "",
-      });
-      setCommandVehicleInputValue({
-        vehicleId: "",
-        searchVehicleInputValue: "",
-        vehicleLicensePlate: "",
-      });
-      setCommandDriverInputValue({
-        driverId: "",
-        searchDriverInputValue: "",
-        driverCnh: "",
-      });
-      setCommandTrafficViolationCodeInputValue({
-        trafficViolationCodeId: "",
-        searchTrafficViolationCodeInputValue: "",
-        violationCode: "",
-      });
-    }
-
-    setCommandBusinessInputValue(updateBusinessData);
-  };
 
   const handleUpdateSearchBranchInputValue = (
     data: CommandBranchInputValue,
@@ -256,7 +224,7 @@ function useUpdateFineForm({
   };
 
   // Step navigation
-  const handleBusinessStepContinue = () => {
+  const handleBranchStepContinue = () => {
     setCurrentStep("select-vehicle-driver");
   };
 
@@ -268,8 +236,8 @@ function useUpdateFineForm({
     setCurrentStep("update-fine");
   };
 
-  const handleBackToBusinessStep = () => {
-    setCurrentStep("select-business");
+  const handleBackToBranchStep = () => {
+    setCurrentStep("select-branch");
   };
 
   const handleBackToVehicleDriverStep = () => {
@@ -330,20 +298,13 @@ function useUpdateFineForm({
     };
   }, [state, handleCloseUpdateFine]);
 
-  // Create sanitized original values for comparison
-  const originalBranchId =
-    fineData.branchName !== "N/A" ? fineData.branchId || "" : "";
-  const originalVehicleId =
-    fineData.vehicleDescription !== "N/A" ? fineData.vehicleId || "" : "";
-  const originalDriverId =
-    fineData.driverName !== "N/A" ? fineData.driverId || "" : "";
-  const originalTrafficViolationCodeId =
-    fineData.violationDescription !== "N/A"
-      ? fineData.trafficViolationCodeId || ""
-      : "";
+  const originalBranchId = fineData.branchId || "";
+  const originalVehicleId = fineData.vehicleId || "";
 
-  const isBusinessAndEntityDirty = [
-    commandBusinessInputValue.businessId !== fineData.businessId,
+  const originalDriverId = fineData.driverId || "";
+  const originalTrafficViolationCodeId = fineData.trafficViolationCodeId || "";
+
+  const isEntityDirty = [
     commandBranchInputValue.branchId !== originalBranchId,
     commandVehicleInputValue.vehicleId !== originalVehicleId,
     commandDriverInputValue.driverId !== originalDriverId,
@@ -354,23 +315,23 @@ function useUpdateFineForm({
   return {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,
     commandTrafficViolationCodeInputValue,
-    handleBusinessStepContinue,
+    handleBranchStepContinue,
     handleVehicleDriverStepContinue,
     handleViolationCodeStepContinue,
-    handleBackToBusinessStep,
+    handleBackToBranchStep,
     handleBackToVehicleDriverStep,
     handleBackToViolationCodeStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateSearchTrafficViolationCodeInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    fineFormValues,
+    handleFormValuesChange,
   };
 }
 

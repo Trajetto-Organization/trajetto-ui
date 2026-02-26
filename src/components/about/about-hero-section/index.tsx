@@ -15,7 +15,7 @@ const AboutHeroSection = () => {
     >
       {/* Optimized background image */}
       <Image
-        src="/about.jpg"
+        src="/about.webp"
         alt="Background"
         fill
         className={`object-cover transition-opacity duration-700 ${

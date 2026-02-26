@@ -6,7 +6,7 @@ import { useState } from "react";
 import Turnstile from "react-turnstile";
 import Link from "next/link";
 
-import { handleLoginUser } from "@/actions/login-user";
+import { handleLoginUser } from "@/actions/user/login-user";
 import { Button } from "@/components/ui/button";
 
 import { Loader, LockIcon, MailIcon } from "lucide-react";

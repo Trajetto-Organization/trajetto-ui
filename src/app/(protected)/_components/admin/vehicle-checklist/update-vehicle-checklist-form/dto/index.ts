@@ -1,6 +1,5 @@
 import {
   CommandBranchInputValue,
-  CommandBusinessInputValue,
   CommandDriverInputValue,
   CommandVehicleInputValue,
 } from "@/app/(protected)/_components/dto";
@@ -51,10 +50,10 @@ interface UpdateVehicleChecklistFormSubmitProps {
   state: UpdateVehicleChecklistFormState;
   onBack: () => void;
   checklistData: VehicleChecklistProps;
-  isBusinessAndEntityDirty: boolean;
-  isUpdateChecklistOpen: boolean;
+  isEntityDirty: boolean;
+  initialFormValues: Record<string, any>;
+  onFormValuesChange: (values: Record<string, any>) => void;
   commandVehicleInputValue: CommandVehicleInputValue;
-  commandBusinessInputValue: CommandBusinessInputValue;
   commandBranchInputValue: CommandBranchInputValue;
   commandDriverInputValue: CommandDriverInputValue;
   checklistFiles: Record<string, File[]>;

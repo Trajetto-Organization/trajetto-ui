@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDeleteFuelForm } from "./hooks";
-import { handleDeleteFuel } from "@/actions/delete-fuel";
+import { handleDeleteFuel } from "@/actions/fuel/delete-fuel";
 
 interface DeleteFuelProps {
   businessId: string;
@@ -24,6 +24,23 @@ interface DeleteFuelProps {
 
 const DeleteFuelFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteFuelList = [
+    {
+      data: "Verifica se o abastecimento pertence à empresa antes de deletar",
+    },
+    {
+      data: "Todos os dados do abastecimento (litros, valores, datas) serão excluídos permanentemente",
+    },
+    {
+      data: "O histórico de abastecimentos do veículo será impactado",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -37,25 +54,15 @@ const DeleteFuelFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                Verifica se o abastecimento pertence à empresa antes de deletar
-              </li>
-              <li>
-                Todos os dados do abastecimento (litros, valores, datas) serão
-                excluídos permanentemente
-              </li>
-              <li>O histórico de abastecimentos do veículo será impactado</li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteFuelList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

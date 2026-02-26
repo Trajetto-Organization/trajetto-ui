@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDashboardDeleteVehicleChecklistForm } from "./hooks";
-import { handleDeleteVehicleChecklist } from "@/actions/delete-vehicle-checklist";
+import { handleDeleteVehicleChecklist } from "@/actions/vehicle-checklist/delete-vehicle-checklist";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -28,6 +28,20 @@ interface DashboardDeleteVehicleChecklistProps {
 
 const DashboardDeleteVehicleChecklistFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteVehicleChecklistList = [
+    {
+      data: "Todos os dados do checklist (condições, inspeções, fotos) serão excluídos permanentemente",
+    },
+    {
+      data: "O histórico de inspeções do veículo será impactado",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -41,25 +55,15 @@ const DashboardDeleteVehicleChecklistFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                Verifica se o checklist pertence à empresa antes de deletar
-              </li>
-              <li>
-                Todos os dados do checklist (condições, inspeções, fotos) serão
-                excluídos permanentemente
-              </li>
-              <li>O histórico de inspeções do veículo será impactado</li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteVehicleChecklistList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

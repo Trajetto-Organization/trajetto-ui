@@ -124,7 +124,7 @@ const UserRegistration = async ({
     activeUsers: users.filter((user) => user.access_revoked === false).length,
     twoFactorEnabled: users.filter((user) => user.two_factor_enabled === true)
       .length,
-    emailVerified: users.filter((user) => user.email_verified === true).length,
+    emailVerified: users.filter((user) => user.email_verified).length,
   };
 
   return (

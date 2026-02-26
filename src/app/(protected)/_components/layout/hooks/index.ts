@@ -25,6 +25,7 @@ function useProtectedLayout(
         role: userLogged.role,
         permissions: userLogged.permissions || [],
       });
+
       storeUpdated.current = true;
     }
   }, [userLogged, setAuth]);

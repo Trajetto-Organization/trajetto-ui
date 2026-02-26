@@ -59,14 +59,22 @@ export function DataTableUserRowActions<TData>({
     },
     {
       label: "Copiar ID da empresa",
-      onClick: () => handleCopyID(collumnRowAction.businessId),
+      onClick: () => handleCopyID(collumnRowAction.businessId as string),
     },
-    ...(collumnRowAction.profileAccessId !== "N/A"
+    ...(collumnRowAction.profileAccessId
       ? [
           {
             label: "Copiar ID do perfil",
             onClick: () =>
               handleCopyID(collumnRowAction.profileAccessId as string),
+          },
+        ]
+      : []),
+    ...(collumnRowAction.driverId
+      ? [
+          {
+            label: "Copiar ID do motorista",
+            onClick: () => handleCopyID(collumnRowAction.driverId as string),
           },
         ]
       : []),

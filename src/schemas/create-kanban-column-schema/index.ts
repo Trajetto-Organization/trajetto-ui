@@ -1,7 +1,5 @@
 import { z } from "zod";
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
+import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
 
 const createKanbanColumnSchema = z.object({
   title: z

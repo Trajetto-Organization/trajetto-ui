@@ -8,6 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 import { DataTableQuoteRowActions } from "../data-table-row-actions";
 
+import {
+  displayValue,
+  formatNotificationDate,
+  formatTelephone,
+} from "@/lib/format-values";
 import { QuoteProps } from "../dto";
 
 const statusColors = {
@@ -65,7 +70,9 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -100,7 +107,7 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-44">
-        {row.getValue("name") ?? "N/A"}
+        {displayValue(row.getValue("name"))}
       </p>
     ),
   },
@@ -114,7 +121,7 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-44">
-        {row.getValue("company") ?? "N/A"}
+        {displayValue(row.getValue("company"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -131,7 +138,7 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-52">
-        {row.getValue("email") ?? "N/A"}
+        {displayValue(row.getValue("email"))}
       </p>
     ),
   },
@@ -144,7 +151,9 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
       <DataTableColumnHeader column={column} title="Telefone" />
     ),
     cell: ({ row }) => (
-      <p className="font-medium w-36">{row.getValue("telephone") ?? "N/A"}</p>
+      <p className="font-medium w-36">
+        {displayValue(formatTelephone(row.getValue("telephone")))}
+      </p>
     ),
   },
   {
@@ -167,7 +176,7 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
       };
       return (
         <p className="font-medium">
-          {fleetLabels[fleetSize] ?? fleetSize ?? "N/A"}
+          {displayValue(fleetLabels[fleetSize] || fleetSize)}
         </p>
       );
     },
@@ -183,9 +192,15 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Data de Contato" />
     ),
-    cell: ({ row }) => (
-      <p className="font-medium w-24">{row.getValue("contacted_at") ?? "-"}</p>
-    ),
+    cell: ({ row }) => {
+      return (
+        <p className="font-medium w-40">
+          {displayValue(
+            formatNotificationDate(row.getValue("contacted_at"), "pt-BR"),
+          )}
+        </p>
+      );
+    },
   },
   {
     accessorKey: "created_at",
@@ -193,11 +208,29 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
       title: "Criação",
     },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Data de Criação" />
+      <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
+      </p>
+    ),
+  },
+  {
+    accessorKey: "updated_at",
+    meta: {
+      title: "Atualização",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Data de atualização" />
+    ),
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDashboardDeleteServiceOrderForm } from "./hooks";
-import { handleDeleteServiceOrder } from "@/actions/delete-service-order";
+import { handleDeleteServiceOrder } from "@/actions/service-order/delete-service-order";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
@@ -28,6 +28,19 @@ interface DeleteServiceOrderProps {
 
 const DashboardDeleteServiceOrderFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteServiceOrdeList = [
+    {
+      data: "Todos os registros de peças associadas a esta ordem serão excluídos automaticamente",
+    },
+    {
+      data: "Contas a pagar vinculadas a esta ordem de serviço serão excluídas automaticamente",
+    },
+    { data: "O histórico de manutenção do veículo será impactado" },
+    { data: "Esta ação será registrada nos logs de atividade do sistema" },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -41,30 +54,15 @@ const DashboardDeleteServiceOrderFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                Verifica se a ordem de serviço pertence à empresa antes de
-                deletar
-              </li>
-              <li>
-                Todos os registros de peças associadas a esta ordem serão
-                excluídos automaticamente
-              </li>
-              <li>
-                Contas a pagar vinculadas a esta ordem de serviço serão
-                excluídas automaticamente
-              </li>
-              <li>O histórico de manutenção do veículo será impactado</li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteServiceOrdeList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

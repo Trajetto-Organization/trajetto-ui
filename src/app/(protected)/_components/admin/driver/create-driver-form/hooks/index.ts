@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
@@ -15,7 +15,6 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
   const toastShownRef = useRef(false);
 
   const [isCreateDriverForm, setIsCreateDriverForm] = useState<boolean>(false);
-
   const [currentStep, setCurrentStep] = useState<
     "select-business-branch" | "create-branch"
   >("select-business-branch");
@@ -31,6 +30,19 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
       branchId: "",
       searchBranchInputValue: "",
     });
+
+  // Persisted form values for the last step
+  const [driverFormValues, setDriverFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setDriverFormValues(values);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isCreateDriverForm) {
@@ -51,6 +63,8 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
         branchId: "",
         searchBranchInputValue: "",
       });
+
+      setDriverFormValues({});
     }
 
     setIsCreateDriverForm(!isCreateDriverForm);
@@ -108,6 +122,8 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
       branchId: "",
       searchBranchInputValue: "",
     });
+
+    setDriverFormValues({});
   };
 
   useEffect(() => {
@@ -173,6 +189,8 @@ function useCreateDriverForm(state: CreateDriverFormState | null) {
     commandBranchInputValue,
     handleBack,
     formRef,
+    driverFormValues,
+    handleFormValuesChange,
   };
 }
 

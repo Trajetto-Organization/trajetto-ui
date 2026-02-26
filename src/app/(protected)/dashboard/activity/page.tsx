@@ -7,7 +7,6 @@ import PageContainer from "../../_components/layout/protected-page-container";
 import { ProtectedHeading } from "../../_components/layout/protected-heading";
 
 import { DataTable } from "../../_components/tanstack-table/data-table";
-
 import { DashboardActivityProps } from "../../_components/dashboard/dashboard-activity-log/dto";
 
 import { parseNDJSON } from "@/lib/parse-nd-json";

@@ -23,24 +23,36 @@ interface NotificationData {
   unread: number;
 }
 
+interface NotificationStreamMeta {
+  total: number;
+  unread: number;
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
 interface NotificationListProps {
-  initialData: NotificationData;
   responseError: {
     error: boolean;
     errorMessage: string;
   };
-  currentLimit: number;
-  currentIncludeRead: boolean;
 }
 
 interface NotificationCardProps {
   notification: Notification;
 }
 
+interface FetchNotificationsProps {
+  cursor?: string;
+  includeRead?: boolean;
+  signal?: AbortSignal;
+}
+
 export type {
   NotificationState,
   Notification,
   NotificationData,
+  NotificationStreamMeta,
   NotificationListProps,
   NotificationCardProps,
+  FetchNotificationsProps,
 };

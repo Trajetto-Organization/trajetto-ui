@@ -15,13 +15,13 @@ import {
   UpdatePermissionFormState,
 } from "./dto";
 
-import { handleUpdatePermission } from "@/actions/update-permission";
+import { handleUpdatePermission } from "@/actions/permission/update-permission";
 import { useUpdatePermissionForm } from "./hooks";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 
 import { cn } from "@/lib/utils";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { UpdatePermission } from "./update-permission";
 
@@ -213,6 +213,17 @@ const UpdatePermissionForm = ({
     isUpdatePermission,
   });
 
+  const updatePermissionForm = (permissionFormData: FormData) => {
+    const updatePermissionData = {
+      businessId: commandBusinessInputValue.businessId,
+      profileAccessId: commandProfileAccessInputValue.profileAccessId,
+      permissionId: permissionData.id,
+    };
+
+    appendDataToForm(permissionFormData, updatePermissionData);
+    return dispatch(permissionFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -245,7 +256,10 @@ const UpdatePermissionForm = ({
       }}
       open={isUpdatePermission}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Permissão</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -254,19 +268,7 @@ const UpdatePermissionForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              profileAccessId: commandProfileAccessInputValue.profileAccessId,
-              permissionId: permissionData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updatePermissionForm}>
           <UpdatePermissionFormSubmit
             state={state}
             handleCloseUpdatePermission={handleOpenUpdatePermission}

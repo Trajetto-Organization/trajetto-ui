@@ -122,16 +122,20 @@ const ServiceOrderPart = async ({
   const statsData = {
     totalItems: meta.total,
     withDiscount: serviceOrderPart.filter(
-      (sop) => sop.discount_percentage !== "0%",
+      (sop) => Number(sop.discount_percentage || 0) > 0,
     ).length,
     totalValue: serviceOrderPart
       .reduce((sum, sop) => {
-        const cleanValue = (sop.totalWithDiscount || "0")
-          .replace(/[^\d,.-]/g, "")
-          .replace(/\./g, "")
-          .replace(",", ".");
-        const value = parseFloat(cleanValue);
-        return sum + (isNaN(value) ? 0 : value);
+        const unitPrice = Number(sop.unit_price);
+        const quantity = sop.quantity;
+
+        const discountPercentage = Number(sop.discount_percentage || 0);
+        const totalPrice = unitPrice * quantity;
+
+        const discountAmount = totalPrice * (discountPercentage / 100);
+        const totalWithDiscount = totalPrice - discountAmount;
+
+        return sum + totalWithDiscount;
       }, 0)
       .toLocaleString("pt-BR", {
         style: "currency",
@@ -139,14 +143,20 @@ const ServiceOrderPart = async ({
       }),
     averageValue: (() => {
       if (serviceOrderPart.length === 0) return "R$ 0,00";
+
       const total = serviceOrderPart.reduce((sum, sop) => {
-        const cleanValue = (sop.totalWithDiscount || "0")
-          .replace(/[^\d,.-]/g, "")
-          .replace(/\./g, "")
-          .replace(",", ".");
-        const value = parseFloat(cleanValue);
-        return sum + (isNaN(value) ? 0 : value);
+        const unitPrice = Number(sop.unit_price);
+        const quantity = sop.quantity;
+
+        const discountPercentage = Number(sop.discount_percentage || 0);
+        const totalPrice = unitPrice * quantity;
+
+        const discountAmount = totalPrice * (discountPercentage / 100);
+        const totalWithDiscount = totalPrice - discountAmount;
+
+        return sum + totalWithDiscount;
       }, 0);
+
       const average = total / serviceOrderPart.length;
       return average.toLocaleString("pt-BR", {
         style: "currency",

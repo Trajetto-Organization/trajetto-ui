@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Loader } from "lucide-react";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateKanbanColumn } from "@/actions/update-kanban-column";
+import { handleUpdateKanbanColumn } from "@/actions/kanban/update-kanban-column";
 import { useUpdateColumnDialog } from "./hooks";
 
 import { Input } from "@/components/ui/input";
@@ -88,7 +88,7 @@ const UpdateColumnForm = ({
     <>
       <div className="space-y-4 mt-2">
         <FormInput
-          label="Nome da Coluna"
+          label="Nome da Coluna *"
           htmlfor="title"
           name="title"
           type="text"
@@ -106,7 +106,8 @@ const UpdateColumnForm = ({
           >
             {state.updateColumnError?.color
               ? state.updateColumnError?.color[0]
-              : "Cor da Coluna"}
+              : "Cor da Coluna"}{" "}
+            <span className="text-red-500 ml-0.5">*</span>
           </Label>
           <div className="flex gap-2">
             {predefinedColors.map((presetColor) => (
@@ -172,7 +173,7 @@ const UpdateColumnDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent>
+      <DialogScrollContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Editar Coluna</DialogTitle>
           <DialogDescription>

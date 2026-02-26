@@ -7,6 +7,7 @@ import { profileAccessTableSchema } from "@/schemas/profile-access-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableProfileAccessRowActions } from "../data-table-row-actions";
+import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
   {
@@ -49,7 +50,9 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -64,7 +67,7 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-36">
-        {row.getValue("name") ?? "N/A"}
+        {displayValue(row.getValue("name"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -72,7 +75,8 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
     },
   },
   {
-    accessorKey: "corporate_reason",
+    accessorKey: "business_name",
+    accessorFn: (row) => row.business?.corporate_reason || "",
     meta: {
       title: "Empresa",
     },
@@ -81,7 +85,7 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("corporate_reason") ?? "N/A"}
+        {displayValue(row.original.business?.corporate_reason)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -98,7 +102,7 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("businessId") ?? "N/A"}
+        {displayValue(row.getValue("businessId"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -114,8 +118,10 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -128,8 +134,10 @@ const tableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

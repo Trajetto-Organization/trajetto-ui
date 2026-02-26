@@ -1,7 +1,7 @@
 interface VehicleChecklistProps {
   id: string;
   current_mileage: number;
-  checklist_date: string;
+  checklist_date: Date | string;
   tires_condition: string;
   headlights_working: boolean;
   taillights_working: boolean;
@@ -29,20 +29,31 @@ interface VehicleChecklistProps {
   notes?: string | null;
   photos?: string[];
   overall_condition: string;
-  businessId?: string;
+  businessId: string;
   branchId: string;
   vehicleId: string;
   driverId: string;
-  business_name?: string;
-  branch_name: string;
-  vehicle_description?: string | null;
-  vehicle_license_plate?: string | null;
-  vehicle_brand?: string | null;
-  vehicle_model?: string | null;
-  driver_name?: string | null;
-  driver_cnh?: string | null;
-  created_at: string;
-  updated_at: string;
+  business?: {
+    corporate_reason: string;
+    fantasy_name: string | null;
+  };
+  branch: {
+    corporate_reason: string;
+    fantasy_name: string | null;
+  };
+  vehicle: {
+    description: string;
+    license_plate: string;
+    brand: string;
+    model: string;
+    current_mileage: number;
+  };
+  driver: {
+    name: string;
+    cnh: string;
+  };
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export type { VehicleChecklistProps };

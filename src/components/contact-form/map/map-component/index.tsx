@@ -104,6 +104,7 @@ const MapComponent = ({
       // Disable all map interactions for a completely static experience
       map.boxZoom.disable();
       map.doubleClickZoom.disable();
+
       map.keyboard.disable();
       map.touchZoom.disable();
     }

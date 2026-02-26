@@ -11,7 +11,11 @@ import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collum
 import { DataTableUserRowActions } from "../data-table-row-actions";
 import { UserBusinessRole } from "../../../dto";
 
-import { formatPhoneNumber } from "@/lib/format-values";
+import {
+  formatPhoneNumber,
+  displayValue,
+  formatNotificationDate,
+} from "@/lib/format-values";
 
 // Labels and colors for user status badges
 const twoFactorLabels = {
@@ -22,16 +26,6 @@ const twoFactorLabels = {
 const twoFactorColors = {
   true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
   false: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
-} as const;
-
-const emailVerifiedLabels = {
-  true: "Verificado",
-  false: "Não verificado",
-} as const;
-
-const emailVerifiedColors = {
-  true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
-  false: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
 } as const;
 
 const accessRevokedLabels = {
@@ -85,7 +79,9 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -100,7 +96,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-36">
-        {row.getValue("name") ?? "N/A"}
+        {displayValue(row.getValue("name"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -117,7 +113,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-36">
-        {row.getValue("email") ?? "N/A"}
+        {displayValue(row.getValue("email"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -158,21 +154,21 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Verificação de e-mail" />
     ),
     cell: ({ row }) => {
-      const emailVerified = row.getValue("email_verified") as boolean;
+      const emailVerified = row.getValue("email_verified") as string | null;
+      const isVerified = emailVerified !== null && emailVerified !== undefined;
+
       return (
         <Badge
           variant="outline"
           className={
-            emailVerifiedColors[
-              String(emailVerified) as keyof typeof emailVerifiedColors
-            ]
+            isVerified
+              ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
+              : "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200"
           }
         >
-          {
-            emailVerifiedLabels[
-              String(emailVerified) as keyof typeof emailVerifiedLabels
-            ]
-          }
+          {isVerified
+            ? formatNotificationDate(emailVerified, "pt-BR")
+            : "Não verificado"}
         </Badge>
       );
     },
@@ -190,7 +186,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-36">
-        {formatPhoneNumber(row.getValue("whatsapp_phone"))}
+        {displayValue(formatPhoneNumber(row.getValue("whatsapp_phone")))}
       </p>
     ),
   },
@@ -243,7 +239,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
 
       return (
         <p className="truncate font-medium w-36">
-          {role ? roleMapping[role] || role : "N/A"}
+          {displayValue(roleMapping[role] || role)}
         </p>
       );
     },
@@ -251,7 +247,8 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "corporate_reason",
+    accessorKey: "business_name",
+    accessorFn: (row) => row.business?.corporate_reason || "",
     meta: {
       title: "Empresa",
     },
@@ -260,7 +257,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("corporate_reason") ?? "N/A"}
+        {displayValue(row.original.business?.corporate_reason)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -269,6 +266,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
   },
   {
     accessorKey: "profileAccess",
+    accessorFn: (row) => row.profileAccess?.name || "",
     meta: {
       title: "Perfil de acesso",
     },
@@ -277,7 +275,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("profileAccess") ?? "N/A"}
+        {displayValue(row.original.profileAccess?.name)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -286,6 +284,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
   },
   {
     accessorKey: "driverName",
+    accessorFn: (row) => row.driver?.name || "",
     meta: {
       title: "Nome do motorista",
     },
@@ -294,7 +293,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("driverName") ?? "N/A"}
+        {displayValue(row.original.driver?.name)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -314,7 +313,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("driverId") ?? "N/A"}
+        {displayValue(row.getValue("driverId"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -331,7 +330,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("businessId") ?? "N/A"}
+        {displayValue(row.getValue("businessId"))}
       </p>
     ),
     enableSorting: false,
@@ -347,7 +346,7 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("profileAccessId") ?? "N/A"}
+        {displayValue(row.getValue("profileAccessId"))}
       </p>
     ),
     enableSorting: false,
@@ -362,8 +361,10 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -376,8 +377,10 @@ const tableUserCollumns: ColumnDef<userTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

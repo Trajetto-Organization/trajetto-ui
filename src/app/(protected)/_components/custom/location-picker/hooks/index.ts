@@ -33,6 +33,7 @@ function useLocationPicker({
     // If props are null/undefined, clear internal state
     if (latitude === null || latitude === undefined) {
       setCurrentLat(null);
+
       setSelectedAddress("");
       setSelectedPlaceId("");
     } else {
@@ -132,7 +133,7 @@ function useLocationPicker({
 
     // If no parts found, return a generic message
     if (addressParts.length === 0) {
-      return "Localização no Brasil";
+      return "Localização selecionada";
     }
 
     return addressParts.join(", ");
@@ -151,8 +152,9 @@ function useLocationPicker({
       const formattedAddress = formatAddressFromNominatim(
         reverseGeoData.address,
       );
+
       setSelectedAddress(formattedAddress);
-      setSelectedPlaceId(reverseGeoData.place_id.toString());
+      setSelectedPlaceId(reverseGeoData.place_id?.toString() || "");
     }
   }, [reverseGeoData, isFetchingAddress, formatAddressFromNominatim]);
 
@@ -251,25 +253,17 @@ function useLocationPicker({
       return;
     }
 
-    // 🇧🇷 Brazil geographical bounds (southwest and northeast corners)
-    const brazilBounds: L.LatLngBoundsExpression = [
-      [-33.75, -73.99], // Southwest corner
-      [5.27, -34.79], // Northeast corner
-    ];
-
-    // Default center (Brazil center)
-    const defaultCenter: [number, number] = [-14.235, -51.9253];
+    // Default center (World center)
+    const defaultCenter: [number, number] = [0, 0];
     const center: [number, number] =
       currentLat && currentLng ? [currentLat, currentLng] : defaultCenter;
 
-    // Create the map with Brazil bounds restriction
+    // Create the map without geographical restrictions
     const map = L.map(mapRef.current, {
       center: center,
-      zoom: currentLat && currentLng ? 15 : 4,
-      minZoom: 4,
+      zoom: currentLat && currentLng ? 15 : 2,
+      minZoom: 2,
       maxZoom: 19,
-      maxBounds: brazilBounds,
-      maxBoundsViscosity: 1.0,
       zoomControl: true,
       attributionControl: false,
       scrollWheelZoom: true,
@@ -340,6 +334,7 @@ function useLocationPicker({
         mapInstanceRef.current.removeLayer(markerRef.current);
         markerRef.current = null;
       }
+
       if (popupRef.current) {
         mapInstanceRef.current.removeLayer(popupRef.current);
         popupRef.current = null;

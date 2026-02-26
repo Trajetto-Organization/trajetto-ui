@@ -13,10 +13,10 @@ import {
 import { CreateFuelFormState } from "./dto";
 import { Button } from "@/components/ui/button";
 
-import { handleCreateFuel } from "@/actions/create-fuel";
+import { handleCreateFuel } from "@/actions/fuel/create-fuel";
 import { useCreateFuelForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
@@ -70,6 +70,8 @@ const CreateFuelForm = (): JSX.Element => {
     handleBackToBusinessBranchStep,
     handleBackToVehicleDriverStep,
     handleBackToFuelTypeStep,
+    fuelFormValues,
+    handleFormValuesChange,
   } = useCreateFuelForm(state);
 
   // Reset file and geolocation states when modal closes or on success
@@ -98,6 +100,39 @@ const CreateFuelForm = (): JSX.Element => {
     }
   }, [state?.successMessage]);
 
+  const createFuelForm = (fuelFormData: FormData) => {
+    // Ensure mileage is sent unformatted
+    const mileageInput = document.querySelector(
+      'input[name="current_mileage"]',
+    ) as HTMLInputElement;
+
+    if (mileageInput && mileageInput.value.includes(".")) {
+      // Remove points if still present
+      const numericValue = mileageInput.value.replace(/\./g, "");
+      mileageInput.value = numericValue;
+
+      fuelFormData.set("current_mileage", numericValue);
+    }
+
+    const fuelData = {
+      businessId: commandBusinessInputValue.businessId,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      driverId: commandDriverInputValue.driverId,
+      fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+      latitude: latitude?.toString() as string, // Send as string or null
+      longitude: longitude?.toString() as string, // Send as string or null
+    };
+
+    // Add the odometer photo file to FormData
+    if (odometerFile) {
+      fuelFormData.set("odometer_photo", odometerFile);
+    }
+
+    appendDataToForm(fuelFormData, fuelData);
+    return dispatch(fuelFormData);
+  };
+
   return (
     <Dialog open={isCreateFuelForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
@@ -106,7 +141,10 @@ const CreateFuelForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -170,43 +208,12 @@ const CreateFuelForm = (): JSX.Element => {
             errorFuelTypeId={state.createFuelError?.fuelTypeId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Ensure mileage is sent unformatted
-              const mileageInput = document.querySelector(
-                'input[name="current_mileage"]',
-              ) as HTMLInputElement;
-              if (mileageInput && mileageInput.value.includes(".")) {
-                // Remove points if still present
-                const numericValue = mileageInput.value.replace(/\./g, "");
-                mileageInput.value = numericValue;
-
-                formData.set("current_mileage", numericValue);
-              }
-
-              const extraData = {
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                driverId: commandDriverInputValue.driverId,
-                fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
-                latitude: latitude?.toString() as string, // Send as string or null
-                longitude: longitude?.toString() as string, // Send as string or null
-              };
-
-              // Add the odometer photo file to FormData
-              if (odometerFile) {
-                formData.set("odometer_photo", odometerFile);
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createFuelForm}>
             <CreateFuelFormSubmit
               state={state}
               onBack={handleBackToFuelTypeStep}
+              initialFormValues={fuelFormValues}
+              onFormValuesChange={handleFormValuesChange}
               commandBusinessInputValue={commandBusinessInputValue}
               commandVehicleInputValue={commandVehicleInputValue}
               handleLocationChange={handleLocationChange}

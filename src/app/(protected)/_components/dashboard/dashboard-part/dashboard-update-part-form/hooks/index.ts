@@ -28,7 +28,7 @@ function useDashboardUpdatePartForm({
     description: partDescription,
     unit_price: partPrice,
     supplierId,
-    supplierName,
+    supplier,
   },
 }: UseDashboardUpdatePartFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -51,13 +51,10 @@ function useDashboardUpdatePartForm({
     formatCurrencyToNumber(partPrice),
   );
 
-  // Treat "N/A" for supplier
-  const actualSupplierName = supplierName === "N/A" ? "" : supplierName;
-
   const [commandSupplierInputValue, setCommandSupplierInputValue] =
     useState<CommandSupplierInputValue>({
-      searchSupplierInputValue: actualSupplierName,
-      supplierId: supplierName === "N/A" ? "" : (supplierId as string),
+      searchSupplierInputValue: supplier?.name || "",
+      supplierId: supplierId || "",
     });
 
   const handleUpdateSearchSupplierInputValue = ({
@@ -84,10 +81,9 @@ function useDashboardUpdatePartForm({
 
       setDisplayUnitPrice(formatToBrazilianCurrency(numericPrice));
 
-      // Treat "N/A" for supplier when reopening modal
       setCommandSupplierInputValue({
-        searchSupplierInputValue: actualSupplierName,
-        supplierId: supplierName === "N/A" ? "" : (supplierId as string),
+        searchSupplierInputValue: supplier?.name || "",
+        supplierId: supplierId || "",
       });
     }
   }, [
@@ -95,8 +91,7 @@ function useDashboardUpdatePartForm({
     partDescription,
     partPrice,
     supplierId,
-    supplierName,
-    actualSupplierName,
+    supplier?.name,
   ]);
 
   useEffect(() => {
@@ -181,6 +176,7 @@ function useDashboardUpdatePartForm({
     ) {
       setDisplayUnitPrice("");
       setNumericUnitPrice(0);
+
       return;
     }
 
@@ -194,7 +190,7 @@ function useDashboardUpdatePartForm({
   const isDirty = [
     description !== partDescription,
     Math.abs(numericUnitPrice - originalNumericPrice) > 0.001, // Comparing with tolerance for float
-    (supplierName === "N/A" ? "" : supplierName) !==
+    (supplier?.name || "") !==
       commandSupplierInputValue.searchSupplierInputValue,
   ].some(Boolean);
 

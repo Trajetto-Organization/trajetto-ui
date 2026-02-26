@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fuelTypeTableSchema } from "@/schemas/fuel-type-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
+import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { DataTableFuelTypeRowActions } from "../dashboard-data-table-row-actions";
 
 const dashboardTableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
@@ -49,7 +50,9 @@ const dashboardTableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -65,7 +68,7 @@ const dashboardTableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("description") ?? "N/A"}
+          {displayValue(row.getValue("description"))}
         </p>
       );
     },
@@ -82,8 +85,10 @@ const dashboardTableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -96,8 +101,10 @@ const dashboardTableFuelTypeCollumns: ColumnDef<fuelTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

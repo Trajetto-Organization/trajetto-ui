@@ -9,7 +9,11 @@ import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-s
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableVehicleChecklistRowActions } from "../data-table-row-actions";
-import { formatDate } from "@/lib/format-values";
+import {
+  formatDate,
+  formatNotificationDate,
+  displayValue,
+} from "@/lib/format-values";
 
 // Helper function to format condition values
 const formatCondition = (condition: string): string => {
@@ -23,6 +27,7 @@ const formatCondition = (condition: string): string => {
     bad: "Ruim",
     needs_attention: "Precisa de Atenção",
   };
+
   return (
     conditionMap[condition as keyof typeof conditionMap] ?? condition ?? "N/A"
   );
@@ -83,7 +88,9 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -99,7 +106,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {formatDate(row.getValue("checklist_date"), "pt-BR") ?? "N/A"}
+          {displayValue(formatDate(row.getValue("checklist_date"), "pt-BR"))}
         </p>
       );
     },
@@ -116,6 +123,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
       const condition = row.getValue(
         "overall_condition",
       ) as keyof typeof overallConditionLabels;
+
       return (
         <Badge variant="outline" className={overallConditionColors[condition]}>
           {overallConditionLabels[condition] || condition || "N/A"}
@@ -145,6 +153,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
   },
   {
     accessorKey: "vehicle_license_plate",
+    accessorFn: (row) => row.vehicle?.license_plate,
     meta: {
       title: "Placa do veículo",
     },
@@ -154,7 +163,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("vehicle_license_plate") ?? "N/A"}
+          {displayValue(row.original.vehicle?.license_plate)}
         </p>
       );
     },
@@ -173,13 +182,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("vehicleId") ?? "N/A"}
+          {displayValue(row.getValue("vehicleId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicle_description",
+    accessorFn: (row) => row.vehicle?.description,
     meta: {
       title: "Descrição do veículo",
     },
@@ -189,13 +199,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("vehicle_description") ?? "N/A"}
+          {displayValue(row.original.vehicle?.description)}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicle_brand",
+    accessorFn: (row) => row.vehicle?.brand,
     meta: {
       title: "Marca do veículo",
     },
@@ -205,13 +216,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("vehicle_brand") ?? "N/A"}
+          {displayValue(row.original.vehicle?.brand)}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicle_model",
+    accessorFn: (row) => row.vehicle?.model,
     meta: {
       title: "Modelo do veículo",
     },
@@ -221,7 +233,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("vehicle_model") ?? "N/A"}
+          {displayValue(row.original.vehicle?.model)}
         </p>
       );
     },
@@ -240,13 +252,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("driverId") ?? "N/A"}
+          {displayValue(row.getValue("driverId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "driver_name",
+    accessorFn: (row) => row.driver?.name,
     meta: {
       title: "Nome do motorista",
     },
@@ -256,13 +269,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("driver_name") ?? "N/A"}
+          {displayValue(row.original.driver?.name)}
         </p>
       );
     },
   },
   {
     accessorKey: "driver_cnh",
+    accessorFn: (row) => row.driver?.cnh,
     meta: {
       title: "CNH do motorista",
     },
@@ -272,7 +286,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("driver_cnh") ?? "N/A"}
+          {displayValue(row.original.driver?.cnh)}
         </p>
       );
     },
@@ -288,13 +302,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
+          {displayValue(row.getValue("businessId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "business_name",
+    accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason,
     meta: {
       title: "Nome da empresa",
     },
@@ -304,7 +319,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
+          {displayValue(row.original.business?.corporate_reason)}
         </p>
       );
     },
@@ -323,13 +338,14 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branchId") ?? "N/A"}
+          {displayValue(row.getValue("branchId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "branch_name",
+    accessorKey: "branchName",
+    accessorFn: (row) => row.branch?.corporate_reason,
     meta: {
       title: "Nome da filial",
     },
@@ -339,7 +355,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branch_name") ?? "N/A"}
+          {displayValue(row.original.branch?.corporate_reason)}
         </p>
       );
     },
@@ -439,7 +455,7 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("notes") ?? "N/A"}
+          {displayValue(row.getValue("notes"))}
         </p>
       );
     },
@@ -453,8 +469,10 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -467,8 +485,10 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

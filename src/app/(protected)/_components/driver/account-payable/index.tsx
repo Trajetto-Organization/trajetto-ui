@@ -21,6 +21,20 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { Loader, Receipt } from "lucide-react";
+import {
+  formatToBrazilianCurrency,
+  formatDate,
+  displayValue,
+  formatNotificationDate,
+} from "@/lib/format-values";
+
+type AccountPayableStatus =
+  | "PENDING"
+  | "PAID"
+  | "PARTIAL"
+  | "LATE"
+  | "PARTIAL_LATE"
+  | "OVERDUE";
 
 const DriverAccountPayableList = (): JSX.Element => {
   const { isLoaded } = useAuthStore();
@@ -55,9 +69,51 @@ const DriverAccountPayableList = (): JSX.Element => {
     setShowSpinner(true);
   }, []);
 
-  const safeString = (value: any) => {
-    if (value === null || value === undefined) return "N/A";
-    return String(value);
+  // Helper function to calculate account payable status
+  const calculateAccountPayableStatus = (
+    amount: number,
+    amountPaid: number | null,
+    dueDate: Date | string,
+    paymentDate: Date | string | null,
+  ): AccountPayableStatus => {
+    let status: AccountPayableStatus = "PENDING";
+
+    const currentDate = new Date();
+    const dueDateObj = new Date(dueDate);
+
+    const isOverdue = currentDate > dueDateObj;
+
+    if (paymentDate) {
+      const paid = amountPaid || 0;
+      const paymentDateObj = new Date(paymentDate);
+
+      const isPaidLate = paymentDateObj > dueDateObj;
+
+      if (paid >= amount) {
+        status = isPaidLate ? "LATE" : "PAID";
+      } else if (paid > 0) {
+        status = isPaidLate || isOverdue ? "PARTIAL_LATE" : "PARTIAL";
+      }
+    } else {
+      status = isOverdue ? "OVERDUE" : "PENDING";
+    }
+
+    return status;
+  };
+
+  // Helper function to translate status to Portuguese
+  const translateAccountPayableStatus = (
+    status: AccountPayableStatus,
+  ): string => {
+    const translations: Record<AccountPayableStatus, string> = {
+      PENDING: "Pendente",
+      PAID: "Pago",
+      PARTIAL: "Parcial",
+      LATE: "Pago com atraso",
+      PARTIAL_LATE: "Parcial com atraso",
+      OVERDUE: "Vencido",
+    };
+    return translations[status];
   };
 
   const getStatusBadge = (status: string) => {
@@ -133,6 +189,35 @@ const DriverAccountPayableList = (): JSX.Element => {
                 {accountPayables.map((accountPayable: any, index: number) => {
                   const isLastElement = index === accountPayables.length - 1;
 
+                  // Calculate status and remaining amount
+                  const rawStatus = calculateAccountPayableStatus(
+                    accountPayable.amount,
+                    accountPayable.amount_paid,
+                    accountPayable.due_date,
+                    accountPayable.payment_date,
+                  );
+
+                  const translatedStatus =
+                    translateAccountPayableStatus(rawStatus);
+                  const remainingAmount =
+                    accountPayable.amount - (accountPayable.amount_paid || 0);
+
+                  // Format service order description
+                  const serviceOrderDescription = accountPayable.serviceOrder
+                    ? (() => {
+                        const formattedDate =
+                          formatDate(
+                            accountPayable.serviceOrder.date,
+                            "pt-BR",
+                          ) || accountPayable.serviceOrder.date;
+                        const vehicleInfo = accountPayable.serviceOrder.vehicle
+                          ?.license_plate
+                          ? `(Veículo: ${accountPayable.serviceOrder.vehicle.description || ""} - Placa: ${accountPayable.serviceOrder.vehicle.license_plate})`
+                          : "";
+                        return `OS#${accountPayable.serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
+                      })()
+                    : null;
+
                   return (
                     <CommandItem
                       key={accountPayable.id}
@@ -149,11 +234,16 @@ const DriverAccountPayableList = (): JSX.Element => {
                                 Emitido em:
                               </p>
                               <p className="text-sm font-semibold text-gray-900">
-                                {safeString(accountPayable.issue_date)}
+                                {displayValue(
+                                  formatNotificationDate(
+                                    accountPayable.issue_date,
+                                    "pt-BR",
+                                  ),
+                                )}
                               </p>
                             </div>
                           </div>
-                          {getStatusBadge(accountPayable.status)}
+                          {getStatusBadge(translatedStatus)}
                         </div>
 
                         {/* Due Date */}
@@ -165,7 +255,9 @@ const DriverAccountPayableList = (): JSX.Element => {
                             Data de Vencimento
                           </p>
                           <p className="text-sm font-medium text-gray-900">
-                            {safeString(accountPayable.due_date)}
+                            {displayValue(
+                              formatDate(accountPayable.due_date, "pt-BR"),
+                            )}
                           </p>
                         </div>
 
@@ -179,7 +271,11 @@ const DriverAccountPayableList = (): JSX.Element => {
                               Valor Total
                             </p>
                             <p className="text-base font-semibold text-primary">
-                              {safeString(accountPayable.amount)}
+                              {displayValue(
+                                formatToBrazilianCurrency(
+                                  accountPayable.amount,
+                                ),
+                              )}
                             </p>
                           </div>
                           <div className="text-center">
@@ -190,7 +286,13 @@ const DriverAccountPayableList = (): JSX.Element => {
                               Valor Pago
                             </p>
                             <p className="text-base font-semibold text-green-600">
-                              {safeString(accountPayable.amount_paid)}
+                              {displayValue(
+                                accountPayable.amount_paid !== null
+                                  ? formatToBrazilianCurrency(
+                                      accountPayable.amount_paid,
+                                    )
+                                  : null,
+                              )}
                             </p>
                           </div>
                           <div className="text-right">
@@ -201,7 +303,9 @@ const DriverAccountPayableList = (): JSX.Element => {
                               Restante
                             </p>
                             <p className="text-base font-semibold text-gray-900">
-                              {safeString(accountPayable.remainingAmount)}
+                              {displayValue(
+                                formatToBrazilianCurrency(remainingAmount),
+                              )}
                             </p>
                           </div>
                         </div>
@@ -214,7 +318,14 @@ const DriverAccountPayableList = (): JSX.Element => {
                             Data de Pagamento
                           </p>
                           <p className="text-sm font-medium text-gray-900">
-                            {safeString(accountPayable.payment_date)}
+                            {displayValue(
+                              accountPayable.payment_date
+                                ? formatDate(
+                                    accountPayable.payment_date,
+                                    "pt-BR",
+                                  )
+                                : null,
+                            )}
                           </p>
                         </div>
 
@@ -224,7 +335,10 @@ const DriverAccountPayableList = (): JSX.Element => {
                             <div>
                               <span className="text-gray-500">Filial: </span>
                               <span className="font-medium text-gray-900">
-                                {safeString(accountPayable.branchName)}
+                                {displayValue(
+                                  accountPayable.branch?.corporate_reason ||
+                                    accountPayable.branch?.fantasy_name,
+                                )}
                               </span>
                             </div>
                           </div>
@@ -238,9 +352,7 @@ const DriverAccountPayableList = (): JSX.Element => {
                                 className="font-medium
                                 text-gray-900"
                               >
-                                {safeString(
-                                  accountPayable.serviceOrderDescription,
-                                )}
+                                {displayValue(serviceOrderDescription)}
                               </span>
                             </div>
                           </div>
@@ -258,7 +370,9 @@ const DriverAccountPayableList = (): JSX.Element => {
                             Responsável pelo Registro
                           </p>
                           <p className="text-sm text-gray-700">
-                            {safeString(accountPayable.registrationUserName)}
+                            {displayValue(
+                              accountPayable.registrationUser?.name,
+                            )}
                           </p>
                         </div>
                       </Card>

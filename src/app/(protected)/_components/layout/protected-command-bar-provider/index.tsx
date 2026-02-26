@@ -8,22 +8,43 @@ import {
   KBarResults,
   KBarSearch,
   useMatches,
+  useRegisterActions,
 } from "kbar";
 
 import { useCommandBarActions } from "./hooks";
 import { ProtectedCommandBarProps } from "../dto";
 
+import { useAuthStore } from "@/store/auth-store";
+
+// Registers actions dynamically — re-registers when store permissions change
+const CommandBarDynamicActions = ({
+  user,
+}: Pick<ProtectedCommandBarProps, "user">): null => {
+  const { permissions: storePermissions } = useAuthStore();
+
+  // Use store permissions (updated by Socket.IO) when available
+  const dynamicUser = {
+    ...user,
+    permissions:
+      storePermissions.length > 0 ? storePermissions : user.permissions,
+  };
+
+  const { actions } = useCommandBarActions({ user: dynamicUser });
+  useRegisterActions(actions, [storePermissions]);
+
+  return null;
+};
+
 const ProtectedCommandBar = ({
   children,
   user,
 }: ProtectedCommandBarProps): JSX.Element => {
-  const { actions } = useCommandBarActions({ user });
-
   return (
-    <KBarProvider actions={actions}>
+    <KBarProvider actions={[]}>
+      <CommandBarDynamicActions user={user} />
       <KBarPortal>
         <KBarPositioner
-          className="bg-black/50 
+          className="bg-black/50
           backdrop-blur-sm z-[99999]"
           data-kbar-portal
         >
@@ -57,7 +78,7 @@ const SearchResults = (): JSX.Element => {
         onRender={({ item, active }) =>
           typeof item === "string" ? (
             <div
-              className="text-sm uppercase px-4 pt-3 
+              className="text-sm uppercase px-4 pt-3
               pb-1 text-neutral-500 font-bold"
             >
               {item}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   CommandBusinessInputValue,
   CommandPartInputValue,
@@ -10,6 +10,8 @@ import { UpdateServiceOrderPartFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
+
+import { formatServiceOrderDisplay } from "@/lib/format-values";
 
 interface UseUpdateServiceOrderPartFormProps {
   state: UpdateServiceOrderPartFormState | null;
@@ -38,51 +40,69 @@ function useUpdateServiceOrderPartForm({
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: serviceOrderPartData.businessId,
-      searchBusinessInputValue: serviceOrderPartData.business_name as string, // This might need to be the business name instead
+      searchBusinessInputValue:
+        serviceOrderPartData.business?.corporate_reason || "",
     });
 
   const [commandServiceOrderInputValue, setCommandServiceOrderInputValue] =
     useState<CommandServiceOrderInputValue>({
       serviceOrderId: serviceOrderPartData.serviceOrderId,
-      searchServiceOrderInputValue:
-        serviceOrderPartData.serviceOrderDescription as string,
+      searchServiceOrderInputValue: serviceOrderPartData.serviceOrder
+        ? formatServiceOrderDisplay(serviceOrderPartData.serviceOrder)
+        : "",
     });
 
   const [commandPartInputValue, setCommandPartInputValue] =
     useState<CommandPartInputValue>({
       partId: serviceOrderPartData.partId,
-      searchPartInputValue: serviceOrderPartData.partDescription,
+      searchPartInputValue: serviceOrderPartData.part?.description || "",
     });
+
+  // Persisted form values for the last step
+  const [serviceOrderPartFormValues, setServiceOrderPartFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setServiceOrderPartFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateServiceOrderPartOpen) {
       setCommandBusinessInputValue({
         businessId: serviceOrderPartData.businessId,
-        searchBusinessInputValue: serviceOrderPartData.business_name as string,
+        searchBusinessInputValue:
+          serviceOrderPartData.business?.corporate_reason || "",
       });
 
       setCommandServiceOrderInputValue({
         serviceOrderId: serviceOrderPartData.serviceOrderId,
-        searchServiceOrderInputValue:
-          serviceOrderPartData.serviceOrderDescription as string,
+        searchServiceOrderInputValue: serviceOrderPartData.serviceOrder
+          ? formatServiceOrderDisplay(serviceOrderPartData.serviceOrder)
+          : "",
       });
 
       setCommandPartInputValue({
         partId: serviceOrderPartData.partId,
-        searchPartInputValue: serviceOrderPartData.partDescription,
+        searchPartInputValue: serviceOrderPartData.part?.description || "",
       });
 
+      setServiceOrderPartFormValues({});
       setCurrentStep("select-business");
     }
   }, [
     isUpdateServiceOrderPartOpen,
     serviceOrderPartData.businessId,
     serviceOrderPartData.serviceOrderId,
-    serviceOrderPartData.serviceOrderDate,
+    serviceOrderPartData.serviceOrder,
     serviceOrderPartData.partId,
-    serviceOrderPartData.partDescription,
-    serviceOrderPartData.business_name,
+    serviceOrderPartData.part?.description,
+    serviceOrderPartData.business?.corporate_reason,
   ]);
 
   // Handle business selection updates
@@ -210,6 +230,8 @@ function useUpdateServiceOrderPartForm({
     handleUpdateSearchServiceOrderInputValue,
     handleUpdateSearchPartInputValue,
     isBusinessAndEntityDirty,
+    serviceOrderPartFormValues,
+    handleFormValuesChange,
   };
 }
 

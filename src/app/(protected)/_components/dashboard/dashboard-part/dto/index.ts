@@ -1,11 +1,13 @@
 interface DashboardPartProps {
   id: string;
   description: string;
-  unit_price: string;
+  unit_price: string | number;
   supplierId?: string | null;
-  supplierName: string;
-  created_at: string;
-  updated_at: string;
+  supplier?: {
+    name: string;
+  } | null;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export type { DashboardPartProps };

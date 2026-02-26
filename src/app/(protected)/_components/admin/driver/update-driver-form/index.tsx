@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-
+import { useEffect, useMemo } from "react";
 import { useFormState, useFormStatus } from "react-dom";
+
 import { Loader } from "lucide-react";
 
 import {
@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateDriver } from "@/actions/update-driver";
+import { handleUpdateDriver } from "@/actions/driver/update-driver";
 
 import { useCepValidation } from "../../../hooks";
 import { useUpdateDriverForm } from "./hooks";
@@ -28,8 +28,9 @@ import {
 import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 
 import { DatePickerField, SelectField } from "../../../custom";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
+import { applyMask } from "@/lib/format-values";
 import { DriverProps } from "../dto";
 
 const UpdateDriverFormSubmit = ({
@@ -38,8 +39,71 @@ const UpdateDriverFormSubmit = ({
   isBusinessAndBranchDirty,
   isUpdateDriverOpen,
   onBack,
+  initialFormValues,
+  onFormValuesChange,
 }: UpdateDriverFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+
+  // Helper function to convert Date | string to string
+  const toStringValue = (value: Date | string | null | undefined): string => {
+    if (!value) return "";
+
+    if (typeof value === "string") return value;
+    return value.toISOString().split("T")[0]; // Convert Date to YYYY-MM-DD
+  };
+
+  // Original data from database (without persisted values) - used for isDirty comparison
+  const originalDataForValidation = useMemo(
+    () => ({
+      id: driverData.id,
+      name: driverData.name || "",
+      birth_date: toStringValue(driverData.birth_date),
+      cpf: applyMask(driverData.cpf?.toString() || "", "999.999.999-99"),
+      rg: applyMask(driverData.rg?.toString() || "", "99.999.999-9"),
+      cnh: applyMask(driverData.cnh?.toString() || "", "99999999999"),
+      status: driverData.status || "",
+      contract_type: driverData.contract_type || "",
+      cep: driverData.cep,
+      city: driverData.city,
+      uf: driverData.uf,
+      street: driverData.street,
+      address_number: driverData.address_number,
+      complement: driverData.complement || "",
+    }),
+    [
+      driverData.id,
+      driverData.name,
+      driverData.birth_date,
+      driverData.cpf,
+      driverData.rg,
+      driverData.cnh,
+      driverData.status,
+      driverData.contract_type,
+      driverData.cep,
+      driverData.city,
+      driverData.uf,
+      driverData.street,
+      driverData.address_number,
+      driverData.complement,
+    ],
+  );
+
+  // Memoize initial data to prevent infinite loops
+  // Include ALL driver fields so isDirty comparison works correctly
+  // Apply masks to CPF, RG, CNH so they match the format used in the form
+  // Merge with persisted form values if available
+  const initialDataForValidation = useMemo(() => {
+    // If there are persisted values, merge them with original data
+    if (Object.keys(initialFormValues).length > 0) {
+      return {
+        ...originalDataForValidation,
+        ...initialFormValues,
+      };
+    }
+
+    return originalDataForValidation;
+  }, [originalDataForValidation, initialFormValues]);
+
   const {
     updatedFields: allFields,
     cepLoading,
@@ -48,8 +112,15 @@ const UpdateDriverFormSubmit = ({
     isDirty: hookIsDirty,
   } = useCepValidation({
     isOpen: isUpdateDriverOpen,
-    initialData: driverData,
+    initialData: initialDataForValidation as any,
+    originalData: originalDataForValidation as any,
   });
+
+  // Save form values when going back
+  const handleBack = () => {
+    onFormValuesChange(formValues);
+    onBack();
+  };
 
   // Function to handle change in custom fields
   const handleCustomFieldChange = (fieldName: string) => (value: string) => {
@@ -78,12 +149,17 @@ const UpdateDriverFormSubmit = ({
   };
 
   // Check if any main field has changed
+  // For masked fields (CPF, RG, CNH), normalize by removing non-numeric characters before comparing
   const isNameChanged =
     formValues?.hasOwnProperty("name") && formValues.name !== driverData.name;
   const isCPFChanged =
-    formValues?.hasOwnProperty("cpf") && formValues.cpf !== driverData.cpf;
+    formValues?.hasOwnProperty("cpf") &&
+    formValues.cpf?.replace(/\D/g, "") !==
+      driverData.cpf?.toString().replace(/\D/g, "");
   const isCNHChanged =
-    formValues?.hasOwnProperty("cnh") && formValues.cnh !== driverData.cnh;
+    formValues?.hasOwnProperty("cnh") &&
+    formValues.cnh?.replace(/\D/g, "") !==
+      driverData.cnh?.toString().replace(/\D/g, "");
   const isRGChanged =
     formValues?.hasOwnProperty("rg") &&
     formValues.rg?.replace(/\D/g, "") !==
@@ -96,11 +172,10 @@ const UpdateDriverFormSubmit = ({
     formValues.contract_type !== driverData.contract_type;
 
   // Then use this for comparison
-
   const isBirthDateChanged =
     formValues?.hasOwnProperty("birth_date") &&
     normalizeDateFormat(formValues.birth_date) !==
-      normalizeDateFormat(driverData.birth_date);
+      normalizeDateFormat(toStringValue(driverData.birth_date));
 
   // Calculate if the form is dirty
   const isDirty =
@@ -135,7 +210,13 @@ const UpdateDriverFormSubmit = ({
 
       fieldsToCheck.forEach((field) => {
         if (driverData[field] && !formValues.hasOwnProperty(field)) {
-          handleFieldChange(field, driverData[field]);
+          const value = driverData[field];
+          // Convert Date to string if necessary
+          const stringValue =
+            typeof value === "object" && value instanceof Date
+              ? value.toISOString().split("T")[0]
+              : String(value);
+          handleFieldChange(field, stringValue);
         }
       });
     }
@@ -146,7 +227,7 @@ const UpdateDriverFormSubmit = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Driver's name */}
         <FormInput
-          label="Nome do motorista"
+          label="Nome do motorista *"
           htmlfor="name"
           name="name"
           type="text"
@@ -168,13 +249,13 @@ const UpdateDriverFormSubmit = ({
 
         {/* Date of Birth */}
         <DatePickerField
-          label="Data de Nascimento"
+          label="Data de Nascimento *"
           htmlfor="birth_date"
           name="birth_date"
           value={
             formValues?.hasOwnProperty("birth_date")
               ? formValues.birth_date
-              : driverData.birth_date || ""
+              : toStringValue(driverData.birth_date)
           }
           onChange={handleCustomFieldChange("birth_date")}
           errorName={
@@ -186,7 +267,7 @@ const UpdateDriverFormSubmit = ({
         />
 
         <FormInput
-          label="CPF"
+          label="CPF *"
           htmlfor="cpf"
           name="cpf"
           type="text"
@@ -205,7 +286,7 @@ const UpdateDriverFormSubmit = ({
         />
 
         <FormInput
-          label="RG"
+          label="RG *"
           htmlfor="rg"
           name="rg"
           type="text"
@@ -224,7 +305,7 @@ const UpdateDriverFormSubmit = ({
         />
 
         <FormInput
-          label="CNH"
+          label="CNH *"
           htmlfor="cnh"
           name="cnh"
           type="text"
@@ -244,7 +325,7 @@ const UpdateDriverFormSubmit = ({
 
         {/* Status */}
         <SelectField
-          label="Status"
+          label="Status *"
           htmlfor="status"
           name="status"
           value={
@@ -268,7 +349,7 @@ const UpdateDriverFormSubmit = ({
 
         {/* Contract Type */}
         <SelectField
-          label="Tipo de Contrato"
+          label="Tipo de Contrato *"
           htmlfor="contract_type"
           name="contract_type"
           value={
@@ -306,7 +387,12 @@ const UpdateDriverFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || cepLoading}
+        >
           Voltar
         </Button>
         <Button
@@ -315,7 +401,7 @@ const UpdateDriverFormSubmit = ({
             pending || cepLoading || !(isDirty || isBusinessAndBranchDirty)
           }
         >
-          <span>Atualizar Motorista</span>
+          <span>Editar Motorista</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -348,6 +434,8 @@ const UpdateDriverForm = ({
     handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     isBusinessAndBranchDirty,
+    driverFormValues,
+    handleFormValuesChange,
   } = useUpdateDriverForm({
     state,
     driverData,
@@ -355,9 +443,23 @@ const UpdateDriverForm = ({
     isUpdateDriverOpen,
   });
 
+  const updateDriverForm = (driverFormData: FormData) => {
+    const updateDriverData = {
+      businessId: commandBusinessInputValue.businessId,
+      branchId: commandBranchInputValue.branchId,
+      driverId: driverData.id,
+    };
+
+    appendDataToForm(driverFormData, updateDriverData);
+    return dispatch(driverFormData);
+  };
+
   return (
     <Dialog open={isUpdateDriverOpen} onOpenChange={handleCloseUpdateDriver}>
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -387,25 +489,15 @@ const UpdateDriverForm = ({
             searchBranchIsOptional={true}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                driverId: driverData.id,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateDriverForm}>
             <UpdateDriverFormSubmit
               isUpdateDriverOpen={isUpdateDriverOpen}
               isBusinessAndBranchDirty={isBusinessAndBranchDirty}
               state={state}
               driverData={driverData}
               onBack={handleBack}
+              initialFormValues={driverFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

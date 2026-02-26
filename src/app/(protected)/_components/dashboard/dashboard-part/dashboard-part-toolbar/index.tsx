@@ -36,7 +36,6 @@ export function DashboardPartToolbar<TData>({
 
   const filters = [
     { key: "description", title: "Descrição da peça" },
-    { key: "unit_price", title: "Preço unitário" },
     {
       key: "supplierName",
       title: "Nome do fornecedor",

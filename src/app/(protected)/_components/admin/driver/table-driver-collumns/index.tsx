@@ -9,7 +9,14 @@ import { driverTableSchema } from "@/schemas/driver-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableDriverRowActions } from "../data-table-row-actions";
-import { formatDate } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDate,
+  formatNotificationDate,
+  formatCpf,
+  formatRg,
+  formatCep,
+} from "@/lib/format-values";
 
 // Labels and colors for driver status badges
 const statusLabels = {
@@ -63,7 +70,9 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -80,7 +89,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       const status = row.getValue("status") as keyof typeof statusLabels;
       return (
         <Badge variant="outline" className={statusColors[status]}>
-          {statusLabels[status] || status || "N/A"}
+          {displayValue(statusLabels[status])}
         </Badge>
       );
     },
@@ -98,7 +107,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("name") ?? "N/A"}
+          {displayValue(row.getValue("name"))}
         </p>
       );
     },
@@ -113,8 +122,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {formatDate(row.getValue("birth_date"), "pt-BR") ?? "N/A"}
+        <p className="truncate font-medium w-24">
+          {displayValue(formatDate(row.getValue("birth_date"), "pt-BR"))}
         </p>
       );
     },
@@ -131,8 +140,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("cnh") ?? "N/A"}
+        <p className="truncate font-medium w-24">
+          {displayValue(row.getValue("cnh"))}
         </p>
       );
     },
@@ -152,8 +161,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("cpf") ?? "N/A"}
+        <p className="truncate font-medium w-24">
+          {displayValue(formatCpf(row.getValue("cpf")))}
         </p>
       );
     },
@@ -173,8 +182,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("rg") ?? "N/A"}
+        <p className="truncate font-medium w-24">
+          {displayValue(formatRg(row.getValue("rg")))}
         </p>
       );
     },
@@ -191,8 +200,8 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("cep") ?? "N/A"}
+        <p className="truncate font-medium w-24">
+          {displayValue(formatCep(row.getValue("cep")))}
         </p>
       );
     },
@@ -210,7 +219,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("city") ?? "N/A"}
+          {displayValue(row.getValue("city"))}
         </p>
       );
     },
@@ -229,7 +238,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-8">
-          {row.getValue("uf") ?? "N/A"}
+          {displayValue(row.getValue("uf"))}
         </p>
       );
     },
@@ -248,7 +257,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("street") ?? "N/A"}
+          {displayValue(row.getValue("street"))}
         </p>
       );
     },
@@ -264,7 +273,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("address_number") ?? "N/A"}
+          {displayValue(row.getValue("address_number"))}
         </p>
       );
     },
@@ -280,7 +289,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-64">
-          {row.getValue("complement") ?? "N/A"}
+          {displayValue(row.getValue("complement"))}
         </p>
       );
     },
@@ -296,11 +305,12 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Tipo do contrato" />
     ),
     cell: ({ row }) => {
+      const contractType =
+        row.getValue("contract_type") === "OWNED" ? "Próprio" : "Terceirizado";
+
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("contract_type") === "OWNED"
-            ? "Próprio"
-            : "Terceirizado"}
+        <p className="truncate font-medium w-24">
+          {displayValue(contractType)}
         </p>
       );
     },
@@ -318,13 +328,14 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
+          {displayValue(row.getValue("businessId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "business_name",
+    accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason,
     meta: {
       title: "Nome da empresa",
     },
@@ -332,9 +343,10 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome da empresa" />
     ),
     cell: ({ row }) => {
+      const businessName = row.original.business?.corporate_reason;
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
+          {displayValue(businessName)}
         </p>
       );
     },
@@ -353,7 +365,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branchId") ?? "N/A"}
+          {displayValue(row.getValue("branchId"))}
         </p>
       );
     },
@@ -363,6 +375,7 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
   },
   {
     accessorKey: "branchName",
+    accessorFn: (row) => row.branch?.corporate_reason,
     meta: {
       title: "Nome da filial",
     },
@@ -370,10 +383,9 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome da filial" />
     ),
     cell: ({ row }) => {
+      const branchName = row.original.branch?.corporate_reason;
       return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("branchName") ?? "N/A"}
-        </p>
+        <p className="truncate font-medium w-48">{displayValue(branchName)}</p>
       );
     },
     filterFn: (row, id, value) => {
@@ -389,8 +401,10 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -403,8 +417,10 @@ const tableDriverCollumns: ColumnDef<driverTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

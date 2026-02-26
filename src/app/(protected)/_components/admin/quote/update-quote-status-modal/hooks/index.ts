@@ -46,26 +46,26 @@ function useQuoteFormStatus({
     setStatus(updateStatus);
   };
 
-  // Função para comparação adequada de strings/null/undefined
+  // Function for proper comparison of strings/null/undefined
   const areValuesEqual = (
     val1: string | null | undefined,
     val2: string | null | undefined,
   ) => {
-    // Tratar string vazia como null para ambos os valores
+    // Treat empty string as null for both values.
     const isEmpty1 = val1 == null || val1.trim() === "";
     const isEmpty2 = val2 == null || val2.trim() === "";
 
-    // Se ambos estão vazios, são iguais
+    // If both are empty, they are equal.
     if (isEmpty1 && isEmpty2) return true;
 
-    // Se apenas um está vazio, são diferentes
+    // If only one is empty, they are different.
     if (isEmpty1 || isEmpty2) return false;
 
-    // Ambos têm conteúdo, compare as strings
+    // Both have content; compare the strings.
     return val1!.trim() === val2!.trim();
   };
 
-  // Verificar se algo mudou comparando com os valores originais
+  // Check if anything has changed by comparing it to the original values.
   const isQuoteStatusDirty =
     status !== originalStatusRef.current ||
     !areValuesEqual(notes, originalNotesRef.current);

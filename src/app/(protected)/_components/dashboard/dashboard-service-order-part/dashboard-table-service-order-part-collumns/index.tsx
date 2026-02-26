@@ -6,7 +6,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { serviceOrderPartTableSchema } from "@/schemas/service-order-part-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
-import { formatDate } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDate,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
 import { DashboardDataTableServiceOrderPartRowActions } from "../dashboard-data-table-row-actions";
 
 const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSchema>[] =
@@ -52,7 +57,7 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
       ),
       cell: ({ row }) => (
         <p className="truncate font-medium w-72">
-          {row.getValue("id") ?? "N/A"}
+          {displayValue(row.getValue("id"))}
         </p>
       ),
       enableSorting: false,
@@ -67,9 +72,10 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Preço unitário" />
       ),
       cell: ({ row }) => {
+        const unitPrice = row.getValue("unit_price");
         return (
           <p className="truncate font-medium w-44">
-            {row.getValue("unit_price") ?? "N/A"}
+            {displayValue(formatToBrazilianCurrency(Number(unitPrice)))}
           </p>
         );
       },
@@ -85,7 +91,7 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-44">
-            {row.getValue("quantity") ?? "N/A"}
+            {displayValue(row.getValue("quantity"))}
           </p>
         );
       },
@@ -102,9 +108,14 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         />
       ),
       cell: ({ row }) => {
+        const discountPercentage = row.getValue("discount_percentage");
         return (
           <p className=" truncate font-medium w-24">
-            {row.getValue("discount_percentage") ?? "N/A"}
+            {displayValue(
+              discountPercentage != null
+                ? `${Number(discountPercentage)}%`
+                : "0%",
+            )}
           </p>
         );
       },
@@ -125,32 +136,14 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("serviceOrderId") ?? "N/A"}
-          </p>
-        );
-      },
-    },
-    {
-      accessorKey: "serviceOrderDescription",
-      meta: {
-        title: "Nome da ordem de serviço",
-      },
-      header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Nome da ordem de serviço"
-        />
-      ),
-      cell: ({ row }) => {
-        return (
-          <p className="truncate font-medium w-48">
-            {row.getValue("serviceOrderDescription") ?? "N/A"}
+            {displayValue(row.getValue("serviceOrderId"))}
           </p>
         );
       },
     },
     {
       accessorKey: "serviceOrderDate",
+      accessorFn: (row) => row.serviceOrder?.date,
       meta: {
         title: "Data da ordem de serviço",
       },
@@ -161,15 +154,17 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         />
       ),
       cell: ({ row }) => {
+        const serviceOrderDate = row.original.serviceOrder?.date;
         return (
           <p className="truncate font-medium w-44">
-            {formatDate(row.getValue("serviceOrderDate"), "pt-BR") ?? "N/A"}
+            {displayValue(formatDate(serviceOrderDate, "pt-BR"))}
           </p>
         );
       },
     },
     {
       accessorKey: "vehicleLicensePlate",
+      accessorFn: (row) => row.serviceOrder?.vehicle?.license_plate,
       meta: {
         title: "Placa do veículo",
       },
@@ -177,9 +172,10 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Placa do veículo" />
       ),
       cell: ({ row }) => {
+        const licensePlate = row.original.serviceOrder?.vehicle?.license_plate;
         return (
           <p className="truncate font-medium w-28">
-            {row.getValue("vehicleLicensePlate") ?? "N/A"}
+            {displayValue(licensePlate)}
           </p>
         );
       },
@@ -189,6 +185,7 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
     },
     {
       accessorKey: "vehicleDescription",
+      accessorFn: (row) => row.serviceOrder?.vehicle?.description,
       meta: {
         title: "Descrição do veículo",
       },
@@ -196,9 +193,11 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Descrição do veículo" />
       ),
       cell: ({ row }) => {
+        const vehicleDescription =
+          row.original.serviceOrder?.vehicle?.description;
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("vehicleDescription") ?? "N/A"}
+            {displayValue(vehicleDescription)}
           </p>
         );
       },
@@ -214,13 +213,14 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("partId") ?? "N/A"}
+            {displayValue(row.getValue("partId"))}
           </p>
         );
       },
     },
     {
       accessorKey: "partDescription",
+      accessorFn: (row) => row.part?.description,
       meta: {
         title: "Descrição da peça",
       },
@@ -228,15 +228,17 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Descrição da peça" />
       ),
       cell: ({ row }) => {
+        const partDescription = row.original.part?.description;
         return (
           <p className="truncate font-medium w-44">
-            {row.getValue("partDescription") ?? "N/A"}
+            {displayValue(partDescription)}
           </p>
         );
       },
     },
     {
       accessorKey: "partUnitPrice",
+      accessorFn: (row) => row.part?.unit_price,
       meta: {
         title: "Preço unitário da peça",
       },
@@ -244,15 +246,22 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Preço unitário da peça" />
       ),
       cell: ({ row }) => {
+        const partUnitPrice = row.original.part?.unit_price;
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("partUnitPrice") ?? "N/A"}
+            {displayValue(formatToBrazilianCurrency(Number(partUnitPrice)))}
           </p>
         );
       },
     },
     {
       accessorKey: "totalPrice",
+      accessorFn: (row) => {
+        const unitPrice = Number(row.unit_price);
+        const quantity = row.quantity;
+
+        return unitPrice * quantity;
+      },
       meta: {
         title: "Preço total",
       },
@@ -260,15 +269,30 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Preço total" />
       ),
       cell: ({ row }) => {
+        const unitPrice = Number(row.original.unit_price);
+
+        const quantity = row.original.quantity;
+        const totalPrice = unitPrice * quantity;
+
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("totalPrice") ?? "N/A"}
+            {displayValue(formatToBrazilianCurrency(totalPrice))}
           </p>
         );
       },
     },
     {
       accessorKey: "totalWithDiscount",
+      accessorFn: (row) => {
+        const unitPrice = Number(row.unit_price);
+        const quantity = row.quantity;
+
+        const discountPercentage = Number(row.discount_percentage || 0);
+        const totalPrice = unitPrice * quantity;
+
+        const discountAmount = totalPrice * (discountPercentage / 100);
+        return totalPrice - discountAmount;
+      },
       meta: {
         title: "Preço total com desconto",
       },
@@ -279,9 +303,20 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         />
       ),
       cell: ({ row }) => {
+        const unitPrice = Number(row.original.unit_price);
+        const quantity = row.original.quantity;
+
+        const discountPercentage = Number(
+          row.original.discount_percentage || 0,
+        );
+        const totalPrice = unitPrice * quantity;
+
+        const discountAmount = totalPrice * (discountPercentage / 100);
+        const totalWithDiscount = totalPrice - discountAmount;
+
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("totalWithDiscount") ?? "N/A"}
+            {displayValue(formatToBrazilianCurrency(totalWithDiscount))}
           </p>
         );
       },
@@ -295,8 +330,10 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Data de criação" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-24">
-          {row.getValue("created_at") ?? "N/A"}
+        <p className="truncate font-medium w-36">
+          {displayValue(
+            formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+          )}
         </p>
       ),
     },
@@ -309,8 +346,10 @@ const dashboardTableServiceOrderPartCollumns: ColumnDef<serviceOrderPartTableSch
         <DataTableColumnHeader column={column} title="Data de atualização" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-24">
-          {row.getValue("updated_at") ?? "N/A"}
+        <p className="truncate font-medium w-36">
+          {displayValue(
+            formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+          )}
         </p>
       ),
     },

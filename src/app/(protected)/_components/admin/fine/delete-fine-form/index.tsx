@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDeleteFineForm } from "./hooks";
-import { handleDeleteFine } from "@/actions/delete-fine";
+import { handleDeleteFine } from "@/actions/fine/delete-fine";
 
 interface DeleteFineProps {
   fineId: string;
@@ -23,6 +23,22 @@ interface DeleteFineProps {
 
 const DeleteFineFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteFineList = [
+    { data: "Todos os dados da multa serão excluídos permanentemente" },
+    { data: "As referências ao motorista e veículo permanecerão intactas" },
+    {
+      data: "Os registros de atividade relacionados à multa serão mantidos para auditoria",
+    },
+    {
+      data: "As estatísticas de multas da empresa serão atualizadas",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -36,26 +52,15 @@ const DeleteFineFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Todos os dados da multa serão excluídos permanentemente</li>
-              <li>
-                As referências ao motorista e veículo permanecerão intactas
-              </li>
-              <li>
-                Os registros de atividade relacionados à multa serão mantidos
-                para auditoria
-              </li>
-              <li>As estatísticas de multas da empresa serão atualizadas</li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteFineList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

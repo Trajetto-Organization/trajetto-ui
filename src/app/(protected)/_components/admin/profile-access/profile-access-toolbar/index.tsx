@@ -38,7 +38,7 @@ export function ProfileAccessToolbar<TData>({
   };
 
   const filters = [
-    { key: "corporate_reason", title: "Empresa" },
+    { key: "business_name", title: "Empresa" },
     { key: "name", title: "Nome do perfil" },
   ];
 

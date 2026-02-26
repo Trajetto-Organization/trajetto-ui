@@ -2,23 +2,45 @@ import { z } from "zod";
 
 export const accountPayableTableSchema = z.object({
   id: z.string(),
-  issue_date: z.string(),
-  due_date: z.string(),
-  payment_date: z.string().nullable().optional(),
-  amount: z.string(),
-  amount_paid: z.string().nullable().optional(),
+  issue_date: z.union([z.string(), z.date()]),
+  due_date: z.union([z.string(), z.date()]),
+  payment_date: z.union([z.string(), z.date()]).nullable(),
+  amount: z.number(),
+  amount_paid: z.number().nullable(),
   businessId: z.string(),
   branchId: z.string(),
-  serviceOrderId: z.string().nullable().optional(),
+  serviceOrderId: z.string().nullable(),
   registrationUserId: z.string(),
-  branchName: z.string(),
-  business_name: z.string().optional(),
-  serviceOrderDescription: z.string().optional(),
-  status: z.string().optional(),
-  registrationUserName: z.string().optional(),
-  remainingAmount: z.string().optional(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  created_at: z.union([z.string(), z.date()]),
+  updated_at: z.union([z.string(), z.date()]),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .optional(),
+  branch: z
+    .object({
+      corporate_reason: z.string(),
+      fantasy_name: z.string(),
+    })
+    .optional(),
+  serviceOrder: z
+    .object({
+      id: z.string(),
+      date: z.union([z.string(), z.date()]),
+      maintenance_type: z.string(),
+      vehicle: z.object({
+        license_plate: z.string(),
+        description: z.string(),
+      }),
+    })
+    .nullable()
+    .optional(),
+  registrationUser: z
+    .object({
+      name: z.string(),
+    })
+    .optional(),
 });
 
 export type accountPayableTableSchema = z.infer<

@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
-  CommandBusinessInputValue,
   CommandDriverInputValue,
   CommandVehicleInputValue,
 } from "@/app/(protected)/_components/dto";
@@ -30,34 +29,16 @@ function useUpdateVehicleChecklistForm({
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
 
-  // Sanitize optional fields that might contain "N/A"
-  const sanitizedBranchName =
-    checklistData.branch_name && checklistData.branch_name !== "N/A"
-      ? checklistData.branch_name
-      : "";
+  // Extract values from nested objects (RAW data)
+  const sanitizedBranchName = checklistData.branch?.corporate_reason || "";
+  const sanitizedVehicleDescription = checklistData.vehicle?.description || "";
 
-  const sanitizedVehicleDescription =
-    checklistData.vehicle_description &&
-    checklistData.vehicle_description !== "N/A"
-      ? checklistData.vehicle_description
-      : "";
-
-  const sanitizedDriverName =
-    checklistData.driver_name && checklistData.driver_name !== "N/A"
-      ? checklistData.driver_name
-      : "";
+  const sanitizedDriverName = checklistData.driver?.name || "";
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
-    "select-business-branch" | "select-vehicle-driver" | "update-checklist"
-  >("select-business-branch");
-
-  // Initialize form values from checklist data with sanitized values
-  const [commandBusinessInputValue, setCommandBusinessInputValue] =
-    useState<CommandBusinessInputValue>({
-      businessId: checklistData.businessId as string,
-      searchBusinessInputValue: checklistData.business_name as string,
-    });
+    "select-branch" | "select-vehicle-driver" | "update-checklist"
+  >("select-branch");
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
@@ -71,31 +52,28 @@ function useUpdateVehicleChecklistForm({
         ? checklistData.vehicleId || ""
         : "",
       searchVehicleInputValue: sanitizedVehicleDescription,
-      vehicleLicensePlate:
-        sanitizedVehicleDescription && checklistData.vehicle_license_plate
-          ? checklistData.vehicle_license_plate
-          : "",
+      vehicleLicensePlate: checklistData.vehicle?.license_plate || "",
     });
 
   const [commandDriverInputValue, setCommandDriverInputValue] =
     useState<CommandDriverInputValue>({
       driverId: sanitizedDriverName ? checklistData.driverId || "" : "",
       searchDriverInputValue: sanitizedDriverName,
-      driverCnh:
-        sanitizedDriverName && checklistData.driver_cnh
-          ? checklistData.driver_cnh
-          : "",
+      driverCnh: checklistData.driver?.cnh || "",
     });
 
-  // Reset form values when dialog closes or checklist changes
+  // Checklist form values callback state
+  const [checklistFormValues, setChecklistFormValues] = useState<
+    Record<string, any>
+  >({});
+
+  const handleFormValuesChange = useCallback((values: Record<string, any>) => {
+    setChecklistFormValues(values);
+  }, []);
+
+  // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateChecklistOpen) {
-      // Reset to initial values when modal closes
-      setCommandBusinessInputValue({
-        businessId: checklistData.businessId as string,
-        searchBusinessInputValue: checklistData.business_name as string,
-      });
-
       setCommandBranchInputValue({
         branchId: sanitizedBranchName ? checklistData.branchId || "" : "",
         searchBranchInputValue: sanitizedBranchName,
@@ -106,55 +84,25 @@ function useUpdateVehicleChecklistForm({
           ? checklistData.vehicleId || ""
           : "",
         searchVehicleInputValue: sanitizedVehicleDescription,
-        vehicleLicensePlate:
-          sanitizedVehicleDescription && checklistData.vehicle_license_plate
-            ? checklistData.vehicle_license_plate
-            : "",
+        vehicleLicensePlate: checklistData.vehicle?.license_plate || "",
       });
 
       setCommandDriverInputValue({
         driverId: sanitizedDriverName ? checklistData.driverId || "" : "",
         searchDriverInputValue: sanitizedDriverName,
-        driverCnh:
-          sanitizedDriverName && checklistData.driver_cnh
-            ? checklistData.driver_cnh
-            : "",
+        driverCnh: checklistData.driver?.cnh || "",
       });
 
-      setCurrentStep("select-business-branch");
+      setCurrentStep("select-branch");
+      setChecklistFormValues({});
     }
-  }, [isUpdateChecklistOpen, checklistData.id]);
-
-  // Handle business and branch selection updates
-  const handleUpdateSearchBusinessInputValue = (
-    data: CommandBusinessInputValue,
-  ) => {
-    const updateBusinessData =
-      data.businessId === commandBusinessInputValue.businessId
-        ? { businessId: "", searchBusinessInputValue: "" }
-        : data;
-
-    if (
-      updateBusinessData.businessId !== commandBusinessInputValue.businessId
-    ) {
-      setCommandBranchInputValue({
-        branchId: "",
-        searchBranchInputValue: "",
-      });
-      setCommandVehicleInputValue({
-        vehicleId: "",
-        searchVehicleInputValue: "",
-        vehicleLicensePlate: "",
-      });
-      setCommandDriverInputValue({
-        driverId: "",
-        searchDriverInputValue: "",
-        driverCnh: "",
-      });
-    }
-
-    setCommandBusinessInputValue(updateBusinessData);
-  };
+  }, [
+    isUpdateChecklistOpen,
+    sanitizedBranchName,
+    sanitizedVehicleDescription,
+    sanitizedDriverName,
+    checklistData,
+  ]);
 
   const handleUpdateSearchBranchInputValue = (
     data: CommandBranchInputValue,
@@ -198,7 +146,7 @@ function useUpdateVehicleChecklistForm({
   };
 
   // Step navigation
-  const handleBusinessBranchStepContinue = () => {
+  const handleBranchStepContinue = () => {
     setCurrentStep("select-vehicle-driver");
   };
 
@@ -206,8 +154,8 @@ function useUpdateVehicleChecklistForm({
     setCurrentStep("update-checklist");
   };
 
-  const handleBackToBusinessBranchStep = () => {
-    setCurrentStep("select-business-branch");
+  const handleBackToBranchStep = () => {
+    setCurrentStep("select-branch");
   };
 
   const handleBackToVehicleDriverStep = () => {
@@ -277,39 +225,28 @@ function useUpdateVehicleChecklistForm({
     };
   }, [state, handleCloseUpdateChecklist]);
 
-  // Create sanitized original values for comparison
-  const originalBranchId =
-    checklistData.branch_name !== "N/A" ? checklistData.branchId || "" : "";
-  const originalVehicleId =
-    checklistData.vehicle_description !== "N/A"
-      ? checklistData.vehicleId || ""
-      : "";
-  const originalDriverId =
-    checklistData.driver_name !== "N/A" ? checklistData.driverId || "" : "";
-
-  const isBusinessAndEntityDirty = [
-    commandBusinessInputValue.businessId !== checklistData.businessId,
-    commandBranchInputValue.branchId !== originalBranchId,
-    commandVehicleInputValue.vehicleId !== originalVehicleId,
-    commandDriverInputValue.driverId !== originalDriverId,
+  const isEntityDirty = [
+    commandBranchInputValue.branchId !== checklistData.branchId,
+    commandVehicleInputValue.vehicleId !== checklistData.vehicleId,
+    commandDriverInputValue.driverId !== checklistData.driverId,
   ].some(Boolean);
 
   return {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,
-    handleBusinessBranchStepContinue,
+    handleBranchStepContinue,
     handleVehicleDriverStepContinue,
-    handleBackToBusinessBranchStep,
+    handleBackToBranchStep,
     handleBackToVehicleDriverStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    checklistFormValues,
+    handleFormValuesChange,
   };
 }
 

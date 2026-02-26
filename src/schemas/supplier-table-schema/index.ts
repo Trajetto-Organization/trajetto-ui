@@ -12,10 +12,15 @@ export const supplierTableSchema = z.object({
   complement: z.string().nullable().optional(),
   telephone: z.string().nullable().optional(),
   email: z.string().nullable().optional(),
-  businessId: z.string().optional(),
-  business_name: z.string().optional(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  businessId: z.string(),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .nullable()
+    .optional(),
+  created_at: z.union([z.string(), z.date()]),
+  updated_at: z.union([z.string(), z.date()]),
 });
 
 export type supplierTableSchema = z.infer<typeof supplierTableSchema>;

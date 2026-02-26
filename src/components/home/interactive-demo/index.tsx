@@ -105,9 +105,16 @@ const InteractiveDemo = () => {
         targetRect.bottom <= scrollAreaRect.bottom;
 
       if (!isVisible) {
-        (target as HTMLElement).scrollIntoView({
+        const targetCenter =
+          targetRect.top -
+          scrollAreaRect.top +
+          scrollArea.scrollTop -
+          scrollAreaRect.height / 2 +
+          targetRect.height / 2;
+
+        scrollArea.scrollTo({
+          top: Math.max(0, targetCenter),
           behavior: "smooth",
-          block: "center",
         });
 
         setTimeout(() => {
@@ -180,16 +187,13 @@ const InteractiveDemo = () => {
         rounded-full bg-[#d81b60]/5 filter blur-3xl"
       />
 
-      <div
-        className="container px-4 
-        mx-auto relative z-10"
-      >
+      <div className="container px-4 mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center space-y-2 mb-16">
           <h2
-            className="text-4xl md:text-5xl pb-3 font-bold mb-3 
+            className="text-4xl md:text-5xl font-bold pb-2
             bg-clip-text text-transparent bg-gradient-to-r 
-            from-foreground to-foreground/70"
+            from-foreground to-foreground/70 tracking-tight"
           >
             Explore o Sistema Interativamente
           </h2>
@@ -275,7 +279,9 @@ const InteractiveDemo = () => {
                         <item.icon className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
                         <span className="hidden xl:inline">{item.title}</span>
                         {item.shortTitle && (
-                          <span className="xl:hidden text-xs">{item.shortTitle}</span>
+                          <span className="xl:hidden text-xs">
+                            {item.shortTitle}
+                          </span>
                         )}
                         {item.hasChevron && (
                           <ChevronRight className="ml-auto h-3 xl:h-4 w-3 xl:w-4" />

@@ -1,7 +1,7 @@
 interface DriverProps {
   id: string;
   name: string;
-  birth_date: string;
+  birth_date: Date | string;
   cnh: string;
   cpf: string;
   rg: string;
@@ -10,15 +10,19 @@ interface DriverProps {
   uf: string;
   street: string;
   address_number: string;
-  complement: string;
+  complement: string | null;
   status: "ACTIVE" | "INACTIVE";
   contract_type: "OWNED" | "THIRD_PARTY";
-  businessId?: string;
-  business_name?: string;
-  branchId?: string | null;
-  branchName?: string | null;
-  created_at: string;
-  updated_at: string;
+  businessId: string;
+  branchId: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+  business?: {
+    corporate_reason: string;
+  } | null;
+  branch?: {
+    corporate_reason: string;
+  } | null;
 }
 
 export type { DriverProps };

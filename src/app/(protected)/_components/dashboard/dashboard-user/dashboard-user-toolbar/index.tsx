@@ -10,7 +10,7 @@ import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-facet
 import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
 
 import { useSearch } from "@/lib/search-params";
-import { emailVerified, twoFactor } from "../data";
+import { twoFactor } from "../data";
 
 interface DashboardDataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -42,11 +42,6 @@ export function DashboardUserToolbar<TData>({
       key: "two_factor_enabled",
       title: "Verificação (2FA)",
       options: twoFactor,
-    },
-    {
-      key: "email_verified",
-      title: "E-mail verificado",
-      options: emailVerified,
     },
     { key: "profileAccess", title: "Perfil de acesso" },
   ];

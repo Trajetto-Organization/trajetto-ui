@@ -6,6 +6,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { partTableSchema } from "@/schemas/part-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
+import {
+  displayValue,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
 import { DashboardDataTablePartRowActions } from "../dashboard-data-table-row-actions";
 
 const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
@@ -49,7 +54,9 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -65,7 +72,7 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("description") ?? "N/A"}
+          {displayValue(row.getValue("description"))}
         </p>
       );
     },
@@ -83,8 +90,8 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("unit_price") ?? "N/A"}
+        <p className="truncate font-medium w-32">
+          {displayValue(formatToBrazilianCurrency(row.getValue("unit_price")))}
         </p>
       );
     },
@@ -108,13 +115,14 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("supplierId") ?? "N/A"}
+          {displayValue(row.getValue("supplierId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "supplierName",
+    accessorFn: (row) => row.supplier?.name,
     meta: {
       title: "Nome do fornecedor",
     },
@@ -122,9 +130,10 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome do fornecedor" />
     ),
     cell: ({ row }) => {
+      const supplierName = row.original.supplier?.name;
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("supplierName") ?? "N/A"}
+          {displayValue(supplierName)}
         </p>
       );
     },
@@ -141,8 +150,10 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -155,8 +166,10 @@ const dashboardTablePartCollumns: ColumnDef<partTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

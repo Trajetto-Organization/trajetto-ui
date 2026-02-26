@@ -6,7 +6,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { serviceOrderTableSchema } from "@/schemas/service-order-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
-import { formatDate } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDate,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
 import { DashboardDataTableServiceOrderRowActions } from "../dashboard-data-table-row-actions";
 
 const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
@@ -18,8 +23,8 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       },
       header: ({ table }) => (
         <Checkbox
-          id="select-all-dashboard-service-orders"
-          name="select-all-dashboard-service-orders"
+          id="select-all-service-orders"
+          name="select-all-service-orders"
           checked={
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
@@ -31,8 +36,8 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       ),
       cell: ({ row }) => (
         <Checkbox
-          id={`select-dashboard-service-order-${row.id}`}
-          name={`select-dashboard-service-order-${row.id}`}
+          id={`select-service-order-${row.id}`}
+          name={`select-service-order-${row.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
@@ -52,7 +57,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       ),
       cell: ({ row }) => (
         <p className="truncate font-medium w-72">
-          {row.getValue("id") ?? "N/A"}
+          {displayValue(row.getValue("id"))}
         </p>
       ),
       enableSorting: false,
@@ -72,7 +77,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-44">
-            {formatDate(row.getValue("date"), "pt-BR") ?? "N/A"}
+            {displayValue(formatDate(row.getValue("date"), "pt-BR"))}
           </p>
         );
       },
@@ -88,7 +93,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-44">
-            {formatDate(row.getValue("completion_date"), "pt-BR") ?? "N/A"}
+            {displayValue(formatDate(row.getValue("completion_date"), "pt-BR"))}
           </p>
         );
       },
@@ -104,15 +109,17 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         const maintenanceType = row.getValue("maintenance_type");
 
-        let displayValue = "N/A";
+        let maintenanceDisplay = "N/A";
 
         if (maintenanceType === "INTERNAL") {
-          displayValue = "Interna";
+          maintenanceDisplay = "Interna";
         } else if (maintenanceType === "EXTERNAL") {
-          displayValue = "Externa";
+          maintenanceDisplay = "Externa";
         }
 
-        return <p className="truncate font-medium w-36">{displayValue}</p>;
+        return (
+          <p className="truncate font-medium w-36">{maintenanceDisplay}</p>
+        );
       },
       filterFn: (row, id, value) => {
         return value.includes(row.getValue(id));
@@ -130,8 +137,10 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       ),
       cell: ({ row }) => {
         return (
-          <p className=" truncate font-medium w-24">
-            {row.getValue("total_amount") ?? "N/A"}
+          <p className="truncate font-medium w-32">
+            {displayValue(
+              formatToBrazilianCurrency(row.getValue("total_amount")),
+            )}
           </p>
         );
       },
@@ -140,6 +149,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
     },
     {
       accessorKey: "vehicleLicensePlate",
+      accessorFn: (row) => row.vehicle?.license_plate,
       meta: {
         title: "Placa do veículo",
       },
@@ -149,7 +159,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-28">
-            {row.getValue("vehicleLicensePlate") ?? "N/A"}
+            {displayValue(row.original.vehicle?.license_plate)}
           </p>
         );
       },
@@ -171,13 +181,14 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("vehicleId") ?? "N/A"}
+            {displayValue(row.getValue("vehicleId"))}
           </p>
         );
       },
     },
     {
       accessorKey: "vehicleDescription",
+      accessorFn: (row) => row.vehicle?.description,
       meta: {
         title: "Descrição do veículo",
       },
@@ -187,13 +198,14 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("vehicleDescription") ?? "N/A"}
+            {displayValue(row.original.vehicle?.description)}
           </p>
         );
       },
     },
     {
       accessorKey: "partsCount",
+      accessorFn: (row) => row.parts?.length,
       meta: {
         title: "Quantidade de peças",
       },
@@ -203,7 +215,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-8">
-            {row.getValue("partsCount") ?? "N/A"}
+            {displayValue(row.original.parts?.length)}
           </p>
         );
       },
@@ -222,13 +234,14 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("responsibleUserId") ?? "N/A"}
+            {displayValue(row.getValue("responsibleUserId"))}
           </p>
         );
       },
     },
     {
       accessorKey: "responsibleUserName",
+      accessorFn: (row) => row.responsibleUser?.name,
       meta: {
         title: "Nome do responsável",
       },
@@ -238,13 +251,14 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("responsibleUserName") ?? "N/A"}
+            {displayValue(row.original.responsibleUser?.name)}
           </p>
         );
       },
     },
     {
       accessorKey: "responsibleUserEmail",
+      accessorFn: (row) => row.responsibleUser?.email,
       meta: {
         title: "E-mail do responsável",
       },
@@ -254,7 +268,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("responsibleUserEmail") ?? "N/A"}
+            {displayValue(row.original.responsibleUser?.email)}
           </p>
         );
       },
@@ -273,13 +287,14 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("supplierId") ?? "N/A"}
+            {displayValue(row.getValue("supplierId"))}
           </p>
         );
       },
     },
     {
       accessorKey: "supplierName",
+      accessorFn: (row) => row.supplier?.name,
       meta: {
         title: "Nome do fornecedor",
       },
@@ -289,7 +304,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("supplierName") ?? "N/A"}
+            {displayValue(row.original.supplier?.name)}
           </p>
         );
       },
@@ -308,13 +323,14 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("branchId") ?? "N/A"}
+            {displayValue(row.getValue("branchId"))}
           </p>
         );
       },
     },
     {
       accessorKey: "branchName",
+      accessorFn: (row) => row.branch?.corporate_reason,
       meta: {
         title: "Nome da filial",
       },
@@ -324,7 +340,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-48">
-            {row.getValue("branchName") ?? "N/A"}
+            {displayValue(row.original.branch?.corporate_reason)}
           </p>
         );
       },
@@ -343,7 +359,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("latitude") ?? "N/A"}
+            {displayValue(row.getValue("latitude"))}
           </p>
         );
       },
@@ -359,7 +375,7 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
       cell: ({ row }) => {
         return (
           <p className="truncate font-medium w-32">
-            {row.getValue("longitude") ?? "N/A"}
+            {displayValue(row.getValue("longitude"))}
           </p>
         );
       },
@@ -373,8 +389,10 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
         <DataTableColumnHeader column={column} title="Data de criação" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-24">
-          {row.getValue("created_at") ?? "N/A"}
+        <p className="truncate font-medium w-36">
+          {displayValue(
+            formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+          )}
         </p>
       ),
     },
@@ -387,8 +405,10 @@ const dashboardTableServiceOrderCollumns: ColumnDef<serviceOrderTableSchema>[] =
         <DataTableColumnHeader column={column} title="Data de atualização" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-24">
-          {row.getValue("updated_at") ?? "N/A"}
+        <p className="truncate font-medium w-36">
+          {displayValue(
+            formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+          )}
         </p>
       ),
     },

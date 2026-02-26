@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { newVerification } from "@/actions/new-verification";
+import { newVerification } from "@/actions/user/new-verification";
 
 function useNewVerificationValidationToken() {
   const router = useRouter();
@@ -26,6 +26,7 @@ function useNewVerificationValidationToken() {
     if (!token) {
       setError("Token ausente!");
       setCountdown(3);
+
       return;
     }
 

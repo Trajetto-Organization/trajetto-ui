@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   CommandBranchInputValue,
-  CommandBusinessInputValue,
   CommandSupplierInputValue,
   CommandUserInputValue,
   CommandVehicleInputValue,
@@ -31,169 +30,130 @@ function useUpdateServiceOrderForm({
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
 
-  // Sanitize optional fields that might contain "N/A"
-  const sanitizedBranchName =
-    serviceOrderData.branchName && serviceOrderData.branchName !== "N/A"
-      ? serviceOrderData.branchName
-      : "";
+  // Memoize extracted values from nested objects to prevent re-renders
+  const branchName = useMemo(
+    () => serviceOrderData.branch?.corporate_reason || "",
+    [serviceOrderData.branch?.corporate_reason],
+  );
 
-  const sanitizedSupplierName =
-    serviceOrderData.supplierName && serviceOrderData.supplierName !== "N/A"
-      ? serviceOrderData.supplierName
-      : "";
+  const supplierName = useMemo(
+    () => serviceOrderData.supplier?.name || "",
+    [serviceOrderData.supplier?.name],
+  );
 
-  const sanitizedVehicleDescription =
-    serviceOrderData.vehicleDescription &&
-    serviceOrderData.vehicleDescription !== "N/A"
-      ? serviceOrderData.vehicleDescription
-      : "";
+  const vehicleDescription = useMemo(
+    () => serviceOrderData.vehicle?.description || "",
+    [serviceOrderData.vehicle?.description],
+  );
 
-  const sanitizedResponsibleUserName =
-    serviceOrderData.responsibleUserName &&
-    serviceOrderData.responsibleUserName !== "N/A"
-      ? serviceOrderData.responsibleUserName
-      : "";
+  const vehicleLicensePlate = useMemo(
+    () => serviceOrderData.vehicle?.license_plate || "",
+    [serviceOrderData.vehicle?.license_plate],
+  );
+
+  const responsibleUserName = useMemo(
+    () => serviceOrderData.responsibleUser?.name || "",
+    [serviceOrderData.responsibleUser?.name],
+  );
+
+  const responsibleUserEmail = useMemo(
+    () => serviceOrderData.responsibleUser?.email || "",
+    [serviceOrderData.responsibleUser?.email],
+  );
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
-    | "select-business-branch"
+    | "select-branch"
     | "select-vehicle-supplier"
     | "select-user"
     | "update-service-order"
-  >("select-business-branch");
-
-  // Initialize form values from service order data with sanitized values
-  const [commandBusinessInputValue, setCommandBusinessInputValue] =
-    useState<CommandBusinessInputValue>({
-      businessId: serviceOrderData.businessId as string,
-      searchBusinessInputValue: serviceOrderData.business_name as string,
-    });
+  >("select-branch");
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
-      branchId: sanitizedBranchName ? serviceOrderData.branchId || "" : "",
-      searchBranchInputValue: sanitizedBranchName,
+      branchId: branchName ? serviceOrderData.branchId || "" : "",
+      searchBranchInputValue: branchName,
     });
 
   const [commandVehicleInputValue, setCommandVehicleInputValue] =
     useState<CommandVehicleInputValue>({
-      vehicleId: sanitizedVehicleDescription
-        ? serviceOrderData.vehicleId || ""
-        : "",
-      searchVehicleInputValue: sanitizedVehicleDescription,
-      vehicleLicensePlate:
-        sanitizedVehicleDescription && serviceOrderData.vehicleLicensePlate
-          ? serviceOrderData.vehicleLicensePlate
-          : "",
+      vehicleId: vehicleDescription ? serviceOrderData.vehicleId || "" : "",
+      searchVehicleInputValue: vehicleDescription,
+      vehicleLicensePlate: vehicleLicensePlate,
     });
 
   const [commandSupplierInputValue, setCommandSupplierInputValue] =
     useState<CommandSupplierInputValue>({
-      supplierId: sanitizedSupplierName
-        ? serviceOrderData.supplierId || ""
-        : "",
-      searchSupplierInputValue: sanitizedSupplierName,
+      supplierId: supplierName ? serviceOrderData.supplierId || "" : "",
+      searchSupplierInputValue: supplierName,
     });
 
   const [commandUserInputValue, setCommandUserInputValue] =
     useState<CommandUserInputValue>({
-      userId: sanitizedResponsibleUserName
+      userId: responsibleUserName
         ? serviceOrderData.responsibleUserId || ""
         : "",
-      searchUserInputValue: sanitizedResponsibleUserName,
-      responsibleUserEmail:
-        sanitizedResponsibleUserName && serviceOrderData.responsibleUserEmail
-          ? serviceOrderData.responsibleUserEmail
-          : "",
+      searchUserInputValue: responsibleUserName,
+      responsibleUserEmail: responsibleUserEmail,
     });
+
+  // Persisted form values for the last step
+  const [serviceOrderFormValues, setServiceOrderFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setServiceOrderFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateServiceOrderOpen) {
-      setCommandBusinessInputValue({
-        businessId: serviceOrderData.businessId as string,
-        searchBusinessInputValue: serviceOrderData.business_name as string,
-      });
-
       setCommandBranchInputValue({
-        branchId: sanitizedBranchName ? serviceOrderData.branchId || "" : "",
-        searchBranchInputValue: sanitizedBranchName,
+        branchId: branchName ? serviceOrderData.branchId || "" : "",
+        searchBranchInputValue: branchName,
       });
 
       setCommandVehicleInputValue({
-        vehicleId: sanitizedVehicleDescription
-          ? serviceOrderData.vehicleId || ""
-          : "",
-        searchVehicleInputValue: sanitizedVehicleDescription,
-        vehicleLicensePlate:
-          sanitizedVehicleDescription && serviceOrderData.vehicleLicensePlate
-            ? serviceOrderData.vehicleLicensePlate
-            : "",
+        vehicleId: vehicleDescription ? serviceOrderData.vehicleId || "" : "",
+        searchVehicleInputValue: vehicleDescription,
+        vehicleLicensePlate: vehicleLicensePlate,
       });
 
       setCommandSupplierInputValue({
-        supplierId: sanitizedSupplierName
-          ? serviceOrderData.supplierId || ""
-          : "",
-        searchSupplierInputValue: sanitizedSupplierName,
+        supplierId: supplierName ? serviceOrderData.supplierId || "" : "",
+        searchSupplierInputValue: supplierName,
       });
 
       setCommandUserInputValue({
-        userId: sanitizedResponsibleUserName
+        userId: responsibleUserName
           ? serviceOrderData.responsibleUserId || ""
           : "",
-        searchUserInputValue: sanitizedResponsibleUserName,
-        responsibleUserEmail:
-          sanitizedResponsibleUserName && serviceOrderData.responsibleUserEmail
-            ? serviceOrderData.responsibleUserEmail
-            : "",
+        searchUserInputValue: responsibleUserName,
+        responsibleUserEmail: responsibleUserEmail,
       });
 
-      setCurrentStep("select-business-branch");
+      setServiceOrderFormValues({});
+      setCurrentStep("select-branch");
     }
   }, [
     isUpdateServiceOrderOpen,
-    sanitizedBranchName,
-    sanitizedSupplierName,
-    sanitizedVehicleDescription,
-    sanitizedResponsibleUserName,
-    serviceOrderData,
+    branchName,
+    supplierName,
+    vehicleDescription,
+    vehicleLicensePlate,
+    responsibleUserName,
+    responsibleUserEmail,
+    serviceOrderData.businessId,
+    serviceOrderData.branchId,
+    serviceOrderData.vehicleId,
+    serviceOrderData.supplierId,
+    serviceOrderData.responsibleUserId,
   ]);
-
-  // Handle business and branch selection updates
-  const handleUpdateSearchBusinessInputValue = (
-    data: CommandBusinessInputValue,
-  ) => {
-    const updateBusinessData =
-      data.businessId === commandBusinessInputValue.businessId
-        ? { businessId: "", searchBusinessInputValue: "" }
-        : data;
-
-    if (
-      updateBusinessData.businessId !== commandBusinessInputValue.businessId
-    ) {
-      setCommandBranchInputValue({
-        branchId: "",
-        searchBranchInputValue: "",
-      });
-      setCommandVehicleInputValue({
-        vehicleId: "",
-        searchVehicleInputValue: "",
-        vehicleLicensePlate: "",
-      });
-      setCommandSupplierInputValue({
-        supplierId: "",
-        searchSupplierInputValue: "",
-      });
-      setCommandUserInputValue({
-        userId: "",
-        searchUserInputValue: "",
-        responsibleUserEmail: "",
-      });
-    }
-
-    setCommandBusinessInputValue(updateBusinessData);
-  };
 
   const handleUpdateSearchBranchInputValue = (
     data: CommandBranchInputValue,
@@ -242,7 +202,7 @@ function useUpdateServiceOrderForm({
   };
 
   // Step navigation
-  const handleBusinessStepContinue = () => {
+  const handleBranchStepContinue = () => {
     setCurrentStep("select-vehicle-supplier");
   };
 
@@ -254,8 +214,8 @@ function useUpdateServiceOrderForm({
     setCurrentStep("update-service-order");
   };
 
-  const handleBackToBusinessBranchStep = () => {
-    setCurrentStep("select-business-branch");
+  const handleBackToBranchStep = () => {
+    setCurrentStep("select-branch");
   };
 
   const handleBackToVehicleSupplierStep = () => {
@@ -325,26 +285,14 @@ function useUpdateServiceOrderForm({
     };
   }, [state, handleCloseUpdateServiceOrder]);
 
-  // Create sanitized original values for comparison
-  const originalBranchId =
-    serviceOrderData.branchName !== "N/A"
-      ? serviceOrderData.branchId || ""
-      : "";
-  const originalVehicleId =
-    serviceOrderData.vehicleDescription !== "N/A"
-      ? serviceOrderData.vehicleId || ""
-      : "";
-  const originalSupplierId =
-    serviceOrderData.supplierName !== "N/A"
-      ? serviceOrderData.supplierId || ""
-      : "";
-  const originalUserId =
-    serviceOrderData.responsibleUserName !== "N/A"
-      ? serviceOrderData.responsibleUserId || ""
-      : "";
+  // Create original values for comparison
+  const originalBranchId = serviceOrderData.branchId || "";
+  const originalVehicleId = serviceOrderData.vehicleId || "";
 
-  const isBusinessAndEntityDirty = [
-    commandBusinessInputValue.businessId !== serviceOrderData.businessId,
+  const originalSupplierId = serviceOrderData.supplierId || "";
+  const originalUserId = serviceOrderData.responsibleUserId || "";
+
+  const isEntityDirty = [
     commandBranchInputValue.branchId !== originalBranchId,
     commandVehicleInputValue.vehicleId !== originalVehicleId,
     commandSupplierInputValue.supplierId !== originalSupplierId,
@@ -354,23 +302,23 @@ function useUpdateServiceOrderForm({
   return {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandSupplierInputValue,
     commandUserInputValue,
-    handleBusinessStepContinue,
+    handleBranchStepContinue,
     handleVehicleSupplierStepContinue,
     handleUserStepContinue,
-    handleBackToBusinessBranchStep,
+    handleBackToBranchStep,
     handleBackToVehicleSupplierStep,
     handleBackToUserStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchSupplierInputValue,
     handleUpdateSearchUserInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    serviceOrderFormValues,
+    handleFormValuesChange,
   };
 }
 

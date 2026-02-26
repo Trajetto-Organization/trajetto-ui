@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { vehicleTypeTableSchema } from "@/schemas/vehicle-type-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
+import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { DataTableVehicleTypeRowActions } from "../data-table-row-actions";
 
 const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
@@ -49,7 +50,9 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -68,7 +71,7 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("description") ?? "N/A"}
+          {displayValue(row.getValue("description"))}
         </p>
       );
     },
@@ -84,7 +87,7 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-36">
-          {row.getValue("number_of_axles") ?? "N/A"}
+          {displayValue(row.getValue("number_of_axles"))}
         </p>
       );
     },
@@ -102,7 +105,7 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
+          {displayValue(row.getValue("businessId"))}
         </p>
       );
     },
@@ -111,7 +114,8 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
     },
   },
   {
-    accessorKey: "business_name",
+    accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason,
     meta: {
       title: "Nome da empresa",
     },
@@ -119,9 +123,10 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome da empresa" />
     ),
     cell: ({ row }) => {
+      const businessName = row.original.business?.corporate_reason;
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
+          {displayValue(businessName)}
         </p>
       );
     },
@@ -138,8 +143,10 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -152,8 +159,10 @@ const tableVehicleTypeCollumns: ColumnDef<vehicleTypeTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

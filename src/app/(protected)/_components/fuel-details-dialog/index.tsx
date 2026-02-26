@@ -24,9 +24,13 @@ import {
 } from "lucide-react";
 
 import { FuelInfoAlert } from "../fuel-info-alert";
-import { FuelDetailsDialogProps } from "./dto";
+import { FuelDetailsDialogProps, InfoItem } from "./dto";
 
-import { formatDate } from "@/lib/format-values";
+import {
+  formatDate,
+  formatToBrazilianCurrency,
+  formatNotificationDate,
+} from "@/lib/format-values";
 import { useFuelTechnicalDetails } from "./hooks/use-fuel-technical-details";
 
 const FuelDetailsDialog = ({
@@ -43,17 +47,135 @@ const FuelDetailsDialog = ({
     pricePerLiter,
   } = useFuelTechnicalDetails(fuelData, isOpen);
 
+  const technicalInformationData = [
+    { technicalData: `ID: ${fuelData.id}` },
+    {
+      technicalData: `Criado: ${formatNotificationDate(fuelData.created_at, "pt-BR")}`,
+    },
+    { technicalData: `Veículo ID: ${fuelData.vehicleId}` },
+    {
+      technicalData: `Atualizado: ${formatNotificationDate(fuelData.updated_at, "pt-BR")}`,
+    },
+  ];
+
+  const fuelInfoItems: InfoItem[] = [
+    {
+      icon: Calendar,
+      label: "Data",
+      content: (
+        <Badge variant="outline">
+          {formatDate(fuelData.refueling_date, "pt-BR") || "N/A"}
+        </Badge>
+      ),
+    },
+    {
+      icon: FuelIcon,
+      label: "Litros",
+      content: (
+        <Badge variant="secondary">
+          {fuelData.liters_amount.toFixed(3).replace(".", ",")}L
+        </Badge>
+      ),
+    },
+    {
+      icon: DollarSign,
+      label: "Preço/L",
+      content: (
+        <Badge variant="secondary">
+          {formatToBrazilianCurrency(fuelData.price_per_liter)}
+        </Badge>
+      ),
+    },
+    {
+      icon: DollarSign,
+      label: "Total",
+      content: (
+        <Badge
+          variant="default"
+          className="bg-green-100 text-green-800 
+          hover:bg-green-300 hover:text-green-950"
+        >
+          {formatToBrazilianCurrency(fuelData.total_amount)}
+        </Badge>
+      ),
+    },
+    {
+      icon: Gauge,
+      label: "Quilometragem",
+      content: (
+        <Badge variant="outline">
+          {fuelData.current_mileage.toLocaleString()} km
+        </Badge>
+      ),
+    },
+  ];
+
+  const relatedInfoItems: InfoItem[] = [
+    {
+      icon: Car,
+      label: "Veículo",
+      content: (
+        <div className="flex gap-2 items-center">
+          <Badge variant="outline">
+            {fuelData.vehicle?.description || "N/A"}
+          </Badge>
+          {fuelData.vehicle?.license_plate && (
+            <span className="text-xs text-muted-foreground">
+              Placa: {fuelData.vehicle.license_plate}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      icon: User,
+      label: "Motorista",
+      content: (
+        <div className="flex gap-2 items-center">
+          <Badge variant="outline">{fuelData.driver?.name || "N/A"}</Badge>
+          {fuelData.driver?.cnh && (
+            <span className="text-xs text-muted-foreground">
+              CNH: {fuelData.driver.cnh}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      icon: FuelIcon,
+      label: "Combustível",
+      content: (
+        <Badge variant="outline">
+          {fuelData.fuelType?.description || "N/A"}
+        </Badge>
+      ),
+    },
+    {
+      icon: MapPin,
+      label: "Filial",
+      content: (
+        <Badge variant="outline">
+          {fuelData.branch?.corporate_reason || "N/A"}
+        </Badge>
+      ),
+    },
+  ];
+
+  if (fuelData.business?.corporate_reason) {
+    relatedInfoItems.push({
+      icon: Building2,
+      label: "Empresa",
+      content: (
+        <Badge variant="outline">{fuelData.business.corporate_reason}</Badge>
+      ),
+    });
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogScrollContent
-        className="max-w-4xl 
-        max-h-[90vh] overflow-y-auto"
-      >
+      <DialogScrollContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FuelIcon className="h-5 w-5" />
-            Detalhes do Abastecimento
-          </DialogTitle>
+          <DialogTitle>Detalhes do Abastecimento</DialogTitle>
           <DialogDescription>
             Informações completas e análise de eficiência do abastecimento
           </DialogDescription>
@@ -66,142 +188,36 @@ const FuelDetailsDialog = ({
             md:grid-cols-2 gap-4"
           >
             <div className="space-y-4">
-              <h3
-                className="font-semibold flex 
-                items-center gap-2"
-              >
+              <h3 className="font-semibold flex items-center gap-2">
                 <FuelIcon className="h-4 w-4" />
                 Dados do Abastecimento
               </h3>
 
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Calendar
-                    className="h-4 w-4 
-                    text-muted-foreground"
-                  />
-
-                  <span className="text-sm">Data:</span>
-                  <Badge variant="outline">
-                    {formatDate(fuelData.refueling_date, "pt-BR") || "N/A"}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <FuelIcon
-                    className="h-4 w-4 
-                    text-muted-foreground"
-                  />
-
-                  <span className="text-sm">Litros:</span>
-                  <Badge variant="secondary">{fuelData.liters_amount}L</Badge>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <DollarSign
-                    className="h-4 w-4 
-                    text-muted-foreground"
-                  />
-
-                  <span className="text-sm">Preço/L:</span>
-                  <Badge variant="secondary">{fuelData.price_per_liter}</Badge>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <DollarSign
-                    className="h-4 w-4 
-                    text-muted-foreground"
-                  />
-                  <span className="text-sm font-medium">Total:</span>
-
-                  <Badge
-                    variant="default"
-                    className="bg-green-100 text-green-800 
-                    hover:bg-green-900 hover:text-green-100"
-                  >
-                    {fuelData.total_amount}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Gauge className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Quilometragem:</span>
-
-                  <Badge variant="outline">
-                    {fuelData.current_mileage.toLocaleString()} km
-                  </Badge>
-                </div>
+                {fuelInfoItems.map(({ icon: Icon, label, content }, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{label}:</span>
+                    {content}
+                  </div>
+                ))}
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3
-                className="font-semibold flex 
-                items-center gap-2"
-              >
+              <h3 className="font-semibold flex items-center gap-2">
                 <Building2 className="h-4 w-4" />
                 Informações Relacionadas
               </h3>
 
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Car className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Veículo:</span>
-
-                  <div className="flex gap-2">
-                    <Badge variant="outline">
-                      {fuelData.vehicle_description || "N/A"}
-                    </Badge>{" "}
-                    /
-                    {fuelData.vehicle_license_plate && (
-                      <span className="text-xs text-muted-foreground mt-1">
-                        Placa: {fuelData.vehicle_license_plate}
-                      </span>
-                    )}
+                {relatedInfoItems.map(({ icon: Icon, label, content }, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{label}:</span>
+                    {content}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Motorista:</span>
-
-                  <div className="flex gap-2">
-                    <Badge variant="outline">
-                      {fuelData.driver_name || "N/A"}
-                    </Badge>
-                    /
-                    {fuelData.driver_cnh && (
-                      <span className="text-xs text-muted-foreground mt-1">
-                        CNH: {fuelData.driver_cnh}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <FuelIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Combustível:</span>
-
-                  <Badge variant="outline">
-                    {fuelData.fuel_type_description || "N/A"}
-                  </Badge>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Filial:</span>
-
-                  <Badge variant="outline">{fuelData.branch_name}</Badge>
-                </div>
-
-                {fuelData.business_name && (
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-
-                    <span className="text-sm">Empresa:</span>
-                    <Badge variant="outline">{fuelData.business_name}</Badge>
-                  </div>
-                )}
+                ))}
               </div>
             </div>
           </div>
@@ -209,7 +225,7 @@ const FuelDetailsDialog = ({
           <Separator />
 
           {/* Observations */}
-          {fuelData.notes && fuelData.notes !== "N/A" && (
+          {fuelData.notes && (
             <>
               <div>
                 <h3
@@ -249,7 +265,7 @@ const FuelDetailsDialog = ({
                   ? "✅ Verificado"
                   : "⏳ Não Verificado"}
               </Badge>
-              {fuelData.odometer_photo && fuelData.odometer_photo !== "N/A" && (
+              {fuelData.odometer_photo && (
                 <span className="text-xs text-muted-foreground">
                   Foto disponível
                 </span>
@@ -303,22 +319,20 @@ const FuelDetailsDialog = ({
           </div>
 
           {/* Technical Information */}
-          <div>
-            <h3
-              className="font-semibold text-sm 
-              text-muted-foreground mb-2"
-            >
-              Informações Técnicas
-            </h3>
-            <div
-              className="grid grid-cols-2 gap-4 
-              text-xs text-muted-foreground"
-            >
-              <div>ID: {fuelData.id}</div>
-              <div>Criado: {fuelData.created_at}</div>
-              <div>Veículo ID: {fuelData.vehicleId}</div>
-              <div>Atualizado: {fuelData.updated_at}</div>
-            </div>
+          <h3
+            className="font-semibold text-sm
+            text-muted-foreground mb-2"
+          >
+            Informações Técnicas
+          </h3>
+
+          <div
+            className="grid grid-cols-2 gap-4
+            text-xs text-muted-foreground"
+          >
+            {technicalInformationData.map(({ technicalData }, idx) => (
+              <span key={idx}>{technicalData}</span>
+            ))}
           </div>
         </div>
       </DialogScrollContent>

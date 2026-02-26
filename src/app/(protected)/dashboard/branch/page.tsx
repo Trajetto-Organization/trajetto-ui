@@ -118,8 +118,7 @@ const Branch = async ({
   // Calculates stats directly from the returned data
   const statsData = {
     totalBranches: meta.total,
-    withErpCode: branch.filter((b) => b.erp_code && b.erp_code !== "N/A")
-      .length,
+    withErpCode: branch.filter((b) => b.erp_code && b.erp_code !== null).length,
     withFantasyName: branch.filter(
       (b) => b.fantasy_name && b.fantasy_name.trim() !== "",
     ).length,

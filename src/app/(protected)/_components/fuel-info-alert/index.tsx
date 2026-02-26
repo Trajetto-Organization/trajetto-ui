@@ -91,16 +91,14 @@ const FuelInfoAlert = ({
         className="text-blue-700
         dark:text-blue-300 space-y-3"
       >
-        <div>
-          <strong>📊 Resumo do Abastecimento:</strong>
-        </div>
+        <strong>📊 Resumo do Abastecimento:</strong>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           {/* Calculated values */}
-          {liters && <div>• Litros: {formatLiters(liters)} L</div>}
+          {liters && <span>• Litros: {formatLiters(liters)} L</span>}
 
           {pricePerLiter && (
-            <div>• Preço/L: {formatToBrazilianCurrency(pricePerLiter)}</div>
+            <span>• Preço/L: {formatToBrazilianCurrency(pricePerLiter)}</span>
           )}
 
           {totalAmount && (

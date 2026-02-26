@@ -10,35 +10,24 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { Button, buttonVariants } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateUser } from "@/actions/create-user";
+import { SelectField } from "@/app/(protected)/_components/custom";
+import { handleCreateUser } from "@/actions/user/create-user";
 
 import {
   DashboardCreateUserFormSubmitProps,
   DashboardCreateUserFormState,
 } from "./dto";
+
 import { roleLabels, UserBusinessRole } from "../../../dto";
 
 import { SearchProfileAccess } from "../../../search-profile-access";
 import { SearchDriver } from "../../../search-driver";
 
-import {
-  useDashboardCreateUserForm,
-  useGenerateRandomPassword,
-  useSelectUserRole,
-} from "./hooks";
-
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { useDashboardCreateUserForm, useSelectUserRole } from "./hooks";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { cn } from "@/lib/utils";
 
@@ -71,20 +60,26 @@ const DashboardCreateUserFormSubmit = ({
   setUserType,
 }: DashboardCreateUserFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const { handleGeneratePassword, handleChangePassword, password } =
-    useGenerateRandomPassword();
 
   const { selectedRole, setSelectedRole } = useSelectUserRole();
   const { businessId, role } = useAuthStore();
 
-  // Only MASTER users can set custom passwords
-  const canSetCustomPassword = role === "MASTER";
+  const roleOptions = Object.values(UserBusinessRole)
+    .filter(
+      (roleItem) =>
+        role !== UserBusinessRole.BUSINESS_USER ||
+        roleItem === UserBusinessRole.BUSINESS_USER,
+    )
+    .map((roleItem) => ({
+      value: roleItem,
+      label: roleLabels[roleItem],
+    }));
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
         <FormInput
-          label={"Email"}
+          label={"Email *"}
           htmlfor={"email"}
           name="email"
           type="email"
@@ -95,7 +90,7 @@ const DashboardCreateUserFormSubmit = ({
         />
 
         <FormInput
-          label={"Nome"}
+          label={"Nome *"}
           htmlfor={"name"}
           name="name"
           type="text"
@@ -105,93 +100,32 @@ const DashboardCreateUserFormSubmit = ({
           disabled={pending}
         />
 
-        <div className="w-full flex flex-col gap-3">
-          <Label
-            htmlFor="role"
-            className={cn(
-              state.createUserError?.role && "h-4 truncate text-red-500",
-            )}
-          >
-            {state.createUserError?.role
-              ? state.createUserError?.role
-              : "Nível de acesso"}
-          </Label>
+        <SelectField
+          label="Nível de acesso *"
+          htmlfor="role"
+          name="role"
+          placeholder="Nível de acesso"
+          errorName={state.createUserError?.role}
+          options={roleOptions}
+          onChange={(value) => {
+            setSelectedRole(value);
+            handleUpdateSearchProfileAccessInputValue({
+              profileAccessId: "",
+              searchProfileAccessInputValue: "",
+            });
+          }}
+          disabled={pending}
+        />
 
-          <Select
-            name="role"
-            disabled={pending}
-            onValueChange={(value) => {
-              setSelectedRole(value);
-
-              handleUpdateSearchProfileAccessInputValue({
-                profileAccessId: "",
-                searchProfileAccessInputValue: "",
-              });
-            }}
-          >
-            <SelectTrigger id="role">
-              <SelectValue placeholder="Nível de acesso" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(UserBusinessRole)
-                .filter(
-                  (roleItem) =>
-                    role !== UserBusinessRole.BUSINESS_USER ||
-                    roleItem === UserBusinessRole.BUSINESS_USER,
-                )
-                .map((roleItem) => (
-                  <SelectItem
-                    key={roleItem}
-                    value={roleItem}
-                    className="cursor-pointer hover:bg-accent
-                    hover:text-accent-foreground"
-                  >
-                    {roleLabels[roleItem]}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+        <div
+          className="flex items-center justify-center
+          p-4 bg-muted/50 rounded-lg border border-dashed"
+        >
+          <p className="text-sm text-muted-foreground text-center">
+            🔐 A senha será gerada automaticamente e enviada por e-mail ao
+            usuário
+          </p>
         </div>
-
-        {canSetCustomPassword && (
-          <div className="flex items-end gap-2 w-full">
-            <div className="w-full -mt-1">
-              <FormInput
-                label="Senha"
-                htmlfor="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                errorName={state?.createUserError?.password}
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => handleChangePassword(e.target.value)}
-                disabled={pending}
-              />
-            </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleGeneratePassword}
-              disabled={pending}
-            >
-              Gerar
-            </Button>
-          </div>
-        )}
-
-        {!canSetCustomPassword && (
-          <div
-            className="flex items-center justify-center
-            p-4 bg-muted/50 rounded-lg border border-dashed"
-          >
-            <p className="text-sm text-muted-foreground text-center">
-              🔐 A senha será gerada automaticamente e enviada por e-mail ao
-              usuário
-            </p>
-          </div>
-        )}
       </div>
 
       {selectedRole === "BUSINESS_USER" && (
@@ -426,6 +360,18 @@ const DashboardCreateUserForm = (): JSX.Element => {
     },
   ]);
 
+  const createUserForm = (userFormData: FormData) => {
+    const userData = {
+      businessId: businessId as string,
+      profileAccessId: commandProfileAccessInputValue.profileAccessId,
+      driverId: commandDriverInputValue.driverId,
+      userType: userType,
+    };
+
+    appendDataToForm(userFormData, userData);
+    return dispatch(userFormData);
+  };
+
   return (
     <Dialog open={isCreateUserForm} onOpenChange={handleOpenCreateUserForm}>
       <TooltipProvider delayDuration={100}>
@@ -455,7 +401,10 @@ const DashboardCreateUserForm = (): JSX.Element => {
         </Tooltip>
       </TooltipProvider>
 
-      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Novo Usuário</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -464,20 +413,7 @@ const DashboardCreateUserForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              profileAccessId: commandProfileAccessInputValue.profileAccessId,
-              driverId: commandDriverInputValue.driverId,
-              userType: userType,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createUserForm}>
           <DashboardCreateUserFormSubmit
             state={state}
             handleOpenCreateUserForm={handleOpenCreateUserForm}

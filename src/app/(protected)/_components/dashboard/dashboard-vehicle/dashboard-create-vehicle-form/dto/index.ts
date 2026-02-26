@@ -33,6 +33,8 @@ interface DashboardCreateVehicleFormState {
 interface DashboardCreateVehicleFormSubmitProps {
   state: DashboardCreateVehicleFormState;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

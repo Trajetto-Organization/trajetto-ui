@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateEmailNotifications } from "@/actions/update-email-notifications";
+import { updateEmailNotifications } from "@/actions/user/update-email-notifications";
 import { EmailNotificationsProps, EmailNotificationsReturn } from "../dto";
 
 function useEmailNotifications({

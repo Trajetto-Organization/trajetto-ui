@@ -1,22 +1,32 @@
 interface DashboardAccountPayableProps {
   id: string;
-  issue_date: string;
-  due_date: string;
-  payment_date?: string | null;
-  amount: string;
-  amount_paid?: string | null;
+  issue_date: Date | string;
+  due_date: Date | string;
+  payment_date: Date | string | null;
+  amount: number;
+  amount_paid: number | null;
   businessId: string;
   branchId: string;
-  serviceOrderId?: string | null;
+  serviceOrderId: string | null;
   registrationUserId: string;
-  branchName: string;
-  business_name?: string;
-  serviceOrderDescription?: string;
-  registrationUserName?: string;
-  status?: string;
-  remainingAmount?: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+  branch?: {
+    corporate_reason: string;
+    fantasy_name: string;
+  };
+  serviceOrder?: {
+    id: string;
+    date: Date | string;
+    maintenance_type: string;
+    vehicle: {
+      license_plate: string;
+      description: string;
+    };
+  } | null;
+  registrationUser?: {
+    name: string;
+  };
 }
 
 export type { DashboardAccountPayableProps };

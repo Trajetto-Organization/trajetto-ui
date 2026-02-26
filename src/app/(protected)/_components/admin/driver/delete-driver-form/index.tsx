@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDeleteDriverForm } from "./hooks";
-import { handleDeleteDriver } from "@/actions/delete-driver";
+import { handleDeleteDriver } from "@/actions/driver/delete-driver";
 
 interface DeleteDriverProps {
   businessId: string;
@@ -24,6 +24,29 @@ interface DeleteDriverProps {
 
 const DeleteDriverFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteDriverList = [
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver multas associadas a este motorista`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver combustíveis associados a este motorista`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver checklists associados a este motorista`,
+    },
+    {
+      data: "Qualquer veículo atribuído a este motorista perderá sua associação",
+    },
+    {
+      data: "O histórico de atividades relacionado a este motorista será mantido",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -37,37 +60,15 @@ const DeleteDriverFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                multas associadas a este motorista
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                combustíveis associados a este motorista
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                checklists associados a este motorista
-              </li>
-              <li>
-                Qualquer veículo atribuído a este motorista perderá sua
-                associação
-              </li>
-              <li>
-                O histórico de atividades relacionado a este motorista será
-                mantido
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteDriverList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

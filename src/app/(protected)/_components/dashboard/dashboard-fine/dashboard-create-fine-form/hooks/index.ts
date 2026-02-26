@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandDriverInputValue,
@@ -20,7 +20,6 @@ function useDashboardCreateFineForm(
   const toastShownRef = useRef(false);
 
   const [isCreateFineForm, setIsCreateFineForm] = useState<boolean>(false);
-
   const [currentStep, setCurrentStep] = useState<
     | "select-branch"
     | "select-vehicle-driver"
@@ -56,6 +55,18 @@ function useDashboardCreateFineForm(
     searchTrafficViolationCodeInputValue: "",
   });
 
+  // Form values state with callback pattern
+  const [fineFormValues, setFineFormValues] = useState<Record<string, string>>(
+    {},
+  );
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setFineFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateFineForm) {
       toast.dismiss();
@@ -87,6 +98,9 @@ function useDashboardCreateFineForm(
         trafficViolationCodeId: "",
         searchTrafficViolationCodeInputValue: "",
       });
+
+      // Reset form values
+      setFineFormValues({});
     }
 
     setIsCreateFineForm(!isCreateFineForm);
@@ -264,6 +278,8 @@ function useDashboardCreateFineForm(
     commandDriverInputValue,
     commandTrafficViolationCodeInputValue,
     formRef,
+    fineFormValues,
+    handleFormValuesChange,
   };
 }
 

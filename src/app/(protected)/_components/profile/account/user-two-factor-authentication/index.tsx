@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { ProtectedContentSectionColumns } from "../../../layout/protected-content-section-collumns";
-import { handleUpdateTwoFactorAuthentication } from "@/actions/update-two-factor-authentication";
+import { handleUpdateTwoFactorAuthentication } from "@/actions/user/update-two-factor-authentication";
 
 import { useTwoFactorAuthenticationForm } from "./hooks";
 import { UserTwoFactorAuthenticationFormProps } from "./dto";

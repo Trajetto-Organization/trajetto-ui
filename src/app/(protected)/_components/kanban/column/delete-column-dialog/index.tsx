@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 
-import { handleDeleteKanbanColumn } from "@/actions/delete-kanban-column";
+import { handleDeleteKanbanColumn } from "@/actions/kanban/delete-kanban-column";
 import { useDeleteColumnDialog } from "./hooks";
 
 import { DeleteColumnDialogProps } from "./dto";
@@ -49,7 +49,6 @@ const DeleteColumnDialogForm = (): JSX.Element => {
           dark:text-red-500 text-red-600"
         >
           <span>Excluir</span>
-
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
       </AlertDialogFooter>

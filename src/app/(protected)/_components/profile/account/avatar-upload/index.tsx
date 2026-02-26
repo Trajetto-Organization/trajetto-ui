@@ -28,7 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "./file-upload";
 
-import { handleDeleteAvatar as deleteAvatarAction } from "@/actions/delete-avatar";
+import { handleDeleteAvatar as deleteAvatarAction } from "@/actions/user/delete-avatar";
 import { useAvatarUpload } from "./hooks";
 
 import { AvatarUploadProps } from "./dto";

@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
-
+import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader } from "lucide-react";
 
+import { Loader } from "lucide-react";
 import dynamic from "next/dynamic";
 
+import {
+  formatCurrencyToNumber,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
 import {
   Dialog,
   DialogScrollContent,
@@ -16,7 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateFine } from "@/actions/update-fine";
+import { handleUpdateFine } from "@/actions/fine/update-fine";
 import { useUpdateFineForm } from "./hooks";
 
 import {
@@ -26,19 +29,12 @@ import {
 } from "./dto";
 
 import { DatePickerField } from "../../../custom";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
-import { FineProps } from "../dto";
-
-import {
-  formatCurrencyToNumber,
-  formatToBrazilianCurrency,
-} from "@/lib/format-values";
-
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
 
 import { SelectViolationCodeStep } from "@/app/(protected)/_components/steps/select-violation-code-step";
+import { SelectBranchStep } from "../../../steps/select-branch-step";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
@@ -56,9 +52,10 @@ const LocationPicker = dynamic(
 const UpdateFineFormSubmit = ({
   state,
   onBack,
+  isEntityDirty,
   fineData,
-  isBusinessAndEntityDirty,
-  isUpdateFineOpen,
+  initialFormValues,
+  onFormValuesChange,
   latitude,
   longitude,
   isLoadingLocation,
@@ -67,127 +64,170 @@ const UpdateFineFormSubmit = ({
 }: UpdateFineFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [isDirty, setIsDirty] = useState<boolean>(false);
-
-  const handleCustomFieldChange = (fieldName: string) => (value: string) => {
-    setFormValues((prev) => {
-      const newValues = { ...prev, [fieldName]: value };
-
-      const hasChanges = Object.keys(newValues).some((key) => {
-        const originalValue = fineData[key as keyof FineProps];
-        return newValues[key] !== (originalValue?.toString() || "");
-      });
-
-      setIsDirty(hasChanges);
-      return newValues;
-    });
-  };
-
-  const [displayAmount, setDisplayAmount] = useState<string>("");
-
-  useEffect(() => {
-    if (isUpdateFineOpen && fineData.amount) {
-      setDisplayAmount(fineData.amount);
+  // Helper to get initial date value
+  const getInitialDateValue = (
+    formKey: string,
+    fineDataValue: string | Date | null | undefined,
+  ): string => {
+    if (initialFormValues[formKey] !== undefined) {
+      return initialFormValues[formKey];
     }
-  }, [isUpdateFineOpen, fineData.amount]);
 
-  const handleFieldChange = (fieldName: string, value: string) => {
-    setFormValues((prev) => {
-      const newValues = { ...prev, [fieldName]: value };
+    if (fineDataValue instanceof Date) {
+      return fineDataValue.toISOString();
+    }
 
-      // Check if any field has changed
-      const isAnyFieldChanged = Object.entries(newValues).some(([key, val]) => {
-        const originalValue = fineData[key as keyof FineProps];
-
-        if (typeof originalValue === "number") {
-          return originalValue.toString() !== val;
-        }
-
-        return originalValue !== val;
-      });
-
-      setIsDirty(isAnyFieldChanged);
-      return newValues;
-    });
+    return fineDataValue || "";
   };
 
+  // Form field states with lazy initializers
+  const [violationDate, setViolationDate] = useState<string>(() =>
+    getInitialDateValue("violation_date", fineData.violation_date),
+  );
+
+  const [dueDate, setDueDate] = useState<string>(() =>
+    getInitialDateValue("due_date", fineData.due_date),
+  );
+
+  const [paymentDate, setPaymentDate] = useState<string>(() =>
+    getInitialDateValue("payment_date", fineData.payment_date),
+  );
+
+  const [displayAmount, setDisplayAmount] = useState<string>(() => {
+    if (initialFormValues.amount !== undefined) {
+      return initialFormValues.amount;
+    }
+
+    if (fineData.amount) {
+      const numericValue = formatCurrencyToNumber(fineData.amount);
+      return formatToBrazilianCurrency(numericValue);
+    }
+
+    return "";
+  });
+
+  const [points, setPoints] = useState<string>(
+    () => initialFormValues.points ?? fineData.points?.toString() ?? "",
+  );
+
+  const [location, setLocation] = useState<string>(
+    () => initialFormValues.location ?? fineData.location ?? "",
+  );
+
+  const [observation, setObservation] = useState<string>(
+    () => initialFormValues.observation ?? fineData.observation ?? "",
+  );
+
+  // Date handlers
+  const handleViolationDateChange = (value: string): void => {
+    setViolationDate(value);
+  };
+
+  const handleDueDateChange = (value: string): void => {
+    setDueDate(value);
+  };
+
+  const handlePaymentDateChange = (value: string): void => {
+    setPaymentDate(value);
+  };
+
+  // Amount handlers
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     let inputValue = e.target.value;
     inputValue = inputValue.replace(/[^\d,.]/g, "");
 
     setDisplayAmount(inputValue);
-    handleFieldChange("amount", inputValue);
   };
 
   const handleAmountBlur = (): void => {
     if (!displayAmount || displayAmount === "," || displayAmount === ".") {
       setDisplayAmount("");
-      handleFieldChange("amount", "");
       return;
     }
 
     const newNumericValue = formatCurrencyToNumber(displayAmount);
-    const formattedValue = formatToBrazilianCurrency(newNumericValue);
-
-    setDisplayAmount(formattedValue);
-    handleFieldChange("amount", formattedValue);
+    setDisplayAmount(formatToBrazilianCurrency(newNumericValue));
   };
 
-  // Initialize form values with existing data
-  useEffect(() => {
-    if (isUpdateFineOpen && fineData) {
-      const initialValues: Record<string, string> = {};
+  // Other field handlers
+  const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setPoints(e.target.value);
+  };
 
-      if (fineData.violation_date) {
-        initialValues.violation_date = fineData.violation_date;
-      }
+  const handleLocationInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    setLocation(e.target.value);
+  };
 
-      if (fineData.due_date) {
-        initialValues.due_date = fineData.due_date;
-      }
+  const handleObservationChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ): void => {
+    setObservation(e.target.value);
+  };
 
-      if (fineData.payment_date) {
-        initialValues.payment_date = fineData.payment_date;
-      }
+  // Function to save form values and go back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      violation_date: violationDate,
+      due_date: dueDate,
+      payment_date: paymentDate,
+      amount: displayAmount,
+      points: points,
+      location: location,
+      observation: observation,
+    };
 
-      setFormValues(initialValues);
+    onFormValuesChange(allFormValues);
+    onBack();
+  };
+
+  // Dirty checking for form fields
+  const getOriginalDateValue = (
+    fineDataValue: string | Date | null | undefined,
+  ): string => {
+    if (fineDataValue instanceof Date) {
+      return fineDataValue.toISOString();
     }
-  }, [isUpdateFineOpen, fineData]);
 
-  // 📍 Check if location has changed
-  const [hasLocationChanged, setHasLocationChanged] = useState<boolean>(false);
+    return fineDataValue || "";
+  };
 
-  useEffect(() => {
-    const originalLat = fineData.latitude ?? null;
-    const originalLng = fineData.longitude ?? null;
+  const originalAmountNumeric = fineData.amount
+    ? formatCurrencyToNumber(fineData.amount)
+    : 0;
 
-    // Check if location changed (compare with original fineData values)
-    const latChanged = originalLat !== latitude;
-    const lngChanged = originalLng !== longitude;
-
-    setHasLocationChanged(latChanged || lngChanged);
-  }, [latitude, longitude, fineData.latitude, fineData.longitude]);
+  const isDirty = [
+    violationDate !== getOriginalDateValue(fineData.violation_date),
+    dueDate !== getOriginalDateValue(fineData.due_date),
+    paymentDate !== getOriginalDateValue(fineData.payment_date),
+    formatCurrencyToNumber(displayAmount) !== originalAmountNumeric,
+    points !== (fineData.points?.toString() || ""),
+    location !== (fineData.location || ""),
+    observation !== (fineData.observation || ""),
+    latitude !== (fineData.latitude ?? null),
+    longitude !== (fineData.longitude ?? null),
+  ].some(Boolean);
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         <DatePickerField
-          label="Data da infração"
+          label="Data da infração *"
           htmlfor="violation_date"
           name="violation_date"
-          value={formValues.violation_date || fineData.violation_date || ""}
-          onChange={handleCustomFieldChange("violation_date")}
+          value={violationDate}
+          onChange={handleViolationDateChange}
           errorName={state.updateFineError?.violation_date}
           disabled={pending}
         />
 
         <DatePickerField
-          label="Data de vencimento"
+          label="Data de vencimento *"
           htmlfor="due_date"
           name="due_date"
-          value={formValues.due_date || fineData.due_date || ""}
-          onChange={handleCustomFieldChange("due_date")}
+          value={dueDate}
+          onChange={handleDueDateChange}
           errorName={state.updateFineError?.due_date}
           disabled={pending}
           allowFutureDates={true}
@@ -197,14 +237,14 @@ const UpdateFineFormSubmit = ({
           label="Data de pagamento (opcional)"
           htmlfor="payment_date"
           name="payment_date"
-          value={formValues.payment_date || fineData.payment_date || ""}
-          onChange={handleCustomFieldChange("payment_date")}
+          value={paymentDate}
+          onChange={handlePaymentDateChange}
           errorName={state.updateFineError?.payment_date}
           disabled={pending}
         />
 
         <FormInput
-          label="Valor da multa"
+          label="Valor da multa *"
           htmlfor="amount"
           name="amount"
           type="text"
@@ -217,20 +257,17 @@ const UpdateFineFormSubmit = ({
         />
 
         <FormInput
-          label="Pontos na carteira"
+          label="Pontos na carteira *"
           htmlfor="points"
           name="points"
           type="number"
           min="0"
           max="20"
-          defaultValue={fineData.points?.toString() || ""}
+          value={points}
+          onChange={handlePointsChange}
           errorName={state.updateFineError?.points}
           placeholder="Digite a pontuação"
           disabled={pending}
-          onChange={(e) => {
-            const originalValue = fineData.points?.toString() || "";
-            setIsDirty(e.target.value !== originalValue);
-          }}
         />
 
         <FormInput
@@ -238,14 +275,11 @@ const UpdateFineFormSubmit = ({
           htmlfor="location"
           name="location"
           type="text"
-          defaultValue={fineData.location || ""}
+          value={location}
+          onChange={handleLocationInputChange}
           errorName={state.updateFineError?.location}
           placeholder="Digite o local da infração"
           disabled={pending}
-          onChange={(e) => {
-            const originalValue = fineData.location || "";
-            setIsDirty(e.target.value !== originalValue);
-          }}
         />
 
         <div className="col-span-1 md:col-span-2">
@@ -254,14 +288,11 @@ const UpdateFineFormSubmit = ({
             htmlfor="observation"
             name="observation"
             type="text"
-            defaultValue={fineData.observation || ""}
+            value={observation}
+            onChange={handleObservationChange}
             errorName={state.updateFineError?.observation}
             placeholder="Digite observações sobre a multa"
             disabled={pending}
-            onChange={(e) => {
-              const originalValue = fineData.observation || "";
-              setIsDirty(e.target.value !== originalValue);
-            }}
           />
         </div>
 
@@ -282,18 +313,19 @@ const UpdateFineFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || isLoadingLocation}
+        >
           Voltar
         </Button>
         <Button
           type="submit"
-          disabled={
-            pending ||
-            !(isDirty || isBusinessAndEntityDirty || hasLocationChanged) ||
-            isLoadingLocation
-          }
+          disabled={pending || !(isDirty || isEntityDirty) || isLoadingLocation}
         >
-          <span>Atualizar Multa</span>
+          <span>Editar Multa</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -316,13 +348,14 @@ const UpdateFineForm = ({
     defaultState,
   );
 
-  // 📍 GEOLOCATION STATE - Initialize with existing fineData location
+  // 📍 GEOLOCATION STATE - Initialize with fineData values
   const [latitude, setLatitude] = useState<number | null>(
     fineData.latitude ?? null,
   );
   const [longitude, setLongitude] = useState<number | null>(
     fineData.longitude ?? null,
   );
+
   const [isLoadingLocation, setIsLoadingLocation] = useState<boolean>(false);
 
   const handleLocationChange = (lat: number, lon: number) => {
@@ -334,7 +367,7 @@ const UpdateFineForm = ({
     setIsLoadingLocation(isLoading);
   };
 
-  // Reset location state when fineData changes
+  // Reset geolocation states when modal closes
   useEffect(() => {
     if (isUpdateFineOpen) {
       setLatitude(fineData.latitude ?? null);
@@ -342,28 +375,28 @@ const UpdateFineForm = ({
 
       setIsLoadingLocation(false);
     }
-  }, [fineData, isUpdateFineOpen]);
+  }, [isUpdateFineOpen, fineData.latitude, fineData.longitude]);
 
   const {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,
     commandTrafficViolationCodeInputValue,
-    handleBusinessStepContinue,
+    handleBranchStepContinue,
     handleVehicleDriverStepContinue,
     handleViolationCodeStepContinue,
-    handleBackToBusinessStep,
+    handleBackToBranchStep,
     handleBackToVehicleDriverStep,
     handleBackToViolationCodeStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateSearchTrafficViolationCodeInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    fineFormValues,
+    handleFormValuesChange,
   } = useUpdateFineForm({
     state,
     fineData,
@@ -371,13 +404,45 @@ const UpdateFineForm = ({
     isUpdateFineOpen,
   });
 
+  const updateFineForm = (fineFormData: FormData) => {
+    const updateFineData = {
+      fineId: fineData.id,
+      businessId: fineData.businessId,
+      branchId: commandBranchInputValue.branchId,
+      driverId: commandDriverInputValue.driverId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      trafficViolationCodeId:
+        commandTrafficViolationCodeInputValue.trafficViolationCodeId,
+    };
+
+    // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+    // When null, send as empty string (backend will convert to null)
+    if (latitude === null) {
+      fineFormData.append("latitude", "");
+    } else if (latitude !== undefined) {
+      fineFormData.append("latitude", latitude.toString());
+    }
+
+    if (longitude === null) {
+      fineFormData.append("longitude", "");
+    } else if (longitude !== undefined) {
+      fineFormData.append("longitude", longitude.toString());
+    }
+
+    appendDataToForm(fineFormData, updateFineData);
+    return dispatch(fineFormData);
+  };
+
   return (
     <Dialog open={isUpdateFineOpen} onOpenChange={handleCloseUpdateFine}>
-      <DialogScrollContent className="max-w-3xl">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business"
-              ? "Selecionar Empresa"
+            {currentStep === "select-branch"
+              ? "Selecionar Filial"
               : currentStep === "select-vehicle-driver"
                 ? "Selecionar Veículo e Motorista"
                 : currentStep === "select-violation-code"
@@ -385,8 +450,8 @@ const UpdateFineForm = ({
                   : "Editar Multa"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business"
-              ? "Selecione a empresa e filial (se necessário alterar)."
+            {currentStep === "select-branch"
+              ? "Selecione a filial para qual deseja atualizar a multa."
               : currentStep === "select-vehicle-driver"
                 ? "Selecione o veículo e motorista (se necessário alterar)."
                 : currentStep === "select-violation-code"
@@ -395,23 +460,19 @@ const UpdateFineForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business" ? (
-          <SelectBusinessBranchStep
-            handleUpdateSearchBusinessInputValue={
-              handleUpdateSearchBusinessInputValue
-            }
+        {currentStep === "select-branch" ? (
+          <SelectBranchStep
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
-            onContinue={handleBusinessStepContinue}
-            commandBusinessInputValue={commandBusinessInputValue}
+            onContinue={handleBranchStepContinue}
             commandBranchInputValue={commandBranchInputValue}
-            errorBusinessId={state.updateFineError?.businessId}
             errorBranchId={state.updateFineError?.branchId}
+            businessId={fineData.businessId}
           />
         ) : currentStep === "select-vehicle-driver" ? (
           <SelectVehicleDriverStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={fineData.businessId}
             commandVehicleInputValue={commandVehicleInputValue}
             commandDriverInputValue={commandDriverInputValue}
             handleUpdateSearchVehicleInputValue={
@@ -421,7 +482,7 @@ const UpdateFineForm = ({
               handleUpdateSearchDriverInputValue
             }
             onContinue={handleVehicleDriverStepContinue}
-            onBack={handleBackToBusinessStep}
+            onBack={handleBackToBranchStep}
             errorDriverId={state.updateFineError?.driverId}
             errorVehicleId={state.updateFineError?.vehicleId}
           />
@@ -440,48 +501,19 @@ const UpdateFineForm = ({
             }
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                fineId: fineData.id,
-                branchId: commandBranchInputValue.branchId,
-                driverId: commandDriverInputValue.driverId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                trafficViolationCodeId:
-                  commandTrafficViolationCodeInputValue.trafficViolationCodeId,
-              };
-
-              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
-              // When null, send as empty string (backend will convert to null)
-              if (latitude === null) {
-                formData.append("latitude", "");
-              } else if (latitude !== undefined) {
-                formData.append("latitude", latitude.toString());
-              }
-
-              if (longitude === null) {
-                formData.append("longitude", "");
-              } else if (longitude !== undefined) {
-                formData.append("longitude", longitude.toString());
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateFineForm}>
             <UpdateFineFormSubmit
               state={state}
               onBack={handleBackToViolationCodeStep}
+              isEntityDirty={isEntityDirty}
               fineData={fineData}
-              isBusinessAndEntityDirty={isBusinessAndEntityDirty}
-              isUpdateFineOpen={isUpdateFineOpen}
-              commandBusinessInputValue={commandBusinessInputValue}
-              handleLocationChange={handleLocationChange}
-              handleLocationLoadingChange={handleLocationLoadingChange}
+              initialFormValues={fineFormValues}
+              onFormValuesChange={handleFormValuesChange}
               latitude={latitude}
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
+              handleLocationChange={handleLocationChange}
+              handleLocationLoadingChange={handleLocationLoadingChange}
             />
           </form>
         )}

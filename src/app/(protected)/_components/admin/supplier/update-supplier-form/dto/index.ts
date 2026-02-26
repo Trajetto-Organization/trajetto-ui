@@ -26,6 +26,8 @@ interface UpdateSupplierFormSubmitProps {
   supplierData: SupplierProps;
   isUpdateSupplierOpen: boolean;
   isDirty: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type { UpdateSupplierFormSubmitProps, UpdateSupplierFormState };

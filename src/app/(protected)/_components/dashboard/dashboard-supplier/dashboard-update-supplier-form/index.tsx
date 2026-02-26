@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateSupplier } from "@/actions/update-supplier";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateSupplier } from "@/actions/supplier/update-supplier";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import {
   DashboardUpdateSupplierSubmitProps,
@@ -70,7 +70,7 @@ const DashboardUpdateSupplierFormSubmit = ({
   );
 
   const nameField: (typeof allFields)[0] = {
-    label: "Nome do Fornecedor",
+    label: "Nome do Fornecedor *",
     htmlfor: "name",
     name: "name",
     type: "text",
@@ -108,15 +108,15 @@ const DashboardUpdateSupplierFormSubmit = ({
   ];
 
   const finalSupplierFields = supplierFields.map((field) => {
-    if (
-      optionalFields.includes(field.name) &&
-      !field.label.includes("opcional")
-    ) {
+    if (optionalFields.includes(field.name)) {
+      const labelWithoutAsterisk = field.label.replace(" *", "");
+
       return {
         ...field,
-        label: `${field.label} (opcional)`,
+        label: `${labelWithoutAsterisk} (opcional)`,
       };
     }
+
     return field;
   });
 
@@ -176,6 +176,16 @@ const DashboardUpdateSupplierForm = ({
 
   const { businessId } = useAuthStore();
 
+  const updateSupplierForm = (supplierFormData: FormData) => {
+    const updateSupplierData = {
+      businessId: businessId as string,
+      supplierId: supplierData.id,
+    };
+
+    appendDataToForm(supplierFormData, updateSupplierData);
+    return dispatch(supplierFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -187,7 +197,10 @@ const DashboardUpdateSupplierForm = ({
       }}
       open={isUpdateSupplierOpen}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Fornecedor</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -196,18 +209,7 @@ const DashboardUpdateSupplierForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              supplierId: supplierData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateSupplierForm}>
           <DashboardUpdateSupplierFormSubmit
             state={state}
             handleCloseUpdateSupplier={handleCloseUpdateSupplier}

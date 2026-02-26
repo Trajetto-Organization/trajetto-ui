@@ -11,8 +11,8 @@ import {
 
 import { Button, buttonVariants } from "@/components/ui/button";
 
-import { handleUpdatePart } from "@/actions/update-part";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdatePart } from "@/actions/part/update-part";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import {
   DashboardUpdatePartFormSubmitProps,
@@ -56,7 +56,7 @@ const DashboardUpdatePartFormSubmit = ({
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição da Peça"}
+          label={"Descrição da Peça *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -70,7 +70,7 @@ const DashboardUpdatePartFormSubmit = ({
         />
 
         <FormInput
-          label={"Preço Unitário"}
+          label={"Preço Unitário *"}
           htmlfor={"unit_price"}
           name="unit_price"
           type="text"
@@ -83,9 +83,9 @@ const DashboardUpdatePartFormSubmit = ({
         />
       </div>
 
-      {searchSupplierInputValue && searchSupplierInputValue !== "N/A" && (
+      {searchSupplierInputValue && (
         <div className="grid grid-cols-2 gap-4 w-full">
-          {searchSupplierInputValue && searchSupplierInputValue !== "N/A" && (
+          {searchSupplierInputValue && (
             <div className="flex items-center gap-2 w-full ml-auto">
               <div
                 className={cn(
@@ -119,9 +119,7 @@ const DashboardUpdatePartFormSubmit = ({
       <div className="grid grid-cols-1 gap-4">
         <SearchSupplier
           errorSupplierId={state.updatePartError?.supplierId}
-          searchSupplierInputValue={
-            searchSupplierInputValue === "N/A" ? "" : searchSupplierInputValue
-          }
+          searchSupplierInputValue={searchSupplierInputValue}
           businessId={businessId as string}
           handleUpdateSearchSupplierInputValue={
             handleUpdateSearchSupplierInputValue
@@ -182,6 +180,17 @@ const DashboardUpdatePartForm = ({
 
   const { businessId } = useAuthStore();
 
+  const updatePartForm = (partFormData: FormData) => {
+    const updatePartData = {
+      businessId: businessId as string,
+      supplierId: commandSupplierInputValue.supplierId,
+      partId: partData.id,
+    };
+
+    appendDataToForm(partFormData, updatePartData);
+    return dispatch(partFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -201,7 +210,10 @@ const DashboardUpdatePartForm = ({
       }}
       open={isUpdatePartOpen}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Peça</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -210,19 +222,7 @@ const DashboardUpdatePartForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              supplierId: commandSupplierInputValue.supplierId,
-              partId: partData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updatePartForm}>
           <DashboardUpdatePartFormSubmit
             state={state}
             handleCloseUpdatePart={handleCloseUpdatePart}

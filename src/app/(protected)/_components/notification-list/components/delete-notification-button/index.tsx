@@ -3,8 +3,15 @@ import { Button } from "@/components/ui/button";
 
 import { Trash2, Loader } from "lucide-react";
 
-const DeleteNotificationButton = (): JSX.Element => {
+interface DeleteNotificationButtonProps {
+  disabled?: boolean;
+}
+
+const DeleteNotificationButton = ({
+  disabled,
+}: DeleteNotificationButtonProps): JSX.Element => {
   const { pending } = useFormStatus();
+  const isDisabled = disabled || pending;
 
   return (
     <Button
@@ -13,10 +20,10 @@ const DeleteNotificationButton = (): JSX.Element => {
       type="submit"
       className="h-8 w-8 flex-shrink-0"
       title="Excluir notificação"
-      disabled={pending}
+      disabled={isDisabled}
     >
       <Trash2 className="h-4 w-4 text-destructive" />
-      {pending && (
+      {isDisabled && (
         <div className="animate-spin mr-1">
           <Loader />
         </div>

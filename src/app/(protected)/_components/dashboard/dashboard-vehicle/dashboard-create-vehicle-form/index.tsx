@@ -11,7 +11,7 @@ import {
 import { DashboardCreateVehicleFormState } from "./dto";
 import { Button } from "@/components/ui/button";
 
-import { handleCreateVehicle } from "@/actions/create-vehicle";
+import { handleCreateVehicle } from "@/actions/vehicle/create-vehicle";
 import { useDashboardCreateVehicleForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -61,6 +61,8 @@ const DashboardCreateVehicleForm = (): JSX.Element => {
     handleBackToBranchStep,
     handleBackToDriverVehicleTypeStep,
     handleBackToFuelTypeStep,
+    vehicleFormValues,
+    handleFormValuesChange,
   } = useDashboardCreateVehicleForm(state);
 
   const { businessId } = useAuthStore();
@@ -76,6 +78,35 @@ const DashboardCreateVehicleForm = (): JSX.Element => {
       label: getPermissionName(permissions.FUEL_TYPE_MANAGE),
     },
   ]);
+
+  const createVehicleForm = (vehicleFormData: FormData) => {
+    // Add selected IDs to form data
+    vehicleFormData.append("businessId", businessId as string);
+
+    if (commandBranchInputValue.branchId) {
+      vehicleFormData.append("branchId", commandBranchInputValue.branchId);
+    }
+
+    if (commandDriverInputValue.driverId) {
+      vehicleFormData.append("driverId", commandDriverInputValue.driverId);
+    }
+
+    if (commandVehicleTypeInputValue.vehicleTypeId) {
+      vehicleFormData.append(
+        "vehicleTypeId",
+        commandVehicleTypeInputValue.vehicleTypeId,
+      );
+    }
+
+    if (commandFuelTypeInputValue.fuelTypeId) {
+      vehicleFormData.append(
+        "fuelTypeId",
+        commandFuelTypeInputValue.fuelTypeId,
+      );
+    }
+
+    return dispatch(vehicleFormData);
+  };
 
   return (
     <Dialog open={isCreateVehicleForm} onOpenChange={handleCloseDialog}>
@@ -106,7 +137,10 @@ const DashboardCreateVehicleForm = (): JSX.Element => {
         </Tooltip>
       </TooltipProvider>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -169,40 +203,12 @@ const DashboardCreateVehicleForm = (): JSX.Element => {
             errorFuelTypeId={state.createVehicleError?.fuelTypeId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Add selected IDs to form data
-              formData.append("businessId", businessId as string);
-
-              if (commandBranchInputValue.branchId) {
-                formData.append("branchId", commandBranchInputValue.branchId);
-              }
-
-              if (commandDriverInputValue.driverId) {
-                formData.append("driverId", commandDriverInputValue.driverId);
-              }
-
-              if (commandVehicleTypeInputValue.vehicleTypeId) {
-                formData.append(
-                  "vehicleTypeId",
-                  commandVehicleTypeInputValue.vehicleTypeId,
-                );
-              }
-
-              if (commandFuelTypeInputValue.fuelTypeId) {
-                formData.append(
-                  "fuelTypeId",
-                  commandFuelTypeInputValue.fuelTypeId,
-                );
-              }
-
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createVehicleForm}>
             <DashboardCreateVehicleFormSubmit
               state={state}
               onBack={handleBackToFuelTypeStep}
+              initialFormValues={vehicleFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

@@ -9,7 +9,11 @@ import { vehicleTableSchema } from "@/schemas/vehicle-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableVehicleRowActions } from "../data-table-row-actions";
-import { formatDate } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDate,
+  formatNotificationDate,
+} from "@/lib/format-values";
 
 // Labels and colors for vehicle status badges
 const statusLabels = {
@@ -67,7 +71,9 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -84,7 +90,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       const status = row.getValue("status") as keyof typeof statusLabels;
       return (
         <Badge variant="outline" className={statusColors[status]}>
-          {statusLabels[status] || status || "N/A"}
+          {displayValue(statusLabels[status])}
         </Badge>
       );
     },
@@ -105,7 +111,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("description") ?? "N/A"}
+          {displayValue(row.getValue("description"))}
         </p>
       );
     },
@@ -121,7 +127,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {row.getValue("license_plate") ?? "N/A"}
+          {displayValue(row.getValue("license_plate"))}
         </p>
       );
     },
@@ -139,7 +145,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {row.getValue("brand") ?? "N/A"}
+          {displayValue(row.getValue("brand"))}
         </p>
       );
     },
@@ -160,7 +166,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {row.getValue("model") ?? "N/A"}
+          {displayValue(row.getValue("model"))}
         </p>
       );
     },
@@ -181,7 +187,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-24">
-          {formatDate(row.getValue("acquisition_date"), "pt-BR") ?? "N/A"}
+          {displayValue(formatDate(row.getValue("acquisition_date"), "pt-BR"))}
         </p>
       );
     },
@@ -197,10 +203,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Tipo de frota" />
     ),
     cell: ({ row }) => {
+      const fleetType =
+        row.getValue("fleet_type") === "OWNED" ? "Própria" : "Terceirizada";
       return (
-        <p className="truncate font-medium w-24">
-          {row.getValue("fleet_type") === "OWNED" ? "Própria" : "Terceirizada"}
-        </p>
+        <p className="truncate font-medium w-24">{displayValue(fleetType)}</p>
       );
     },
     enableSorting: false,
@@ -217,7 +223,9 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-24">
-          {formatDate(row.getValue("last_maintenance_date"), "pt-BR") ?? "N/A"}
+          {displayValue(
+            formatDate(row.getValue("last_maintenance_date"), "pt-BR"),
+          )}
         </p>
       );
     },
@@ -235,9 +243,11 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("current_mileage");
+      const formattedValue = value != null ? `${value} km` : null;
+
       return (
         <p className="truncate font-medium w-24">
-          {value != null ? `${value} km` : "N/A"}
+          {displayValue(formattedValue)}
         </p>
       );
     },
@@ -255,9 +265,11 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("last_maintenance_mileage");
+      const formattedValue = value != null ? `${value} km` : null;
+
       return (
         <p className="truncate font-medium w-24">
-          {value != null ? `${value} km` : "N/A"}
+          {displayValue(formattedValue)}
         </p>
       );
     },
@@ -275,9 +287,11 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("maintenance_interval_km");
+      const formattedValue = value != null ? `${value} km` : null;
+
       return (
         <p className="truncate font-medium w-24">
-          {value != null ? `${value} km` : "N/A"}
+          {displayValue(formattedValue)}
         </p>
       );
     },
@@ -297,9 +311,11 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("maintenance_interval_months");
+      const formattedValue = value != null ? `${value} meses` : null;
+
       return (
         <p className="truncate font-medium w-24">
-          {value != null ? `${value} meses` : "N/A"}
+          {displayValue(formattedValue)}
         </p>
       );
     },
@@ -317,7 +333,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {row.getValue("renavam") ?? "N/A"}
+          {displayValue(row.getValue("renavam"))}
         </p>
       );
     },
@@ -335,7 +351,9 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {formatDate(row.getValue("manufacturing_year"), "pt-BR") ?? "N/A"}
+          {displayValue(
+            formatDate(row.getValue("manufacturing_year"), "pt-BR"),
+          )}
         </p>
       );
     },
@@ -353,7 +371,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {formatDate(row.getValue("model_year"), "pt-BR") ?? "N/A"}
+          {displayValue(formatDate(row.getValue("model_year"), "pt-BR"))}
         </p>
       );
     },
@@ -370,9 +388,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const value = row.getValue("km_per_liter");
+      const formattedValue = value != null ? `${value} km por litro` : null;
       return (
         <p className="truncate font-medium w-24">
-          {value != null ? `${value} km por litro` : "N/A"}
+          {displayValue(formattedValue)}
         </p>
       );
     },
@@ -390,7 +409,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {row.getValue("number_of_axles") ?? "N/A"}
+          {displayValue(row.getValue("number_of_axles"))}
         </p>
       );
     },
@@ -411,13 +430,14 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("vehicleTypeId") ?? "N/A"}
+          {displayValue(row.getValue("vehicleTypeId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicleTypeDescription",
+    accessorFn: (row) => row.vehicleType?.description,
     meta: {
       title: "Nome do tipo de veículo",
     },
@@ -425,9 +445,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome do tipo de veículo" />
     ),
     cell: ({ row }) => {
+      const vehicleTypeDescription = row.original.vehicleType?.description;
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("vehicleTypeDescription") ?? "N/A"}
+          {displayValue(vehicleTypeDescription)}
         </p>
       );
     },
@@ -446,13 +467,14 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("fuelTypeId") ?? "N/A"}
+          {displayValue(row.getValue("fuelTypeId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "fuelTypeDescription",
+    accessorFn: (row) => row.fuelType?.description,
     meta: {
       title: "Nome do tipo de combustível",
     },
@@ -463,9 +485,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       />
     ),
     cell: ({ row }) => {
+      const fuelTypeDescription = row.original.fuelType?.description;
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("fuelTypeDescription") ?? "N/A"}
+          {displayValue(fuelTypeDescription)}
         </p>
       );
     },
@@ -484,13 +507,14 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("driverId") ?? "N/A"}
+          {displayValue(row.getValue("driverId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "driverName",
+    accessorFn: (row) => row.driver?.name,
     meta: {
       title: "Nome do motorista",
     },
@@ -498,15 +522,15 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome do motorista" />
     ),
     cell: ({ row }) => {
+      const driverName = row.original.driver?.name;
       return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("driverName") ?? "N/A"}
-        </p>
+        <p className="truncate font-medium w-48">{displayValue(driverName)}</p>
       );
     },
   },
   {
     accessorKey: "driverCnh",
+    accessorFn: (row) => row.driver?.cnh,
     meta: {
       title: "CNH do motorista",
     },
@@ -514,10 +538,9 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="CNH do motorista" />
     ),
     cell: ({ row }) => {
+      const driverCnh = row.original.driver?.cnh;
       return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("driverCnh") ?? "N/A"}
-        </p>
+        <p className="truncate font-medium w-48">{displayValue(driverCnh)}</p>
       );
     },
   },
@@ -532,13 +555,14 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
+          {displayValue(row.getValue("businessId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "business_name",
+    accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason,
     meta: {
       title: "Nome da empresa",
     },
@@ -546,9 +570,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome da empresa" />
     ),
     cell: ({ row }) => {
+      const businessName = row.original.business?.corporate_reason;
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
+          {displayValue(businessName)}
         </p>
       );
     },
@@ -567,7 +592,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branchId") ?? "N/A"}
+          {displayValue(row.getValue("branchId"))}
         </p>
       );
     },
@@ -577,6 +602,7 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
   },
   {
     accessorKey: "branchName",
+    accessorFn: (row) => row.branch?.corporate_reason,
     meta: {
       title: "Nome da filial",
     },
@@ -584,10 +610,9 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Nome da filial" />
     ),
     cell: ({ row }) => {
+      const branchName = row.original.branch?.corporate_reason;
       return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("branchName") ?? "N/A"}
-        </p>
+        <p className="truncate font-medium w-48">{displayValue(branchName)}</p>
       );
     },
     filterFn: (row, id, value) => {
@@ -603,8 +628,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -617,8 +644,10 @@ const tableVehicleCollumns: ColumnDef<vehicleTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

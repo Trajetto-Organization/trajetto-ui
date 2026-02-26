@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateActivityNotifications } from "@/actions/update-activity-notifications";
+import { updateActivityNotifications } from "@/actions/user/update-activity-notifications";
 import {
   ActivityNotificationsProps,
   ActivityNotificationsReturn,

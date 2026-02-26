@@ -9,7 +9,12 @@ import { fuelTableSchema } from "@/schemas/fuel-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableFuelRowActions } from "../data-table-row-actions";
-import { formatDate } from "@/lib/format-values";
+import {
+  formatDate,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+  displayValue,
+} from "@/lib/format-values";
 
 // Labels and colors for odometer verification badges
 const odometerLabels = {
@@ -63,7 +68,9 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -79,7 +86,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {formatDate(row.getValue("refueling_date"), "pt-BR") ?? "N/A"}
+          {displayValue(formatDate(row.getValue("refueling_date"), "pt-BR"))}
         </p>
       );
     },
@@ -129,7 +136,9 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("price_per_liter") ?? "N/A"}
+          {displayValue(
+            formatToBrazilianCurrency(row.getValue("price_per_liter")),
+          )}
         </p>
       );
     },
@@ -145,7 +154,9 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-24">
-          {row.getValue("total_amount") ?? "N/A"}
+          {displayValue(
+            formatToBrazilianCurrency(row.getValue("total_amount")),
+          )}
         </p>
       );
     },
@@ -154,6 +165,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
   },
   {
     accessorKey: "vehicle_license_plate",
+    accessorFn: (row) => row.vehicle?.license_plate,
     meta: {
       title: "Placa do veículo",
     },
@@ -163,7 +175,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("vehicle_license_plate") ?? "N/A"}
+          {displayValue(row.original.vehicle?.license_plate)}
         </p>
       );
     },
@@ -182,13 +194,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("vehicleId") ?? "N/A"}
+          {displayValue(row.getValue("vehicleId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicle_description",
+    accessorFn: (row) => row.vehicle?.description,
     meta: {
       title: "Descrição do veículo",
     },
@@ -198,13 +211,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("vehicle_description") ?? "N/A"}
+          {displayValue(row.original.vehicle?.description)}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicle_brand",
+    accessorFn: (row) => row.vehicle?.brand,
     meta: {
       title: "Marca do veículo",
     },
@@ -214,13 +228,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("vehicle_brand") ?? "N/A"}
+          {displayValue(row.original.vehicle?.brand)}
         </p>
       );
     },
   },
   {
     accessorKey: "vehicle_model",
+    accessorFn: (row) => row.vehicle?.model,
     meta: {
       title: "Modelo do veículo",
     },
@@ -230,7 +245,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("vehicle_model") ?? "N/A"}
+          {displayValue(row.original.vehicle?.model)}
         </p>
       );
     },
@@ -249,13 +264,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("driverId") ?? "N/A"}
+          {displayValue(row.getValue("driverId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "driver_name",
+    accessorFn: (row) => row.driver?.name,
     meta: {
       title: "Nome do motorista",
     },
@@ -265,13 +281,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("driver_name") ?? "N/A"}
+          {displayValue(row.original.driver?.name)}
         </p>
       );
     },
   },
   {
     accessorKey: "driver_cnh",
+    accessorFn: (row) => row.driver?.cnh,
     meta: {
       title: "CNH do motorista",
     },
@@ -281,7 +298,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("driver_cnh") ?? "N/A"}
+          {displayValue(row.original.driver?.cnh)}
         </p>
       );
     },
@@ -300,13 +317,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("fuelTypeId") ?? "N/A"}
+          {displayValue(row.getValue("fuelTypeId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "fuel_type_description",
+    accessorFn: (row) => row.fuelType?.description,
     meta: {
       title: "Tipo de combustível",
     },
@@ -316,7 +334,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("fuel_type_description") ?? "N/A"}
+          {displayValue(row.original.fuelType?.description)}
         </p>
       );
     },
@@ -335,13 +353,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
+          {displayValue(row.getValue("businessId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "business_name",
+    accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason,
     meta: {
       title: "Nome da empresa",
     },
@@ -351,7 +370,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
+          {displayValue(row.original.business?.corporate_reason)}
         </p>
       );
     },
@@ -370,13 +389,14 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branchId") ?? "N/A"}
+          {displayValue(row.getValue("branchId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "branch_name",
+    accessorKey: "branchName",
+    accessorFn: (row) => row.branch?.corporate_reason,
     meta: {
       title: "Nome da filial",
     },
@@ -386,7 +406,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branch_name") ?? "N/A"}
+          {displayValue(row.original.branch?.corporate_reason)}
         </p>
       );
     },
@@ -405,7 +425,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("notes") ?? "N/A"}
+          {displayValue(row.getValue("notes"))}
         </p>
       );
     },
@@ -421,7 +441,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("latitude") ?? "N/A"}
+          {displayValue(row.getValue("latitude"))}
         </p>
       );
     },
@@ -437,7 +457,7 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("longitude") ?? "N/A"}
+          {displayValue(row.getValue("longitude"))}
         </p>
       );
     },
@@ -473,8 +493,10 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -487,8 +509,10 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

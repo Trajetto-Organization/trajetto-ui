@@ -21,7 +21,6 @@ interface ProtectedLayoutLayoutProps {
   userLogged: UserLogged;
   children: ReactNode;
   error: boolean;
-  notificationCount: number;
   notificationError: boolean;
 }
 
@@ -55,8 +54,19 @@ interface ProtectedNavItemsProps {
   items: ProtectedNavItem[];
 }
 
+interface ServerNotification {
+  id: string;
+  title: string;
+  message: string;
+  link?: string;
+  type: string;
+  read: boolean;
+  created_at: string | Date;
+}
+
 interface SyncNotificationsProviderProps {
   children: React.ReactNode;
+  serverNotifications: ServerNotification[];
   serverNotificationIds: string[];
 }
 
@@ -103,7 +113,7 @@ interface ProtectedCommandBarProps extends HTMLAttributes<HTMLElement> {
 interface UseCommandBarActions {
   user: {
     role: UserRole;
-    permissions?: UserPermission[];
+    permissions?: { permissionKey: PermissionKey }[];
     driverId?: string | null;
     profileAccess?: {
       permissions?: { permissionKey: PermissionKey }[];
@@ -124,7 +134,6 @@ interface Action {
 
 interface ProtectedAccountSettingsProps {
   userLogged: UserLogged;
-  notificationCount: number;
 }
 
 export type {

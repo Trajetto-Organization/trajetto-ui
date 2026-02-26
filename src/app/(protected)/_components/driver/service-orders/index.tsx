@@ -22,6 +22,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { Loader, Wrench } from "lucide-react";
 
+import {
+  displayValue,
+  formatToBrazilianCurrency,
+  formatDate,
+  formatNotificationDate,
+} from "@/lib/format-values";
+
 interface DriverServiceOrdersListProps {
   vehicleId: string;
 }
@@ -61,16 +68,11 @@ const DriverServiceOrdersList = ({
     setShowSpinner(true);
   }, []);
 
-  const safeString = (value: any) => {
-    if (value === null || value === undefined) return "N/A";
-    return String(value);
-  };
-
   const getMaintenanceTypeBadge = (type: string) => {
     if (type === "INTERNAL") {
       return (
         <Badge
-          className="bg-blue-100 
+          className="bg-blue-100
           text-blue-800 hover:bg-blue-300"
         >
           Interna
@@ -80,7 +82,7 @@ const DriverServiceOrdersList = ({
 
     return (
       <Badge
-        className="bg-purple-100 
+        className="bg-purple-100
         text-purple-800 hover:bg-purple-300"
       >
         Externa
@@ -88,11 +90,11 @@ const DriverServiceOrdersList = ({
     );
   };
 
-  const getStatusBadge = (completionDate: string | null) => {
-    if (completionDate && completionDate !== "N/A") {
+  const getStatusBadge = (completionDate: Date | string | null | undefined) => {
+    if (completionDate) {
       return (
         <Badge
-          className="bg-green-100 
+          className="bg-green-100
           text-green-800 hover:bg-green-300"
         >
           Concluída
@@ -102,7 +104,7 @@ const DriverServiceOrdersList = ({
 
     return (
       <Badge
-        className="bg-yellow-100 
+        className="bg-yellow-100
         text-yellow-800 hover:bg-yellow-300"
       >
         Em Andamento
@@ -162,7 +164,12 @@ const DriverServiceOrdersList = ({
                                 Registrado em:
                               </p>
                               <p className="text-sm font-semibold text-gray-900">
-                                {safeString(serviceOrder.created_at)}
+                                {displayValue(
+                                  formatNotificationDate(
+                                    serviceOrder.created_at,
+                                    "pt-BR",
+                                  ),
+                                )}
                               </p>
                               <p className="text-xs text-gray-600">
                                 {getMaintenanceTypeBadge(
@@ -183,7 +190,9 @@ const DriverServiceOrdersList = ({
                             Data da Ordem de Serviço
                           </p>
                           <p className="text-sm font-medium text-gray-900">
-                            {safeString(serviceOrder.date)}
+                            {displayValue(
+                              formatDate(serviceOrder.date, "pt-BR"),
+                            )}
                           </p>
                         </div>
 
@@ -196,7 +205,7 @@ const DriverServiceOrdersList = ({
                             Responsável
                           </p>
                           <p className="text-sm font-medium text-gray-900">
-                            {safeString(serviceOrder.responsibleUserName)}
+                            {displayValue(serviceOrder.responsibleUser?.name)}
                           </p>
                         </div>
 
@@ -210,7 +219,11 @@ const DriverServiceOrdersList = ({
                               Valor Total
                             </p>
                             <p className="text-base font-semibold text-primary">
-                              {safeString(serviceOrder.total_amount)}
+                              {displayValue(
+                                formatToBrazilianCurrency(
+                                  serviceOrder.total_amount,
+                                ),
+                              )}
                             </p>
                           </div>
                           <div className="text-right">
@@ -221,7 +234,7 @@ const DriverServiceOrdersList = ({
                               Peças
                             </p>
                             <p className="text-base font-semibold text-gray-900">
-                              {serviceOrder.partsCount || 0}
+                              {displayValue(serviceOrder.parts?.length || 0)}
                             </p>
                           </div>
                         </div>
@@ -232,7 +245,9 @@ const DriverServiceOrdersList = ({
                             <div>
                               <span className="text-gray-500">Filial: </span>
                               <span className="font-medium text-gray-900">
-                                {safeString(serviceOrder.branchName)}
+                                {displayValue(
+                                  serviceOrder.branch?.corporate_reason,
+                                )}
                               </span>
                             </div>
                           </div>
@@ -243,14 +258,14 @@ const DriverServiceOrdersList = ({
                                 Fornecedor:{" "}
                               </span>
                               <span className="font-medium text-gray-900">
-                                {safeString(serviceOrder.supplierName)}
+                                {displayValue(serviceOrder.supplier?.name)}
                               </span>
                             </div>
                           </div>
                         </div>
 
                         <div
-                          className="mt-3 pt-3 
+                          className="mt-3 pt-3
                           border-t border-gray-100"
                         >
                           <p
@@ -260,7 +275,14 @@ const DriverServiceOrdersList = ({
                             Data de Conclusão
                           </p>
                           <p className="text-sm text-gray-700">
-                            {safeString(serviceOrder.completion_date)}
+                            {displayValue(
+                              serviceOrder.completion_date
+                                ? formatDate(
+                                    serviceOrder.completion_date,
+                                    "pt-BR",
+                                  )
+                                : null,
+                            )}
                           </p>
                         </div>
                       </Card>

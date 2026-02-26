@@ -12,4 +12,10 @@ interface VehicleEfficiencyData {
   last_maintenance_mileage?: number;
 }
 
-export type { FuelDetailsDialogProps, VehicleEfficiencyData };
+type InfoItem = {
+  icon: React.ElementType;
+  label: string;
+  content: React.ReactNode;
+};
+
+export type { FuelDetailsDialogProps, VehicleEfficiencyData, InfoItem };

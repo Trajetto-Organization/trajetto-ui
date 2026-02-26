@@ -159,6 +159,7 @@ const TutorialProvider: React.FC<TutorialProviderProps> = ({
     if (path === "/dashboard" && tab === "charts") {
       return "/dashboard/charts";
     }
+
     return path;
   }, []);
 
@@ -265,6 +266,7 @@ const TutorialProvider: React.FC<TutorialProviderProps> = ({
       if (!isMobile && !hasSeen && processedSteps.length > 0 && !isActive) {
         setSteps(processedSteps);
         setIsActive(true);
+
         setCurrentStep(0);
       }
 

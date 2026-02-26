@@ -20,12 +20,35 @@ const formatDate = (
   return dateObject.toLocaleDateString(locale);
 };
 
+const formatCpf = (cpf: string): string => {
+  return cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, "$1.$2.$3-$4");
+};
+
+const formatRg = (rg: string): string => {
+  const digits = rg.replace(/\D/g, "");
+
+  if (/^\d{9}$/.test(digits)) {
+    return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d)$/, "$1.$2.$3-$4");
+  }
+
+  return rg;
+};
+
 const formatNotificationDate = (
   date: Date | string,
   locale: string = "pt-BR",
 ): string => {
   try {
+    if (date === null || date === undefined || date === "") {
+      return "N/A";
+    }
+
     const dateObject = typeof date === "string" ? new Date(date) : date;
+
+    // Check if the date is valid
+    if (isNaN(dateObject.getTime())) {
+      return "N/A";
+    }
 
     return new Intl.DateTimeFormat(locale, {
       day: "2-digit",
@@ -33,7 +56,6 @@ const formatNotificationDate = (
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "America/Sao_Paulo",
     })
       .format(dateObject)
       .replace(",", " às");
@@ -194,28 +216,28 @@ const formatNumericInput = (
 
 // Format mileage with thousands separator (Brazilian format)
 const formatMileage = (value: string): string => {
-  // Remove tudo que não é número
+  // Remove everything that is not a number.
   const numbers = value.replace(/\D/g, "");
 
-  // Adiciona pontos como separadores de milhares
+  // Adds periods as thousands separators.
   return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 };
 
 // Format liters input with Brazilian decimal format (natural approach)
 const formatLiters = (value: string): string => {
-  // Remove caracteres inválidos, mantém apenas números, vírgula e ponto
+  // Remove invalid characters, keeping only numbers, commas, and periods.
   let cleaned = value.replace(/[^\d,\.]/g, "");
 
-  // Substitui ponto por vírgula (padrão brasileiro)
+  // Replaces period with comma (Brazilian standard)
   cleaned = cleaned.replace(".", ",");
 
-  // Permite apenas uma vírgula
+  // Allows only one comma.
   const parts = cleaned.split(",");
   if (parts.length > 2) {
     cleaned = parts[0] + "," + parts.slice(1).join("");
   }
 
-  // Limita a 3 casas decimais após a vírgula
+  // Limits to 3 decimal places after the comma.
   if (parts.length === 2 && parts[1].length > 3) {
     cleaned = parts[0] + "," + parts[1].substring(0, 3);
   }
@@ -255,17 +277,124 @@ const formatPhoneNumber = (phone: string | null | undefined): string => {
   return phone;
 };
 
+const formatCnpj = (cnpj: string | null | undefined): string => {
+  if (!cnpj) return "";
+  return cnpj.replace(
+    /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+    "$1.$2.$3/$4-$5",
+  );
+};
+
+const formatCep = (cep: string | null | undefined): string => {
+  if (!cep) return "";
+  return cep.replace(/^(\d{5})(\d{3})$/, "$1-$2");
+};
+
+const formatTelephone = (telephone: string | null | undefined): string => {
+  if (!telephone) return "";
+  return telephone.replace(/^(\d{2})(\d{5}|\d{4})(\d{4})$/, "+55 ($1) $2-$3");
+};
+
+// Helper function to format service order display
+const formatServiceOrderDisplay = (serviceOrder: any) => {
+  const formattedDate =
+    formatDate(serviceOrder.date, "pt-BR") || serviceOrder.date;
+
+  const vehicleInfo = serviceOrder.vehicle?.license_plate
+    ? `(Veículo: ${serviceOrder.vehicle.description || ""} - Placa: ${serviceOrder.vehicle.license_plate})`
+    : "";
+
+  return `OS#${serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
+};
+
+// Helper function to display value or N/A fallback
+const displayValue = <T>(
+  value: T | null | undefined,
+  fallback: string = "N/A",
+): string | T => {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+
+  return value;
+};
+
+// Helper function to apply a mask pattern to a value
+// The mask uses "9" to represent numeric characters
+// Example: applyMask("12345678901", "999.999.999-99") => "123.456.789-01"
+const applyMask = (value: string, mask: string): string => {
+  if (!value) return "";
+  let masked = "";
+
+  let valueIndex = 0;
+  const cleanedValue = value.replace(/\D/g, "");
+
+  for (let i = 0; i < mask.length; i++) {
+    const maskChar = mask[i];
+    if (maskChar === "9") {
+      masked += cleanedValue[valueIndex] || "";
+      valueIndex++;
+    } else {
+      masked += maskChar;
+    }
+  }
+
+  return masked;
+};
+
+const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
+const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
+
+const isEmptyOrWhitespace = (value: string): boolean =>
+  value.trim().length === 0;
+const isValidDateString = (value: string): boolean => {
+  const date = new Date(value);
+  return !isNaN(date.getTime());
+};
+
+// Helper function to convert empty strings to null
+const emptyStringToNull = (value: any) => {
+  if (typeof value === "string" && value.trim() === "") {
+    return null;
+  }
+
+  return value;
+};
+
+// Helper function to convert string to boolean
+const stringToBoolean = (value: any) => {
+  if (typeof value === "string") {
+    return value.toLowerCase() === "true";
+  }
+
+  return Boolean(value);
+};
+
 export {
   formatCurrencyToNumber,
   formatNotificationDate,
   formatToBrazilianCurrency,
+  formatServiceOrderDisplay,
   formatNumericInput,
   parseCurrencyToNumber,
+  isEmptyOrWhitespace,
+  isValidDateString,
+  emptyStringToNull,
+  stringToBoolean,
   formatDate,
   formatMileage,
   formatLiters,
   mileageToNumber,
   litersToNumber,
+  formatCnpj,
+  formatCep,
+  formatTelephone,
+  displayValue,
+  formatCpf,
+  formatRg,
+  applyMask,
+  hasSpaceAtEdges,
+  hasConsecutiveSpaces,
 };
 
 export { formatPhoneNumber };

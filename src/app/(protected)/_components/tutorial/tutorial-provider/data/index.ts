@@ -217,7 +217,7 @@ const tutorialConfigs: TutorialConfig = {
       target: "[role='table']",
       title: "Resumo de Atividades 📈",
       content:
-        "Acompanhe em tempo real o resumo das atividades do sistema, incluindo status de registros, alterações recentes e indicadores importantes.",
+        "Acompanhe o resumo das atividades do sistema, incluindo status de registros, alterações recentes e indicadores importantes.",
       placement: "top",
       spotlightPadding: 10,
     },
@@ -316,7 +316,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Para adicionar uma nova filial ao sistema, clique neste botão.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Filiais
-      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador do sistema.
+      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador.
       Ao adicionar uma filial, você precisará fornecer informações essenciais como CNPJ, razão social, endereço completo e dados para contato.`,
       placement: "bottom",
     },
@@ -333,7 +333,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todas as filiais cadastradas em uma interface organizada e intuitiva.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Filiais
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       DICA: Clique nos cabeçalhos das colunas para ordenar os dados e utilize os filtros para refinar a visualização conforme suas necessidades.`,
       placement: "left",
       spotlightPadding: 20,
@@ -345,7 +345,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Filiais
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       ATENÇÃO CRÍTICA: A exclusão de uma filial afetará todos os veículos, motoristas e ordens de serviço associados a ela. Esta ação deve ser realizada com extremo cuidado.`,
       placement: "bottom",
     },
@@ -477,7 +477,7 @@ const tutorialConfigs: TutorialConfig = {
       • ESCRITA em Gerenciar Motoristas
       PERMISSÕES OPCIONAIS:
       • LEITURA em Gerenciar Filiais (para vincular à filial específica)
-      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador.
       Informe dados pessoais completos, informações da CNH, documentos necessários e opcionalmente selecione uma filial de vinculação.`,
       placement: "bottom",
     },
@@ -494,8 +494,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os motoristas cadastrados com informações detalhadas e atualizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Motoristas
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
-      Veja informações como status da CNH, categoria de habilitação e data de vencimento. O sistema alerta automaticamente sobre documentos próximos do vencimento.`,
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.`,
       placement: "left",
       spotlightPadding: 20,
     },
@@ -506,7 +505,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Motoristas
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       NOTA: Desativar um motorista não o exclui permanentemente do sistema, apenas impede que seja associado a novos veículos até ser reativado.`,
       placement: "bottom",
     },
@@ -537,7 +536,7 @@ const tutorialConfigs: TutorialConfig = {
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Tipos de Combustível
       IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador do sistema.
-      Selecione entre os tipos disponíveis: Gasolina Comum/Aditivada, Diesel S10/S500, Etanol, GNV, entre outros.`,
+      Selecione entre os tipos disponíveis: Gasolina, Diesel, Etanol, GNV, entre outros.`,
       placement: "bottom",
     },
     {
@@ -553,7 +552,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os tipos de combustível cadastrados no sistema de forma organizada.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Tipos de Combustível
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       Esta tabela mostra a descrição detalhada e informações de registro de cada tipo de combustível disponível.`,
       placement: "bottom",
       spotlightPadding: 20,
@@ -565,7 +564,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Tipos de Combustível
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       ATENÇÃO: Só é possível excluir tipos que não estejam associados a nenhum veículo no sistema.`,
       placement: "bottom",
     },
@@ -612,14 +611,14 @@ const tutorialConfigs: TutorialConfig = {
       • ESCRITA em Gerenciar Peças
       PERMISSÕES OPCIONAIS:
       • LEITURA em Gerenciar Fornecedores (para vincular a um fornecedor)
-      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador.
       Informe descrição detalhada, preço unitário atualizado e opcionalmente selecione um fornecedor preferencial.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Busca de Peças 🔍",
-      content: `Encontre rapidamente peças específicas digitando descrição, código de referência ou qualquer outra informação cadastrada.
+      content: `Encontre rapidamente peças específicas digitando descrição, identificador ou qualquer outra informação cadastrada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -629,7 +628,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todas as peças cadastradas no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Peças
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta descrição detalhada, preço unitário atualizado, fornecedor associado e outras informações relevantes para gestão.`,
       placement: "left",
       spotlightPadding: 20,
@@ -641,7 +640,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Peças
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       Ao editar, você pode atualizar a descrição, preço unitário e fornecedor associado.
       ATENÇÃO: A exclusão só é possível se a peça não estiver vinculada a ordens de serviço no sistema.`,
       placement: "bottom",
@@ -673,14 +672,14 @@ const tutorialConfigs: TutorialConfig = {
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Permissões de Usuários
       • LEITURA em Gerenciar Perfis de Acesso
-      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador.
       Selecione o perfil de acesso de destino, o recurso específico do sistema e configure se o perfil pode ler e/ou escrever nesse recurso.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Permissões 🔍",
-      content: `Encontre rapidamente permissões específicas digitando o nome do perfil de acesso, recurso do sistema ou tipo de permissão configurada.
+      content: `Encontre rapidamente permissões específicas digitando o nome do perfil de acesso, identificador ou tipo de permissão configurada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -690,7 +689,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todas as permissões configuradas no sistema de forma clara e organizada.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Permissões de Usuários
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela mostra o perfil de acesso, o recurso específico e o tipo de permissão concedida (leitura/escrita).`,
       placement: "bottom",
       spotlightPadding: 20,
@@ -703,7 +702,7 @@ const tutorialConfigs: TutorialConfig = {
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Permissões de Usuários
       • LEITURA em Gerenciar Perfis de Acesso
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       Ao editar, você pode modificar o tipo de permissão concedida (leitura/escrita).
       CUIDADO: A exclusão remove completamente o acesso ao recurso para o perfil selecionado!`,
       placement: "bottom",
@@ -741,7 +740,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Para adicionar um novo perfil de acesso ao sistema, clique neste botão.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Perfis de Acesso
-      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador do sistema.
+      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador.
       Informe um nome descritivo e claro para o perfil (exemplos: 'Supervisor de Frota', 'Técnico de Manutenção', 'Analista Operacional').`,
       placement: "bottom",
     },
@@ -758,7 +757,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os perfis de acesso cadastrados no sistema de forma organizada.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Perfis de Acesso
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       LEMBRE-SE: Após criar um perfil, você deve configurar suas permissões específicas na página 'Permissões' para que ele tenha funcionalidade.`,
       placement: "bottom",
       spotlightPadding: 20,
@@ -817,14 +816,14 @@ const tutorialConfigs: TutorialConfig = {
       • ESCRITA em Gerenciar Peças em Ordens de Serviço
       • LEITURA em Gerenciar Ordens de Serviço
       • LEITURA em Gerenciar Peças
-      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador.
       Informe a quantidade exata utilizada para cálculo preciso dos custos.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Registros 🔍",
-      content: `Encontre rapidamente registros específicos digitando o número da ordem de serviço, descrição da peça utilizada ou qualquer outra informação relacionada.
+      content: `Encontre rapidamente registros específicos digitando o identificador da ordem de serviço, descrição da peça utilizada ou qualquer outra informação relacionada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -834,7 +833,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todas as peças utilizadas em ordens de serviço com informações detalhadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Peças em Ordens de Serviço
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela mostra a ordem de serviço relacionada, peça utilizada, quantidade consumida, valor unitário e total calculado automaticamente.`,
       placement: "left",
       spotlightPadding: 20,
@@ -846,7 +845,9 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Peças em Ordens de Serviço
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      • LEITURA em Gerenciar Ordens de Serviço
+      • LEITURA em Gerenciar Peças
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       Ao editar, você pode atualizar a quantidade utilizada ou substituir a peça selecionada.
       IMPORTANTE: A remoção de um registro afetará diretamente o valor total calculado da ordem de serviço.`,
       placement: "bottom",
@@ -888,14 +889,16 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Veículos
       • LEITURA em Gerenciar Filiais
       • LEITURA em Gerenciar Cadastros de Usuários
-      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
+      PERMISSÕES OPCIONAIS:
+      • LEITURA em Gerenciar Fornecedores (para vincular a uma ordem específica)
+      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador.
       Descreva detalhadamente o problema identificado e informe as datas previstas para execução dos serviços.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Ordens de Serviço 🔍",
-      content: `Encontre rapidamente ordens específicas digitando o número da ordem, placa do veículo, tipo de serviço ou qualquer outra informação relacionada.
+      content: `Encontre rapidamente ordens específicas digitando o identificador da ordem, placa do veículo ou qualquer outra informação relacionada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -905,7 +908,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todas as ordens de serviço registradas no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Ordens de Serviço
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta informações detalhadas como veículo relacionado, tipo de serviço, status atual, datas programadas e valores envolvidos.`,
       placement: "left",
       spotlightPadding: 20,
@@ -917,7 +920,12 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Ordens de Serviço
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      • LEITURA em Gerenciar Veículos
+      • LEITURA em Gerenciar Filiais
+      • LEITURA em Gerenciar Cadastros de Usuários
+      PERMISSÕES OPCIONAIS:
+      • LEITURA em Gerenciar Fornecedores (para vincular a uma ordem específica)
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       NOTA: Diferentes ações estarão disponíveis de acordo com o status atual da ordem de serviço (planejada, em andamento, concluída, etc.).`,
       placement: "bottom",
     },
@@ -955,14 +963,14 @@ const tutorialConfigs: TutorialConfig = {
       content: `Para adicionar um novo fornecedor ao sistema, clique neste botão.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Fornecedores
-      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador do sistema.
-      Informe dados completos como nome/razão social, CNPJ, contatos atualizados, endereço completo e área de atuação específica (peças automotivas, serviços especializados, combustível, etc.).`,
+      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador.
+      Informe dados completos como nome/razão social, CNPJ, contatos atualizados, endereço completo, etc.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Fornecedores 🔍",
-      content: `Encontre rapidamente fornecedores específicos digitando nome fantasia, CNPJ, cidade de localização ou qualquer outra informação cadastrada.
+      content: `Encontre rapidamente fornecedores específicos digitando o CNPJ, cidade de localização ou qualquer outra informação cadastrada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -972,8 +980,8 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os fornecedores cadastrados no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Fornecedores
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
-      A tabela apresenta informações essenciais como nome/razão social, CNPJ, contatos atualizados e localização geográfica.`,
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
+      A tabela apresenta informações essenciais como nome/razão social, CNPJ, contatos atualizados, etc.`,
       placement: "left",
       spotlightPadding: 20,
     },
@@ -1023,7 +1031,8 @@ const tutorialConfigs: TutorialConfig = {
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Cadastros de Usuários
       • LEITURA em Gerenciar Perfis de Acesso
-      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
+      • LEITURA em Gerenciar Motoristas
+      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador.
       Informe email válido, nome completo, senha inicial segura e selecione cuidadosamente o nível de acesso e perfil apropriados para o usuário.`,
       placement: "bottom",
     },
@@ -1040,7 +1049,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os usuários cadastrados no sistema com informações detalhadas de acesso.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Cadastros de Usuários
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta informações como nome completo, email de acesso, nível de acesso configurado, perfil atribuído e status de verificação da conta.`,
       placement: "left",
       spotlightPadding: 20,
@@ -1053,7 +1062,8 @@ const tutorialConfigs: TutorialConfig = {
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Cadastros de Usuários
       • LEITURA em Gerenciar Perfis de Acesso (para alterar perfis)
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      • LEITURA em Gerenciar Motoristas
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       A edição permite atualizar dados pessoais e alterar níveis de acesso e perfis atribuídos ao usuário.`,
       placement: "bottom",
     },
@@ -1083,8 +1093,8 @@ const tutorialConfigs: TutorialConfig = {
       content: `Para cadastrar um novo tipo de veículo no sistema, clique neste botão.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Tipos de Veículos
-      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador do sistema.
-      Informe a descrição específica do tipo, como 'Caminhão Baú', 'Van Utilitária', 'Motocicleta para Entregas', etc. Seja específico e descritivo para facilitar análises futuras e relatórios segmentados.`,
+      IMPORTANTE: Caso não possua esta permissão, será necessário solicitá-la ao administrador.
+      Informe a descrição específica do tipo, como 'Caminhão Baú', 'Van Utilitária', etc. Seja específico e descritivo para facilitar análises futuras e relatórios segmentados.`,
       placement: "bottom",
     },
     {
@@ -1100,7 +1110,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os tipos de veículos cadastrados no sistema de forma organizada.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Tipos de Veículos
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       Esta tabela mostra a descrição detalhada e informações de registro de cada tipo de veículo disponível para classificação.`,
       placement: "bottom",
       spotlightPadding: 20,
@@ -1112,7 +1122,7 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Tipos de Veículos
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       ATENÇÃO: A exclusão só é possível se não houver veículos cadastrados utilizando este tipo específico no sistema.`,
       placement: "bottom",
     },
@@ -1163,14 +1173,14 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Tipos de Veículos (para selecionar o tipo específico)
       • LEITURA em Gerenciar Filiais (para vincular à filial responsável)
       • LEITURA em Gerenciar Motoristas (para atribuir um motorista específico)
-      IMPORTANTE: Caso não possua as permissões obrigatórias, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua as permissões obrigatórias, será necessário solicitá-las ao administrador.
       Informe dados essenciais como placa, modelo, ano de fabricação, número do chassi, entre outras informações técnicas importantes.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Veículos 🔍",
-      content: `Encontre rapidamente veículos específicos digitando placa, modelo, ano ou qualquer outra informação cadastrada.
+      content: `Encontre rapidamente veículos específicos digitando placa, modelo, ou qualquer outra informação cadastrada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -1180,7 +1190,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os veículos da frota com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Veículos
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta informações essenciais como placa, modelo, ano de fabricação, tipo de veículo, status operacional atual e filial associada.`,
       placement: "left",
       spotlightPadding: 20,
@@ -1192,8 +1202,11 @@ const tutorialConfigs: TutorialConfig = {
       IMPORTANTE: Os botões só são exibidos quando há registros na tabela.
       PERMISSÕES NECESSÁRIAS:
       • ESCRITA em Gerenciar Veículos
+      • LEITURA em Gerenciar Tipos de Combustível
       PERMISSÕES OPCIONAIS:
-      • ESCRITA em Gerenciar Ordens de Serviço (para registrar manutenções)
+      • LEITURA em Gerenciar Tipos de Veículos (para selecionar o tipo específico)
+      • LEITURA em Gerenciar Filiais (para vincular à filial responsável)
+      • LEITURA em Gerenciar Motoristas (para atribuir um motorista específico)
       IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.`,
       placement: "bottom",
     },
@@ -1236,13 +1249,13 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Cadastros de Usuários
       PERMISSÕES OPCIONAIS:
       • LEITURA em Gerenciar Ordens de Serviço (para vincular a uma ordem específica)
-      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador do sistema.`,
+      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Contas 🔍",
-      content: `Encontre rapidamente contas específicas digitando valor, data de vencimento, nome da filial responsável ou qualquer outra informação relacionada.
+      content: `Encontre rapidamente contas específicas digitando o nome da filial responsável, identificador da conta ou qualquer outra informação relacionada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -1252,7 +1265,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todas as contas a pagar registradas com informações completas e status atualizados.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Contas a Pagar
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta informações essenciais como valor da conta, data de vencimento, data de pagamento, filial responsável e status atual.
       DICA VISUAL: As cores das linhas indicam status importantes: Verde = Conta Paga, Amarelo = Próximo do vencimento, Vermelho = Conta Vencida.`,
       placement: "left",
@@ -1269,7 +1282,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Cadastros de Usuários
       PERMISSÕES OPCIONAIS:
       • LEITURA em Gerenciar Ordens de Serviço (para editar vinculação)
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.`,
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.`,
       placement: "bottom",
     },
     {
@@ -1326,14 +1339,14 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Tipos de Combustível
       • LEITURA em Gerenciar Filiais (para vincular à filial responsável)
       • LEITURA em Gerenciar Motoristas (para identificar o condutor)
-      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua as permissões necessárias, será necessário solicitá-las ao administrador.
       Informe dados precisos como quantidade de litros, valor total, odômetro atual e posto onde foi realizado o abastecimento.`,
       placement: "bottom",
     },
     {
       target: "[placeholder='Procurar...']",
       title: "Buscar Abastecimentos 🔍",
-      content: `Encontre rapidamente registros específicos digitando placa do veículo, valor do abastecimento, nome do posto ou qualquer outra informação relacionada.
+      content: `Encontre rapidamente registros específicos digitando placa do veículo, ou qualquer outra informação relacionada.
       NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
       placement: "bottom",
     },
@@ -1343,7 +1356,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os abastecimentos registrados no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Abastecimento
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta informações detalhadas como veículo abastecido, tipo de combustível, quantidade em litros, valor total, data/hora do abastecimento e localização do posto.
       DICA: Use os filtros para analisar consumo por período, veículo específico ou tipo de combustível.`,
       placement: "left",
@@ -1360,7 +1373,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Tipos de Combustível
       • LEITURA em Gerenciar Filiais
       • LEITURA em Gerenciar Motoristas
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       Funcionalidades disponíveis:
       • Editar quantidade, valor ou informações do posto
       • Corrigir dados do odômetro ou data/hora
@@ -1391,6 +1404,21 @@ const tutorialConfigs: TutorialConfig = {
     },
     createPageStatsTutorialStep(),
     {
+      target: "[data-tutorial='export-excel']",
+      title: "Exportar Relatório de Checklists 📊",
+      content: `Clique aqui para exportar um relatório completo de checklists em formato Excel (.xlsx).
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Checklist dos Veículos
+      O arquivo exportado contém todos os checklists filtrados atualmente na tabela, com informações detalhadas como:
+      • Dados do veículo e motorista responsável
+      • Condição dos Pneus
+      • Nível de Combustível Adequado
+      • Funcionamento de faróis
+      • Data do checklist
+      IMPORTANTE: A exportação será realizada apenas se houver dados na tabela para exportar.`,
+      placement: "bottom",
+    },
+    {
       target: "[data-revalidate]",
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
@@ -1407,7 +1435,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Veículos
       • LEITURA em Gerenciar Filiais
       • LEITURA em Gerenciar Motoristas
-      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador do sistema.
+      IMPORTANTE: Caso não possua essas permissões, será necessário solicitá-las ao administrador.
       O processo é organizado em 3 etapas:
       1. Seleção da filial responsável
       2. Escolha do veículo e motorista para inspeção
@@ -1427,7 +1455,7 @@ const tutorialConfigs: TutorialConfig = {
       content: `Visualize todos os checklists veiculares registrados no sistema com informações completas e organizadas.
       PERMISSÕES NECESSÁRIAS:
       • LEITURA em Gerenciar Checklist dos Veículos
-      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua esta permissão, solicite ao administrador.
       A tabela apresenta informações essenciais como veículo inspecionado, motorista responsável, data do checklist, quilometragem registrada, condição geral do veículo e status da inspeção.
       DICA VISUAL: As cores das linhas indicam a condição geral: Verde = Aprovado, Amarelo = Aprovado com Restrições, Vermelho = Reprovado.`,
       placement: "left",
@@ -1443,7 +1471,7 @@ const tutorialConfigs: TutorialConfig = {
       • LEITURA em Gerenciar Veículos
       • LEITURA em Gerenciar Filiais
       • LEITURA em Gerenciar Motoristas
-      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador do sistema.
+      IMPORTANTE: Caso ainda não possua essas permissões, solicite ao administrador.
       Funcionalidades disponíveis:
       • Visualizar detalhes completos do checklist e fotos anexadas
       • Editar informações do checklist e substituir fotos

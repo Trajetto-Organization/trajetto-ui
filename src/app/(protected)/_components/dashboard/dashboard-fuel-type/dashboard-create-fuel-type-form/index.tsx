@@ -4,14 +4,6 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
   Dialog,
   DialogScrollContent,
   DialogDescription,
@@ -21,17 +13,17 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { handleCreateFuelType } from "@/actions/create-fuel-type";
+import { SelectField } from "@/app/(protected)/_components/custom";
 
+import { handleCreateFuelType } from "@/actions/fuel-type/create-fuel-type";
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 
 import {
   DashboardCreateFuelTypeSubmitProps,
   DashboardCreateFuelTypeFormState,
 } from "./dto";
-import { useDashboardCreateFuelTypeForm } from "./hooks";
 
-import { cn } from "@/lib/utils";
+import { useDashboardCreateFuelTypeForm } from "./hooks";
 import { useAuthStore } from "@/store/auth-store";
 
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -45,36 +37,18 @@ const DashboardCreateFuelTypeFormSubmit = ({
 
   return (
     <div className="space-y-6 mt-2">
-      <div className="w-full flex flex-col gap-3">
-        <div
-          className={cn(
-            "text-sm font-medium",
-            state.createFuelTypeError?.description &&
-              "h-4 truncate text-red-500",
-          )}
-        >
-          {state.createFuelTypeError?.description
-            ? state.createFuelTypeError?.description
-            : "Combustível"}
-        </div>
-        <Select name="description" disabled={pending}>
-          <SelectTrigger aria-label="Tipo do combustível">
-            <SelectValue placeholder="Tipo do combustível" />
-          </SelectTrigger>
-          <SelectContent>
-            {allowedFuelTypes.map((fuel) => (
-              <SelectItem
-                key={fuel}
-                value={fuel}
-                className="cursor-pointer hover:bg-accent
-                hover:text-accent-foreground"
-              >
-                {fuel}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SelectField
+        name="description"
+        label="Combustível *"
+        placeholder="Tipo do combustível"
+        htmlfor="description"
+        options={allowedFuelTypes.map((fuel) => ({
+          label: fuel,
+          value: fuel,
+        }))}
+        disabled={pending}
+        errorName={state.createFuelTypeError?.description}
+      />
 
       <div className="flex gap-2 mt-6">
         <Button
@@ -114,6 +88,11 @@ const DashboardCreateFuelTypeForm = (): JSX.Element => {
     "write",
   );
 
+  const createFuelTypeForm = (fuelTypeFormData: FormData) => {
+    fuelTypeFormData.append("businessId", businessId as string);
+    return dispatch(fuelTypeFormData);
+  };
+
   return (
     <Dialog
       open={isCreateFuelTypeForm}
@@ -129,7 +108,10 @@ const DashboardCreateFuelTypeForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Combustível</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -138,13 +120,7 @@ const DashboardCreateFuelTypeForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            formData.append("businessId", businessId as string);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createFuelTypeForm}>
           <DashboardCreateFuelTypeFormSubmit
             state={state}
             handleOpenCreateFuelTypeForm={handleOpenCreateFuelTypeForm}

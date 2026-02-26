@@ -9,15 +9,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { handleUpdateVehicleChecklist } from "@/actions/update-vehicle-checklist";
+import { handleUpdateVehicleChecklist } from "@/actions/vehicle-checklist/update-vehicle-checklist";
 import { useUpdateVehicleChecklistForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { UpdateChecklistFormSubmit } from "./update-vehicle-checklist-form-submit";
 
 import { validateUpdatePhotoRequirements } from "../create-vehicle-checklist-form/utils/photo-requirements";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
+import { SelectBranchStep } from "../../../steps/select-branch-step";
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
 
 import {
@@ -49,25 +49,125 @@ const UpdateVehicleChecklistForm = ({
   const {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,
-    handleBusinessBranchStepContinue,
+    handleBranchStepContinue,
     handleVehicleDriverStepContinue,
-    handleBackToBusinessBranchStep,
+    handleBackToBranchStep,
     handleBackToVehicleDriverStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    checklistFormValues,
+    handleFormValuesChange,
   } = useUpdateVehicleChecklistForm({
     state,
     handleCloseUpdateChecklist,
     checklistData,
     isUpdateChecklistOpen,
   });
+
+  const updateVehicleChecklistForm = (vehicleChecklistFormData: FormData) => {
+    // Ensure mileage is sent unformatted
+    const mileageInput = document.querySelector(
+      'input[name="current_mileage"]',
+    ) as HTMLInputElement;
+
+    if (mileageInput && mileageInput.value.includes(".")) {
+      const numericValue = mileageInput.value.replace(/\./g, "");
+      mileageInput.value = numericValue;
+
+      vehicleChecklistFormData.set("current_mileage", numericValue);
+    }
+
+    const updateVehicleChacklistData = {
+      checklistId: checklistData.id,
+      businessId: checklistData.businessId,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      driverId: commandDriverInputValue.driverId,
+    };
+
+    // Add files to FormData
+    Object.entries(checklistFiles).forEach(([fieldName, files]) => {
+      files.forEach((file) => {
+        vehicleChecklistFormData.append(fieldName, file);
+      });
+    });
+
+    // Add photos to remove
+    if (photosToRemove.length > 0) {
+      vehicleChecklistFormData.append(
+        "photosToRemove",
+        JSON.stringify(photosToRemove),
+      );
+    }
+
+    // Frontend validation as additional layer
+    // Extract current form values for validation
+    const currentFormValues: Record<string, any> = {};
+    for (const [key, value] of vehicleChecklistFormData.entries()) {
+      if (
+        typeof value === "string" &&
+        key !== "checklistId" &&
+        key !== "businessId" &&
+        key !== "photosToRemove"
+      ) {
+        if (value === "true") {
+          currentFormValues[key] = true;
+        } else if (value === "false") {
+          currentFormValues[key] = false;
+        } else if (value.trim() !== "") {
+          currentFormValues[key] = value;
+        }
+      }
+    }
+
+    // Validate photo requirements for update
+    const photoValidation = validateUpdatePhotoRequirements(
+      currentFormValues,
+      checklistFiles,
+      checklistData.photos || [],
+      photosToRemove,
+    );
+
+    if (!photoValidation.isValid) {
+      // Map field names to Portuguese labels
+      const fieldLabels: Record<string, string> = {
+        current_mileage: "Quilometragem Atual",
+        fuel_level_adequate: "Nível de Combustível",
+        tires_condition: "Condição dos Pneus",
+        brakes_working: "Freios Funcionando",
+        headlights_working: "Faróis Funcionando",
+        taillights_working: "Lanternas Traseiras Funcionando",
+        turn_signals_working: "Setas Funcionando",
+        steering_wheel_condition: "Condição do Volante",
+        battery_condition: "Condição da Bateria",
+        bumpers_condition: "Condição dos Para-choques",
+        windshield_condition: "Condição do Para-brisa",
+        mirrors_condition: "Condição dos Retrovisores",
+        spare_tire_condition: "Condição do Estepe",
+        oil_level_adequate: "Nível de Óleo",
+        radiator_water_adequate: "Água do Radiador",
+        brake_fluid_adequate: "Fluido de Freio",
+        seatbelts_working: "Cintos de Segurança",
+        dashboard_working: "Painel Funcionando",
+        clutch_working: "Embreagem Funcionando",
+      };
+
+      const missingPhotoLabels = photoValidation.missingPhotos.map(
+        (field) => fieldLabels[field] || field,
+      );
+
+      toast.info(`Foto obrigatória faltando: ${missingPhotoLabels.join(", ")}`);
+      return; // Prevent form submission
+    }
+
+    appendDataToForm(vehicleChecklistFormData, updateVehicleChacklistData);
+    return dispatch(vehicleChecklistFormData);
+  };
 
   return (
     <Dialog
@@ -76,44 +176,44 @@ const UpdateVehicleChecklistForm = ({
         if (isUpdateChecklistOpen) {
           formRef.current?.reset();
         }
+
         handleCloseUpdateChecklist();
       }}
     >
-      <DialogScrollContent className="max-w-3xl">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business-branch"
-              ? "Selecionar Empresa e Filial"
+            {currentStep === "select-branch"
+              ? "Selecionar Filial"
               : currentStep === "select-vehicle-driver"
                 ? "Selecionar Veículo e Motorista"
-                : "Atualizar Checklist Veicular"}
+                : "Editar Checklist Veicular"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business-branch"
-              ? "Selecione a empresa e filial para a qual deseja atualizar o checklist."
+            {currentStep === "select-branch"
+              ? "Selecione a filial para qual deseja atualizar o checklist."
               : currentStep === "select-vehicle-driver"
                 ? "Selecione o veículo e motorista para o checklist."
                 : "Atualize as informações necessárias do checklist veicular."}
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business-branch" ? (
-          <SelectBusinessBranchStep
-            handleUpdateSearchBusinessInputValue={
-              handleUpdateSearchBusinessInputValue
-            }
+        {currentStep === "select-branch" ? (
+          <SelectBranchStep
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
-            onContinue={handleBusinessBranchStepContinue}
-            commandBusinessInputValue={commandBusinessInputValue}
+            onContinue={handleBranchStepContinue}
             commandBranchInputValue={commandBranchInputValue}
             errorBranchId={state?.updateVehicleChecklistError?.branchId}
-            errorBusinessId={state.updateVehicleChecklistError?.businessId}
+            businessId={checklistData.businessId}
           />
         ) : currentStep === "select-vehicle-driver" ? (
           <SelectVehicleDriverStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={checklistData.businessId}
             commandVehicleInputValue={commandVehicleInputValue}
             commandDriverInputValue={commandDriverInputValue}
             handleUpdateSearchVehicleInputValue={
@@ -123,121 +223,19 @@ const UpdateVehicleChecklistForm = ({
               handleUpdateSearchDriverInputValue
             }
             onContinue={handleVehicleDriverStepContinue}
-            onBack={handleBackToBusinessBranchStep}
+            onBack={handleBackToBranchStep}
             errorDriverId={state.updateVehicleChecklistError?.driverId}
             errorVehicleId={state.updateVehicleChecklistError?.vehicleId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Ensure mileage is sent unformatted
-              const mileageInput = document.querySelector(
-                'input[name="current_mileage"]',
-              ) as HTMLInputElement;
-              if (mileageInput && mileageInput.value.includes(".")) {
-                const numericValue = mileageInput.value.replace(/\./g, "");
-                mileageInput.value = numericValue;
-
-                formData.set("current_mileage", numericValue);
-              }
-
-              const extraData = {
-                checklistId: checklistData.id,
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                driverId: commandDriverInputValue.driverId,
-              };
-
-              // Add files to FormData
-              Object.entries(checklistFiles).forEach(([fieldName, files]) => {
-                files.forEach((file) => {
-                  formData.append(fieldName, file);
-                });
-              });
-
-              // Add photos to remove
-              if (photosToRemove.length > 0) {
-                formData.append(
-                  "photosToRemove",
-                  JSON.stringify(photosToRemove),
-                );
-              }
-
-              // Frontend validation as additional layer
-              // Extract current form values for validation
-              const currentFormValues: Record<string, any> = {};
-              for (const [key, value] of formData.entries()) {
-                if (
-                  typeof value === "string" &&
-                  key !== "checklistId" &&
-                  key !== "businessId" &&
-                  key !== "photosToRemove"
-                ) {
-                  if (value === "true") {
-                    currentFormValues[key] = true;
-                  } else if (value === "false") {
-                    currentFormValues[key] = false;
-                  } else if (value.trim() !== "") {
-                    currentFormValues[key] = value;
-                  }
-                }
-              }
-
-              // Validate photo requirements for update
-              const photoValidation = validateUpdatePhotoRequirements(
-                currentFormValues,
-                checklistFiles,
-                checklistData.photos || [],
-                photosToRemove,
-              );
-
-              if (!photoValidation.isValid) {
-                // Map field names to Portuguese labels
-                const fieldLabels: Record<string, string> = {
-                  current_mileage: "Quilometragem Atual",
-                  fuel_level_adequate: "Nível de Combustível",
-                  tires_condition: "Condição dos Pneus",
-                  brakes_working: "Freios Funcionando",
-                  headlights_working: "Faróis Funcionando",
-                  taillights_working: "Lanternas Traseiras Funcionando",
-                  turn_signals_working: "Setas Funcionando",
-                  steering_wheel_condition: "Condição do Volante",
-                  battery_condition: "Condição da Bateria",
-                  bumpers_condition: "Condição dos Para-choques",
-                  windshield_condition: "Condição do Para-brisa",
-                  mirrors_condition: "Condição dos Retrovisores",
-                  spare_tire_condition: "Condição do Estepe",
-                  oil_level_adequate: "Nível de Óleo",
-                  radiator_water_adequate: "Água do Radiador",
-                  brake_fluid_adequate: "Fluido de Freio",
-                  seatbelts_working: "Cintos de Segurança",
-                  dashboard_working: "Painel Funcionando",
-                  clutch_working: "Embreagem Funcionando",
-                };
-
-                const missingPhotoLabels = photoValidation.missingPhotos.map(
-                  (field) => fieldLabels[field] || field,
-                );
-
-                toast.info(
-                  `Foto obrigatória faltando: ${missingPhotoLabels.join(", ")}`,
-                );
-                return; // Prevent form submission
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateVehicleChecklistForm}>
             <UpdateChecklistFormSubmit
               state={state}
               onBack={handleBackToVehicleDriverStep}
               checklistData={checklistData}
-              isBusinessAndEntityDirty={isBusinessAndEntityDirty}
-              isUpdateChecklistOpen={isUpdateChecklistOpen}
-              commandBusinessInputValue={commandBusinessInputValue}
+              isEntityDirty={isEntityDirty}
+              initialFormValues={checklistFormValues}
+              onFormValuesChange={handleFormValuesChange}
               commandBranchInputValue={commandBranchInputValue}
               commandVehicleInputValue={commandVehicleInputValue}
               commandDriverInputValue={commandDriverInputValue}

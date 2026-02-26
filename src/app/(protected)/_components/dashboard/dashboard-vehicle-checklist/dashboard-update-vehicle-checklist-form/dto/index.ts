@@ -52,7 +52,8 @@ interface DashboardUpdateVehicleChecklistFormSubmitProps {
   onBack: () => void;
   checklistData: DashboardVehicleChecklistProps;
   isEntityDirty: boolean;
-  isUpdateChecklistOpen: boolean;
+  initialFormValues: Record<string, any>;
+  onFormValuesChange: (values: Record<string, any>) => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   commandBranchInputValue: CommandBranchInputValue;
   commandDriverInputValue: CommandDriverInputValue;

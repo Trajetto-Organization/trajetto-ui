@@ -20,7 +20,7 @@ import {
   CreateProfileAccessFormSubmitProps,
 } from "./dto";
 
-import { handleCreateProfileAccess } from "@/actions/create-profile-access";
+import { handleCreateProfileAccess } from "@/actions/profile-access/create-profile-access";
 import { useCreateProfileAccessForm } from "./hooks";
 
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ const CreateProfileAccessFormSubmit = ({
     <>
       <div className="space-y-4 mt-2">
         <FormInput
-          label={"Nome do perfil"}
+          label={"Nome do perfil *"}
           htmlfor={"name"}
           name="name"
           type="text"
@@ -119,6 +119,15 @@ const CreateProfileAccessForm = (): JSX.Element => {
     formRef,
   } = useCreateProfileAccessForm(state);
 
+  const createProfileAccessForm = (profileAccessFormData: FormData) => {
+    profileAccessFormData.append(
+      "businessId",
+      commandBusinessInputValue.businessId,
+    );
+
+    return dispatch(profileAccessFormData);
+  };
+
   return (
     <Dialog
       open={isCreateCreateProfileAccessForm}
@@ -130,7 +139,10 @@ const CreateProfileAccessForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Novo Perfil</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -139,13 +151,7 @@ const CreateProfileAccessForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            formData.append("businessId", commandBusinessInputValue.businessId);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createProfileAccessForm}>
           <CreateProfileAccessFormSubmit
             handleOpenCreateProfileAccessForm={
               handleOpenCreateProfileAccessForm

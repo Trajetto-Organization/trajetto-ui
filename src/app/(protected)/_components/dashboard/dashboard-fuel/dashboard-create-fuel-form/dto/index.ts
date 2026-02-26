@@ -27,6 +27,8 @@ interface DashboardCreateFuelFormSubmitProps {
   state: DashboardCreateFuelFormState;
   commandVehicleInputValue: CommandVehicleInputValue;
   businessId: string;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
   odometerFile: File | null;
   setOdometerFile: (file: File | null) => void;
   fileError: string | null;

@@ -7,30 +7,20 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Loader, X } from "lucide-react";
 
 import FormInput from "@/components/custom/form-input";
-import { Label } from "@/components/ui/label";
+import { SelectField } from "@/app/(protected)/_components/custom";
 
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
+import { useDashboardUpdateUserForm } from "./hooks";
 import { DashboardUserRegistrationProps } from "../dto";
-import {
-  useUpdateGenerateRandomPassword,
-  useDashboardUpdateUserForm,
-} from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
-import { handleUpdateUserRegistration } from "@/actions/update-user-registration";
+import { appendDataToForm } from "@/lib/append-data-form";
+import { handleUpdateUserRegistration } from "@/actions/user/update-user-registration";
 
 import {
   DashboardUpdateUserFormSubmitProps,
@@ -70,19 +60,24 @@ const DashboardUpdateUserFormSubmit = ({
   },
 }: DashboardUpdateUserFormSubmitProps) => {
   const { pending } = useFormStatus();
-  const { handleGeneratePassword, handleChangePassword, password } =
-    useUpdateGenerateRandomPassword();
 
   const { businessId, role } = useAuthStore();
-
-  // Only MASTER users can set custom passwords
-  const canSetCustomPassword = role === "MASTER";
+  const roleOptions = Object.values(UserBusinessRole)
+    .filter(
+      (roleItem) =>
+        role !== UserBusinessRole.BUSINESS_USER ||
+        roleItem === UserBusinessRole.BUSINESS_USER,
+    )
+    .map((roleItem) => ({
+      value: roleItem,
+      label: roleLabels[roleItem],
+    }));
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
         <FormInput
-          label={"Email"}
+          label={"Email *"}
           htmlfor={"email"}
           name="email"
           type="email"
@@ -95,7 +90,7 @@ const DashboardUpdateUserFormSubmit = ({
         />
 
         <FormInput
-          label={"Nome"}
+          label={"Nome *"}
           htmlfor={"name"}
           name="name"
           type="text"
@@ -107,100 +102,38 @@ const DashboardUpdateUserFormSubmit = ({
           value={userName}
         />
 
-        <div className="w-full flex flex-col gap-3">
-          <Label
-            htmlFor="role"
-            className={cn(
-              state.updateUserError?.role && "h-4 truncate text-red-500",
-            )}
-          >
-            {state.updateUserError?.role
-              ? state.updateUserError?.role
-              : "Nível de acesso"}
-          </Label>
+        <SelectField
+          label="Nível de acesso *"
+          htmlfor="role"
+          name="role"
+          placeholder="Nível de acesso"
+          value={userRole}
+          onChange={(value) => {
+            handleUpdateUserRole(value);
+            handleUpdateSearchProfileAccessInputValue({
+              profileAccessId: "",
+              searchProfileAccessInputValue: "",
+            });
+            handleUpdateSearchDriverInputValue({
+              driverId: "",
+              searchDriverInputValue: "",
+              driverCnh: "",
+            });
+          }}
+          errorName={state.updateUserError?.role}
+          options={roleOptions}
+          disabled={pending}
+        />
 
-          <Select
-            name="role"
-            disabled={pending}
-            value={userRole}
-            onValueChange={(value) => {
-              handleUpdateUserRole(value);
-
-              handleUpdateSearchProfileAccessInputValue({
-                profileAccessId: "",
-                searchProfileAccessInputValue: "",
-              });
-
-              handleUpdateSearchDriverInputValue({
-                driverId: "",
-                searchDriverInputValue: "",
-                driverCnh: "",
-              });
-            }}
-          >
-            <SelectTrigger id="role">
-              <SelectValue placeholder="Nível de acesso" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(UserBusinessRole)
-                .filter(
-                  (roleItem) =>
-                    role !== UserBusinessRole.BUSINESS_USER ||
-                    roleItem === UserBusinessRole.BUSINESS_USER,
-                )
-                .map((roleItem) => (
-                  <SelectItem
-                    key={roleItem}
-                    value={roleItem}
-                    className="cursor-pointer
-                    hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {roleLabels[roleItem]}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+        <div
+          className="flex items-center justify-center
+          p-4 bg-muted/50 rounded-lg border border-dashed"
+        >
+          <p className="text-sm text-muted-foreground text-center">
+            🔐 Por segurança, a senha só poderá ser alterada pelo próprio
+            usuário
+          </p>
         </div>
-
-        {canSetCustomPassword && (
-          <div className="flex items-end gap-2 w-full">
-            <div className="w-full -mt-1">
-              <FormInput
-                label="Senha"
-                htmlfor="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                errorName={state?.updateUserError?.password}
-                placeholder="Senha"
-                value={password}
-                onChange={(e) => handleChangePassword(e.target.value)}
-                disabled={pending}
-              />
-            </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleGeneratePassword}
-              disabled={pending}
-            >
-              Gerar
-            </Button>
-          </div>
-        )}
-
-        {!canSetCustomPassword && (
-          <div
-            className="flex items-center justify-center
-            p-4 bg-muted/50 rounded-lg border border-dashed"
-          >
-            <p className="text-sm text-muted-foreground text-center">
-              🔐 A senha será gerada automaticamente e enviada por e-mail ao
-              usuário
-            </p>
-          </div>
-        )}
       </div>
 
       {userRole === "BUSINESS_USER" && (
@@ -277,48 +210,43 @@ const DashboardUpdateUserFormSubmit = ({
 
       {((userRole &&
         searchProfileAccessInputValue &&
-        userRole !== "BUSINESS_ADMIN" &&
-        searchProfileAccessInputValue !== "N/A") ||
+        userRole !== "BUSINESS_ADMIN") ||
         (userRole === "BUSINESS_USER" &&
           userType === "driver" &&
-          searchDriverInputValue &&
-          searchDriverInputValue !== "N/A")) && (
+          searchDriverInputValue)) && (
         <div className="grid grid-cols-1 gap-4 w-full mt-6">
-          {userRole !== "BUSINESS_ADMIN" &&
-            searchProfileAccessInputValue &&
-            searchProfileAccessInputValue !== "N/A" && (
-              <div className="flex items-center gap-2 w-full ml-auto">
-                <div
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "border-dashed truncate h-8 text-left",
-                  )}
-                >
-                  <span>Perfil:</span>
-                  <span className="w-full truncate">
-                    {searchProfileAccessInputValue}
-                  </span>
-                </div>
-
-                <Button
-                  className="h-8 w-4"
-                  variant="ghost"
-                  onClick={() =>
-                    handleUpdateSearchProfileAccessInputValue({
-                      profileAccessId: "",
-                      searchProfileAccessInputValue: "",
-                    })
-                  }
-                >
-                  <X />
-                </Button>
+          {userRole !== "BUSINESS_ADMIN" && searchProfileAccessInputValue && (
+            <div className="flex items-center gap-2 w-full ml-auto">
+              <div
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-dashed truncate h-8 text-left",
+                )}
+              >
+                <span>Perfil:</span>
+                <span className="w-full truncate">
+                  {searchProfileAccessInputValue}
+                </span>
               </div>
-            )}
+
+              <Button
+                className="h-8 w-4"
+                variant="ghost"
+                onClick={() =>
+                  handleUpdateSearchProfileAccessInputValue({
+                    profileAccessId: "",
+                    searchProfileAccessInputValue: "",
+                  })
+                }
+              >
+                <X />
+              </Button>
+            </div>
+          )}
 
           {userRole === "BUSINESS_USER" &&
             userType === "driver" &&
-            searchDriverInputValue &&
-            searchDriverInputValue !== "N/A" && (
+            searchDriverInputValue && (
               <div className="flex items-center gap-2 w-full ml-auto">
                 <div
                   className={cn(
@@ -380,7 +308,7 @@ const DashboardUpdateUserFormSubmit = ({
         <Button type="button" variant="outline" onClick={handleOpenUpdateUser}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={pending || (!isDirty && !password)}>
+        <Button type="submit" disabled={pending || !isDirty}>
           <span>Editar Usuário</span>
           {pending && (
             <div className="ml-2 animate-spin">
@@ -428,6 +356,19 @@ const DashboardUpdateUserForm = ({
 
   const { businessId } = useAuthStore();
 
+  const updateUserForm = (userFormData: FormData) => {
+    const updateUserData = {
+      businessId: businessId as string,
+      profileAccessId: commandProfileAccessInputValue.profileAccessId,
+      driverId: commandDriverInputValue.driverId,
+      userId: userData.id,
+      userType: userType,
+    };
+
+    appendDataToForm(userFormData, updateUserData);
+    return dispatch(userFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -456,7 +397,10 @@ const DashboardUpdateUserForm = ({
       }}
       open={isUpdateUser}
     >
-      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Usuário</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -465,21 +409,7 @@ const DashboardUpdateUserForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              profileAccessId: commandProfileAccessInputValue.profileAccessId,
-              driverId: commandDriverInputValue.driverId,
-              userId: userData.id,
-              userType: userType,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateUserForm}>
           <DashboardUpdateUserFormSubmit
             state={state}
             handleOpenUpdateUser={handleOpenUpdateUser}

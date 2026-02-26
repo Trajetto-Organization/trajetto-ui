@@ -14,7 +14,7 @@ import { Loader, ShieldAlert, Trash } from "lucide-react";
 import { useDashboardDeleteProfileAccessForm } from "./hooks";
 
 import { Button } from "@/components/ui/button";
-import { handleDeleteProfileAccess } from "@/actions/delete-profile-access";
+import { handleDeleteProfileAccess } from "@/actions/profile-access/delete-profile-access";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
@@ -25,6 +25,26 @@ interface DashboardDeleteProfileAccessProps {
 
 const DashboardDeleteProfileAccessFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteProfileAccessList = [
+    {
+      data: `<strong>Validação prévia:</strong> Você não pode deletar seu próprio perfil de acesso`,
+    },
+    {
+      data: "Todas as permissões associadas a este perfil serão excluídas automaticamente",
+    },
+    {
+      data: "Todos os usuários atribuídos a este perfil terão seus perfis removidos",
+    },
+    {
+      data: "Os usuários afetados perderão acesso imediato às funcionalidades",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -38,32 +58,15 @@ const DashboardDeleteProfileAccessFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> Você não pode deletar seu
-                próprio perfil de acesso
-              </li>
-              <li>
-                Todas as permissões associadas a este perfil serão excluídas
-                automaticamente
-              </li>
-              <li>
-                Todos os usuários atribuídos a este perfil terão seus perfis
-                removidos
-              </li>
-              <li>
-                Os usuários afetados perderão acesso imediato às funcionalidades
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteProfileAccessList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

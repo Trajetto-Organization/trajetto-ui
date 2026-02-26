@@ -7,6 +7,7 @@ import { profileAccessTableSchema } from "@/schemas/profile-access-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableProfileAccessRowActions } from "../dashboard-data-table-row-actions";
+import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[] =
   [
@@ -51,7 +52,7 @@ const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[]
       ),
       cell: ({ row }) => (
         <p className="truncate font-medium w-72">
-          {row.getValue("id") ?? "N/A"}
+          {displayValue(row.getValue("id"))}
         </p>
       ),
       enableSorting: false,
@@ -67,7 +68,7 @@ const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[]
       ),
       cell: ({ row }) => (
         <p className="truncate font-medium w-36">
-          {row.getValue("name") ?? "N/A"}
+          {displayValue(row.getValue("name"))}
         </p>
       ),
       filterFn: (row, id, value) => {
@@ -83,8 +84,10 @@ const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[]
         <DataTableColumnHeader column={column} title="Data de criação" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-24">
-          {row.getValue("created_at") ?? "N/A"}
+        <p className="truncate font-medium w-36">
+          {displayValue(
+            formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+          )}
         </p>
       ),
     },
@@ -97,8 +100,10 @@ const dashboardTableProfileAccessCollumns: ColumnDef<profileAccessTableSchema>[]
         <DataTableColumnHeader column={column} title="Data de atualização" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-24">
-          {row.getValue("updated_at") ?? "N/A"}
+        <p className="truncate font-medium w-36">
+          {displayValue(
+            formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+          )}
         </p>
       ),
     },

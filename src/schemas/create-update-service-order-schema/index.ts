@@ -1,17 +1,9 @@
-import { parseCurrencyToNumber } from "@/lib/format-values";
 import { z } from "zod";
-
-const emptyStringToNull = (value: any) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-  return value;
-};
-
-const isValidDateString = (value: string): boolean => {
-  const date = new Date(value);
-  return !isNaN(date.getTime());
-};
+import {
+  emptyStringToNull,
+  isValidDateString,
+  parseCurrencyToNumber,
+} from "@/lib/format-values";
 
 const createUpdateServiceOrderSchema = z
   .object({
@@ -24,6 +16,7 @@ const createUpdateServiceOrderSchema = z
             code: z.ZodIssueCode.custom,
             message: "Data da ordem de serviço inválida",
           });
+
           return;
         }
       }),
@@ -62,6 +55,7 @@ const createUpdateServiceOrderSchema = z
           if (val.trim() === "") return undefined;
           return parseFloat(val.replace(",", "."));
         }
+
         return val;
       },
       z
@@ -80,6 +74,7 @@ const createUpdateServiceOrderSchema = z
           if (val.trim() === "") return undefined;
           return parseFloat(val.replace(",", "."));
         }
+
         return val;
       },
       z
@@ -101,6 +96,7 @@ const createUpdateServiceOrderSchema = z
           if (val.trim() === "") return undefined;
           return parseFloat(val.replace(",", "."));
         }
+
         return val;
       },
       z
@@ -124,6 +120,7 @@ const createUpdateServiceOrderSchema = z
           if (val.trim() === "") return undefined;
           return parseFloat(val.replace(",", "."));
         }
+
         return val;
       },
       z
@@ -227,6 +224,7 @@ const createUpdateServiceOrderSchema = z
           data.current_mileage_at_service
         );
       }
+
       return true;
     },
     {
@@ -241,6 +239,7 @@ const createUpdateServiceOrderSchema = z
       if (data.completion_date && !data.new_mileage_after_service) {
         return false;
       }
+
       return true;
     },
     {

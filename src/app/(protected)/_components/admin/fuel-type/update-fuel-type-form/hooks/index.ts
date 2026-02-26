@@ -23,7 +23,7 @@ function useUpdateFuelTypeForm({
   fuelTypeValues: {
     description: fuelTypeDescription,
     businessId: fuelTypeBusiness,
-    business_name: businessName,
+    business: businessName,
   },
 }: UseUpdateFuelTypeFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -33,7 +33,7 @@ function useUpdateFuelTypeForm({
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: fuelTypeBusiness || "",
-      searchBusinessInputValue: businessName || "",
+      searchBusinessInputValue: businessName?.corporate_reason || "",
     });
 
   useEffect(() => {
@@ -41,7 +41,7 @@ function useUpdateFuelTypeForm({
       setDescription(fuelTypeDescription);
       setCommandBusinessInputValue({
         businessId: fuelTypeBusiness || "",
-        searchBusinessInputValue: businessName || "",
+        searchBusinessInputValue: businessName?.corporate_reason || "",
       });
     }
   }, [

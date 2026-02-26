@@ -43,7 +43,7 @@ export function DashboardPermissionToolbar<TData>({
   const filters = [
     { key: "action", title: "Nome da permissão" },
     {
-      key: "permission",
+      key: "permissionKey",
       title: "Permissão",
       options: Object.entries(permissionLabels).map(([value, label]) => ({
         value,

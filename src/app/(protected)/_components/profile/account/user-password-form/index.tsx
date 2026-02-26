@@ -21,7 +21,7 @@ import { ProtectedContentSectionColumns } from "../../../layout/protected-conten
 
 import { Loader } from "lucide-react";
 
-import { handleUpdateUserPassword } from "@/actions/update-user-password";
+import { handleUpdateUserPassword } from "@/actions/user/update-user-password";
 import FormInput from "@/components/custom/form-input";
 
 import { MdLockOutline } from "react-icons/md";

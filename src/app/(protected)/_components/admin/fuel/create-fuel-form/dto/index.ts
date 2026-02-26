@@ -28,6 +28,8 @@ interface CreateFuelFormState {
 interface CreateFuelFormSubmitProps {
   state: CreateFuelFormState;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   commandBusinessInputValue: CommandBusinessInputValue;
   handleLocationChange: (lat: number, lon: number) => void;

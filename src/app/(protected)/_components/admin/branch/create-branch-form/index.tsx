@@ -13,10 +13,10 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateBranch } from "@/actions/create-branch";
+import { handleCreateBranch } from "@/actions/branch/create-branch";
 import { CreateBranchFormSubmitProps, CreateBranchFormState } from "./dto";
 
-import { useCreateBusinessForm } from "./hooks";
+import { useCreateBranchForm } from "./hooks";
 import { useCepValidation } from "../../../hooks";
 
 import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
@@ -25,11 +25,20 @@ const CreateBranchFormSubmit = ({
   state,
   isCreateBranchForm,
   onBack,
+  initialFormValues,
+  onFormValuesChange,
 }: CreateBranchFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const { updatedFields, cepLoading } = useCepValidation({
+  const { updatedFields, cepLoading, formValues } = useCepValidation({
     isOpen: isCreateBranchForm,
+    initialData: initialFormValues,
   });
+
+  // Save form values when going back
+  const handleBack = () => {
+    onFormValuesChange(formValues);
+    onBack();
+  };
 
   return (
     <>
@@ -49,7 +58,12 @@ const CreateBranchFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || cepLoading}
+        >
           Voltar
         </Button>
         <Button type="submit" disabled={pending || cepLoading}>
@@ -82,7 +96,14 @@ const CreateBranchForm = (): JSX.Element => {
     handleBack,
     handleUpdateSearchBussinessInputValue,
     handleContinue,
-  } = useCreateBusinessForm(state);
+    branchFormValues,
+    handleFormValuesChange,
+  } = useCreateBranchForm(state);
+
+  const createBranchForm = (branchFormData: FormData) => {
+    branchFormData.append("businessId", selectedBusiness.businessId);
+    return dispatch(branchFormData);
+  };
 
   return (
     <Dialog open={isCreateBranchForm} onOpenChange={handleCloseDialog}>
@@ -92,7 +113,10 @@ const CreateBranchForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business"
@@ -116,17 +140,13 @@ const CreateBranchForm = (): JSX.Element => {
             errorBusinessId={getBusinessIdError()}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              formData.append("businessId", selectedBusiness.businessId);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createBranchForm}>
             <CreateBranchFormSubmit
               isCreateBranchForm={isCreateBranchForm}
               state={state}
               onBack={handleBack}
+              initialFormValues={branchFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

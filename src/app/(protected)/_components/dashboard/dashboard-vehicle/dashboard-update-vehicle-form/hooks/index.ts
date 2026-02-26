@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   CommandBranchInputValue,
   CommandDriverInputValue,
@@ -30,22 +30,31 @@ function useDashboardUpdateVehicleForm({
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
 
-  // Sanitize optional fields that might contain "N/A"
-  const sanitizedBranchName =
-    vehicleData.branchName && vehicleData.branchName !== "N/A"
-      ? vehicleData.branchName
-      : "";
+  // Memoize extracted values from nested objects to prevent re-renders
+  const branchName = useMemo(
+    () => vehicleData.branch?.corporate_reason || "",
+    [vehicleData.branch?.corporate_reason],
+  );
 
-  const sanitizedDriverName =
-    vehicleData.driverName && vehicleData.driverName !== "N/A"
-      ? vehicleData.driverName
-      : "";
+  const driverName = useMemo(
+    () => vehicleData.driver?.name || "",
+    [vehicleData.driver?.name],
+  );
 
-  const sanitizedVehicleTypeDescription =
-    vehicleData.vehicleTypeDescription &&
-    vehicleData.vehicleTypeDescription !== "N/A"
-      ? vehicleData.vehicleTypeDescription
-      : "";
+  const driverCnh = useMemo(
+    () => vehicleData.driver?.cnh || "",
+    [vehicleData.driver?.cnh],
+  );
+
+  const vehicleTypeDescription = useMemo(
+    () => vehicleData.vehicleType?.description || "",
+    [vehicleData.vehicleType?.description],
+  );
+
+  const fuelTypeDescription = useMemo(
+    () => vehicleData.fuelType?.description || "",
+    [vehicleData.fuelType?.description],
+  );
 
   // Step management
   const [currentStep, setCurrentStep] = useState<
@@ -57,71 +66,84 @@ function useDashboardUpdateVehicleForm({
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
-      branchId: sanitizedBranchName ? vehicleData.branchId || "" : "",
-      searchBranchInputValue: sanitizedBranchName,
+      branchId: branchName ? vehicleData.branchId || "" : "",
+      searchBranchInputValue: branchName,
     });
 
   const [commandDriverInputValue, setCommandDriverInputValue] =
     useState<CommandDriverInputValue>({
-      driverId: sanitizedDriverName ? vehicleData.driverId || "" : "",
-      searchDriverInputValue: sanitizedDriverName,
-      driverCnh:
-        sanitizedDriverName && vehicleData.driverCnh
-          ? vehicleData.driverCnh.slice(-4)
-          : "",
+      driverId: driverName ? vehicleData.driverId || "" : "",
+      searchDriverInputValue: driverName,
+      driverCnh: driverCnh ? driverCnh.slice(-4) : "",
     });
 
   const [commandVehicleTypeInputValue, setCommandVehicleTypeInputValue] =
     useState<CommandVehicleTypeInputValue>({
-      vehicleTypeId: sanitizedVehicleTypeDescription
+      vehicleTypeId: vehicleTypeDescription
         ? vehicleData.vehicleTypeId || ""
         : "",
-      searchVehicleTypeInputValue: sanitizedVehicleTypeDescription,
+      searchVehicleTypeInputValue: vehicleTypeDescription,
     });
 
   const [commandFuelTypeInputValue, setCommandFuelTypeInputValue] =
     useState<CommandFuelTypeInputValue>({
       fuelTypeId: vehicleData.fuelTypeId,
-      searchFuelTypeInputValue: vehicleData.fuelTypeDescription,
+      searchFuelTypeInputValue: fuelTypeDescription,
     });
+
+  // Persisted form values for the last step
+  const [vehicleFormValues, setVehicleFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setVehicleFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateVehicleOpen) {
       setCommandBranchInputValue({
-        branchId: sanitizedBranchName ? vehicleData.branchId || "" : "",
-        searchBranchInputValue: sanitizedBranchName,
+        branchId: branchName ? vehicleData.branchId || "" : "",
+        searchBranchInputValue: branchName,
       });
 
       setCommandDriverInputValue({
-        driverId: sanitizedDriverName ? vehicleData.driverId || "" : "",
-        searchDriverInputValue: sanitizedDriverName,
-        driverCnh:
-          sanitizedDriverName && vehicleData.driverCnh
-            ? vehicleData.driverCnh.slice(-4)
-            : "",
+        driverId: driverName ? vehicleData.driverId || "" : "",
+        searchDriverInputValue: driverName,
+        driverCnh: driverCnh ? driverCnh.slice(-4) : "",
       });
 
       setCommandVehicleTypeInputValue({
-        vehicleTypeId: sanitizedVehicleTypeDescription
+        vehicleTypeId: vehicleTypeDescription
           ? vehicleData.vehicleTypeId || ""
           : "",
-        searchVehicleTypeInputValue: sanitizedVehicleTypeDescription,
+        searchVehicleTypeInputValue: vehicleTypeDescription,
       });
 
       setCommandFuelTypeInputValue({
         fuelTypeId: vehicleData.fuelTypeId,
-        searchFuelTypeInputValue: vehicleData.fuelTypeDescription,
+        searchFuelTypeInputValue: fuelTypeDescription,
       });
 
+      setVehicleFormValues({});
       setCurrentStep("select-branch");
     }
   }, [
     isUpdateVehicleOpen,
-    sanitizedBranchName,
-    sanitizedDriverName,
-    sanitizedVehicleTypeDescription,
-    vehicleData,
+    branchName,
+    driverName,
+    driverCnh,
+    vehicleTypeDescription,
+    fuelTypeDescription,
+    vehicleData.branchId,
+    vehicleData.driverId,
+    vehicleData.vehicleTypeId,
+    vehicleData.fuelTypeId,
   ]);
 
   const handleUpdateSearchBranchInputValue = (
@@ -169,7 +191,7 @@ function useDashboardUpdateVehicleForm({
   };
 
   // Step navigation
-  const handleBusinessStepContinue = () => {
+  const handleStepContinue = () => {
     setCurrentStep("select-driver-vehicle-type");
   };
 
@@ -253,15 +275,11 @@ function useDashboardUpdateVehicleForm({
     };
   }, [state, handleCloseUpdateVehicle]);
 
-  // Create sanitized original values for comparison
-  const originalBranchId =
-    vehicleData.branchName !== "N/A" ? vehicleData.branchId || "" : "";
-  const originalDriverId =
-    vehicleData.driverName !== "N/A" ? vehicleData.driverId || "" : "";
-  const originalVehicleTypeId =
-    vehicleData.vehicleTypeDescription !== "N/A"
-      ? vehicleData.vehicleTypeId || ""
-      : "";
+  // Compare current values with original values from vehicle data
+  const originalBranchId = vehicleData.branchId || "";
+  const originalDriverId = vehicleData.driverId || "";
+
+  const originalVehicleTypeId = vehicleData.vehicleTypeId || "";
 
   const isBranchDirty = [
     commandBranchInputValue.branchId !== originalBranchId,
@@ -277,7 +295,7 @@ function useDashboardUpdateVehicleForm({
     commandDriverInputValue,
     commandVehicleTypeInputValue,
     commandFuelTypeInputValue,
-    handleBusinessStepContinue,
+    handleStepContinue,
     handleDriverVehicleTypeStepContinue,
     handleFuelTypeStepContinue,
     handleBackToBranchStep,
@@ -288,6 +306,8 @@ function useDashboardUpdateVehicleForm({
     handleUpdateSearchVehicleTypeInputValue,
     handleUpdateSearchFuelTypeInputValue,
     isBranchDirty,
+    vehicleFormValues,
+    handleFormValuesChange,
   };
 }
 

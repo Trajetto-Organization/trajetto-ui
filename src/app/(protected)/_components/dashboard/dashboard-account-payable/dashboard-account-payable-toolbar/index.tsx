@@ -40,14 +40,6 @@ export function DashboardAccountPayableToolbar<TData>({
       title: "Nome da filial",
       dynamicOptionIcon: Building2,
     },
-    {
-      key: "amount",
-      title: "Valor total",
-    },
-    {
-      key: "issue_date",
-      title: "Data da emissão",
-    },
   ];
 
   return (

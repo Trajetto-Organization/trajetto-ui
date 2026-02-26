@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDashboardDeleteVehicleForm } from "./hooks";
-import { handleDeleteVehicle } from "@/actions/delete-vehicle";
+import { handleDeleteVehicle } from "@/actions/vehicle/delete-vehicle";
 
 import { permissions } from "@/lib/permissions";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -28,6 +28,29 @@ interface DashboardDeleteVehicleProps {
 
 const DashboardDeleteVehicleFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteVehicleList = [
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver multas associadas a este veículo`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver ordens de serviço associadas a este veículo`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver combustíveis associados a este veículo`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver checklists associados a este veículo`,
+    },
+    {
+      data: `Caso passe nas validações, o veículo será excluído permanentemente`,
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -41,38 +64,15 @@ const DashboardDeleteVehicleFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                multas associadas a este veículo
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                ordens de serviço associadas a este veículo
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                combustíveis associados a este veículo
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                checklists associados a este veículo
-              </li>
-              <li>Verifica se o veículo pertence à empresa antes de deletar</li>
-              <li>
-                Caso passe nas validações, o veículo será excluído
-                permanentemente
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteVehicleList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

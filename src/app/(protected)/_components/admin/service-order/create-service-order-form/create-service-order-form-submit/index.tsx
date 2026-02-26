@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import dynamic from "next/dynamic";
-
 import {
   formatCurrencyToNumber,
   formatNumericInput,
@@ -49,9 +48,15 @@ const CreateServiceOrderFormSubmit = ({
   latitude,
   longitude,
   isLoadingLocation,
+  initialFormValues,
+  onFormValuesChange,
 }: CreateServiceOrderFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [formValues, setFormValues] = useState<Record<string, string>>(() => ({
+    date: initialFormValues.date || "",
+    completion_date: initialFormValues.completion_date || "",
+    maintenance_type: initialFormValues.maintenance_type || "",
+  }));
 
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
     vehicleId: commandVehicleInputValue.vehicleId,
@@ -59,22 +64,26 @@ const CreateServiceOrderFormSubmit = ({
   });
 
   // 📸 SNAPSHOT: Vehicle data at the time of creation (EDITABLE FOR MASTER)
-  const [snapshotData, setSnapshotData] = useState({
-    current_mileage_at_service: "",
-    maintenance_interval_km_at_service: "",
-    last_maintenance_mileage_at_service: "",
-  });
+  const [snapshotData, setSnapshotData] = useState(() => ({
+    current_mileage_at_service:
+      initialFormValues.current_mileage_at_service || "",
+    maintenance_interval_km_at_service:
+      initialFormValues.maintenance_interval_km_at_service || "",
+    last_maintenance_mileage_at_service:
+      initialFormValues.last_maintenance_mileage_at_service || "",
+  }));
 
   // 🔧 EDITABLE: New mileage after service
-  const [newMileageAfterService, setNewMileageAfterService] =
-    useState<string>("");
+  const [newMileageAfterService, setNewMileageAfterService] = useState<string>(
+    () => initialFormValues.new_mileage_after_service || "",
+  );
 
   // Check if it is finishing (has completion_date)
   const isCompleting = !!formValues.completion_date;
 
-  // Update snapshot when vehicle data loads
+  // Update snapshot when vehicle data loads (only if no persisted values)
   useEffect(() => {
-    if (data) {
+    if (data && !initialFormValues.current_mileage_at_service) {
       setSnapshotData({
         current_mileage_at_service: data.current_mileage.toString(),
         maintenance_interval_km_at_service:
@@ -84,23 +93,31 @@ const CreateServiceOrderFormSubmit = ({
       });
     }
 
-    if (!isCompleting) {
+    if (!isCompleting && !initialFormValues.new_mileage_after_service) {
       setNewMileageAfterService("");
     }
-  }, [data, isCompleting]);
+  }, [
+    data,
+    isCompleting,
+    initialFormValues.current_mileage_at_service,
+    initialFormValues.new_mileage_after_service,
+  ]);
 
   // Function to handle changes in custom fields (select, datepicker)
   const handleCustomFieldChange = (fieldName: string) => (value: string) => {
     setFormValues((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  const [displayUnitPrice, setDisplayUnitPrice] = useState<string>("");
+  const [displayUnitPrice, setDisplayUnitPrice] = useState<string>(
+    () => initialFormValues.total_amount || "",
+  );
 
   const handleUnitPriceChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ): void => {
     let inputValue = e.target.value;
     inputValue = inputValue.replace(/[^\d,.]/g, "");
+
     setDisplayUnitPrice(inputValue);
   };
 
@@ -136,6 +153,23 @@ const CreateServiceOrderFormSubmit = ({
       }));
     };
 
+  // Save form values when going back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      ...formValues,
+      total_amount: displayUnitPrice,
+      current_mileage_at_service: snapshotData.current_mileage_at_service,
+      maintenance_interval_km_at_service:
+        snapshotData.maintenance_interval_km_at_service,
+      last_maintenance_mileage_at_service:
+        snapshotData.last_maintenance_mileage_at_service,
+      new_mileage_after_service: newMileageAfterService,
+    };
+
+    onFormValuesChange(allFormValues);
+    onBack();
+  };
+
   // Real-time validation of new mileage
   const currentMileageSnapshot =
     parseFloat(snapshotData.current_mileage_at_service) || 0;
@@ -151,7 +185,7 @@ const CreateServiceOrderFormSubmit = ({
       >
         {/* Date */}
         <DatePickerField
-          label="Data da ordem de serviço"
+          label="Data da ordem de serviço *"
           htmlfor="date"
           name="date"
           value={formValues.date || ""}
@@ -173,9 +207,11 @@ const CreateServiceOrderFormSubmit = ({
 
         {/* Maintenance Type */}
         <SelectField
-          label="Tipo de manutenção"
+          key={formValues.maintenance_type}
+          label="Tipo de manutenção *"
           htmlfor="maintenance_type"
           name="maintenance_type"
+          value={formValues.maintenance_type || ""}
           errorName={state.createServiceOrderError?.maintenance_type}
           disabled={pending}
           placeholder="Selecione o tipo de manutenção"
@@ -187,7 +223,7 @@ const CreateServiceOrderFormSubmit = ({
         />
 
         <FormInput
-          label={"Valor total"}
+          label={"Valor total *"}
           htmlfor={"total_amount"}
           name="total_amount"
           type="text"
@@ -435,7 +471,12 @@ const CreateServiceOrderFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || isLoadingVehicle || isLoadingLocation}
+        >
           Voltar
         </Button>
         <Button

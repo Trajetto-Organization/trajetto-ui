@@ -36,7 +36,7 @@ export function AccountPayableToolbar<TData>({
 
   const filters = [
     {
-      key: "business_name",
+      key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },
@@ -44,14 +44,6 @@ export function AccountPayableToolbar<TData>({
       key: "branchName",
       title: "Nome da filial",
       dynamicOptionIcon: Building2,
-    },
-    {
-      key: "amount",
-      title: "Valor total",
-    },
-    {
-      key: "issue_date",
-      title: "Data da emissão",
     },
   ];
 

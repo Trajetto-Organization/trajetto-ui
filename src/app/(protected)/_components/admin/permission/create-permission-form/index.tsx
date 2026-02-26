@@ -18,10 +18,10 @@ import {
   CreatePermissionFormState,
 } from "./dto";
 
-import { handleCreatePermission } from "@/actions/create-permission";
+import { handleCreatePermission } from "@/actions/permission/create-permission";
 import { useCreatePermissionForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { SearchBusiness } from "../../../search-business";
 
 import { CreatePermission } from "./create-permission";
@@ -171,6 +171,16 @@ const CreatePermissionForm = (): JSX.Element => {
     formRef,
   } = useCreatePermissionForm(state);
 
+  const createPermissionForm = (permissionFormData: FormData) => {
+    const permissionData = {
+      businessId: commandBusinessInputValue.businessId,
+      profileAccessId: commandProfileAccessInputValue.profileAccessId,
+    };
+
+    appendDataToForm(permissionFormData, permissionData);
+    return dispatch(permissionFormData);
+  };
+
   return (
     <Dialog
       open={isCreatePermissionForm}
@@ -182,7 +192,10 @@ const CreatePermissionForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Nova Permissão</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -191,18 +204,7 @@ const CreatePermissionForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              profileAccessId: commandProfileAccessInputValue.profileAccessId,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createPermissionForm}>
           <CreatePermissionFormSubmit
             state={state}
             handleOpenCreatePermissionForm={handleOpenCreatePermissionForm}

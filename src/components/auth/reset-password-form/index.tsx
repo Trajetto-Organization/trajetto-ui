@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
+
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 import { Loader } from "lucide-react";
@@ -8,7 +11,7 @@ import { motion } from "framer-motion";
 
 import FormInput from "../../custom/form-input";
 
-import { handleResetPassword } from "@/actions/reset-user-password";
+import { handleResetPassword } from "@/actions/user/reset-user-password";
 import { ResetPasswordFormContainerProps, ResetPasswordFormState } from "./dto";
 
 import { ErrorForm } from "../error-form";
@@ -37,7 +40,7 @@ const ResetPasswordFormContainer = ({
           type="password"
           placeholder={"Deve ter no mínimo 7 caracteres"}
           errorName={state.resetPasswordError?.password}
-          disabled={pending || Boolean(error)}
+          disabled={pending || Boolean(error) || Boolean(state?.successMessage)}
           className="pr-10"
         />
 
@@ -49,7 +52,7 @@ const ResetPasswordFormContainer = ({
           type="password"
           placeholder={"As senhas devem corresponder"}
           errorName={state.resetPasswordError?.confirm_password}
-          disabled={pending || Boolean(error)}
+          disabled={pending || Boolean(error) || Boolean(state?.successMessage)}
           className="pr-10"
         />
       </section>
@@ -57,14 +60,13 @@ const ResetPasswordFormContainer = ({
       <ErrorForm
         message={state?.resetPasswordError?.resetPasswordErrorMessage || error}
       />
-
       <SuccessForm message={state?.successMessage} />
 
       <div className="mt-7">
         <Button
           type="submit"
           aria-label={"Redefinir senha"}
-          disabled={pending || Boolean(error)}
+          disabled={pending || Boolean(error) || Boolean(state?.successMessage)}
           className="w-full"
         >
           Redefinir Senha
@@ -80,11 +82,37 @@ const ResetPasswordFormContainer = ({
 };
 
 const ResetPasswordForm = (): JSX.Element => {
-  const { token, error } = useResetPasswordValidationToken();
+  const router = useRouter();
+  const { token, error, countdown } = useResetPasswordValidationToken();
 
-  // Default value for state
   const defaultState: ResetPasswordFormState = {};
   const [state, dispatch] = useFormState(handleResetPassword, null);
+
+  const [successCountdown, setSuccessCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (state?.successMessage && successCountdown === null) {
+      setSuccessCountdown(3);
+    }
+  }, [state?.successMessage, successCountdown]);
+
+  useEffect(() => {
+    if (successCountdown === null) return;
+
+    if (successCountdown === 0) {
+      router.push("/login");
+    } else {
+      const timer = setTimeout(() => {
+        setSuccessCountdown((prev) => (prev !== null ? prev - 1 : null));
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successCountdown, router]);
+
+  const activeCountdown = countdown ?? successCountdown;
+  const showRedirect =
+    (error || state?.successMessage) && activeCountdown !== null;
 
   return (
     <>
@@ -120,6 +148,15 @@ const ResetPasswordForm = (): JSX.Element => {
           error={error}
         />
       </form>
+
+      {showRedirect && (
+        <p
+          className="text-sm text-muted-foreground
+          text-center animate-pulse mt-4"
+        >
+          Redirecionando para o login em {activeCountdown}...
+        </p>
+      )}
     </>
   );
 };

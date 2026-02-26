@@ -9,7 +9,73 @@ import { accountPayableTableSchema } from "@/schemas/account-payable-table-schem
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableAccountPayableRowActions } from "../data-table-row-actions";
-import { formatDate } from "@/lib/format-values";
+import {
+  formatDate,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+  displayValue,
+} from "@/lib/format-values";
+
+// Helper function to calculate account payable status
+type AccountPayableStatus =
+  | "PENDING"
+  | "PAID"
+  | "PARTIAL"
+  | "LATE"
+  | "PARTIAL_LATE"
+  | "OVERDUE";
+
+function calculateAccountPayableStatus(
+  amount: number,
+  amountPaid: number | null,
+  dueDate: Date | string,
+  paymentDate: Date | string | null,
+): AccountPayableStatus {
+  let status: AccountPayableStatus = "PENDING";
+
+  const currentDate = new Date();
+  const dueDateObj = new Date(dueDate);
+
+  const isOverdue = currentDate > dueDateObj;
+
+  if (paymentDate) {
+    const paid = amountPaid || 0;
+    const paymentDateObj = new Date(paymentDate);
+    const isPaidLate = paymentDateObj > dueDateObj;
+
+    if (paid >= amount) {
+      // Full payment
+      status = isPaidLate ? "LATE" : "PAID";
+    } else if (paid > 0) {
+      // Partial payment
+      if (isPaidLate) {
+        status = "PARTIAL_LATE";
+      } else if (isOverdue) {
+        status = "PARTIAL_LATE";
+      } else {
+        status = "PARTIAL";
+      }
+    }
+  } else {
+    // No payment date
+    status = isOverdue ? "OVERDUE" : "PENDING";
+  }
+
+  return status;
+}
+
+function translateAccountPayableStatus(status: AccountPayableStatus): string {
+  const translations: Record<AccountPayableStatus, string> = {
+    PENDING: "Pendente",
+    PAID: "Pago",
+    PARTIAL: "Parcial",
+    LATE: "Pago com atraso",
+    PARTIAL_LATE: "Parcial com atraso",
+    OVERDUE: "Vencido",
+  };
+
+  return translations[status];
+}
 
 // Labels and colors for account payable status badges
 const statusLabels = {
@@ -74,13 +140,25 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
   },
   {
     accessorKey: "status",
+    accessorFn: (row) => {
+      const rawStatus = calculateAccountPayableStatus(
+        row.amount,
+        row.amount_paid,
+        row.due_date,
+        row.payment_date,
+      );
+
+      return translateAccountPayableStatus(rawStatus);
+    },
     meta: {
       title: "Status",
     },
@@ -106,7 +184,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-40">
-        {row.getValue("issue_date") ?? "N/A"}
+        {displayValue(formatDate(row.getValue("issue_date"), "pt-BR"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -124,7 +202,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-40">
-          {formatDate(row.getValue("due_date"), "pt-BR") ?? "N/A"}
+          {displayValue(formatDate(row.getValue("due_date"), "pt-BR"))}
         </p>
       );
     },
@@ -143,7 +221,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className=" truncate font-medium w-36">
-          {formatDate(row.getValue("payment_date"), "pt-BR") ?? "N/A"}
+          {displayValue(formatDate(row.getValue("payment_date"), "pt-BR"))}
         </p>
       );
     },
@@ -161,7 +239,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("amount") ?? "N/A"}
+          {displayValue(formatToBrazilianCurrency(row.getValue("amount")))}
         </p>
       );
     },
@@ -178,15 +256,20 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Valor pago" />
     ),
     cell: ({ row }) => {
+      const amountPaid = row.getValue("amount_paid") as number | null;
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("amount_paid") ?? "N/A"}
+          {amountPaid !== null ? formatToBrazilianCurrency(amountPaid) : "N/A"}
         </p>
       );
     },
   },
   {
     accessorKey: "remainingAmount",
+    accessorFn: (row) => {
+      const remaining = row.amount - (row.amount_paid || 0);
+      return remaining;
+    },
     meta: {
       title: "Valor restante",
     },
@@ -196,7 +279,9 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("remainingAmount") ?? "N/A"}
+          {displayValue(
+            formatToBrazilianCurrency(row.getValue("remainingAmount")),
+          )}
         </p>
       );
     },
@@ -212,13 +297,14 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
+          {displayValue(row.getValue("businessId"))}
         </p>
       );
     },
   },
   {
-    accessorKey: "business_name",
+    accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason,
     meta: {
       title: "Nome da empresa",
     },
@@ -228,7 +314,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
+          {displayValue(row.original.business?.corporate_reason)}
         </p>
       );
     },
@@ -247,13 +333,14 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branchId") ?? "N/A"}
+          {displayValue(row.getValue("branchId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "branchName",
+    accessorFn: (row) => row.branch?.corporate_reason,
     meta: {
       title: "Nome da filial",
     },
@@ -263,7 +350,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("branchName") ?? "N/A"}
+          {displayValue(row.original.branch?.corporate_reason)}
         </p>
       );
     },
@@ -285,23 +372,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("serviceOrderId") ?? "N/A"}
-        </p>
-      );
-    },
-  },
-  {
-    accessorKey: "serviceOrderDescription",
-    meta: {
-      title: "Nome da ordem de serviço",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Nome da ordem de serviço" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("serviceOrderDescription") ?? "N/A"}
+          {displayValue(row.getValue("serviceOrderId"))}
         </p>
       );
     },
@@ -320,13 +391,14 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("registrationUserId") ?? "N/A"}
+          {displayValue(row.getValue("registrationUserId"))}
         </p>
       );
     },
   },
   {
     accessorKey: "registrationUserName",
+    accessorFn: (row) => row.registrationUser?.name,
     meta: {
       title: "Registro nome do usuário",
     },
@@ -336,7 +408,7 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("registrationUserName") ?? "N/A"}
+          {displayValue(row.original.registrationUser?.name)}
         </p>
       );
     },
@@ -350,8 +422,10 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -364,8 +438,10 @@ const accountPayableTableCollumns: ColumnDef<accountPayableTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

@@ -36,13 +36,13 @@ export function BranchToolbar<TData>({
 
   const filters = [
     {
-      key: "corporate_reason",
-      title: "Razão Social",
+      key: "business_name",
+      title: "Nome da Empresa",
       dynamicOptionIcon: BookUser,
     },
     {
-      key: "business_name",
-      title: "Nome da Empresa",
+      key: "corporate_reason",
+      title: "Razão Social",
       dynamicOptionIcon: BookUser,
     },
     { key: "email", title: "E-mail" },

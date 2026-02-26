@@ -27,6 +27,8 @@ interface CreateSupplierFormSubmitProps {
   state: CreateSupplierFormState;
   isCreateSupplierForm: boolean;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

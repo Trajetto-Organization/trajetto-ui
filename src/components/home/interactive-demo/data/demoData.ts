@@ -13,7 +13,6 @@ import {
   NotepadText,
   Truck,
   Logs,
-  ChevronRight,
 } from "lucide-react";
 
 import { DemoStep, StatCard, Activity, QuickLink, SidebarItem } from "../types";

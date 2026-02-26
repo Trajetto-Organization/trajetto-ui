@@ -59,6 +59,8 @@ interface DashboardCreateVehicleChecklistSubmitProps {
   setChecklistFiles: Dispatch<SetStateAction<Record<string, File[]>>>;
   fileErrors: Record<string, string | null>;
   setFileErrors: Dispatch<SetStateAction<Record<string, string | null>>>;
+  initialFormValues: Record<string, any>;
+  onFormValuesChange: (values: Record<string, any>) => void;
 }
 
 export type {

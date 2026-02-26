@@ -16,17 +16,8 @@ interface DashboardCreateServiceOrderPartFormState {
 interface DashboardCreateServiceOrderPartFormSubmitProps {
   state: DashboardCreateServiceOrderPartFormState;
   onBack: () => void;
-  quantityInputValue: string;
-  displayUnitPrice: string;
-  displayDiscountPercentage: string;
-  handleQuantityChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleUnitPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleUnitPriceBlur: () => void;
-  handleDiscountPercentageChange: (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => void;
-  handleDiscountPercentageBlur: () => void;
-  handleQuantityBlur: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

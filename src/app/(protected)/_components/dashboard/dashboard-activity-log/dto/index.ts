@@ -7,11 +7,13 @@ interface DashboardActivityProps {
   status: string;
   performedBy: string;
   businessId: string | null;
-  userEmail: string;
-  userName: string;
-  userRole: string;
-  created_at: string;
-  updated_at: string;
+  user?: {
+    email: string;
+    role: string;
+    name: string;
+  };
+  created_at: string | Date;
+  updated_at: string | Date;
 }
 
 interface DashboardActivityLogProps {

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseJwt } from "./lib/decode-jwt";
 
-import { Permission, PermissionKey } from "./app/(protected)/_components/dto";
-import { appRoutes } from "./app/app-routes";
-
 interface RefreshUserSessionProps {
   refresh_token: string;
   token: string;
@@ -16,51 +13,100 @@ const AUTH_ROUTES = [
   "/new-verification",
 ];
 
-const PRIVATE_ROUTES = {
-  dashboard: "/dashboard",
-  admin: "/admin",
-  profile: "/profile",
-  notifications: "/notifications",
-  driver: "/driver",
-};
-
-const PAGE_PERMISSIONS: Record<string, PermissionKey> = {};
-appRoutes.forEach((route) => {
-  if (route.requiredPermission) {
-    PAGE_PERMISSIONS[route.path] = route.requiredPermission;
-  }
-});
-
 export default async function middleware(req: NextRequest) {
-  const accessToken = req.cookies.get("tkey")?.value; // Access Token
-  const refreshToken = req.cookies.get("rkey")?.value; // Refresh token
+  const accessToken = req.cookies.get("tkey")?.value;
+  const refreshToken = req.cookies.get("rkey")?.value;
 
   const pathname = req.nextUrl.pathname;
+  let decodeJwt = accessToken ? parseJwt(accessToken) : null;
 
-  const decodeJwt = accessToken ? parseJwt(accessToken) : null;
+  // ============================================
+  // 0. FORCE LOGOUT (from ProtectedProvider security checks)
+  // Deletes cookies and redirects to clean login URL
+  // ============================================
+  if (req.nextUrl.searchParams.get("force_logout") === "true") {
+    const cleanUrl = new URL(req.url);
+    cleanUrl.searchParams.delete("force_logout");
+
+    const response = NextResponse.redirect(cleanUrl);
+
+    response.cookies.delete("tkey");
+    response.cookies.delete("rkey");
+
+    return response;
+  }
+
+  // ============================================
+  // 1. TOKEN REFRESH (runs FIRST, before anything)
+  // ============================================
+  if (decodeJwt && refreshToken) {
+    const currentTime = Date.now() / 1000;
+
+    if (decodeJwt.exp < currentTime) {
+      try {
+        const refreshResponse = await fetch(
+          `${process.env.HTTP_REQUEST}/user/refresh-token`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: refreshToken }),
+          },
+        );
+
+        if (!refreshResponse.ok) {
+          return handleLogout(req, "session_expired");
+        }
+
+        const { token, refresh_token } =
+          (await refreshResponse.json()) as RefreshUserSessionProps;
+
+        // Redirect to same page with fresh cookies
+        const response = NextResponse.redirect(new URL(req.url));
+
+        response.cookies.set("tkey", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          path: "/",
+        });
+
+        response.cookies.set("rkey", refresh_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          path: "/",
+        });
+
+        return response;
+      } catch {
+        return handleLogout(req, "session_not_renewed");
+      }
+    }
+  }
+
   const userRole = decodeJwt?.role || "";
-
   const driverId = decodeJwt?.driverId || null;
 
-  // Checks if the route is private, using the defined prefixes
-  const isDashboard = pathname.startsWith(PRIVATE_ROUTES.dashboard);
-  const isAdmin = pathname.startsWith(PRIVATE_ROUTES.admin);
+  // ============================================
+  // 2. ROUTE CLASSIFICATION
+  // ============================================
+  const isPrivateRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/driver");
 
-  const isProfile = pathname.startsWith(PRIVATE_ROUTES.profile);
-  const isDriver = pathname.startsWith(PRIVATE_ROUTES.driver);
-
-  const isPrivateRoute = isDashboard || isAdmin || isProfile || isDriver;
-  const isPublicRoute = !isPrivateRoute;
-
-  // If it is on a public route and authenticated, redirect if it is an authentication route
-  if (isPublicRoute && accessToken) {
+  // ============================================
+  // 3. PUBLIC ROUTES - redirect authenticated users away from login
+  // ============================================
+  if (!isPrivateRoute && accessToken) {
     if (AUTH_ROUTES.includes(pathname)) {
-      let redirectPath = "/dashboard"; // Default para BUSINESS_USER/BUSINESS_ADMIN
+      let redirectPath = "/dashboard";
 
       if (userRole.startsWith("MASTER")) {
         redirectPath = "/admin";
       } else if (userRole === "BUSINESS_USER" && driverId) {
-        // If you are a driver (you have a driverId in the JWT) → go to /profile
         redirectPath = "/profile";
       }
 
@@ -68,179 +114,73 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // Access restrictions:
-  // - MASTER users cannot access /dashboard
-  if (isDashboard && userRole.startsWith("MASTER")) {
-    return NextResponse.redirect(new URL("/admin", req.url));
-  }
-
-  // - Non-MASTER users cannot access /admin
-  if (isAdmin && !userRole.startsWith("MASTER")) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // - /dashboard/activity: Only BUSINESS_ADMIN can access
-  if (
-    pathname.startsWith("/dashboard/activity") &&
-    userRole !== "BUSINESS_ADMIN"
-  ) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
-  }
-
-  // If it is a private route and you are not authenticated, it redirects to login
+  // ============================================
+  // 4. PRIVATE ROUTES - require authentication
+  // ============================================
   if (isPrivateRoute && !accessToken) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
+  // ============================================
+  // 5. ROLE-BASED ROUTING (from JWT only, zero API calls)
+  // ============================================
   if (isPrivateRoute && accessToken) {
-    // For ALL users (including drivers), request full validation
-    try {
-      const userCheckResponse = await fetch(
-        `${process.env.HTTP_REQUEST}/user/me`,
-        {
-          credentials: "include",
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        },
+    // MASTER cannot access /dashboard
+    if (pathname.startsWith("/dashboard") && userRole.startsWith("MASTER")) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
+
+    // Non-MASTER cannot access /admin
+    if (pathname.startsWith("/admin") && !userRole.startsWith("MASTER")) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    // Non-drivers cannot access /driver routes
+    if (pathname.startsWith("/driver") && !driverId) {
+      const redirectPath = userRole.startsWith("MASTER")
+        ? "/admin"
+        : "/dashboard";
+
+      return NextResponse.redirect(new URL(redirectPath, req.url));
+    }
+
+    // /dashboard/activity: Only BUSINESS_ADMIN
+    if (
+      pathname.startsWith("/dashboard/activity") &&
+      userRole !== "BUSINESS_ADMIN"
+    ) {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    // Drivers can only access /profile, /notifications, /driver
+    if (userRole === "BUSINESS_USER" && driverId) {
+      const allowedPaths = ["/profile", "/notifications", "/driver"];
+      const isAllowedPath = allowedPaths.some((path) =>
+        pathname.startsWith(path),
       );
 
-      // Check for specific error status codes BEFORE parsing JSON
-      if (userCheckResponse.status === 403) {
-        // 403 can be access_revoked or driver_inactive
-        const errorData = await userCheckResponse.json();
-        const errorMessage = errorData.message || "";
-
-        // Check which specific error it is based on the message
-        if (errorMessage.includes("acesso foi revogado")) {
-          return await handleLogout(req, "user_revoked");
-        }
-
-        if (errorMessage.includes("motorista está inativo")) {
-          return await handleLogout(req, "driver_inactive");
-        }
+      if (!isAllowedPath) {
+        return NextResponse.redirect(new URL("/profile", req.url));
       }
-
-      if (
-        userCheckResponse.status === 404 ||
-        userCheckResponse.status === 401
-      ) {
-        return handleLogout(req, "access_denied");
-      }
-
-      const { user } = await userCheckResponse.json();
-
-      // BUSINESS_USER driver: check allowed paths AFTER validation
-      if (userRole === "BUSINESS_USER" && driverId) {
-        // Driver can ONLY access /profile, /notifications, and /driver routes
-        const allowedPaths = ["/profile", "/notifications", "/driver"];
-        const isAllowedPath = allowedPaths.some((path) =>
-          pathname.startsWith(path),
-        );
-
-        if (!isAllowedPath) {
-          // Any other route → redirects to /profile
-          return NextResponse.redirect(new URL("/profile", req.url));
-        }
-
-        // If you are on a permitted route, continue
-        return NextResponse.next();
-      }
-
-      // BUSINESS_USER employee: check profileAccess
-      if (userRole === "BUSINESS_USER") {
-        const hasProfileAccess =
-          user.profileAccess &&
-          user.profileAccess.permissions &&
-          user.profileAccess.permissions.length > 0;
-
-        // Employee MUST have profileAccess configured
-        if (!hasProfileAccess) {
-          return handleLogout(req, "no_user_permission");
-        }
-
-        // SPECIFIC CHECK FOR PAGES REQUIRING PERMISSION
-        const requiredPermission = PAGE_PERMISSIONS[pathname];
-        if (requiredPermission) {
-          const hasPermission = user.profileAccess.permissions.some(
-            (perm: Permission) => perm.permissionKey === requiredPermission,
-          );
-
-          if (!hasPermission) {
-            return NextResponse.redirect(new URL("/dashboard", req.url));
-          }
-        }
-      }
-    } catch (error) {
-      return await handleLogout(req, "session_not_renewed");
     }
   }
 
-  // Check token expiration and try to renew it
-  const currentTime = Date.now() / 1000;
-  if (decodeJwt && decodeJwt.exp < currentTime) {
-    try {
-      const refreshUserTokenRoute = `${process.env.HTTP_REQUEST}/user/refresh-token`;
-      const refreshUserToken = await fetch(refreshUserTokenRoute, {
-        credentials: "include",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token: refreshToken }),
-      });
+  // ============================================
+  // 6. FORWARD PATHNAME (for ProtectedProvider permission check)
+  // ============================================
+  const response = NextResponse.next();
+  response.headers.set("x-pathname", pathname);
 
-      if (!refreshUserToken.ok) {
-        return await handleLogout(req, "session_expired");
-      }
-
-      const { token, refresh_token } =
-        (await refreshUserToken.json()) as RefreshUserSessionProps;
-
-      const updateCookie = NextResponse.redirect(new URL(req.url));
-
-      updateCookie.cookies.set("tkey", token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        path: "/",
-      });
-
-      updateCookie.cookies.set("rkey", refresh_token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        path: "/",
-      });
-
-      return updateCookie;
-    } catch (error) {
-      return await handleLogout(req, "session_not_renewed");
-    }
-  }
-
-  return NextResponse.next();
+  return response;
 }
 
-// Function to log out the user and redirect to login
-const handleLogout = async (req: NextRequest, errorType: string) => {
+const handleLogout = (req: NextRequest, errorType: string) => {
   const response = NextResponse.redirect(
     new URL(`/login?error=${errorType}`, req.url),
   );
 
   response.cookies.delete("tkey");
   response.cookies.delete("rkey");
-
-  response.cookies.set({
-    httpOnly: true,
-    secure: true,
-    sameSite: "strict",
-    name: errorType,
-    value: "true",
-    path: "/",
-  });
 
   return response;
 };

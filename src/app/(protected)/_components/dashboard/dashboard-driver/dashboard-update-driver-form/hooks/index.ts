@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
 import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
@@ -20,7 +20,7 @@ function useDashboardUpdateDriverForm({
   state,
   handleCloseUpdateDriver,
   isUpdateDriverOpen,
-  driverData: { business_name, branchName, businessId, branchId },
+  driverData,
 }: UseDashboardUpdateDriverFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
@@ -30,31 +30,43 @@ function useDashboardUpdateDriverForm({
     "select-branch" | "update-driver"
   >("select-branch");
 
-  const sanitizedBranchName =
-    branchName && branchName !== "N/A" ? branchName : "";
+  // Extract values from nested objects - memoized to prevent unnecessary re-renders
+  const branchName = useMemo(
+    () => driverData.branch?.corporate_reason || "",
+    [driverData.branch?.corporate_reason],
+  );
+
+  const { businessId, branchId } = driverData;
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
-      searchBranchInputValue: sanitizedBranchName,
-      branchId: sanitizedBranchName ? branchId! : "",
+      searchBranchInputValue: branchName,
+      branchId: branchName ? branchId! : "",
     });
+
+  // Persisted form values for the last step
+  const [driverFormValues, setDriverFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setDriverFormValues(values);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!isUpdateDriverOpen) {
       setCommandBranchInputValue({
-        searchBranchInputValue: sanitizedBranchName,
-        branchId: sanitizedBranchName ? branchId! : "",
+        searchBranchInputValue: branchName,
+        branchId: branchName ? branchId! : "",
       });
+
+      setDriverFormValues({});
     }
-  }, [
-    isUpdateDriverOpen,
-    commandBranchInputValue,
-    businessId,
-    branchId,
-    branchName,
-    business_name,
-    sanitizedBranchName,
-  ]);
+  }, [isUpdateDriverOpen, businessId, branchId, branchName]);
 
   const handleUpdateSearchBranchInputValue = (
     data: CommandBranchInputValue,
@@ -140,6 +152,8 @@ function useDashboardUpdateDriverForm({
     handleContinue,
     handleUpdateSearchBranchInputValue,
     isBranchDirty,
+    driverFormValues,
+    handleFormValuesChange,
   };
 }
 

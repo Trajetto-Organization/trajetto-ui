@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { handleCreatePart } from "@/actions/create-part";
+import { handleCreatePart } from "@/actions/part/create-part";
 
 import { CreatePartFormState, CreatePartFormSubmitProps } from "./dto";
 import { useCreatePartForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { cn } from "@/lib/utils";
 import FormInput from "@/components/custom/form-input";
@@ -43,7 +43,7 @@ const CreatePartFormSubmit = ({
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição da Peça"}
+          label={"Descrição da Peça *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -53,7 +53,7 @@ const CreatePartFormSubmit = ({
         />
 
         <FormInput
-          label={"Preço Unitário"}
+          label={"Preço Unitário *"}
           htmlfor={"unit_price"}
           name="unit_price"
           type="text"
@@ -198,6 +198,16 @@ const CreatePartForm = (): JSX.Element => {
     formRef,
   } = useCreatePartForm(state);
 
+  const createPartForm = (partFormData: FormData) => {
+    const partData = {
+      businessId: commandBusinessInputValue.businessId,
+      supplierId: commandSupplierInputValue.supplierId,
+    };
+
+    appendDataToForm(partFormData, partData);
+    return dispatch(partFormData);
+  };
+
   return (
     <Dialog open={isCreatePartForm} onOpenChange={handleOpenCreatePartForm}>
       <DialogTrigger asChild>
@@ -206,7 +216,10 @@ const CreatePartForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl max-h-[90vh]">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Peça</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -215,18 +228,7 @@ const CreatePartForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              supplierId: commandSupplierInputValue.supplierId,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createPartForm}>
           <CreatePartFormSubmit
             state={state}
             handleOpenCreatePartForm={handleOpenCreatePartForm}

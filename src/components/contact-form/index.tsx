@@ -92,8 +92,8 @@ const ContactForm = (): JSX.Element => {
         h-64 bg-[#d81b60]/10 rounded-full blur-3xl"
       />
 
-      <div className="container px-4 md:px-6 py-12 lg:py-24 relative z-10">
-        <div className="text-center mb-12">
+      <div className="container px-4 md:px-6 py-16 sm:py-20 relative z-10">
+        <div className="text-center mb-14 sm:mb-20">
           <motion.h2
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}

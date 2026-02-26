@@ -37,6 +37,7 @@ const updateWhatsAppSettingsSchema = z
       if (data.whatsapp_notifications_enabled && !data.whatsapp_phone) {
         return false;
       }
+
       return true;
     },
     {

@@ -15,7 +15,7 @@ import { Loader, ShieldAlert, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useDeleteUserForm } from "./hooks";
-import { handleDeleteUserRegistration } from "@/actions/delete-user-registration";
+import { handleDeleteUserRegistration } from "@/actions/user/delete-user-registration";
 
 interface DeleteUserProps {
   userId: string;
@@ -23,6 +23,38 @@ interface DeleteUserProps {
 
 const DeleteUserFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteUserList = [
+    {
+      data: `<strong>Validação prévia:</strong> Você não pode deletar sua própria conta`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver ordens de serviço onde este usuário é responsável`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver contas a pagar registradas por este usuário`,
+    },
+    {
+      data: "Todas as sessões e tokens de acesso deste usuário serão invalidados automaticamente",
+    },
+    {
+      data: "Notificações para este usuário serão excluídas automaticamente",
+    },
+    {
+      data: "Cartões Kanban atribuídos a este usuário serão desvinculados automaticamente",
+    },
+    {
+      data: "Confirmações de dois fatores serão excluídas automaticamente",
+    },
+    {
+      data: "O usuário perderá acesso total à plataforma",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -35,44 +67,15 @@ const DeleteUserFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> Você não pode deletar sua
-                própria conta
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                ordens de serviço onde este usuário é responsável
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                contas a pagar registradas por este usuário
-              </li>
-              <li>
-                Todas as sessões e tokens de acesso deste usuário serão
-                invalidados automaticamente
-              </li>
-              <li>
-                Notificações para este usuário serão excluídas automaticamente
-              </li>
-              <li>
-                Cartões Kanban atribuídos a este usuário serão desvinculados
-                automaticamente
-              </li>
-              <li>
-                Confirmações de dois fatores serão excluídas automaticamente
-              </li>
-              <li>O usuário perderá acesso total à plataforma</li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteUserList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

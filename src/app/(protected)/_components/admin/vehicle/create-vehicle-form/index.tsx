@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { handleCreateVehicle } from "@/actions/create-vehicle";
+import { handleCreateVehicle } from "@/actions/vehicle/create-vehicle";
 
 import { useCreateVehicleForm } from "./hooks";
 import { CreateVehicleFormState } from "./dto";
@@ -48,7 +48,38 @@ const CreateVehicleForm = (): JSX.Element => {
     handleBackToBusinessStep,
     handleBackToDriverVehicleTypeStep,
     handleBackToFuelTypeStep,
+    vehicleFormValues,
+    handleFormValuesChange,
   } = useCreateVehicleForm(state);
+
+  const createVehicleForm = (vehicleFormData: FormData) => {
+    // Add selected IDs to form data
+    vehicleFormData.append("businessId", commandBusinessInputValue.businessId);
+
+    if (commandBranchInputValue.branchId) {
+      vehicleFormData.append("branchId", commandBranchInputValue.branchId);
+    }
+
+    if (commandDriverInputValue.driverId) {
+      vehicleFormData.append("driverId", commandDriverInputValue.driverId);
+    }
+
+    if (commandVehicleTypeInputValue.vehicleTypeId) {
+      vehicleFormData.append(
+        "vehicleTypeId",
+        commandVehicleTypeInputValue.vehicleTypeId,
+      );
+    }
+
+    if (commandFuelTypeInputValue.fuelTypeId) {
+      vehicleFormData.append(
+        "fuelTypeId",
+        commandFuelTypeInputValue.fuelTypeId,
+      );
+    }
+
+    return dispatch(vehicleFormData);
+  };
 
   return (
     <Dialog open={isCreateVehicleForm} onOpenChange={handleCloseDialog}>
@@ -58,7 +89,10 @@ const CreateVehicleForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -125,43 +159,12 @@ const CreateVehicleForm = (): JSX.Element => {
             errorFuelTypeId={state.createVehicleError?.fuelTypeId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Add selected IDs to form data
-              formData.append(
-                "businessId",
-                commandBusinessInputValue.businessId,
-              );
-
-              if (commandBranchInputValue.branchId) {
-                formData.append("branchId", commandBranchInputValue.branchId);
-              }
-
-              if (commandDriverInputValue.driverId) {
-                formData.append("driverId", commandDriverInputValue.driverId);
-              }
-
-              if (commandVehicleTypeInputValue.vehicleTypeId) {
-                formData.append(
-                  "vehicleTypeId",
-                  commandVehicleTypeInputValue.vehicleTypeId,
-                );
-              }
-
-              if (commandFuelTypeInputValue.fuelTypeId) {
-                formData.append(
-                  "fuelTypeId",
-                  commandFuelTypeInputValue.fuelTypeId,
-                );
-              }
-
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createVehicleForm}>
             <CreateVehicleFormSubmit
               state={state}
               onBack={handleBackToFuelTypeStep}
+              initialFormValues={vehicleFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

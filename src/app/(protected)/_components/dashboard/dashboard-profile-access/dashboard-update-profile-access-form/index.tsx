@@ -19,10 +19,10 @@ import {
 
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateProfileAccess } from "@/actions/update-profile-access";
+import { handleUpdateProfileAccess } from "@/actions/profile-access/update-profile-access";
 import { useDashboardUpdateProfileAccessForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
 interface DashboardUpdateProfileAccessProps {
@@ -44,7 +44,7 @@ const DashboardUpdateProfileAccessFormSubmit = ({
     <>
       <div className="space-y-4 mt-2">
         <FormInput
-          label={"Nome do perfil"}
+          label={"Nome do perfil *"}
           htmlfor={"name"}
           name="name"
           onChange={(event) =>
@@ -107,6 +107,16 @@ const DashboardUpdateProfileAccessForm = ({
 
   const { businessId } = useAuthStore();
 
+  const updateProfileAccessForm = (profileAccessFormData: FormData) => {
+    const updateProfileAccessData = {
+      businessId: businessId as string,
+      profileAccessId: profileAccessData.id,
+    };
+
+    appendDataToForm(profileAccessFormData, updateProfileAccessData);
+    return dispatch(profileAccessFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -119,7 +129,10 @@ const DashboardUpdateProfileAccessForm = ({
       }}
       open={isUpdateProfileAccess}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Perfil</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -128,18 +141,7 @@ const DashboardUpdateProfileAccessForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              profileAccessId: profileAccessData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateProfileAccessForm}>
           <DashboardUpdateProfileAccessFormSubmit
             state={state}
             handleCloseUpdateProfileAccess={handleCloseUpdateProfileAccess}

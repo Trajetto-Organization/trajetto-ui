@@ -1,8 +1,4 @@
-import {
-  CommandBusinessInputValue,
-  CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
+import { CommandVehicleInputValue } from "@/app/(protected)/_components/dto";
 import { ServiceOrderProps } from "../../dto";
 
 interface UpdateServiceOrderValidationError {
@@ -33,15 +29,15 @@ interface UpdateServiceOrderFormSubmitProps {
   state: UpdateServiceOrderFormState;
   onBack: () => void;
   serviceOrderData: ServiceOrderProps;
-  isBusinessAndEntityDirty: boolean;
-  isUpdateServiceOrderOpen: boolean;
-  commandBusinessInputValue: CommandBusinessInputValue;
+  isEntityDirty: boolean;
   commandVehicleInputValue: CommandVehicleInputValue;
   handleLocationChange: (lat: number, lon: number) => void;
   handleLocationLoadingChange: (isLoading: boolean) => void;
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface UpdateServiceOrderFormProps {

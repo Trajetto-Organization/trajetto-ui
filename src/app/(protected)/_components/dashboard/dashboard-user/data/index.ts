@@ -13,17 +13,4 @@ const twoFactor = [
   },
 ];
 
-const emailVerified = [
-  {
-    label: "Verificado",
-    value: true,
-    icon: ShieldCheck,
-  },
-  {
-    label: "Não verificado",
-    value: false,
-    icon: ShieldAlert,
-  },
-];
-
-export { twoFactor, emailVerified };
+export { twoFactor };

@@ -11,20 +11,23 @@ function useFuelTechnicalDetails(fuelData: FuelProps, isOpen: boolean) {
   });
 
   // Fetch previous fuel record for this specific fuel
+  // Convert Date to string if needed
+  const currentFuelDate =
+    fuelData.refueling_date instanceof Date
+      ? fuelData.refueling_date.toISOString()
+      : fuelData.refueling_date;
+
   const { data: previousFuelData, isLoading: isLoadingPreviousFuel } =
     useFetchPreviousFuel({
       vehicleId: fuelData.vehicleId,
-      currentFuelDate: fuelData.refueling_date,
+      currentFuelDate,
       businessId: fuelData.businessId || "",
       enabled: isOpen,
     });
 
-  // Conversions for calculations
-  const liters = parseFloat(fuelData.liters_amount.replace(",", ".")) || 0;
-  const pricePerLiter =
-    parseFloat(
-      fuelData.price_per_liter.replace(/[^\d,]/g, "").replace(",", "."),
-    ) || 0;
+  // RAW data comes as numbers, no need to parse
+  const liters = fuelData.liters_amount || 0;
+  const pricePerLiter = fuelData.price_per_liter || 0;
 
   return {
     vehicleData,

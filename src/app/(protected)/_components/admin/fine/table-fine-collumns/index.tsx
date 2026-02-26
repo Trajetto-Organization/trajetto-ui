@@ -6,7 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { fineTableSchema } from "@/schemas/fine-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
-import { formatDate } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDate,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+  formatCpf,
+} from "@/lib/format-values";
 import { DataTableFineRowActions } from "../data-table-row-actions";
 
 const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
@@ -50,7 +56,9 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -65,7 +73,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-32">
-        {formatDate(row.getValue("violation_date"), "pt-BR") ?? "N/A"}
+        {displayValue(formatDate(row.getValue("violation_date"), "pt-BR"))}
       </p>
     ),
   },
@@ -79,7 +87,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-32">
-        {formatDate(row.getValue("due_date"), "pt-BR") ?? "N/A"}
+        {displayValue(formatDate(row.getValue("due_date"), "pt-BR"))}
       </p>
     ),
   },
@@ -93,9 +101,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-32">
-        {row.getValue("payment_date")
-          ? formatDate(row.getValue("payment_date"), "pt-BR")
-          : "N/A"}
+        {displayValue(formatDate(row.getValue("payment_date"), "pt-BR"))}
       </p>
     ),
   },
@@ -109,7 +115,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-24">
-        {row.getValue("amount") ?? "N/A"}
+        {displayValue(formatToBrazilianCurrency(row.getValue("amount")))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -127,7 +133,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-16">
-        {row.getValue("points") ?? "0"}
+        {displayValue(row.getValue("points")?.toString())}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -144,29 +150,48 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-48">
-        {row.getValue("location") ?? "N/A"}
+        {displayValue(row.getValue("location"))}
       </p>
     ),
   },
   {
     accessorKey: "violationCode",
+    accessorFn: (row) => {
+      const code = row.trafficViolationCode?.code;
+      const subCode = row.trafficViolationCode?.sub_code;
+
+      return code && subCode !== undefined && subCode !== null
+        ? `${code}-${subCode}`
+        : "";
+    },
     meta: {
       title: "Código da infração",
     },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Código da infração" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("violationCode") ?? "N/A"}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const code = row.original.trafficViolationCode?.code;
+      const subCode = row.original.trafficViolationCode?.sub_code;
+
+      const violationCode =
+        code && subCode !== undefined && subCode !== null
+          ? `${code}-${subCode}`
+          : undefined;
+
+      return (
+        <p className="truncate font-medium w-24">
+          {displayValue(violationCode)}
+        </p>
+      );
+    },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
   },
   {
     accessorKey: "violationDescription",
+    accessorFn: (row) => row.trafficViolationCode?.description || "",
     meta: {
       title: "Descrição da infração",
     },
@@ -175,12 +200,13 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("violationDescription") ?? "N/A"}
+        {displayValue(row.original.trafficViolationCode?.description)}
       </p>
     ),
   },
   {
     accessorKey: "driverName",
+    accessorFn: (row) => row.driver?.name || "",
     meta: {
       title: "Nome do motorista",
     },
@@ -189,12 +215,13 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-48">
-        {row.getValue("driverName") ?? "N/A"}
+        {displayValue(row.original.driver?.name)}
       </p>
     ),
   },
   {
     accessorKey: "driverCpf",
+    accessorFn: (row) => row.driver?.cpf || "",
     meta: {
       title: "CPF do motorista",
     },
@@ -203,12 +230,13 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-32">
-        {row.getValue("driverCpf") ?? "N/A"}
+        {displayValue(formatCpf(row.original.driver?.cpf))}
       </p>
     ),
   },
   {
     accessorKey: "vehicleLicensePlate",
+    accessorFn: (row) => row.vehicle?.license_plate || "",
     meta: {
       title: "Placa do veículo",
     },
@@ -217,12 +245,13 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-24">
-        {row.getValue("vehicleLicensePlate") ?? "N/A"}
+        {displayValue(row.original.vehicle?.license_plate)}
       </p>
     ),
   },
   {
     accessorKey: "vehicleDescription",
+    accessorFn: (row) => row.vehicle?.description || "",
     meta: {
       title: "Descrição do veículo",
     },
@@ -231,12 +260,13 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-48">
-        {row.getValue("vehicleDescription") ?? "N/A"}
+        {displayValue(row.original.vehicle?.description)}
       </p>
     ),
   },
   {
     accessorKey: "businessName",
+    accessorFn: (row) => row.business?.corporate_reason || "",
     meta: {
       title: "Nome da empresa",
     },
@@ -245,7 +275,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-48">
-        {row.getValue("businessName") ?? "N/A"}
+        {displayValue(row.original.business?.corporate_reason)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -254,6 +284,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
   },
   {
     accessorKey: "branchName",
+    accessorFn: (row) => row.branch?.corporate_reason || "",
     meta: {
       title: "Nome da filial",
     },
@@ -262,7 +293,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-48">
-        {row.getValue("branchName") ?? "N/A"}
+        {displayValue(row.original.branch?.corporate_reason)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -280,7 +311,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("latitude") ?? "N/A"}
+          {displayValue(row.getValue("latitude"))}
         </p>
       );
     },
@@ -296,7 +327,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("longitude") ?? "N/A"}
+          {displayValue(row.getValue("longitude"))}
         </p>
       );
     },
@@ -311,7 +342,7 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("observation") ?? "N/A"}
+        {displayValue(row.getValue("observation"))}
       </p>
     ),
   },
@@ -324,8 +355,10 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -338,8 +371,10 @@ const tableFineCollumns: ColumnDef<fineTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

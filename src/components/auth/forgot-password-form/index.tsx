@@ -12,7 +12,7 @@ import { Loader, MailIcon } from "lucide-react";
 import { ForgotPasswordContainerProps, ForgotPasswordFormState } from "./dto";
 import FormInput from "../../custom/form-input";
 
-import { handleForgotPassword } from "@/actions/forgot-password-user";
+import { handleForgotPassword } from "@/actions/user/forgot-password-user";
 
 import { ErrorForm } from "../error-form";
 import { SuccessForm } from "../success-form";
@@ -47,7 +47,6 @@ const ForgotPasswordContainer = ({
       <ErrorForm
         message={state.forgotPasswordError?.forgotPasswordErrorMessage}
       />
-
       <SuccessForm message={state.successMessage} />
 
       <div className="mt-6">

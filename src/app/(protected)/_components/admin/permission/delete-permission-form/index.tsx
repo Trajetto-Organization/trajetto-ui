@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
-import { handleDeletePermission } from "@/actions/delete-permission";
+import { handleDeletePermission } from "@/actions/permission/delete-permission";
 import { useDeletePermissionForm } from "./hooks";
 
 interface DeletePermissionProps {
@@ -23,6 +23,26 @@ interface DeletePermissionProps {
 
 const DeletePermissionFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deletePermissionList = [
+    {
+      data: `<strong>Validação prévia:</strong> Você não pode deletar suas próprias permissões`,
+    },
+    {
+      data: "Usuários com esta permissão perderão acesso às funcionalidades relacionadas",
+    },
+    {
+      data: "Perfis de acesso que contêm esta permissão serão modificados automaticamente",
+    },
+    {
+      data: "Esta alteração afetará todos os usuários associados aos perfis modificados",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -36,38 +56,21 @@ const DeletePermissionFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> Você não pode deletar suas
-                próprias permissões
-              </li>
-              <li>
-                Usuários com esta permissão perderão acesso às funcionalidades
-                relacionadas
-              </li>
-              <li>
-                Perfis de acesso que contêm esta permissão serão modificados
-                automaticamente
-              </li>
-              <li>
-                Esta alteração afetará todos os usuários associados aos perfis
-                modificados
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deletePermissionList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}
           variant={"secondary"}
-          className="bg-red-600/10 dark:bg-red-500/10 dark:text-red-500 text-red-600"
+          className="bg-red-600/10 dark:bg-red-500/10 
+          dark:text-red-500 text-red-600"
         >
           <ShieldAlert className="mr-1 size-5" />
           <span>Deletar Permissão</span>

@@ -59,7 +59,7 @@ export function DataTableVehicleRowActions<TData>({
       label: "Copiar ID da empresa",
       onClick: () => handleCopyID(collumnRowAction.businessId as string),
     },
-    ...(collumnRowAction.driverId !== "N/A"
+    ...(collumnRowAction.driverId
       ? [
           {
             label: "Copiar ID do motorista",
@@ -67,7 +67,7 @@ export function DataTableVehicleRowActions<TData>({
           },
         ]
       : []),
-    ...(collumnRowAction.branchId !== "N/A"
+    ...(collumnRowAction.branchId
       ? [
           {
             label: "Copiar ID da filial",
@@ -75,7 +75,7 @@ export function DataTableVehicleRowActions<TData>({
           },
         ]
       : []),
-    ...(collumnRowAction.vehicleTypeId !== "N/A"
+    ...(collumnRowAction.vehicleTypeId
       ? [
           {
             label: "Copiar ID do tipo de veículo",

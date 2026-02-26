@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
 import { UpdateBusinessFormSubmitProps, UpdateBusinessFormState } from "./dto";
-import { handleUpdateBusiness } from "@/actions/update-business";
+import { handleUpdateBusiness } from "@/actions/business/update-business";
 
 import { BusinessProps } from "../../../dto";
 
@@ -92,6 +92,11 @@ const UpdateBusinessForm = ({
     handleCloseUpdateBusiness,
   });
 
+  const updateBusinessForm = (businessFormData: FormData) => {
+    businessFormData.append("businessId", businessData.id);
+    return dispatch(businessFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -103,7 +108,10 @@ const UpdateBusinessForm = ({
       }}
       open={isUpdateBusinessOpen}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Empresa</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -112,13 +120,7 @@ const UpdateBusinessForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            formData.append("businessId", businessData.id);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateBusinessForm}>
           <UpdateBusinessFormSubmit
             state={state}
             handleCloseUpdateBusiness={handleCloseUpdateBusiness}

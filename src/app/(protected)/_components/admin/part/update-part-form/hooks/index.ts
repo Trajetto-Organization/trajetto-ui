@@ -32,8 +32,8 @@ function useUpdatePartForm({
     unit_price: partPrice,
     businessId,
     supplierId,
-    supplierName,
-    business_name,
+    supplier,
+    business,
   },
 }: UseUpdatePartFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -56,19 +56,16 @@ function useUpdatePartForm({
     formatCurrencyToNumber(partPrice),
   );
 
-  // Treat "N/A" for supplier
-  const actualSupplierName = supplierName === "N/A" ? "" : supplierName;
-
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
-      searchBusinessInputValue: business_name as string,
-      businessId: businessId as string,
+      searchBusinessInputValue: business?.corporate_reason || "",
+      businessId: businessId || "",
     });
 
   const [commandSupplierInputValue, setCommandSupplierInputValue] =
     useState<CommandSupplierInputValue>({
-      searchSupplierInputValue: actualSupplierName,
-      supplierId: supplierName === "N/A" ? "" : (supplierId as string),
+      searchSupplierInputValue: supplier?.name || "",
+      supplierId: supplierId || "",
     });
 
   const handleUpdateSearchBusinessInputValue = ({
@@ -113,14 +110,13 @@ function useUpdatePartForm({
       setDisplayUnitPrice(formatToBrazilianCurrency(numericPrice));
 
       setCommandBusinessInputValue({
-        searchBusinessInputValue: business_name as string,
-        businessId: businessId as string,
+        searchBusinessInputValue: business?.corporate_reason || "",
+        businessId: businessId || "",
       });
 
-      // Treat "N/A" for supplier when reopening modal
       setCommandSupplierInputValue({
-        searchSupplierInputValue: actualSupplierName,
-        supplierId: supplierName === "N/A" ? "" : (supplierId as string),
+        searchSupplierInputValue: supplier?.name || "",
+        supplierId: supplierId || "",
       });
     }
   }, [
@@ -128,9 +124,8 @@ function useUpdatePartForm({
     partDescription,
     partPrice,
     supplierId,
-    supplierName,
-    actualSupplierName,
-    business_name,
+    supplier?.name,
+    business?.corporate_reason,
     businessId,
   ]);
 
@@ -229,8 +224,8 @@ function useUpdatePartForm({
   const isDirty = [
     description !== partDescription,
     Math.abs(numericUnitPrice - originalNumericPrice) > 0.001, // Comparing with tolerance for float
-    commandBusinessInputValue.businessId !== businessId,
-    (supplierName === "N/A" ? "" : supplierName) !==
+    commandBusinessInputValue.businessId !== (businessId || ""),
+    (supplier?.name || "") !==
       commandSupplierInputValue.searchSupplierInputValue,
   ].some(Boolean);
 

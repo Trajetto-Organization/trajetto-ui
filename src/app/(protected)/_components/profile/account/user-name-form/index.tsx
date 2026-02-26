@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormStatus, useFormState } from "react-dom";
-import { handleUpdateUserName } from "@/actions/update-username";
+import { handleUpdateUserName } from "@/actions/user/update-username";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

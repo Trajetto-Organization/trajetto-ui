@@ -12,10 +12,10 @@ import {
 import { DashboardCreateVehicleChecklistFormState } from "./dto";
 
 import { Button } from "@/components/ui/button";
-import { handleCreateVehicleChecklist } from "@/actions/create-vehicle-checklist";
+import { handleCreateVehicleChecklist } from "@/actions/vehicle-checklist/create-vehicle-checklist";
 
 import { useDashboardCreateVehicleChecklistForm } from "./hooks";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { useAuthStore } from "@/store/auth-store";
 import { permissions } from "@/lib/permissions";
@@ -66,6 +66,8 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
     handleVehicleDriverStepContinue,
     handleBackToBranchStep,
     handleBackToVehicleDriverStep,
+    checklistFormValues,
+    handleFormValuesChange,
   } = useDashboardCreateVehicleChecklistForm(state);
 
   const { businessId } = useAuthStore();
@@ -108,6 +110,47 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
     }
   }, [state?.successMessage]);
 
+  const createVehicleChecklistForm = (vehicleChecklistFormData: FormData) => {
+    // Ensure mileage is sent unformatted
+    const mileageInput = document.querySelector(
+      'input[name="current_mileage"]',
+    ) as HTMLInputElement;
+
+    if (mileageInput && mileageInput.value.includes(".")) {
+      // Remove points if still present
+      const numericValue = mileageInput.value.replace(/\./g, "");
+      mileageInput.value = numericValue;
+
+      vehicleChecklistFormData.set("current_mileage", numericValue);
+    }
+
+    const vehicleChecklistData = {
+      businessId: businessId as string,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      driverId: commandDriverInputValue.driverId,
+    };
+
+    // Add all checklist files to FormData with renamed files
+    Object.entries(checklistFiles).forEach(([fieldName, files]) => {
+      files.forEach((file, index) => {
+        // Create new file with mobile-like naming pattern: fieldName_timestamp_index.extension
+        const fileExtension = file.name.split(".").pop() || "jpg";
+        const newFileName = `${fieldName}_${Date.now()}_${index}.${fileExtension}`;
+
+        // Create a new File object with the new name
+        const renamedFile = new File([file], newFileName, {
+          type: file.type,
+        });
+
+        vehicleChecklistFormData.append(fieldName, renamedFile);
+      });
+    });
+
+    appendDataToForm(vehicleChecklistFormData, vehicleChecklistData);
+    return dispatch(vehicleChecklistFormData);
+  };
+
   return (
     <Dialog
       open={isCreateVehicleChecklistForm}
@@ -139,7 +182,10 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
         </Tooltip>
       </TooltipProvider>
 
-      <DialogScrollContent className="max-w-3xl">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -184,49 +230,7 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
             errorVehicleId={state.createVehicleChecklistError?.vehicleId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Ensure mileage is sent unformatted
-              const mileageInput = document.querySelector(
-                'input[name="current_mileage"]',
-              ) as HTMLInputElement;
-
-              if (mileageInput && mileageInput.value.includes(".")) {
-                // Remove points if still present
-                const numericValue = mileageInput.value.replace(/\./g, "");
-                mileageInput.value = numericValue;
-
-                formData.set("current_mileage", numericValue);
-              }
-
-              const extraData = {
-                businessId: businessId as string,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                driverId: commandDriverInputValue.driverId,
-              };
-
-              // Add all checklist files to FormData with renamed files
-              Object.entries(checklistFiles).forEach(([fieldName, files]) => {
-                files.forEach((file, index) => {
-                  // Create new file with mobile-like naming pattern: fieldName_timestamp_index.extension
-                  const fileExtension = file.name.split(".").pop() || "jpg";
-                  const newFileName = `${fieldName}_${Date.now()}_${index}.${fileExtension}`;
-
-                  // Create a new File object with the new name
-                  const renamedFile = new File([file], newFileName, {
-                    type: file.type,
-                  });
-
-                  formData.append(fieldName, renamedFile);
-                });
-              });
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createVehicleChecklistForm}>
             <DashboardCreateVehicleChecklistFormSubmit
               state={state}
               onBack={handleBackToVehicleDriverStep}
@@ -237,6 +241,8 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
               setChecklistFiles={setChecklistFiles}
               fileErrors={fileErrors}
               setFileErrors={setFileErrors}
+              initialFormValues={checklistFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

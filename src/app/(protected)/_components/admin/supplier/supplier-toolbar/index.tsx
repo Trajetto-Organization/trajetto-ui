@@ -35,6 +35,11 @@ export function SupplierToolbar<TData>({
   };
 
   const filters = [
+    {
+      key: "businessName",
+      title: "Nome da empresa",
+      dynamicOptionIcon: Building2,
+    },
     { key: "name", title: "Nome do fornecedor" },
     { key: "cnpj", title: "CNPJ" },
     { key: "email", title: "E-mail" },

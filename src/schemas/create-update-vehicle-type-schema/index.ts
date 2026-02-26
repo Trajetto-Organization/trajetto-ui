@@ -1,7 +1,5 @@
 import { z } from "zod";
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
+import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
 
 const createUpdateVehicleTypeSchema = z.object({
   description: z
@@ -14,6 +12,7 @@ const createUpdateVehicleTypeSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome não deve exceder 100 caracteres.",
         });
+
         return;
       }
 
@@ -22,6 +21,7 @@ const createUpdateVehicleTypeSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome não deve conter espaços consecutivos.",
         });
+
         return;
       }
 
@@ -30,6 +30,7 @@ const createUpdateVehicleTypeSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome não pode começar ou terminar com espaço em branco.",
         });
+
         return;
       }
 
@@ -48,8 +49,10 @@ const createUpdateVehicleTypeSchema = z.object({
         if (val.trim() === "") {
           return undefined;
         }
+
         return parseInt(val, 10);
       }
+
       return val;
     },
     z

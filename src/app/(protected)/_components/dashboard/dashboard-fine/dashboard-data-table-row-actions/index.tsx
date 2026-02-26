@@ -109,7 +109,8 @@ export function DashboardDataTableFineRowActions<TData>({
     },
     {
       label: "Copiar código de infração",
-      onClick: () => handleCopyID(columnRowAction.violationCode as string),
+      onClick: () =>
+        handleCopyID(columnRowAction.trafficViolationCode.code as string),
     },
   ];
 

@@ -19,8 +19,10 @@ interface DashboardUpdateServiceOrderPartFormSubmitProps {
   state: DashboardUpdateServiceOrderPartFormState;
   onBack: () => void;
   serviceOrderPartData: DashboardServiceOrderPartProps;
-  isBusinessAndEntityDirty: boolean;
+  isEntityDirty: boolean;
   isUpdateServiceOrderPartOpen: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface DashboardUpdateServiceOrderPartFormProps {

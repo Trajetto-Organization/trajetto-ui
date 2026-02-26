@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDashboardDeleteFuelTypeForm } from "./hooks";
-import { handleDeleteFuelType } from "@/actions/delete-fuel-type";
+import { handleDeleteFuelType } from "@/actions/fuel-type/delete-fuel-type";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -28,6 +28,20 @@ interface DashboardDeleteFuelTypeProps {
 
 const DashboardDeleteFuelTypeFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteFuelTypeList = [
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver veículos utilizando este tipo de combustível`,
+    },
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se houver abastecimentos associados a este tipo de combustível`,
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -41,29 +55,15 @@ const DashboardDeleteFuelTypeFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                veículos utilizando este tipo de combustível
-              </li>
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se houver
-                abastecimentos associados a este tipo de combustível
-              </li>
-              <li>
-                Verifica se o tipo de combustível pertence à empresa antes de
-                deletar
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteFuelTypeList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

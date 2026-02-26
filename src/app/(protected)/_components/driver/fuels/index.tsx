@@ -22,6 +22,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { Loader, Fuel as FuelIcon } from "lucide-react";
 
+import {
+  formatDate,
+  formatNotificationDate,
+  formatToBrazilianCurrency,
+  displayValue,
+} from "@/lib/format-values";
+
 interface DriverFuelsListProps {
   vehicleId: string;
   driverId: string;
@@ -62,11 +69,6 @@ const DriverFuelsList = ({
   useEffect(() => {
     setShowSpinner(true);
   }, []);
-
-  const safeString = (value: any) => {
-    if (value === null || value === undefined) return "N/A";
-    return String(value);
-  };
 
   return (
     <div className="space-y-6 mt-7">
@@ -121,16 +123,19 @@ const DriverFuelsList = ({
                                 Registrado em:
                               </p>
                               <p className="text-sm font-semibold text-gray-900">
-                                {safeString(fuel.created_at)}
+                                {formatNotificationDate(
+                                  fuel.created_at,
+                                  "pt-BR",
+                                )}
                               </p>
                               <p className="text-xs text-gray-600">
-                                {safeString(fuel.fuel_type_description)}
+                                {displayValue(fuel.fuelType?.description)}
                               </p>
                             </div>
                           </div>
                           {isCurrentUser && (
                             <Badge
-                              className="bg-blue-100 text-blue-800 
+                              className="bg-blue-100 text-blue-800
                               hover:bg-blue-300"
                             >
                               Você
@@ -147,7 +152,7 @@ const DriverFuelsList = ({
                             Data do Abastecimento
                           </p>
                           <p className="text-sm font-medium text-gray-900">
-                            {safeString(fuel.refueling_date)}
+                            {formatDate(fuel.refueling_date, "pt-BR")}
                           </p>
                         </div>
 
@@ -160,7 +165,7 @@ const DriverFuelsList = ({
                             Motorista
                           </p>
                           <p className="text-sm font-semibold text-gray-900">
-                            {safeString(fuel.driver_name)}
+                            {displayValue(fuel.driver?.name)}
                           </p>
                         </div>
 
@@ -168,24 +173,25 @@ const DriverFuelsList = ({
                         <div className="grid grid-cols-2 gap-3 mb-3">
                           <div>
                             <p
-                              className="text-xs text-gray-500 
+                              className="text-xs text-gray-500
                               uppercase tracking-wide mb-1"
                             >
                               Litros
                             </p>
                             <p className="text-base font-semibold text-gray-900">
-                              {safeString(fuel.liters_amount)} L
+                              {fuel.liters_amount?.toFixed(3).replace(".", ",")}{" "}
+                              L
                             </p>
                           </div>
                           <div className="text-right">
                             <p
-                              className="text-xs text-gray-500 
+                              className="text-xs text-gray-500
                               uppercase tracking-wide mb-1"
                             >
                               Total
                             </p>
                             <p className="text-base font-semibold text-primary">
-                              {fuel.total_amount}
+                              {formatToBrazilianCurrency(fuel.total_amount)}
                             </p>
                           </div>
                         </div>
@@ -202,28 +208,31 @@ const DriverFuelsList = ({
                             <div>
                               <span className="text-gray-500">Preço/L: </span>
                               <span className="font-medium text-gray-900">
-                                {fuel.price_per_liter}
+                                {formatToBrazilianCurrency(
+                                  fuel.price_per_liter,
+                                )}
                               </span>
                             </div>
                           </div>
                         </div>
 
                         {/* Notes if available */}
-
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <p
-                            className="text-xs text-gray-500 
-                            uppercase tracking-wide mb-1"
-                          >
-                            Observações
-                          </p>
-                          <p
-                            className="text-sm text-gray-700 
-                            line-clamp-2 w-full truncate"
-                          >
-                            {fuel.notes}
-                          </p>
-                        </div>
+                        {fuel.notes && (
+                          <div className="mt-3 pt-3 border-t border-gray-100">
+                            <p
+                              className="text-xs text-gray-500
+                              uppercase tracking-wide mb-1"
+                            >
+                              Observações
+                            </p>
+                            <p
+                              className="text-sm text-gray-700
+                              line-clamp-2 w-full truncate"
+                            >
+                              {fuel.notes}
+                            </p>
+                          </div>
+                        )}
                       </Card>
                     </CommandItem>
                   );

@@ -3,7 +3,7 @@ import { z } from "zod";
 export const driverTableSchema = z.object({
   id: z.string(),
   name: z.string(),
-  birth_date: z.string(),
+  birth_date: z.union([z.string(), z.date()]),
   cnh: z.string(),
   cpf: z.string(),
   rg: z.string(),
@@ -12,15 +12,25 @@ export const driverTableSchema = z.object({
   uf: z.string(),
   street: z.string(),
   address_number: z.string(),
-  complement: z.string(),
+  complement: z.string().nullable(),
   status: z.enum(["ACTIVE", "INACTIVE"]),
   contract_type: z.enum(["OWNED", "THIRD_PARTY"]),
-  businessId: z.string().optional(),
-  business_name: z.string().optional(),
-  branchId: z.string().nullable().optional(),
-  branchName: z.string().nullable().optional(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  businessId: z.string(),
+  branchId: z.string().nullable(),
+  created_at: z.union([z.string(), z.date()]),
+  updated_at: z.union([z.string(), z.date()]),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .nullable()
+    .optional(),
+  branch: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type driverTableSchema = z.infer<typeof driverTableSchema>;

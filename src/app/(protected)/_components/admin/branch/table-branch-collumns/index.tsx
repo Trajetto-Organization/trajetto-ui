@@ -7,6 +7,13 @@ import { branchTableSchema } from "@/schemas/branch-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DataTableBranchRowActions } from "../data-table-row-actions";
+import {
+  formatCep,
+  formatCnpj,
+  formatNotificationDate,
+  formatTelephone,
+  displayValue,
+} from "@/lib/format-values";
 
 const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
   {
@@ -49,7 +56,9 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -64,7 +73,7 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("corporate_reason") ?? "N/A"}
+        {displayValue(row.getValue("corporate_reason"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -79,13 +88,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nome Fantasia" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-64">
-          {row.getValue("fantasy_name") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-64">
+        {displayValue(row.getValue("fantasy_name"))}
+      </p>
+    ),
   },
   {
     accessorKey: "cep",
@@ -95,13 +102,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="CEP" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("cep") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-24">
+        {displayValue(formatCep(row.getValue("cep")))}
+      </p>
+    ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -113,13 +118,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Cidade" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-28">
-          {row.getValue("city") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-28">
+        {displayValue(row.getValue("city"))}
+      </p>
+    ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -132,13 +135,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="UF" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-8">
-          {row.getValue("uf") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-8">
+        {displayValue(row.getValue("uf"))}
+      </p>
+    ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -151,13 +152,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Rua" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-32">
-          {row.getValue("street") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-32">
+        {displayValue(row.getValue("street"))}
+      </p>
+    ),
   },
   {
     accessorKey: "address_number",
@@ -167,13 +166,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Número do endereço" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-28">
-          {row.getValue("address_number") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-28">
+        {displayValue(row.getValue("address_number"))}
+      </p>
+    ),
   },
   {
     accessorKey: "cnpj",
@@ -183,13 +180,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="CNPJ" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-36">
-          {row.getValue("cnpj") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-36">
+        {displayValue(formatCnpj(row.getValue("cnpj")))}
+      </p>
+    ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -204,13 +199,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Complemento" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-64">
-          {row.getValue("complement") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-64">
+        {displayValue(row.getValue("complement"))}
+      </p>
+    ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -222,13 +215,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="CNAE" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-16">
-          {row.getValue("cnae") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-16">
+        {displayValue(row.getValue("cnae"))}
+      </p>
+    ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -240,13 +231,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Código ERP" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-40">
-          {row.getValue("erp_code") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-40">
+        {displayValue(row.getValue("erp_code"))}
+      </p>
+    ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -261,13 +250,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nome do responsável" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-44">
-          {row.getValue("responsible_name") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-44">
+        {displayValue(row.getValue("responsible_name"))}
+      </p>
+    ),
   },
   {
     accessorKey: "telephone",
@@ -277,13 +264,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Telefone" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-36">
-          {row.getValue("telephone") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-36">
+        {displayValue(formatTelephone(row.getValue("telephone")))}
+      </p>
+    ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -295,13 +280,11 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="E-mail" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("email") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-48">
+        {displayValue(row.getValue("email"))}
+      </p>
+    ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -314,29 +297,26 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Identificador da empresa" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("businessId") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-48">
+        {displayValue(row.getValue("businessId"))}
+      </p>
+    ),
   },
   {
     accessorKey: "business_name",
+    accessorFn: (row) => row.business?.corporate_reason || "",
     meta: {
       title: "Nome da empresa",
     },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nome da empresa" />
     ),
-    cell: ({ row }) => {
-      return (
-        <p className="truncate font-medium w-48">
-          {row.getValue("business_name") ?? "N/A"}
-        </p>
-      );
-    },
+    cell: ({ row }) => (
+      <p className="truncate font-medium w-48">
+        {displayValue(row.original.business?.corporate_reason)}
+      </p>
+    ),
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
@@ -350,8 +330,10 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -364,8 +346,10 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

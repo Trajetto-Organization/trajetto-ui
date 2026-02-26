@@ -15,7 +15,6 @@ interface DashboardBranchProps {
   telephone: string;
   email: string;
   businessId: string;
-  business_name?: string;
   created_at: string;
   updated_at: string;
 }

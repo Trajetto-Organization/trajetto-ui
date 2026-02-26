@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import {
@@ -8,7 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,12 +15,7 @@ import FormInput from "@/components/custom/form-input";
 
 import { DatePickerField } from "../../../custom";
 
-import {
-  formatCurrencyToNumber,
-  formatToBrazilianCurrency,
-} from "@/lib/format-values";
-
-import { handleUpdateAccountPayable } from "@/actions/update-account-payable";
+import { handleUpdateAccountPayable } from "@/actions/account-payable/update-account-payable";
 import { useUpdateAccountPayableForm } from "./hooks";
 
 import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
@@ -35,75 +29,52 @@ import {
   UpdateAccountPayableFormSubmitProps,
 } from "./dto";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
+
+import {
+  formatCurrencyToNumber,
+  formatToBrazilianCurrency,
+} from "@/lib/format-values";
 
 const UpdateAccountPayableFormSubmit = ({
   state,
   onBack,
-  accountPayableData,
   isBusinessAndEntityDirty,
-  isUpdateAccountPayableOpen,
+  accountPayableData,
+  initialFormValues,
+  onFormValuesChange,
 }: UpdateAccountPayableFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [isDirty, setIsDirty] = useState<boolean>(false);
+  // Form field states with lazy initializers
+  const [displayAmount, setDisplayAmount] = useState<string>(
+    () =>
+      initialFormValues.amount ??
+      formatToBrazilianCurrency(accountPayableData.amount),
+  );
 
-  const [displayAmount, setDisplayAmount] = useState<string>("");
-  const [displayAmountPaid, setDisplayAmountPaid] = useState<string>("");
+  const [displayAmountPaid, setDisplayAmountPaid] = useState<string>(
+    () =>
+      initialFormValues.amount_paid ??
+      (accountPayableData.amount_paid
+        ? formatToBrazilianCurrency(accountPayableData.amount_paid)
+        : ""),
+  );
 
-  // Initialize form values when the component mounts
-  useEffect(() => {
-    if (accountPayableData && isUpdateAccountPayableOpen) {
-      setFormValues({
-        due_date: accountPayableData.due_date,
-        payment_date:
-          accountPayableData.payment_date &&
-          accountPayableData.payment_date !== "N/A"
-            ? accountPayableData.payment_date
-            : "",
-      });
+  const [dueDate, setDueDate] = useState<string>(
+    () => initialFormValues.due_date ?? accountPayableData.due_date,
+  );
+  const [paymentDate, setPaymentDate] = useState<string>(
+    () =>
+      initialFormValues.payment_date ?? (accountPayableData.payment_date || ""),
+  );
 
-      setDisplayAmount(accountPayableData.amount);
-      setDisplayAmountPaid(accountPayableData.amount_paid || "");
-    }
-  }, [accountPayableData, isUpdateAccountPayableOpen]);
-
-  // Function to handle changes in custom fields (datepicker)
-  const handleCustomFieldChange = (fieldName: string) => (value: string) => {
-    setFormValues((prev) => {
-      const newValues = { ...prev, [fieldName]: value };
-
-      // Check if any field has changed
-      const isAnyFieldChanged = Object.entries(newValues).some(([key, val]) => {
-        const originalValue =
-          accountPayableData[key as keyof typeof accountPayableData];
-
-        if (key === "payment_date" && !originalValue && !val) {
-          return false;
-        }
-
-        return originalValue !== val;
-      });
-
-      const isAmountChanged = displayAmount !== accountPayableData.amount;
-      const isAmountPaidChanged =
-        displayAmountPaid !== (accountPayableData.amount_paid || "");
-
-      setIsDirty(isAnyFieldChanged || isAmountChanged || isAmountPaidChanged);
-      return newValues;
-    });
-  };
-
+  // Amount handlers
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     let inputValue = e.target.value;
     inputValue = inputValue.replace(/[^\d,.]/g, "");
 
     setDisplayAmount(inputValue);
-
-    const isAmountPaidChanged =
-      displayAmountPaid !== (accountPayableData.amount_paid || "");
-    setIsDirty(inputValue !== accountPayableData.amount || isAmountPaidChanged);
   };
 
   const handleAmountBlur = (): void => {
@@ -113,17 +84,10 @@ const UpdateAccountPayableFormSubmit = ({
     }
 
     const newNumericValue = formatCurrencyToNumber(displayAmount);
-    const formattedValue = formatToBrazilianCurrency(newNumericValue);
-
-    setDisplayAmount(formattedValue);
-
-    const isAmountPaidChanged =
-      displayAmountPaid !== (accountPayableData.amount_paid || "");
-    setIsDirty(
-      formattedValue !== accountPayableData.amount || isAmountPaidChanged,
-    );
+    setDisplayAmount(formatToBrazilianCurrency(newNumericValue));
   };
 
+  // Amount paid handlers
   const handleAmountPaidChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ): void => {
@@ -131,11 +95,6 @@ const UpdateAccountPayableFormSubmit = ({
     inputValue = inputValue.replace(/[^\d,.]/g, "");
 
     setDisplayAmountPaid(inputValue);
-
-    const isAmountChanged = displayAmount !== accountPayableData.amount;
-    setIsDirty(
-      inputValue !== (accountPayableData.amount_paid || "") || isAmountChanged,
-    );
   };
 
   const handleAmountPaidBlur = (): void => {
@@ -149,28 +108,52 @@ const UpdateAccountPayableFormSubmit = ({
     }
 
     const newNumericValue = formatCurrencyToNumber(displayAmountPaid);
-    const formattedValue = formatToBrazilianCurrency(newNumericValue);
-
-    setDisplayAmountPaid(formattedValue);
-
-    const isAmountChanged = displayAmount !== accountPayableData.amount;
-    setIsDirty(
-      formattedValue !== (accountPayableData.amount_paid || "") ||
-        isAmountChanged,
-    );
+    setDisplayAmountPaid(formatToBrazilianCurrency(newNumericValue));
   };
+
+  // Date handlers
+  const handleDueDateChange = (value: string): void => {
+    setDueDate(value);
+  };
+
+  const handlePaymentDateChange = (value: string): void => {
+    setPaymentDate(value);
+  };
+
+  // Function to save form values and go back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      amount: displayAmount,
+      amount_paid: displayAmountPaid,
+      due_date: dueDate,
+      payment_date: paymentDate,
+    };
+
+    onFormValuesChange(allFormValues);
+    onBack();
+  };
+
+  // Dirty checking for form fields
+  const isDirty = [
+    formatCurrencyToNumber(displayAmount) !== accountPayableData.amount,
+    formatCurrencyToNumber(displayAmountPaid) !==
+      (accountPayableData.amount_paid || 0),
+    dueDate !== accountPayableData.due_date,
+    paymentDate !== (accountPayableData.payment_date || ""),
+  ].some(Boolean);
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Due Date */}
         <DatePickerField
-          label="Data de vencimento"
+          label="Data de vencimento *"
           htmlfor="due_date"
           name="due_date"
-          value={formValues.due_date || ""}
-          onChange={handleCustomFieldChange("due_date")}
+          value={dueDate}
+          onChange={handleDueDateChange}
           errorName={state.updateAccountPayableError?.due_date}
+          allowFutureDates={true}
           disabled={pending}
         />
 
@@ -179,15 +162,16 @@ const UpdateAccountPayableFormSubmit = ({
           label="Data de pagamento (opcional)"
           htmlfor="payment_date"
           name="payment_date"
-          value={formValues.payment_date || ""}
-          onChange={handleCustomFieldChange("payment_date")}
+          value={paymentDate}
+          onChange={handlePaymentDateChange}
           errorName={state.updateAccountPayableError?.payment_date}
+          allowFutureDates={true}
           disabled={pending}
         />
 
         {/* Amount */}
         <FormInput
-          label="Valor total"
+          label="Valor total *"
           htmlfor="amount"
           name="amount"
           type="text"
@@ -215,14 +199,19 @@ const UpdateAccountPayableFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending}
+        >
           Voltar
         </Button>
         <Button
           type="submit"
           disabled={pending || (!isDirty && !isBusinessAndEntityDirty)}
         >
-          <span>Atualizar Conta a Pagar</span>
+          <span>Editar Conta a Pagar</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />
@@ -263,12 +252,27 @@ const UpdateAccountPayableForm = ({
     handleUpdateSearchServiceOrderInputValue,
     handleUpdateSearchUserInputValue,
     isBusinessAndEntityDirty,
+    accountPayableFormValues,
+    handleFormValuesChange,
   } = useUpdateAccountPayableForm({
     state,
     handleCloseUpdateAccountPayable,
     accountPayableData,
     isUpdateAccountPayableOpen,
   });
+
+  const updateAccountPayableForm = (accountPayableFormData: FormData) => {
+    const updateAccountPayableData = {
+      accountPayableId: accountPayableData.id,
+      businessId: commandBusinessInputValue.businessId,
+      branchId: commandBranchInputValue.branchId,
+      serviceOrderId: commandServiceOrderInputValue.serviceOrderId,
+      registrationUserId: commandUserInputValue.userId,
+    };
+
+    appendDataToForm(accountPayableFormData, updateAccountPayableData);
+    return dispatch(accountPayableFormData);
+  };
 
   return (
     <Dialog
@@ -280,7 +284,10 @@ const UpdateAccountPayableForm = ({
         handleCloseUpdateAccountPayable();
       }}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -289,7 +296,7 @@ const UpdateAccountPayableForm = ({
                 ? "Selecionar Ordem de Serviço (Opcional)"
                 : currentStep === "select-user"
                   ? "Selecionar Usuário Responsável"
-                  : "Atualizar Conta a Pagar"}
+                  : "Editar Conta a Pagar"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             {currentStep === "select-business-branch"
@@ -340,27 +347,14 @@ const UpdateAccountPayableForm = ({
             errorUserId={state?.updateAccountPayableError?.registrationUserId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                accountPayableId: accountPayableData.id,
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                serviceOrderId: commandServiceOrderInputValue.serviceOrderId,
-                registrationUserId: commandUserInputValue.userId,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateAccountPayableForm}>
             <UpdateAccountPayableFormSubmit
               state={state}
               onBack={handleBackToUserStep}
-              accountPayableData={accountPayableData}
               isBusinessAndEntityDirty={isBusinessAndEntityDirty}
-              isUpdateAccountPayableOpen={isUpdateAccountPayableOpen}
+              accountPayableData={accountPayableData}
+              initialFormValues={accountPayableFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

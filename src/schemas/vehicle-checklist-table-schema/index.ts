@@ -3,7 +3,7 @@ import { z } from "zod";
 export const vehicleChecklistTableSchema = z.object({
   id: z.string(),
   current_mileage: z.number(),
-  checklist_date: z.string(),
+  checklist_date: z.union([z.date(), z.string()]),
   tires_condition: z.string(),
   headlights_working: z.boolean(),
   taillights_working: z.boolean(),
@@ -31,20 +31,33 @@ export const vehicleChecklistTableSchema = z.object({
   notes: z.string().nullable().optional(),
   photos: z.array(z.string()).optional(),
   overall_condition: z.string(),
-  businessId: z.string().optional(),
+  businessId: z.string(),
   branchId: z.string(),
   vehicleId: z.string(),
   driverId: z.string(),
-  business_name: z.string().optional(),
-  branch_name: z.string(),
-  vehicle_description: z.string().nullable().optional(),
-  vehicle_license_plate: z.string().nullable().optional(),
-  vehicle_brand: z.string().nullable().optional(),
-  vehicle_model: z.string().nullable().optional(),
-  driver_name: z.string().nullable().optional(),
-  driver_cnh: z.string().nullable().optional(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+      fantasy_name: z.string().nullable(),
+    })
+    .optional(),
+  branch: z.object({
+    corporate_reason: z.string(),
+    fantasy_name: z.string().nullable(),
+  }),
+  vehicle: z.object({
+    description: z.string(),
+    license_plate: z.string(),
+    brand: z.string(),
+    model: z.string(),
+    current_mileage: z.number(),
+  }),
+  driver: z.object({
+    name: z.string(),
+    cnh: z.string(),
+  }),
+  created_at: z.union([z.date(), z.string()]),
+  updated_at: z.union([z.date(), z.string()]),
 });
 
 export type vehicleChecklistTableSchema = z.infer<

@@ -13,6 +13,7 @@ import {
   formatCurrencyToNumber,
   formatNumericInput,
   formatToBrazilianCurrency,
+  formatDate,
 } from "@/lib/format-values";
 
 import { DashboardUpdateServiceOrderFormSubmitProps } from "../dto";
@@ -40,19 +41,60 @@ const DashboardUpdateServiceOrderFormSubmit = ({
   state,
   onBack,
   serviceOrderData,
-  isBusinessAndEntityDirty,
+  isEntityDirty,
   isUpdateServiceOrderOpen,
   handleLocationChange,
   handleLocationLoadingChange,
   latitude,
   longitude,
   isLoadingLocation,
+  initialFormValues,
+  onFormValuesChange,
 }: DashboardUpdateServiceOrderFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [isDirty, setIsDirty] = useState<boolean>(false);
+  // Helper to convert Date | string to string for comparison
+  const toStringValue = (value: Date | string | null | undefined): string => {
+    if (!value) return "";
+    if (value instanceof Date) return value.toISOString().split("T")[0];
+    return value.toString();
+  };
+
+  const [formValues, setFormValues] = useState<Record<string, string>>(() => {
+    if (Object.keys(initialFormValues).length > 0) {
+      return {
+        date: initialFormValues.date || "",
+        completion_date: initialFormValues.completion_date || "",
+        maintenance_type: initialFormValues.maintenance_type || "",
+        total_amount: initialFormValues.total_amount || "",
+      };
+    }
+    return {} as Record<string, string>;
+  });
+  const [isDirty, setIsDirty] = useState<boolean>(() => {
+    // Check if persisted values are different from original
+    if (Object.keys(initialFormValues).length > 0) {
+      const formattedOriginalTotalAmount =
+        typeof serviceOrderData.total_amount === "number"
+          ? formatToBrazilianCurrency(serviceOrderData.total_amount)
+          : serviceOrderData.total_amount || "";
+
+      const originalDate = toStringValue(serviceOrderData.date);
+      const originalCompletionDate = toStringValue(
+        serviceOrderData.completion_date,
+      );
+
+      return (
+        initialFormValues.date !== originalDate ||
+        initialFormValues.completion_date !== originalCompletionDate ||
+        initialFormValues.maintenance_type !==
+          serviceOrderData.maintenance_type ||
+        initialFormValues.total_amount !== formattedOriginalTotalAmount
+      );
+    }
+    return false;
+  });
 
   // Fetch current vehicle data for validation
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
@@ -61,24 +103,44 @@ const DashboardUpdateServiceOrderFormSubmit = ({
   });
 
   // New mileage (only editable)
-  const [newMileageAfterService, setNewMileageAfterService] =
-    useState<string>("");
+  const [newMileageAfterService, setNewMileageAfterService] = useState<string>(
+    () => initialFormValues.new_mileage_after_service || "",
+  );
 
   const [serviceOrderMileageAfterService, setServiceOrderMileageAfterService] =
-    useState<string>("");
+    useState<string>(
+      () => serviceOrderData.new_mileage_after_service?.toString() || "",
+    );
 
-  // Initialize form values when the component mounts
+  // Initialize form values when the component mounts (only if no persisted values)
   useEffect(() => {
-    if (serviceOrderData && isUpdateServiceOrderOpen) {
+    if (
+      serviceOrderData &&
+      isUpdateServiceOrderOpen &&
+      Object.keys(initialFormValues).length === 0
+    ) {
+      // Format total_amount for display
+      const formattedTotalAmount =
+        typeof serviceOrderData.total_amount === "number"
+          ? formatToBrazilianCurrency(serviceOrderData.total_amount)
+          : serviceOrderData.total_amount;
+
+      // Convert Date objects to strings if needed
+      const dateValue =
+        serviceOrderData.date instanceof Date
+          ? serviceOrderData.date.toISOString()
+          : serviceOrderData.date;
+
+      const completionDateValue =
+        serviceOrderData.completion_date instanceof Date
+          ? serviceOrderData.completion_date.toISOString()
+          : serviceOrderData.completion_date || "";
+
       setFormValues({
-        date: serviceOrderData.date,
-        completion_date:
-          serviceOrderData.completion_date &&
-          serviceOrderData.completion_date !== "N/A"
-            ? serviceOrderData.completion_date
-            : "",
+        date: dateValue,
+        completion_date: completionDateValue,
         maintenance_type: serviceOrderData.maintenance_type,
-        total_amount: serviceOrderData.total_amount,
+        total_amount: formattedTotalAmount,
       });
 
       setServiceOrderMileageAfterService(
@@ -88,14 +150,14 @@ const DashboardUpdateServiceOrderFormSubmit = ({
       // IMPORTANT: If you already have a completion date, initialize the new mileage
       if (
         serviceOrderData.completion_date &&
-        serviceOrderData.completion_date !== "N/A"
+        !initialFormValues.new_mileage_after_service
       ) {
         setNewMileageAfterService(
           serviceOrderData.new_mileage_after_service?.toString() || "",
         );
       }
     }
-  }, [serviceOrderData, isUpdateServiceOrderOpen]);
+  }, [serviceOrderData, isUpdateServiceOrderOpen, initialFormValues]);
 
   // Function to handle changes in form fields
   const handleFieldChange = (fieldName: string, value: string | number) => {
@@ -108,15 +170,31 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         const originalValue =
           serviceOrderData[key as keyof typeof serviceOrderData];
 
-        // Special handling for completion_date
-        if (key === "completion_date") {
-          const originalIsEmpty = !originalValue || originalValue === "N/A";
+        // Special handling for dates (convert Date to string for comparison)
+        if (key === "date" || key === "completion_date") {
+          const originalStringValue =
+            originalValue instanceof Date
+              ? originalValue.toISOString()
+              : originalValue || "";
+
           const newIsEmpty = !val;
+          const originalIsEmpty = !originalStringValue;
 
           if (originalIsEmpty && newIsEmpty) return false;
           if (originalIsEmpty !== newIsEmpty) return true;
 
-          return originalValue !== val;
+          return originalStringValue !== val;
+        }
+
+        // Special handling for total_amount (currency)
+        if (key === "total_amount") {
+          const currentNumeric = formatCurrencyToNumber(val);
+          const originalNumeric =
+            typeof originalValue === "number"
+              ? originalValue
+              : formatCurrencyToNumber(originalValue as string);
+
+          return currentNumeric !== originalNumeric;
         }
 
         // For other numeric fields
@@ -137,40 +215,41 @@ const DashboardUpdateServiceOrderFormSubmit = ({
     handleFieldChange(fieldName, value);
   };
 
-  const [displayTotalAmount, setDisplayTotalAmount] = useState<string>(
-    serviceOrderData.total_amount || "",
-  );
-
-  useEffect(() => {
-    if (serviceOrderData && serviceOrderData.total_amount) {
-      setDisplayTotalAmount(serviceOrderData.total_amount);
-    }
-  }, [serviceOrderData]);
-
   const handleTotalAmountChange = (
     e: React.ChangeEvent<HTMLInputElement>,
   ): void => {
     let inputValue = e.target.value;
+
+    // Remove R$ and spaces, keep only digits, comma and period
     inputValue = inputValue.replace(/[^\d,.]/g, "");
 
-    setDisplayTotalAmount(inputValue);
+    // Replace period with comma (Brazilian standard)
+    inputValue = inputValue.replace(/\./g, ",");
+
+    // Allow only one comma
+    const parts = inputValue.split(",");
+    if (parts.length > 2) {
+      inputValue = parts[0] + "," + parts.slice(1).join("");
+    }
+
+    // Limit to 2 decimal places after comma
+    if (parts.length === 2 && parts[1] && parts[1].length > 2) {
+      inputValue = parts[0] + "," + parts[1].substring(0, 2);
+    }
     handleFieldChange("total_amount", inputValue);
   };
 
   const handleTotalAmountBlur = (): void => {
-    if (
-      !displayTotalAmount ||
-      displayTotalAmount === "," ||
-      displayTotalAmount === "."
-    ) {
-      setDisplayTotalAmount("");
+    const currentValue = formValues.total_amount || "";
+
+    if (!currentValue || currentValue === "," || currentValue === ".") {
+      handleFieldChange("total_amount", "");
       return;
     }
 
-    const newNumericValue = formatCurrencyToNumber(displayTotalAmount);
-    const formattedValue = formatToBrazilianCurrency(newNumericValue);
+    const numericValue = formatCurrencyToNumber(currentValue);
+    const formattedValue = formatToBrazilianCurrency(numericValue);
 
-    setDisplayTotalAmount(formattedValue);
     handleFieldChange("total_amount", formattedValue);
   };
 
@@ -182,10 +261,18 @@ const DashboardUpdateServiceOrderFormSubmit = ({
     setNewMileageAfterService(value);
   };
 
+  // Save form values when going back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      ...formValues,
+      new_mileage_after_service: newMileageAfterService,
+    };
+    onFormValuesChange(allFormValues);
+    onBack();
+  };
+
   // Dynamic calculation based on the current state of the form
-  const wasCompleted =
-    !!serviceOrderData.completion_date &&
-    serviceOrderData.completion_date !== "N/A";
+  const wasCompleted = !!serviceOrderData.completion_date;
 
   // Now uses formValues.completion_date to be reactive
   const isCompleting = !!formValues.completion_date && !wasCompleted;
@@ -258,17 +345,14 @@ const DashboardUpdateServiceOrderFormSubmit = ({
 
   // Check if there are any changes in the form
   const hasAnyChange =
-    isDirty ||
-    isBusinessAndEntityDirty ||
-    isNewMileageDirty ||
-    hasLocationChanged;
+    isDirty || isEntityDirty || isNewMileageDirty || hasLocationChanged;
 
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Date */}
         <DatePickerField
-          label="Data da ordem de serviço"
+          label="Data da ordem de serviço *"
           htmlfor="date"
           name="date"
           value={formValues.date || ""}
@@ -291,7 +375,7 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         {/* Maintenance Type */}
         <SelectField
           key={formValues.maintenance_type}
-          label="Tipo de manutenção"
+          label="Tipo de manutenção *"
           htmlfor="maintenance_type"
           name="maintenance_type"
           value={formValues.maintenance_type || ""}
@@ -306,12 +390,12 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         />
 
         <FormInput
-          label={"Valor total"}
+          label={"Valor total *"}
           htmlfor={"total_amount"}
           name="total_amount"
           type="text"
           errorName={state.updateServiceOrderError?.total_amount}
-          value={displayTotalAmount}
+          value={formValues.total_amount || ""}
           onChange={handleTotalAmountChange}
           onBlur={handleTotalAmountBlur}
           placeholder={"0,00"}
@@ -534,11 +618,11 @@ const DashboardUpdateServiceOrderFormSubmit = ({
             >
               <div>
                 • <strong>Data de criação:</strong>{" "}
-                {serviceOrderData.created_at}
+                {formatDate(serviceOrderData.created_at, "pt-BR")}
               </div>
               <div>
                 • <strong>Última atualização:</strong>{" "}
-                {serviceOrderData.updated_at}
+                {formatDate(serviceOrderData.updated_at, "pt-BR")}
               </div>
               <div>
                 • <strong>Status:</strong>{" "}
@@ -560,7 +644,12 @@ const DashboardUpdateServiceOrderFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || isLoadingLocation}
+        >
           Voltar
         </Button>
         <Button
@@ -569,7 +658,7 @@ const DashboardUpdateServiceOrderFormSubmit = ({
             pending || !hasAnyChange || !isFormValid || isLoadingLocation
           }
         >
-          <span>Atualizar Ordem de Serviço</span>
+          <span>Editar Ordem de Serviço</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />

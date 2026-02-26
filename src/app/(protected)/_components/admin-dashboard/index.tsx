@@ -41,6 +41,8 @@ import { useTabTutorial } from "./hooks/use-tab-tutorial";
 import { getStatusBadge } from "./status-badge";
 import { quickLinks, statCards } from "./data";
 
+import { displayValue, formatNotificationDate } from "@/lib/format-values";
+
 const AdminDashboard = ({
   initialData,
   userLogged,
@@ -273,15 +275,30 @@ const AdminDashboard = ({
                     {recentActivity.map((activity) => (
                       <TableRow key={activity.id}>
                         <TableCell className="font-medium">
-                          {activity.type}
+                          {displayValue(activity.type)}
                         </TableCell>
-                        <TableCell>{activity.description}</TableCell>
-                        <TableCell>{activity.userName}</TableCell>
-                        <TableCell>{activity.userEmail}</TableCell>
+                        <TableCell>
+                          {displayValue(activity.description)}
+                        </TableCell>
+                        <TableCell>
+                          {displayValue(activity.user?.name)}
+                        </TableCell>
+                        <TableCell>
+                          {displayValue(activity.user?.email)}
+                        </TableCell>
                         {!hasUserError && userLogged?.role === "MASTER" && (
-                          <TableCell>{activity.business_name}</TableCell>
+                          <TableCell>
+                            {displayValue(activity.business?.corporate_reason)}
+                          </TableCell>
                         )}
-                        <TableCell>{activity.date}</TableCell>
+                        <TableCell>
+                          {displayValue(
+                            formatNotificationDate(
+                              activity.created_at,
+                              "pt-BR",
+                            ),
+                          )}
+                        </TableCell>
                         <TableCell>{getStatusBadge(activity.status)}</TableCell>
                       </TableRow>
                     ))}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 import { useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
@@ -11,61 +11,102 @@ import { formatNumericInput } from "@/lib/format-values";
 import { DatePickerField, SelectField } from "../../../../custom";
 import { UpdateVehicleFormSubmitProps } from "../dto";
 
+// Helper function to normalize values for comparison (moved outside component)
+const normalizeValue = (value: any): any => {
+  if (value === null || value === undefined) return "";
+
+  if (typeof value === "string" && value.trim() === "") return "";
+  if (typeof value === "string" && !isNaN(Number(value))) return Number(value);
+
+  return value;
+};
+
 const UpdateVehicleFormSubmit = ({
   state,
   onBack,
   vehicleData,
-  isBusinessAndBranchDirty,
-  isUpdateVehicleOpen,
+  isEntityDirty,
+  initialFormValues,
+  onFormValuesChange,
 }: UpdateVehicleFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+
+  // Helper function to convert Date | string to string
+  const toStringValue = (value: Date | string | null | undefined): string => {
+    if (!value) return "";
+
+    if (typeof value === "string") return value;
+    return value.toISOString().split("T")[0]; // Convert Date to YYYY-MM-DD
+  };
+
+  // Build original values from vehicleData (for isDirty comparison)
+  const originalValues: Record<string, string | number> = {
+    description: vehicleData.description,
+    license_plate: vehicleData.license_plate,
+    brand: vehicleData.brand,
+    model: vehicleData.model,
+    acquisition_date: toStringValue(vehicleData.acquisition_date),
+    fleet_type: vehicleData.fleet_type,
+    last_maintenance_date: toStringValue(vehicleData.last_maintenance_date),
+    current_mileage: vehicleData.current_mileage,
+    last_maintenance_mileage: vehicleData.last_maintenance_mileage || "",
+    maintenance_interval_km: vehicleData.maintenance_interval_km,
+    maintenance_interval_months: vehicleData.maintenance_interval_months,
+    renavam: vehicleData.renavam,
+    manufacturing_year: vehicleData.manufacturing_year,
+    model_year: vehicleData.model_year,
+    km_per_liter: vehicleData.km_per_liter,
+    number_of_axles: vehicleData.number_of_axles,
+    status: vehicleData.status,
+  };
+
+  // Initialize form values: use persisted values if available, otherwise use original values
   const [formValues, setFormValues] = useState<Record<string, string | number>>(
-    {},
+    () => {
+      if (Object.keys(initialFormValues).length > 0) {
+        // Convert string values to numbers for numeric fields
+        const numericFields = [
+          "current_mileage",
+          "last_maintenance_mileage",
+          "maintenance_interval_km",
+          "maintenance_interval_months",
+          "km_per_liter",
+          "number_of_axles",
+        ];
+
+        const converted: Record<string, string | number> = {};
+        for (const key of Object.keys(initialFormValues)) {
+          const value = initialFormValues[key];
+          if (numericFields.includes(key) && value !== "") {
+            converted[key] = Number(value);
+          } else {
+            converted[key] = value;
+          }
+        }
+        return converted;
+      }
+      return originalValues;
+    },
   );
 
-  const initialFormValuesRef = useRef<Record<string, string | number>>({});
-  const [isDirty, setIsDirty] = useState<boolean>(false);
-
-  // Initialize form values when the component mounts
-  useEffect(() => {
-    if (vehicleData && isUpdateVehicleOpen) {
-      const initialValues = {
-        description: vehicleData.description,
-        license_plate: vehicleData.license_plate,
-        brand: vehicleData.brand,
-        model: vehicleData.model,
-        acquisition_date: vehicleData.acquisition_date,
-        fleet_type: vehicleData.fleet_type,
-        last_maintenance_date:
-          vehicleData.last_maintenance_date &&
-          vehicleData.last_maintenance_date !== "N/A"
-            ? vehicleData.last_maintenance_date
-            : "",
-        current_mileage: vehicleData.current_mileage,
-        last_maintenance_mileage: vehicleData.last_maintenance_mileage,
-        maintenance_interval_km: vehicleData.maintenance_interval_km,
-        maintenance_interval_months: vehicleData.maintenance_interval_months,
-        renavam: vehicleData.renavam,
-        manufacturing_year: vehicleData.manufacturing_year,
-        model_year: vehicleData.model_year,
-        km_per_liter: vehicleData.km_per_liter,
-        number_of_axles: vehicleData.number_of_axles,
-        status: vehicleData.status,
-      };
-
-      setFormValues(initialValues);
-      initialFormValuesRef.current = initialValues;
+  const initialFormValuesRef = useRef<Record<string, string | number>>(
+    originalValues,
+  );
+  const [isDirty, setIsDirty] = useState<boolean>(() => {
+    // Check if form is dirty on initial render (when coming back from a previous step)
+    if (Object.keys(initialFormValues).length > 0) {
+      return Object.keys(originalValues).some((key) => {
+        const originalValue = normalizeValue(originalValues[key]);
+        const currentValue = normalizeValue(
+          initialFormValues[key] !== undefined
+            ? initialFormValues[key]
+            : originalValues[key],
+        );
+        return originalValue !== currentValue;
+      });
     }
-  }, [vehicleData, isUpdateVehicleOpen]);
-
-  // Helper function to normalize values for comparison
-  const normalizeValue = (value: any): any => {
-    if (value === null || value === undefined) return "";
-    if (typeof value === "string" && value.trim() === "") return "";
-    if (typeof value === "string" && !isNaN(Number(value)))
-      return Number(value);
-    return value;
-  };
+    return false;
+  });
 
   // Function to handle changes in form fields
   const handleFieldChange = (fieldName: string, value: string | number) => {
@@ -113,6 +154,18 @@ const UpdateVehicleFormSubmit = ({
       handleFieldChange(fieldName, value);
     };
 
+  // Save form values when going back
+  const handleBack = () => {
+    // Convert all values to strings for persistence
+    const stringValues: Record<string, string> = {};
+    for (const key of Object.keys(formValues)) {
+      const value = formValues[key];
+      stringValues[key] = value !== undefined && value !== null ? String(value) : "";
+    }
+    onFormValuesChange(stringValues);
+    onBack();
+  };
+
   const licensePlateMask = (value: string) => {
     // Remove all characters that are not letters or numbers
     const cleanValue = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
@@ -150,7 +203,7 @@ const UpdateVehicleFormSubmit = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Vehicle description */}
         <FormInput
-          label="Descrição do veículo"
+          label="Descrição do veículo *"
           htmlfor="description"
           name="description"
           type="text"
@@ -163,7 +216,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* License plate */}
         <FormInput
-          label="Placa do veículo"
+          label="Placa do veículo *"
           htmlfor="license_plate"
           name="license_plate"
           placeholder="ABC1234 ou ABC1D23"
@@ -179,7 +232,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Brand */}
         <FormInput
-          label="Marca"
+          label="Marca *"
           htmlfor="brand"
           name="brand"
           type="text"
@@ -192,7 +245,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Model */}
         <FormInput
-          label="Modelo"
+          label="Modelo *"
           htmlfor="model"
           name="model"
           type="text"
@@ -205,7 +258,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Acquisition date */}
         <DatePickerField
-          label="Data de aquisição"
+          label="Data de aquisição *"
           htmlfor="acquisition_date"
           name="acquisition_date"
           value={formValues.acquisition_date?.toString() || ""}
@@ -216,7 +269,7 @@ const UpdateVehicleFormSubmit = ({
 
         <SelectField
           key={formValues.fleet_type}
-          label="Tipo de frota"
+          label="Tipo de frota *"
           htmlfor="fleet_type"
           name="fleet_type"
           value={formValues.fleet_type?.toString() || ""}
@@ -243,7 +296,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Current mileage */}
         <FormInput
-          label="Quilometragem atual"
+          label="Quilometragem atual *"
           htmlfor="current_mileage"
           name="current_mileage"
           type="number"
@@ -279,7 +332,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Maintenance interval km */}
         <FormInput
-          label="Revisão do veículo (km)"
+          label="Revisão do veículo (km) *"
           htmlfor="maintenance_interval_km"
           name="maintenance_interval_km"
           type="number"
@@ -298,7 +351,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Maintenance interval months */}
         <FormInput
-          label="Intervalo de manutenção (meses)"
+          label="Intervalo de manutenção (meses) *"
           htmlfor="maintenance_interval_months"
           name="maintenance_interval_months"
           type="number"
@@ -318,7 +371,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Renavam */}
         <FormInput
-          label="Renavam"
+          label="Renavam *"
           htmlfor="renavam"
           name="renavam"
           type="text"
@@ -332,7 +385,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Manufacturing year */}
         <DatePickerField
-          label="Ano de fabricação"
+          label="Ano de fabricação *"
           htmlfor="manufacturing_year"
           name="manufacturing_year"
           value={formValues.manufacturing_year?.toString() || ""}
@@ -343,7 +396,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Model year */}
         <DatePickerField
-          label="Ano do modelo"
+          label="Ano do modelo *"
           htmlfor="model_year"
           name="model_year"
           value={formValues.model_year?.toString() || ""}
@@ -354,7 +407,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Km per liter */}
         <FormInput
-          label="Km por litro"
+          label="Km por litro *"
           htmlfor="km_per_liter"
           name="km_per_liter"
           type="number"
@@ -371,7 +424,7 @@ const UpdateVehicleFormSubmit = ({
 
         {/* Number of axles */}
         <FormInput
-          label="Número de eixos"
+          label="Número de eixos *"
           htmlfor="number_of_axles"
           name="number_of_axles"
           type="number"
@@ -389,7 +442,7 @@ const UpdateVehicleFormSubmit = ({
 
         <SelectField
           key={formValues.status}
-          label="Status"
+          label="Status *"
           htmlfor="status"
           name="status"
           value={formValues.status?.toString() || ""}
@@ -407,14 +460,19 @@ const UpdateVehicleFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending}
+        >
           Voltar
         </Button>
         <Button
           type="submit"
-          disabled={pending || (!isDirty && !isBusinessAndBranchDirty)}
+          disabled={pending || (!isDirty && !isEntityDirty)}
         >
-          <span>Atualizar Veículo</span>
+          <span>Editar Veículo</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />

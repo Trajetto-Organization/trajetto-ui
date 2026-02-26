@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import Image from "next/image";
@@ -27,6 +27,7 @@ import {
   formatLiters,
   mileageToNumber,
   litersToNumber,
+  formatNotificationDate,
 } from "@/lib/format-values";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -53,7 +54,8 @@ const DashboardUpdateFuelFormSubmit = ({
   onBack,
   fuelData,
   isBusinessAndEntityDirty,
-  isUpdateFuelOpen,
+  initialFormValues,
+  onFormValuesChange,
   commandVehicleInputValue,
   odometerFile,
   setOdometerFile,
@@ -69,89 +71,53 @@ const DashboardUpdateFuelFormSubmit = ({
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
-  const [isDirty, setIsDirty] = useState<boolean>(false);
-
   // Fetch current vehicle data for validation - use selected vehicle or fallback to original
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
     vehicleId: commandVehicleInputValue.vehicleId || fuelData.vehicleId,
     businessId: businessId as string,
   });
 
-  // Initialize form values when the component mounts
-  useEffect(() => {
-    if (fuelData && isUpdateFuelOpen) {
-      setFormValues({
-        refueling_date: fuelData.refueling_date,
-        current_mileage: fuelData.current_mileage.toString(),
-        liters_amount: fuelData.liters_amount,
-        price_per_liter: fuelData.price_per_liter,
-        notes: fuelData.notes && fuelData.notes !== "N/A" ? fuelData.notes : "",
-      });
+  // Helper to get initial date value
+  const getInitialRefuelingDate = (): string => {
+    if (initialFormValues.refueling_date !== undefined) {
+      return initialFormValues.refueling_date;
     }
-  }, [fuelData, isUpdateFuelOpen]);
-
-  // Function to handle changes in form fields
-  const handleFieldChange = (fieldName: string, value: string | number) => {
-    setFormValues((prev) => {
-      const stringValue = typeof value === "number" ? value.toString() : value;
-      const newValues = { ...prev, [fieldName]: stringValue };
-
-      // Check if any field has changed
-      const isAnyFieldChanged = Object.entries(newValues).some(([key, val]) => {
-        const originalValue = fuelData[key as keyof typeof fuelData];
-
-        // Special handling for notes
-        if (key === "notes") {
-          const originalIsEmpty = !originalValue || originalValue === "N/A";
-          const newIsEmpty = !val;
-
-          if (originalIsEmpty && newIsEmpty) return false;
-          if (originalIsEmpty !== newIsEmpty) return true;
-
-          return originalValue !== val;
-        }
-
-        // Special handling for dates to normalize comparison
-        if (key === "refueling_date") {
-          const normalizeDate = (dateStr: string) => {
-            if (!dateStr) return "";
-            // Convert to ISO date string (YYYY-MM-DD) for consistent comparison
-            return new Date(dateStr).toISOString().split("T")[0];
-          };
-
-          const originalNormalized = normalizeDate(originalValue as string);
-          const newNormalized = normalizeDate(val);
-
-          return originalNormalized !== newNormalized;
-        }
-
-        if (typeof originalValue === "number") {
-          return originalValue.toString() !== val;
-        }
-
-        return originalValue !== val;
-      });
-
-      setIsDirty(isAnyFieldChanged);
-      return newValues;
-    });
+    return fuelData.refueling_date instanceof Date
+      ? fuelData.refueling_date.toISOString().split("T")[0]
+      : fuelData.refueling_date;
   };
 
-  // Function to handle changes in custom fields (datepicker)
-  const handleCustomFieldChange = (fieldName: string) => (value: string) => {
-    handleFieldChange(fieldName, value);
-  };
-
-  const [displayPricePerLiter, setDisplayPricePerLiter] = useState<string>(
-    fuelData.price_per_liter || "",
+  // Form field states with lazy initializers
+  const [refuelingDate, setRefuelingDate] = useState<string>(() =>
+    getInitialRefuelingDate(),
   );
 
-  useEffect(() => {
-    if (fuelData && fuelData.price_per_liter) {
-      setDisplayPricePerLiter(fuelData.price_per_liter);
-    }
-  }, [fuelData]);
+  const [displayPricePerLiter, setDisplayPricePerLiter] = useState<string>(
+    () =>
+      initialFormValues.price_per_liter ??
+      formatToBrazilianCurrency(fuelData.price_per_liter),
+  );
+
+  const [displayMileage, setDisplayMileage] = useState<string>(
+    () =>
+      initialFormValues.current_mileage ??
+      formatMileage(fuelData.current_mileage.toString()),
+  );
+
+  const [displayLiters, setDisplayLiters] = useState<string>(
+    () =>
+      initialFormValues.liters_amount ??
+      formatLiters(fuelData.liters_amount.toString()),
+  );
+
+  const [notes, setNotes] = useState<string>(
+    () => initialFormValues.notes ?? (fuelData.notes || ""),
+  );
+
+  // Date handler
+  const handleRefuelingDateChange = (value: string): void => {
+    setRefuelingDate(value);
+  };
 
   const handlePricePerLiterChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -160,7 +126,6 @@ const DashboardUpdateFuelFormSubmit = ({
     inputValue = inputValue.replace(/[^\d,.]/g, "");
 
     setDisplayPricePerLiter(inputValue);
-    handleFieldChange("price_per_liter", inputValue);
   };
 
   const handlePricePerLiterBlur = (): void => {
@@ -174,23 +139,8 @@ const DashboardUpdateFuelFormSubmit = ({
     }
 
     const newNumericValue = formatCurrencyToNumber(displayPricePerLiter);
-    const formattedValue = formatToBrazilianCurrency(newNumericValue);
-
-    setDisplayPricePerLiter(formattedValue);
-    handleFieldChange("price_per_liter", formattedValue);
+    setDisplayPricePerLiter(formatToBrazilianCurrency(newNumericValue));
   };
-
-  // States for formatted display values
-  const [displayMileage, setDisplayMileage] = useState<string>("");
-  const [displayLiters, setDisplayLiters] = useState<string>("");
-
-  // Initialize display values when component mounts or data changes
-  useEffect(() => {
-    if (fuelData && isUpdateFuelOpen) {
-      setDisplayMileage(formatMileage(fuelData.current_mileage.toString()));
-      setDisplayLiters(formatLiters(fuelData.liters_amount));
-    }
-  }, [fuelData, isUpdateFuelOpen]);
 
   const handleMileageChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -199,10 +149,7 @@ const DashboardUpdateFuelFormSubmit = ({
     const numbersOnly = rawValue.replace(/\D/g, "");
 
     const formatted = formatMileage(numbersOnly);
-
     setDisplayMileage(formatted);
-    // Update form state with numeric value
-    handleFieldChange("current_mileage", mileageToNumber(formatted));
   };
 
   const handleLitersChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -210,8 +157,30 @@ const DashboardUpdateFuelFormSubmit = ({
     const formatted = formatLiters(rawValue);
 
     setDisplayLiters(formatted);
-    // Update form state with numeric value (convert comma to dot)
-    handleFieldChange("liters_amount", litersToNumber(formatted));
+  };
+
+  const handleLitersBlur = (): void => {
+    const numericValue = displayLiters.replace(",", ".");
+    const input = document.querySelector(
+      'input[name="liters_amount"]',
+    ) as HTMLInputElement;
+    if (input) {
+      input.value = numericValue;
+    }
+  };
+
+  // Function to save form values and go back
+  const handleBack = () => {
+    const allFormValues: Record<string, string> = {
+      refueling_date: refuelingDate,
+      current_mileage: displayMileage,
+      liters_amount: displayLiters,
+      price_per_liter: displayPricePerLiter,
+      notes: notes,
+    };
+
+    onFormValuesChange(allFormValues);
+    onBack();
   };
 
   // File validation function
@@ -283,19 +252,28 @@ const DashboardUpdateFuelFormSubmit = ({
 
   const hasFileChange = odometerFile !== null;
 
-  // 📍 Check if location has changed
-  const [hasLocationChanged, setHasLocationChanged] = useState<boolean>(false);
+  const hasLocationChanged =
+    latitude !== (fuelData.latitude ?? null) ||
+    longitude !== (fuelData.longitude ?? null);
 
-  useEffect(() => {
-    const originalLat = fuelData.latitude ?? null;
-    const originalLng = fuelData.longitude ?? null;
+  // Dirty checking for form fields
+  const originalRefuelingDate =
+    fuelData.refueling_date instanceof Date
+      ? fuelData.refueling_date.toISOString().split("T")[0]
+      : fuelData.refueling_date;
 
-    // Check if location changed (compare with original fuelData values)
-    const latChanged = originalLat !== latitude;
-    const lngChanged = originalLng !== longitude;
+  const originalPriceNumeric =
+    typeof fuelData.price_per_liter === "number"
+      ? fuelData.price_per_liter
+      : formatCurrencyToNumber(fuelData.price_per_liter as string);
 
-    setHasLocationChanged(latChanged || lngChanged);
-  }, [latitude, longitude, fuelData.latitude, fuelData.longitude]);
+  const isDirty = [
+    refuelingDate !== originalRefuelingDate,
+    Number(mileageToNumber(displayMileage)) !== fuelData.current_mileage,
+    Number(litersToNumber(displayLiters)) !== fuelData.liters_amount,
+    formatCurrencyToNumber(displayPricePerLiter) !== originalPriceNumeric,
+    notes !== (fuelData.notes || ""),
+  ].some(Boolean);
 
   const hasAnyChange =
     isDirty || isBusinessAndEntityDirty || hasFileChange || hasLocationChanged;
@@ -305,18 +283,18 @@ const DashboardUpdateFuelFormSubmit = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Refueling Date */}
         <DatePickerField
-          label="Data do abastecimento"
+          label="Data do abastecimento *"
           htmlfor="refueling_date"
           name="refueling_date"
-          value={formValues.refueling_date || ""}
-          onChange={handleCustomFieldChange("refueling_date")}
+          value={refuelingDate}
+          onChange={handleRefuelingDateChange}
           errorName={state.updateFuelError?.refueling_date}
           disabled={pending}
         />
 
         {/* Current Mileage */}
         <FormInput
-          label="Quilometragem"
+          label="Quilometragem *"
           htmlfor="current_mileage"
           name="current_mileage"
           type="text"
@@ -329,12 +307,13 @@ const DashboardUpdateFuelFormSubmit = ({
 
         {/* Liters Amount */}
         <FormInput
-          label="Quantidade de litros"
+          label="Quantidade de litros *"
           htmlfor="liters_amount"
           name="liters_amount"
           type="text"
           value={displayLiters}
           onChange={handleLitersChange}
+          onBlur={handleLitersBlur}
           errorName={state.updateFuelError?.liters_amount}
           disabled={pending}
           placeholder="Ex: 45,237"
@@ -342,7 +321,7 @@ const DashboardUpdateFuelFormSubmit = ({
 
         {/* Price per Liter */}
         <FormInput
-          label="Preço por litro"
+          label="Preço por litro *"
           htmlfor="price_per_liter"
           name="price_per_liter"
           type="text"
@@ -360,8 +339,8 @@ const DashboardUpdateFuelFormSubmit = ({
             htmlfor="notes"
             name="notes"
             type="text"
-            value={formValues.notes || ""}
-            onChange={(e) => handleFieldChange("notes", e.target.value)}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
             errorName={state.updateFuelError?.notes}
             disabled={pending}
             maxLength={500}
@@ -598,17 +577,20 @@ const DashboardUpdateFuelFormSubmit = ({
               dark:text-purple-400 space-y-1"
             >
               <div>
-                • <strong>Data de criação:</strong> {fuelData.created_at}
+                • <strong>Data de criação:</strong>{" "}
+                {formatNotificationDate(fuelData.created_at, "pt-BR")}
               </div>
               <div>
-                • <strong>Última atualização:</strong> {fuelData.updated_at}
+                • <strong>Última atualização:</strong>{" "}
+                {formatNotificationDate(fuelData.updated_at, "pt-BR")}
               </div>
               <div>
                 • <strong>Odômetro verificado:</strong>{" "}
                 {fuelData.odometer_verified ? "✅ Sim" : "❌ Não"}
               </div>
               <div>
-                • <strong>Valor total atual:</strong> {fuelData.total_amount}
+                • <strong>Valor total atual:</strong>{" "}
+                {formatToBrazilianCurrency(fuelData.total_amount)}
               </div>
             </div>
           </div>
@@ -616,7 +598,12 @@ const DashboardUpdateFuelFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || isLoadingVehicle || isLoadingLocation}
+        >
           Voltar
         </Button>
         <Button
@@ -625,7 +612,7 @@ const DashboardUpdateFuelFormSubmit = ({
             pending || !hasAnyChange || isLoadingVehicle || isLoadingLocation
           }
         >
-          <span>Atualizar Abastecimento</span>
+          <span>Editar Abastecimento</span>
           {pending && (
             <div className="ml-2 animate-spin">
               <Loader />

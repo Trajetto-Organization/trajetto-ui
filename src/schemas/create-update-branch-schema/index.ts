@@ -1,9 +1,9 @@
 import { z } from "zod";
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const isEmptyOrWhitespace = (value: string): boolean =>
-  value.trim().length === 0;
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
+import {
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
+  isEmptyOrWhitespace,
+} from "@/lib/format-values";
 
 const createUpdateBranchSchema = z.object({
   cep: z.preprocess(
@@ -91,6 +91,7 @@ const createUpdateBranchSchema = z.object({
           message:
             "O UF deve conter apenas letras sem números, símbolos ou traços.",
         });
+
         return;
       }
     }),
@@ -191,6 +192,7 @@ const createUpdateBranchSchema = z.object({
           message:
             "O nome do complemento não deve conter espaços consecutivos.",
         });
+
         return;
       }
 
@@ -200,6 +202,7 @@ const createUpdateBranchSchema = z.object({
           message:
             "O nome do complemento não pode começar ou terminar com espaço em branco.",
         });
+
         return;
       }
 
@@ -268,6 +271,7 @@ const createUpdateBranchSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "O nome não deve exceder 100 caracteres.",
       });
+
       return;
     }
 
@@ -276,6 +280,7 @@ const createUpdateBranchSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "O nome não deve conter espaços consecutivos.",
       });
+
       return;
     }
 
@@ -284,6 +289,7 @@ const createUpdateBranchSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "O nome não pode começar ou terminar com espaço em branco.",
       });
+
       return;
     }
 
@@ -292,6 +298,7 @@ const createUpdateBranchSchema = z.object({
         code: z.ZodIssueCode.custom,
         message: "Por favor, insira o nome completo.",
       });
+
       return;
     }
 
@@ -360,6 +367,7 @@ const createUpdateBranchSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome fantasia não deve conter espaços consecutivos.",
         });
+
         return;
       }
 
@@ -369,6 +377,7 @@ const createUpdateBranchSchema = z.object({
           message:
             "O nome fantasia não pode começar ou terminar com espaço em branco.",
         });
+
         return;
       }
 

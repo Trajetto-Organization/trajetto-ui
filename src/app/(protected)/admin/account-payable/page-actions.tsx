@@ -6,8 +6,8 @@ import { CreateAccountPayableForm } from "../../_components/admin/account-payabl
 const AccountPayableActions = () => {
   return (
     <div
-      className="flex flex-col sm:flex-row 
-      items-stretch sm:items-center gap-3 
+      className="flex flex-col sm:flex-row sm:flex-wrap
+      items-stretch sm:items-center gap-3
       sm:gap-2 justify-end mt-6 mb-6"
     >
       <div className="w-full sm:w-auto">

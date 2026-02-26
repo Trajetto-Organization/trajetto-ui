@@ -63,6 +63,8 @@ interface CreateVehicleChecklistFormSubmitProps {
   setFileErrors: React.Dispatch<
     React.SetStateAction<Record<string, string | null>>
   >;
+  initialFormValues: Record<string, any>;
+  onFormValuesChange: (values: Record<string, any>) => void;
 }
 
 export type {

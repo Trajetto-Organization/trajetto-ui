@@ -23,11 +23,14 @@ interface DashboardCreateFineFormState {
 interface DashboardCreateFineFormSubmitProps {
   state: DashboardCreateFineFormState;
   onBack: () => void;
-  handleLocationChange: (lat: number, lon: number) => void;
-  handleLocationLoadingChange: (isLoading: boolean) => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
+  // 📍 GEOLOCATION PROPS
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
 }
 
 export type {

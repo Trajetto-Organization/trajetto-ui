@@ -11,7 +11,9 @@ const MapComponent = dynamic(() => import("./map-component"), {
   ssr: false,
   loading: () => (
     <div className="h-full w-full flex items-center justify-center bg-muted/30">
-      <div className="animate-pulse text-muted-foreground">Loading map...</div>
+      <div className="animate-pulse text-muted-foreground">
+        Carregando o mapa...
+      </div>
     </div>
   ),
 });
@@ -31,6 +33,12 @@ const Map = (): JSX.Element => {
       transition: { duration: 0.3 },
     });
   }, [controls]);
+
+  const contactInformation = [
+    { title: "Endereço", content: "Av. Afonso Pena, 1500 - Centro" },
+    { title: "WhatsApp", content: "+55 (31) 99999-9999" },
+    { title: "Email", content: "contato@intrajetto.com" },
+  ];
 
   return (
     <div
@@ -61,22 +69,12 @@ const Map = (): JSX.Element => {
           className="container grid grid-cols-1 
           md:grid-cols-3 gap-4"
         >
-          <div className="text-center">
-            <p className="font-medium">Endereço</p>
-            <p className="text-sm text-muted-foreground">
-              Av. Afonso Pena, 1500 - Centro
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="font-medium">WhatsApp</p>
-            <p className="text-sm text-muted-foreground">+55 (31) 99999-9999</p>
-          </div>
-          <div className="text-center">
-            <p className="font-medium">Email</p>
-            <p className="text-sm text-muted-foreground">
-              contato@intrajetto.com
-            </p>
-          </div>
+          {contactInformation.map(({ title, content }, idx) => (
+            <div className="text-center" key={idx}>
+              <p className="font-medium">{title}</p>
+              <p className="text-sm text-muted-foreground">{content}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

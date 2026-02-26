@@ -36,6 +36,8 @@ interface DashboardUpdateDriverSubmitProps {
   isBranchDirty: boolean;
   isUpdateDriverOpen: boolean;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

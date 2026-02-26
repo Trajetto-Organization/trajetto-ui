@@ -1,5 +1,3 @@
-import { FormEvent } from "react";
-
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
@@ -14,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateVehicleType } from "@/actions/update-vehicle-type";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateVehicleType } from "@/actions/vehicle-type/update-vehicle-type";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import {
   DashboardUpdateVehicleTypeFormSubmitProps,
@@ -26,6 +24,7 @@ import { DashboardVehicleTypeProps } from "../dto";
 import { useDashboardUpdateVehicleTypeForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
+import { formatNumericInput } from "@/lib/format-values";
 
 interface DashboardUpdateVehicleTypeProps {
   vehicleTypeData: DashboardVehicleTypeProps;
@@ -33,7 +32,7 @@ interface DashboardUpdateVehicleTypeProps {
   isUpdateVehicleTypeOpen: boolean;
 }
 
-const UpdateVehicleTypeFormSubmit = ({
+const DashboardUpdateVehicleTypeFormSubmit = ({
   state,
   handleCloseUpdateVehicleType,
   handleUpdateNumberOfAxles,
@@ -43,36 +42,11 @@ const UpdateVehicleTypeFormSubmit = ({
 }: DashboardUpdateVehicleTypeFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const handleNumberOfAxles = (event: FormEvent<HTMLInputElement>) => {
-    const target = event.target as HTMLInputElement;
-    let value = target.value;
-
-    // Removes leading zeros (prevents the first digit from being 0)
-    value = value.replace(/^0+/, "");
-
-    // If there is no value (i.e. if there are only zeros), reset the input.
-    if (value === "") {
-      target.value = "";
-      return;
-    }
-
-    // Convert to number to compare
-    const numericValue = parseInt(value, 10);
-
-    // If the value is greater than 10, force it to 10
-    if (numericValue > 10) {
-      target.value = "10";
-    } else {
-      // If not, keep the entered value.
-      target.value = value;
-    }
-  };
-
   return (
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição do Veículo"}
+          label={"Descrição do Veículo *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -86,7 +60,7 @@ const UpdateVehicleTypeFormSubmit = ({
         />
 
         <FormInput
-          label="Quantidade de Eixos"
+          label="Quantidade de Eixos *"
           htmlfor="number_of_axles"
           name="number_of_axles"
           type="number"
@@ -100,7 +74,7 @@ const UpdateVehicleTypeFormSubmit = ({
           errorName={state.updateVehicleTypeError?.number_of_axles}
           placeholder="Digite a quantidade de eixos do tipo de veículo"
           disabled={pending}
-          onInput={handleNumberOfAxles}
+          onInput={(event) => formatNumericInput(event, 10)}
           value={number_of_axles}
         />
       </div>
@@ -154,6 +128,16 @@ const UpdateVehicleTypeForm = ({
 
   const { businessId } = useAuthStore();
 
+  const updateVehicleTypeForm = (vehicleTypeFormData: FormData) => {
+    const updateVehicleTypeData = {
+      businessId: businessId as string,
+      vehicleTypeId: vehicleTypeData.id,
+    };
+
+    appendDataToForm(vehicleTypeFormData, updateVehicleTypeData);
+    return dispatch(vehicleTypeFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -168,7 +152,10 @@ const UpdateVehicleTypeForm = ({
       }}
       open={isUpdateVehicleTypeOpen}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Tipo do Veículo</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -177,19 +164,8 @@ const UpdateVehicleTypeForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              vehicleTypeId: vehicleTypeData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
-          <UpdateVehicleTypeFormSubmit
+        <form ref={formRef} action={updateVehicleTypeForm}>
+          <DashboardUpdateVehicleTypeFormSubmit
             state={state}
             handleCloseUpdateVehicleType={handleCloseUpdateVehicleType}
             handleUpdateNumberOfAxles={handleUpdateNumberOfAxles}

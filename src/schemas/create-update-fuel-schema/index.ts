@@ -1,24 +1,12 @@
-import { parseCurrencyToNumber } from "@/lib/format-values";
 import { z } from "zod";
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const isEmptyOrWhitespace = (value: string): boolean =>
-  value.trim().length === 0;
-
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
-
-const emptyStringToNull = (value: any) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-
-  return value;
-};
-
-const isValidDateString = (value: string): boolean => {
-  const date = new Date(value);
-  return !isNaN(date.getTime());
-};
+import {
+  emptyStringToNull,
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
+  isEmptyOrWhitespace,
+  isValidDateString,
+  parseCurrencyToNumber,
+} from "@/lib/format-values";
 
 const createUpdateFuelSchema = z.object({
   current_mileage: z.preprocess(
@@ -27,6 +15,7 @@ const createUpdateFuelSchema = z.object({
         if (val.trim() === "") return undefined;
         return parseFloat(val.replace(",", "."));
       }
+
       return val;
     },
     z
@@ -44,6 +33,7 @@ const createUpdateFuelSchema = z.object({
         if (val.trim() === "") return undefined;
         return parseFloat(val.replace(",", "."));
       }
+
       return val;
     },
     z
@@ -82,6 +72,7 @@ const createUpdateFuelSchema = z.object({
             code: z.ZodIssueCode.custom,
             message: "As observações não podem conter apenas espaços.",
           });
+
           return;
         }
 
@@ -90,6 +81,7 @@ const createUpdateFuelSchema = z.object({
             code: z.ZodIssueCode.custom,
             message: "As observações não devem conter espaços consecutivos.",
           });
+
           return;
         }
 
@@ -99,6 +91,7 @@ const createUpdateFuelSchema = z.object({
             message:
               "As observações não podem começar ou terminar com espaço em branco.",
           });
+
           return;
         }
       })
@@ -114,6 +107,7 @@ const createUpdateFuelSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "Data do abastecimento inválida.",
         });
+
         return;
       }
 
@@ -128,6 +122,7 @@ const createUpdateFuelSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "A data do abastecimento não pode ser no futuro.",
         });
+
         return;
       }
     }),
@@ -163,6 +158,7 @@ const createUpdateFuelSchema = z.object({
         if (val.trim() === "") return null;
         return parseFloat(val);
       }
+
       return val;
     },
     z

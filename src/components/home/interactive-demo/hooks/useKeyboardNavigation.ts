@@ -35,12 +35,14 @@ const useKeyboardNavigation = ({
           if (currentStep > 0) {
             prevStep();
           }
+
           break;
         case "ArrowRight":
           event.preventDefault();
           if (currentStep < totalSteps - 1) {
             nextStep();
           }
+
           break;
         case " ":
         case "Spacebar":
@@ -50,12 +52,14 @@ const useKeyboardNavigation = ({
           } else {
             startAutoTour();
           }
+
           break;
         case "Escape":
           event.preventDefault();
           if (isPlaying) {
             pauseAutoTour();
           }
+
           break;
       }
     };

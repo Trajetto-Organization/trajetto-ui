@@ -25,14 +25,16 @@ interface DashboardUpdateFineFormState {
 interface DashboardUpdateFineFormSubmitProps {
   state: DashboardUpdateFineFormState;
   onBack: () => void;
+  isEntityDirty: boolean;
   fineData: DashboardFineProps;
-  isBusinessAndEntityDirty: boolean;
-  isUpdateFineOpen: boolean;
-  handleLocationChange: (lat: number, lon: number) => void;
-  handleLocationLoadingChange: (isLoading: boolean) => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
+  // 📍 GEOLOCATION PROPS
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
 }
 
 interface DashboardUpdateFineFormProps {

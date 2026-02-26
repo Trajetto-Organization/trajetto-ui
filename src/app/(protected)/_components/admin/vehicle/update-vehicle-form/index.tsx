@@ -7,15 +7,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { handleUpdateVehicle } from "@/actions/update-vehicle";
+import { handleUpdateVehicle } from "@/actions/vehicle/update-vehicle";
 
 import { useUpdateVehicleForm } from "./hooks";
 import { UpdateVehicleFormState, UpdateVehicleFormProps } from "./dto";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { UpdateVehicleFormSubmit } from "./update-vehicle-form-submit";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
 import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/steps/select-driver-vehicle-type-step";
 
 import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
@@ -34,29 +34,43 @@ const UpdateVehicleForm = ({
   const {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandDriverInputValue,
     commandVehicleTypeInputValue,
     commandFuelTypeInputValue,
-    handleBusinessStepContinue,
+    handleBranchStepContinue,
     handleDriverVehicleTypeStepContinue,
     handleFuelTypeStepContinue,
-    handleBackToBusinessStep,
+    handleBackToBranchStep,
     handleBackToDriverVehicleTypeStep,
     handleBackToFuelTypeStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchDriverInputValue,
     handleUpdateSearchVehicleTypeInputValue,
     handleUpdateSearchFuelTypeInputValue,
-    isBusinessAndBranchDirty,
+    isEntityDirty,
+    vehicleFormValues,
+    handleFormValuesChange,
   } = useUpdateVehicleForm({
     state,
     handleCloseUpdateVehicle,
     vehicleData,
     isUpdateVehicleOpen,
   });
+
+  const updateVehicleForm = (vehicleFormData: FormData) => {
+    const updateVehicleData = {
+      vehicleId: vehicleData.id,
+      businessId: vehicleData.businessId,
+      branchId: commandBranchInputValue.branchId,
+      driverId: commandDriverInputValue.driverId,
+      vehicleTypeId: commandVehicleTypeInputValue.vehicleTypeId,
+      fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
+    };
+
+    appendDataToForm(vehicleFormData, updateVehicleData);
+    return dispatch(vehicleFormData);
+  };
 
   return (
     <Dialog
@@ -69,20 +83,23 @@ const UpdateVehicleForm = ({
         handleCloseUpdateVehicle();
       }}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business-branch"
-              ? "Selecionar Empresa"
+            {currentStep === "select-branch"
+              ? "Selecionar Filial"
               : currentStep === "select-driver-vehicle-type"
                 ? "Selecionar Motorista e Tipo de Veículo"
                 : currentStep === "select-fuel-type"
                   ? "Selecionar Combustível"
-                  : "Atualizar Veículo"}
+                  : "Editar Veículo"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business-branch"
-              ? "Selecione a empresa para a qual deseja editar um veículo (obrigatório) e opcionalmente uma filial."
+            {currentStep === "select-branch"
+              ? "Selecione a filial para a qual deseja editar um veículo (opcional)"
               : currentStep === "select-driver-vehicle-type"
                 ? "Selecione opcionalmente um motorista e tipo de veículo."
                 : currentStep === "select-fuel-type"
@@ -91,24 +108,20 @@ const UpdateVehicleForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business-branch" ? (
-          <SelectBusinessBranchStep
-            handleUpdateSearchBusinessInputValue={
-              handleUpdateSearchBusinessInputValue
-            }
+        {currentStep === "select-branch" ? (
+          <SelectBranchStep
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
-            onContinue={handleBusinessStepContinue}
-            commandBusinessInputValue={commandBusinessInputValue}
+            onContinue={handleBranchStepContinue}
             commandBranchInputValue={commandBranchInputValue}
             errorBranchId={state.updateVehicleError?.branchId}
-            errorBusinessId={state.updateVehicleError?.businessId}
             searchBranchIsOptional={true}
+            businessId={vehicleData.businessId}
           />
         ) : currentStep === "select-driver-vehicle-type" ? (
           <SelectDriverVehicleTypeStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={vehicleData.businessId}
             commandDriverInputValue={commandDriverInputValue}
             commandVehicleTypeInputValue={commandVehicleTypeInputValue}
             handleUpdateSearchDriverInputValue={
@@ -118,7 +131,7 @@ const UpdateVehicleForm = ({
               handleUpdateSearchVehicleTypeInputValue
             }
             onContinue={handleDriverVehicleTypeStepContinue}
-            onBack={handleBackToBusinessStep}
+            onBack={handleBackToBranchStep}
             errorDriverId={state.updateVehicleError?.driverId}
             errorVehicleTypeId={state.updateVehicleError?.vehicleTypeId}
             searchDriverIsOptional={true}
@@ -126,7 +139,7 @@ const UpdateVehicleForm = ({
           />
         ) : currentStep === "select-fuel-type" ? (
           <SelectFuelTypeStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={vehicleData.businessId}
             commandFuelTypeInputValue={commandFuelTypeInputValue}
             handleUpdateSearchFuelTypeInputValue={
               handleUpdateSearchFuelTypeInputValue
@@ -136,28 +149,14 @@ const UpdateVehicleForm = ({
             errorFuelTypeId={state.updateVehicleError?.fuelTypeId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                vehicleId: vehicleData.id,
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                driverId: commandDriverInputValue.driverId,
-                vehicleTypeId: commandVehicleTypeInputValue.vehicleTypeId,
-                fuelTypeId: commandFuelTypeInputValue.fuelTypeId,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateVehicleForm}>
             <UpdateVehicleFormSubmit
               state={state}
               onBack={handleBackToFuelTypeStep}
               vehicleData={vehicleData}
-              isBusinessAndBranchDirty={isBusinessAndBranchDirty}
-              isUpdateVehicleOpen={isUpdateVehicleOpen}
+              isEntityDirty={isEntityDirty}
+              initialFormValues={vehicleFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

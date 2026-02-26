@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
@@ -59,6 +59,18 @@ function useCreateFuelForm(state: CreateFuelFormState | null) {
       searchFuelTypeInputValue: "",
     });
 
+  // Form values state with callback pattern
+  const [fuelFormValues, setFuelFormValues] = useState<Record<string, string>>(
+    {},
+  );
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setFuelFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateFuelForm) {
       toast.dismiss();
@@ -95,6 +107,9 @@ function useCreateFuelForm(state: CreateFuelFormState | null) {
         fuelTypeId: "",
         searchFuelTypeInputValue: "",
       });
+
+      // Reset form values
+      setFuelFormValues({});
     }
 
     setIsCreateFuelForm(!isCreateFuelForm);
@@ -244,6 +259,9 @@ function useCreateFuelForm(state: CreateFuelFormState | null) {
       fuelTypeId: "",
       searchFuelTypeInputValue: "",
     });
+
+    // Reset form values
+    setFuelFormValues({});
   };
 
   useEffect(() => {
@@ -333,6 +351,8 @@ function useCreateFuelForm(state: CreateFuelFormState | null) {
     commandDriverInputValue,
     commandFuelTypeInputValue,
     formRef,
+    fuelFormValues,
+    handleFormValuesChange,
   };
 }
 

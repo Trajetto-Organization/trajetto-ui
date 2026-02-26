@@ -41,9 +41,11 @@ export function PermissionToolbar<TData>({
   };
 
   const filters = [
+    { key: "business_name", title: "Empresa" },
+    { key: "profile_name", title: "Perfil de acesso" },
     { key: "action", title: "Nome da permissão" },
     {
-      key: "permission",
+      key: "permissionKey",
       title: "Permissão",
       options: Object.entries(permissionLabels).map(([value, label]) => ({
         value,
@@ -52,8 +54,6 @@ export function PermissionToolbar<TData>({
     },
     { key: "canRead", title: "Leitura", options: canRead },
     { key: "canWrite", title: "Escrita", options: canWrite },
-    { key: "corporate_reason", title: "Empresa" },
-    { key: "profile_name", title: "Perfil de acesso" },
   ];
 
   return (

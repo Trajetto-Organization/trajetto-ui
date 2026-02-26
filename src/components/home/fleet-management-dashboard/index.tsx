@@ -47,7 +47,10 @@ const FleetManagementDashboard = (): JSX.Element => {
   };
 
   return (
-    <section className="py-24 relative overflow-hidden" ref={containerRef}>
+    <section
+      className="py-16 sm:py-24 relative overflow-hidden"
+      ref={containerRef}
+    >
       <div
         className="absolute inset-0 bg-gradient-to-b 
         from-background via-background/90 to-background z-0"
@@ -74,7 +77,7 @@ const FleetManagementDashboard = (): JSX.Element => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="text-center space-y-6 mb-16 max-w-3xl mx-auto"
+          className="text-center space-y-2 sm:space-y-4 mb-16 max-w-3xl mx-auto"
         >
           <h2
             className="text-3xl font-bold tracking-tight inline-block 
@@ -123,7 +126,7 @@ const FleetManagementDashboard = (): JSX.Element => {
           {/* Dashboard image */}
           <div className="relative w-full h-full">
             <Image
-              src="/trajetto-management-dashboard.png"
+              src="/trajetto-management-dashboard.webp"
               alt="Dashboard de Gerenciamento de Frota"
               layout="fill"
               className="z-10 will-change-transform object-cover"
@@ -150,7 +153,7 @@ const FleetManagementDashboard = (): JSX.Element => {
 
         {/* Call to action */}
         <motion.div
-          className="text-center mt-12 space-y-6"
+          className="text-center mt-12 space-y-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}

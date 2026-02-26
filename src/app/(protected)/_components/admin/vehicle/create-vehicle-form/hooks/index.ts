@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import {
   CommandBranchInputValue,
@@ -59,6 +59,19 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
       searchFuelTypeInputValue: "",
     });
 
+  // Persisted form values for the last step
+  const [vehicleFormValues, setVehicleFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setVehicleFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateVehicleForm) {
       toast.dismiss();
@@ -93,6 +106,8 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
         fuelTypeId: "",
         searchFuelTypeInputValue: "",
       });
+
+      setVehicleFormValues({});
     }
 
     setIsCreateVehicleForm(!isCreateVehicleForm);
@@ -230,6 +245,8 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
       fuelTypeId: "",
       searchFuelTypeInputValue: "",
     });
+
+    setVehicleFormValues({});
   };
 
   useEffect(() => {
@@ -313,6 +330,8 @@ function useCreateVehicleForm(state: CreateVehicleFormState | null) {
     commandVehicleTypeInputValue,
     commandFuelTypeInputValue,
     formRef,
+    vehicleFormValues,
+    handleFormValuesChange,
   };
 }
 

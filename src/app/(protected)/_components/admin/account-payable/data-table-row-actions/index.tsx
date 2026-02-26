@@ -60,6 +60,23 @@ export function DataTableAccountPayableRowActions<TData>({
       label: "Copiar ID da empresa",
       onClick: () => handleCopyID(collumnRowAction.businessId),
     },
+    {
+      label: "Copiar ID da filial",
+      onClick: () => handleCopyID(collumnRowAction.branchId),
+    },
+    {
+      label: "Copiar ID do usuário responsável",
+      onClick: () => handleCopyID(collumnRowAction.registrationUserId),
+    },
+    ...(collumnRowAction.serviceOrderId
+      ? [
+          {
+            label: "Copiar ID da ordem de serviço",
+            onClick: () =>
+              handleCopyID(collumnRowAction.serviceOrderId as string),
+          },
+        ]
+      : []),
   ];
 
   return (

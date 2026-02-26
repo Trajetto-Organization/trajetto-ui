@@ -38,7 +38,7 @@ export function DriverToolbar<TData>({
     { key: "cnh", title: "CNH" },
     { key: "cpf", title: "CPF" },
     {
-      key: "business_name",
+      key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },

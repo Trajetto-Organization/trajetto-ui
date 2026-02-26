@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
 import { DashboardCreateDriverFormState } from "../dto";
@@ -26,6 +26,19 @@ function useDashboardCreateDriverForm(
       searchBranchInputValue: "",
     });
 
+  // Persisted form values for the last step
+  const [driverFormValues, setDriverFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setDriverFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateDriverForm) {
       toast.dismiss();
@@ -40,6 +53,8 @@ function useDashboardCreateDriverForm(
         branchId: "",
         searchBranchInputValue: "",
       });
+
+      setDriverFormValues({});
     }
 
     setIsCreateDriverForm(!isCreateDriverForm);
@@ -72,6 +87,8 @@ function useDashboardCreateDriverForm(
       branchId: "",
       searchBranchInputValue: "",
     });
+
+    setDriverFormValues({});
   };
 
   useEffect(() => {
@@ -135,6 +152,8 @@ function useDashboardCreateDriverForm(
     commandBranchInputValue,
     handleBack,
     formRef,
+    driverFormValues,
+    handleFormValuesChange,
   };
 }
 

@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
-import { handleDeleteBranch } from "@/actions/delete-branch";
+import { handleDeleteBranch } from "@/actions/branch/delete-branch";
 import { useDeleteBranchForm } from "./hooks";
 
 interface DeleteBranchProps {
@@ -24,6 +24,32 @@ interface DeleteBranchProps {
 
 const DeleteBranchFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteBranchList = [
+    {
+      data: "Todos os veículos vinculados a esta filial serão excluídos",
+    },
+    {
+      data: "Todos os motoristas associados a esta filial serão excluídos",
+    },
+    {
+      data: "Todas as ordens de serviço registradas nesta filial serão excluídas",
+    },
+    {
+      data: "Todos os combustíveis registrados nesta filial serão excluídos",
+    },
+    {
+      data: "Todos os checklist veiculares registrados nesta filial serão excluídos",
+    },
+    {
+      data: "Todos os registros financeiros (contas a pagar) da filial serão removidos",
+    },
+    {
+      data: "Todas as multas registradas nesta filial serão excluídas",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -37,36 +63,15 @@ const DeleteBranchFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                Todos os veículos vinculados a esta filial serão excluídos
-              </li>
-              <li>
-                Todos os motoristas associados a esta filial serão excluídos
-              </li>
-              <li>
-                Todas as ordens de serviço registradas nesta filial serão
-                excluídas
-              </li>
-              <li>
-                Todos os combustíveis registrados nesta filial serão excluídos
-              </li>
-              <li>
-                Todos os checklist veiculares registrados nesta filial serão
-                excluídos
-              </li>
-              <li>
-                Todos os registros financeiros (contas a pagar) da filial serão
-                removidos
-              </li>
-              <li>Todas as multas registradas nesta filial serão excluídas</li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteBranchList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

@@ -15,7 +15,6 @@ const fetchAddressSearch = async (
     `https://nominatim.openstreetmap.org/search?` +
       `format=json&` +
       `q=${encodeURIComponent(query)}&` +
-      `countrycodes=br&` + // Restrict to Brazil only
       `addressdetails=1&` +
       `dedupe=0&` + // It does not deduplicate results (shows all variations).
       `accept-language=pt-BR`,

@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
@@ -12,8 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateSupplier } from "@/actions/update-supplier";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateSupplier } from "@/actions/supplier/update-supplier";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { UpdateSupplierFormSubmitProps, UpdateSupplierFormState } from "./dto";
 
@@ -37,8 +39,25 @@ const UpdateSupplierFormSubmit = ({
   supplierData,
   isUpdateSupplierOpen,
   isDirty,
+  initialFormValues,
+  onFormValuesChange,
 }: UpdateSupplierFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+
+  // Merge supplierData with initialFormValues (persisted values take precedence)
+  // Use useMemo to prevent creating a new object on every render (which causes infinite loops)
+  const mergedInitialData = useMemo(() => {
+    // If there are persisted values, merge them with supplierData
+    if (Object.keys(initialFormValues).length > 0) {
+      return {
+        ...supplierData,
+        ...initialFormValues,
+      } as Partial<BusinessProps>;
+    }
+    // Otherwise, just use supplierData
+    return supplierData as Partial<BusinessProps>;
+  }, [supplierData, initialFormValues]);
+
   const {
     updatedFields: allFields,
     isDirty: hookIsDirty,
@@ -46,9 +65,16 @@ const UpdateSupplierFormSubmit = ({
     handleFieldChange,
     formValues,
   } = useCepValidation({
-    initialData: supplierData as Partial<BusinessProps>,
+    initialData: mergedInitialData,
     isOpen: isUpdateSupplierOpen,
+    originalData: supplierData as Partial<BusinessProps>,
   });
+
+  // Save form values when going back
+  const handleBack = () => {
+    onFormValuesChange(formValues);
+    handleCloseUpdateSupplier();
+  };
 
   const isNameChanged =
     formValues?.hasOwnProperty("name") && formValues.name !== supplierData.name;
@@ -68,7 +94,7 @@ const UpdateSupplierFormSubmit = ({
   );
 
   const nameField: (typeof allFields)[0] = {
-    label: "Nome do Fornecedor",
+    label: "Nome do Fornecedor *",
     htmlfor: "name",
     name: "name",
     type: "text",
@@ -106,15 +132,15 @@ const UpdateSupplierFormSubmit = ({
   ];
 
   const finalSupplierFields = supplierFields.map((field) => {
-    if (
-      optionalFields.includes(field.name) &&
-      !field.label.includes("opcional")
-    ) {
+    if (optionalFields.includes(field.name)) {
+      const labelWithoutAsterisk = field.label.replace(" *", "");
+
       return {
         ...field,
-        label: `${field.label} (opcional)`,
+        label: `${labelWithoutAsterisk} (opcional)`,
       };
     }
+
     return field;
   });
 
@@ -139,7 +165,8 @@ const UpdateSupplierFormSubmit = ({
         <Button
           type="button"
           variant="outline"
-          onClick={handleCloseUpdateSupplier}
+          onClick={handleBack}
+          disabled={pending || cepLoading}
         >
           Voltar
         </Button>
@@ -179,12 +206,24 @@ const UpdateSupplierForm = ({
     handleBack,
     isDirty,
     getBusinessIdError,
+    supplierFormValues,
+    handleFormValuesChange,
   } = useUpdateSupplierForm({
     state,
     handleCloseUpdateSupplier,
     supplierData,
     isUpdateSupplierOpen,
   });
+
+  const updateSupplierForm = (supplierFormData: FormData) => {
+    const updateSupplierData = {
+      businessId: selectedBusiness.businessId,
+      supplierId: supplierData.id,
+    };
+
+    appendDataToForm(supplierFormData, updateSupplierData);
+    return dispatch(supplierFormData);
+  };
 
   return (
     <Dialog
@@ -197,7 +236,10 @@ const UpdateSupplierForm = ({
       }}
       open={isUpdateSupplierOpen}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business"
@@ -221,24 +263,15 @@ const UpdateSupplierForm = ({
             errorBusinessId={getBusinessIdError()}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData: FormData) => {
-              const extraData = {
-                businessId: selectedBusiness.businessId,
-                supplierId: supplierData.id,
-              };
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateSupplierForm}>
             <UpdateSupplierFormSubmit
               state={state}
               handleCloseUpdateSupplier={handleBack}
               supplierData={supplierData}
               isUpdateSupplierOpen={isUpdateSupplierOpen}
               isDirty={isDirty}
+              initialFormValues={supplierFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

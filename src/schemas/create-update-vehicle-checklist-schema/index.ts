@@ -1,22 +1,11 @@
 import { z } from "zod";
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const isEmptyOrWhitespace = (value: string): boolean =>
-  value.trim().length === 0;
-
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
-
-const emptyStringToNull = (value: any) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-  return value;
-};
-
-const isValidDateString = (value: string): boolean => {
-  const date = new Date(value);
-  return !isNaN(date.getTime());
-};
+import {
+  emptyStringToNull,
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
+  isEmptyOrWhitespace,
+  isValidDateString,
+} from "@/lib/format-values";
 
 const createUpdateVehicleChecklistSchema = z.object({
   current_mileage: z.preprocess(
@@ -25,6 +14,7 @@ const createUpdateVehicleChecklistSchema = z.object({
         if (val.trim() === "") return undefined;
         return parseFloat(val.replace(",", "."));
       }
+
       return val;
     },
     z
@@ -45,6 +35,7 @@ const createUpdateVehicleChecklistSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "Data do checklist inválida.",
         });
+
         return;
       }
 
@@ -185,6 +176,7 @@ const createUpdateVehicleChecklistSchema = z.object({
               code: z.ZodIssueCode.custom,
               message: "As observações não podem conter apenas espaços.",
             });
+
             return;
           }
 
@@ -193,6 +185,7 @@ const createUpdateVehicleChecklistSchema = z.object({
               code: z.ZodIssueCode.custom,
               message: "As observações não devem conter espaços consecutivos.",
             });
+
             return;
           }
 
@@ -202,6 +195,7 @@ const createUpdateVehicleChecklistSchema = z.object({
               message:
                 "As observações não podem começar ou terminar com espaço em branco.",
             });
+
             return;
           }
         }

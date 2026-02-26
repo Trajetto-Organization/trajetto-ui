@@ -35,13 +35,12 @@ export function FineToolbar<TData>({
   };
 
   const filters = [
-    { key: "amount", title: "Valor da multa" },
-    { key: "violationCode", title: "Código da infração" },
     {
       key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },
+    { key: "violationCode", title: "Código da infração" },
     {
       key: "branchName",
       title: "Nome da filial",

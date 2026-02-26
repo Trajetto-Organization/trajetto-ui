@@ -18,25 +18,25 @@ const AboutTeamSection = () => {
       name: "Michael Sivori",
       role: "CPO & Co-Fundador",
       bio: "Lidera design e experiência do usuário da plataforma com foco em interface e front-end.",
-      image: "/about/michael-about-co-founder.png",
+      image: "/about/michael-about-co-founder.webp",
     },
     {
       name: "Gabriel Mesquita",
       role: "CTO & Co-Fundador",
       bio: "Arquiteto técnico da plataforma. Especialista em desenvolvimento full-stack.",
-      image: "/about/gabriel-about-co-founder.png",
+      image: "/about/gabriel-about-co-founder.webp",
     },
     {
       name: "Thiago Baptista",
       role: "Head de Infraestrutura & Co-Fundador",
       bio: "Especialista em automação, IA e arquitetura de sistemas. CEO da THS Tecnologia.",
-      image: "/about/thiago-about-co-founder.png",
+      image: "/about/thiago-about-co-founder.webp",
     },
     {
       name: "Jomar Pereira",
       role: "Head Comercial & Co-Fundador",
       bio: "Lidera estratégias de vendas e relacionamento com clientes no mercado B2B de gestão de frotas.",
-      image: "/about/jomar-about-co-founder.png",
+      image: "/about/jomar-about-co-founder.webp",
     },
   ];
 

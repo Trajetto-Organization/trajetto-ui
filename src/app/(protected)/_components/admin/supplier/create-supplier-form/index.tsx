@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateSupplier } from "@/actions/create-supplier";
+import { handleCreateSupplier } from "@/actions/supplier/create-supplier";
 import { CreateSupplierFormSubmitProps, CreateSupplierFormState } from "./dto";
 
 import { useCreateSupplierForm } from "./hooks";
@@ -25,6 +25,8 @@ const CreateSupplierFormSubmit = ({
   state,
   isCreateSupplierForm,
   onBack,
+  initialFormValues,
+  onFormValuesChange,
 }: CreateSupplierFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const {
@@ -34,7 +36,14 @@ const CreateSupplierFormSubmit = ({
     formValues,
   } = useCepValidation({
     isOpen: isCreateSupplierForm,
+    initialData: initialFormValues,
   });
+
+  // Save form values when going back
+  const handleBack = () => {
+    onFormValuesChange(formValues);
+    onBack();
+  };
 
   // Filter unwanted fields
   const excludedFields = [
@@ -52,7 +61,7 @@ const CreateSupplierFormSubmit = ({
   // Add name field for supplier
   // Ensure nameField has the same type as FieldProps
   const nameField: (typeof allFields)[0] = {
-    label: "Nome do Fornecedor",
+    label: "Nome do Fornecedor *",
     htmlfor: "name",
     name: "name",
     type: "text",
@@ -94,15 +103,15 @@ const CreateSupplierFormSubmit = ({
   ];
 
   const finalSupplierFields = supplierFields.map((field) => {
-    if (
-      optionalFields.includes(field.name) &&
-      !field.label.includes("opcional")
-    ) {
+    if (optionalFields.includes(field.name)) {
+      const labelWithoutAsterisk = field.label.replace(" *", "");
+
       return {
         ...field,
-        label: `${field.label} (opcional)`,
+        label: `${labelWithoutAsterisk} (opcional)`,
       };
     }
+
     return field;
   });
 
@@ -124,7 +133,12 @@ const CreateSupplierFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || cepLoading}
+        >
           Voltar
         </Button>
         <Button type="submit" disabled={pending || cepLoading}>
@@ -157,7 +171,14 @@ const CreateSupplierForm = (): JSX.Element => {
     handleBack,
     handleUpdateSearchBusinessInputValue,
     handleContinue,
+    supplierFormValues,
+    handleFormValuesChange,
   } = useCreateSupplierForm(state);
+
+  const createSupplierForm = (supplierFormData: FormData) => {
+    supplierFormData.append("businessId", selectedBusiness.businessId);
+    return dispatch(supplierFormData);
+  };
 
   return (
     <Dialog open={isCreateSupplierForm} onOpenChange={handleCloseDialog}>
@@ -167,7 +188,10 @@ const CreateSupplierForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business"
@@ -191,17 +215,13 @@ const CreateSupplierForm = (): JSX.Element => {
             errorBusinessId={getBusinessIdError()}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              formData.append("businessId", selectedBusiness.businessId);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createSupplierForm}>
             <CreateSupplierFormSubmit
               isCreateSupplierForm={isCreateSupplierForm}
               state={state}
               onBack={handleBack}
+              initialFormValues={supplierFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

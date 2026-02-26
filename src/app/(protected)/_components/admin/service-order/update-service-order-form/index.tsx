@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import { handleUpdateServiceOrder } from "@/actions/update-service-order";
+import { handleUpdateServiceOrder } from "@/actions/service-order/update-service-order";
 import { useUpdateServiceOrderForm } from "./hooks";
 
 import {
@@ -18,10 +18,10 @@ import {
 } from "./dto";
 
 import { UpdateServiceOrderFormSubmit } from "./update-service-order-form-submit";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
+import { SelectBranchStep } from "../../../steps/select-branch-step";
 
 import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/steps/select-vehicle-supplier-step";
 
@@ -67,29 +67,57 @@ const UpdateServiceOrderForm = ({
   const {
     formRef,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandSupplierInputValue,
     commandUserInputValue,
-    handleBusinessStepContinue,
+    handleBranchStepContinue,
     handleVehicleSupplierStepContinue,
     handleUserStepContinue,
-    handleBackToBusinessBranchStep,
+    handleBackToBranchStep,
     handleBackToVehicleSupplierStep,
     handleBackToUserStep,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchSupplierInputValue,
     handleUpdateSearchUserInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    serviceOrderFormValues,
+    handleFormValuesChange,
   } = useUpdateServiceOrderForm({
     state,
     handleCloseUpdateServiceOrder,
     serviceOrderData,
     isUpdateServiceOrderOpen,
   });
+
+  const updateServiceOrderForm = (serviceOrderFormData: FormData) => {
+    const updateServiceOrderData = {
+      serviceOrderId: serviceOrderData.id,
+      businessId: serviceOrderData.businessId,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      supplierId: commandSupplierInputValue.supplierId,
+      responsibleUserId: commandUserInputValue.userId,
+    };
+
+    // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+    // When null, send as empty string (backend will convert to null)
+    if (latitude === null) {
+      serviceOrderFormData.append("latitude", "");
+    } else if (latitude !== undefined) {
+      serviceOrderFormData.append("latitude", latitude.toString());
+    }
+
+    if (longitude === null) {
+      serviceOrderFormData.append("longitude", "");
+    } else if (longitude !== undefined) {
+      serviceOrderFormData.append("longitude", longitude.toString());
+    }
+
+    appendDataToForm(serviceOrderFormData, updateServiceOrderData);
+    return dispatch(serviceOrderFormData);
+  };
 
   return (
     <Dialog
@@ -102,20 +130,23 @@ const UpdateServiceOrderForm = ({
         handleCloseUpdateServiceOrder();
       }}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
-            {currentStep === "select-business-branch"
-              ? "Selecionar Empresa e Filial"
+            {currentStep === "select-branch"
+              ? "Selecionar Filial"
               : currentStep === "select-vehicle-supplier"
                 ? "Selecionar Veículo e Fornecedor"
                 : currentStep === "select-user"
                   ? "Selecionar Usuário Responsável"
-                  : "Atualizar Ordem de Serviço"}
+                  : "Editar Ordem de Serviço"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            {currentStep === "select-business-branch"
-              ? "Selecione a empresa e filial para a qual deseja atualizar a ordem de serviço."
+            {currentStep === "select-branch"
+              ? "Selecione a filial para qual deseja atualizar a ordem de serviço."
               : currentStep === "select-vehicle-supplier"
                 ? "Selecione o veículo (obrigatório) e opcionalmente um fornecedor."
                 : currentStep === "select-user"
@@ -124,23 +155,19 @@ const UpdateServiceOrderForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        {currentStep === "select-business-branch" ? (
-          <SelectBusinessBranchStep
-            handleUpdateSearchBusinessInputValue={
-              handleUpdateSearchBusinessInputValue
-            }
+        {currentStep === "select-branch" ? (
+          <SelectBranchStep
             handleUpdateSearchBranchInputValue={
               handleUpdateSearchBranchInputValue
             }
-            onContinue={handleBusinessStepContinue}
-            commandBusinessInputValue={commandBusinessInputValue}
+            onContinue={handleBranchStepContinue}
             commandBranchInputValue={commandBranchInputValue}
-            errorBusinessId={state?.updateServiceOrderError?.businessId}
             errorBranchId={state?.updateServiceOrderError?.branchId}
+            businessId={serviceOrderData.businessId}
           />
         ) : currentStep === "select-vehicle-supplier" ? (
           <SelectVehicleSupplierStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={serviceOrderData.businessId}
             commandVehicleInputValue={commandVehicleInputValue}
             commandSupplierInputValue={commandSupplierInputValue}
             handleUpdateSearchVehicleInputValue={
@@ -150,14 +177,14 @@ const UpdateServiceOrderForm = ({
               handleUpdateSearchSupplierInputValue
             }
             onContinue={handleVehicleSupplierStepContinue}
-            onBack={handleBackToBusinessBranchStep}
+            onBack={handleBackToBranchStep}
             errorVehicleId={state?.updateServiceOrderError?.vehicleId}
             errorSupplierId={state?.updateServiceOrderError?.supplierId}
             searchSupplierIsOptional={true}
           />
         ) : currentStep === "select-user" ? (
           <SelectUserStep
-            businessId={commandBusinessInputValue.businessId}
+            businessId={serviceOrderData.businessId}
             commandUserInputValue={commandUserInputValue}
             handleUpdateSearchUserInputValue={handleUpdateSearchUserInputValue}
             onContinue={handleUserStepContinue}
@@ -165,49 +192,20 @@ const UpdateServiceOrderForm = ({
             errorUserId={state?.updateServiceOrderError?.responsibleUserId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                serviceOrderId: serviceOrderData.id,
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                supplierId: commandSupplierInputValue.supplierId,
-                responsibleUserId: commandUserInputValue.userId,
-              };
-
-              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
-              // When null, send as empty string (backend will convert to null)
-              if (latitude === null) {
-                formData.append("latitude", "");
-              } else if (latitude !== undefined) {
-                formData.append("latitude", latitude.toString());
-              }
-
-              if (longitude === null) {
-                formData.append("longitude", "");
-              } else if (longitude !== undefined) {
-                formData.append("longitude", longitude.toString());
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateServiceOrderForm}>
             <UpdateServiceOrderFormSubmit
               state={state}
               onBack={handleBackToUserStep}
               serviceOrderData={serviceOrderData}
-              isBusinessAndEntityDirty={isBusinessAndEntityDirty}
-              isUpdateServiceOrderOpen={isUpdateServiceOrderOpen}
+              isEntityDirty={isEntityDirty}
               commandVehicleInputValue={commandVehicleInputValue}
-              commandBusinessInputValue={commandBusinessInputValue}
               handleLocationChange={handleLocationChange}
               handleLocationLoadingChange={handleLocationLoadingChange}
               latitude={latitude}
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
+              initialFormValues={serviceOrderFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

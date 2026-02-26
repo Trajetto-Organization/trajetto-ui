@@ -13,10 +13,10 @@ import {
 import { CreateServiceOrderFormState } from "./dto";
 
 import { Button } from "@/components/ui/button";
-import { handleCreateServiceOrder } from "@/actions/create-service-order";
+import { handleCreateServiceOrder } from "@/actions/service-order/create-service-order";
 
 import { useCreateServiceOrderForm } from "./hooks";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
 
@@ -68,6 +68,8 @@ const CreateServiceOrderForm = (): JSX.Element => {
     handleBackToBusinessBranchStep,
     handleBackToVehicleSupplierStep,
     handleBackToUserStep,
+    serviceOrderFormValues,
+    handleFormValuesChange,
   } = useCreateServiceOrderForm(state);
 
   // Reset geolocation states when modal closes or on success
@@ -90,6 +92,27 @@ const CreateServiceOrderForm = (): JSX.Element => {
     }
   }, [state?.successMessage]);
 
+  const createServiceOrderForm = (serviceOrderFormData: FormData) => {
+    const serviceOrderData = {
+      businessId: commandBusinessInputValue.businessId,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      responsibleUserId: commandUserInputValue.userId,
+      latitude: latitude?.toString() as string, // Send as string or null
+      longitude: longitude?.toString() as string, // Send as string or null
+    };
+
+    if (commandSupplierInputValue.supplierId) {
+      serviceOrderFormData.append(
+        "supplierId",
+        commandSupplierInputValue.supplierId,
+      );
+    }
+
+    appendDataToForm(serviceOrderFormData, serviceOrderData);
+    return dispatch(serviceOrderFormData);
+  };
+
   return (
     <Dialog open={isCreateServiceOrderForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger asChild>
@@ -98,7 +121,10 @@ const CreateServiceOrderForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
@@ -161,29 +187,7 @@ const CreateServiceOrderForm = (): JSX.Element => {
             errorUserId={state?.createServiceOrderError?.responsibleUserId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                businessId: commandBusinessInputValue.businessId,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                responsibleUserId: commandUserInputValue.userId,
-                latitude: latitude?.toString() as string, // Send as string or null
-                longitude: longitude?.toString() as string, // Send as string or null
-              };
-
-              if (commandSupplierInputValue.supplierId) {
-                formData.append(
-                  "supplierId",
-                  commandSupplierInputValue.supplierId,
-                );
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createServiceOrderForm}>
             <CreateServiceOrderFormSubmit
               state={state}
               onBack={handleBackToUserStep}
@@ -194,6 +198,8 @@ const CreateServiceOrderForm = (): JSX.Element => {
               latitude={latitude}
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
+              initialFormValues={serviceOrderFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

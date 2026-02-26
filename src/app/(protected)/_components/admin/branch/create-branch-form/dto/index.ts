@@ -25,6 +25,8 @@ interface CreateBranchFormSubmitProps {
   state: CreateBranchFormState;
   isCreateBranchForm: boolean;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type { CreateBranchFormSubmitProps, CreateBranchFormState };

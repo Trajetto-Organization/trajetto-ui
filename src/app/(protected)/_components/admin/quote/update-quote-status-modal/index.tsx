@@ -22,13 +22,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { Textarea } from "@/components/ui/textarea";
-import { handleUpdateQuoteStatus } from "@/actions/update-quote-status";
+import { handleUpdateQuoteStatus } from "@/actions/quote/update-quote-status";
 
 import { QuoteProps, QuoteStatus } from "../dto";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { UpdateQuoteFormSubmitProps, UpdateQuoteFormState } from "./dto";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { useQuoteFormStatus } from "./hooks";
 
@@ -173,6 +173,17 @@ const UpdateQuoteStatusModal = ({
     isOpen,
   });
 
+  const updateQuoteStatusModalForm = (updateQuoteStatusFormData: FormData) => {
+    const updateQuoteStatusData = {
+      quoteId: quote.id,
+      status,
+      notes: notes as string,
+    };
+
+    appendDataToForm(updateQuoteStatusFormData, updateQuoteStatusData);
+    return dispatch(updateQuoteStatusFormData);
+  };
+
   return (
     <Dialog
       open={isOpen}
@@ -183,7 +194,10 @@ const UpdateQuoteStatusModal = ({
         }
       }}
     >
-      <DialogScrollContent className="max-w-md">
+      <DialogScrollContent
+        className="max-w-md overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>Atualizar Status do Orçamento</DialogTitle>
           <DialogDescription>
@@ -191,19 +205,7 @@ const UpdateQuoteStatusModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              quoteId: quote.id,
-              status,
-              notes: notes as string,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateQuoteStatusModalForm}>
           <UpdateQuoteStatusModalFormSubmit
             originalStatus={quote.status}
             state={state}

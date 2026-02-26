@@ -214,6 +214,7 @@ const KanbanBoardProvider = ({
           {showBusinessSelector && mode === "admin" && (
             <BusinessSelector currentBusinessId={businessId} />
           )}
+
           <div className="w-full sm:max-w-md flex items-center gap-2">
             <div className="relative flex-1">
               <Search
@@ -277,61 +278,56 @@ const KanbanBoardProvider = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
         {showBusinessSelector && mode === "admin" && (
           <BusinessSelector currentBusinessId={businessId} />
         )}
-        <div className="w-full sm:max-w-md flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search
-              className="absolute left-3 top-1/2 transform 
-              -translate-y-1/2 text-muted-foreground h-4 w-4"
-            />
-            <Input
-              id="kanban-search-main"
-              name="kanban-search-main"
-              type="text"
-              placeholder={
-                hasLimitedAccess
-                  ? "Buscar seus cards por ID, título ou usuário..."
-                  : "Buscar por ID, coluna, card ou usuário..."
-              }
-              value={searchValue}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10 pr-10 w-full"
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-md">
+          <Search
+            className="absolute left-3 top-1/2 transform
+            -translate-y-1/2 text-muted-foreground h-4 w-4"
+          />
+          <Input
+            id="kanban-search-main"
+            name="kanban-search-main"
+            type="text"
+            placeholder={
+              hasLimitedAccess
+                ? "Buscar seus cards por ID, título ou usuário..."
+                : "Buscar por ID, coluna, card ou usuário..."
+            }
+            value={searchValue}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-10 pr-10 w-full"
+            disabled={isLoading && !columns}
+          />
+          {isSearchPending && (
+            <div
+              className="absolute right-3 top-1/2
+              -translate-y-1/2 pointer-events-none"
+            >
+              <Loader2
+                className="h-4 w-4 animate-spin
+                text-muted-foreground"
+              />
+            </div>
+          )}
+          {searchValue && !isSearchPending && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1
+              top-1/2 transform -translate-y-1/2
+              h-6 w-6"
+              onClick={handleClearSearch}
               disabled={isLoading && !columns}
-            />
-            {isSearchPending && (
-              <div
-                className="absolute right-3 top-1/2
-                -translate-y-1/2 pointer-events-none"
-              >
-                <Loader2
-                  className="h-4 w-4 animate-spin
-                  text-muted-foreground"
-                />
-              </div>
-            )}
-            {searchValue && !isSearchPending && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1
-                top-1/2 transform -translate-y-1/2
-                h-6 w-6"
-                onClick={handleClearSearch}
-                disabled={isLoading && !columns}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         {!(isLoading && !columns) && !hasLimitedAccess && (
-          <div
-            className="w-full sm:w-auto 
-            sm:ml-auto flex justify-end gap-2"
-          >
+          <div className="flex items-center gap-2 sm:ml-auto">
             <KanbanRevalidationButton
               businessId={businessId}
               rateLimit={{
@@ -343,7 +339,7 @@ const KanbanBoardProvider = ({
             />
             <Button
               variant="outline"
-              className="w-full sm:w-44 
+              className="flex-1 sm:flex-none sm:w-44
               h-10 border-dashed"
               onClick={handleOpenColumnModal}
               disabled={!hasUserPermission}

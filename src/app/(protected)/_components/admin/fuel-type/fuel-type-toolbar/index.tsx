@@ -40,12 +40,7 @@ export function FuelTypeToolbar<TData>({
   const filters = [
     { key: "description", title: "Tipo do combustível" },
     {
-      key: "businessId",
-      title: "Identificador da empresa",
-      dynamicOptionIcon: Building2,
-    },
-    {
-      key: "business_name",
+      key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },

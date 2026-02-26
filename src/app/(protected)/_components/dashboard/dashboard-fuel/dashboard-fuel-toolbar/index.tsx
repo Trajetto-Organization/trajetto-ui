@@ -36,7 +36,7 @@ export function DashboardFuelToolbar<TData>({
 
   const filters = [
     {
-      key: "branch_name",
+      key: "branchName",
       title: "Nome da filial",
       dynamicOptionIcon: Building2,
     },

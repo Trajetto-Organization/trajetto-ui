@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateBranch } from "@/actions/update-branch";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateBranch } from "@/actions/branch/update-branch";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import {
   DashboardUpdateBranchContainerProps,
@@ -96,6 +96,16 @@ const DashboardUpdateBranchForm = ({
     handleCloseUpdateBranch,
   });
 
+  const updateBranchForm = (branchFormData: FormData) => {
+    const updateBranchData = {
+      businessId: branchData.businessId,
+      branchId: branchData.id,
+    };
+
+    appendDataToForm(branchFormData, updateBranchData);
+    return dispatch(branchFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -107,7 +117,10 @@ const DashboardUpdateBranchForm = ({
       }}
       open={isUpdateBranchOpen}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Filial</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -116,18 +129,7 @@ const DashboardUpdateBranchForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: branchData.businessId,
-              branchId: branchData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateBranchForm}>
           <DashboardUpdateBranchFormSubmit
             state={state}
             handleCloseUpdateBranch={handleCloseUpdateBranch}

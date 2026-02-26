@@ -9,12 +9,20 @@ export const activityTableSchema = z.object({
   status: z.string(),
   performedBy: z.string(),
   businessId: z.string().nullable(),
-  userEmail: z.string(),
-  userName: z.string(),
-  userRole: z.string(),
-  business_name: z.string().optional(), // Only for MASTER
-  created_at: z.string(),
-  updated_at: z.string(),
+  user: z
+    .object({
+      email: z.string(),
+      role: z.string(),
+      name: z.string(),
+    })
+    .optional(),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .optional(),
+  created_at: z.union([z.string(), z.date()]),
+  updated_at: z.union([z.string(), z.date()]),
 });
 
 export type activityTableSchema = z.infer<typeof activityTableSchema>;

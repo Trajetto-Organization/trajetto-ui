@@ -13,6 +13,8 @@ import {
 import { activityTableSchema } from "@/schemas/activity-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
+import { displayValue, formatNotificationDate } from "@/lib/format-values";
+
 // Action labels
 const actionLabels: Record<string, string> = {
   create: "Criar",
@@ -71,11 +73,13 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
               className="truncate w-56 
               font-medium cursor-help"
             >
-              {row.getValue("id") ?? "N/A"}
+              {displayValue(row.getValue("id"))}
             </p>
           </TooltipTrigger>
           <TooltipContent>
-            <p className="text-xs truncate">{row.getValue("id")}</p>
+            <p className="text-xs truncate">
+              {displayValue(row.getValue("id"))}
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -100,7 +104,7 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
           className="bg-blue-100 text-blue-800 
           border-blue-200 hover:bg-blue-200"
         >
-          {type || "N/A"}
+          {displayValue(type)}
         </Badge>
       );
     },
@@ -120,12 +124,13 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const action = row.getValue("action") as string;
+
       const colorClass = actionColors[action] || actionColors["create"];
       const label = actionLabels[action] || action;
 
       return (
         <Badge variant="outline" className={colorClass}>
-          {label || "N/A"}
+          {displayValue(label)}
         </Badge>
       );
     },
@@ -154,11 +159,11 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
                 className="max-w-[300px] 
                 truncate cursor-help"
               >
-                {description ?? "N/A"}
+                {displayValue(description)}
               </p>
             </TooltipTrigger>
             <TooltipContent>
-              <p className="max-w-lg truncate">{description}</p>
+              <p className="max-w-lg truncate">{displayValue(description)}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -175,17 +180,17 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Usuário" />
     ),
     cell: ({ row }) => {
-      const userName = row.getValue("userName") as string;
-      const userEmail = row.original.userEmail;
+      const userName = row.original.user?.name;
+      const userEmail = row.original.user?.email;
 
       return (
         <div className="flex flex-col gap-1">
-          <p className="font-medium text-sm">{userName || "N/A"}</p>
+          <p className="font-medium text-sm">{displayValue(userName)}</p>
           <p
             className="text-xs text-muted-foreground 
             truncate max-w-[200px]"
           >
-            {userEmail || "N/A"}
+            {displayValue(userEmail)}
           </p>
         </div>
       );
@@ -194,6 +199,7 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
   },
   {
     accessorKey: "userRole",
+    accessorFn: (row) => row.user?.role || "",
     meta: {
       title: "Papel",
     },
@@ -201,21 +207,21 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Papel" />
     ),
     cell: ({ row }) => {
-      const role = row.getValue("userRole") as string;
-      const colorClass = roleColors[role] || roleColors["BUSINESS_USER"];
+      const role = row.original.user?.role;
+      const colorClass = roleColors[role || ""] || roleColors["BUSINESS_USER"];
 
-      const label = roleLabels[role] || role;
+      const label = roleLabels[role || ""] || role;
 
       return (
         <Badge variant="outline" className={colorClass}>
-          {label || "N/A"}
+          {displayValue(label)}
         </Badge>
       );
     },
+    enableSorting: false,
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
-    enableSorting: false,
   },
   {
     accessorKey: "status",
@@ -233,14 +239,14 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
 
       return (
         <Badge variant="outline" className={colorClass}>
-          {status || "N/A"}
+          {displayValue(status)}
         </Badge>
       );
     },
+    enableSorting: false,
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id));
     },
-    enableSorting: false,
   },
   {
     accessorKey: "created_at",
@@ -256,7 +262,9 @@ const dashboardTableActivityColumns: ColumnDef<activityTableSchema>[] = [
           className="text-sm w-32 
           text-muted-foreground"
         >
-          {row.getValue("created_at") ?? "N/A"}
+          {displayValue(
+            formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+          )}
         </p>
       );
     },

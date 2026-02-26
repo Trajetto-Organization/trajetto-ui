@@ -7,6 +7,13 @@ import { supplierTableSchema } from "@/schemas/supplier-table-schema";
 import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableSupplierRowActions } from "../dashboard-data-table-row-actions";
+import {
+  displayValue,
+  formatNotificationDate,
+  formatCnpj,
+  formatCep,
+  formatTelephone,
+} from "@/lib/format-values";
 
 const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
   {
@@ -49,7 +56,9 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -65,7 +74,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-44">
-          {row.getValue("name") ?? "N/A"}
+          {displayValue(row.getValue("name"))}
         </p>
       );
     },
@@ -84,7 +93,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-36">
-          {row.getValue("cnpj") ?? "N/A"}
+          {displayValue(formatCnpj(row.getValue("cnpj")))}
         </p>
       );
     },
@@ -104,8 +113,8 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     ),
     cell: ({ row }) => {
       return (
-        <p className=" truncate font-medium w-24">
-          {row.getValue("cep") ?? "N/A"}
+        <p className="truncate font-medium w-24">
+          {displayValue(formatCep(row.getValue("cep")))}
         </p>
       );
     },
@@ -123,7 +132,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("city") ?? "N/A"}
+          {displayValue(row.getValue("city"))}
         </p>
       );
     },
@@ -142,7 +151,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-8">
-          {row.getValue("uf") ?? "N/A"}
+          {displayValue(row.getValue("uf"))}
         </p>
       );
     },
@@ -161,7 +170,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-32">
-          {row.getValue("street") ?? "N/A"}
+          {displayValue(row.getValue("street"))}
         </p>
       );
     },
@@ -177,7 +186,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-28">
-          {row.getValue("address_number") ?? "N/A"}
+          {displayValue(row.getValue("address_number"))}
         </p>
       );
     },
@@ -193,7 +202,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-64">
-          {row.getValue("complement") ?? "N/A"}
+          {displayValue(row.getValue("complement"))}
         </p>
       );
     },
@@ -211,7 +220,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-36">
-          {row.getValue("telephone") ?? "N/A"}
+          {displayValue(formatTelephone(row.getValue("telephone")))}
         </p>
       );
     },
@@ -229,7 +238,7 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
     cell: ({ row }) => {
       return (
         <p className="truncate font-medium w-48">
-          {row.getValue("email") ?? "N/A"}
+          {displayValue(row.getValue("email"))}
         </p>
       );
     },
@@ -246,8 +255,10 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -260,8 +271,10 @@ const dashboardTableSupplierCollumns: ColumnDef<supplierTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

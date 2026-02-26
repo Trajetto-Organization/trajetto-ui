@@ -96,10 +96,7 @@ const Column = ({
           className="flex items-center 
           justify-between mb-4"
         >
-          <div
-            className="flex items-center 
-            gap-2 flex-1"
-          >
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <div
               className={cn(
                 hasUserPermission
@@ -118,14 +115,17 @@ const Column = ({
                 )}
               />
             </div>
-            <h3 className="font-semibold text-sm">{column.title}</h3>
+
+            <h3 className="font-semibold text-sm truncate">{column.title}</h3>
+
             <span
               className="text-xs text-muted-foreground 
-              bg-muted px-2 py-1 rounded-full"
+              bg-muted px-2 py-1 rounded-full shrink-0"
             >
               {column.cards.length}
             </span>
           </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">

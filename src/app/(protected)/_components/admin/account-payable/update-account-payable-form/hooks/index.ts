@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
@@ -6,18 +6,12 @@ import {
   CommandUserInputValue,
 } from "@/app/(protected)/_components/dto";
 
-import { AccountPayableProps } from "../../dto";
-import { UpdateAccountPayableFormState } from "../dto";
+import { UseUpdateAccountPayableFormProps } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
 
-interface UseUpdateAccountPayableFormProps {
-  state: UpdateAccountPayableFormState | null;
-  handleCloseUpdateAccountPayable: () => void;
-  accountPayableData: AccountPayableProps;
-  isUpdateAccountPayableOpen: boolean;
-}
+import { formatServiceOrderDisplay } from "@/lib/format-values";
 
 function useUpdateAccountPayableForm({
   state,
@@ -40,61 +34,78 @@ function useUpdateAccountPayableForm({
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: accountPayableData.businessId,
-      searchBusinessInputValue: accountPayableData.business_name || "",
+      searchBusinessInputValue:
+        accountPayableData.business?.corporate_reason || "",
     });
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
       branchId: accountPayableData.branchId,
-      searchBranchInputValue: accountPayableData.branchName || "",
+      searchBranchInputValue:
+        accountPayableData.branch?.corporate_reason ||
+        accountPayableData.branch?.fantasy_name ||
+        "",
     });
 
   const [commandServiceOrderInputValue, setCommandServiceOrderInputValue] =
     useState<CommandServiceOrderInputValue>({
       serviceOrderId: accountPayableData.serviceOrderId || "",
-      searchServiceOrderInputValue:
-        accountPayableData.serviceOrderDescription &&
-        accountPayableData.serviceOrderDescription !== "N/A"
-          ? accountPayableData.serviceOrderDescription
-          : "",
+      searchServiceOrderInputValue: accountPayableData.serviceOrder
+        ? formatServiceOrderDisplay(accountPayableData.serviceOrder)
+        : "",
     });
 
   const [commandUserInputValue, setCommandUserInputValue] =
     useState<CommandUserInputValue>({
       userId: accountPayableData.registrationUserId,
-      searchUserInputValue: accountPayableData.registrationUserName || "",
+      searchUserInputValue: accountPayableData.registrationUser?.name || "",
       responsibleUserEmail: "",
     });
+
+  // Form values state with callback pattern
+  const [accountPayableFormValues, setAccountPayableFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setAccountPayableFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateAccountPayableOpen) {
       setCommandBusinessInputValue({
         businessId: accountPayableData.businessId,
-        searchBusinessInputValue: accountPayableData.business_name || "",
+        searchBusinessInputValue:
+          accountPayableData.business?.corporate_reason || "",
       });
 
       setCommandBranchInputValue({
         branchId: accountPayableData.branchId,
-        searchBranchInputValue: accountPayableData.branchName || "",
+        searchBranchInputValue:
+          accountPayableData.branch?.corporate_reason ||
+          accountPayableData.branch?.fantasy_name ||
+          "",
       });
 
       setCommandServiceOrderInputValue({
         serviceOrderId: accountPayableData.serviceOrderId || "",
-        searchServiceOrderInputValue:
-          accountPayableData.serviceOrderDescription &&
-          accountPayableData.serviceOrderDescription !== "N/A"
-            ? accountPayableData.serviceOrderDescription
-            : "",
+        searchServiceOrderInputValue: accountPayableData.serviceOrder
+          ? formatServiceOrderDisplay(accountPayableData.serviceOrder)
+          : "",
       });
 
       setCommandUserInputValue({
         userId: accountPayableData.registrationUserId,
-        searchUserInputValue: accountPayableData.registrationUserName || "",
+        searchUserInputValue: accountPayableData.registrationUser?.name || "",
         responsibleUserEmail: "",
       });
 
       setCurrentStep("select-business-branch");
+      setAccountPayableFormValues({});
     }
   }, [isUpdateAccountPayableOpen, accountPayableData]);
 
@@ -251,6 +262,8 @@ function useUpdateAccountPayableForm({
     handleUpdateSearchServiceOrderInputValue,
     handleUpdateSearchUserInputValue,
     isBusinessAndEntityDirty,
+    accountPayableFormValues,
+    handleFormValuesChange,
   };
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 import { CommandBusinessInputValue } from "@/app/(protected)/_components/dto";
 import { CreateBranchFormState } from "../dto";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 import { queryClientProps } from "@/lib/query-client-props";
 
-function useCreateBusinessForm(state: CreateBranchFormState | null) {
+function useCreateBranchForm(state: CreateBranchFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);
   const toastShownRef = useRef(false);
 
@@ -27,6 +27,19 @@ function useCreateBusinessForm(state: CreateBranchFormState | null) {
       searchBusinessInputValue: "",
     });
 
+  // Persisted form values for the last step
+  const [branchFormValues, setBranchFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setBranchFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateBranchForm) {
       toast.dismiss();
@@ -40,7 +53,9 @@ function useCreateBusinessForm(state: CreateBranchFormState | null) {
         businessId: "",
         searchBusinessInputValue: "",
       });
+
       setBusinessNotSelected(undefined);
+      setBranchFormValues({});
     }
 
     setIsCreateBranchForm(!isCreateBranchForm);
@@ -83,7 +98,9 @@ function useCreateBusinessForm(state: CreateBranchFormState | null) {
       businessId: "",
       searchBusinessInputValue: "",
     });
+
     setBusinessNotSelected(undefined);
+    setBranchFormValues({});
   };
 
   useEffect(() => {
@@ -144,7 +161,9 @@ function useCreateBusinessForm(state: CreateBranchFormState | null) {
     selectedBusiness,
     handleBack,
     formRef,
+    branchFormValues,
+    handleFormValuesChange,
   };
 }
 
-export { useCreateBusinessForm };
+export { useCreateBranchForm };

@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateSupplier } from "@/actions/create-supplier";
+import { handleCreateSupplier } from "@/actions/supplier/create-supplier";
 import {
   DashboardCreateSupplierFormSubmitProps,
   DashboardCreateSupplierFormState,
@@ -58,7 +58,7 @@ const CreateSupplierFormSubmit = ({
   // Add name field for supplier
   // Ensure nameField has the same type as FieldProps
   const nameField: (typeof allFields)[0] = {
-    label: "Nome do Fornecedor",
+    label: "Nome do Fornecedor *",
     htmlfor: "name",
     name: "name",
     type: "text",
@@ -100,15 +100,15 @@ const CreateSupplierFormSubmit = ({
   ];
 
   const finalSupplierFields = supplierFields.map((field) => {
-    if (
-      optionalFields.includes(field.name) &&
-      !field.label.includes("opcional")
-    ) {
+    if (optionalFields.includes(field.name)) {
+      const labelWithoutAsterisk = field.label.replace(" *", "");
+
       return {
         ...field,
-        label: `${field.label} (opcional)`,
+        label: `${labelWithoutAsterisk} (opcional)`,
       };
     }
+
     return field;
   });
 
@@ -170,6 +170,11 @@ const DashboardCreateSupplierForm = (): JSX.Element => {
     "write",
   );
 
+  const createSupplierForm = (supplierFormData: FormData) => {
+    supplierFormData.append("businessId", businessId as string);
+    return dispatch(supplierFormData);
+  };
+
   return (
     <Dialog open={isCreateSupplierForm} onOpenChange={handleCloseDialog}>
       <DialogTrigger
@@ -182,7 +187,10 @@ const DashboardCreateSupplierForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Novo Fornecedor</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -191,13 +199,7 @@ const DashboardCreateSupplierForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData) => {
-            formData.append("businessId", businessId as string);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createSupplierForm}>
           <CreateSupplierFormSubmit
             isCreateSupplierForm={isCreateSupplierForm}
             handleOpenCreateSupplierForm={handleOpenCreateSupplierForm}

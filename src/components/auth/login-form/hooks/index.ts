@@ -1,9 +1,7 @@
 import { useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+
 import { toast } from "sonner";
-
-import { getCookies, deleteCookies } from "@/actions/cookies";
-import { useSearchParams } from "next/navigation";
-
 import { disconnectSocket } from "@/socket";
 
 type MessageType = "error" | "success";
@@ -38,42 +36,37 @@ const messages: Record<string, MessageInfo> = {
     text: "Sua conta foi excluída ou não está autorizada. Por favor, entre em contato com o administrador.",
     type: "error",
   },
+  permissions_changed: {
+    text: "Suas permissões de acesso foram atualizadas. Por favor, faça login novamente para continuar.",
+    type: "error",
+  },
 };
 
 type MessageKey = keyof typeof messages;
 
 function useLoginMessages() {
   const searchParams = useSearchParams();
+
+  const router = useRouter();
   const mounted = useRef(false);
 
   useEffect(() => {
     if (mounted.current) return;
     mounted.current = true;
 
-    const checkMessages = async () => {
-      for (const key of Object.keys(messages)) {
-        const cookieValue = await getCookies(key);
+    const error = searchParams.get("error");
 
-        if (cookieValue === "true") {
-          if (key in messages) {
-            const { text, type } = messages[key as MessageKey];
+    if (error && error in messages) {
+      const { text, type } = messages[error as MessageKey];
 
-            if (type === "error") {
-              toast.error(text);
-              disconnectSocket();
-            } else {
-              toast.success(text);
-            }
-
-            await deleteCookies(key);
-            break;
-          }
-        }
+      if (type === "error") {
+        toast.error(text);
+        disconnectSocket();
+      } else {
+        toast.success(text);
       }
-    };
-
-    checkMessages();
-  }, [searchParams]);
+    }
+  }, [searchParams, router]);
 }
 
 export { useLoginMessages };

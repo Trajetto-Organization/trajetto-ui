@@ -11,6 +11,8 @@ import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collum
 import { DataTablePermissionRowActions } from "../data-table-row-actions";
 import { permissionLabels as permissionTypeLabels } from "@/lib/permissions";
 
+import { formatNotificationDate, displayValue } from "@/lib/format-values";
+
 // Labels and colors for permission badges
 const permissionStatusLabels = {
   true: "Habilitado",
@@ -63,7 +65,9 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">{row.getValue("id") ?? "N/A"}</p>
+      <p className="truncate font-medium w-72">
+        {displayValue(row.getValue("id"))}
+      </p>
     ),
     enableSorting: false,
     enableHiding: false,
@@ -78,7 +82,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-36">
-        {row.getValue("action") ?? "N/A"}
+        {displayValue(row.getValue("action"))}
       </p>
     ),
     enableSorting: false,
@@ -88,7 +92,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     },
   },
   {
-    accessorKey: "permission",
+    accessorKey: "permissionKey",
     meta: {
       title: "Permissão",
     },
@@ -97,12 +101,12 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => {
       const permissionKey = row.getValue(
-        "permission",
+        "permissionKey",
       ) as keyof typeof permissionTypeLabels;
 
       return (
         <p className="truncate font-medium w-36">
-          {permissionTypeLabels[permissionKey] ?? "N/A"}
+          {displayValue(permissionTypeLabels[permissionKey])}
         </p>
       );
     },
@@ -175,7 +179,8 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "corporate_reason",
+    accessorKey: "business_name",
+    accessorFn: (row) => row.business?.corporate_reason || "",
     meta: {
       title: "Empresa",
     },
@@ -184,7 +189,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("corporate_reason") ?? "N/A"}
+        {displayValue(row.original.business?.corporate_reason)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -193,6 +198,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
   },
   {
     accessorKey: "profile_name",
+    accessorFn: (row) => row.profileAccess.name || "",
     meta: {
       title: "Perfil de acesso",
     },
@@ -201,7 +207,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-64">
-        {row.getValue("profile_name") ?? "N/A"}
+        {displayValue(row.original.profileAccess.name)}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -218,7 +224,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("businessId") ?? "N/A"}
+        {displayValue(row.getValue("businessId"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -235,7 +241,7 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-72">
-        {row.getValue("profileAccessId") ?? "N/A"}
+        {displayValue(row.getValue("profileAccessId"))}
       </p>
     ),
     filterFn: (row, id, value) => {
@@ -251,8 +257,10 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de criação" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("created_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
       </p>
     ),
   },
@@ -265,8 +273,10 @@ const tablePermissionsCollumns: ColumnDef<permissionsTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Data de atualização" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {row.getValue("updated_at") ?? "N/A"}
+      <p className="truncate font-medium w-36">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
       </p>
     ),
   },

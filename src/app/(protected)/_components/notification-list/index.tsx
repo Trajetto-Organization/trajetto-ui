@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useFormState } from "react-dom";
+import { toast } from "sonner";
 
 import {
   Card,
@@ -15,26 +15,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { Bell } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Bell, Loader } from "lucide-react";
+
 import {
   handleMarkNotificationAsRead,
   handleDeleteNotification,
-  handleMarkAllNotificationsAsRead,
 } from "@/actions/notifications";
 
 import Link from "next/link";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-import { AlertCircle } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { AlertCircle, Clock, RefreshCw } from "lucide-react";
 
 import {
   Tooltip,
@@ -43,63 +35,92 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { useNotifications } from "./hooks";
-
 import { useNotificationsContext } from "../layout/protected-provider/notifications-provider";
-import { ButtonRevalidation } from "../revalidation-button";
 
-import { NotificationCardProps, NotificationListProps } from "./dto";
+import {
+  NotificationCardProps,
+  NotificationListProps,
+  Notification,
+} from "./dto";
 
 import { DeleteNotificationButton } from "./components/delete-notification-button";
-import { MarkAllAsReadButton } from "./components/mark-all-read-button";
-
 import { MarkAsReadButton } from "./components/mark-read-button";
+
 import { useNotificationStatus } from "./hooks/use-notification-status";
+import { useNotificationInfiniteScroll } from "./hooks/notification-infinite-scroll";
+
+import { useDataButtonRevalidation } from "../hooks/revalidation-button";
+
+// ============================================================================
+// NOTIFICATION CARD - Receives cache manipulation functions as props
+// ============================================================================
+interface ExtendedNotificationCardProps extends NotificationCardProps {
+  onRemoveFromCache: (id: string) => void;
+  onUpdateInCache: (id: string, updates: Partial<Notification>) => void;
+}
 
 const NotificationCard = ({
   notification,
-}: NotificationCardProps): JSX.Element => {
+  onRemoveFromCache,
+  onUpdateInCache,
+}: ExtendedNotificationCardProps): JSX.Element => {
   const { markNotificationAsRead, removeNotification } =
     useNotificationsContext();
 
-  const [markAsReadState, markAsReadDispatch] = useFormState(async () => {
-    if (!notification.read) {
+  const [isMarkingRead, setIsMarkingRead] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const handleMarkAsRead = async () => {
+    if (notification.read || isMarkingRead) return;
+    setIsMarkingRead(true);
+
+    try {
       const result = await handleMarkNotificationAsRead(notification.id);
 
       if (result.successMessage) {
+        // Update BOTH sources of truth atomically
         markNotificationAsRead(notification.id);
+        onUpdateInCache(notification.id, { read: true });
+
+        toast.success(result.successMessage);
+      } else if (result.markAsReadError) {
+        toast.error(result.markAsReadError);
       }
-
-      return result;
+    } catch {
+      toast.error("Erro ao marcar notificação como lida");
+    } finally {
+      setIsMarkingRead(false);
     }
-    return null;
-  }, null);
+  };
 
-  const [deleteState, deleteDispatch] = useFormState(async () => {
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+
     try {
       const result = await handleDeleteNotification(notification.id);
 
       if (!result.deleteNotificationError) {
-        // Pass wasUnread parameter to properly update counter
-        removeNotification(notification.id, !notification.read);
+        // CRITICAL: Remove from BOTH sources of truth atomically
+        // This prevents ghost data resurrection
+        removeNotification(notification.id);
+        onRemoveFromCache(notification.id);
 
-        return {
-          ...result,
-          successMessage:
-            result.successMessage || "Notificação excluída com sucesso!",
-        };
+        toast.success(
+          result.successMessage || "Notificação excluída com sucesso!",
+        );
+      } else {
+        toast.error(result.deleteNotificationError);
       }
-
-      return result;
-    } catch (error) {
-      return {
-        deleteNotificationError:
-          "Ocorreu um erro inesperado ao tentar excluir a notificação.",
-      };
+    } catch {
+      toast.error(
+        "Ocorreu um erro inesperado ao tentar excluir a notificação.",
+      );
+    } finally {
+      setIsDeleting(false);
     }
-  }, null);
+  };
 
-  useNotifications(markAsReadState || deleteState);
   const formattedDate = notification.created_at as string;
 
   return (
@@ -115,17 +136,11 @@ const NotificationCard = ({
         <CardDescription>{formattedDate}</CardDescription>
       </CardHeader>
       <CardContent className="pb-4">
-        <p
-          className="text-[0.9rem] 
-          text-muted-foreground"
-        >
+        <p className="text-[0.9rem] text-muted-foreground">
           {notification.message}
         </p>
       </CardContent>
-      <CardFooter
-        className="pt-0 flex flex-wrap 
-        justify-between gap-y-2"
-      >
+      <CardFooter className="pt-0 flex flex-wrap justify-between gap-y-2">
         <div className="flex flex-wrap gap-2">
           {notification.link && (
             <Button
@@ -139,98 +154,113 @@ const NotificationCard = ({
           )}
 
           {!notification.read && (
-            <form action={markAsReadDispatch}>
-              <MarkAsReadButton />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleMarkAsRead();
+              }}
+            >
+              <MarkAsReadButton disabled={isMarkingRead} />
             </form>
           )}
         </div>
 
-        <form action={deleteDispatch}>
-          <DeleteNotificationButton />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleDelete();
+          }}
+        >
+          <DeleteNotificationButton disabled={isDeleting} />
         </form>
       </CardFooter>
     </Card>
   );
 };
 
+// ============================================================================
+// NOTIFICATION LIST
+// ============================================================================
 const NotificationList = ({
-  initialData,
   responseError,
-  currentLimit,
-  currentIncludeRead,
 }: NotificationListProps): JSX.Element => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const [showSpinner, setShowSpinner] = useState<boolean>(false);
 
-  // Notifications status
+  // Notifications status (browser permissions)
   const { isClient, permissionStatus, toggleNotifications } =
     useNotificationStatus();
 
-  // Get real-time notifications from context
+  // Get notifications from context (single source of truth for display)
+  const { notifications: contextNotifications, unreadCount } =
+    useNotificationsContext();
+
+  // Infinite scroll hook - fetches data and syncs with context
   const {
-    realtimeNotifications,
-    markAllNotificationsAsRead,
-    deletedNotifications,
-    clearDeletedNotifications,
-    markedAsReadNotifications,
-  } = useNotificationsContext();
+    notifications: scrollNotifications,
+    lastElementRef,
+    isFetching,
+    isLoading,
+    hasError,
+    errorMessage,
+    refetch,
+    removeFromCache,
+    updateInCache,
+  } = useNotificationInfiniteScroll(true);
 
-  const [isMarkingAllAsRead, setIsMarkingAllAsRead] = useState<boolean>(false);
+  // Rate limiter for refresh button
+  const { isRateLimited, cooldownRemaining, registerClick } =
+    useDataButtonRevalidation(null, {
+      maxClicks: 3,
+      timeWindowMs: 30000,
+      cooldownTimeMs: 15000,
+      storageKey: "notification-revalidation",
+    });
 
-  // Combine bank and real-time notifications, removing duplicates and deleted notifications
-  // IMPORTANT: Respect the limit by only taking the first 'currentLimit' notifications
-  const combinedNotifications = [...realtimeNotifications, ...initialData.data]
-    .filter((notification) => !deletedNotifications.has(notification.id)) // Filter deleted notifications
-    .filter(
-      (notification, index, self) =>
-        index === self.findIndex((n) => n.id === notification.id),
-    )
-    .map((notification) => {
-      // Apply "read" status from markedAsReadNotifications
-      // Only if the notification is not already read
-      if (
-        !notification.read &&
-        (markedAsReadNotifications.has("__ALL__") ||
-          markedAsReadNotifications.has(notification.id))
-      ) {
-        return { ...notification, read: true };
-      }
-      return notification;
-    })
-    .slice(0, currentLimit); // Respect the limit
+  const [activeTab, setActiveTab] = useState<string>("all");
 
-  // Handle marking all as read
-  const [markAllAsReadState, markAllAsReadDispatch] = useFormState(async () => {
-    setIsMarkingAllAsRead(true);
-    return await handleMarkAllNotificationsAsRead();
-  }, null);
-
-  useNotifications(markAllAsReadState);
-
-  // Effect for mark all as read
+  // ============================================================================
+  // LOADING SPINNER LOGIC (same as search-business)
+  // ============================================================================
   useEffect(() => {
-    if (isMarkingAllAsRead && markAllAsReadState?.successMessage) {
-      // Reset flag first
-      setIsMarkingAllAsRead(false);
-      markAllNotificationsAsRead();
+    if (hasError) {
+      setShowSpinner(false);
+      return;
     }
-  }, [isMarkingAllAsRead, markAllAsReadState, markAllNotificationsAsRead]);
 
-  // Clear deleted notifications when data is revalidated (page refreshes with new server data)
-  useEffect(() => {
-    // When initialData changes (revalidation), clear the deleted tracking
-    // This ensures consistency between UI and server state
-    clearDeletedNotifications();
-  }, [initialData, clearDeletedNotifications]);
+    if (isLoading || isFetching) {
+      setShowSpinner(true);
+    } else {
+      setShowSpinner(false);
+    }
+  }, [isLoading, isFetching, hasError]);
 
-  const updateFilterParams = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+  // ============================================================================
+  // DISPLAY NOTIFICATIONS - UNIFIED SOURCE OF TRUTH
+  // Context is the primary source, but we always show what's available
+  // ============================================================================
+  // CRITICAL FIX: Always prefer context as it has the most up-to-date state
+  // Only fall back to scrollNotifications during initial load
+  const displayNotifications =
+    contextNotifications.length > 0 || !isLoading
+      ? contextNotifications
+      : scrollNotifications;
 
-    params.set(key, value);
-    router.push(`?${params.toString()}`);
+  // Filter for unread tab
+  const unreadNotifications = displayNotifications.filter((n) => !n.read);
+
+  // ============================================================================
+  // REFRESH WITH RATE LIMITING
+  // ============================================================================
+  const handleRefresh = () => {
+    const canProceed = registerClick();
+    if (!canProceed) return;
+    refetch();
   };
 
-  if (responseError.error) {
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  if (responseError.error && !scrollNotifications.length && !hasError) {
     return (
       <div className="space-y-4 my-9">
         <Alert variant="destructive">
@@ -242,45 +272,13 @@ const NotificationList = ({
     );
   }
 
-  // Check if we have the total unread notifications from the server
-  const serverUnreadCount = initialData.unread || 0;
-
-  // Calculate the number of real-time notifications that do not exist in the database
-  const realtimeOnlyNotifications = realtimeNotifications.filter(
-    (rn) =>
-      !initialData.data.some((db) => db.id === rn.id) &&
-      !rn.read &&
-      !deletedNotifications.has(rn.id),
-  );
-
-  // The actual unread total is the server total + the new ones in real time
-  const totalRealUnreadCount =
-    serverUnreadCount + realtimeOnlyNotifications.length;
-
-  // Remove those that were deleted locally from server notifications
-  const deletedServerUnreadCount = [...deletedNotifications].filter((id) =>
-    initialData.data.some((n) => n.id === id && !n.read),
-  ).length;
-
-  // Calculate how many server notifications were marked as read locally
-  const markedAsReadServerCount = markedAsReadNotifications.has("__ALL__")
-    ? serverUnreadCount // If ALL marked, subtract all server unread
-    : [...markedAsReadNotifications].filter((id) =>
-        initialData.data.some((n) => n.id === id && !n.read),
-      ).length;
-
-  // The adjusted unread count is the total minus deleted and marked as read
-  const adjustedUnreadCount =
-    totalRealUnreadCount - deletedServerUnreadCount - markedAsReadServerCount;
-
+  // Notification count text
   const notificationText =
-    adjustedUnreadCount === 0
+    unreadCount === 0
       ? "0 notificações não lidas"
-      : adjustedUnreadCount === 1
+      : unreadCount === 1
         ? "1 notificação não lida"
-        : adjustedUnreadCount > currentLimit
-          ? `${currentLimit}+ notificações não lidas`
-          : `${adjustedUnreadCount} notificações não lidas`;
+        : `${unreadCount} notificações não lidas`;
 
   return (
     <div className="space-y-4 my-9">
@@ -305,19 +303,20 @@ const NotificationList = ({
                     variant="ghost"
                     size="sm"
                     onClick={toggleNotifications}
-                    className="ml-2 h-7 px-2 whitespace-nowrap rounded-full bg-gradient-to-r 
-                    from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 
+                    className="ml-2 h-7 px-2 whitespace-nowrap rounded-full bg-gradient-to-r
+                    from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100
                     transition-all duration-300 border border-purple-200"
                   >
                     {permissionStatus === "granted" ? (
                       <>
                         <div
-                          className="mr-1.5 h-2 w-2 rounded-full 
+                          className="mr-1.5 h-2 w-2 rounded-full
                           bg-green-400 animate-pulse"
                         />
                         <span
-                          className="text-xs font-medium bg-clip-text 
-                          text-transparent bg-gradient-to-r from-purple-500 to-pink-500"
+                          className="text-xs font-medium bg-clip-text
+                          text-transparent bg-gradient-to-r
+                          from-purple-500 to-pink-500"
                         >
                           Ativo
                         </span>
@@ -342,131 +341,169 @@ const NotificationList = ({
           )}
         </div>
         <div
-          className="flex flex-col sm:flex-row 
-          items-stretch sm:items-center gap-2 
-          w-full sm:w-auto"
+          className="flex flex-col sm:flex-row items-stretch
+          sm:items-center gap-2 w-full sm:w-auto"
         >
-          <form action={markAllAsReadDispatch} className="w-full sm:w-auto">
-            <MarkAllAsReadButton disabled={totalRealUnreadCount === 0} />
-          </form>
-
-          <ButtonRevalidation
-            revalidateData={["update-notification"]}
-            rateLimit={{
-              storageKey: "notification",
-              maxClicks: 3,
-              timeWindowMs: 30000,
-              cooldownTimeMs: 15000,
-            }}
-          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching || isRateLimited}
+            className="w-full sm:w-auto"
+          >
+            {isRateLimited ? (
+              <>
+                Aguarde {cooldownRemaining}s
+                <Clock className="ml-2 h-4 w-4" />
+              </>
+            ) : (
+              <>
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 flex-shrink-0 ${isFetching ? "animate-spin" : ""}`}
+                />
+                Atualizar
+              </>
+            )}
+          </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="all" className="flex-1 sm:flex-auto">
             Todas
           </TabsTrigger>
           <TabsTrigger value="unread" className="flex-1 sm:flex-auto">
-            Não lidas
+            Não lidas ({unreadCount})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4 mt-4">
-          {combinedNotifications.length === 0 ? (
-            <Card>
-              <CardContent
-                className="pt-6 text-center 
-                text-muted-foreground"
+          {/* Error state */}
+          {hasError && (
+            <div
+              className="flex flex-col items-center 
+              justify-center py-8 text-center"
+            >
+              <p className="text-muted-foreground mb-2">
+                {errorMessage || "Erro ao carregar as notificações"}
+              </p>
+              <Button
+                className="h-8 mt-2"
+                variant="outline"
+                type="button"
+                onClick={() => refetch()}
               >
-                Você não tem notificações.
-              </CardContent>
-            </Card>
-          ) : (
-            combinedNotifications.map((notification) => (
-              <NotificationCard
-                key={notification.id}
-                notification={notification}
-              />
-            ))
+                Revalidar Notificações
+              </Button>
+            </div>
           )}
+
+          {/* Notifications list */}
+          {!hasError &&
+            displayNotifications.map((notification) => (
+              <div key={notification.id} ref={lastElementRef}>
+                <NotificationCard
+                  notification={notification}
+                  onRemoveFromCache={removeFromCache}
+                  onUpdateInCache={updateInCache}
+                />
+              </div>
+            ))}
+
+          {/* Loading skeleton when fetching more */}
+          {isFetching && displayNotifications.length > 0 && !hasError && (
+            <Skeleton className="w-full h-32" />
+          )}
+
+          {/* Initial loading spinner */}
+          {showSpinner && !displayNotifications.length && !hasError && (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex flex-col items-center gap-3">
+                <Loader className="animate-spin h-6 w-6 text-primary" />
+                <span className="text-sm text-muted-foreground">
+                  Carregando notificações...
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!isLoading &&
+            !isFetching &&
+            !hasError &&
+            displayNotifications.length === 0 && (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  Você não tem notificações.
+                </CardContent>
+              </Card>
+            )}
         </TabsContent>
 
         <TabsContent value="unread" className="space-y-4 mt-4">
-          {combinedNotifications.filter((n) => !n.read).length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center text-muted-foreground">
-                Você não tem notificações não lidas.
-              </CardContent>
-            </Card>
-          ) : (
-            combinedNotifications
-              .filter((notification) => !notification.read)
-              .map((notification) => (
-                <NotificationCard
-                  key={notification.id}
-                  notification={notification}
-                />
-              ))
+          {/* Error state */}
+          {hasError && (
+            <div
+              className="flex flex-col items-center 
+              justify-center py-8 text-center"
+            >
+              <p className="text-muted-foreground mb-2">
+                {errorMessage || "Erro ao carregar as notificações"}
+              </p>
+              <Button
+                className="h-8 mt-2"
+                variant="outline"
+                type="button"
+                onClick={() => refetch()}
+              >
+                Revalidar Notificações
+              </Button>
+            </div>
           )}
+
+          {/* Unread notifications list */}
+          {!hasError &&
+            unreadNotifications.map((notification) => (
+              <div key={notification.id} ref={lastElementRef}>
+                <NotificationCard
+                  notification={notification}
+                  onRemoveFromCache={removeFromCache}
+                  onUpdateInCache={updateInCache}
+                />
+              </div>
+            ))}
+
+          {/* Loading skeleton when fetching more */}
+          {isFetching && unreadNotifications.length > 0 && !hasError && (
+            <Skeleton className="w-full h-32" />
+          )}
+
+          {/* Initial loading spinner */}
+          {showSpinner && !unreadNotifications.length && !hasError && (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex flex-col items-center gap-3">
+                <Loader className="animate-spin h-6 w-6 text-primary" />
+                <span className="text-sm text-muted-foreground">
+                  Carregando notificações...
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!isLoading &&
+            !isFetching &&
+            !hasError &&
+            unreadNotifications.length === 0 && (
+              <Card>
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                  Você não tem notificações não lidas.
+                </CardContent>
+              </Card>
+            )}
         </TabsContent>
       </Tabs>
-
-      <div
-        className="flex flex-col sm:flex-row 
-        sm:justify-end gap-4 mt-6"
-      >
-        <div
-          className="flex items-center justify-between 
-          sm:justify-start gap-2 w-full sm:w-auto"
-        >
-          <span
-            className="text-sm text-muted-foreground 
-            whitespace-nowrap"
-          >
-            Status:
-          </span>
-          <Select
-            defaultValue={String(currentIncludeRead)}
-            onValueChange={(value) => updateFilterParams("includeRead", value)}
-          >
-            <SelectTrigger className="w-full sm:w-[150px] h-8">
-              <SelectValue
-                placeholder={currentIncludeRead ? "Todas" : "Apenas não lidas"}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="true">Todas</SelectItem>
-              <SelectItem value="false">Apenas não lidas</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div
-          className="flex items-center justify-between 
-          sm:justify-start gap-2 w-full sm:w-auto"
-        >
-          <span
-            className="text-sm text-muted-foreground 
-            whitespace-nowrap"
-          >
-            Exibir:
-          </span>
-          <Select
-            defaultValue={String(currentLimit)}
-            onValueChange={(value) => updateFilterParams("limit", value)}
-          >
-            <SelectTrigger className="w-full sm:w-[110px] h-8">
-              <SelectValue placeholder={`${currentLimit} itens`} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10 itens</SelectItem>
-              <SelectItem value="20">20 itens</SelectItem>
-              <SelectItem value="50">50 itens</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
     </div>
   );
 };

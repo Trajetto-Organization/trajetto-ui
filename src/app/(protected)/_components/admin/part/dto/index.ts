@@ -1,13 +1,17 @@
 interface PartProps {
   id: string;
   description: string;
-  unit_price: string;
-  businessId?: string;
-  business_name?: string;
+  unit_price: string | number;
+  businessId?: string | null;
   supplierId?: string | null;
-  supplierName: string;
-  created_at: string;
-  updated_at: string;
+  business?: {
+    corporate_reason: string;
+  } | null;
+  supplier?: {
+    name: string;
+  } | null;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export type { PartProps };

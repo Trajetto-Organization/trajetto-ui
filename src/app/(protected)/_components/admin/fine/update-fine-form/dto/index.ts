@@ -1,4 +1,3 @@
-import { CommandBusinessInputValue } from "@/app/(protected)/_components/dto";
 import { FineProps } from "../../dto";
 
 interface UpdateFineValidationError {
@@ -27,15 +26,16 @@ interface UpdateFineFormState {
 interface UpdateFineFormSubmitProps {
   state: UpdateFineFormState;
   onBack: () => void;
+  isEntityDirty: boolean;
   fineData: FineProps;
-  isBusinessAndEntityDirty: boolean;
-  isUpdateFineOpen: boolean;
-  commandBusinessInputValue: CommandBusinessInputValue;
-  handleLocationChange: (lat: number, lon: number) => void;
-  handleLocationLoadingChange: (isLoading: boolean) => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
+  // 📍 GEOLOCATION PROPS
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  handleLocationChange: (lat: number, lon: number) => void;
+  handleLocationLoadingChange: (isLoading: boolean) => void;
 }
 
 interface UpdateFineFormProps {

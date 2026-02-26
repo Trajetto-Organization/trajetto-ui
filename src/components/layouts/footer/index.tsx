@@ -1,9 +1,5 @@
 import Link from "next/link";
-import {
-  InstagramLogoIcon,
-  LinkedInLogoIcon,
-  TwitterLogoIcon,
-} from "@radix-ui/react-icons";
+import { InstagramLogoIcon, LinkedInLogoIcon } from "@radix-ui/react-icons";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -27,7 +23,6 @@ const Footer = (): JSX.Element => {
       links: [
         { item: "Privacidade", href: "/legal/privacy" },
         { item: "Termos", href: "/legal/terms" },
-        { item: "Cookies", href: "/legal/cookies" },
       ],
     },
   ];

@@ -30,7 +30,8 @@ interface DashboardUpdateFuelFormSubmitProps {
   onBack: () => void;
   fuelData: FuelProps;
   isBusinessAndEntityDirty: boolean;
-  isUpdateFuelOpen: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
   commandVehicleInputValue: CommandVehicleInputValue;
   odometerFile: File | null;
   setOdometerFile: (file: File | null) => void;

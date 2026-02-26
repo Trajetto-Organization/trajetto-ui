@@ -35,7 +35,6 @@ export function DashboardFineToolbar<TData>({
   };
 
   const filters = [
-    { key: "amount", title: "Valor da multa" },
     { key: "violationCode", title: "Código da infração" },
     {
       key: "branchName",

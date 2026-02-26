@@ -34,6 +34,8 @@ interface DashboardCreateServiceOrderFormSubmitProps {
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

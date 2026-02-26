@@ -21,8 +21,16 @@ interface UpdateAccountPayableFormState {
 interface UpdateAccountPayableFormSubmitProps {
   state: UpdateAccountPayableFormState;
   onBack: () => void;
-  accountPayableData: AccountPayableProps;
   isBusinessAndEntityDirty: boolean;
+  accountPayableData: AccountPayableProps;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
+}
+
+interface UseUpdateAccountPayableFormProps {
+  state: UpdateAccountPayableFormState | null;
+  handleCloseUpdateAccountPayable: () => void;
+  accountPayableData: AccountPayableProps;
   isUpdateAccountPayableOpen: boolean;
 }
 
@@ -36,4 +44,5 @@ export type {
   UpdateAccountPayableFormState,
   UpdateAccountPayableFormProps,
   UpdateAccountPayableFormSubmitProps,
+  UseUpdateAccountPayableFormProps,
 };

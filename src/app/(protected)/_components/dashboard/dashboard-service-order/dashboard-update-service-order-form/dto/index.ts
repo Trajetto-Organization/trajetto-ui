@@ -28,13 +28,15 @@ interface DashboardUpdateServiceOrderFormSubmitProps {
   state: DashboardUpdateServiceOrderFormState;
   onBack: () => void;
   serviceOrderData: DashboardServiceOrderProps;
-  isBusinessAndEntityDirty: boolean;
+  isEntityDirty: boolean;
   isUpdateServiceOrderOpen: boolean;
   handleLocationChange: (lat: number, lon: number) => void;
   handleLocationLoadingChange: (isLoading: boolean) => void;
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface DashboardUpdateServiceOrderFormProps {

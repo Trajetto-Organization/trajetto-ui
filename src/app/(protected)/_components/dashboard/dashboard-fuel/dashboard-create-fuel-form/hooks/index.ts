@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandDriverInputValue,
@@ -54,6 +54,18 @@ function useDashboardCreateFuelForm(
       searchFuelTypeInputValue: "",
     });
 
+  // Form values state with callback pattern
+  const [fuelFormValues, setFuelFormValues] = useState<Record<string, string>>(
+    {},
+  );
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setFuelFormValues(values);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!isCreateFuelForm) {
       toast.dismiss();
@@ -85,6 +97,8 @@ function useDashboardCreateFuelForm(
         fuelTypeId: "",
         searchFuelTypeInputValue: "",
       });
+
+      setFuelFormValues({});
     }
 
     setIsCreateFuelForm(!isCreateFuelForm);
@@ -191,6 +205,8 @@ function useDashboardCreateFuelForm(
       fuelTypeId: "",
       searchFuelTypeInputValue: "",
     });
+
+    setFuelFormValues({});
   };
 
   useEffect(() => {
@@ -278,6 +294,8 @@ function useDashboardCreateFuelForm(
     commandDriverInputValue,
     commandFuelTypeInputValue,
     formRef,
+    fuelFormValues,
+    handleFormValuesChange,
   };
 }
 

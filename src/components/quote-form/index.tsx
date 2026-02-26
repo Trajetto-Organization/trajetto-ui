@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import Link from "next/link";
 
-import { handleQuoteSubmit } from "@/actions/quote";
+import Link from "next/link";
+import Turnstile from "react-turnstile";
+
+import { handleQuoteSubmit } from "@/actions/quote/create-quote";
 import { CreateQuoteContainerProps, CreateQuoteFormState } from "./dto";
 
 import {
@@ -38,8 +41,17 @@ import { ErrorForm } from "../auth/error-form";
 import { useQuoteForm } from "./hooks";
 import { cn } from "@/lib/utils";
 
+import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 const QuoteFormContainer = ({ state }: CreateQuoteContainerProps) => {
   const { pending } = useFormStatus();
+  const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
 
   const inputFields = [
     {
@@ -105,18 +117,32 @@ const QuoteFormContainer = ({ state }: CreateQuoteContainerProps) => {
         ))}
       </div>
 
-      <div className="mt-5">
-        <label htmlFor="fleet_size" className="block text-sm font-medium mb-1">
-          {state.createQuoteError?.fleet_size ? (
-            <p className="text-sm text-red-500 mt-1">
-              {state.createQuoteError?.fleet_size}
-            </p>
-          ) : (
-            <>
-              Tamanho da frota <span className="text-red-500">*</span>
-            </>
-          )}
-        </label>
+      <div className="mt-5 flex flex-col gap-3">
+        {state.createQuoteError?.fleet_size ? (
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Label
+                  className={cn("h-4 truncate text-red-500")}
+                  htmlFor="fleet_size"
+                >
+                  {state.createQuoteError.fleet_size[0]}
+                </Label>
+              </TooltipTrigger>
+              <TooltipContent
+                align="start"
+                className="max-w-[300px] p-2
+                break-words whitespace-normal"
+              >
+                {state.createQuoteError.fleet_size[0]}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <Label htmlFor="fleet_size" className="h-4 truncate">
+            Tamanho da frota <span className="text-red-500">*</span>
+          </Label>
+        )}
         <Select name="fleet_size" disabled={pending}>
           <SelectTrigger id="fleet_size" className="w-full h-10">
             <SelectValue
@@ -134,16 +160,32 @@ const QuoteFormContainer = ({ state }: CreateQuoteContainerProps) => {
         </Select>
       </div>
 
-      <div className="mt-5">
-        <label htmlFor="message" className="block text-sm font-medium mb-1">
-          {state.createQuoteError?.message ? (
-            <p className="text-sm text-red-500 mt-1">
-              {state.createQuoteError?.message}
-            </p>
-          ) : (
-            "Mensagem (opcional)"
-          )}
-        </label>
+      <div className="mt-5 flex flex-col gap-3">
+        {state.createQuoteError?.message ? (
+          <TooltipProvider delayDuration={300}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Label
+                  className={cn("h-4 truncate text-red-500")}
+                  htmlFor="message"
+                >
+                  {state.createQuoteError.message[0]}
+                </Label>
+              </TooltipTrigger>
+              <TooltipContent
+                align="start"
+                className="max-w-[300px] p-2
+                break-words whitespace-normal"
+              >
+                {state.createQuoteError.message[0]}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <Label htmlFor="message" className="h-4 truncate">
+            Mensagem (opcional)
+          </Label>
+        )}
         <Textarea
           name="message"
           id="message"
@@ -157,9 +199,11 @@ const QuoteFormContainer = ({ state }: CreateQuoteContainerProps) => {
 
       <Button
         type="submit"
-        className="w-full mt-6 bg-[#d81b60] 
+        className="w-full mt-6 bg-[#d81b60]
         hover:bg-[#c2185b] text-white"
-        disabled={pending}
+        disabled={
+          (process.env.NODE_ENV === "production" && !isCaptchaValid) || pending
+        }
       >
         Solicitar Orçamento
         {pending && (
@@ -168,6 +212,30 @@ const QuoteFormContainer = ({ state }: CreateQuoteContainerProps) => {
           </div>
         )}
       </Button>
+
+      {process.env.NODE_ENV === "production" && (
+        <>
+          <Turnstile
+            sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            onSuccess={(token) => {
+              const input = document.getElementById(
+                "quote-turnstile-token",
+              ) as HTMLInputElement;
+
+              if (input) input.value = token;
+              setIsCaptchaValid(true);
+            }}
+            theme="auto"
+            size="flexible"
+            className="mt-5"
+          />
+          <input
+            id="quote-turnstile-token"
+            type="hidden"
+            name="turnstileToken"
+          />
+        </>
+      )}
     </>
   );
 };
@@ -227,7 +295,7 @@ const QuoteForm = (): JSX.Element => {
   return (
     <>
       <section
-        className="relative py-20 bg-gradient-to-b 
+        className="relative py-28 bg-gradient-to-b 
         from-background to-background/90 overflow-hidden"
       >
         <div
@@ -267,11 +335,17 @@ const QuoteForm = (): JSX.Element => {
                 className={cn(
                   buttonVariants({ size: "lg" }),
                   `bg-[#d81b60] hover:bg-[#c2185b] 
-                  text-white rounded-full`,
+                  text-white rounded-full group`,
                 )}
               >
                 Solicitar Orçamento
-                <ChevronRight className="ml-2 h-4 w-4" />
+                <div className="ml-2">
+                  <ChevronRight
+                    size={20}
+                    className="group-hover:translate-x-1
+                    transition-all duration-300"
+                  />
+                </div>
               </Link>
             </motion.div>
           </div>

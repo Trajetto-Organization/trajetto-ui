@@ -7,12 +7,16 @@ interface ActivityProps {
   status: string;
   performedBy: string;
   businessId: string | null;
-  userEmail: string;
-  userName: string;
-  userRole: string;
-  business_name?: string; // Only for MASTER
-  created_at: string;
-  updated_at: string;
+  user?: {
+    email: string;
+    role: string;
+    name: string;
+  };
+  business?: {
+    corporate_reason: string;
+  };
+  created_at: string | Date;
+  updated_at: string | Date;
 }
 
 interface ActivityLogProps {

@@ -14,6 +14,7 @@ import {
   Ban,
   Car,
   PackageCheck,
+  BookUser,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,11 @@ export function ActivityToolbar<TData>({
   };
 
   const filters = [
+    {
+      key: "business_name",
+      title: "Nome da Empresa",
+      dynamicOptionIcon: BookUser,
+    },
     {
       key: "type",
       title: "Tipo",

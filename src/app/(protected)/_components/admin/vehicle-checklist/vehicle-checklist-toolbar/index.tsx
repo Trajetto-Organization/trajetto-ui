@@ -51,12 +51,12 @@ export function VehicleChecklistToolbar<TData>({
 
   const filters = [
     {
-      key: "business_name",
+      key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },
     {
-      key: "branch_name",
+      key: "branchName",
       title: "Nome da filial",
       dynamicOptionIcon: Building2,
     },

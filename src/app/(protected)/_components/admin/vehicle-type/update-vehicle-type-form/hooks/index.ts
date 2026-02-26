@@ -24,7 +24,7 @@ function useUpdateVehicleTypeForm({
     number_of_axles: vehicleNumberOfAxles,
     description: vehicleTypeDescription,
     businessId: vehicleTypeBusiness,
-    business_name: businessName,
+    business: businessName,
   },
 }: UseUpdateVehicleTypeFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -39,7 +39,7 @@ function useUpdateVehicleTypeForm({
   const [commandBusinessInputValue, setCommandBusinessInputValue] =
     useState<CommandBusinessInputValue>({
       businessId: vehicleTypeBusiness || "",
-      searchBusinessInputValue: businessName || "",
+      searchBusinessInputValue: businessName?.corporate_reason || "",
     });
 
   useEffect(() => {
@@ -49,7 +49,7 @@ function useUpdateVehicleTypeForm({
 
       setCommandBusinessInputValue({
         businessId: vehicleTypeBusiness || "",
-        searchBusinessInputValue: businessName || "",
+        searchBusinessInputValue: businessName?.corporate_reason || "",
       });
     }
   }, [

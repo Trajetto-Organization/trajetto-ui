@@ -116,12 +116,12 @@ const Business = async ({
   // Calculates stats directly from the returned data
   const statsData = {
     totalBusiness: meta.total,
-    withErpCode: business.filter((b) => b.erp_code && b.erp_code !== "N/A")
+    withErpCode: business.filter((b) => b.erp_code && b.erp_code !== null)
       .length,
     topStates: (() => {
       const stateCount: Record<string, number> = {};
       business.forEach((b) => {
-        if (b.uf && b.uf !== "N/A") {
+        if (b.uf && b.uf !== null) {
           stateCount[b.uf] = (stateCount[b.uf] || 0) + 1;
         }
       });
@@ -137,7 +137,7 @@ const Business = async ({
     topCities: (() => {
       const cityCount: Record<string, number> = {};
       business.forEach((b) => {
-        if (b.city && b.city !== "N/A") {
+        if (b.city && b.city !== null) {
           cityCount[b.city] = (cityCount[b.city] || 0) + 1;
         }
       });

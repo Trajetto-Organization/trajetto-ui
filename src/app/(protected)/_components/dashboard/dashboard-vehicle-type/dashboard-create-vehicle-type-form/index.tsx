@@ -1,7 +1,5 @@
 "use client";
 
-import { FormEvent } from "react";
-
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
@@ -22,7 +20,7 @@ import {
   DashboardCreateVehicleTypeFormState,
 } from "./dto";
 
-import { handleCreateVehicleType } from "@/actions/create-vehicle-type";
+import { handleCreateVehicleType } from "@/actions/vehicle-type/create-vehicle-type";
 import { useDashboardCreateVehicleTypeForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -30,42 +28,19 @@ import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
+import { formatNumericInput } from "@/lib/format-values";
+
 const DashboardCreateVehicleTypeFormSubmit = ({
   state,
   handleOpenCreateVehicleTypeForm,
 }: DashboardCreateVehicleTypeFormSubmitProps) => {
   const { pending } = useFormStatus();
 
-  const handleNumberOfAxles = (event: FormEvent<HTMLInputElement>) => {
-    const target = event.target as HTMLInputElement;
-    let value = target.value;
-
-    // Removes leading zeros (prevents the first digit from being 0)
-    value = value.replace(/^0+/, "");
-
-    // If there is no value (i.e. if there are only zeros), reset the input.
-    if (value === "") {
-      target.value = "";
-      return;
-    }
-
-    // Convert to number to compare
-    const numericValue = parseInt(value, 10);
-
-    // If the value is greater than 10, force it to 10
-    if (numericValue > 10) {
-      target.value = "10";
-    } else {
-      // If not, keep the entered value.
-      target.value = value;
-    }
-  };
-
   return (
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição do Veículo"}
+          label={"Descrição do Veículo *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -75,7 +50,7 @@ const DashboardCreateVehicleTypeFormSubmit = ({
         />
 
         <FormInput
-          label="Quantidade de Eixos"
+          label="Quantidade de Eixos *"
           htmlfor="number_of_axles"
           name="number_of_axles"
           type="number"
@@ -86,7 +61,7 @@ const DashboardCreateVehicleTypeFormSubmit = ({
           errorName={state.createVehicleTypeError?.number_of_axles}
           placeholder="Digite a quantidade de eixos do tipo de veículo"
           disabled={pending}
-          onInput={handleNumberOfAxles}
+          onInput={(event) => formatNumericInput(event, 10)}
         />
       </div>
 
@@ -131,6 +106,11 @@ const DashboardCreateVehicleTypeForm = (): JSX.Element => {
     "write",
   );
 
+  const createVehicleTypeForm = (vehicleTypeFormData: FormData) => {
+    vehicleTypeFormData.append("businessId", businessId as string);
+    return dispatch(vehicleTypeFormData);
+  };
+
   return (
     <Dialog
       open={isCreateCreateVehicleTypeForm}
@@ -146,7 +126,10 @@ const DashboardCreateVehicleTypeForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Tipo do Veículo</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -155,13 +138,7 @@ const DashboardCreateVehicleTypeForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            formData.append("businessId", businessId as string);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createVehicleTypeForm}>
           <DashboardCreateVehicleTypeFormSubmit
             state={state}
             handleOpenCreateVehicleTypeForm={handleOpenCreateVehicleTypeForm}

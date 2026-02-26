@@ -10,9 +10,8 @@ interface DashboardSupplierProps {
   complement?: string | null;
   telephone?: string | null;
   email?: string | null;
-  businessId?: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export type { DashboardSupplierProps };

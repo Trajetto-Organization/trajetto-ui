@@ -1,31 +1,57 @@
 interface ServiceOrderProps {
   id: string;
-  date: string;
-  completion_date?: string | null;
+  date: Date | string;
+  completion_date: Date | string | null;
   maintenance_type: "INTERNAL" | "EXTERNAL";
-  total_amount: string;
-  current_mileage_at_service?: number | null;
-  maintenance_interval_km_at_service?: number | null;
-  last_maintenance_mileage_at_service?: number | null;
-  new_mileage_after_service?: number | null;
-  businessId?: string;
+  total_amount: number | string;
+  current_mileage_at_service: number | null;
+  maintenance_interval_km_at_service: number | null;
+  last_maintenance_mileage_at_service: number | null;
+  new_mileage_after_service: number | null;
+  businessId: string;
   vehicleId: string;
   responsibleUserId: string;
   branchId: string;
-  supplierId?: string | null;
-  vehicleLicensePlate?: string | null;
-  vehicleDescription?: string | null;
-  responsibleUserName?: string | null;
-  responsibleUserEmail?: string | null;
-  branchName: string;
-  business_name?: string;
-  supplierName?: string | null;
-  partsCount?: number | null;
-  // 📍 GEOLOCATION
-  latitude?: number | null;
-  longitude?: number | null;
-  created_at: string;
-  updated_at: string;
+  supplierId: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  latitude_original: number | null;
+  longitude_original: number | null;
+  location_source: string | null;
+  location_edited_by: string | null;
+  location_edited_at: Date | string | null;
+  created_from: "WEB" | "MOBILE" | "WEB_DASHBOARD";
+  created_at: Date | string;
+  updated_at: Date | string;
+  business?: {
+    corporate_reason: string;
+  };
+  vehicle?: {
+    license_plate: string;
+    description: string;
+  };
+  responsibleUser?: {
+    name: string;
+    email: string;
+  };
+  branch?: {
+    corporate_reason: string;
+    fantasy_name: string;
+  };
+  supplier?: {
+    name: string;
+  } | null;
+  parts?: Array<{
+    id: string;
+    quantity: number;
+    unit_price: number | string;
+    serviceOrderId: string;
+    partId: string;
+    part: {
+      id: string;
+      description: string;
+    };
+  }>;
 }
 
 export type { ServiceOrderProps };

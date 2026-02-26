@@ -100,12 +100,20 @@ export function DashboardDataTableUserRowActions<TData>({
       label: "Copiar ID",
       onClick: () => handleCopyID(collumnRowAction.id),
     },
-    ...(collumnRowAction.profileAccessId !== "N/A"
+    ...(collumnRowAction.profileAccessId
       ? [
           {
             label: "Copiar ID do perfil",
             onClick: () =>
               handleCopyID(collumnRowAction.profileAccessId as string),
+          },
+        ]
+      : []),
+    ...(collumnRowAction.driverId
+      ? [
+          {
+            label: "Copiar ID do motorista",
+            onClick: () => handleCopyID(collumnRowAction.driverId as string),
           },
         ]
       : []),

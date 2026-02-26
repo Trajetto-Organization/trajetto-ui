@@ -8,8 +8,15 @@ interface NotificationsProps {
 
 // Mark notification as read
 const handleMarkNotificationAsRead = async (notificationId: string) => {
-  const updateMarkNotificationAsRead = `${process.env.HTTP_REQUEST}/notification/${notificationId}/read`;
   const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) {
+    return {
+      markAsReadError: "Token de acesso não encontrado. Faça login novamente.",
+    };
+  }
+
+  const updateMarkNotificationAsRead = `${process.env.HTTP_REQUEST}/notification/${notificationId}/read`;
 
   try {
     const response = await fetch(updateMarkNotificationAsRead, {
@@ -35,41 +42,18 @@ const handleMarkNotificationAsRead = async (notificationId: string) => {
   }
 };
 
-// Mark all notifications as read
-const handleMarkAllNotificationsAsRead = async () => {
-  const updateMarkAllNotificationAsRead = `${process.env.HTTP_REQUEST}/notification/read-all`;
-  const tokenAccess = await getCookies("tkey");
-
-  try {
-    const response = await fetch(updateMarkAllNotificationAsRead, {
-      credentials: "include",
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${tokenAccess}`,
-      },
-    });
-
-    const { message } = (await response.json()) as NotificationsProps;
-
-    if (!response.ok && message) {
-      return { markAllAsReadError: message };
-    }
-
-    return {
-      successMessage: message,
-    };
-  } catch (error) {
-    return {
-      markAllAsReadError:
-        "Ocorreu um erro inesperado ao tentar marcar todas as notificações como lidas.",
-    };
-  }
-};
-
 // Delete notification
 const handleDeleteNotification = async (notificationId: string) => {
-  const deleteNotification = `${process.env.HTTP_REQUEST}/notification/${notificationId}`;
   const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) {
+    return {
+      deleteNotificationError:
+        "Token de acesso não encontrado. Faça login novamente.",
+    };
+  }
+
+  const deleteNotification = `${process.env.HTTP_REQUEST}/notification/${notificationId}`;
 
   try {
     const response = await fetch(deleteNotification, {
@@ -98,8 +82,4 @@ const handleDeleteNotification = async (notificationId: string) => {
   }
 };
 
-export {
-  handleDeleteNotification,
-  handleMarkAllNotificationsAsRead,
-  handleMarkNotificationAsRead,
-};
+export { handleDeleteNotification, handleMarkNotificationAsRead };

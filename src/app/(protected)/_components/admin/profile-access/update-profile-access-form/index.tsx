@@ -19,11 +19,11 @@ import {
 
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateProfileAccess } from "@/actions/update-profile-access";
+import { handleUpdateProfileAccess } from "@/actions/profile-access/update-profile-access";
 import { useUpdateProfileAccessForm } from "./hooks";
 
 import { cn } from "@/lib/utils";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { SearchBusiness } from "../../../search-business";
 
@@ -48,7 +48,7 @@ const UpdateProfileAccessFormSubmit = ({
     <>
       <div className="space-y-4 mt-2">
         <FormInput
-          label={"Nome do perfil"}
+          label={"Nome do perfil *"}
           htmlfor={"name"}
           name="name"
           onChange={(event) =>
@@ -142,11 +142,22 @@ const UpdateProfileAccessForm = ({
     handleCloseUpdateProfileAccess,
     profileName: profileAccessData.name,
     profileBusiness: {
-      searchBusinessInputValue: profileAccessData.corporate_reason as string,
+      searchBusinessInputValue: profileAccessData.business
+        ?.corporate_reason as string,
       businessId: profileAccessData.businessId as string,
     },
     isUpdateProfileAccess,
   });
+
+  const updateProfileAccessForm = (profileAccessFormData: FormData) => {
+    const updateProfileAccessData = {
+      businessId: commandBusinessInputValue.businessId,
+      profileAccessId: profileAccessData.id,
+    };
+
+    appendDataToForm(profileAccessFormData, updateProfileAccessData);
+    return dispatch(profileAccessFormData);
+  };
 
   return (
     <Dialog
@@ -167,7 +178,10 @@ const UpdateProfileAccessForm = ({
       }}
       open={isUpdateProfileAccess}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh]">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Perfil</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -176,18 +190,7 @@ const UpdateProfileAccessForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              profileAccessId: profileAccessData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateProfileAccessForm}>
           <UpdateProfileAccessFormSubmit
             state={state}
             handleCloseUpdateProfileAccess={handleCloseUpdateProfileAccess}

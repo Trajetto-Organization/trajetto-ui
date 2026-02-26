@@ -36,7 +36,7 @@ export function ServiceOrderToolbar<TData>({
 
   const filters = [
     {
-      key: "business_name",
+      key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },

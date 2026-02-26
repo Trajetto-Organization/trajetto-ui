@@ -7,25 +7,19 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Loader, X } from "lucide-react";
 
 import FormInput from "@/components/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/custom";
+
 import { Label } from "@/components/ui/label";
 
 import { UserRegistrationProps } from "../dto";
 import { useUpdateGenerateRandomPassword, useUpdateUserForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
-import { handleUpdateUserRegistration } from "@/actions/update-user-registration";
+import { appendDataToForm } from "@/lib/append-data-form";
+import { handleUpdateUserRegistration } from "@/actions/user/update-user-registration";
 
 import { UpdateUserFormSubmitProps, UpdateUserFormState } from "./dto";
 import { roleLabels, UserBusinessRole } from "../../../dto";
@@ -69,11 +63,16 @@ const UpdateUserFormSubmit = ({
   const { handleGeneratePassword, handleChangePassword, password } =
     useUpdateGenerateRandomPassword();
 
+  const roleOptions = Object.values(UserBusinessRole).map((role) => ({
+    value: role,
+    label: roleLabels[role],
+  }));
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
         <FormInput
-          label={"Email"}
+          label={"Email *"}
           htmlfor={"email"}
           name="email"
           type="email"
@@ -86,7 +85,7 @@ const UpdateUserFormSubmit = ({
         />
 
         <FormInput
-          label={"Nome"}
+          label={"Nome *"}
           htmlfor={"name"}
           name="name"
           type="text"
@@ -98,52 +97,28 @@ const UpdateUserFormSubmit = ({
           value={userName}
         />
 
-        <div className="w-full flex flex-col gap-3">
-          <Label
-            htmlFor="role"
-            className={cn(
-              state.updateUserError?.role && "h-4 truncate text-red-500",
-            )}
-          >
-            {state.updateUserError?.role
-              ? state.updateUserError?.role
-              : "Nível de acesso"}
-          </Label>
-
-          <Select
-            name="role"
-            disabled={pending}
-            value={userRole}
-            onValueChange={(value) => {
-              handleUpdateUserRole(value);
-              handleUpdateSearchBusinessInputValue({
-                businessId: "",
-                searchBusinessInputValue: "",
-              });
-            }}
-          >
-            <SelectTrigger id="role">
-              <SelectValue placeholder="Nível de acesso" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(UserBusinessRole).map((role) => (
-                <SelectItem
-                  key={role}
-                  value={role}
-                  className="cursor-pointer
-                  hover:bg-accent hover:text-accent-foreground"
-                >
-                  {roleLabels[role]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SelectField
+          label="Nível de acesso *"
+          htmlfor="role"
+          name="role"
+          placeholder="Nível de acesso"
+          value={userRole}
+          onChange={(value) => {
+            handleUpdateUserRole(value);
+            handleUpdateSearchBusinessInputValue({
+              businessId: "",
+              searchBusinessInputValue: "",
+            });
+          }}
+          errorName={state.updateUserError?.role}
+          options={roleOptions}
+          disabled={pending}
+        />
 
         <div className="flex items-end gap-2 w-full">
           <div className="w-full -mt-1">
             <FormInput
-              label="Senha"
+              label="Senha (opcional)"
               htmlfor="password"
               name="password"
               type="password"
@@ -272,36 +247,34 @@ const UpdateUserFormSubmit = ({
             </div>
           )}
 
-          {userRole !== "BUSINESS_ADMIN" &&
-            searchProfileAccessInputValue &&
-            searchProfileAccessInputValue !== "N/A" && (
-              <div className="flex items-center gap-2 w-full ml-auto">
-                <div
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "border-dashed truncate h-8 text-left",
-                  )}
-                >
-                  <span>Perfil:</span>
-                  <span className="w-full truncate">
-                    {searchProfileAccessInputValue}
-                  </span>
-                </div>
-
-                <Button
-                  className="h-8 w-4"
-                  variant="ghost"
-                  onClick={() =>
-                    handleUpdateSearchProfileAccessInputValue({
-                      profileAccessId: "",
-                      searchProfileAccessInputValue: "",
-                    })
-                  }
-                >
-                  <X />
-                </Button>
+          {userRole !== "BUSINESS_ADMIN" && searchProfileAccessInputValue && (
+            <div className="flex items-center gap-2 w-full ml-auto">
+              <div
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "border-dashed truncate h-8 text-left",
+                )}
+              >
+                <span>Perfil:</span>
+                <span className="w-full truncate">
+                  {searchProfileAccessInputValue}
+                </span>
               </div>
-            )}
+
+              <Button
+                className="h-8 w-4"
+                variant="ghost"
+                onClick={() =>
+                  handleUpdateSearchProfileAccessInputValue({
+                    profileAccessId: "",
+                    searchProfileAccessInputValue: "",
+                  })
+                }
+              >
+                <X />
+              </Button>
+            </div>
+          )}
 
           {userRole === "BUSINESS_USER" &&
             userType === "driver" &&
@@ -434,6 +407,19 @@ const UpdateUserForm = ({
     isUpdateUser,
   });
 
+  const updateUserForm = (userFormData: FormData) => {
+    const updateUserData = {
+      businessId: commandBusinessInputValue.businessId,
+      profileAccessId: commandProfileAccessInputValue.profileAccessId,
+      driverId: commandDriverInputValue.driverId,
+      userType: userType,
+      userId: userData.id,
+    };
+
+    appendDataToForm(userFormData, updateUserData);
+    return dispatch(userFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -467,7 +453,10 @@ const UpdateUserForm = ({
       }}
       open={isUpdateUser}
     >
-      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Usuário</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -476,21 +465,7 @@ const UpdateUserForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              profileAccessId: commandProfileAccessInputValue.profileAccessId,
-              driverId: commandDriverInputValue.driverId,
-              userType: userType,
-              userId: userData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateUserForm}>
           <UpdateUserFormSubmit
             state={state}
             handleOpenUpdateUser={handleOpenUpdateUser}

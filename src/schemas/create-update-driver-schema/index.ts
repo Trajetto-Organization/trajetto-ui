@@ -1,18 +1,11 @@
 import { z } from "zod";
-
-const hasSpaceAtEdges = (value: string) => /^\s|\s$/.test(value);
-const isEmptyOrWhitespace = (value: string): boolean =>
-  value.trim().length === 0;
-const hasConsecutiveSpaces = (value: string): boolean => /\s{2,}/.test(value);
-
-// Helper function to convert empty strings to null
-const emptyStringToNull = (value: any) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-
-  return value;
-};
+import {
+  emptyStringToNull,
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
+  isEmptyOrWhitespace,
+  isValidDateString,
+} from "@/lib/format-values";
 
 const isAdult = (date: Date) => {
   const today = new Date();
@@ -32,11 +25,6 @@ const isAdult = (date: Date) => {
   return age >= 18;
 };
 
-const isValidDateString = (value: string): boolean => {
-  const date = new Date(value);
-  return !isNaN(date.getTime());
-};
-
 const createUpdateDriverSchema = z.object({
   name: z
     .string()
@@ -48,6 +36,7 @@ const createUpdateDriverSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome não deve exceder 100 caracteres.",
         });
+
         return;
       }
 
@@ -56,6 +45,7 @@ const createUpdateDriverSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome não deve conter espaços consecutivos.",
         });
+
         return;
       }
 
@@ -64,6 +54,7 @@ const createUpdateDriverSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "O nome não pode começar ou terminar com espaço em branco.",
         });
+
         return;
       }
 
@@ -72,6 +63,7 @@ const createUpdateDriverSchema = z.object({
           code: z.ZodIssueCode.custom,
           message: "Por favor, insira o nome completo.",
         });
+
         return;
       }
 

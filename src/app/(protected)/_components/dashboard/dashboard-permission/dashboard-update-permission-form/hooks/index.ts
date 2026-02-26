@@ -22,10 +22,10 @@ function useUpdatePermissionForm({
     action,
     canRead: canReadPermission,
     canWrite: canWritePermission,
-    permission: permissionKeyName,
+    permissionKey: permissionKeyName,
+    profileAccess: { name },
     businessId,
     profileAccessId,
-    profile_name,
   },
 }: UseUpdatePermissionFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -39,7 +39,7 @@ function useUpdatePermissionForm({
 
   const [commandProfileAccessInputValue, setCommandProfileAccessInputValue] =
     useState<CommandProfileAccessInputValue>({
-      searchProfileAccessInputValue: profile_name,
+      searchProfileAccessInputValue: name,
       profileAccessId,
     });
 
@@ -52,7 +52,7 @@ function useUpdatePermissionForm({
       setCanWrite(canWritePermission);
 
       setCommandProfileAccessInputValue({
-        searchProfileAccessInputValue: profile_name,
+        searchProfileAccessInputValue: name,
         profileAccessId,
       });
     }
@@ -63,7 +63,7 @@ function useUpdatePermissionForm({
     canReadPermission,
     canWritePermission,
     businessId,
-    profile_name,
+    name,
     profileAccessId,
   ]);
 
@@ -143,7 +143,6 @@ function useUpdatePermissionForm({
     canRead !== canReadPermission,
     permissionKey !== permissionKeyName,
     canWrite !== canWritePermission,
-
     commandProfileAccessInputValue.profileAccessId !== profileAccessId,
   ].some(Boolean);
 

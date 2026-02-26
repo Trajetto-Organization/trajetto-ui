@@ -10,18 +10,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { Button, buttonVariants } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
 
-import { handleCreateUser } from "@/actions/create-user";
+import FormInput from "@/components/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/custom";
+
+import { handleCreateUser } from "@/actions/user/create-user";
 import { CreateUserFormSubmitProps, CreateUserFormState } from "./dto";
 
 import { SearchProfileAccess } from "../../../search-profile-access";
@@ -35,7 +29,7 @@ import {
   useSelectUserRole,
 } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { roleLabels, UserBusinessRole } from "../../../dto";
 
 import { Label } from "@/components/ui/label";
@@ -61,14 +55,19 @@ const CreateUserFormSubmit = ({
 
   const { selectedRole, setSelectedRole } = useSelectUserRole();
 
+  const roleOptions = Object.values(UserBusinessRole).map((role) => ({
+    value: role,
+    label: roleLabels[role],
+  }));
+
   return (
     <>
       <div
-        className="grid grid-cols-1 
+        className="grid grid-cols-1
         md:grid-cols-2 gap-4 mt-3"
       >
         <FormInput
-          label={"Email"}
+          label={"Email *"}
           htmlfor={"email"}
           id="email"
           name="email"
@@ -80,7 +79,7 @@ const CreateUserFormSubmit = ({
         />
 
         <FormInput
-          label={"Nome"}
+          label={"Nome *"}
           htmlfor={"name"}
           id="name"
           name="name"
@@ -91,52 +90,27 @@ const CreateUserFormSubmit = ({
           disabled={pending}
         />
 
-        <div className="w-full flex flex-col gap-3">
-          <Label
-            htmlFor="role"
-            className={cn(
-              state.createUserError?.role && "h-4 truncate text-red-500",
-            )}
-          >
-            {state.createUserError?.role
-              ? state.createUserError?.role
-              : "Nível de acesso"}
-          </Label>
-
-          <Select
-            name="role"
-            disabled={pending}
-            onValueChange={(value) => {
-              setSelectedRole(value);
-
-              handleUpdateSearchBusinessInputValue({
-                businessId: "",
-                searchBusinessInputValue: "",
-              });
-            }}
-          >
-            <SelectTrigger id="role">
-              <SelectValue placeholder="Nível de acesso" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(UserBusinessRole).map((role) => (
-                <SelectItem
-                  key={role}
-                  value={role}
-                  className="cursor-pointer
-                  hover:bg-accent hover:text-accent-foreground"
-                >
-                  {roleLabels[role]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <SelectField
+          label="Nível de acesso *"
+          htmlfor="role"
+          name="role"
+          placeholder="Nível de acesso"
+          errorName={state.createUserError?.role}
+          options={roleOptions}
+          onChange={(value) => {
+            setSelectedRole(value);
+            handleUpdateSearchBusinessInputValue({
+              businessId: "",
+              searchBusinessInputValue: "",
+            });
+          }}
+          disabled={pending}
+        />
 
         <div className="flex items-end gap-2 w-full">
           <div className="w-full -mt-1">
             <FormInput
-              label="Senha"
+              label="Senha *"
               htmlfor="password"
               name="password"
               id="password"
@@ -422,6 +396,18 @@ const CreateUserForm = (): JSX.Element => {
     setUserType,
   } = useCreateUserForm(state);
 
+  const createUserForm = (userFormData: FormData) => {
+    const userData = {
+      businessId: commandBusinessInputValue.businessId,
+      profileAccessId: commandProfileAccessInputValue.profileAccessId,
+      driverId: commandDriverInputValue.driverId,
+      userType: userType,
+    };
+
+    appendDataToForm(userFormData, userData);
+    return dispatch(userFormData);
+  };
+
   return (
     <Dialog open={isCreateUserForm} onOpenChange={handleOpenCreateUserForm}>
       <DialogTrigger asChild>
@@ -430,7 +416,10 @@ const CreateUserForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Novo Usuário</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -439,20 +428,7 @@ const CreateUserForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              profileAccessId: commandProfileAccessInputValue.profileAccessId,
-              driverId: commandDriverInputValue.driverId,
-              userType: userType,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createUserForm}>
           <CreateUserFormSubmit
             state={state}
             handleOpenCreateUserForm={handleOpenCreateUserForm}

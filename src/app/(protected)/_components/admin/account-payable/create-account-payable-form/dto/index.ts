@@ -19,12 +19,8 @@ interface CreateAccountPayableFormState {
 interface CreateAccountPayableFormSubmitProps {
   state: CreateAccountPayableFormState;
   onBack: () => void;
-  displayAmount: string;
-  displayAmountPaid: string;
-  handleAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleAmountBlur: () => void;
-  handleAmountPaidChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleAmountPaidBlur: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

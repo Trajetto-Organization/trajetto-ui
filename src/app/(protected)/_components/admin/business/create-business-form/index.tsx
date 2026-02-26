@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateBusiness } from "@/actions/create-business";
+import { handleCreateBusiness } from "@/actions/business/create-business";
 
 import { useCreateBusinessForm } from "./hooks";
 import { useCepValidation } from "../../../hooks";
@@ -89,7 +89,10 @@ const CreateBusinessForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Nova Empresa</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">

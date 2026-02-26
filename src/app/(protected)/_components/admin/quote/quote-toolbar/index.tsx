@@ -96,6 +96,13 @@ export function QuoteToolbar<TData>({
         sm:min-w-[270px] sm:max-w-[270px]"
       />
 
+      {table.getColumn("company") && (
+        <DataTableFacetedFilter
+          column={table.getColumn("company")}
+          title="Empresa"
+        />
+      )}
+
       {table.getColumn("status") && (
         <DataTableFacetedFilter
           column={table.getColumn("status")}
@@ -109,13 +116,6 @@ export function QuoteToolbar<TData>({
           column={table.getColumn("fleet_size")}
           title="Tamanho da Frota"
           options={fleetSizeOptions}
-        />
-      )}
-
-      {table.getColumn("company") && (
-        <DataTableFacetedFilter
-          column={table.getColumn("company")}
-          title="Empresa"
         />
       )}
 

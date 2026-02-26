@@ -122,14 +122,17 @@ const Part = async ({
     withSupplier: part.filter((p) => p.supplierId !== null).length,
     averagePrice: (() => {
       if (part.length === 0) return "R$ 0,00";
+
       const total = part.reduce((sum, p) => {
-        const cleanValue = (p.unit_price || "0")
+        const cleanValue = String(p.unit_price || "0")
           .replace(/[^\d,.-]/g, "")
           .replace(/\./g, "")
           .replace(",", ".");
+
         const price = parseFloat(cleanValue);
         return sum + (isNaN(price) ? 0 : price);
       }, 0);
+
       const average = total / part.length;
       return average.toLocaleString("pt-BR", {
         style: "currency",
@@ -138,10 +141,11 @@ const Part = async ({
     })(),
     totalValue: part
       .reduce((sum, p) => {
-        const cleanValue = (p.unit_price || "0")
+        const cleanValue = String(p.unit_price || "0")
           .replace(/[^\d,.-]/g, "")
           .replace(/\./g, "")
           .replace(",", ".");
+
         const price = parseFloat(cleanValue);
         return sum + (isNaN(price) ? 0 : price);
       }, 0)

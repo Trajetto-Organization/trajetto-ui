@@ -21,9 +21,10 @@ interface DashboardUpdateAccountPayableFormState {
 interface DashboardUpdateAccountPayableFormSubmitProps {
   state: DashboardUpdateAccountPayableFormState;
   onBack: () => void;
-  accountPayableData: DashboardAccountPayableProps;
   isBusinessAndEntityDirty: boolean;
-  isUpdateAccountPayableOpen: boolean;
+  accountPayableData: DashboardAccountPayableProps;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface DashboardUpdateAccountPayableFormProps {

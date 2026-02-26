@@ -138,7 +138,7 @@ const VehicleChecklist = async ({
         description="Gerencie os checklists veiculares cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
 
-      <VehicleChecklistActions />
+      <VehicleChecklistActions hasData={vehicleChecklists.length > 0} />
       <PageStats stats={vehicleChecklistStats} data={statsData} columns={4} />
 
       <DataTable

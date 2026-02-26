@@ -44,7 +44,7 @@ const Features = (): JSX.Element => {
       icon: BarChart3,
       title: "Dashboards Inteligentes",
       description:
-        "Métricas em tempo real, relatórios personalizados e insights poderosos para tomada de decisões estratégicas.",
+        "Métricas atualizadas, relatórios sob medida e insights poderosos para tomada de decisões precisas e estratégicas.",
     },
   ];
 
@@ -52,7 +52,7 @@ const Features = (): JSX.Element => {
     <>
       <div
         className="w-full flex flex-row 
-        justify-center h-24 mt-7"
+        justify-center h-24 mt-12"
         id="como-funciona"
       >
         <Step />

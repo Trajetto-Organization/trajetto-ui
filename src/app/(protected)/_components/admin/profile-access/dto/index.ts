@@ -1,8 +1,10 @@
 interface ProfileAccessProps {
   id: string;
   name: string;
-  corporate_reason?: string;
   businessId?: string;
+  business?: {
+    corporate_reason: string;
+  };
   created_at: string;
   updated_at: string;
 }

@@ -4,18 +4,32 @@ export const userTableSchema = z.object({
   id: z.string(),
   role: z.string(),
   email: z.string(),
+  email_verified: z.string().nullable().optional(),
   two_factor_enabled: z.boolean(),
   access_revoked: z.boolean(),
-  email_verified: z.boolean(),
   name: z.string(),
-  avatar: z.string(),
-  corporate_reason: z.string().optional(),
-  businessId: z.string(),
-  profileAccess: z.string(),
-  profileAccessId: z.string(),
-  driverId: z.string().optional(),
-  driverName: z.string().optional(),
-  whatsapp_phone: z.string().optional().nullable(),
+  avatar: z.string().nullable().optional(),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .optional(),
+  businessId: z.string().nullable().optional(),
+  profileAccessId: z.string().nullable().optional(),
+  profileAccess: z
+    .object({
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+  driverId: z.string().nullable().optional(),
+  driver: z
+    .object({
+      name: z.string(),
+    })
+    .nullable()
+    .optional(),
+  whatsapp_phone: z.string().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

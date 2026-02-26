@@ -15,7 +15,7 @@ import { Loader, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { useDeleteUserForm } from "./hooks";
-import { handleRevokeUserAccess } from "@/actions/revoke-user-access";
+import { handleRevokeUserAccess } from "@/actions/user/revoke-user-access";
 
 interface RevokeUserFormSubmitProps {
   access_revoked: boolean;
@@ -30,6 +30,23 @@ const RevokeUserFormSubmit = ({
   access_revoked,
 }: RevokeUserFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+  const enableRevokeUserList = [
+    { data: "O usuário poderá fazer login normalmente." },
+    { data: "Todos os tokens ativos voltam a valer." },
+    { data: "Ele recupera permissão na plataforma." },
+  ];
+
+  const revokeUserList = [
+    { data: "Todas as sessões e tokens de acesso serão invalidados" },
+    {
+      data: "Ordens de serviço em que ele seja responsável permanecerão no sistema",
+    },
+    {
+      data: "Contas a pagar registradas por este usuário permanecerão no sistema",
+    },
+    { data: "O usuário perderá acesso total à plataforma" },
+    { data: "Esta ação não pode ser desfeita sem intervenção de admin" },
+  ];
 
   return (
     <>
@@ -50,9 +67,9 @@ const RevokeUserFormSubmit = ({
                   Consequências imediatas:
                 </span>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li>O usuário poderá fazer login normalmente.</li>
-                  <li>Todos os tokens ativos voltam a valer.</li>
-                  <li>Ele recupera permissão na plataforma.</li>
+                  {enableRevokeUserList.map(({ data }, idx) => (
+                    <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+                  ))}
                 </ul>
               </div>
             ) : (
@@ -65,19 +82,9 @@ const RevokeUserFormSubmit = ({
                   Consequências imediatas:
                 </span>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li>Todas as sessões e tokens de acesso serão invalidados</li>
-                  <li>
-                    Ordens de serviço em que ele seja responsável permanecerão
-                    no sistema
-                  </li>
-                  <li>
-                    Contas a pagar registradas por este usuário permanecerão no
-                    sistema
-                  </li>
-                  <li>O usuário perderá acesso total à plataforma</li>
-                  <li>
-                    Esta ação não pode ser desfeita sem intervenção de admin
-                  </li>
+                  {revokeUserList.map(({ data }, idx) => (
+                    <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+                  ))}
                 </ul>
               </div>
             )}
@@ -87,7 +94,6 @@ const RevokeUserFormSubmit = ({
 
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

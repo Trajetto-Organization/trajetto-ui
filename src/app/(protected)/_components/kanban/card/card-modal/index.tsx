@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
 import {
   Dialog,
   DialogScrollContent,
@@ -25,44 +22,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
-import {
-  CalendarIcon,
-  Loader,
-  ShieldAlert,
-  Trash2,
-  CheckCircle2,
-  Copy,
-} from "lucide-react";
-
-import { Calendar } from "@/components/ui/calendar";
+import { Loader, ShieldAlert, Trash2, CheckCircle2, Copy } from "lucide-react";
 
 import FormInput from "@/components/custom/form-input";
 import { cn } from "@/lib/utils";
 
-import { handleCreateKanbanCard } from "@/actions/create-kanban-card";
-import { handleUpdateKanbanCard } from "@/actions/update-kanban-card";
+import { handleCreateKanbanCard } from "@/actions/kanban/create-kanban-card";
+import { handleUpdateKanbanCard } from "@/actions/kanban/update-kanban-card";
 
-import { handleDeleteKanbanCard } from "@/actions/delete-kanban-card";
+import { handleDeleteKanbanCard } from "@/actions/kanban/delete-kanban-card";
 
 import {
   CardModalFormProps,
@@ -81,6 +55,11 @@ import { useHasPermission } from "@/lib/user-has-permission";
 
 import { permissions } from "@/lib/permissions";
 import { useCardModalForm } from "./hooks/use-card-modal-form";
+
+import {
+  DatePickerField,
+  SelectField,
+} from "@/app/(protected)/_components/custom";
 
 const CardModalForm = ({
   card,
@@ -151,7 +130,7 @@ const CardModalForm = ({
 
         {/* Title */}
         <FormInput
-          label="Título"
+          label="Título *"
           htmlfor="title"
           name="title"
           type="text"
@@ -168,7 +147,8 @@ const CardModalForm = ({
             className={errorState?.description ? "text-red-500" : ""}
             htmlFor="description"
           >
-            {errorState?.description ? errorState.description : "Descrição"}
+            {errorState?.description ? errorState.description : "Descrição"}{" "}
+            <span className="text-red-500 ml-0.5">*</span>
           </Label>
           <Textarea
             id="description"
@@ -187,80 +167,34 @@ const CardModalForm = ({
         </div>
 
         {/* Priority */}
-        <div className="space-y-2">
-          <Label
-            className={errorState?.priority ? "text-red-500" : ""}
-            htmlFor="priority"
-          >
-            {errorState?.priority ? errorState.priority : "Prioridade"}
-          </Label>
-          <Select
-            name="priority"
-            value={priority}
-            onValueChange={(value) =>
-              handlePriorityChange(value as PriorityProps)
-            }
-            disabled={pending || !hasUserPermission}
-          >
-            <SelectTrigger id="priority">
-              <SelectValue placeholder="Selecione a prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Baixa</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-              <SelectItem value="urgent">Urgente</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <SelectField
+          label="Prioridade *"
+          htmlfor="priority"
+          name="priority"
+          value={priority}
+          onChange={(value) => handlePriorityChange(value as PriorityProps)}
+          errorName={errorState?.priority}
+          disabled={pending || !hasUserPermission}
+          placeholder="Selecione a prioridade"
+          options={[
+            { value: "low", label: "Baixa" },
+            { value: "medium", label: "Média" },
+            { value: "high", label: "Alta" },
+            { value: "urgent", label: "Urgente" },
+          ]}
+        />
 
         {/* Expiration Date */}
-        <div className="space-y-2">
-          <Label
-            htmlFor="dueDate-button"
-            className={errorState?.dueDate ? "text-red-500" : ""}
-          >
-            {errorState?.dueDate ? errorState.dueDate : "Data de Vencimento"}
-          </Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="dueDate-button"
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dueDate && "text-muted-foreground",
-                  errorState?.dueDate && "border-red-500",
-                )}
-                disabled={pending || !hasUserPermission}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dueDate ? (
-                  format(dueDate, "PPP", { locale: ptBR })
-                ) : (
-                  <span>Selecione uma data</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dueDate}
-                onSelect={handleDueDateChange}
-                locale={ptBR}
-                initialFocus
-                disabled={!hasUserPermission}
-              />
-            </PopoverContent>
-          </Popover>
-          <input
-            id="dueDate"
-            type="hidden"
-            name="dueDate"
-            value={dueDate ? dueDate.toISOString() : ""}
-            disabled={!hasUserPermission}
-          />
-        </div>
+        <DatePickerField
+          label="Data de Vencimento *"
+          htmlfor="dueDate"
+          name="dueDate"
+          value={dueDate}
+          onChange={handleDueDateChange}
+          errorName={errorState?.dueDate}
+          disabled={pending || !hasUserPermission}
+          allowFutureDates={true}
+        />
 
         {hasUserPermission && (
           <UserSelector
@@ -472,7 +406,10 @@ const CardModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent className="max-w-xl">
+      <DialogScrollContent
+        className="max-w-xl"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="space-y-1.5 text-left">

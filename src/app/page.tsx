@@ -3,6 +3,7 @@ import { Navbar } from "@/components/layouts/navbar";
 import { Features } from "@/components/home/features";
 import { Hero } from "@/components/home/hero";
 
+import { AIVerificationShowcase } from "@/components/home/ai-verification";
 import { Stats } from "@/components/home/stats";
 
 import { FleetManagementDashboard } from "@/components/home/fleet-management-dashboard";
@@ -25,6 +26,7 @@ const Home = (): JSX.Element => {
         <Features />
       </main>
       <Stats />
+      <AIVerificationShowcase />
       <FleetManagementDashboard />
       <InteractiveDemo />
       <Reviews />

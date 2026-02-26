@@ -36,8 +36,9 @@ interface UpdateVehicleFormSubmitProps {
   state: UpdateVehicleFormState;
   onBack: () => void;
   vehicleData: VehicleProps;
-  isBusinessAndBranchDirty: boolean;
-  isUpdateVehicleOpen: boolean;
+  isEntityDirty: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface UpdateVehicleFormProps {

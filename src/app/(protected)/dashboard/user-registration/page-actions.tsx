@@ -6,7 +6,7 @@ import { DashboardCreateUserForm } from "../../_components/dashboard/dashboard-u
 const UserRegistrationActions = () => {
   return (
     <div
-      className="flex flex-col sm:flex-row
+      className="flex flex-col sm:flex-row sm:flex-wrap
       items-stretch sm:items-center gap-3
       sm:gap-2 justify-end mt-6 mb-6"
     >

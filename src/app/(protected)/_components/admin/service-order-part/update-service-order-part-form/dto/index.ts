@@ -21,6 +21,8 @@ interface UpdateServiceOrderPartFormSubmitProps {
   serviceOrderPartData: ServiceOrderPartProps;
   isBusinessAndEntityDirty: boolean;
   isUpdateServiceOrderPartOpen: boolean;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 interface UpdateServiceOrderPartFormProps {

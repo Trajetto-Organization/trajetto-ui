@@ -31,6 +31,8 @@ interface CreateDriverFormSubmitProps {
   state: CreateDriverFormState;
   isCreateDriverForm: boolean;
   onBack: () => void;
+  initialFormValues: Record<string, string>;
+  onFormValuesChange: (values: Record<string, string>) => void;
 }
 
 export type {

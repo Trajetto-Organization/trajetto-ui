@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Loader } from "lucide-react";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateKanbanColumn } from "@/actions/create-kanban-column";
+import { handleCreateKanbanColumn } from "@/actions/kanban/create-kanban-column";
 import { useCreateColumnModal } from "./hooks";
 
 import {
@@ -61,7 +61,7 @@ const CreateColumnForm = ({
       <div className="space-y-4 mt-2">
         {/* Título */}
         <FormInput
-          label="Nome da Coluna"
+          label="Nome da Coluna *"
           htmlfor="title"
           name="title"
           type="text"
@@ -80,7 +80,8 @@ const CreateColumnForm = ({
           >
             {state.createColumnError?.color
               ? state.createColumnError?.color
-              : "Cor da Coluna"}
+              : "Cor da Coluna"}{" "}
+            <span className="text-red-500 ml-0.5">*</span>
           </Label>
           <div className="flex gap-2">
             {predefinedColors.map((presetColor) => (
@@ -147,7 +148,7 @@ const CreateColumnModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent>
+      <DialogScrollContent onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Nova Coluna</DialogTitle>
           <DialogDescription>

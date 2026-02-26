@@ -14,8 +14,10 @@ interface BranchProps {
   responsible_name: string;
   telephone: string;
   email: string;
-  business_name?: string;
   businessId: string;
+  business?: {
+    corporate_reason: string;
+  };
   created_at: string;
   updated_at: string;
 }

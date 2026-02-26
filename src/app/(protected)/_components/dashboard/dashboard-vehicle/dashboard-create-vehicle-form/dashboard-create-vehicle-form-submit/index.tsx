@@ -14,13 +14,28 @@ import { DashboardCreateVehicleFormSubmitProps } from "../dto";
 const DashboardCreateVehicleFormSubmit = ({
   state,
   onBack,
+  initialFormValues,
+  onFormValuesChange,
 }: DashboardCreateVehicleFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [formValues, setFormValues] = useState<Record<string, string>>(
+    () => initialFormValues,
+  );
+
+  // Function to handle changes in text fields
+  const handleFieldChange = (fieldName: string, value: string) => {
+    setFormValues((prev) => ({ ...prev, [fieldName]: value }));
+  };
 
   // Function to handle changes in custom fields (select, datepicker)
   const handleCustomFieldChange = (fieldName: string) => (value: string) => {
     setFormValues((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
+  // Save form values when going back
+  const handleBack = () => {
+    onFormValuesChange(formValues);
+    onBack();
   };
 
   const licensePlateMask = (value: string) => {
@@ -60,18 +75,20 @@ const DashboardCreateVehicleFormSubmit = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Vehicle description */}
         <FormInput
-          label="Descrição do veículo"
+          label="Descrição do veículo *"
           htmlfor="description"
           name="description"
           type="text"
           placeholder="Digite a descrição do veículo"
+          value={formValues.description || ""}
+          onChange={(e) => handleFieldChange("description", e.target.value)}
           errorName={state.createVehicleError?.description}
           disabled={pending}
         />
 
         {/* License plate */}
         <FormInput
-          label="Placa do veículo"
+          label="Placa do veículo *"
           htmlfor="license_plate"
           name="license_plate"
           placeholder="ABC1234 ou ABC1D23"
@@ -79,35 +96,41 @@ const DashboardCreateVehicleFormSubmit = ({
           maskChar={null}
           beforeMaskedValueChange={beforeMaskedValueChange}
           type="text"
+          value={formValues.license_plate || ""}
+          onChange={(e) => handleFieldChange("license_plate", e.target.value)}
           errorName={state.createVehicleError?.license_plate}
           disabled={pending}
         />
 
         {/* Brand */}
         <FormInput
-          label="Marca"
+          label="Marca *"
           htmlfor="brand"
           name="brand"
           type="text"
           placeholder="Digite a marca do veículo"
+          value={formValues.brand || ""}
+          onChange={(e) => handleFieldChange("brand", e.target.value)}
           errorName={state.createVehicleError?.brand}
           disabled={pending}
         />
 
         {/* Model */}
         <FormInput
-          label="Modelo"
+          label="Modelo *"
           htmlfor="model"
           name="model"
           type="text"
           placeholder="Digite o modelo do veículo"
+          value={formValues.model || ""}
+          onChange={(e) => handleFieldChange("model", e.target.value)}
           errorName={state.createVehicleError?.model}
           disabled={pending}
         />
 
         {/* Acquisition date */}
         <DatePickerField
-          label="Data de aquisição"
+          label="Data de aquisição *"
           htmlfor="acquisition_date"
           name="acquisition_date"
           value={formValues.acquisition_date || ""}
@@ -117,9 +140,11 @@ const DashboardCreateVehicleFormSubmit = ({
         />
 
         <SelectField
-          label="Tipo de frota"
+          label="Tipo de frota *"
           htmlfor="fleet_type"
           name="fleet_type"
+          value={formValues.fleet_type || ""}
+          onChange={handleCustomFieldChange("fleet_type")}
           errorName={state.createVehicleError?.fleet_type}
           disabled={pending}
           placeholder="Selecione o tipo da frota"
@@ -142,7 +167,7 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Current mileage */}
         <FormInput
-          label="Quilometragem atual"
+          label="Quilometragem atual *"
           htmlfor="current_mileage"
           name="current_mileage"
           type="number"
@@ -150,6 +175,8 @@ const DashboardCreateVehicleFormSubmit = ({
           max="9999999"
           step="0.1"
           placeholder="Digite a quilometragem atual"
+          value={formValues.current_mileage || ""}
+          onChange={(e) => handleFieldChange("current_mileage", e.target.value)}
           errorName={state.createVehicleError?.current_mileage}
           disabled={pending}
           onInput={(event) => formatNumericInput(event, 9999999, true)}
@@ -165,6 +192,10 @@ const DashboardCreateVehicleFormSubmit = ({
           max="9999999"
           step="0.1"
           placeholder="Digite a quilometragem da última revisão"
+          value={formValues.last_maintenance_mileage || ""}
+          onChange={(e) =>
+            handleFieldChange("last_maintenance_mileage", e.target.value)
+          }
           errorName={state.createVehicleError?.last_maintenance_mileage}
           disabled={pending}
           onInput={(event) => formatNumericInput(event, 9999999, true)}
@@ -172,7 +203,7 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Maintenance interval km */}
         <FormInput
-          label="Revisão do veículo (km)"
+          label="Revisão do veículo (km) *"
           htmlfor="maintenance_interval_km"
           name="maintenance_interval_km"
           type="number"
@@ -180,6 +211,10 @@ const DashboardCreateVehicleFormSubmit = ({
           max="100000"
           step="0.1"
           placeholder="Digite a revisão do veículo em km"
+          value={formValues.maintenance_interval_km || ""}
+          onChange={(e) =>
+            handleFieldChange("maintenance_interval_km", e.target.value)
+          }
           errorName={state.createVehicleError?.maintenance_interval_km}
           disabled={pending}
           onInput={(event) => formatNumericInput(event, 100000, true)}
@@ -187,7 +222,7 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Maintenance interval months */}
         <FormInput
-          label="Intervalo de manutenção (meses)"
+          label="Intervalo de manutenção (meses) *"
           htmlfor="maintenance_interval_months"
           name="maintenance_interval_months"
           type="number"
@@ -196,6 +231,10 @@ const DashboardCreateVehicleFormSubmit = ({
           step="1"
           inputMode="numeric"
           placeholder="Digite o intervalo de manutenção em meses"
+          value={formValues.maintenance_interval_months || ""}
+          onChange={(e) =>
+            handleFieldChange("maintenance_interval_months", e.target.value)
+          }
           errorName={state.createVehicleError?.maintenance_interval_months}
           disabled={pending}
           onInput={(event) => formatNumericInput(event, 60)}
@@ -203,19 +242,21 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Renavam */}
         <FormInput
-          label="Renavam"
+          label="Renavam *"
           htmlfor="renavam"
           name="renavam"
           type="text"
           maxLength={11}
           placeholder="Digite o renavam do veículo"
+          value={formValues.renavam || ""}
+          onChange={(e) => handleFieldChange("renavam", e.target.value)}
           errorName={state.createVehicleError?.renavam}
           disabled={pending}
         />
 
         {/* Manufacturing year */}
         <DatePickerField
-          label="Ano de fabricação"
+          label="Ano de fabricação *"
           htmlfor="manufacturing_year"
           name="manufacturing_year"
           value={formValues.manufacturing_year || ""}
@@ -226,7 +267,7 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Model year */}
         <DatePickerField
-          label="Ano do modelo"
+          label="Ano do modelo *"
           htmlfor="model_year"
           name="model_year"
           value={formValues.model_year || ""}
@@ -237,7 +278,7 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Km per liter */}
         <FormInput
-          label="Km por litro"
+          label="Km por litro *"
           htmlfor="km_per_liter"
           name="km_per_liter"
           type="number"
@@ -245,6 +286,8 @@ const DashboardCreateVehicleFormSubmit = ({
           max="50"
           step="1"
           placeholder="Digite os km por litro"
+          value={formValues.km_per_liter || ""}
+          onChange={(e) => handleFieldChange("km_per_liter", e.target.value)}
           errorName={state.createVehicleError?.km_per_liter}
           disabled={pending}
           onInput={(event) => formatNumericInput(event, 50)}
@@ -252,7 +295,7 @@ const DashboardCreateVehicleFormSubmit = ({
 
         {/* Number of axles */}
         <FormInput
-          label="Número de eixos"
+          label="Número de eixos *"
           htmlfor="number_of_axles"
           name="number_of_axles"
           type="number"
@@ -260,6 +303,8 @@ const DashboardCreateVehicleFormSubmit = ({
           max="10"
           step="1"
           inputMode="numeric"
+          value={formValues.number_of_axles || ""}
+          onChange={(e) => handleFieldChange("number_of_axles", e.target.value)}
           errorName={state.createVehicleError?.number_of_axles}
           placeholder="Digite o número de eixos"
           disabled={pending}
@@ -267,9 +312,11 @@ const DashboardCreateVehicleFormSubmit = ({
         />
 
         <SelectField
-          label="Status"
+          label="Status *"
           htmlfor="status"
           name="status"
+          value={formValues.status || ""}
+          onChange={handleCustomFieldChange("status")}
           errorName={state.createVehicleError?.status}
           disabled={pending}
           placeholder="Selecione o status do veículo"
@@ -283,7 +330,12 @@ const DashboardCreateVehicleFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending}
+        >
           Voltar
         </Button>
         <Button type="submit" disabled={pending}>

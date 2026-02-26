@@ -6,7 +6,7 @@ const BlogTitleSubtitle = () => {
   return (
     <div
       className="text-center max-w-3xl 
-      mx-auto py-12 lg:py-24"
+      mx-auto py-16 sm:py-20"
     >
       <motion.h2
         initial={{ opacity: 0 }}

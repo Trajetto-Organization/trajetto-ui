@@ -92,14 +92,14 @@ function useTutorialComponent() {
   // Preload audios when component mounts
   useEffect(() => {
     // Create and configure audio for "next"
-    const nextAudio = new Audio("/sounds/next-tutorial.mp3");
+    const nextAudio = new Audio("/sounds/next-tutorial.aac");
     nextAudio.preload = "auto";
 
     nextAudio.volume = 0.5;
     nextSoundRef.current = nextAudio;
 
     // Create and configure audio for "return"
-    const backAudio = new Audio("/sounds/back-tutorial.mp3");
+    const backAudio = new Audio("/sounds/back-tutorial.aac");
     backAudio.preload = "auto";
 
     backAudio.volume = 0.5;

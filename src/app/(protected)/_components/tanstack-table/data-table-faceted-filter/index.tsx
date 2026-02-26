@@ -53,7 +53,7 @@ function DataTableFacetedFilter<TData, TValue>({
 
   const dynamicOptions = useMemo(() => {
     return Array.from(facets?.keys() || [])
-      .filter((value) => value !== undefined && value !== null)
+      .filter((value) => value !== undefined && value !== null && value !== "")
       .map((value) => ({
         label: String(value),
         value: String(value),

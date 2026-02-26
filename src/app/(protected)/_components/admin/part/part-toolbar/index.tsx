@@ -36,9 +36,8 @@ export function PartToolbar<TData>({
 
   const filters = [
     { key: "description", title: "Descrição da peça" },
-    { key: "unit_price", title: "Preço unitário" },
     {
-      key: "business_name",
+      key: "businessName",
       title: "Nome da empresa",
       dynamicOptionIcon: Building2,
     },

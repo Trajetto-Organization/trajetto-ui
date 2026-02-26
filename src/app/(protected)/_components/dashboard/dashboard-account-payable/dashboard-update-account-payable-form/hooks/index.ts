@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandServiceOrderInputValue,
@@ -10,6 +10,8 @@ import { DashboardUpdateAccountPayableFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
+
+import { formatServiceOrderDisplay } from "@/lib/format-values";
 
 interface UseDashboardUpdateAccountPayableFormProps {
   state: DashboardUpdateAccountPayableFormState | null;
@@ -38,50 +40,67 @@ function useDashboardUpdateAccountPayableForm({
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
       branchId: accountPayableData.branchId,
-      searchBranchInputValue: accountPayableData.branchName || "",
+      searchBranchInputValue:
+        accountPayableData.branch?.corporate_reason ||
+        accountPayableData.branch?.fantasy_name ||
+        "",
     });
 
   const [commandServiceOrderInputValue, setCommandServiceOrderInputValue] =
     useState<CommandServiceOrderInputValue>({
       serviceOrderId: accountPayableData.serviceOrderId || "",
-      searchServiceOrderInputValue:
-        accountPayableData.serviceOrderDescription &&
-        accountPayableData.serviceOrderDescription !== "N/A"
-          ? accountPayableData.serviceOrderDescription
-          : "",
+      searchServiceOrderInputValue: accountPayableData.serviceOrder
+        ? formatServiceOrderDisplay(accountPayableData.serviceOrder)
+        : "",
     });
 
   const [commandUserInputValue, setCommandUserInputValue] =
     useState<CommandUserInputValue>({
       userId: accountPayableData.registrationUserId,
-      searchUserInputValue: accountPayableData.registrationUserName || "",
+      searchUserInputValue: accountPayableData.registrationUser?.name || "",
       responsibleUserEmail: "",
     });
+
+  // Form values state with callback pattern
+  const [accountPayableFormValues, setAccountPayableFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setAccountPayableFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateAccountPayableOpen) {
       setCommandBranchInputValue({
         branchId: accountPayableData.branchId,
-        searchBranchInputValue: accountPayableData.branchName || "",
+        searchBranchInputValue:
+          accountPayableData.branch?.corporate_reason ||
+          accountPayableData.branch?.fantasy_name ||
+          "",
       });
 
       setCommandServiceOrderInputValue({
         serviceOrderId: accountPayableData.serviceOrderId || "",
-        searchServiceOrderInputValue:
-          accountPayableData.serviceOrderDescription &&
-          accountPayableData.serviceOrderDescription !== "N/A"
-            ? accountPayableData.serviceOrderDescription
-            : "",
+        searchServiceOrderInputValue: accountPayableData.serviceOrder
+          ? formatServiceOrderDisplay(accountPayableData.serviceOrder)
+          : "",
       });
 
       setCommandUserInputValue({
         userId: accountPayableData.registrationUserId,
-        searchUserInputValue: accountPayableData.registrationUserName || "",
+        searchUserInputValue: accountPayableData.registrationUser?.name || "",
         responsibleUserEmail: "",
       });
 
       setCurrentStep("select-branch");
+
+      // Reset form values
+      setAccountPayableFormValues({});
     }
   }, [isUpdateAccountPayableOpen, accountPayableData]);
 
@@ -117,7 +136,7 @@ function useDashboardUpdateAccountPayableForm({
   };
 
   // Step navigation
-  const handleBusinessBranchStepContinue = () => {
+  const handleBranchStepContinue = () => {
     setCurrentStep("select-service-order");
   };
 
@@ -180,7 +199,7 @@ function useDashboardUpdateAccountPayableForm({
     };
   }, [state, handleCloseUpdateAccountPayable]);
 
-  const isBusinessAndEntityDirty = [
+  const isEntityDirty = [
     commandBranchInputValue.branchId !== accountPayableData.branchId,
     commandServiceOrderInputValue.serviceOrderId !==
       (accountPayableData.serviceOrderId || ""),
@@ -193,7 +212,7 @@ function useDashboardUpdateAccountPayableForm({
     commandBranchInputValue,
     commandServiceOrderInputValue,
     commandUserInputValue,
-    handleBusinessBranchStepContinue,
+    handleBranchStepContinue,
     handleServiceOrderStepContinue,
     handleUserStepContinue,
     handleBackToBranchStep,
@@ -202,7 +221,9 @@ function useDashboardUpdateAccountPayableForm({
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchServiceOrderInputValue,
     handleUpdateSearchUserInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    accountPayableFormValues,
+    handleFormValuesChange,
   };
 }
 

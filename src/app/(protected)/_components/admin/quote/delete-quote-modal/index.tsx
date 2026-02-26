@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { QuoteProps } from "../dto";
 
-import { handleDeleteQuote } from "@/actions/delete-quote";
+import { handleDeleteQuote } from "@/actions/quote/delete-quote";
 import { useDeleteQuoteForm } from "./hooks";
 
 interface DeleteQuoteModalProps {
@@ -31,13 +31,25 @@ interface DeleteQuoteModalButton {
 
 const DeleteQuoteModalFormSubmit = ({ quote }: DeleteQuoteModalButton) => {
   const { pending } = useFormStatus();
-
   const statusLabels = {
     PENDING: "Pendente",
     CONTACTED: "Contatado",
     CLOSED: "Fechado",
     CONVERTED: "Convertido",
   };
+
+  const deleteQuoteModalDataContactList = [
+    { data: `Empresa: ${quote.company}` },
+    { data: `Contato: ${quote.name}` },
+    { data: `E-mail: ${quote.email}` },
+    { data: `Status: ${statusLabels[quote.status]}` },
+  ];
+
+  const deleteQuoteModalList = [
+    { data: `Todos os dados do orçamento serão excluídos permanentemente` },
+    { data: `Não há registros relacionados que serão afetados` },
+    { data: `Status: ${statusLabels[quote.status]}` },
+  ];
 
   return (
     <>
@@ -50,24 +62,22 @@ const DeleteQuoteModalFormSubmit = ({ quote }: DeleteQuoteModalButton) => {
               Informações do orçamento:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Empresa: {quote.company}</li>
-              <li>Contato: {quote.name}</li>
-              <li>E-mail: {quote.email}</li>
-              <li>Status: {statusLabels[quote.status]}</li>
+              {deleteQuoteModalDataContactList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
             <span className="block mt-4 font-medium text-foreground">
               Consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong>
-              </li>
-              <li>
-                Todos os dados do orçamento serão excluídos permanentemente
-              </li>
-              <li>Não há registros relacionados que serão afetados</li>
+              {deleteQuoteModalList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
-            <span className="block mt-4 text-red-600 dark:text-red-400 font-medium">
+            <span
+              className="block mt-4 text-red-600 
+              dark:text-red-400 font-medium"
+            >
               Esta ação não pode ser desfeita!
             </span>
           </div>

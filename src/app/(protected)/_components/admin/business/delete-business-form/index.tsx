@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
-import { handleDeleteBusiness } from "@/actions/delete-business";
+import { handleDeleteBusiness } from "@/actions/business/delete-business";
 import { useDeleteBusinessForm } from "./hooks";
 
 interface DeleteBusinessProps {
@@ -23,6 +23,33 @@ interface DeleteBusinessProps {
 
 const DeleteBusinessFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+
+  const deleteBusinessList = [
+    {
+      data: "Todas as filiais vinculadas a esta empresa serão excluídas permanentemente",
+    },
+    {
+      data: "Todos os usuários associados a esta empresa perderão acesso ao sistema",
+    },
+    {
+      data: "Todos os perfis de acesso e permissões desta empresa serão removidos",
+    },
+    {
+      data: "Todos os veículos, motoristas, peças e tipos de combustível serão excluídos",
+    },
+    {
+      data: "Todas as ordens de serviço e registros financeiros serão excluídos",
+    },
+    {
+      data: "Todas as atividades, notificações e colunas kanban serão removidas",
+    },
+    {
+      data: "Todas as multas registradas na empresa serão excluídas",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -36,39 +63,15 @@ const DeleteBusinessFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                Todas as filiais vinculadas a esta empresa serão excluídas
-                permanentemente
-              </li>
-              <li>
-                Todos os usuários associados a esta empresa perderão acesso ao
-                sistema
-              </li>
-              <li>
-                Todos os perfis de acesso e permissões desta empresa serão
-                removidos
-              </li>
-              <li>
-                Todos os veículos, motoristas, peças e tipos de combustível
-                serão excluídos
-              </li>
-              <li>
-                Todas as ordens de serviço e registros financeiros serão
-                excluídos
-              </li>
-              <li>
-                Todas as atividades, notificações e colunas kanban serão
-                removidas
-              </li>
-              <li>Todas as multas registradas na empresa serão excluídas</li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteBusinessList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { handleUpdateServiceOrder } from "@/actions/update-service-order";
+import { handleUpdateServiceOrder } from "@/actions/service-order/update-service-order";
 
 import { useDashboardUpdateServiceOrderForm } from "./hooks";
 import {
@@ -16,7 +16,7 @@ import {
   DashboardUpdateServiceOrderFormProps,
 } from "./dto";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
 import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
@@ -82,7 +82,9 @@ const DashboardUpdateServiceOrderForm = ({
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchSupplierInputValue,
     handleUpdateSearchUserInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    serviceOrderFormValues,
+    handleFormValuesChange,
   } = useDashboardUpdateServiceOrderForm({
     state,
     handleCloseUpdateServiceOrder,
@@ -91,6 +93,34 @@ const DashboardUpdateServiceOrderForm = ({
   });
 
   const { businessId } = useAuthStore();
+
+  const updateServiceOrderForm = (serviceOrderFormData: FormData) => {
+    const updateServiceOrderData = {
+      serviceOrderId: serviceOrderData.id,
+      businessId: businessId as string,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      supplierId: commandSupplierInputValue.supplierId,
+      responsibleUserId: commandUserInputValue.userId,
+    };
+
+    // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
+    // When null, send as empty string (backend will convert to null)
+    if (latitude === null) {
+      serviceOrderFormData.append("latitude", "");
+    } else if (latitude !== undefined) {
+      serviceOrderFormData.append("latitude", latitude.toString());
+    }
+
+    if (longitude === null) {
+      serviceOrderFormData.append("longitude", "");
+    } else if (longitude !== undefined) {
+      serviceOrderFormData.append("longitude", longitude.toString());
+    }
+
+    appendDataToForm(serviceOrderFormData, updateServiceOrderData);
+    return dispatch(serviceOrderFormData);
+  };
 
   return (
     <Dialog
@@ -102,7 +132,10 @@ const DashboardUpdateServiceOrderForm = ({
         handleCloseUpdateServiceOrder();
       }}
     >
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -111,7 +144,7 @@ const DashboardUpdateServiceOrderForm = ({
                 ? "Selecionar Veículo e Fornecedor"
                 : currentStep === "select-user"
                   ? "Selecionar Usuário Responsável"
-                  : "Atualizar Ordem de Serviço"}
+                  : "Editar Ordem de Serviço"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             {currentStep === "select-branch"
@@ -161,47 +194,20 @@ const DashboardUpdateServiceOrderForm = ({
             errorUserId={state?.updateServiceOrderError?.responsibleUserId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              const extraData = {
-                serviceOrderId: serviceOrderData.id,
-                businessId: businessId as string,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                supplierId: commandSupplierInputValue.supplierId,
-                responsibleUserId: commandUserInputValue.userId,
-              };
-
-              // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
-              // When null, send as empty string (backend will convert to null)
-              if (latitude === null) {
-                formData.append("latitude", "");
-              } else if (latitude !== undefined) {
-                formData.append("latitude", latitude.toString());
-              }
-
-              if (longitude === null) {
-                formData.append("longitude", "");
-              } else if (longitude !== undefined) {
-                formData.append("longitude", longitude.toString());
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={updateServiceOrderForm}>
             <DashboardUpdateServiceOrderFormSubmit
               state={state}
               onBack={handleBackToUserStep}
               serviceOrderData={serviceOrderData}
-              isBusinessAndEntityDirty={isBusinessAndEntityDirty}
+              isEntityDirty={isEntityDirty}
               isUpdateServiceOrderOpen={isUpdateServiceOrderOpen}
               handleLocationChange={handleLocationChange}
               handleLocationLoadingChange={handleLocationLoadingChange}
               latitude={latitude}
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
+              initialFormValues={serviceOrderFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

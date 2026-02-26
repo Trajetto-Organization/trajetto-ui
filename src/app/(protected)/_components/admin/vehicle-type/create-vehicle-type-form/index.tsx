@@ -20,7 +20,7 @@ import {
   CreateVehicleTypeFormState,
 } from "./dto";
 
-import { handleCreateVehicleType } from "@/actions/create-vehicle-type";
+import { handleCreateVehicleType } from "@/actions/vehicle-type/create-vehicle-type";
 import { useCreateVehicleTypeForm } from "./hooks";
 
 import { formatNumericInput } from "@/lib/format-values";
@@ -40,7 +40,7 @@ const CreateVehicleTypeFormSubmit = ({
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição do Veículo"}
+          label={"Descrição do Veículo *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -50,7 +50,7 @@ const CreateVehicleTypeFormSubmit = ({
         />
 
         <FormInput
-          label="Quantidade de Eixos"
+          label="Quantidade de Eixos *"
           htmlfor="number_of_axles"
           name="number_of_axles"
           type="number"
@@ -135,6 +135,15 @@ const CreateVehicleTypeForm = (): JSX.Element => {
     formRef,
   } = useCreateVehicleTypeForm(state);
 
+  const createVehicleTypeForm = (vehicleTypeFormData: FormData) => {
+    vehicleTypeFormData.append(
+      "businessId",
+      commandBusinnessInputValue.businessId,
+    );
+
+    return dispatch(vehicleTypeFormData);
+  };
+
   return (
     <Dialog
       open={isCreateCreateVehicleTypeForm}
@@ -146,7 +155,10 @@ const CreateVehicleTypeForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Tipo do Veículo</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -155,17 +167,7 @@ const CreateVehicleTypeForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            formData.append(
-              "businessId",
-              commandBusinnessInputValue.businessId,
-            );
-
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createVehicleTypeForm}>
           <CreateVehicleTypeFormSubmit
             state={state}
             handleOpenCreateVehicleTypeForm={handleOpenCreateVehicleTypeForm}

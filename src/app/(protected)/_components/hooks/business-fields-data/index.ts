@@ -2,7 +2,7 @@ import { FieldProps } from "../dto";
 
 const businessFieldsData: FieldProps[] = [
   {
-    label: "Razão Social",
+    label: "Razão Social *",
     htmlfor: "corporate_reason",
     name: "corporate_reason",
     type: "text",
@@ -18,7 +18,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "organization",
   },
   {
-    label: "CNPJ",
+    label: "CNPJ *",
     htmlfor: "cnpj",
     name: "cnpj",
     type: "text",
@@ -27,7 +27,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "off",
   },
   {
-    label: "CEP",
+    label: "CEP *",
     htmlfor: "cep",
     name: "cep",
     type: "text",
@@ -36,7 +36,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "postal-code",
   },
   {
-    label: "Cidade",
+    label: "Cidade *",
     htmlfor: "city",
     name: "city",
     type: "text",
@@ -44,7 +44,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "address-level2",
   },
   {
-    label: "UF",
+    label: "UF *",
     htmlfor: "uf",
     name: "uf",
     type: "text",
@@ -53,7 +53,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "address-level1",
   },
   {
-    label: "Rua",
+    label: "Rua *",
     htmlfor: "street",
     name: "street",
     type: "text",
@@ -61,7 +61,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "street-address",
   },
   {
-    label: "Número",
+    label: "Número *",
     htmlfor: "address_number",
     name: "address_number",
     type: "text",
@@ -77,7 +77,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "off",
   },
   {
-    label: "CNAE",
+    label: "CNAE *",
     htmlfor: "cnae",
     name: "cnae",
     type: "text",
@@ -94,7 +94,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "off",
   },
   {
-    label: "Nome do responsável",
+    label: "Nome do responsável *",
     htmlfor: "responsible_name",
     name: "responsible_name",
     type: "text",
@@ -102,7 +102,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "name",
   },
   {
-    label: "Telefone",
+    label: "Telefone *",
     htmlfor: "telephone",
     name: "telephone",
     type: "text",
@@ -111,7 +111,7 @@ const businessFieldsData: FieldProps[] = [
     autoComplete: "tel",
   },
   {
-    label: "E-mail",
+    label: "E-mail *",
     htmlfor: "email",
     name: "email",
     type: "text",

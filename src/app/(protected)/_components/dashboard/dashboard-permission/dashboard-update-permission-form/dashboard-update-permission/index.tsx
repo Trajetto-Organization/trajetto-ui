@@ -1,21 +1,13 @@
 import { useFormStatus } from "react-dom";
-
 import FormInput from "@/components/custom/form-input";
-import { Checkbox } from "@/components/ui/checkbox";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectField } from "@/app/(protected)/_components/custom";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { Label } from "@/components/ui/label";
 import { permissionLabels, permissions } from "@/lib/permissions";
 
 import { DashboardUpdatePermissionFormState } from "../dto";
-import { cn } from "@/lib/utils";
 
 interface DashboardUpdatePermissionProps {
   state: DashboardUpdatePermissionFormState;
@@ -42,11 +34,16 @@ const DashboardUpdatePermission = ({
 }: DashboardUpdatePermissionProps): JSX.Element => {
   const { pending } = useFormStatus();
 
+  const permissionOptions = Object.values(permissions).map((permKey) => ({
+    value: permKey,
+    label: permissionLabels[permKey],
+  }));
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <FormInput
-          label={"Nome da Permissão"}
+          label={"Nome da Permissão *"}
           htmlfor={"action"}
           name="action"
           type="text"
@@ -60,42 +57,17 @@ const DashboardUpdatePermission = ({
         />
       </div>
 
-      <div className="w-full flex flex-col gap-3">
-        <div
-          className={cn(
-            "text-sm font-medium",
-            state.updatePermissionError?.permissionKey &&
-              "h-4 truncate text-red-500",
-          )}
-        >
-          {state.updatePermissionError?.permissionKey
-            ? state.updatePermissionError?.permissionKey
-            : "Permissão"}
-        </div>
-        <Select
-          name="permissionKey"
-          disabled={pending}
-          value={permissionKeyName}
-          onValueChange={(value: string) =>
-            handleUpdatePermissionKeyName(value)
-          }
-        >
-          <SelectTrigger aria-label="Permissão de acesso">
-            <SelectValue placeholder="Permissão de acesso" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.values(permissions).map((permKey) => (
-              <SelectItem
-                key={permKey}
-                value={permKey}
-                className="cursor-pointer hover:bg-accent hover:text-accent-foreground"
-              >
-                {permissionLabels[permKey]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SelectField
+        label="Permissão *"
+        htmlfor="permissionKey"
+        name="permissionKey"
+        placeholder="Permissão de acesso"
+        value={permissionKeyName}
+        onChange={handleUpdatePermissionKeyName}
+        errorName={state.updatePermissionError?.permissionKey}
+        options={permissionOptions}
+        disabled={pending}
+      />
 
       <div className="flex items-center space-x-4">
         <div className="flex items-center space-x-2">

@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleCreateDriver } from "@/actions/create-driver";
+import { handleCreateDriver } from "@/actions/driver/create-driver";
 
 import { useCepValidation } from "../../../hooks";
 import { useDashboardCreateDriverForm } from "./hooks";
@@ -35,12 +35,21 @@ const DashboardCreateDriverFormSubmit = ({
   state,
   isCreateDriverForm,
   onBack,
+  initialFormValues,
+  onFormValuesChange,
 }: DashboardCreateDriverFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { updatedFields, cepLoading, formValues, handleFieldChange } =
     useCepValidation({
       isOpen: isCreateDriverForm,
+      initialData: initialFormValues,
     });
+
+  // Save form values when going back
+  const handleBack = () => {
+    onFormValuesChange(formValues);
+    onBack();
+  };
 
   // Function to handle change in custom fields
   const handleCustomFieldChange = (fieldName: string) => (value: string) => {
@@ -60,7 +69,7 @@ const DashboardCreateDriverFormSubmit = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Driver's name - always at the top */}
         <FormInput
-          label="Nome do motorista"
+          label="Nome do motorista *"
           htmlfor="name"
           name="name"
           type="text"
@@ -78,7 +87,7 @@ const DashboardCreateDriverFormSubmit = ({
 
         {/* Date of Birth Field (Custom Component) */}
         <DatePickerField
-          label="Data de Nascimento"
+          label="Data de Nascimento *"
           htmlfor="birth_date"
           name="birth_date"
           value={formValues["birth_date"] || ""}
@@ -92,7 +101,7 @@ const DashboardCreateDriverFormSubmit = ({
         />
 
         <FormInput
-          label="CPF"
+          label="CPF *"
           htmlfor="cpf"
           name="cpf"
           type="text"
@@ -107,7 +116,7 @@ const DashboardCreateDriverFormSubmit = ({
         />
 
         <FormInput
-          label="RG"
+          label="RG *"
           htmlfor="rg"
           name="rg"
           type="text"
@@ -122,7 +131,7 @@ const DashboardCreateDriverFormSubmit = ({
         />
 
         <FormInput
-          label="CNH"
+          label="CNH *"
           htmlfor="cnh"
           name="cnh"
           type="text"
@@ -138,7 +147,7 @@ const DashboardCreateDriverFormSubmit = ({
 
         {/* Status (custom component) */}
         <SelectField
-          label="Status"
+          label="Status *"
           htmlfor="status"
           name="status"
           value={formValues["status"]}
@@ -158,7 +167,7 @@ const DashboardCreateDriverFormSubmit = ({
 
         {/* Contract Type (custom component) */}
         <SelectField
-          label="Tipo de Contrato"
+          label="Tipo de Contrato *"
           htmlfor="contract_type"
           name="contract_type"
           value={formValues["contract_type"]}
@@ -193,7 +202,12 @@ const DashboardCreateDriverFormSubmit = ({
       </div>
 
       <div className="flex justify-end mt-6 gap-2">
-        <Button type="button" variant="outline" onClick={onBack}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleBack}
+          disabled={pending || cepLoading}
+        >
           Voltar
         </Button>
         <Button type="submit" disabled={pending || cepLoading}>
@@ -225,6 +239,8 @@ const DashboardCreateDriverForm = (): JSX.Element => {
     handleBack,
     handleUpdateSearchBranchInputValue,
     handleContinue,
+    driverFormValues,
+    handleFormValuesChange,
   } = useDashboardCreateDriverForm(state);
 
   const { businessId } = useAuthStore();
@@ -232,6 +248,16 @@ const DashboardCreateDriverForm = (): JSX.Element => {
     permissions.DRIVER_MANAGE,
     "write",
   );
+
+  const createDriverForm = (driverFormData: FormData) => {
+    driverFormData.append("businessId", businessId as string);
+
+    if (commandBranchInputValue.branchId) {
+      driverFormData.append("branchId", commandBranchInputValue.branchId);
+    }
+
+    return dispatch(driverFormData);
+  };
 
   return (
     <Dialog open={isCreateDriverForm} onOpenChange={handleCloseDialog}>
@@ -245,7 +271,10 @@ const DashboardCreateDriverForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -271,22 +300,13 @@ const DashboardCreateDriverForm = (): JSX.Element => {
             searchBranchIsOptional={true}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              formData.append("businessId", businessId as string);
-
-              if (commandBranchInputValue.branchId) {
-                formData.append("branchId", commandBranchInputValue.branchId);
-              }
-
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createDriverForm}>
             <DashboardCreateDriverFormSubmit
               isCreateDriverForm={isCreateDriverForm}
               state={state}
               onBack={handleBack}
+              initialFormValues={driverFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

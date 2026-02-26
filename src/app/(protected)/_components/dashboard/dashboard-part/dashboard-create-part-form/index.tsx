@@ -13,15 +13,15 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { handleCreatePart } from "@/actions/create-part";
+import { handleCreatePart } from "@/actions/part/create-part";
 
 import {
   DashboardCreatePartFormState,
   DashboardCreatePartSubmitProps,
 } from "./dto";
-import { useDashboardCreatePartForm } from "./hooks";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { useDashboardCreatePartForm } from "./hooks";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import { cn } from "@/lib/utils";
 import FormInput from "@/components/custom/form-input";
@@ -48,7 +48,7 @@ const DashboardCreatePartFormSubmit = ({
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição da Peça"}
+          label={"Descrição da Peça *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -58,7 +58,7 @@ const DashboardCreatePartFormSubmit = ({
         />
 
         <FormInput
-          label={"Preço Unitário"}
+          label={"Preço Unitário *"}
           htmlfor={"unit_price"}
           name="unit_price"
           type="text"
@@ -159,6 +159,16 @@ const DashboardCreatePartForm = (): JSX.Element => {
   const { businessId } = useAuthStore();
   const hasUserPermission = useHasPermission(permissions.PART_MANAGE, "write");
 
+  const createPartForm = (partFormData: FormData) => {
+    const partData = {
+      businessId: businessId as string,
+      supplierId: commandSupplierInputValue.supplierId,
+    };
+
+    appendDataToForm(partFormData, partData);
+    return dispatch(partFormData);
+  };
+
   return (
     <Dialog open={isCreatePartForm} onOpenChange={handleOpenCreatePartForm}>
       <DialogTrigger
@@ -171,7 +181,10 @@ const DashboardCreatePartForm = (): JSX.Element => {
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Peça</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -180,18 +193,7 @@ const DashboardCreatePartForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: businessId as string,
-              supplierId: commandSupplierInputValue.supplierId,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={createPartForm}>
           <DashboardCreatePartFormSubmit
             state={state}
             handleOpenCreatePartForm={handleOpenCreatePartForm}

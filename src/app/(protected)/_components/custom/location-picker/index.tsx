@@ -4,15 +4,14 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 import { MapPin, Locate, Info, Search, X, Loader2, Check } from "lucide-react";
-
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Command,
   CommandEmpty,
@@ -21,6 +20,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+
 import {
   Popover,
   PopoverContent,

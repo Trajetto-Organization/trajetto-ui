@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
-import { handleDeleteServiceOrderPart } from "@/actions/delete-service-order-part";
+import { handleDeleteServiceOrderPart } from "@/actions/service-order-part/delete-service-order-part";
 import { useDashboardDeleteServiceOrderPartForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -29,6 +29,26 @@ interface DashboardDeleteServiceOrderPartProps {
 
 const DashboardDeleteServiceOrderPartFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteServiceOrderPartList = [
+    {
+      data: "Verifique se a peça realmente pertence à ordem de serviço especificada",
+    },
+    {
+      data: "O valor total da ordem de serviço será recalculado automaticamente",
+    },
+    {
+      data: "O estoque da peça não será reajustado automaticamente",
+    },
+    {
+      data: "O registro de utilização da peça será removido do histórico da ordem",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -42,27 +62,9 @@ const DashboardDeleteServiceOrderPartFormSubmit = (): JSX.Element => {
               Validações e consequências:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                Verifica se a ordem de serviço pertence à empresa antes de
-                deletar
-              </li>
-              <li>
-                Verifica se a peça realmente pertence à ordem de serviço
-                especificada
-              </li>
-              <li>
-                O valor total da ordem de serviço será recalculado
-                automaticamente
-              </li>
-              <li>O estoque da peça não será reajustado automaticamente</li>
-              <li>
-                O registro de utilização da peça será removido do histórico da
-                ordem
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteServiceOrderPartList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>

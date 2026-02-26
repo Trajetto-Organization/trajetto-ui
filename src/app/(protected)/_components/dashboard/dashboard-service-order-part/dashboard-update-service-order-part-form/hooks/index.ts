@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   CommandPartInputValue,
   CommandServiceOrderInputValue,
@@ -9,6 +9,8 @@ import { DashboardUpdateServiceOrderPartFormState } from "../dto";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
+
+import { formatServiceOrderDisplay } from "@/lib/format-values";
 
 interface UseDashboardUpdateServiceOrderPartFormProps {
   state: DashboardUpdateServiceOrderPartFormState | null;
@@ -34,39 +36,55 @@ function useDashboardUpdateServiceOrderPartForm({
   const [commandServiceOrderInputValue, setCommandServiceOrderInputValue] =
     useState<CommandServiceOrderInputValue>({
       serviceOrderId: serviceOrderPartData.serviceOrderId,
-      searchServiceOrderInputValue:
-        serviceOrderPartData.serviceOrderDescription as string,
+      searchServiceOrderInputValue: serviceOrderPartData.serviceOrder
+        ? formatServiceOrderDisplay(serviceOrderPartData.serviceOrder)
+        : "",
     });
 
   const [commandPartInputValue, setCommandPartInputValue] =
     useState<CommandPartInputValue>({
       partId: serviceOrderPartData.partId,
-      searchPartInputValue: serviceOrderPartData.partDescription,
+      searchPartInputValue: serviceOrderPartData.part?.description || "",
     });
+
+  // Persisted form values for the last step
+  const [serviceOrderPartFormValues, setServiceOrderPartFormValues] = useState<
+    Record<string, string>
+  >({});
+
+  // Callback to update form values from child component
+  const handleFormValuesChange = useCallback(
+    (values: Record<string, string>) => {
+      setServiceOrderPartFormValues(values);
+    },
+    [],
+  );
 
   // Reset form values when dialog closes
   useEffect(() => {
     if (!isUpdateServiceOrderPartOpen) {
       setCommandServiceOrderInputValue({
         serviceOrderId: serviceOrderPartData.serviceOrderId,
-        searchServiceOrderInputValue:
-          serviceOrderPartData.serviceOrderDescription as string,
+        searchServiceOrderInputValue: serviceOrderPartData.serviceOrder
+          ? formatServiceOrderDisplay(serviceOrderPartData.serviceOrder)
+          : "",
       });
 
       setCommandPartInputValue({
         partId: serviceOrderPartData.partId,
-        searchPartInputValue: serviceOrderPartData.partDescription,
+        searchPartInputValue: serviceOrderPartData.part?.description || "",
       });
 
+      setServiceOrderPartFormValues({});
       setCurrentStep("select-service-order-part");
     }
   }, [
     isUpdateServiceOrderPartOpen,
     serviceOrderPartData.businessId,
     serviceOrderPartData.serviceOrderId,
-    serviceOrderPartData.serviceOrderDate,
+    serviceOrderPartData.serviceOrder,
     serviceOrderPartData.partId,
-    serviceOrderPartData.partDescription,
+    serviceOrderPartData.part?.description,
   ]);
 
   const handleUpdateSearchServiceOrderInputValue = (
@@ -138,7 +156,7 @@ function useDashboardUpdateServiceOrderPartForm({
     };
   }, [state, handleCloseUpdateServiceOrderPart]);
 
-  const isBusinessAndEntityDirty = [
+  const isEntityDirty = [
     commandServiceOrderInputValue.serviceOrderId !==
       serviceOrderPartData.serviceOrderId,
     commandPartInputValue.partId !== serviceOrderPartData.partId,
@@ -153,7 +171,9 @@ function useDashboardUpdateServiceOrderPartForm({
     handleBackToServiceOrderPartStep,
     handleUpdateSearchServiceOrderInputValue,
     handleUpdateSearchPartInputValue,
-    isBusinessAndEntityDirty,
+    isEntityDirty,
+    serviceOrderPartFormValues,
+    handleFormValuesChange,
   };
 }
 

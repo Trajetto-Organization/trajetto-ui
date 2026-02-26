@@ -20,14 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
-import { cn } from "@/lib/utils";
-
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 import { useDatePicker } from "./hooks";
 import { FormFieldProps, SelectFieldProps } from "./dto";
@@ -60,20 +59,33 @@ const DatePickerField: React.FC<FormFieldProps> = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="text-sm font-medium text-red-500">
+              <Label
+                className={cn("h-4 truncate text-red-500")}
+                htmlFor={htmlfor}
+              >
                 {errorName[0]}
-              </div>
+              </Label>
             </TooltipTrigger>
             <TooltipContent
-              className="max-w-[300px] whitespace-normal
-              break-words p-2"
+              align="start"
+              className="max-w-[300px] p-2
+              whitespace-normal break-words"
             >
               {errorName[0]}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
       ) : (
-        <div className="text-sm font-medium">{label}</div>
+        <Label className="h-4 truncate" htmlFor={htmlfor}>
+          {label.includes("*") ? (
+            <>
+              {label.replace("*", "")}
+              <span className="text-red-500 ml-0.5">*</span>
+            </>
+          ) : (
+            label
+          )}
+        </Label>
       )}
 
       <input type="hidden" id={htmlfor} name={name} value={value || ""} />
@@ -188,7 +200,14 @@ const SelectField: React.FC<SelectFieldProps> = ({
         </TooltipProvider>
       ) : (
         <Label className="h-4 truncate" htmlFor={htmlfor}>
-          {label}
+          {label.includes("*") ? (
+            <>
+              {label.replace("*", "")}
+              <span className="text-red-500 ml-0.5">*</span>
+            </>
+          ) : (
+            label
+          )}
         </Label>
       )}
 

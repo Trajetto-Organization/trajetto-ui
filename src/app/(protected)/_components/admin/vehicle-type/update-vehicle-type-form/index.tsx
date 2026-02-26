@@ -12,8 +12,8 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import FormInput from "@/components/custom/form-input";
 
-import { handleUpdateVehicleType } from "@/actions/update-vehicle-type";
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { handleUpdateVehicleType } from "@/actions/vehicle-type/update-vehicle-type";
+import { appendDataToForm } from "@/lib/append-data-form";
 
 import {
   UpdateVehicleTypeFormSubmitProps,
@@ -51,7 +51,7 @@ const UpdateVehicleTypeFormSubmit = ({
     <div className="space-y-6 mt-2">
       <div className="space-y-5">
         <FormInput
-          label={"Descrição do Veículo"}
+          label={"Descrição do Veículo *"}
           htmlfor={"description"}
           name="description"
           type="text"
@@ -65,7 +65,7 @@ const UpdateVehicleTypeFormSubmit = ({
         />
 
         <FormInput
-          label="Quantidade de Eixos"
+          label="Quantidade de Eixos *"
           htmlfor="number_of_axles"
           name="number_of_axles"
           type="number"
@@ -174,6 +174,16 @@ const UpdateVehicleTypeForm = ({
     isUpdateVehicleTypeOpen,
   });
 
+  const updateVehicleTypeForm = (vehicleTypeFormData: FormData) => {
+    const updateVehicleTypeData = {
+      businessId: commandBusinessInputValue.businessId,
+      vehicleTypeId: vehicleTypeData.id,
+    };
+
+    appendDataToForm(vehicleTypeFormData, updateVehicleTypeData);
+    return dispatch(vehicleTypeFormData);
+  };
+
   return (
     <Dialog
       onOpenChange={() => {
@@ -185,7 +195,10 @@ const UpdateVehicleTypeForm = ({
       }}
       open={isUpdateVehicleTypeOpen}
     >
-      <DialogScrollContent className="max-w-xl max-h-[90vh]">
+      <DialogScrollContent
+        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Editar Tipo do Veículo</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -194,18 +207,7 @@ const UpdateVehicleTypeForm = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form
-          ref={formRef}
-          action={(formData: FormData) => {
-            const extraData = {
-              businessId: commandBusinessInputValue.businessId,
-              vehicleTypeId: vehicleTypeData.id,
-            };
-
-            appendExtraDataToForm(formData, extraData);
-            return dispatch(formData);
-          }}
-        >
+        <form ref={formRef} action={updateVehicleTypeForm}>
           <UpdateVehicleTypeFormSubmit
             state={state}
             handleCloseUpdateVehicleType={handleCloseUpdateVehicleType}

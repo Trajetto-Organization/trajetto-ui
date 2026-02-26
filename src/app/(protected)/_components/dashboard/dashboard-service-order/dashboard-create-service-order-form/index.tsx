@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { DashboardCreateServiceOrderFormState } from "./dto";
 
-import { handleCreateServiceOrder } from "@/actions/create-service-order";
+import { handleCreateServiceOrder } from "@/actions/service-order/create-service-order";
 import { useDashboardCreateServiceOrderForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -31,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { appendExtraDataToForm } from "@/lib/append-extra-data-form";
+import { appendDataToForm } from "@/lib/append-data-form";
 import { DashboardCreateServiceOrderFormSubmit } from "./dashboard-create-service-order-form-submit";
 
 import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
@@ -80,6 +80,8 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
     handleBackToBranchStep,
     handleBackToVehicleSupplierStep,
     handleBackToUserStep,
+    serviceOrderFormValues,
+    handleFormValuesChange,
   } = useDashboardCreateServiceOrderForm(state);
 
   const { businessId } = useAuthStore();
@@ -126,6 +128,27 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
     }
   }, [state?.successMessage]);
 
+  const createServiceOrderForm = (serviceOrderFormData: FormData) => {
+    const serviceOrderData = {
+      businessId: businessId as string,
+      branchId: commandBranchInputValue.branchId,
+      vehicleId: commandVehicleInputValue.vehicleId,
+      responsibleUserId: commandUserInputValue.userId,
+      latitude: latitude?.toString() as string,
+      longitude: longitude?.toString() as string,
+    };
+
+    if (commandSupplierInputValue.supplierId) {
+      serviceOrderFormData.append(
+        "supplierId",
+        commandSupplierInputValue.supplierId,
+      );
+    }
+
+    appendDataToForm(serviceOrderFormData, serviceOrderData);
+    return dispatch(serviceOrderFormData);
+  };
+
   return (
     <Dialog open={isCreateServiceOrderForm} onOpenChange={handleCloseDialog}>
       <TooltipProvider delayDuration={100}>
@@ -155,7 +178,10 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
         </Tooltip>
       </TooltipProvider>
 
-      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-branch"
@@ -214,30 +240,7 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
             errorUserId={state?.createServiceOrderError?.responsibleUserId}
           />
         ) : (
-          <form
-            ref={formRef}
-            action={(formData) => {
-              // Add geolocation data
-              const extraData = {
-                businessId: businessId as string,
-                branchId: commandBranchInputValue.branchId,
-                vehicleId: commandVehicleInputValue.vehicleId,
-                responsibleUserId: commandUserInputValue.userId,
-                latitude: latitude?.toString() as string,
-                longitude: longitude?.toString() as string,
-              };
-
-              if (commandSupplierInputValue.supplierId) {
-                formData.append(
-                  "supplierId",
-                  commandSupplierInputValue.supplierId,
-                );
-              }
-
-              appendExtraDataToForm(formData, extraData);
-              return dispatch(formData);
-            }}
-          >
+          <form ref={formRef} action={createServiceOrderForm}>
             <DashboardCreateServiceOrderFormSubmit
               state={state}
               onBack={handleBackToUserStep}
@@ -248,6 +251,8 @@ const DashboardCreateServiceOrderForm = (): JSX.Element => {
               latitude={latitude}
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
+              initialFormValues={serviceOrderFormValues}
+              onFormValuesChange={handleFormValuesChange}
             />
           </form>
         )}

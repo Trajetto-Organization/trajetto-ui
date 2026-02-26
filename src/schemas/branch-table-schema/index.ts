@@ -16,7 +16,11 @@ export const branchTableSchema = z.object({
   responsible_name: z.string(),
   telephone: z.string(),
   email: z.string(),
-  business_name: z.string().optional(),
+  business: z
+    .object({
+      corporate_reason: z.string(),
+    })
+    .optional(),
   businessId: z.string(),
   created_at: z.string(),
   updated_at: z.string(),

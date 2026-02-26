@@ -1,19 +1,9 @@
 import { z } from "zod";
-import { parseCurrencyToNumber } from "@/lib/format-values";
-
-// Helper function to convert empty strings to null
-const emptyStringToNull = (value: any) => {
-  if (typeof value === "string" && value.trim() === "") {
-    return null;
-  }
-
-  return value;
-};
-
-const isValidDateString = (value: string): boolean => {
-  const date = new Date(value);
-  return !isNaN(date.getTime());
-};
+import {
+  emptyStringToNull,
+  isValidDateString,
+  parseCurrencyToNumber,
+} from "@/lib/format-values";
 
 const createUpdateAccountPayableSchema = z
   .object({

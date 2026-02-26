@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandBusinessInputValue,
@@ -52,6 +52,15 @@ function useCreateVehicleChecklistForm(
       driverCnh: "",
     });
 
+  // Checklist form values callback state
+  const [checklistFormValues, setChecklistFormValues] = useState<
+    Record<string, any>
+  >({});
+
+  const handleFormValuesChange = useCallback((values: Record<string, any>) => {
+    setChecklistFormValues(values);
+  }, []);
+
   useEffect(() => {
     if (!isCreateVehicleChecklistForm) {
       toast.dismiss();
@@ -83,6 +92,8 @@ function useCreateVehicleChecklistForm(
         searchDriverInputValue: "",
         driverCnh: "",
       });
+
+      setChecklistFormValues({});
     }
 
     setIsCreateVehicleChecklistForm(!isCreateVehicleChecklistForm);
@@ -203,6 +214,8 @@ function useCreateVehicleChecklistForm(
       searchDriverInputValue: "",
       driverCnh: "",
     });
+
+    setChecklistFormValues({});
   };
 
   useEffect(() => {
@@ -285,6 +298,8 @@ function useCreateVehicleChecklistForm(
     commandVehicleInputValue,
     commandDriverInputValue,
     formRef,
+    checklistFormValues,
+    handleFormValuesChange,
   };
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandBranchInputValue,
   CommandDriverInputValue,
@@ -44,6 +44,15 @@ const useDashboardCreateVehicleChecklistForm = (
       driverCnh: "",
     });
 
+  // Checklist form values callback state
+  const [checklistFormValues, setChecklistFormValues] = useState<
+    Record<string, any>
+  >({});
+
+  const handleFormValuesChange = useCallback((values: Record<string, any>) => {
+    setChecklistFormValues(values);
+  }, []);
+
   useEffect(() => {
     if (!isCreateVehicleChecklistForm) {
       toast.dismiss();
@@ -70,6 +79,8 @@ const useDashboardCreateVehicleChecklistForm = (
         searchDriverInputValue: "",
         driverCnh: "",
       });
+
+      setChecklistFormValues({});
     }
 
     setIsCreateVehicleChecklistForm(!isCreateVehicleChecklistForm);
@@ -96,24 +107,49 @@ const useDashboardCreateVehicleChecklistForm = (
       searchDriverInputValue: "",
       driverCnh: "",
     });
+
+    setChecklistFormValues({});
   };
 
   const handleUpdateSearchBranchInputValue = (
-    values: CommandBranchInputValue,
+    data: CommandBranchInputValue,
   ) => {
-    setCommandBranchInputValue(values);
+    const updateBranchData =
+      data.branchId === commandBranchInputValue.branchId
+        ? { branchId: "", searchBranchInputValue: "" }
+        : data;
+
+    setCommandBranchInputValue(updateBranchData);
   };
 
   const handleUpdateSearchVehicleInputValue = (
-    values: CommandVehicleInputValue,
+    data: CommandVehicleInputValue,
   ) => {
-    setCommandVehicleInputValue(values);
+    const updateVehicleData =
+      data.vehicleId === commandVehicleInputValue.vehicleId
+        ? {
+            vehicleId: "",
+            searchVehicleInputValue: "",
+            vehicleLicensePlate: "",
+          }
+        : data;
+
+    setCommandVehicleInputValue(updateVehicleData);
   };
 
   const handleUpdateSearchDriverInputValue = (
-    values: CommandDriverInputValue,
+    data: CommandDriverInputValue,
   ) => {
-    setCommandDriverInputValue(values);
+    const updateDriverData =
+      data.driverId === commandDriverInputValue.driverId
+        ? {
+            driverId: "",
+            searchDriverInputValue: "",
+            driverCnh: "",
+          }
+        : data;
+
+    setCommandDriverInputValue(updateDriverData);
   };
 
   const handleBranchStepContinue = () => {
@@ -210,6 +246,8 @@ const useDashboardCreateVehicleChecklistForm = (
     handleVehicleDriverStepContinue,
     handleBackToBranchStep,
     handleBackToVehicleDriverStep,
+    checklistFormValues,
+    handleFormValuesChange,
   };
 };
 

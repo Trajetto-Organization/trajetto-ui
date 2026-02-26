@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import { useDeleteAccountPayableForm } from "./hooks";
-import { handleDeleteAccountPayable } from "@/actions/delete-account-payable";
+import { handleDeleteAccountPayable } from "@/actions/account-payable/delete-account-payable";
 
 interface DeleteAccountPayableProps {
   businessId: string;
@@ -24,6 +24,23 @@ interface DeleteAccountPayableProps {
 
 const DeleteAccountPayableFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
+  const deleteAccountPayableList = [
+    {
+      data: `<strong>Validação prévia:</strong> A exclusão falhará se a conta já foi paga`,
+    },
+    {
+      data: "Verifique se a conta pertence à empresa antes de deletar",
+    },
+    {
+      data: "Todos os dados da conta a pagar serão excluídos permanentemente",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
 
   return (
     <>
@@ -37,25 +54,15 @@ const DeleteAccountPayableFormSubmit = (): JSX.Element => {
               Consequências imediatas:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>
-                <strong>Validação prévia:</strong> A exclusão falhará se a conta
-                já foi paga
-              </li>
-              <li>Verifica se a conta pertence à empresa antes de deletar</li>
-              <li>
-                Todos os dados da conta a pagar serão excluídos permanentemente
-              </li>
-              <li>
-                Esta ação será registrada nos logs de atividade do sistema
-              </li>
-              <li>Esta ação não pode ser desfeita</li>
+              {deleteAccountPayableList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
             </ul>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
         <Button
           type="submit"
           disabled={pending}

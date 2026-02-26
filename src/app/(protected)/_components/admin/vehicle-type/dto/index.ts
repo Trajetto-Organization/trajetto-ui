@@ -2,10 +2,12 @@ interface VehicleTypeProps {
   id: string;
   description: string;
   number_of_axles: number;
-  businessId?: string;
-  business_name?: string;
-  created_at: string;
-  updated_at: string;
+  businessId: string;
+  created_at: Date | string;
+  updated_at: Date | string;
+  business?: {
+    corporate_reason: string;
+  } | null;
 }
 
 export type { VehicleTypeProps };

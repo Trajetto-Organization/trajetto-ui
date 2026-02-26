@@ -85,7 +85,7 @@ export function DashboardDataTableVehicleRowActions<TData>({
       label: "Copiar ID",
       onClick: () => handleCopyID(collumnRowAction.id),
     },
-    ...(collumnRowAction.driverId !== "N/A"
+    ...(collumnRowAction.driverId
       ? [
           {
             label: "Copiar ID do motorista",
@@ -93,7 +93,7 @@ export function DashboardDataTableVehicleRowActions<TData>({
           },
         ]
       : []),
-    ...(collumnRowAction.branchId !== "N/A"
+    ...(collumnRowAction.branchId
       ? [
           {
             label: "Copiar ID da filial",
@@ -101,11 +101,7 @@ export function DashboardDataTableVehicleRowActions<TData>({
           },
         ]
       : []),
-    {
-      label: "Copiar ID do combustível",
-      onClick: () => handleCopyID(collumnRowAction.fuelTypeId as string),
-    },
-    ...(collumnRowAction.vehicleTypeId !== "N/A"
+    ...(collumnRowAction.vehicleTypeId
       ? [
           {
             label: "Copiar ID do tipo de veículo",
@@ -114,6 +110,10 @@ export function DashboardDataTableVehicleRowActions<TData>({
           },
         ]
       : []),
+    {
+      label: "Copiar ID do combustível",
+      onClick: () => handleCopyID(collumnRowAction.fuelTypeId as string),
+    },
   ];
 
   return (

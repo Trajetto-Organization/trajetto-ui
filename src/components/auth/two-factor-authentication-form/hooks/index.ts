@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { handleResendTwoFactorCode } from "@/actions/resend-two-factor-code";
+import { handleResendTwoFactorCode } from "@/actions/user/resend-two-factor-code";
 
 import { toast } from "sonner";
 

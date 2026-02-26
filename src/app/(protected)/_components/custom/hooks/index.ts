@@ -9,9 +9,6 @@ function useDatePicker({ value, onChange }: DatePickerProps) {
   const parseDate = (dateValue: string | undefined) => {
     if (!dateValue) return null;
 
-    // Check if the value is equal to "N/A" or not a valid ISO string
-    if (dateValue === "N/A") return null;
-
     try {
       const parsed = parseISO(dateValue);
 

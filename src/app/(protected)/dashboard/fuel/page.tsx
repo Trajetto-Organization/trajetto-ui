@@ -119,9 +119,9 @@ const Fuel = async ({
     totalLiters:
       fuel
         .reduce((sum, f) => {
-          // liters_amount comes as string "10,500" - convert to number
-          const liters = parseFloat(f.liters_amount.replace(",", "."));
-          return sum + (isNaN(liters) ? 0 : liters);
+          // liters_amount comes as number from RAW data
+          const liters = f.liters_amount || 0;
+          return sum + liters;
         }, 0)
         .toLocaleString("pt-BR", {
           minimumFractionDigits: 2,
@@ -129,14 +129,9 @@ const Fuel = async ({
         }) + " L",
     totalAmount: fuel
       .reduce((sum, f) => {
-        // total_amount is already formatted - remove formatting
-        const cleanValue = (f.total_amount || "0")
-          .replace(/[^\d,.-]/g, "")
-          .replace(/\./g, "")
-          .replace(",", ".");
-
-        const amount = parseFloat(cleanValue);
-        return sum + (isNaN(amount) ? 0 : amount);
+        // total_amount comes as number from RAW data
+        const amount = f.total_amount || 0;
+        return sum + amount;
       }, 0)
       .toLocaleString("pt-BR", {
         style: "currency",

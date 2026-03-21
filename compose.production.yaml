@@ -5,6 +5,7 @@ services:
     image: ghcr.io/trajetto-organization/trajetto-ui:latest
     environment:
       NODE_ENV: production
+      HOSTNAME: 0.0.0.0
       METADATA_BASE: ${METADATA_BASE}
       HTTP_REQUEST: ${HTTP_REQUEST}
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}

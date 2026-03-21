@@ -13,7 +13,7 @@ interface DashboardAccountPayableProps {
   updated_at: Date | string;
   branch?: {
     corporate_reason: string;
-    fantasy_name: string;
+    fantasy_name: string | null;
   };
   serviceOrder?: {
     id: string;

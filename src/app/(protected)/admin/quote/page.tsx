@@ -1,30 +1,16 @@
-import { createElement } from "react";
+import { Suspense } from "react";
 
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import PageContainer from "../../_components/layout/protected-page-container";
-import { ProtectedHeading } from "../../_components/layout/protected-heading";
+import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
+import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { DataTable } from "../../_components/tanstack-table/data-table";
-import { tableQuoteColumns } from "../../_components/admin/quote/table-quote-columns";
-
-import { QuoteProps } from "../../_components/admin/quote/dto";
-import { QuoteToolbar } from "../../_components/admin/quote/quote-toolbar";
-
-import { parseNDJSON } from "@/lib/parse-nd-json";
+import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { quoteStats } from "./stats-config";
-import { PageStats } from "../../_components/stats/page-stats";
-
 import { QuoteActions } from "./page-actions";
-
-interface MetaInfo {
-  total: number;
-  page: number;
-  pageSize: number;
-}
+import { QuoteContent } from "./quote-content";
 
 interface QuoteQueryParamsProps {
   searchParams: { page?: string; pageSize?: string; search?: string };
@@ -34,9 +20,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Orçamentos",
     description: `
-      Gerencie todas as solicitações de orçamento recebidas. 
-      Acompanhe o status de cada lead, registre contatos realizados, 
-      adicione notas sobre negociações e converta prospects em clientes. 
+      Gerencie todas as solicitações de orçamento recebidas.
+      Acompanhe o status de cada lead, registre contatos realizados,
+      adicione notas sobre negociações e converta prospects em clientes.
       Otimize seu processo de vendas com visibilidade completa do funil comercial.`,
   };
 }
@@ -50,77 +36,6 @@ const Quote = async ({
     redirect("/login");
   }
 
-  const page = Number(searchParams.page) || 1;
-  const pageSize = Number(searchParams.pageSize) || 10;
-
-  const search = searchParams.search || "";
-
-  let quoteResponseError = {
-    error: false,
-    errorMessage: "",
-  };
-
-  let quotes: QuoteProps[] = [];
-  let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
-
-  let response: Response | undefined;
-
-  try {
-    response = await fetch(
-      `${process.env.HTTP_REQUEST}/quote/list-quote?page=${page}&pageSize=${pageSize}&search=${search}`,
-      {
-        credentials: "include",
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Encoding": "gzip",
-          Authorization: `Bearer ${tokenAccess}`,
-        },
-        next: {
-          tags: ["create-quote", "delete-quote", "update-quote-status"],
-        },
-      },
-    );
-  } catch (error) {
-    quoteResponseError = {
-      error: true,
-      errorMessage:
-        "Ocorreu um erro inesperado ao tentar recuperar a lista de orçamentos",
-    };
-
-    quotes = [];
-    meta = { total: 0, page: 1, pageSize: pageSize };
-  }
-
-  if (response) {
-    if (!response.ok) {
-      if (response.status === 401) {
-        redirect("/login");
-      }
-
-      quoteResponseError = {
-        error: true,
-        errorMessage: "Houve um erro ao tentar recuperar a lista de orçamentos",
-      };
-
-      quotes = [];
-      meta = { total: 0, page: 1, pageSize: pageSize };
-    } else {
-      const { meta: metaParsed, data } = await parseNDJSON(response);
-
-      quotes = data;
-      meta = metaParsed;
-    }
-  }
-
-  // Calculates stats directly from the returned data
-  const statsData = {
-    totalQuotes: meta.total,
-    pendingQuotes: quotes.filter((q) => q.status === "PENDING").length,
-    contactedQuotes: quotes.filter((q) => q.status === "CONTACTED").length,
-    convertedQuotes: quotes.filter((q) => q.status === "CONVERTED").length,
-  };
-
   return (
     <PageContainer>
       <ProtectedHeading
@@ -129,15 +44,10 @@ const Quote = async ({
       />
 
       <QuoteActions />
-      <PageStats stats={quoteStats} data={statsData} columns={4} />
 
-      <DataTable
-        data={quotes}
-        meta={meta}
-        columns={tableQuoteColumns}
-        responseError={quoteResponseError}
-        toolbar={createElement(QuoteToolbar)}
-      />
+      <Suspense fallback={<ProtectedStatsContentLoading />}>
+        <QuoteContent searchParams={searchParams} token={tokenAccess} />
+      </Suspense>
     </PageContainer>
   );
 };

@@ -6,7 +6,7 @@ import { Area } from "react-easy-crop";
 import { getCroppedImg } from "@/lib/crop-image";
 import { toast } from "sonner";
 
-import { FileUploadProps } from "../dto";
+import type { FileUploadProps } from "../file-upload.types";
 
 function useFileUpload({
   accept,

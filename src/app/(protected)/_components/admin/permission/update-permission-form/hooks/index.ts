@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { UpdatePermissionFormState } from "../dto";
 
-import { PermissionProps } from "../../dto";
-import {
+import type { UpdatePermissionFormState } from "../update-permission-form.types";
+import type { PermissionProps } from "../../permission.types";
+
+import type {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
-} from "../../../../dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 interface UseUpdatePermissionFormProps {
   state: UpdatePermissionFormState | null;

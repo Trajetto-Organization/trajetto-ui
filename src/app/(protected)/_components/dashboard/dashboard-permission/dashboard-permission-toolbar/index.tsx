@@ -7,15 +7,15 @@ import { Button } from "@/components/ui/button";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { useSearch } from "@/lib/search-params";
-import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-faceted-filter";
+import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
 
-import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
+import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
 import { DashboardCreatePermissionForm } from "../dashboard-create-permission-form";
 
 import { permissionLabels } from "@/lib/permissions";
 import { canRead, canWrite } from "../data";
 
-import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 
 interface DashboardDataTableToolbarProps<TData> {
   table: Table<TData>;

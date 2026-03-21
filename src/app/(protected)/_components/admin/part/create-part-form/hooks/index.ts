@@ -1,19 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { CreatePartFormState } from "../dto";
 
-import {
+import type { CreatePartFormState } from "../create-part-form.types";
+import type {
   CommandBusinessInputValue,
   CommandSupplierInputValue,
-} from "../../../../dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
-import { queryClientProps } from "@/lib/query-client-props";
+import { toast } from "sonner";
 
 function useCreatePartForm(state: CreatePartFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

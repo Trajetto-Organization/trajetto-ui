@@ -16,17 +16,25 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { Loader } from "lucide-react";
-import FormInput from "@/components/custom/form-input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+import { cn } from "@/lib/utils";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateKanbanColumn } from "@/actions/kanban/update-kanban-column";
 import { useUpdateColumnDialog } from "./hooks";
 
 import { Input } from "@/components/ui/input";
-import {
+import type {
   UpdateColumnDialogFormState,
   UpdateColumnDialogProps,
   UpdateColumnFormProps,
-} from "./dto";
+} from "./update-column-dialog.types";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
@@ -100,15 +108,32 @@ const UpdateColumnForm = ({
         />
 
         <div className="space-y-2">
-          <Label
-            htmlFor="color"
-            className={state.updateColumnError?.color ? "text-red-500" : ""}
-          >
-            {state.updateColumnError?.color
-              ? state.updateColumnError?.color[0]
-              : "Cor da Coluna"}{" "}
-            <span className="text-red-500 ml-0.5">*</span>
-          </Label>
+          {state.updateColumnError?.color ? (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label
+                    className={cn("h-4 truncate text-red-500")}
+                    htmlFor="color"
+                  >
+                    {state.updateColumnError.color[0]}
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent
+                  align="start"
+                  className="max-w-[300px]
+                  whitespace-normal break-words p-2"
+                >
+                  {state.updateColumnError.color[0]}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Label className="h-4 truncate" htmlFor="color">
+              Cor da Coluna
+              <span className="text-red-500 ml-0.5">*</span>
+            </Label>
+          )}
           <div className="flex gap-2">
             {predefinedColors.map((presetColor) => (
               <button

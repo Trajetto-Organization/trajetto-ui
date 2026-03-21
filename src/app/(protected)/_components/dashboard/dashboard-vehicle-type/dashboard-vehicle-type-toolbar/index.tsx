@@ -4,9 +4,10 @@ import { Table } from "@tanstack/react-table";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { useSearch } from "@/lib/search-params";
-import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
 
-import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
+import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+
 import { DashboardCreateVehicleTypeForm } from "../dashboard-create-vehicle-type-form";
 
 interface DataTableToolbarProps<TData> {

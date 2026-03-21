@@ -8,26 +8,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Button, buttonVariants } from "@/components/ui/button";
 
 import { handleUpdatePart } from "@/actions/part/update-part";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   DashboardUpdatePartFormSubmitProps,
   DashboardUpdatePartFormState,
-} from "./dto";
+} from "./dashboard-update-part-form.types";
+import type { DashboardPartProps } from "../dashboard-part.types";
 
-import { DashboardPartProps } from "../dto";
+import FormInput from "@/components/shared/custom/form-input";
+import { SearchSupplier } from "@/app/(protected)/_components/shared/searches/search-supplier";
+
+import { useAuthStore } from "@/store/auth-store";
 import { useDashboardUpdatePartForm } from "./hooks";
 
-import { SearchSupplier } from "../../../search-supplier";
-
-import FormInput from "@/components/custom/form-input";
-
 import { cn } from "@/lib/utils";
-import { useAuthStore } from "@/store/auth-store";
 
 interface DashboardUpdatePartProps {
   partData: DashboardPartProps;

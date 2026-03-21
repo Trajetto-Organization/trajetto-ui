@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { useAuthStore } from "@/store/auth-store";
-import { useServiceOrderByVehicleInfiniteScroll } from "../../search-service-order-by-vehicle/hooks/service-order-by-vehicle-infinite-scroll";
-
 import {
   Command,
   CommandEmpty,
@@ -20,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import type { DriverServiceOrdersListProps } from "./service-orders.types";
 import { Loader, Wrench } from "lucide-react";
 
 import {
@@ -28,45 +24,22 @@ import {
   formatDate,
   formatNotificationDate,
 } from "@/lib/format-values";
-
-interface DriverServiceOrdersListProps {
-  vehicleId: string;
-}
+import { useDriverServiceOrdersList } from "./hooks";
 
 const DriverServiceOrdersList = ({
   vehicleId,
 }: DriverServiceOrdersListProps): JSX.Element => {
-  const { businessId, isLoaded } = useAuthStore();
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
-
   const {
-    serviceOrders,
-    lastElementRef,
+    errorMessage,
+    hasError,
     isFetching,
     isLoading,
+    lastElementRef,
     refetch,
-    hasError,
-    errorMessage,
-  } = useServiceOrderByVehicleInfiniteScroll(vehicleId, businessId!);
-
-  useEffect(() => {
-    if (hasError) {
-      setShowSpinner(false);
-      return;
-    }
-
-    // Show spinner while auth is loading OR while data is loading
-    if (!isLoaded || isLoading || isFetching) {
-      setShowSpinner(true);
-    } else {
-      setShowSpinner(false);
-    }
-  }, [isLoading, isFetching, hasError, isLoaded]);
-
-  // Initialize spinner as true to avoid blank screen
-  useEffect(() => {
-    setShowSpinner(true);
-  }, []);
+    serviceOrders,
+    showSpinner,
+    isLoaded,
+  } = useDriverServiceOrdersList(vehicleId);
 
   const getMaintenanceTypeBadge = (type: string) => {
     if (type === "INTERNAL") {
@@ -163,7 +136,7 @@ const DriverServiceOrdersList = ({
                               <p className="text-xs text-gray-500">
                                 Registrado em:
                               </p>
-                              <p className="text-sm font-semibold text-gray-900">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
                                 {displayValue(
                                   formatNotificationDate(
                                     serviceOrder.created_at,
@@ -241,26 +214,20 @@ const DriverServiceOrdersList = ({
 
                         {/* Branch and Supplier */}
                         <div className="pt-3 border-t border-gray-100">
-                          <div className="flex justify-between text-xs mb-2">
-                            <div>
-                              <span className="text-gray-500">Filial: </span>
-                              <span className="font-medium text-gray-900">
-                                {displayValue(
-                                  serviceOrder.branch?.corporate_reason,
-                                )}
-                              </span>
-                            </div>
+                          <div className="text-xs mb-2 truncate">
+                            <span className="text-gray-500">Filial: </span>
+                            <span className="font-medium text-gray-900">
+                              {displayValue(
+                                serviceOrder.branch?.corporate_reason,
+                              )}
+                            </span>
                           </div>
 
-                          <div className="flex justify-between text-xs">
-                            <div>
-                              <span className="text-gray-500">
-                                Fornecedor:{" "}
-                              </span>
-                              <span className="font-medium text-gray-900">
-                                {displayValue(serviceOrder.supplier?.name)}
-                              </span>
-                            </div>
+                          <div className="text-xs truncate">
+                            <span className="text-gray-500">Fornecedor: </span>
+                            <span className="font-medium text-gray-900">
+                              {displayValue(serviceOrder.supplier?.name)}
+                            </span>
                           </div>
                         </div>
 

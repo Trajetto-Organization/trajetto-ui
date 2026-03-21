@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { formatNotificationDate } from "@/lib/format-values";
 import { initializeSocket, getSocket, disconnectSocket } from "@/socket";
 
+import { useAIVerificationStore } from "@/store/ai-verification-store";
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -460,6 +462,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
             "Houve um erro ao se conectar ao serviço de notificações!",
             { duration: 5000, id: "socket-init-error" },
           );
+
           throw new Error("Falha ao inicializar o socket");
         }
 
@@ -519,8 +522,30 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         socket.on("securityAction", (event: { reason: string }) => {
           if (event.reason === "access_revoked") {
             disconnectSocket();
+
+            sessionStorage.setItem("pending_login_toast", "true");
             window.location.href =
               "/login?error=user_revoked&force_logout=true";
+
+            return;
+          }
+
+          if (event.reason === "access_denied") {
+            disconnectSocket();
+
+            sessionStorage.setItem("pending_login_toast", "true");
+            window.location.href =
+              "/login?error=access_denied&force_logout=true";
+
+            return;
+          }
+
+          if (event.reason === "user_updated") {
+            disconnectSocket();
+
+            sessionStorage.setItem("pending_login_toast", "true");
+            window.location.href =
+              "/login?error=session_expired&force_logout=true";
 
             return;
           }
@@ -528,6 +553,51 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
           // For all other security events, dispatch a DOM event
           // so useNavigationSecurityCheck can run the /user/me check
           window.dispatchEvent(new CustomEvent("security-check-required"));
+        });
+
+        // AI Verification event listener — real-time verification progress
+        socket.on("aiVerification", (event: any) => {
+          const store = useAIVerificationStore.getState();
+          store.updateVerification(event);
+
+          // Update business usage when the backend sends it
+          if (event.usage && event.businessId) {
+            store.updateBusinessUsage(event.businessId, event.usage);
+          }
+
+          if (event.step === "completed") {
+            const status = event.overallStatus;
+
+            if (status === "error") {
+              toast.error("Erro na verificação IA", {
+                id: `ai-${event.recordId}`,
+              });
+            } else if (status === "skipped") {
+              toast.warning("Verificação IA não realizada (limite atingido)", {
+                id: `ai-${event.recordId}`,
+              });
+            } else if (status === "mismatch" || status === "issues_found") {
+              toast.warning("Verificação IA concluída com divergências", {
+                id: `ai-${event.recordId}`,
+              });
+            } else if (status === "fraud") {
+              toast.error("Verificação IA: suspeita de fraude detectada", {
+                id: `ai-${event.recordId}`,
+              });
+            } else {
+              toast.success("Verificação IA concluída", {
+                id: `ai-${event.recordId}`,
+              });
+            }
+          } else if (event.step === "skipped") {
+            toast.warning(event.message || "Verificação IA não realizada", {
+              id: `ai-${event.recordId}`,
+            });
+          } else if (event.step === "queued") {
+            toast("Verificação IA iniciada...", {
+              id: `ai-${event.recordId}`,
+            });
+          }
         });
 
         // On reconnect, trigger a security check to catch events missed during disconnection
@@ -558,11 +628,12 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         socket.off("pushNotification");
         socket.off("securityAction");
 
+        socket.off("aiVerification");
+
         socket.off("connect");
         socket.off("disconnect");
 
         socket.io.off("reconnect");
-
         socketInitialized.current = false;
       }
     };

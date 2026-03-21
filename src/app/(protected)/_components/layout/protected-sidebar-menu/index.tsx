@@ -10,7 +10,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -20,18 +19,18 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-import { PermissionKey } from "../../dto";
-import {
-  protectedNavIcons,
-  ProtectedNavItem,
-  protectedNavItemsByRole,
-} from "../protected-navbar-items";
+import type { PermissionKey } from "../../shared/common.types";
+import type { ProtectedNavItem } from "../shared/common.types";
 
-import {
+import type {
   ProtectedNavItemsProps,
   ProtectedSidebarMenuItemsProps,
   User,
-} from "../dto";
+} from "./protected-sidebar-menu.types";
+import {
+  protectedNavIcons,
+  protectedNavItemsByRole,
+} from "../protected-navbar-items";
 
 /**
  * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)

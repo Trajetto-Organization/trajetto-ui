@@ -46,6 +46,13 @@ export const fuelTableSchema = z.object({
     .optional(),
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
+  odometer_ai_status: z.string().optional(),
+  odometer_ai_reading: z.number().nullable().optional(),
+  odometer_ai_details: z.any().nullable().optional(),
+  odometer_ai_analyzed_at: z
+    .union([z.string(), z.date()])
+    .nullable()
+    .optional(),
   created_at: z.union([z.string(), z.date()]),
   updated_at: z.union([z.string(), z.date()]),
 });

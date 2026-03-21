@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
-import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
+import type { CommandBranchInputValue } from "@/app/(protected)/_components/shared/common.types";
 
-import { DashboardDriverProps } from "../../dto";
-import { DashboardUpdateDriverFormState } from "../dto";
+import type { DashboardDriverProps } from "../../dashboard-driver.types";
+import type { DashboardUpdateDriverFormState } from "../dashboard-update-driver.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";

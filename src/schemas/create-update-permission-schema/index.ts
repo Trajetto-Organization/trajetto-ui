@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
-import { EnumPermissionKey } from "@/app/(protected)/_components/dto";
+import { EnumPermissionKey } from "@/app/(protected)/_components/shared/common.types";
 
 const permissionKeyEnum = z.nativeEnum(EnumPermissionKey, {
   errorMap: () => ({ message: "A permissão é obrigatória." }),

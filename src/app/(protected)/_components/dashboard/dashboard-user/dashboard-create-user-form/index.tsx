@@ -11,23 +11,25 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import { SelectField } from "@/app/(protected)/_components/custom";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 import { handleCreateUser } from "@/actions/user/create-user";
 
-import {
+import type {
   DashboardCreateUserFormSubmitProps,
   DashboardCreateUserFormState,
-} from "./dto";
+} from "./dashboard-create-user-form.types";
+import {
+  roleLabels,
+  UserBusinessRole,
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { roleLabels, UserBusinessRole } from "../../../dto";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
+import { SearchDriver } from "@/app/(protected)/_components/shared/searches/search-driver";
 
-import { SearchProfileAccess } from "../../../search-profile-access";
-import { SearchDriver } from "../../../search-driver";
-
-import { useDashboardCreateUserForm, useSelectUserRole } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
+import { useDashboardCreateUserForm, useSelectUserRole } from "./hooks";
 
 import { cn } from "@/lib/utils";
 
@@ -41,7 +43,6 @@ import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-
 import {
   Tooltip,
   TooltipContent,

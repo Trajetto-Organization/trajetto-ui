@@ -10,19 +10,19 @@ import {
 } from "@/components/ui/dialog";
 import { handleUpdateServiceOrder } from "@/actions/service-order/update-service-order";
 
-import { useDashboardUpdateServiceOrderForm } from "./hooks";
-import {
+import type {
   DashboardUpdateServiceOrderFormState,
   DashboardUpdateServiceOrderFormProps,
-} from "./dto";
+} from "./dashboard-update-service-order-form.types";
+import { useDashboardUpdateServiceOrderForm } from "./hooks";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/steps/select-vehicle-supplier-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-supplier-step";
 
 import { DashboardUpdateServiceOrderFormSubmit } from "./dashboard-update-service-order-form-submit";
 

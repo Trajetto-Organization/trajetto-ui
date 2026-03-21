@@ -4,7 +4,7 @@ import { useInfiniteQuery } from "react-query";
 import { getCookies } from "@/actions/cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
-import { KanbanColumn } from "../../dto";
+import type { KanbanColumn } from "../../shared/common.types";
 
 interface FetchKanbanProps {
   pageParam: number;

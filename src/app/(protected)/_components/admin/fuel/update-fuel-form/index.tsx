@@ -12,15 +12,18 @@ import {
 import { handleUpdateFuel } from "@/actions/fuel/update-fuel";
 import { useUpdateFuelForm } from "./hooks";
 
-import { UpdateFuelFormState, UpdateFuelFormProps } from "./dto";
+import type {
+  UpdateFuelFormState,
+  UpdateFuelFormProps,
+} from "./update-fuel-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { UpdateFuelFormSubmit } from "./update-fuel-form-submit";
 
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
-import { SelectBranchStep } from "../../../steps/select-branch-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
 const UpdateFuelForm = ({
   fuelData,

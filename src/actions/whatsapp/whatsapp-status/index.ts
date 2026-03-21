@@ -1,10 +1,10 @@
 "use server";
 
 import { getCookies } from "@/actions/cookies";
-import {
+import type {
   ConnectionInfo,
   WhatsAppResponse,
-} from "@/app/(protected)/_components/profile/notifications/whatsapp/dto";
+} from "@/app/(protected)/_components/profile/notifications/whatsapp/shared/common.types";
 
 /**
  * 🔄 Update WhatsApp connection status

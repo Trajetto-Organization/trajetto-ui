@@ -1,16 +1,18 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { DashboardCreateVehicleChecklistForm } from "../../_components/dashboard/dashboard-vehicle-checklist/dashboard-create-vehicle-checklist-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { DashboardCreateVehicleChecklistForm } from "@/app/(protected)/_components/dashboard/dashboard-vehicle-checklist/dashboard-create-vehicle-checklist-form";
 
-import { ExportExcelButton } from "../../_components/custom/export-excel-button";
-import { handleExportVehicleChecklistExcel } from "@/actions/vehicle-checklist/export-vehicle-checklist-excel";
+import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
+import { handleExportVehicleChecklist } from "@/actions/vehicle-checklist/export-vehicle-checklist";
 
 interface FuelActionsProps {
   hasData: boolean;
 }
 
-const VehicleChecklistActions = ({ hasData }: FuelActionsProps) => {
+const VehicleChecklistActions = ({
+  hasData,
+}: FuelActionsProps): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -18,11 +20,10 @@ const VehicleChecklistActions = ({ hasData }: FuelActionsProps) => {
       sm:gap-2 justify-end mt-6 mb-6"
     >
       <div className="w-full sm:w-auto">
-        <ExportExcelButton
+        <ExportButton
           hasData={hasData}
-          exportAction={handleExportVehicleChecklistExcel}
+          exportAction={handleExportVehicleChecklist}
           entityName="relatório de checklist veicular"
-          buttonText="Exportar (Excel)"
         />
       </div>
       <div className="w-full sm:w-auto">

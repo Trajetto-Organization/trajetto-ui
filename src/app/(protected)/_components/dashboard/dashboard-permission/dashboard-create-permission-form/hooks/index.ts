@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreatePermissionFormState } from "../dto";
+
+import type { DashboardCreatePermissionFormState } from "../dashboard-create-permission-form.types";
+import type { CommandProfileAccessInputValue } from "@/app/(protected)/_components/shared/common.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { CommandProfileAccessInputValue } from "@/app/(protected)/_components/dto";
-
 import { toast } from "sonner";
 
 function useDashboardCreatePermissionForm(

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardUpdateProfileAccessFormState } from "../dto";
+import type { DashboardUpdateProfileAccessFormState } from "../dashboard-update-profile-access-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 interface UseDashboardUpdateProfileAccessFormProps {
   state: DashboardUpdateProfileAccessFormState | null;

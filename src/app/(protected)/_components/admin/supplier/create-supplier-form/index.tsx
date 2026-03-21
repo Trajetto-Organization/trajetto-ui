@@ -11,15 +11,18 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
+
+import type {
+  CreateSupplierFormSubmitProps,
+  CreateSupplierFormState,
+} from "./create-supplier-form.types";
 
 import { handleCreateSupplier } from "@/actions/supplier/create-supplier";
-import { CreateSupplierFormSubmitProps, CreateSupplierFormState } from "./dto";
+import { SelectBusinessStep } from "@/app/(protected)/_components/shared/steps/select-business-step";
 
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useCreateSupplierForm } from "./hooks";
-import { useCepValidation } from "../../../hooks";
-
-import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
 
 const CreateSupplierFormSubmit = ({
   state,

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { CreateProfileAccessFormState } from "../dto";
 
-import { toast } from "sonner";
-import { CommandBusinessInputValue } from "../../../../dto";
+import type { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
+import type { CreateProfileAccessFormState } from "../create-profile-access-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useCreateProfileAccessForm(
   state: CreateProfileAccessFormState | null,

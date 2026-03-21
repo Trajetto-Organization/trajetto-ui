@@ -12,17 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { partTableSchema } from "@/schemas/part-table-schema";
+
 import { DashboardDeletePartForm } from "../dashboard-delete-part-form";
-
-import { useDashboardUpdatePartForm } from "./hooks";
 import { DashboardUpdatePartForm } from "../dashboard-update-part-form";
-
-import { toast } from "sonner";
 
 import { permissions } from "@/lib/permissions";
 import { useHasPermission } from "@/lib/user-has-permission";
+
+import { useDashboardUpdatePartForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

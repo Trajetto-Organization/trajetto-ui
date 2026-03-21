@@ -13,14 +13,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
 import { Button } from "@/components/ui/button";
 
 import { ProtectedContentSectionColumns } from "../../../layout/protected-content-section-collumns";
 import { handleUpdateTwoFactorAuthentication } from "@/actions/user/update-two-factor-authentication";
 
+import type { UserTwoFactorAuthenticationFormProps } from "./user-two-factor-authentication.types";
 import { useTwoFactorAuthenticationForm } from "./hooks";
-import { UserTwoFactorAuthenticationFormProps } from "./dto";
 
 const UserTwoFactorAuthenticationFormSubmit = ({
   error,

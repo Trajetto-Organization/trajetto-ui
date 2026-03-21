@@ -1,7 +1,7 @@
 "use client";
 
 import { Users, UserCheck, UserX, UserCog } from "lucide-react";
-import { StatConfig } from "../../_components/stats/dto";
+import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shared/common.types";
 
 /**
  * Statistics setup for drivers page

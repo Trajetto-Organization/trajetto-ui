@@ -6,8 +6,8 @@ import { getCookies } from "@/actions/cookies";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { KanbanBoardProvider } from "../../_components/kanban/board-provider";
-import { BackButton } from "../../_components/driver/back-button";
+import { KanbanBoardProvider } from "@/app/(protected)/_components/kanban/board-provider";
+import { BackButton } from "@/app/(protected)/_components/driver/back-button";
 
 export const metadata: Metadata = {
   title: "Kanban",

@@ -5,20 +5,16 @@ import { getCookies } from "@/actions/cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import { formatNotificationDate } from "@/lib/format-values";
-import {
-  Notification,
-  NotificationStreamMeta,
-  FetchNotificationsProps,
-} from "../dto";
+import type { Notification } from "../shared/common.types";
 
+import type {
+  FetchNotificationsProps,
+  FetchNotificationsResult,
+  NotificationStreamMeta,
+} from "../notification-list.types";
 import { useNotificationsContext } from "../../layout/protected-provider/notifications-provider";
 
 const NOTIFICATIONS_PAGE_SIZE = 20;
-
-interface FetchNotificationsResult {
-  data: Notification[];
-  meta: NotificationStreamMeta;
-}
 
 const fetchNotifications = async ({
   cursor,

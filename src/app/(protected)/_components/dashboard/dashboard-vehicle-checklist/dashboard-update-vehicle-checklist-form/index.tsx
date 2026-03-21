@@ -12,21 +12,21 @@ import {
 import { handleUpdateVehicleChecklist } from "@/actions/vehicle-checklist/update-vehicle-checklist";
 import { useUpdateVehicleChecklistForm } from "./hooks";
 
-import {
+import type {
   DashboardUpdateVehicleChecklistFormState,
   DashboardUpdateVehicleChecklistFormProps,
-} from "./dto";
+} from "./dashboard-update-vehicle-checklist-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { DashboardUpdateChecklistFormSubmit } from "./dashboard-update-vehicle-checklist-form-submit";
+
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
 import { validateUpdatePhotoRequirements } from "../dashboard-create-vehicle-checklist-form/utils/photo-requirements";
 
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth-store";
-
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
 
 const DashboardUpdateVehicleChecklistForm = ({
   checklistData,

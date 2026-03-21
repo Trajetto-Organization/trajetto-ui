@@ -22,7 +22,6 @@ const handleReorderKanbanCards = async (reorderData: {
   }
 
   const reorderCards = `${process.env.HTTP_REQUEST}/kanban/cards/reorder`;
-
   const reorderValidation = reorderKanbanCardsSchema.safeParse(reorderData);
 
   if (reorderValidation.error) {

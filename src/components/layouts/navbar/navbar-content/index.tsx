@@ -15,7 +15,6 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-
 import {
   Sheet,
   SheetContent,
@@ -23,11 +22,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+
 import { Menu } from "lucide-react";
-
 import { cn } from "@/lib/utils";
-import { UserRole } from "@/app/(protected)/_components/dto";
 
+import type { UserRole } from "@/app/(protected)/_components/shared/common.types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavbarContentProps {

@@ -21,7 +21,7 @@ export const accountPayableTableSchema = z.object({
   branch: z
     .object({
       corporate_reason: z.string(),
-      fantasy_name: z.string(),
+      fantasy_name: z.string().nullable(),
     })
     .optional(),
   serviceOrder: z

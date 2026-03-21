@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateServiceOrderPart } from "@/actions/service-order-part/update-service-order-part";
 import {
@@ -20,17 +20,17 @@ import {
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
 
-import { useDashboardUpdateServiceOrderPartForm } from "./hooks";
-import {
+import type {
   DashboardUpdateServiceOrderPartFormState,
   DashboardUpdateServiceOrderPartFormProps,
   DashboardUpdateServiceOrderPartFormSubmitProps,
-} from "./dto";
+} from "./dashboard-update-service-order-part-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
-import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/steps/select-service-order-part-step";
+import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/shared/steps/select-service-order-part-step";
+import { useDashboardUpdateServiceOrderPartForm } from "./hooks";
 
 const UpdateServiceOrderPartSubmit = ({
   state,

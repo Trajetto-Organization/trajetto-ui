@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { DashboardCreateVehicleFormState } from "./dto";
+import type { DashboardCreateVehicleFormState } from "./dashboard-create-vehicle-form.types";
 import { Button } from "@/components/ui/button";
 
 import { handleCreateVehicle } from "@/actions/vehicle/create-vehicle";
@@ -21,7 +21,6 @@ import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-
 import {
   Tooltip,
   TooltipContent,
@@ -29,10 +28,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/steps/select-driver-vehicle-type-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/shared/steps/select-driver-vehicle-type-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
 import { DashboardCreateVehicleFormSubmit } from "./dashboard-create-vehicle-form-submit";
 
 const DashboardCreateVehicleForm = (): JSX.Element => {

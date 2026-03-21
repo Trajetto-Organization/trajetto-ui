@@ -27,11 +27,9 @@ const handleCreateFuelType = async (
   }
 
   const businessId = createFuelTypeValues.get("businessId");
-
   const createFuelType = `${process.env.HTTP_REQUEST}/fuel-type/create-fuel-type/${businessId}`;
 
   const fuelTypeValues = Object.fromEntries(createFuelTypeValues.entries());
-
   const createFuelTypeValidation =
     createUpdateFuelTypeSchema.safeParse(fuelTypeValues);
 

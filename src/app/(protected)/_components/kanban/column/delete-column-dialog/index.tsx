@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { handleDeleteKanbanColumn } from "@/actions/kanban/delete-kanban-column";
 import { useDeleteColumnDialog } from "./hooks";
 
-import { DeleteColumnDialogProps } from "./dto";
+import type { DeleteColumnDialogProps } from "./delete-column-dialog.types";
 import { Loader } from "lucide-react";
 
 import { useHasPermission } from "@/lib/user-has-permission";

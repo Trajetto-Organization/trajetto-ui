@@ -2,7 +2,6 @@ import { useEffect, useMemo } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { Loader } from "lucide-react";
-
 import {
   Dialog,
   DialogScrollContent,
@@ -12,26 +11,27 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateDriver } from "@/actions/driver/update-driver";
 
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useUpdateDriverForm } from "./hooks";
 
-import {
+import type {
   UpdateDriverFormProps,
   UpdateDriverFormSubmitProps,
   UpdateDriverFormState,
-} from "./dto";
+} from "./update-driver-form.types";
+import type { DriverProps } from "../driver.types";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
-
-import { DatePickerField, SelectField } from "../../../custom";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
 import { appendDataToForm } from "@/lib/append-data-form";
 
 import { applyMask } from "@/lib/format-values";
-import { DriverProps } from "../dto";
+
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 const UpdateDriverFormSubmit = ({
   state,

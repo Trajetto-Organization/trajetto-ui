@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-import { KanbanEmptyStateProps } from "../dto";
+import type { KanbanEmptyStateProps } from "./empty-state.types";
 
 const KanbanEmptyState = ({
   searchQuery,
@@ -18,7 +18,7 @@ const KanbanEmptyState = ({
   onSearchChange,
   updateUrl,
   hasLimitedAccess = false,
-}: KanbanEmptyStateProps) => {
+}: KanbanEmptyStateProps): JSX.Element => {
   const router = useRouter();
   const searchParams = useSearchParams();
 

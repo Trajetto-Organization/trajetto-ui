@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-import { LogOutUserState } from "./dto";
+import type { LogOutUserState } from "../protected-account-settings.types";
 
 function useProtectedAccountSettings(
   state: LogOutUserState | null | undefined,

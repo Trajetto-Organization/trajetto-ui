@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { useAuthStore } from "@/store/auth-store";
-import { useAccountPayableByResponsibleUserInfiniteScroll } from "../../search-account-payable-by-responsible-user/hooks/account-payable-by-responsible-user-infinite-scroll";
-
 import {
   Command,
   CommandEmpty,
@@ -28,46 +23,21 @@ import {
   formatNotificationDate,
 } from "@/lib/format-values";
 
-type AccountPayableStatus =
-  | "PENDING"
-  | "PAID"
-  | "PARTIAL"
-  | "LATE"
-  | "PARTIAL_LATE"
-  | "OVERDUE";
+import type { AccountPayableStatus } from "./account-payable.types";
+import { useDriverAccountPayableList } from "./hooks";
 
 const DriverAccountPayableList = (): JSX.Element => {
-  const { isLoaded } = useAuthStore();
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
-
   const {
+    showSpinner,
     accountPayables,
     lastElementRef,
+    refetch,
+    errorMessage,
+    isLoaded,
+    hasError,
     isFetching,
     isLoading,
-    refetch,
-    hasError,
-    errorMessage,
-  } = useAccountPayableByResponsibleUserInfiniteScroll();
-
-  useEffect(() => {
-    if (hasError) {
-      setShowSpinner(false);
-      return;
-    }
-
-    // Show spinner while auth is loading OR while data is loading
-    if (!isLoaded || isLoading || isFetching) {
-      setShowSpinner(true);
-    } else {
-      setShowSpinner(false);
-    }
-  }, [isLoading, isFetching, hasError, isLoaded]);
-
-  // Initialize spinner as true to avoid blank screen
-  useEffect(() => {
-    setShowSpinner(true);
-  }, []);
+  } = useDriverAccountPayableList();
 
   // Helper function to calculate account payable status
   const calculateAccountPayableStatus = (
@@ -210,10 +180,12 @@ const DriverAccountPayableList = (): JSX.Element => {
                             accountPayable.serviceOrder.date,
                             "pt-BR",
                           ) || accountPayable.serviceOrder.date;
+
                         const vehicleInfo = accountPayable.serviceOrder.vehicle
                           ?.license_plate
                           ? `(Veículo: ${accountPayable.serviceOrder.vehicle.description || ""} - Placa: ${accountPayable.serviceOrder.vehicle.license_plate})`
                           : "";
+
                         return `OS#${accountPayable.serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
                       })()
                     : null;
@@ -233,7 +205,7 @@ const DriverAccountPayableList = (): JSX.Element => {
                               <p className="text-xs text-gray-500">
                                 Emitido em:
                               </p>
-                              <p className="text-sm font-semibold text-gray-900">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
                                 {displayValue(
                                   formatNotificationDate(
                                     accountPayable.issue_date,
@@ -331,16 +303,14 @@ const DriverAccountPayableList = (): JSX.Element => {
 
                         {/* Branch and Service Order */}
                         <div className="pt-3 border-t border-gray-100">
-                          <div className="flex justify-between text-xs mb-2">
-                            <div>
-                              <span className="text-gray-500">Filial: </span>
-                              <span className="font-medium text-gray-900">
-                                {displayValue(
-                                  accountPayable.branch?.corporate_reason ||
-                                    accountPayable.branch?.fantasy_name,
-                                )}
-                              </span>
-                            </div>
+                          <div className="text-xs mb-2 truncate">
+                            <span className="text-gray-500">Filial: </span>
+                            <span className="font-medium text-gray-900">
+                              {displayValue(
+                                accountPayable.branch?.corporate_reason ||
+                                  accountPayable.branch?.fantasy_name,
+                              )}
+                            </span>
                           </div>
 
                           <div className="flex justify-between text-xs">

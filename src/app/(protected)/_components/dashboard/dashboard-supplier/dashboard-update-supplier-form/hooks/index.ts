@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { DashboardUpdateSupplierFormState } from "../dto";
+import type { DashboardUpdateSupplierFormState } from "../dashboard-update-supplier-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseDashboardUpdateSupplierFormProps {
   state: DashboardUpdateSupplierFormState | null;

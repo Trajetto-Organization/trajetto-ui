@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/auth-store";
 
-import { UserLoggedData } from "../dto";
+import type { UserLoggedData } from "../layout.types";
 import { toast } from "sonner";
 
 function useProtectedLayout(

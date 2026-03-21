@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import {
-  ScanEye,
   Camera,
   CheckCircle,
   ShieldCheck,
   Gauge,
   ClipboardCheck,
   Sparkles,
+  BrainCircuit,
 } from "lucide-react";
 
 const scanLineVariants = {
@@ -51,7 +51,7 @@ const AIVerificationShowcase = (): JSX.Element => {
             className="inline-flex items-center gap-2
             rounded-full border px-4 py-1.5 mb-6"
           >
-            <ScanEye size={16} className="text-[#d81b60]" />
+            <BrainCircuit size={16} className="text-[#d81b60]" />
             <span className="text-sm font-medium text-muted-foreground">
               Inteligência Artificial
             </span>

@@ -16,16 +16,24 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { Loader } from "lucide-react";
-import FormInput from "@/components/custom/form-input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+import { cn } from "@/lib/utils";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateKanbanColumn } from "@/actions/kanban/create-kanban-column";
 import { useCreateColumnModal } from "./hooks";
 
-import {
+import type {
   CreateColumnFormProps,
   CreateColumnModalFormState,
   CreateColumnModalProps,
-} from "./dto";
+} from "./create-column-modal.types";
 import { Input } from "@/components/ui/input";
 
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -74,15 +82,32 @@ const CreateColumnForm = ({
 
         {/* Cor */}
         <div className="space-y-2">
-          <Label
-            htmlFor="color"
-            className={state.createColumnError?.color && "text-red-500"}
-          >
-            {state.createColumnError?.color
-              ? state.createColumnError?.color
-              : "Cor da Coluna"}{" "}
-            <span className="text-red-500 ml-0.5">*</span>
-          </Label>
+          {state.createColumnError?.color ? (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label
+                    className={cn("h-4 truncate text-red-500")}
+                    htmlFor="color"
+                  >
+                    {state.createColumnError.color[0]}
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent
+                  align="start"
+                  className="max-w-[300px]
+                  whitespace-normal break-words p-2"
+                >
+                  {state.createColumnError.color[0]}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Label className="h-4 truncate" htmlFor="color">
+              Cor da Coluna
+              <span className="text-red-500 ml-0.5">*</span>
+            </Label>
+          )}
           <div className="flex gap-2">
             {predefinedColors.map((presetColor) => (
               <button

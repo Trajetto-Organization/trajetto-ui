@@ -10,21 +10,21 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { handleUpdateFuelType } from "@/actions/fuel-type/update-fuel-type";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   DashboardUpdateFuelTypeFormSubmitProps,
   DashboardUpdateFuelTypeFormState,
-} from "./dto";
+} from "./dashboard-update-fuel-type-form.types";
 
-import { DashboardFuelTypeProps } from "../dto";
-import { useDashboardUpdateFuelTypeForm } from "./hooks";
-
+import type { DashboardFuelTypeProps } from "../dashboard-fuel-types.types";
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
+
 import { useAuthStore } from "@/store/auth-store";
+import { useDashboardUpdateFuelTypeForm } from "./hooks";
 
 interface DashboardUpdateFuelTypeProps {
   fuelTypeData: DashboardFuelTypeProps;

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { handleLogOutUser } from "../user-authentication";
 
-const handleLogoutUser = async () => {
+const handleLogout = async () => {
   let loggedOut: boolean = false;
 
   try {
@@ -16,9 +16,9 @@ const handleLogoutUser = async () => {
     };
   } finally {
     if (loggedOut) {
-      redirect(`/login`);
+      redirect("/login?reason=logout");
     }
   }
 };
 
-export { handleLogoutUser };
+export { handleLogout };

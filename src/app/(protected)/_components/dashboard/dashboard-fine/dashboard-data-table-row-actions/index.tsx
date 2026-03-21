@@ -21,11 +21,11 @@ import { toast } from "sonner";
 import { permissions } from "@/lib/permissions";
 
 import { DashboardUpdateFineForm } from "../dashboard-update-fine-form";
-
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
+
 import {
   Tooltip,
   TooltipContent,

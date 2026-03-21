@@ -11,12 +11,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
+
+import type {
   DashboardCreatePermissionFormSubmitProps,
   DashboardCreatePermissionFormState,
-} from "./dto";
+} from "./dashboard-create-permission-form.types";
 
 import { handleCreatePermission } from "@/actions/permission/create-permission";
 import { useDashboardCreatePermissionForm } from "./hooks";
@@ -24,22 +24,21 @@ import { useDashboardCreatePermissionForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 import { DashboardCreatePermission } from "./dashboard-create-permission";
 
-import { SearchProfileAccess } from "../../../search-profile-access";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
 import { useAuthStore } from "@/store/auth-store";
 
 import { permissions } from "@/lib/permissions";
-
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
+
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
 import { cn } from "@/lib/utils";
 
 const DashboardCreatePermissionFormSubmit = ({
@@ -47,7 +46,7 @@ const DashboardCreatePermissionFormSubmit = ({
   handleOpenCreatePermissionForm,
   handleUpdateSearchProfileAccessInputValue,
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
-}: DashboardCreatePermissionFormSubmitProps) => {
+}: DashboardCreatePermissionFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
 

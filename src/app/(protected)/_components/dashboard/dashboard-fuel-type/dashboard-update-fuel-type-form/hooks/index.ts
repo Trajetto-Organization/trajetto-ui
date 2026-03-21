@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-import { DashboardUpdateFuelTypeFormState } from "../dto";
-import { DashboardFuelTypeProps } from "../../dto";
+import type { DashboardUpdateFuelTypeFormState } from "../dashboard-update-fuel-type-form.types";
+import type { DashboardFuelTypeProps } from "../../dashboard-fuel-types.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseDashboardUpdateFuelTypeFormProps {
   state: DashboardUpdateFuelTypeFormState | null;

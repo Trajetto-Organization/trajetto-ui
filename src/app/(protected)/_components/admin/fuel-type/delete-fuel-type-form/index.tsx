@@ -1,5 +1,4 @@
 import { useFormState, useFormStatus } from "react-dom";
-
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -11,11 +10,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-import { useDeleteFuelTypeForm } from "./hooks";
 import { handleDeleteFuelType } from "@/actions/fuel-type/delete-fuel-type";
+import { useDeleteFuelTypeForm } from "./hooks";
 
 interface DeleteFuelTypeProps {
   businessId: string;

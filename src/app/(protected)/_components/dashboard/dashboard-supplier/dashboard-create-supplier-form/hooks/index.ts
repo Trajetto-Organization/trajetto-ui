@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreateSupplierFormState } from "../dto";
+import type { DashboardCreateSupplierFormState } from "../dashboard-create-supplier-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useDashboardCreateSupplierForm(
   state: DashboardCreateSupplierFormState | null,

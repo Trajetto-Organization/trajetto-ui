@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreateUserFormState } from "../dto";
+
+import type { DashboardCreateUserFormState } from "../dashboard-create-user-form.types";
+import type {
+  CommandProfileAccessInputValue,
+  CommandDriverInputValue,
+} from "@/app/(protected)/_components/shared/common.types";
 
 import { generateRandomPassword } from "@/lib/generate-random-password";
+
+import { queryClientProps } from "@/lib/query-client-props";
 import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
-import {
-  CommandProfileAccessInputValue,
-  CommandDriverInputValue,
-} from "@/app/(protected)/_components/dto";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDashboardCreateUserForm(
   state: DashboardCreateUserFormState | null,

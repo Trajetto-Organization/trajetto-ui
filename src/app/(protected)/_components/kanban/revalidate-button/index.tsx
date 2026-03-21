@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Clock, RefreshCw } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { toast } from "sonner";
 
-import { useKanbanQueryClient } from "../hooks/use-query-client";
+import { RevalidateButtonUI } from "@/app/(protected)/_components/shared/revalidate-button-ui";
 import { useDataButtonRevalidation } from "../../hooks/revalidation-button";
+
+import { useKanbanQueryClient } from "../hooks/query-client";
 
 interface KanbanRevalidationButtonProps {
   businessId?: string;
@@ -29,16 +28,10 @@ const KanbanRevalidationButton = ({
   },
 }: KanbanRevalidationButtonProps): JSX.Element => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isMounted, setIsMounted] = useState<boolean>(false);
-
   const { invalidateKanbanQueries } = useKanbanQueryClient();
 
   const { isRateLimited, cooldownRemaining, registerClick } =
     useDataButtonRevalidation(null, rateLimit);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   const handleRevalidate = async () => {
     const canProceed = registerClick();
@@ -57,33 +50,16 @@ const KanbanRevalidationButton = ({
     }
   };
 
-  const isDisabled = isLoading || isRateLimited;
-  const displayCooldown =
-    isRateLimited && cooldownRemaining <= 0 ? 1 : cooldownRemaining;
-
   return (
-    <Button
-      variant="outline"
-      onClick={handleRevalidate}
-      disabled={isDisabled}
+    <RevalidateButtonUI
+      isLoading={isLoading}
+      isRateLimited={isRateLimited}
+      cooldownRemaining={cooldownRemaining}
       className="whitespace-nowrap"
-    >
-      {!isMounted ? (
-        <span>Atualizar</span>
-      ) : isRateLimited ? (
-        <>
-          Aguarde {displayCooldown}s
-          <Clock className="ml-2 h-4 w-4" />
-        </>
-      ) : (
-        <>
-          <RefreshCw
-            className={`h-4 w-4 mr-2 flex-shrink-0 ${isLoading ? "animate-spin" : ""}`}
-          />
-          <span>Atualizar</span>
-        </>
-      )}
-    </Button>
+      size="default"
+      type="button"
+      onClick={handleRevalidate}
+    />
   );
 };
 

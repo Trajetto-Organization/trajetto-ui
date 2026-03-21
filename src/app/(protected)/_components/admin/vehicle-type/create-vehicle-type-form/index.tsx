@@ -13,20 +13,20 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import {
+import type {
   CreateVehicleTypeFormSubmitProps,
   CreateVehicleTypeFormState,
-} from "./dto";
+} from "./create-vehicle-type-form.types";
 
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
 import { handleCreateVehicleType } from "@/actions/vehicle-type/create-vehicle-type";
-import { useCreateVehicleTypeForm } from "./hooks";
 
 import { formatNumericInput } from "@/lib/format-values";
-import { SearchBusiness } from "../../../search-business";
-
 import { cn } from "@/lib/utils";
+
+import { useCreateVehicleTypeForm } from "./hooks";
 
 const CreateVehicleTypeFormSubmit = ({
   state,

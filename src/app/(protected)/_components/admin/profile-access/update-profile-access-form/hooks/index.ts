@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { UpdateProfileAccessFormState } from "../dto";
 
-import { toast } from "sonner";
-import { CommandBusinessInputValue } from "../../../../dto";
+import type { UpdateProfileAccessFormState } from "../update-profile-access-form.types";
+import type { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseUpdateProfileAccessFormProps {
   state: UpdateProfileAccessFormState | null;

@@ -1,5 +1,10 @@
+import { ReactNode } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ProtectedPageContainerProps } from "../dto";
+
+interface ProtectedPageContainerProps {
+  children: ReactNode;
+  scrollable?: boolean;
+}
 
 const ProtectedPageContainer = ({
   children,

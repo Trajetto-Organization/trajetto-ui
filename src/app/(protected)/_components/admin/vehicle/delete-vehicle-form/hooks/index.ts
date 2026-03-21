@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteVehicleFormState } from "../dto";
+import type { DeleteVehicleFormState } from "../delete-vehicle-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteVehicleForm(state: DeleteVehicleFormState | null) {
   const [isOpenDeleteVehicleForm, setIsOpenDeleteVehicleForm] =

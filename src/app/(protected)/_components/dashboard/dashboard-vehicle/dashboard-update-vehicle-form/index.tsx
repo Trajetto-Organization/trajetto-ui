@@ -13,15 +13,15 @@ import { useDashboardUpdateVehicleForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
-import {
+import type {
   DashboardUpdateVehicleFormState,
   DashboardUpdateVehicleFormProps,
-} from "./dto";
+} from "./dashboard-update-vehicle-form.types";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/steps/select-driver-vehicle-type-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/shared/steps/select-driver-vehicle-type-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
 import { DashboardUpdateVehicleFormSubmit } from "./dashboard-update-vehicle-form-submit";
 
 const DashboardUpdateVehicleForm = ({

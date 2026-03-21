@@ -31,7 +31,7 @@ interface BlogPostsGridProps {
   posts: ProcessedPost[];
 }
 
-const BlogPostsGrid = ({ posts }: BlogPostsGridProps) => {
+const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -175,6 +175,7 @@ const generateBlurDataURL = (width: number = 8, height: number = 6) => {
       <rect x="1" y="1" width="${width - 2}" height="${height - 2}" fill="#e5e7eb"/>
     </svg>
   `;
+
   return `data:image/svg+xml;base64,${Buffer.from(canvas).toString("base64")}`;
 };
 

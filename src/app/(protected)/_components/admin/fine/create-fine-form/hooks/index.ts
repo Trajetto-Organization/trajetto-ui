@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
+
+import type {
   CommandBranchInputValue,
   CommandBusinessInputValue,
   CommandDriverInputValue,
   CommandTrafficViolationCodeInputValue,
   CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
-import { CreateFineFormState } from "../dto";
+} from "@/app/(protected)/_components/shared/common.types";
+import type { CreateFineFormState } from "../create-fine-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useCreateFineForm(state: CreateFineFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

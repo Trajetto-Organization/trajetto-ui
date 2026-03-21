@@ -1,12 +1,12 @@
 "use client";
 
 import { useProtectedLayout } from "./hooks";
-import { useNavigationSecurityCheck } from "./hooks/use-navigation-security-check";
+import { useNavigationSecurityCheck } from "./hooks/navigation-security-check";
 
-import { DriverLayout } from "./driver-layout";
-import { DefaultLayout } from "./default-layout";
+import { DriverLayout } from "./protected-driver-layout";
+import { DefaultLayout } from "./protected-default-layout";
 
-import { ProtectedLayoutLayoutProps } from "./dto";
+import { ProtectedLayoutLayoutProps } from "./layout.types";
 
 const ProtectedLayout = ({
   children,

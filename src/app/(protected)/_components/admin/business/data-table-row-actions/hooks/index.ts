@@ -4,6 +4,8 @@ import { toast } from "sonner";
 function useUpdateBusinessForm() {
   const [isUpdateBusinessOpen, setIsUpdateBusinessOpen] =
     useState<boolean>(false);
+
+  const [isAILimitOpen, setIsAILimitOpen] = useState<boolean>(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   const handleCloseUpdateBusiness = () => {
@@ -13,6 +15,15 @@ function useUpdateBusinessForm() {
 
     setIsDropdownOpen(false);
     setIsUpdateBusinessOpen(!isUpdateBusinessOpen);
+  };
+
+  const handleCloseAILimit = () => {
+    if (isAILimitOpen) {
+      toast.dismiss();
+    }
+
+    setIsDropdownOpen(false);
+    setIsAILimitOpen(!isAILimitOpen);
   };
 
   const handleOpenDropdown = () => {
@@ -30,6 +41,8 @@ function useUpdateBusinessForm() {
   return {
     isUpdateBusinessOpen,
     handleCloseUpdateBusiness,
+    isAILimitOpen,
+    handleCloseAILimit,
     handleOpenDropdown,
     isDropdownOpen,
   };

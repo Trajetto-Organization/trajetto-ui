@@ -1,29 +1,32 @@
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 
 import { useFormStatus } from "react-dom";
-import { CheckCircle, Info, Loader } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
-import dynamic from "next/dynamic";
-import FormInput from "@/components/custom/form-input";
+import { CheckCircle, Info, Loader } from "lucide-react";
+import FormInput from "@/components/shared/custom/form-input";
 
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+
+import type { DashboardCreateServiceOrderFormSubmitProps } from "../dashboard-create-service-order-form.types";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
+
+import { InfoBox } from "./info-box";
 import {
   formatCurrencyToNumber,
   formatNumericInput,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
 
-import { DatePickerField, SelectField } from "../../../../custom";
-import { DashboardCreateServiceOrderFormSubmitProps } from "../dto";
-
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { cn } from "@/lib/utils";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (
@@ -151,6 +154,7 @@ const DashboardCreateServiceOrderFormSubmit = ({
         snapshotData.last_maintenance_mileage_at_service,
       new_mileage_after_service: newMileageAfterService,
     };
+
     onFormValuesChange(allFormValues);
     onBack();
   };
@@ -158,6 +162,7 @@ const DashboardCreateServiceOrderFormSubmit = ({
   // Real-time validation of new mileage
   const currentMileageSnapshot =
     parseFloat(snapshotData.current_mileage_at_service) || 0;
+
   const newMileageValue = parseFloat(newMileageAfterService) || 0;
   const isNewMileageValid =
     !newMileageAfterService || newMileageValue > currentMileageSnapshot;
@@ -379,63 +384,73 @@ const DashboardCreateServiceOrderFormSubmit = ({
 
         {/* Useful Information */}
         <div className="col-span-1 md:col-span-2 mt-4">
-          <div
-            className="bg-blue-50 dark:bg-blue-900/20
-            p-4 rounded-lg border border-blue-200"
-          >
-            <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-2">
-              ℹ️ Como Funciona o Sistema de Quilometragem:
-            </h4>
-            <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
-              <li>
-                • <strong>📸 Snapshot:</strong> Os dados atuais do veículo são
-                &quot;fotografados&quot; automaticamente
-              </li>
-              <li>
-                • <strong>🔒 Proteção:</strong> Dados do snapshot nunca podem
-                ser alterados (auditoria)
-              </li>
-              <li>
-                • <strong>🔧 Atualização:</strong> Só a nova quilometragem é
-                editável, apenas na conclusão
-              </li>
-              <li>
-                • <strong>🔄 Sincronização:</strong> O veículo é atualizado
-                automaticamente quando a OS é finalizada
-              </li>
-              <li>
-                • <strong>📋 Kanban:</strong> A ordem será automaticamente
-                adicionada ao seu kanban (colunas padrão criadas se necessário)
-              </li>
-            </ul>
-          </div>
+          <InfoBox
+            title="ℹ️ Como Funciona o Sistema de Quilometragem:"
+            items={[
+              {
+                icon: "📸",
+                label: "Snapshot",
+                description:
+                  "Os dados atuais do veículo são fotografados automaticamente",
+              },
+              {
+                icon: "🔒",
+                label: "Proteção",
+                description:
+                  "Dados do snapshot nunca podem ser alterados (auditoria)",
+              },
+              {
+                icon: "🔧",
+                label: "Atualização",
+                description:
+                  "Somente a nova quilometragem é editável, apenas na conclusão",
+              },
+              {
+                icon: "🔄",
+                label: "Sincronização",
+                description:
+                  "O veículo é atualizado automaticamente quando a OS é finalizada",
+              },
+              {
+                icon: "📋",
+                label: "Kanban",
+                description:
+                  "A ordem será automaticamente adicionada ao seu kanban (colunas padrão criadas se necessário)",
+              },
+            ]}
+            variant="blue"
+          />
 
-          <div
-            className="bg-green-50 dark:bg-green-900/20 
-            p-4 rounded-lg border border-green-200 mt-4"
-          >
-            <h4 className="font-semibold text-green-700 dark:text-green-300 mb-2">
-              📋 Integração Automática com Kanban:
-            </h4>
-            <ul className="text-sm text-green-600 dark:text-green-400 space-y-1">
-              <li>
-                • <strong>🏗️ Criação:</strong> Colunas padrão criadas
-                automaticamente se não existirem
-              </li>
-              <li>
-                • <strong>📍 Posicionamento:</strong> Card adicionado na coluna
-                &quot;Pendente&quot; ou &quot;Concluído&quot;
-              </li>
-              <li>
-                • <strong>🎯 Prioridade:</strong> Definida automaticamente pelo
-                valor da manutenção
-              </li>
-              <li>
-                • <strong>📅 Vencimento:</strong> Data calculada automaticamente
-                (7 dias)
-              </li>
-            </ul>
-          </div>
+          <InfoBox
+            title="📋 Integração Automática com Kanban:"
+            items={[
+              {
+                icon: "🏗️",
+                label: "Criação",
+                description:
+                  "Colunas padrão criadas automaticamente se não existirem",
+              },
+              {
+                icon: "📍",
+                label: "Posicionamento",
+                description:
+                  'Card adicionado na coluna "Pendente" ou "Concluído"',
+              },
+              {
+                icon: "🎯",
+                label: "Prioridade",
+                description:
+                  "Definida automaticamente pelo valor da manutenção",
+              },
+              {
+                icon: "📅",
+                label: "Vencimento",
+                description: "Data calculada automaticamente (7 dias)",
+              },
+            ]}
+            variant="green"
+            className="mt-4"
+          />
         </div>
       </div>
 

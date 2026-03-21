@@ -1,9 +1,9 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { CreateBranchForm } from "../../_components/admin/branch/create-branch-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { CreateBranchForm } from "@/app/(protected)/_components/admin/branch/create-branch-form";
 
-const BranchActions = () => {
+const BranchActions = (): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap

@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from "react";
-
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader } from "lucide-react";
 
+import { Loader } from "lucide-react";
 import {
   Dialog,
   DialogScrollContent,
@@ -12,27 +11,27 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateDriver } from "@/actions/driver/update-driver";
 
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useDashboardUpdateDriverForm } from "./hooks";
 
-import {
+import type {
   DashboardUpdateDriverFormProps,
   DashboardUpdateDriverSubmitProps,
   DashboardUpdateDriverFormState,
-} from "./dto";
+} from "./dashboard-update-driver.types";
+import type { DashboardDriverProps } from "../dashboard-driver.types";
 
-import { DatePickerField, SelectField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { applyMask } from "@/lib/format-values";
 
-import { DashboardDriverProps } from "../dto";
-
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 import { useAuthStore } from "@/store/auth-store";
 
 const DashboardUpdateDriverFormSubmit = ({
@@ -49,8 +48,8 @@ const DashboardUpdateDriverFormSubmit = ({
   // Helper function to convert Date | string to string
   const toStringValue = (value: Date | string | null | undefined): string => {
     if (!value) return "";
-
     if (typeof value === "string") return value;
+
     return value.toISOString().split("T")[0]; // Convert Date to YYYY-MM-DD
   };
 

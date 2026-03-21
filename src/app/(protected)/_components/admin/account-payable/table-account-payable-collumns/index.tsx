@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { accountPayableTableSchema } from "@/schemas/account-payable-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { DataTableAccountPayableRowActions } from "../data-table-row-actions";
 import {

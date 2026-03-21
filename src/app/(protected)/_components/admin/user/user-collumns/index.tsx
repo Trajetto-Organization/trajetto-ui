@@ -6,10 +6,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { userTableSchema } from "@/schemas/user-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
+import type { UserBusinessRole } from "@/app/(protected)/_components/shared/common.types";
 import { DataTableUserRowActions } from "../data-table-row-actions";
-import { UserBusinessRole } from "../../../dto";
 
 import {
   formatPhoneNumber,

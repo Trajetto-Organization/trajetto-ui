@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "next-sanity/webhook";
 
 const secret = process.env.SANITY_WEBHOOK_SECRET;
-
 const log = {
   info: (message: string, data?: any) => {
     console.log(
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest) {
   try {
     log.info("Webhook received, starting processing...");
 
-    // VALIDAÇÃO DE ASSINATURA
+    // SIGNATURE VALIDATION
     const { body, isValidSignature } = await parseBody<{
       _type: string;
       _id: string;

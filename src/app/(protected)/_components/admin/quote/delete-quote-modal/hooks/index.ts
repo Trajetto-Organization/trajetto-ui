@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { DeleteQuoteFormState } from "../dto";
+import type { DeleteQuoteFormState } from "../delete-quote-modal.types";
 
 import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";

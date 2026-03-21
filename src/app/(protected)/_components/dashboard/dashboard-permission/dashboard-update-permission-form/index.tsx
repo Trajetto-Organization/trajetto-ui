@@ -9,24 +9,23 @@ import {
   DialogHeader,
 } from "@/components/ui/dialog";
 
-import { DashboardPermissionProps } from "../dto";
-import {
+import type { DashboardPermissionProps } from "../dashboard-permission.types";
+import type {
   DashboardUpdatePermissionFormSubmitProps,
   DashboardUpdatePermissionFormState,
-} from "./dto";
+} from "./dashboard-update-permission-form.types";
 
 import { handleUpdatePermission } from "@/actions/permission/update-permission";
 import { useUpdatePermissionForm } from "./hooks";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-
-import { cn } from "@/lib/utils";
 import { appendDataToForm } from "@/lib/append-data-form";
 
 import { DashboardUpdatePermission } from "./dashboard-update-permission";
-import { SearchProfileAccess } from "../../../search-profile-access";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
 
 import { useAuthStore } from "@/store/auth-store";
+import { cn } from "@/lib/utils";
 
 interface DashboardUpdatePermissionProps {
   permissionData: DashboardPermissionProps;

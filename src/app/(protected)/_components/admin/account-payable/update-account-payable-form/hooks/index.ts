@@ -4,9 +4,9 @@ import {
   CommandBusinessInputValue,
   CommandServiceOrderInputValue,
   CommandUserInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { UseUpdateAccountPayableFormProps } from "../dto";
+import type { UseUpdateAccountPayableFormProps } from "../update-account-payable-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
@@ -203,6 +203,7 @@ function useUpdateAccountPayableForm({
       toast.error(
         state.updateAccountPayableError.updateAccountPayableErrorMessage,
       );
+
       return;
     }
 

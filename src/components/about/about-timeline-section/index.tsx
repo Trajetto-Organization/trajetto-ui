@@ -4,9 +4,9 @@ import { useRef } from "react";
 import { motion } from "framer-motion";
 
 import { useInView } from "framer-motion";
-import { TrendingUp, Award, Truck, BarChart, Code } from "lucide-react";
+import { TrendingUp, Award, Truck, Code } from "lucide-react";
 
-const AboutTimelineSection = () => {
+const AboutTimelineSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 

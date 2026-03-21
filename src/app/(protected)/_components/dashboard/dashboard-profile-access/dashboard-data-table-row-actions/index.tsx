@@ -17,12 +17,14 @@ import { profileAccessTableSchema } from "@/schemas/profile-access-schema";
 import { DashboardDeleteProfileAccessForm } from "../dashboard-delete-profile-access-form";
 
 import { DashboardUpdateProfileAccessForm } from "../dashboard-update-profile-access-form";
-import { useDashboardUpdateProfileAccessForm } from "./hooks";
+import { BulkConfigurePermissionsDialog } from "@/app/(protected)/_components/shared/bulk-configure-permissions-dialog";
 
-import { toast } from "sonner";
+import { useDashboardUpdateProfileAccessForm } from "./hooks";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+
+import { toast } from "sonner";
 
 interface DashboardDataTableRowActionsProps<TData> {
   row: Row<TData>;
@@ -37,6 +39,8 @@ export function DashboardDataTableProfileAccessRowActions<TData>({
     handleOpenUpdateProfileAccess,
     handleOpenDropdown,
     isDropdownOpen,
+    isBulkConfigureOpen,
+    handleOpenBulkConfigure,
   } = useDashboardUpdateProfileAccessForm();
 
   const handleCopyID = (collumn: string) => {
@@ -50,16 +54,26 @@ export function DashboardDataTableProfileAccessRowActions<TData>({
       });
   };
 
-  const hasUserPermission = useHasPermission(
+  const hasProfileAccessPermission = useHasPermission(
     permissions.PROFILE_ACCESS_MANAGE,
+    "write",
+  );
+
+  const hasUserPermissionManage = useHasPermission(
+    permissions.USER_PERMISSION_MANAGE,
     "write",
   );
 
   const menuActions = [
     {
+      label: "Configurar Permissões",
+      onClick: handleOpenBulkConfigure,
+      disabled: !hasUserPermissionManage || !collumnRowAction.businessId,
+    },
+    {
       label: "Editar Perfil",
       onClick: handleOpenUpdateProfileAccess,
-      disabled: !hasUserPermission,
+      disabled: !hasProfileAccessPermission,
     },
     {
       label: "Copiar ID",
@@ -103,6 +117,16 @@ export function DashboardDataTableProfileAccessRowActions<TData>({
           profileAccessData={collumnRowAction}
           handleCloseUpdateProfileAccess={handleOpenUpdateProfileAccess}
           isUpdateProfileAccess={isUpdateProfileAccessOpen}
+        />
+      )}
+
+      {isBulkConfigureOpen && (
+        <BulkConfigurePermissionsDialog
+          profileAccessId={collumnRowAction.id}
+          businessId={collumnRowAction.businessId as string}
+          profileName={collumnRowAction.name}
+          isOpen={isBulkConfigureOpen}
+          onClose={handleOpenBulkConfigure}
         />
       )}
     </>

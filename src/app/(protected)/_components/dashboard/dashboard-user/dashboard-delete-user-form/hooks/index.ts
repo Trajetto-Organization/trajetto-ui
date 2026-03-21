@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteUserFormState } from "../dto";
-
-import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
+import type { DashboardDeleteUserFormState } from "../dashboard-delete-user-form.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 function useDashboardDeleteUserForm(
   state: DashboardDeleteUserFormState | null,

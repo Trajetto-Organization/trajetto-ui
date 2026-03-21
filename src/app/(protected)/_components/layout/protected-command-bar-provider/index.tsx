@@ -10,10 +10,9 @@ import {
   useMatches,
   useRegisterActions,
 } from "kbar";
+import type { ProtectedCommandBarProps } from "./protected-command-bar-provider.types";
 
 import { useCommandBarActions } from "./hooks";
-import { ProtectedCommandBarProps } from "../dto";
-
 import { useAuthStore } from "@/store/auth-store";
 
 // Registers actions dynamically — re-registers when store permissions change

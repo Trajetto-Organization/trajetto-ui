@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteVehicleChecklistFormState } from "../dto";
+import type { DeleteVehicleChecklistFormState } from "../delete-vehicle-checklist-form.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 function useDeleteVehicleChecklistForm(
   state: DeleteVehicleChecklistFormState | null,

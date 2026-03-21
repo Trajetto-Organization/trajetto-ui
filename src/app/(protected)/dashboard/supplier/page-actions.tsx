@@ -1,9 +1,9 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { DashboardCreateSupplierForm } from "../../_components/dashboard/dashboard-supplier/dashboard-create-supplier-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { DashboardCreateSupplierForm } from "@/app/(protected)/_components/dashboard/dashboard-supplier/dashboard-create-supplier-form";
 
-const SupplierActions = () => {
+const SupplierActions = (): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap

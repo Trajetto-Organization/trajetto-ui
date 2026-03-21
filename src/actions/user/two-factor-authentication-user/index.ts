@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { validateTwoFactorUserFormSchema } from "@/schemas/two-factor-schema";
 import { handleAuthenticateUser } from "../user-authentication";
 
-import { UserRole } from "@/app/(protected)/_components/dto";
+import { UserRole } from "@/app/(protected)/_components/shared/common.types";
 import { parseJwt } from "@/lib/decode-jwt";
 
 import { getCookies } from "../../cookies";

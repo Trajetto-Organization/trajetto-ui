@@ -1,10 +1,10 @@
 "use server";
 
 import { getCookies } from "@/actions/cookies";
-import {
+import type {
   QRCodeData,
   WhatsAppResponse,
-} from "@/app/(protected)/_components/profile/notifications/whatsapp/dto";
+} from "@/app/(protected)/_components/profile/notifications/whatsapp/shared/common.types";
 
 /**
  * 📱 Get QR Code for WhatsApp connection

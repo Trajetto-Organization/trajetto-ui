@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-import { CommandBusinessInputValue } from "@/app/(protected)/_components/dto";
-import { CreateBranchFormState } from "../dto";
-
-import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
+import type { CreateBranchFormState } from "../create-branch-form.types";
+import { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 function useCreateBranchForm(state: CreateBranchFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

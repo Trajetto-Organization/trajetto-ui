@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { CreateUserFormState } from "../dto";
 
-import {
+import type { CreateUserFormState } from "../create-user-form.types";
+import type {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
   CommandDriverInputValue,
-} from "../../../../dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { generateRandomPassword } from "@/lib/generate-random-password";
+import { queryClientProps } from "@/lib/query-client-props";
 import { revalidateTagName } from "@/actions/revalidate";
 
+import { generateRandomPassword } from "@/lib/generate-random-password";
 import { toast } from "sonner";
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useCreateUserForm(state: CreateUserFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

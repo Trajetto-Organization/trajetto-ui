@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-import { CommandBranchInputValue } from "@/app/(protected)/_components/dto";
-import { DashboardCreateDriverFormState } from "../dto";
+import type { DashboardCreateDriverFormState } from "../dashboard-create-driver-form.types";
+import { CommandBranchInputValue } from "@/app/(protected)/_components/shared/common.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useDashboardCreateDriverForm(
   state: DashboardCreateDriverFormState | null,
@@ -15,7 +15,6 @@ function useDashboardCreateDriverForm(
   const toastShownRef = useRef(false);
 
   const [isCreateDriverForm, setIsCreateDriverForm] = useState<boolean>(false);
-
   const [currentStep, setCurrentStep] = useState<
     "select-branch" | "create-driver"
   >("select-branch");

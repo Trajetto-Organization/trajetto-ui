@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
 
-const AboutHeroSection = () => {
+const AboutHeroSection = (): JSX.Element => {
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
 
   return (

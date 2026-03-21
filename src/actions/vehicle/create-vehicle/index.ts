@@ -30,13 +30,11 @@ const handleCreateVehicle = async (
   const createVehicle = `${process.env.HTTP_REQUEST}/vehicle/create-vehicle/${businessId}`;
 
   const vehicleTypeValues = Object.fromEntries(createVehicleValues.entries());
-
   const createVehicleValidation =
     createUpdateVehicleSchema.safeParse(vehicleTypeValues);
 
   if (createVehicleValidation.error) {
     const formatError = createVehicleValidation.error.flatten();
-
     return {
       createVehicleError: formatError.fieldErrors,
     };

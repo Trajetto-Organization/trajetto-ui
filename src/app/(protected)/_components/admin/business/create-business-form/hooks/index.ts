@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { CreateBusinessFormState } from "../dto";
+import type { CreateBusinessFormState } from "../create-business-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useCreateBusinessForm(state: CreateBusinessFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

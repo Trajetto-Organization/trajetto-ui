@@ -10,16 +10,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { CreateVehicleChecklistFormState } from "./dto";
-
 import { Button } from "@/components/ui/button";
+
+import type { CreateVehicleChecklistFormState } from "./create-vehicle-checklist-form.types";
 import { handleCreateVehicleChecklist } from "@/actions/vehicle-checklist/create-vehicle-checklist";
 
 import { useCreateVehicleChecklistForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
 import { CreateVehicleChecklistFormSubmit } from "./create-vehicle-checklist-form-submit";
 

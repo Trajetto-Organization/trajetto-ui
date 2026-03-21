@@ -27,19 +27,16 @@ const handleUpdateProfileAccess = async (
   }
 
   const profileAccessId = updateProfileAccessValues.get("profileAccessId");
-
   const updateProfileAccess = `${process.env.HTTP_REQUEST}/profile-access/update-profile-access/${profileAccessId}`;
 
   const profileAccessValues = Object.fromEntries(
     updateProfileAccessValues.entries(),
   );
-
   const updateProfileAccessValidation =
     createUpdateProfileAccessSchema.safeParse(profileAccessValues);
 
   if (updateProfileAccessValidation.error) {
     const formatError = updateProfileAccessValidation.error.flatten();
-
     return {
       updateProfileAccessError: formatError.fieldErrors,
     };

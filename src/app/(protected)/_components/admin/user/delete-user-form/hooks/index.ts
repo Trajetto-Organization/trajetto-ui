@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteUserFormState } from "../dto";
-
-import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
+import type { DeleteUserFormState } from "../delete-user-form.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 function useDeleteUserForm(state: DeleteUserFormState | null) {
   const toastShownRef = useRef(false);

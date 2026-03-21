@@ -12,20 +12,20 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
+import type {
   CreatePermissionFormSubmitProps,
   CreatePermissionFormState,
-} from "./dto";
+} from "./create-permission-form.types";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 import { handleCreatePermission } from "@/actions/permission/create-permission";
 import { useCreatePermissionForm } from "./hooks";
 
 import { appendDataToForm } from "@/lib/append-data-form";
-import { SearchBusiness } from "../../../search-business";
-
 import { CreatePermission } from "./create-permission";
-import { SearchProfileAccess } from "../../../search-profile-access";
+
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
 
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,7 @@ const CreatePermissionFormSubmit = ({
   handleUpdateSearchProfileAccessInputValue,
   commandBusinessInputValue: { searchBusinessInputValue, businessId },
   commandProfileAccessInputValue: { searchProfileAccessInputValue },
-}: CreatePermissionFormSubmitProps) => {
+}: CreatePermissionFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
   return (

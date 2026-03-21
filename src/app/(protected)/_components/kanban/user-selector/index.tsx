@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
 import {
   Command,
   CommandEmpty,
@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { Label } from "@/components/ui/label";
-
 import {
   User,
   Loader,
@@ -30,8 +29,8 @@ import {
   UserMinus,
 } from "lucide-react";
 
-import { useUserInfiniteScroll } from "../../search-user/hooks/user-infinite-scroll";
-import { UserSelectorProps } from "../dto";
+import type { UserSelectorProps } from "./user-selector.types";
+import { useUserInfiniteScroll } from "../../shared/searches/search-user/hooks/user-infinite-scroll";
 
 import { cn } from "@/lib/utils";
 

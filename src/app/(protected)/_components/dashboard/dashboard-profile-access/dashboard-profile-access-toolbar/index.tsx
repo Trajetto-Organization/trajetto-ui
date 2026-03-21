@@ -8,11 +8,11 @@ import { SearchInputWithLoading } from "@/components/ui/search-input-with-loadin
 
 import { useSearch } from "@/lib/search-params";
 
-import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-faceted-filter";
-import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
+import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
+import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
 
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 import { DashboardCreateProfileAccessForm } from "../dashboard-create-profile-access-form";
-import { DataTableRevalidate } from "../../../tanstack-table/data-table-revalidate";
 
 interface DashboardDataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -93,6 +93,7 @@ export function DashboardProfileAccessToolbar<TData>({
                 cooldownTimeMs: 15000,
               }}
             />
+
             <DataTableViewOptions table={table} />
             <DashboardCreateProfileAccessForm />
           </div>

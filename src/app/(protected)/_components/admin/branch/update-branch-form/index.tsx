@@ -10,15 +10,18 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateBranch } from "@/actions/branch/update-branch";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { UpdateBranchFormSubmitProps, UpdateBranchFormState } from "./dto";
-import { BranchProps } from "../dto";
+import type {
+  UpdateBranchFormSubmitProps,
+  UpdateBranchFormState,
+} from "./update-branch-form.types";
+import type { BranchProps } from "../branch.types";
 
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useUpdateBranchForm } from "./hooks";
 
 interface UpdateBranchProps {

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { RevokeAccessUserFormState } from "@/app/(protected)/_components/admin/user/revoke-user-access/dto";
-
-import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
+import type { RevokeAccessUserFormState } from "../dashboard-revoke-user-access.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 function useDashboardDeleteUserForm(state: RevokeAccessUserFormState | null) {
   const toastShownRef = useRef(false);

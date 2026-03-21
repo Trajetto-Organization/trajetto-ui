@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Loader, ShieldAlert, Trash } from "lucide-react";
-import { useDashboardDeleteProfileAccessForm } from "./hooks";
 
 import { Button } from "@/components/ui/button";
 import { handleDeleteProfileAccess } from "@/actions/profile-access/delete-profile-access";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+
+import { useDashboardDeleteProfileAccessForm } from "./hooks";
 
 interface DashboardDeleteProfileAccessProps {
   profileAccessId: string;

@@ -5,8 +5,8 @@ import { toast } from "sonner";
 
 import { applyMask } from "@/lib/format-values";
 
-import { businessFieldsData } from "./business-fields-data";
-import { FieldProps, UseCepValidationProps } from "./dto";
+import type { FieldProps, UseCepValidationProps } from "../shared/common.types";
+import { businessFieldsData } from "../data";
 
 const fetchCep = async (numericCep: string) => {
   const res = await fetch(`https://viacep.com.br/ws/${numericCep}/json/`);

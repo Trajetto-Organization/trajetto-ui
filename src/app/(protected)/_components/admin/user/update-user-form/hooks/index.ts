@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import {
+import type {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
   CommandDriverInputValue,
-} from "../../../../dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { UpdateUserFormState } from "../dto";
-import { UserRegistrationProps } from "../../dto";
-
-import { toast } from "sonner";
-import { generateRandomPassword } from "@/lib/generate-random-password";
+import type { UpdateUserFormState } from "../update-user-form.types";
+import type { UserRegistrationProps } from "../../user.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { generateRandomPassword } from "@/lib/generate-random-password";
+import { toast } from "sonner";
 
 interface UseUpdateUserFormProps {
   state: UpdateUserFormState | null;

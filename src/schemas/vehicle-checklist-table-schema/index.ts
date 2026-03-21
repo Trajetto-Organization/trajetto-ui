@@ -56,6 +56,10 @@ export const vehicleChecklistTableSchema = z.object({
     name: z.string(),
     cnh: z.string(),
   }),
+  ai_verification_status: z.string().optional(),
+  ai_verification_details: z.any().nullable().optional(),
+  ai_verified_at: z.union([z.date(), z.string()]).nullable().optional(),
+  photos_by_field: z.any().nullable().optional(),
   created_at: z.union([z.date(), z.string()]),
   updated_at: z.union([z.date(), z.string()]),
 });

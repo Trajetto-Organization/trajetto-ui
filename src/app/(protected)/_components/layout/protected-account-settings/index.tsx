@@ -6,7 +6,6 @@ import { useFormState, useFormStatus } from "react-dom";
 import { useState, useEffect, useRef } from "react";
 
 import { SidebarMenuButton } from "@/components/ui/sidebar";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,14 +19,11 @@ import {
 import { Bell, ChevronsUpDown, User, Loader, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { handleLogoutUser } from "@/actions/user/logout-user";
+import { handleLogout } from "@/actions/user/logout-user";
 import { useProtectedAccountSettings } from "./hooks";
 
-import { useAuthStore } from "@/store/auth-store";
+import type { ProtectedAccountSettingsProps } from "./protected-account-settings.types";
 import { useNotificationsContext } from "../protected-provider/notifications-provider";
-
-import { disconnectSocket } from "@/socket";
-import { ProtectedAccountSettingsProps } from "../dto";
 
 const LogOutUserContainer = ({
   onPendingChange,
@@ -74,16 +70,12 @@ const ProtectedAccountSettings = ({
   userLogged,
 }: ProtectedAccountSettingsProps): JSX.Element => {
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-
   const [state, dispatch] = useFormState(async () => {
-    // Disconnect socket immediately
-    disconnectSocket();
+    // Signal the login page to show the toast once (consumed on arrival)
+    sessionStorage.setItem("pending_login_toast", "true");
 
     // CRITICAL: Wait for logout to complete before redirecting
-    await handleLogoutUser();
-
-    // Clear local state after server logout completes
-    useAuthStore.getState().logout();
+    await handleLogout();
 
     // Redirects immediately
     return null;

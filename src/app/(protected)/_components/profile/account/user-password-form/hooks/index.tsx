@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { UpdateUserPasswordFormState } from "../dto";
+import type { UpdateUserPasswordFormState } from "../user-password-form.types";
 
 import { toast } from "sonner";
 

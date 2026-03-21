@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, MapPin, Code, Users } from "lucide-react";
-import { StatConfig } from "../../_components/stats/dto";
+import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shared/common.types";
 
 /**
  * Calculates stats directly from the returned data

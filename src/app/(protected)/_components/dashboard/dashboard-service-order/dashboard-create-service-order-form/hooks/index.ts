@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
+
+import type {
   CommandBranchInputValue,
   CommandSupplierInputValue,
   CommandUserInputValue,
   CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
-
-import { DashboardCreateServiceOrderFormState } from "../dto";
+} from "@/app/(protected)/_components/shared/common.types";
+import type { DashboardCreateServiceOrderFormState } from "../dashboard-create-service-order-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useDashboardCreateServiceOrderForm(
   state: DashboardCreateServiceOrderFormState | null,

@@ -31,13 +31,11 @@ const handleUpdateServiceOrderPart = async (
 
   const serviceOrderPartId =
     updateServiceOrderPartValues.get("serviceOrderPartId");
-
   const updateServiceOrderPart = `${process.env.HTTP_REQUEST}/service-order-part/update-service-order-part/${serviceOrderPartId}/serviceOrder/${serviceOrderId}/business/${businessId}`;
 
   const serviceOrderPartValues = Object.fromEntries(
     updateServiceOrderPartValues.entries(),
   );
-
   const updateServiceOrderPartValidation =
     createUpdateServiceOrderPartSchema.safeParse(serviceOrderPartValues);
 

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import {
+import type {
   CommandBranchInputValue,
   CommandSupplierInputValue,
   CommandUserInputValue,
   CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { DashboardServiceOrderProps } from "../../dto";
-import { DashboardUpdateServiceOrderFormState } from "../dto";
+import type { DashboardServiceOrderProps } from "../../dashboard-service-order.types";
+import type { DashboardUpdateServiceOrderFormState } from "../dashboard-update-service-order-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";

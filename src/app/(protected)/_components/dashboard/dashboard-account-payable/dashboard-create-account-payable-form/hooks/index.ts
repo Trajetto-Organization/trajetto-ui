@@ -3,9 +3,9 @@ import {
   CommandBranchInputValue,
   CommandServiceOrderInputValue,
   CommandUserInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { DashboardCreateAccountPayableFormState } from "../dto";
+import type { DashboardCreateAccountPayableFormState } from "../dashboard-create-account-payable-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
@@ -155,6 +155,7 @@ function useDashboardCreateAccountPayableForm(
       toast.error(
         state.createAccountPayableError.createAccountPayableErrorMessage,
       );
+
       return;
     }
 

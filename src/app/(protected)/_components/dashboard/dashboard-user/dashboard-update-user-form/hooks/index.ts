@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import {
+import type {
   CommandProfileAccessInputValue,
   CommandDriverInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { DashboardUpdateUserFormState } from "../dto";
-import { DashboardUserRegistrationProps } from "../../dto";
+import type { DashboardUpdateUserFormState } from "../dashboard-update-user-form.types";
+import type { DashboardUserRegistrationProps } from "../../dashboard-user.types";
 
 import { toast } from "sonner";
 import { generateRandomPassword } from "@/lib/generate-random-password";

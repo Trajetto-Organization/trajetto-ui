@@ -17,7 +17,9 @@ export const metadata: Metadata = {
   },
 };
 
-const BlogLayout = async ({ children }: BlogLayoutProps) => {
+const BlogLayout = async ({
+  children,
+}: BlogLayoutProps): Promise<JSX.Element> => {
   return (
     <>
       <Navbar />

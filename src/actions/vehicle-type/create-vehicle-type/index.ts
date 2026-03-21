@@ -27,19 +27,16 @@ const handleCreateVehicleType = async (
   }
 
   const businessId = createVehicleTypeValues.get("businessId");
-
   const createVehicleType = `${process.env.HTTP_REQUEST}/vehicle-type/create-vehicle-type/${businessId}`;
 
   const vehicleTypeValues = Object.fromEntries(
     createVehicleTypeValues.entries(),
   );
-
   const createVehicleTypeValidation =
     createUpdateVehicleTypeSchema.safeParse(vehicleTypeValues);
 
   if (createVehicleTypeValidation.error) {
     const formatError = createVehicleTypeValidation.error.flatten();
-
     return {
       createVehicleTypeError: formatError.fieldErrors,
     };

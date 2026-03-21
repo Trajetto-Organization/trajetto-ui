@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
+
+import type {
   CommandBusinessInputValue,
   CommandPartInputValue,
   CommandServiceOrderInputValue,
-} from "@/app/(protected)/_components/dto";
-
-import { CreateServiceOrderPartFormState } from "../dto";
+} from "@/app/(protected)/_components/shared/common.types";
+import type { CreateServiceOrderPartFormState } from "../create-service-order-part-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";

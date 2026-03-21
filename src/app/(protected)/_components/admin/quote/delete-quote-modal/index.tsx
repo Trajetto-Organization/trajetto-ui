@@ -13,8 +13,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import type { QuoteProps } from "../quote.types";
 import { Button } from "@/components/ui/button";
-import { QuoteProps } from "../dto";
 
 import { handleDeleteQuote } from "@/actions/quote/delete-quote";
 import { useDeleteQuoteForm } from "./hooks";
@@ -29,7 +29,9 @@ interface DeleteQuoteModalButton {
   quote: QuoteProps;
 }
 
-const DeleteQuoteModalFormSubmit = ({ quote }: DeleteQuoteModalButton) => {
+const DeleteQuoteModalFormSubmit = ({
+  quote,
+}: DeleteQuoteModalButton): JSX.Element => {
   const { pending } = useFormStatus();
   const statusLabels = {
     PENDING: "Pendente",

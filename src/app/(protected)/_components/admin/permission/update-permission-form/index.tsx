@@ -8,25 +8,24 @@ import {
   DialogTitle,
   DialogHeader,
 } from "@/components/ui/dialog";
+import { Button, buttonVariants } from "@/components/ui/button";
 
-import { PermissionProps } from "../dto";
-import {
+import type { PermissionProps } from "../permission.types";
+import type {
   UpdatePermissionFormSubmitProps,
   UpdatePermissionFormState,
-} from "./dto";
+} from "./update-permission-form.types";
 
 import { handleUpdatePermission } from "@/actions/permission/update-permission";
 import { useUpdatePermissionForm } from "./hooks";
 
-import { Button, buttonVariants } from "@/components/ui/button";
-
-import { cn } from "@/lib/utils";
 import { appendDataToForm } from "@/lib/append-data-form";
-
 import { UpdatePermission } from "./update-permission";
 
-import { SearchBusiness } from "../../../search-business";
-import { SearchProfileAccess } from "../../../search-profile-access";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
+
+import { cn } from "@/lib/utils";
 
 interface UpdatePermissionProps {
   permissionData: PermissionProps;

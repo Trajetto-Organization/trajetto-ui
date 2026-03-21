@@ -1,5 +1,4 @@
 import { useFormState, useFormStatus } from "react-dom";
-
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -14,8 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader, ShieldAlert, Trash } from "lucide-react";
 
-import { useDeleteVehicleTypeForm } from "./hooks";
 import { handleDeleteVehicleType } from "@/actions/vehicle-type/delete-vehicle-type";
+import { useDeleteVehicleTypeForm } from "./hooks";
 
 interface DeleteVehicleTypeProps {
   businessId: string;

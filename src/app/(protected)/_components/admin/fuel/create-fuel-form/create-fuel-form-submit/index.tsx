@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -22,17 +22,16 @@ import {
   formatMileage,
   formatLiters,
 } from "@/lib/format-values";
-
-import { DatePickerField } from "../../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
-import { CreateFuelFormSubmitProps } from "../dto";
+import type { CreateFuelFormSubmitProps } from "../create-fuel-form.types";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

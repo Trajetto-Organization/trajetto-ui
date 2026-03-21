@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { CreateColumnModalFormState } from "../dto";
+import type { CreateColumnModalFormState } from "../create-column-modal.types";
 
-import { useKanbanQueryClient } from "../../../hooks/use-query-client";
+import { useKanbanQueryClient } from "../../../hooks/query-client";
 import { toast } from "sonner";
 
 interface UseCreateColumnModalProps {

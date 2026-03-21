@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, Store, Code, MapPinned } from "lucide-react";
-import { StatConfig } from "../../_components/stats/dto";
+import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shared/common.types";
 
 /**
  * Setting up statistics for the branches page (Dashboard)

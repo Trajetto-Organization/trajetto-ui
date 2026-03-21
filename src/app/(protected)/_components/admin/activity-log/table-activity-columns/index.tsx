@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { activityTableSchema } from "@/schemas/activity-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 

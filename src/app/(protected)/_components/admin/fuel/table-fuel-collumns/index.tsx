@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { fuelTableSchema } from "@/schemas/fuel-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { DataTableFuelRowActions } from "../data-table-row-actions";
 import {
@@ -16,7 +16,32 @@ import {
   displayValue,
 } from "@/lib/format-values";
 
-// Labels and colors for odometer verification badges
+import { useAIVerificationStore } from "@/store/ai-verification-store";
+
+// AI verification status colors and labels
+const aiStatusColors: Record<string, string> = {
+  pending: "bg-gray-100 text-gray-700 border-gray-200",
+  analyzing: "bg-blue-100 text-blue-700 border-blue-200 animate-pulse",
+  verified: "bg-green-100 text-green-800 border-green-200",
+  mismatch: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  fraud: "bg-red-100 text-red-800 border-red-200",
+  unreadable: "bg-orange-100 text-orange-800 border-orange-200",
+  error: "bg-red-100 text-red-700 border-red-200",
+  skipped: "bg-gray-50 text-gray-500 border-gray-100",
+};
+
+const aiStatusLabels: Record<string, string> = {
+  pending: "Pendente",
+  analyzing: "Analisando...",
+  verified: "Verificado IA",
+  mismatch: "Divergente",
+  fraud: "Suspeita Fraude",
+  unreadable: "Ilegível",
+  error: "Erro",
+  skipped: "Não Analisado",
+};
+
+// Fallback for legacy odometer_verified boolean
 const odometerLabels = {
   true: "Verificado",
   false: "Não verificado",
@@ -26,6 +51,57 @@ const odometerColors = {
   true: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
   false: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
 } as const;
+
+const FuelAIStatusCell = ({
+  recordId,
+  aiStatus,
+  odometerVerified,
+}: {
+  recordId: string;
+  aiStatus: string | null;
+  odometerVerified: boolean;
+}) => {
+  const realtimeEvent = useAIVerificationStore((s) =>
+    s.verifications.get(recordId),
+  );
+
+  const isTerminal =
+    realtimeEvent?.step === "completed" || realtimeEvent?.step === "skipped";
+
+  const status = realtimeEvent
+    ? isTerminal
+      ? realtimeEvent.overallStatus || aiStatus
+      : "analyzing"
+    : aiStatus;
+
+  if (!status) {
+    return (
+      <Badge
+        variant="outline"
+        className={
+          odometerColors[
+            String(odometerVerified) as keyof typeof odometerColors
+          ]
+        }
+      >
+        {
+          odometerLabels[
+            String(odometerVerified) as keyof typeof odometerLabels
+          ]
+        }
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className={aiStatusColors[status] || aiStatusColors.pending}
+    >
+      {aiStatusLabels[status] || status}
+    </Badge>
+  );
+};
 
 const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
   {
@@ -463,26 +539,20 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
     },
   },
   {
-    accessorKey: "odometer_verified",
+    accessorKey: "odometer_ai_status",
     meta: {
-      title: "Odômetro verificado",
+      title: "Verificação IA",
     },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Odômetro verificado" />
+      <DataTableColumnHeader column={column} title="Verificação IA" />
     ),
-    cell: ({ row }) => {
-      const verified = row.getValue("odometer_verified") as boolean;
-      return (
-        <Badge
-          variant="outline"
-          className={
-            odometerColors[String(verified) as keyof typeof odometerColors]
-          }
-        >
-          {odometerLabels[String(verified) as keyof typeof odometerLabels]}
-        </Badge>
-      );
-    },
+    cell: ({ row }) => (
+      <FuelAIStatusCell
+        recordId={row.original.id}
+        aiStatus={row.original.odometer_ai_status as string}
+        odometerVerified={row.getValue("odometer_ai_status") as boolean}
+      />
+    ),
   },
   {
     accessorKey: "created_at",

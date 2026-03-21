@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
+import type {
   CommandBranchInputValue,
   CommandBusinessInputValue,
   CreateDriverFormState,
-} from "../dto";
+} from "../create-driver-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 function useCreateDriverForm(state: CreateDriverFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

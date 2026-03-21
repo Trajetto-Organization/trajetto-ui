@@ -1,4 +1,4 @@
-import { PermissionKey } from "../(protected)/_components/dto";
+import type { PermissionKey } from "../(protected)/_components/shared/common.types";
 
 interface AppRoute {
   path: string;
@@ -15,6 +15,7 @@ const appRoutes: AppRoute[] = [
   { path: "/admin/profile-access", title: "Perfil de acesso" },
   { path: "/admin/permission", title: "Permissão do usuário" },
   { path: "/admin/user-registration", title: "Cadastro de usuário" },
+  { path: "/admin/master-users", title: "Usuários masters" },
   { path: "/admin/supplier", title: "Fornecedores" },
   { path: "/admin/part", title: "Peças" },
   { path: "/admin/vehicle-type", title: "Tipos de veículos" },

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteServiceOrderFormState } from "../dto";
+import type { DeleteServiceOrderFormState } from "../delete-service-order-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteServiceOrderForm(state: DeleteServiceOrderFormState | null) {
   const [isOpenDeleteServiceOrderForm, setIsOpenDeleteServiceOrderForm] =

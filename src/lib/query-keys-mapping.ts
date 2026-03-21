@@ -1,5 +1,6 @@
 type RevalidateDataProps =
   | "update-user-registration"
+  | "update-master-user"
   | "update-branch"
   | "update-business"
   | "update-part"
@@ -21,6 +22,7 @@ type RevalidateDataProps =
 
 const revalidateDataToQueryKeyMap: Record<RevalidateDataProps, string[]> = {
   "update-user-registration": ["user"],
+  "update-master-user": ["master_user"],
   "update-branch": ["branch"],
   "update-business": ["business"],
   "update-part": ["part"],

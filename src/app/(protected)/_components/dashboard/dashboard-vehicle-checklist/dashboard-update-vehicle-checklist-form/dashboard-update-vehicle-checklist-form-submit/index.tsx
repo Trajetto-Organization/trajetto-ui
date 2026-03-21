@@ -4,17 +4,18 @@ import { useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { formatMileage } from "@/lib/format-values";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
-import { DatePickerField, SelectField } from "../../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
-import { DashboardUpdateVehicleChecklistFormSubmitProps } from "../dto";
+import type { DashboardUpdateVehicleChecklistFormSubmitProps } from "../dashboard-update-vehicle-checklist-form.types";
 import { getPhotoRequirements } from "../../dashboard-create-vehicle-checklist-form/utils/photo-requirements";
 
-import { DashboardPhotoUpload } from "../components/dashboard-photo-upload";
+import { PhotoUpload } from "../photo-upload";
 import { useAuthStore } from "@/store/auth-store";
 
 // Reusable select options
@@ -255,7 +256,7 @@ const DashboardUpdateChecklistFormSubmit = ({
     const isRequired = requirement?.required;
 
     return (
-      <DashboardPhotoUpload
+      <PhotoUpload
         fieldName={fieldName}
         label={label}
         isRequired={isRequired}

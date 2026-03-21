@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { DeletePermissionFormState } from "../dto";
+import type { DeletePermissionFormState } from "../delete-permission.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 function useDeletePermissionForm(state: DeletePermissionFormState | null) {
   const toastShownRef = useRef(false);

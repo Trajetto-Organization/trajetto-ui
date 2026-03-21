@@ -18,8 +18,8 @@ import { supplierTableSchema } from "@/schemas/supplier-table-schema";
 import { DeleteSupplierForm } from "../delete-supplier-form";
 import { UpdateSupplierForm } from "../update-supplier-form";
 
-import { toast } from "sonner";
 import { useUpdateSupplierForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

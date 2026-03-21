@@ -9,6 +9,10 @@ import {
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
 
+import type {
+  DashboardCreateFineFormSubmitProps,
+  DashboardCreateFineFormState,
+} from "./dashboard-create-fine-form.types";
 import {
   Dialog,
   DialogScrollContent,
@@ -18,17 +22,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
-  DashboardCreateFineFormSubmitProps,
-  DashboardCreateFineFormState,
-} from "./dto";
-
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateFine } from "@/actions/fine/create-fine";
 
-import { DatePickerField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { useDashboardCreateFineForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -46,14 +45,14 @@ import {
 } from "@/components/ui/tooltip";
 
 import { appendDataToForm } from "@/lib/append-data-form";
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
-import { SelectViolationCodeStep } from "@/app/(protected)/_components/steps/select-violation-code-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
+import { SelectViolationCodeStep } from "@/app/(protected)/_components/shared/steps/select-violation-code-step";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

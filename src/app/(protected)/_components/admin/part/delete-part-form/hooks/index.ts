@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeletePartFormState } from "../dto";
+import type { DeletePartFormState } from "../delete-part-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeletePartForm(state: DeletePartFormState | null) {
   const toastShownRef = useRef(false);

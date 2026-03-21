@@ -1,13 +1,13 @@
 import { useFormStatus } from "react-dom";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import { SelectField } from "@/app/(protected)/_components/custom";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { Label } from "@/components/ui/label";
 import { permissionLabels, permissions } from "@/lib/permissions";
 
-import { DashboardUpdatePermissionFormState } from "../dto";
+import type { DashboardUpdatePermissionFormState } from "../dashboard-update-permission-form.types";
 
 interface DashboardUpdatePermissionProps {
   state: DashboardUpdatePermissionFormState;

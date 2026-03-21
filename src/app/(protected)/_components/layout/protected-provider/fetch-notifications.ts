@@ -1,20 +1,9 @@
-interface ServerNotification {
-  id: string;
-  title: string;
-  message: string;
-  link?: string;
-  type: string;
-  read: boolean;
-  created_at: string | Date;
-}
+import type {
+  FetchNotificationsResult,
+  ServerNotification,
+} from "./protected-provider.types";
 
-interface FetchNotificationsResult {
-  notifications: ServerNotification[];
-  notificationIds: string[];
-  error: boolean;
-}
-
-export async function fetchNotifications(
+async function fetchNotifications(
   tokenAccess: string,
 ): Promise<FetchNotificationsResult> {
   try {
@@ -75,3 +64,4 @@ export async function fetchNotifications(
 }
 
 export type { ServerNotification };
+export { fetchNotifications };

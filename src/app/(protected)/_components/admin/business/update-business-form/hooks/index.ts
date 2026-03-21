@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { UpdateBusinessFormState } from "../dto";
+import type { UpdateBusinessFormState } from "../update-business-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseUpdateBusinessFormProps {
   state: UpdateBusinessFormState | null;

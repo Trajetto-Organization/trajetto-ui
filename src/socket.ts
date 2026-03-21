@@ -88,6 +88,7 @@ async function initializeSocket(): Promise<Socket> {
 
       connectionStatus.errorMessage =
         error instanceof Error ? error.message : "Erro desconhecido";
+
       reject(error);
     }
   });

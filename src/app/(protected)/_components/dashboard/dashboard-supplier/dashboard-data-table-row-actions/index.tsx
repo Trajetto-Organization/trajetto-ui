@@ -12,17 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { supplierTableSchema } from "@/schemas/supplier-table-schema";
 
 import { DashboardDeleteSupplierForm } from "../dashboard-delete-supplier-form";
 import { DashboardUpdateSupplierForm } from "../dashboard-update-supplier-form";
 
-import { toast } from "sonner";
-import { useDashboardUpdateSupplierForm } from "./hooks";
-
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+
+import { useDashboardUpdateSupplierForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

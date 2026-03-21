@@ -8,24 +8,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Button, buttonVariants } from "@/components/ui/button";
-import { SelectField } from "@/app/(protected)/_components/custom";
+
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
 
 import { handleUpdateFuelType } from "@/actions/fuel-type/update-fuel-type";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   UpdateFuelTypeFormSubmitProps,
   UpdateFuelTypeFormState,
   UpdateFuelTypeFormProps,
-} from "./dto";
+} from "./update-fuel-type.types";
+
 import { useUpdateFuelTypeForm } from "./hooks";
-
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
-import { cn } from "@/lib/utils";
 
-import { SearchBusiness } from "../../../search-business";
+import { cn } from "@/lib/utils";
 
 const UpdateFuelTypeFormSubmit = ({
   state,

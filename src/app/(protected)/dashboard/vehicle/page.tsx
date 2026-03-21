@@ -1,30 +1,15 @@
-import { createElement } from "react";
+import { Suspense } from "react";
 
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import PageContainer from "../../_components/layout/protected-page-container";
-import { ProtectedHeading } from "../../_components/layout/protected-heading";
+import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
+import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { DataTable } from "../../_components/tanstack-table/data-table";
-import { dashboardTableVehicleCollumns } from "../../_components/dashboard/dashboard-vehicle/dashboard-table-vehicle-collumns";
-
-import { DashboardVehicleProps } from "../../_components/dashboard/dashboard-vehicle/dto";
-import { DashboardVehicleToolbar } from "../../_components/dashboard/dashboard-vehicle/dashboard-vehicle-toolbar";
-
-import { parseNDJSON } from "@/lib/parse-nd-json";
+import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { vehicleStats } from "./stats-config";
-import { PageStats } from "../../_components/stats/page-stats";
-
-import { VehicleActions } from "./page-actions";
-
-interface MetaInfo {
-  total: number;
-  page: number;
-  pageSize: number;
-}
+import { VehicleContent } from "./vehicle-content";
 
 interface VehicleQueryParamsProps {
   searchParams: { page?: string; pageSize?: string; search?: string };
@@ -34,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Veículos",
     description: `
-      Gerencie facilmente seus veículos cadastrados. Consulte, edite e 
+      Gerencie facilmente seus veículos cadastrados. Consulte, edite e
       remova informações essenciais de maneira rápida e segura.`,
   };
 }
@@ -48,80 +33,6 @@ const Vehicle = async ({
     redirect("/login");
   }
 
-  const page = Number(searchParams.page) || 1;
-  const pageSize = Number(searchParams.pageSize) || 10;
-
-  const search = searchParams.search || "";
-
-  let vehicleResponseError = {
-    error: false,
-    errorMessage: "",
-  };
-
-  let vehicle: DashboardVehicleProps[] = [];
-  let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
-
-  let response: Response | undefined;
-
-  try {
-    response = await fetch(
-      `${process.env.HTTP_REQUEST}/vehicle/list-vehicle?page=${page}&pageSize=${pageSize}&search=${search}`,
-      {
-        credentials: "include",
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Encoding": "gzip", // Send header for compression
-          Authorization: `Bearer ${tokenAccess}`,
-        },
-        next: {
-          tags: ["create-vehicle", "delete-vehicle", "update-vehicle"],
-        },
-      },
-    );
-  } catch (error) {
-    vehicleResponseError = {
-      error: true,
-      errorMessage:
-        "Ocorreu um erro inesperado ao tentar recuperar a lista de veículos",
-    };
-
-    vehicle = [];
-    meta = { total: 0, page: 1, pageSize: pageSize };
-  }
-
-  if (response) {
-    if (!response.ok) {
-      if (response.status === 401) {
-        redirect("/login");
-      }
-
-      vehicleResponseError = {
-        error: true,
-        errorMessage: "Houve um erro ao tentar recuperar a lista de veículos",
-      };
-
-      vehicle = [];
-      meta = { total: 0, page: 1, pageSize: pageSize };
-    } else {
-      // Instead of using response.json(), we process NDJSON
-      const { meta: metaParsed, data } = await parseNDJSON(response);
-
-      vehicle = data;
-      meta = metaParsed;
-    }
-  }
-
-  // Calculates stats directly from the returned data
-  const statsData = {
-    totalVehicles: meta.total,
-    activeVehicles: vehicle.filter((v) => v.status === "ACTIVE").length,
-    inRoute: vehicle.filter((v) => v.status === "IN_ROUTE").length,
-    outOfOperation: vehicle.filter(
-      (v) => v.status === "INACTIVE" || v.status === "BLOCKED",
-    ).length,
-  };
-
   return (
     <PageContainer>
       <ProtectedHeading
@@ -129,16 +40,9 @@ const Vehicle = async ({
         description="Gerencie os veículos cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
 
-      <VehicleActions />
-      <PageStats stats={vehicleStats} data={statsData} columns={4} />
-
-      <DataTable
-        data={vehicle}
-        meta={meta}
-        columns={dashboardTableVehicleCollumns}
-        responseError={vehicleResponseError}
-        toolbar={createElement(DashboardVehicleToolbar)}
-      />
+      <Suspense fallback={<ProtectedStatsContentLoading />}>
+        <VehicleContent searchParams={searchParams} token={tokenAccess} />
+      </Suspense>
     </PageContainer>
   );
 };

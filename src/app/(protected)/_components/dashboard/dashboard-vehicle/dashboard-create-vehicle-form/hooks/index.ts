@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-import {
+import type {
   CommandBranchInputValue,
   CommandDriverInputValue,
   CommandFuelTypeInputValue,
   CommandVehicleTypeInputValue,
-} from "@/app/(protected)/_components/dto";
-import { DashboardCreateVehicleFormState } from "../dto";
-
-import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
+} from "@/app/(protected)/_components/shared/common.types";
+import type { DashboardCreateVehicleFormState } from "../dashboard-create-vehicle-form.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 function useDashboardCreateVehicleForm(
   state: DashboardCreateVehicleFormState | null,

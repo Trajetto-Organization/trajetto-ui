@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFormState } from "react-dom";
 
+import type { DashboardCreateFuelFormState } from "./dashboard-create-fuel-form.types";
 import {
   Dialog,
   DialogScrollContent,
@@ -9,8 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-import { DashboardCreateFuelFormState } from "./dto";
 
 import { Button } from "@/components/ui/button";
 import { handleCreateFuel } from "@/actions/fuel/create-fuel";
@@ -34,10 +33,10 @@ import {
 import { appendDataToForm } from "@/lib/append-data-form";
 import { DashboardCreateFuelFormSubmit } from "./dashboard-create-fuel-form-submit";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
 
 const DashboardCreateFuelForm = (): JSX.Element => {
   const defaultState: DashboardCreateFuelFormState = {};

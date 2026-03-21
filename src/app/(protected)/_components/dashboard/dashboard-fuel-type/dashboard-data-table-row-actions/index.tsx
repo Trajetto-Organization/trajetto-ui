@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { fuelTypeTableSchema } from "@/schemas/fuel-type-table-schema";
 
 import { DashboardUpdateFuelTypeForm } from "../dashboard-update-fuel-type-form";
@@ -21,8 +20,8 @@ import { DashboardDeleteFuelTypeForm } from "../dashboard-delete-fuel-type-form"
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-import { toast } from "sonner";
 import { useDashboardUpdateFuelTypeForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

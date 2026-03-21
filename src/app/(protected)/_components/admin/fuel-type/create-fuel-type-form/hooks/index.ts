@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { CreateFuelTypeFormState } from "../dto";
 
-import { CommandBusinessInputValue } from "../../../../dto";
+import type { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
+import type { CreateFuelTypeFormState } from "../create-fuel-type-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useCreateFuelTypeForm(state: CreateFuelTypeFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

@@ -10,28 +10,32 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Loader, X } from "lucide-react";
 
-import FormInput from "@/components/custom/form-input";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import FormInput from "@/components/shared/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-import { useDashboardUpdateUserForm } from "./hooks";
-import { DashboardUserRegistrationProps } from "../dto";
+import type { DashboardUserRegistrationProps } from "../dashboard-user.types";
+import type {
+  DashboardUpdateUserFormSubmitProps,
+  DashboardUpdateUserFormState,
+} from "./dashboard-update-user-form.types";
+
+import {
+  roleLabels,
+  UserBusinessRole,
+} from "@/app/(protected)/_components/shared/common.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { handleUpdateUserRegistration } from "@/actions/user/update-user-registration";
 
-import {
-  DashboardUpdateUserFormSubmitProps,
-  DashboardUpdateUserFormState,
-} from "./dto";
-import { roleLabels, UserBusinessRole } from "../../../dto";
-
-import { SearchProfileAccess } from "../../../search-profile-access";
-import { SearchDriver } from "../../../search-driver";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
+import { SearchDriver } from "@/app/(protected)/_components/shared/searches/search-driver";
 
 import { cn } from "@/lib/utils";
+
+import { useDashboardUpdateUserForm } from "./hooks";
 import { useAuthStore } from "@/store/auth-store";
 
 interface UpdateUserProps {

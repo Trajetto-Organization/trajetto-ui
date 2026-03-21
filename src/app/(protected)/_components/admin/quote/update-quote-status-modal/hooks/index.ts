@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { QuoteProps, QuoteStatus } from "../../dto";
 
-import { UpdateQuoteFormState } from "../dto";
+import type { QuoteProps, QuoteStatus } from "../../quote.types";
+import type { UpdateQuoteFormState } from "../update-quote-status-modal.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";

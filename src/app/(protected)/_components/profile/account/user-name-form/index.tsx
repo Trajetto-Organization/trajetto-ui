@@ -12,7 +12,10 @@ import { Loader } from "lucide-react";
 import { ProtectedContentSectionColumns } from "../../../layout/protected-content-section-collumns";
 import { useUserNameForm } from "./hooks";
 
-import { UserNameFormSubmitProps, UserNameProps } from "./dto";
+import type {
+  UserNameFormSubmitProps,
+  UserNameProps,
+} from "./user-name-form.types";
 
 const UserNameFormSubmit = ({
   userNameValue,

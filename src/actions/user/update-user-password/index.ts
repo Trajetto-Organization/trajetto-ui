@@ -31,7 +31,6 @@ const handleUpdateUserPassword = async (
 
   if (userPasswordValidation.error) {
     const formatError = userPasswordValidation.error.flatten();
-
     return {
       userPasswordError: formatError.fieldErrors,
     };
@@ -39,7 +38,6 @@ const handleUpdateUserPassword = async (
 
   const { current_password, confirm_new_password } =
     userPasswordValidation.data;
-
   const updateUserPassword = {
     currentPassword: current_password,
     newPassword: confirm_new_password,

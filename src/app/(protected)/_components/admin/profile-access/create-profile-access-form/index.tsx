@@ -13,18 +13,18 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import {
+import type {
   CreateProfileAccessFormState,
   CreateProfileAccessFormSubmitProps,
-} from "./dto";
+} from "./create-profile-access-form.types";
 
 import { handleCreateProfileAccess } from "@/actions/profile-access/create-profile-access";
-import { useCreateProfileAccessForm } from "./hooks";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
 
+import { useCreateProfileAccessForm } from "./hooks";
 import { cn } from "@/lib/utils";
-import { SearchBusiness } from "../../../search-business";
 
 const CreateProfileAccessFormSubmit = ({
   state,

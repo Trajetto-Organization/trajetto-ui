@@ -6,7 +6,7 @@ import {
   AlertTriangle,
   XCircle,
 } from "lucide-react";
-import { StatConfig } from "../../_components/stats/dto";
+import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shared/common.types";
 
 /**
  * Configuring statistics for the vehicle checklist page

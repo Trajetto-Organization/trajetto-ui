@@ -22,7 +22,7 @@ const handleUpdateQuoteStatus = async (
     };
   }
 
-  if (updateQuoteValues.get("type") === "RESET") {
+  if (updateQuoteValues.type === "RESET") {
     return {};
   }
 

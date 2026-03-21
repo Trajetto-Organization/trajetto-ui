@@ -27,7 +27,6 @@ const handleUpdateKanbanCard = async (
   }
 
   const cardId = updateCardValues.get("cardId") as string;
-
   if (!cardId) {
     return {
       updateCardError: {
@@ -37,16 +36,14 @@ const handleUpdateKanbanCard = async (
   }
 
   const updateCard = `${process.env.HTTP_REQUEST}/kanban/card/update/${cardId}`;
-
   const cardValues = Object.fromEntries(updateCardValues.entries());
+
   // Remove cardId from values as it's in the URL
   delete cardValues.cardId;
-
   const updateCardValidation = updateKanbanCardSchema.safeParse(cardValues);
 
   if (updateCardValidation.error) {
     const formatError = updateCardValidation.error.flatten();
-
     return {
       updateCardError: formatError.fieldErrors,
     };

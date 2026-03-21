@@ -14,21 +14,23 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateFine } from "@/actions/fine/create-fine";
 
-import { DatePickerField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { useCreateFineForm } from "./hooks";
 
-import { CreateFineFormState, CreateFineFormSubmitProps } from "./dto";
+import type {
+  CreateFineFormState,
+  CreateFineFormSubmitProps,
+} from "./create-fine-form.types";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import { SelectViolationCodeStep } from "@/app/(protected)/_components/steps/select-violation-code-step";
-
+import { SelectViolationCodeStep } from "@/app/(protected)/_components/shared/steps/select-violation-code-step";
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
@@ -36,7 +38,7 @@ import {
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

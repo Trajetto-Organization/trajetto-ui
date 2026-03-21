@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { DataTableVehicleChecklistRowActions } from "../data-table-row-actions";
 import {
@@ -14,6 +14,27 @@ import {
   formatNotificationDate,
   displayValue,
 } from "@/lib/format-values";
+
+import { useAIVerificationStore } from "@/store/ai-verification-store";
+
+// AI verification status colors and labels for checklist
+const checklistAIStatusColors: Record<string, string> = {
+  pending: "bg-gray-100 text-gray-700 border-gray-200",
+  analyzing: "bg-blue-100 text-blue-700 border-blue-200 animate-pulse",
+  verified: "bg-green-100 text-green-800 border-green-200",
+  issues_found: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  error: "bg-red-100 text-red-700 border-red-200",
+  skipped: "bg-gray-50 text-gray-500 border-gray-100",
+};
+
+const checklistAIStatusLabels: Record<string, string> = {
+  pending: "Pendente",
+  analyzing: "Analisando...",
+  verified: "Verificado IA",
+  issues_found: "Problemas Encontrados",
+  error: "Erro",
+  skipped: "Não Analisado",
+};
 
 // Helper function to format condition values
 const formatCondition = (condition: string): string => {
@@ -46,6 +67,46 @@ const overallConditionColors = {
     "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
   rejected: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
 } as const;
+
+const ChecklistAIStatusCell = ({
+  recordId,
+  aiStatus,
+}: {
+  recordId: string;
+  aiStatus: string | null;
+}) => {
+  const realtimeEvent = useAIVerificationStore((s) =>
+    s.verifications.get(recordId),
+  );
+
+  const isTerminal =
+    realtimeEvent?.step === "completed" || realtimeEvent?.step === "skipped";
+
+  const status = realtimeEvent
+    ? isTerminal
+      ? realtimeEvent.overallStatus || aiStatus
+      : "analyzing"
+    : aiStatus;
+
+  if (!status) {
+    return (
+      <Badge variant="outline" className={checklistAIStatusColors.skipped}>
+        {checklistAIStatusLabels.skipped}
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className={
+        checklistAIStatusColors[status] || checklistAIStatusColors.pending
+      }
+    >
+      {checklistAIStatusLabels[status] || status}
+    </Badge>
+  );
+};
 
 const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
   {
@@ -109,29 +170,6 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
           {displayValue(formatDate(row.getValue("checklist_date"), "pt-BR"))}
         </p>
       );
-    },
-  },
-  {
-    accessorKey: "overall_condition",
-    meta: {
-      title: "Condição geral",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Condição geral" />
-    ),
-    cell: ({ row }) => {
-      const condition = row.getValue(
-        "overall_condition",
-      ) as keyof typeof overallConditionLabels;
-
-      return (
-        <Badge variant="outline" className={overallConditionColors[condition]}>
-          {overallConditionLabels[condition] || condition || "N/A"}
-        </Badge>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
     },
   },
   {
@@ -459,6 +497,44 @@ const tableVehicleChecklistColumns: ColumnDef<vehicleChecklistTableSchema>[] = [
         </p>
       );
     },
+  },
+  {
+    accessorKey: "overall_condition",
+    meta: {
+      title: "Condição geral",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Condição geral" />
+    ),
+    cell: ({ row }) => {
+      const condition = row.getValue(
+        "overall_condition",
+      ) as keyof typeof overallConditionLabels;
+
+      return (
+        <Badge variant="outline" className={overallConditionColors[condition]}>
+          {overallConditionLabels[condition] || condition || "N/A"}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+  },
+  {
+    accessorKey: "ai_verification_status",
+    meta: {
+      title: "Verificação IA",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Verificação IA" />
+    ),
+    cell: ({ row }) => (
+      <ChecklistAIStatusCell
+        recordId={row.original.id}
+        aiStatus={row.original.ai_verification_status ?? null}
+      />
+    ),
   },
   {
     accessorKey: "created_at",

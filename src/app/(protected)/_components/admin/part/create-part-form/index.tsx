@@ -15,16 +15,19 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { handleCreatePart } from "@/actions/part/create-part";
 
-import { CreatePartFormState, CreatePartFormSubmitProps } from "./dto";
-import { useCreatePartForm } from "./hooks";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
+import { SearchSupplier } from "@/app/(protected)/_components/shared/searches/search-supplier";
+
+import type {
+  CreatePartFormState,
+  CreatePartFormSubmitProps,
+} from "./create-part-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
+import { useCreatePartForm } from "./hooks";
 
 import { cn } from "@/lib/utils";
-import FormInput from "@/components/custom/form-input";
-
-import { SearchBusiness } from "../../../search-business";
-import { SearchSupplier } from "../../../search-supplier";
+import FormInput from "@/components/shared/custom/form-input";
 
 const CreatePartFormSubmit = ({
   state,

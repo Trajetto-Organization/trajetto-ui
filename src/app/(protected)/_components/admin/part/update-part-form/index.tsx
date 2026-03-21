@@ -8,21 +8,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Button, buttonVariants } from "@/components/ui/button";
 
 import { handleUpdatePart } from "@/actions/part/update-part";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { UpdatePartFormSubmitProps, UpdatePartFormState } from "./dto";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
+import { SearchSupplier } from "@/app/(protected)/_components/shared/searches/search-supplier";
 
-import { PartProps } from "../dto";
+import FormInput from "@/components/shared/custom/form-input";
+
+import type {
+  UpdatePartFormSubmitProps,
+  UpdatePartFormState,
+} from "./update-part-form.types";
+import type { PartProps } from "../part.types";
+
 import { useUpdatePartForm } from "./hooks";
-
-import { SearchBusiness } from "../../../search-business";
-import { SearchSupplier } from "../../../search-supplier";
-
-import FormInput from "@/components/custom/form-input";
 import { cn } from "@/lib/utils";
 
 interface UpdatePartProps {

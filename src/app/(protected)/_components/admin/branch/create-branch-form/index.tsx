@@ -11,15 +11,18 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateBranch } from "@/actions/branch/create-branch";
-import { CreateBranchFormSubmitProps, CreateBranchFormState } from "./dto";
 
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
+import { SelectBusinessStep } from "@/app/(protected)/_components/shared/steps/select-business-step";
+
+import type {
+  CreateBranchFormSubmitProps,
+  CreateBranchFormState,
+} from "./create-branch-form.types";
 import { useCreateBranchForm } from "./hooks";
-import { useCepValidation } from "../../../hooks";
-
-import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
 
 const CreateBranchFormSubmit = ({
   state,

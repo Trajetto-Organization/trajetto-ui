@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-import { DashboardUpdateVehicleTypeFormState } from "../dto";
-import { DashboardVehicleTypeProps } from "../../dto";
-
-import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
+import type { DashboardUpdateVehicleTypeFormState } from "../dashboard-update-vehicle-type-form.types";
+import type { DashboardVehicleTypeProps } from "../../dashboard-vehicle-type.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 interface UseUpdateVehicleTypeFormProps {
   state: DashboardUpdateVehicleTypeFormState | null;

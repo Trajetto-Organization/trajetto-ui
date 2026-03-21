@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteFineFormState } from "../dto";
+import type { DashboardDeleteFineFormState } from "../dashboard-delete-fine-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDashboardDeleteFineForm(
   state: DashboardDeleteFineFormState | null,

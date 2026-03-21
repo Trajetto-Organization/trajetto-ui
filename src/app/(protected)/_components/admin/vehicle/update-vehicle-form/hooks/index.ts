@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import {
+import type {
   CommandBranchInputValue,
   CommandDriverInputValue,
   CommandFuelTypeInputValue,
   CommandVehicleTypeInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { VehicleProps } from "../../dto";
-import { UpdateVehicleFormState } from "../dto";
-
-import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
+import type { VehicleProps } from "../../vehicle.types";
+import type { UpdateVehicleFormState } from "../update-vehicle-form.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 interface UseUpdateVehicleFormProps {
   state: UpdateVehicleFormState | null;

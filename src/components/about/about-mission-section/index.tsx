@@ -4,7 +4,6 @@ import { useRef } from "react";
 import Link from "next/link";
 
 import { useInView, motion } from "framer-motion";
-
 import {
   BarChart,
   CheckCircle,
@@ -15,9 +14,32 @@ import {
   Users,
 } from "lucide-react";
 
-const AboutMissionSection = () => {
+const AboutMissionSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
+
+  const missionData = [
+    {
+      title: "Inovação",
+      description: "Investimos constantemente em novas tecnologias",
+      Icon: CheckCircle,
+    },
+    {
+      title: "Confiabilidade",
+      description: "Sistemas robustos com uptime de 99.9%",
+      Icon: Shield,
+    },
+    {
+      title: "Colaboração",
+      description: "Parceria próxima com nossos clientes",
+      Icon: Users,
+    },
+    {
+      title: "Resultado",
+      description: "Foco em métricas e otimização contínua",
+      Icon: TrendingUp,
+    },
+  ];
 
   return (
     <section className="py-20 bg-background overflow-x-hidden" ref={ref}>
@@ -73,55 +95,20 @@ const AboutMissionSection = () => {
             }}
           >
             <h3 className="text-2xl font-bold">Nossos Valores</h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-start space-x-4">
-                <div className="bg-[#d81b60]/10 p-3 rounded-full">
-                  <CheckCircle className="h-6 w-6 text-[#d81b60]" />
+              {missionData.map(({ title, Icon, description }, index) => (
+                <div key={index} className="flex items-start space-x-4">
+                  <div className="bg-[#d81b60]/10 p-3 rounded-full">
+                    <Icon className="h-6 w-6 text-[#d81b60]" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-1">{title}</h4>
+                    <p className="text-muted-foreground text-sm">
+                      {description}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium mb-1">Inovação</h4>
-                  <p className="text-muted-foreground text-sm">
-                    Investimos constantemente em novas tecnologias
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-[#d81b60]/10 p-3 rounded-full">
-                  <Shield className="h-6 w-6 text-[#d81b60]" />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-1">Confiabilidade</h4>
-                  <p className="text-muted-foreground text-sm">
-                    Sistemas robustos com uptime de 99.9%
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-[#d81b60]/10 p-3 rounded-full">
-                  <Users className="h-6 w-6 text-[#d81b60]" />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-1">Colaboração</h4>
-                  <p className="text-muted-foreground text-sm">
-                    Parceria próxima com nossos clientes
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="bg-[#d81b60]/10 p-3 rounded-full">
-                  <TrendingUp className="h-6 w-6 text-[#d81b60]" />
-                </div>
-                <div>
-                  <h4 className="font-medium mb-1">Resultado</h4>
-                  <p className="text-muted-foreground text-sm">
-                    Foco em métricas e otimização contínua
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </motion.div>
         </div>
@@ -138,7 +125,7 @@ const AboutMissionSection = () => {
           <div className="grid md:grid-cols-3 gap-8">
             <motion.div
               className="bg-card rounded-xl p-6 shadow-lg 
-                border border-muted/10"
+              border border-muted/10"
               style={{
                 transform: isInView ? "none" : "translateY(50px)",
                 opacity: isInView ? 1 : 0,
@@ -170,8 +157,8 @@ const AboutMissionSection = () => {
             >
               <div
                 className="w-12 h-12 bg-gradient-to-br from-blue-400 
-                  to-[#f06292] rounded-lg flex items-center j
-                  justify-center text-white mb-4"
+                to-[#f06292] rounded-lg flex items-center j
+                justify-center text-white mb-4"
               >
                 <BarChart className="h-6 w-6" />
               </div>
@@ -184,7 +171,7 @@ const AboutMissionSection = () => {
 
             <motion.div
               className="bg-card rounded-xl p-6 
-                shadow-lg border border-muted/10"
+              shadow-lg border border-muted/10"
               style={{
                 transform: isInView ? "none" : "translateY(50px)",
                 opacity: isInView ? 1 : 0,

@@ -1,5 +1,4 @@
 import { useFormState, useFormStatus } from "react-dom";
-
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -23,7 +22,6 @@ interface DeleteBusinessProps {
 
 const DeleteBusinessFormSubmit = (): JSX.Element => {
   const { pending } = useFormStatus();
-
   const deleteBusinessList = [
     {
       data: "Todas as filiais vinculadas a esta empresa serão excluídas permanentemente",

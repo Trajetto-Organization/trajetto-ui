@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { UpdateBranchFormState } from "../dto";
+import type { UpdateBranchFormState } from "../update-branch-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseUpdateBranchFormProps {
   state: UpdateBranchFormState | null;

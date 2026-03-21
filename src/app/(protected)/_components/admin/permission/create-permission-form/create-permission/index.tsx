@@ -1,11 +1,11 @@
 import { useFormStatus } from "react-dom";
 
-import FormInput from "@/components/custom/form-input";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import FormInput from "@/components/shared/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { CreatePermissionFormState } from "../dto";
+import type { CreatePermissionFormState } from "../create-permission-form.types";
 import { useCheckBox } from "./hooks";
 
 import { Label } from "@/components/ui/label";

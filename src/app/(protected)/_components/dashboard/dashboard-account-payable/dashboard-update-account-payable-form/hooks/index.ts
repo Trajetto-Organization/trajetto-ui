@@ -3,10 +3,10 @@ import {
   CommandBranchInputValue,
   CommandServiceOrderInputValue,
   CommandUserInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { DashboardAccountPayableProps } from "../../dto";
-import { DashboardUpdateAccountPayableFormState } from "../dto";
+import type { DashboardAccountPayableProps } from "../../dashboard-account-payable.types";
+import type { DashboardUpdateAccountPayableFormState } from "../dashboard-update-account-payable-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
@@ -166,6 +166,7 @@ function useDashboardUpdateAccountPayableForm({
       toast.error(
         state.updateAccountPayableError.updateAccountPayableErrorMessage,
       );
+
       return;
     }
 

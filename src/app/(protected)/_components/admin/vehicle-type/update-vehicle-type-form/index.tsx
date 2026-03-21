@@ -10,22 +10,21 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateVehicleType } from "@/actions/vehicle-type/update-vehicle-type";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   UpdateVehicleTypeFormSubmitProps,
   UpdateVehicleTypeFormState,
-} from "./dto";
+} from "./update-vehicle-type-form.types";
+import type { VehicleTypeProps } from "../vehicle-type.types";
 
-import { VehicleTypeProps } from "../dto";
-import { useUpdateVehicleTypeForm } from "./hooks";
-
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
 import { formatNumericInput } from "@/lib/format-values";
 
-import { SearchBusiness } from "../../../search-business";
+import { useUpdateVehicleTypeForm } from "./hooks";
 import { cn } from "@/lib/utils";
 
 interface UpdateVehicleTypeProps {

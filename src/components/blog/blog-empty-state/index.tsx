@@ -11,7 +11,10 @@ interface BlogEmptyStateProps {
   category?: string;
 }
 
-const BlogEmptyState = ({ searchQuery, category }: BlogEmptyStateProps) => {
+const BlogEmptyState = ({
+  searchQuery,
+  category,
+}: BlogEmptyStateProps): JSX.Element => {
   const router = useRouter();
 
   const clearFilters = () => {

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeletePermissionFormState } from "../dto";
+import type { DashboardDeletePermissionFormState } from "../dashboard-delete-permission-form.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 function useDashboardDeletePermissionForm(
   state: DashboardDeletePermissionFormState | null,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteAccountPayableFormState } from "../dto";
+import type { DashboardDeleteAccountPayableFormState } from "../dashboard-delete-account-payable-form.types";
 
 import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";

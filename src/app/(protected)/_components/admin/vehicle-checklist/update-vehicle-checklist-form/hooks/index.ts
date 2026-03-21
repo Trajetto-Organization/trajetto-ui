@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
+import type {
   CommandBranchInputValue,
   CommandDriverInputValue,
   CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { VehicleChecklistProps } from "../../dto";
-import { UpdateVehicleChecklistFormState } from "../dto";
-
-import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
+import type { VehicleChecklistProps } from "../../vehicle-checklist.types";
+import type { UpdateVehicleChecklistFormState } from "../update-vehicle-checklist-form.types";
 
 import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
+
+import { toast } from "sonner";
 
 interface UseUpdateVehicleChecklistFormProps {
   state: UpdateVehicleChecklistFormState | null;

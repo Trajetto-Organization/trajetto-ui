@@ -21,14 +21,12 @@ const handleForgotPassword = async (
   }
 
   const forgotPassword = `${process.env.HTTP_REQUEST}/user/forgot/password`;
-
   const forgotPasswordValidation = validateForgotFormSchema.safeParse({
     email: forgotPasswordValues.get("email"),
   });
 
   if (forgotPasswordValidation.error) {
     const formatError = forgotPasswordValidation.error.flatten();
-
     return {
       forgotPasswordError: formatError.fieldErrors,
     };

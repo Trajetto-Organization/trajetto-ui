@@ -12,18 +12,18 @@ import {
 import { handleUpdateServiceOrder } from "@/actions/service-order/update-service-order";
 import { useUpdateServiceOrderForm } from "./hooks";
 
-import {
+import type {
   UpdateServiceOrderFormState,
   UpdateServiceOrderFormProps,
-} from "./dto";
+} from "./update-service-order-form.types";
 
 import { UpdateServiceOrderFormSubmit } from "./update-service-order-form-submit";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
-import { SelectBranchStep } from "../../../steps/select-branch-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
-import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/steps/select-vehicle-supplier-step";
+import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-supplier-step";
 
 const UpdateServiceOrderForm = ({
   serviceOrderData,

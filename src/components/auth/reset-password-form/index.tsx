@@ -9,15 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Loader } from "lucide-react";
 import { motion } from "framer-motion";
 
-import FormInput from "../../custom/form-input";
+import type {
+  ResetPasswordFormContainerProps,
+  ResetPasswordFormState,
+} from "./reset-password-form.types";
+import FormInput from "../../shared/custom/form-input";
 
 import { handleResetPassword } from "@/actions/user/reset-user-password";
-import { ResetPasswordFormContainerProps, ResetPasswordFormState } from "./dto";
+import { useResetPasswordValidationToken } from "./hooks/reset-password-validation";
 
 import { ErrorForm } from "../error-form";
 import { SuccessForm } from "../success-form";
-
-import { useResetPasswordValidationToken } from "./hooks/reset-password-validation";
 
 const ResetPasswordFormContainer = ({
   state,

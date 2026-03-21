@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import Image from "next/image";
-
 import {
   Info,
   Loader,
@@ -15,11 +14,10 @@ import {
 import { useDropzone } from "react-dropzone";
 import dynamic from "next/dynamic";
 
-import FormInput from "@/components/custom/form-input";
-import { DatePickerField } from "../../../../custom";
+import FormInput from "@/components/shared/custom/form-input";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
 import { Button } from "@/components/ui/button";
-
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
@@ -31,14 +29,14 @@ import {
 } from "@/lib/format-values";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
-import { DashboardUpdateFuelFormSubmitProps } from "../dto";
+import type { DashboardUpdateFuelFormSubmitProps } from "../dashboard-update-fuel-form.types";
 import { useAuthStore } from "@/store/auth-store";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { UseUpdateColumnDialogProps } from "../dto";
+import type { UseUpdateColumnDialogProps } from "../update-column-dialog.types";
 
-import { useKanbanQueryClient } from "../../../hooks/use-query-client";
+import { useKanbanQueryClient } from "../../../hooks/query-client";
 import { toast } from "sonner";
 
 function useUpdateColumnDialog({

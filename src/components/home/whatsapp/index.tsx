@@ -11,7 +11,7 @@ const WhatsApp = (): JSX.Element => {
         href={`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`}
         aria-label="Fale com a gente no WhatsApp"
         target="_blank"
-        title="https://trajetto/boas-vindas"
+        title="Fale com a gente no WhatsApp"
         className="block"
       >
         <FaSquareWhatsapp

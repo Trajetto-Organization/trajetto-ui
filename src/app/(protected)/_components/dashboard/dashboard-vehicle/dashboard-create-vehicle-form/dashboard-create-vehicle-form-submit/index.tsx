@@ -4,12 +4,13 @@ import { useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
+import type { DashboardCreateVehicleFormSubmitProps } from "../dashboard-create-vehicle-form.types";
 import { formatNumericInput } from "@/lib/format-values";
-import { DatePickerField, SelectField } from "../../../../custom";
 
-import { DashboardCreateVehicleFormSubmitProps } from "../dto";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 const DashboardCreateVehicleFormSubmit = ({
   state,

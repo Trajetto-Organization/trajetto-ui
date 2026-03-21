@@ -4,12 +4,13 @@ import { useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import type { UpdateVehicleFormSubmitProps } from "../update-vehicle-form.types";
 
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 import { formatNumericInput } from "@/lib/format-values";
 
-import { DatePickerField, SelectField } from "../../../../custom";
-import { UpdateVehicleFormSubmitProps } from "../dto";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 // Helper function to normalize values for comparison (moved outside component)
 const normalizeValue = (value: any): any => {
@@ -89,9 +90,8 @@ const UpdateVehicleFormSubmit = ({
     },
   );
 
-  const initialFormValuesRef = useRef<Record<string, string | number>>(
-    originalValues,
-  );
+  const initialFormValuesRef =
+    useRef<Record<string, string | number>>(originalValues);
   const [isDirty, setIsDirty] = useState<boolean>(() => {
     // Check if form is dirty on initial render (when coming back from a previous step)
     if (Object.keys(initialFormValues).length > 0) {
@@ -160,7 +160,8 @@ const UpdateVehicleFormSubmit = ({
     const stringValues: Record<string, string> = {};
     for (const key of Object.keys(formValues)) {
       const value = formValues[key];
-      stringValues[key] = value !== undefined && value !== null ? String(value) : "";
+      stringValues[key] =
+        value !== undefined && value !== null ? String(value) : "";
     }
     onFormValuesChange(stringValues);
     onBack();

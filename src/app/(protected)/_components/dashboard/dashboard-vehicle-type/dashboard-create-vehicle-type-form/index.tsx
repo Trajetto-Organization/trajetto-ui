@@ -13,21 +13,20 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import {
+import type {
   DashboardCreateVehicleTypeFormSubmitProps,
   DashboardCreateVehicleTypeFormState,
-} from "./dto";
+} from "./dashboard-create-vehicle-type-form.types";
 
 import { handleCreateVehicleType } from "@/actions/vehicle-type/create-vehicle-type";
 import { useDashboardCreateVehicleTypeForm } from "./hooks";
 
+import { useHasPermission } from "@/lib/user-has-permission";
 import { useAuthStore } from "@/store/auth-store";
 
-import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
-
 import { formatNumericInput } from "@/lib/format-values";
 
 const DashboardCreateVehicleTypeFormSubmit = ({

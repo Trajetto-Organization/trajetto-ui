@@ -30,7 +30,6 @@ const handleResetPassword = async (
 
   if (resetPasswordValidation.error) {
     const formatError = resetPasswordValidation.error.flatten();
-
     return {
       resetPasswordError: formatError.fieldErrors,
     };

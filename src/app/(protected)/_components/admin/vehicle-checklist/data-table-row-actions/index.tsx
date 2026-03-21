@@ -2,7 +2,7 @@
 
 import { Row } from "@tanstack/react-table";
 
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -12,12 +12,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
 
+import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
 import { useVehicleChecklistRowActions } from "./hooks";
+
 import { DeleteVehicleChecklistForm } from "../delete-vehicle-checklist-form";
 
 import { UpdateVehicleChecklistForm } from "../update-vehicle-checklist-form";
+import { ChecklistDetailsDialog } from "@/app/(protected)/_components/shared/checklist-details-dialog";
+
 import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
@@ -34,6 +37,8 @@ export function DataTableVehicleChecklistRowActions<TData>({
     isDropdownOpen,
     handleCloseUpdateChecklist,
     isUpdateChecklistOpen,
+    isDetailsOpen,
+    handleToggleDetails,
   } = useVehicleChecklistRowActions();
 
   const handleCopyID = (column: string) => {
@@ -87,6 +92,14 @@ export function DataTableVehicleChecklistRowActions<TData>({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
+          <DropdownMenuItem
+            onClick={handleToggleDetails}
+            className="flex cursor-pointer justify-between"
+          >
+            Ver Detalhes
+            <Eye />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {menuActions.map((action) => (
             <DropdownMenuItem
               key={action.label}
@@ -104,6 +117,14 @@ export function DataTableVehicleChecklistRowActions<TData>({
           />
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {isDetailsOpen && (
+        <ChecklistDetailsDialog
+          checklistData={columnRowAction}
+          isOpen={isDetailsOpen}
+          onOpenChange={handleToggleDetails}
+        />
+      )}
 
       {isUpdateChecklistOpen && (
         <UpdateVehicleChecklistForm

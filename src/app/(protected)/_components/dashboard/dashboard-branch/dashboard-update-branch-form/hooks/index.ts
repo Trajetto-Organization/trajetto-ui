@@ -1,17 +1,17 @@
 import { useEffect, useRef } from "react";
-import { DashboardUpdateBranchFormState } from "../dto";
+import type { DashboardUpdateBranchFormState } from "../dashboard-update-branch-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseDashboardUpdateBranchFormProps {
   state: DashboardUpdateBranchFormState | null;
   handleCloseUpdateBranch: () => void;
 }
 
-function useUpdateBranchForm({
+function useDashboardUpdateBranchForm({
   state,
   handleCloseUpdateBranch,
 }: UseDashboardUpdateBranchFormProps) {
@@ -75,4 +75,4 @@ function useUpdateBranchForm({
   };
 }
 
-export { useUpdateBranchForm };
+export { useDashboardUpdateBranchForm };

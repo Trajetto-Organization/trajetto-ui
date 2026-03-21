@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
@@ -16,31 +17,31 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateAccountPayable } from "@/actions/account-payable/update-account-payable";
 
 import { useDashboardUpdateAccountPayableForm } from "./hooks";
-import { DatePickerField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
-import {
+import type {
   DashboardUpdateAccountPayableFormState,
   DashboardUpdateAccountPayableFormProps,
   DashboardUpdateAccountPayableFormSubmitProps,
-} from "./dto";
+} from "./dashboard-update-account-payable-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
-import { SelectServiceOrderStep } from "@/app/(protected)/_components/steps/select-service-order-step";
+import { SelectServiceOrderStep } from "@/app/(protected)/_components/shared/steps/select-service-order-step";
 
 const DashboardUpdateAccountPayableFormSubmit = ({
   state,
   onBack,
-  isBusinessAndEntityDirty,
+  isEntityDirty,
   accountPayableData,
   initialFormValues,
   onFormValuesChange,
@@ -65,7 +66,6 @@ const DashboardUpdateAccountPayableFormSubmit = ({
   const [dueDate, setDueDate] = useState<string>(
     () => initialFormValues.due_date ?? accountPayableData.due_date,
   );
-
   const [paymentDate, setPaymentDate] = useState<string>(
     () =>
       initialFormValues.payment_date ?? (accountPayableData.payment_date || ""),
@@ -211,7 +211,7 @@ const DashboardUpdateAccountPayableFormSubmit = ({
         </Button>
         <Button
           type="submit"
-          disabled={pending || (!isDirty && !isBusinessAndEntityDirty)}
+          disabled={pending || (!isDirty && !isEntityDirty)}
         >
           <span>Editar Conta a Pagar</span>
           {pending && (
@@ -349,7 +349,7 @@ const DashboardUpdateAccountPayableForm = ({
             <DashboardUpdateAccountPayableFormSubmit
               state={state}
               onBack={handleBackToUserStep}
-              isBusinessAndEntityDirty={isEntityDirty}
+              isEntityDirty={isEntityDirty}
               accountPayableData={accountPayableData}
               initialFormValues={accountPayableFormValues}
               onFormValuesChange={handleFormValuesChange}

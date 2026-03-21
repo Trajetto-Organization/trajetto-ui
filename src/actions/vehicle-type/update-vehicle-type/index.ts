@@ -30,7 +30,6 @@ const handleUpdateVehicleType = async (
   const businessId = updateVehicleTypeValues.get("businessId");
 
   const updateVehicleType = `${process.env.HTTP_REQUEST}/vehicle-type/update-vehicle-type/${vehicleTypeId}/business/${businessId}`;
-
   const vehicleTypeValues = Object.fromEntries(
     updateVehicleTypeValues.entries(),
   );

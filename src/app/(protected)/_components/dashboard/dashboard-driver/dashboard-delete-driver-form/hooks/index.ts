@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteDriverFormState } from "../dto";
+import type { DashboardDeleteDriverFormState } from "../dashboard-delete-driver-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDashboardDeleteDriverForm(
   state: DashboardDeleteDriverFormState | null,

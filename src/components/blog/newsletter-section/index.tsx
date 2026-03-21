@@ -18,7 +18,6 @@ const NewsletterSection = (): JSX.Element => {
     e.preventDefault();
 
     if (!email) return;
-
     setIsSubmitting(true);
 
     // Simulate API call

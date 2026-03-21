@@ -1,9 +1,9 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { CreatePartForm } from "../../_components/admin/part/create-part-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { CreatePartForm } from "@/app/(protected)/_components/admin/part/create-part-form";
 
-const PartActions = () => {
+const PartActions = (): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap

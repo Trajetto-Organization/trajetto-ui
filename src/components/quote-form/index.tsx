@@ -6,9 +6,12 @@ import { useFormState, useFormStatus } from "react-dom";
 import Link from "next/link";
 import Turnstile from "react-turnstile";
 
-import { handleQuoteSubmit } from "@/actions/quote/create-quote";
-import { CreateQuoteContainerProps, CreateQuoteFormState } from "./dto";
+import type {
+  CreateQuoteContainerProps,
+  CreateQuoteFormState,
+} from "./quote-form.types";
 
+import { handleQuoteSubmit } from "@/actions/quote/create-quote";
 import {
   BarChart3,
   Building,
@@ -21,8 +24,7 @@ import {
   User,
   Fuel,
 } from "lucide-react";
-
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,7 +51,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const QuoteFormContainer = ({ state }: CreateQuoteContainerProps) => {
+const QuoteFormContainer = ({
+  state,
+}: CreateQuoteContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
 
@@ -255,7 +259,8 @@ const QuoteForm = (): JSX.Element => {
     },
     {
       title: "Controle Multi-Filiais",
-      description: "Gerencie várias filiais com isolamento total de dados",
+      description:
+        "Gerencie múltiplas filiais em uma única plataforma com segurança segmentada de dados",
       icon: <Building className="h-8 w-8 text-[#d81b60]" />,
     },
     {
@@ -476,14 +481,14 @@ const QuoteForm = (): JSX.Element => {
                     "Gestão de multas e documentos",
                     "Relatórios detalhados de desempenho",
                     "Controle de usuários com autenticação 2FA",
-                    "Sistema multi-empresas e filiais",
-                    "Exportação de relatórios em Excel",
+                    "Gerencie múltiplas filiais em uma única plataforma",
+                    "Exportação de relatórios em Excel e CSV",
                     "Integração com WhatsApp para notificações",
                     "Controle granular de permissões por usuário",
                     "Gestão de motoristas e documentação",
                     "Dashboards com métricas essenciais",
-                    "Histórico completo de manutenções",
                     "Suporte técnico especializado",
+                    "Histórico completo",
                   ].map((item, i) => (
                     <li key={i} className="flex items-start">
                       <Check

@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DashboardCreateVehicleChecklistFormState } from "./dto";
+import type { DashboardCreateVehicleChecklistFormState } from "./dashboard-create-vehicle-checklist-form.types";
 
 import { Button } from "@/components/ui/button";
 import { handleCreateVehicleChecklist } from "@/actions/vehicle-checklist/create-vehicle-checklist";
@@ -24,7 +24,6 @@ import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-
 import {
   Tooltip,
   TooltipContent,
@@ -34,8 +33,8 @@ import {
 
 import { DashboardCreateVehicleChecklistFormSubmit } from "./dashboard-create-vehicle-checklist-form-submit";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
 const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
   const defaultState: DashboardCreateVehicleChecklistFormState = {};

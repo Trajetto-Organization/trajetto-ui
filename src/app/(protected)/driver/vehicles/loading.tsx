@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card } from "@/components/ui/card";
 
-import PageContainer from "../../_components/layout/protected-page-container";
+import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 
 const Loading = (): JSX.Element => {
   return (

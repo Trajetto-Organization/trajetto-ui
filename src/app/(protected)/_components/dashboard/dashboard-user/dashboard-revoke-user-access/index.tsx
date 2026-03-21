@@ -1,5 +1,4 @@
 import { useFormState, useFormStatus } from "react-dom";
-
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -14,8 +13,8 @@ import {
 import { Loader, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-import { useDashboardDeleteUserForm } from "./hooks";
 import { handleRevokeUserAccess } from "@/actions/user/revoke-user-access";
+import { useDashboardDeleteUserForm } from "./hooks";
 
 interface DashboardRevokeUserFormSubmitProps {
   access_revoked: boolean;

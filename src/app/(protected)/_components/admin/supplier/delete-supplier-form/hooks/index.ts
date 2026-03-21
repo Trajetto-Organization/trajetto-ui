@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteSupplierFormState } from "../dto";
+import type { DeleteSupplierFormState } from "../delete-supplier-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteSupplierForm(state: DeleteSupplierFormState | null) {
   const toastShownRef = useRef(false);

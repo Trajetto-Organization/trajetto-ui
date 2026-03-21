@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useFormState } from "react-dom";
 
 import Image from "next/image";
-
 import {
   Dialog,
   DialogContent,
@@ -15,20 +14,20 @@ import {
 import { handleUpdateFuel } from "@/actions/fuel/update-fuel";
 import { useDashboardUpdateFuelForm } from "./hooks";
 
-import {
+import type {
   DashboardUpdateFuelFormState,
   DashboardUpdateFuelFormProps,
-} from "./dto";
+} from "./dashboard-update-fuel-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
 
 import { DashboardUpdateFuelFormSubmit } from "./dashboard-update-fuel-form-submit";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
 
 const DashboardUpdateFuelForm = ({
   fuelData,

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreateProfileAccessFormState } from "../dto";
+import type { DashboardCreateProfileAccessFormState } from "../dashboard-create-profile-access-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useCreateDashboardProfileAccessForm(
   state: DashboardCreateProfileAccessFormState | null,
@@ -29,6 +29,7 @@ function useCreateDashboardProfileAccessForm(
       toast.error(
         state.createProfileAccessError.createProfileAccessErrorMessage,
       );
+
       return;
     }
 

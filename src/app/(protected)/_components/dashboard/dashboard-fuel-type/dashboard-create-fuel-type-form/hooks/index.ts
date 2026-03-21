@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreateFuelTypeFormState } from "../dto";
+import type { DashboardCreateFuelTypeFormState } from "../dashboard-create-fuel-type.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDashboardCreateFuelTypeForm(
   state: DashboardCreateFuelTypeFormState | null,

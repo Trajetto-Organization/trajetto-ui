@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 
 import Image from "next/image";
@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Search,
   Menu,
+  ChartArea,
+  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -25,30 +27,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-import {
-  DemoTooltip,
-  FloatingControls,
-  KeyboardHints,
-  StepInformation,
-} from "./components";
-
-import {
-  useTooltipPosition,
-  useDemoNavigation,
-  useKeyboardNavigation,
-} from "./hooks";
-
 import {
   demoSteps,
   fakeStats,
   fakeActivities,
   fakeQuickLinks,
   sidebarItems,
-} from "./data/demoData";
+} from "./data";
 
-const InteractiveDemo = () => {
+import { useDemoNavigation } from "./hooks/demo-navigation";
+import { useTooltipPosition } from "./hooks/tooltip-position";
+
+import { useKeyboardNavigation } from "./hooks/keyboard-navigation";
+import { FloatingControls } from "./floating-controls";
+
+import { DemoTooltip } from "./demo-tooltip";
+import { KeyboardHints } from "./keyboard-hints";
+
+import { StepInformation } from "./step-information";
+
+const InteractiveDemo = (): JSX.Element => {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -79,8 +79,21 @@ const InteractiveDemo = () => {
     pauseAutoTour,
   });
 
+  // Track pending timeouts to cancel on rapid navigation
+  const pendingTimeouts = useRef<NodeJS.Timeout[]>([]);
+
+  const safeTimeout = useCallback((fn: () => void, delay: number) => {
+    const id = setTimeout(fn, delay);
+    pendingTimeouts.current.push(id);
+    return id;
+  }, []);
+
   // Scroll and position management
   useEffect(() => {
+    // Cancel all pending timeouts from previous step
+    pendingTimeouts.current.forEach(clearTimeout);
+    pendingTimeouts.current = [];
+
     const currentStepData = demoSteps[currentStep];
     if (!currentStepData?.tooltip || !containerRef.current) return;
 
@@ -112,35 +125,36 @@ const InteractiveDemo = () => {
           scrollAreaRect.height / 2 +
           targetRect.height / 2;
 
+        // Use instant scroll to avoid timing issues with rapid navigation
         scrollArea.scrollTo({
           top: Math.max(0, targetCenter),
-          behavior: "smooth",
+          behavior: "auto",
         });
 
-        setTimeout(() => {
+        safeTimeout(() => {
           updateTooltipPosition();
-        }, 300);
+        }, 50);
       } else {
-        setTimeout(() => {
+        safeTimeout(() => {
           updateTooltipPosition();
         }, 10);
       }
     };
 
     const handleResize = () => {
-      setTimeout(() => {
+      safeTimeout(() => {
         updateTooltipPosition();
       }, 50);
     };
 
     const handleScroll = () => {
-      setTimeout(() => {
+      safeTimeout(() => {
         updateTooltipPosition();
       }, 10);
     };
 
     requestAnimationFrame(() => {
-      setTimeout(handleScrollAndPosition, 10);
+      safeTimeout(handleScrollAndPosition, 10);
     });
 
     window.addEventListener("resize", handleResize);
@@ -150,7 +164,7 @@ const InteractiveDemo = () => {
       window.removeEventListener("resize", handleResize);
       scrollArea.removeEventListener("scroll", handleScroll);
     };
-  }, [currentStep, updateTooltipPosition]);
+  }, [currentStep, updateTooltipPosition, safeTimeout]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -380,12 +394,20 @@ const InteractiveDemo = () => {
                           <span>Overview</span>
                         </button>
                         <button
-                          className="flex items-center space-x-1 flex-1 
-                          sm:flex-initial px-2 sm:px-3 py-1 text-xs 
+                          className="flex items-center space-x-1 flex-1
+                          sm:flex-initial px-2 sm:px-3 py-1 text-xs
                           sm:text-sm text-muted-foreground"
                         >
                           <BarChart3 className="h-3 sm:h-4 w-3 sm:w-4" />
                           <span>Análise Gráfica</span>
+                        </button>
+                        <button
+                          className="flex items-center space-x-1 flex-1
+                          sm:flex-initial px-2 sm:px-3 py-1 text-xs
+                          sm:text-sm text-muted-foreground"
+                        >
+                          <Zap className="h-3 sm:h-4 w-3 sm:w-4" />
+                          <span>Limites de Uso</span>
                         </button>
                       </div>
                       <Button
@@ -487,15 +509,27 @@ const InteractiveDemo = () => {
                     >
                       <Card className="shadow-sm sm:shadow-md">
                         <CardHeader
-                          className="pb-2 sm:pb-4 pt-3 sm:pt-4 
+                          className="pb-2 sm:pb-4 pt-3 sm:pt-4
                           lg:pt-6 px-3 sm:px-4 lg:px-6"
                         >
-                          <CardTitle className="text-sm sm:text-base lg:text-lg">
-                            Atividades Recentes
-                          </CardTitle>
-                          <p className="text-xs sm:text-sm text-muted-foreground">
-                            Últimas ações realizadas no sistema
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <CardTitle className="text-sm sm:text-base lg:text-lg">
+                                Atividades Recentes
+                              </CardTitle>
+                              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                                Últimas ações realizadas no sistema
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs h-7 sm:h-8 hidden sm:flex"
+                            >
+                              <ChartArea className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
+                              Ver todas
+                            </Button>
+                          </div>
                         </CardHeader>
                         <CardContent className="px-2 sm:px-4 lg:px-6 pb-3 sm:pb-4 lg:pb-6">
                           <div className="overflow-x-auto">

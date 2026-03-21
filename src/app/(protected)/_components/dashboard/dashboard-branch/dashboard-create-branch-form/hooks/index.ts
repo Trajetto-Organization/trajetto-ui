@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreateBranchFormState } from "../dto";
+import type { DashboardCreateBranchFormState } from "../dashboard-create-branch-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
 
-function useDashboardCreateBusinessForm(
+import { toast } from "sonner";
+
+function useDashboardCreateBranchForm(
   state: DashboardCreateBranchFormState | null,
 ) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -87,4 +87,4 @@ function useDashboardCreateBusinessForm(
   };
 }
 
-export { useDashboardCreateBusinessForm };
+export { useDashboardCreateBranchForm };

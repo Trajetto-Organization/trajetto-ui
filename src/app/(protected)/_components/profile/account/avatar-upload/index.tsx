@@ -6,7 +6,6 @@ import { useFormState, useFormStatus } from "react-dom";
 import { Loader, Trash2, ArrowLeft } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import {
   Dialog,
   DialogContent,
@@ -31,7 +30,7 @@ import { FileUpload } from "./file-upload";
 import { handleDeleteAvatar as deleteAvatarAction } from "@/actions/user/delete-avatar";
 import { useAvatarUpload } from "./hooks";
 
-import { AvatarUploadProps } from "./dto";
+import type { AvatarUploadProps } from "./avatar-upload.types";
 
 // Upload button component - no form status needed, we'll use state
 function UploadButton({
@@ -42,7 +41,7 @@ function UploadButton({
   hasAvatar: boolean;
   onClick: () => void;
   isPending: boolean;
-}) {
+}): JSX.Element {
   return (
     <Button
       type="button"

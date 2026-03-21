@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardUpdatePermissionFormState } from "../dto";
 
-import { DashboardPermissionProps } from "../../dto";
-import { CommandProfileAccessInputValue } from "@/app/(protected)/_components/dto";
+import type { DashboardUpdatePermissionFormState } from "../dashboard-update-permission-form.types";
+import type { DashboardPermissionProps } from "../../dashboard-permission.types";
+
+import type { CommandProfileAccessInputValue } from "@/app/(protected)/_components/shared/common.types";
+import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
 
 interface UseUpdatePermissionFormProps {
   state: DashboardUpdatePermissionFormState | null;

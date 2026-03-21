@@ -2,11 +2,10 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 
-import {
+import type {
   TwoFactorAuthenticationFormContainerProps,
   TwoFactorFormState,
-} from "./dto";
-
+} from "./two-factor-authentication-form.types";
 import {
   InputOTP,
   InputOTPGroup,
@@ -32,7 +31,7 @@ interface TwoFactorAuthenticationFormProps {
 const TwoFactorAuthenticationFormContainer = ({
   state,
   email,
-}: TwoFactorAuthenticationFormContainerProps) => {
+}: TwoFactorAuthenticationFormContainerProps): JSX.Element => {
   const {
     handleOTPChange,
     isOTPComplete,
@@ -132,7 +131,6 @@ const TwoFactorAuthenticationForm = ({
 }: TwoFactorAuthenticationFormProps): JSX.Element => {
   // Default value for state
   const defaultState: TwoFactorFormState = {};
-
   const [state, dispatch] = useFormState(
     handleTwoFactorAuthenticationUser,
     null,

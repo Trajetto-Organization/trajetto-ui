@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteVehicleChecklistFormState } from "../dto";
+import type { DashboardDeleteVehicleChecklistFormState } from "../dashboard-delete-vehicle-checklist-form.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 function useDashboardDeleteVehicleChecklistForm(
   state: DashboardDeleteVehicleChecklistFormState | null,

@@ -8,22 +8,21 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-
 import { Loader } from "lucide-react";
-import { DashboardProfileAccessProps } from "../dto";
 
-import {
+import type { DashboardProfileAccessProps } from "../dashboard-profile-access.types";
+import type {
   DashboardUpdateProfileAccessFormSubmitProps,
   DashboardUpdateProfileAccessFormState,
-} from "./dto";
+} from "./dashboard-update-profile-access-form.types";
 
-import FormInput from "@/components/custom/form-input";
-
+import FormInput from "@/components/shared/custom/form-input";
 import { handleUpdateProfileAccess } from "@/actions/profile-access/update-profile-access";
-import { useDashboardUpdateProfileAccessForm } from "./hooks";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { useAuthStore } from "@/store/auth-store";
+
+import { useDashboardUpdateProfileAccessForm } from "./hooks";
 
 interface DashboardUpdateProfileAccessProps {
   profileAccessData: DashboardProfileAccessProps;

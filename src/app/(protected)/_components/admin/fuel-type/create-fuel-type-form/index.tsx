@@ -13,16 +13,19 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { handleCreateFuelType } from "@/actions/fuel-type/create-fuel-type";
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 
-import { CreateFuelTypeFormSubmitProps, CreateFuelTypeFormState } from "./dto";
-import { useCreateFuelTypeForm } from "./hooks";
-
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
 import { cn } from "@/lib/utils";
-import { SearchBusiness } from "../../../search-business";
+
+import type {
+  CreateFuelTypeFormSubmitProps,
+  CreateFuelTypeFormState,
+} from "./create-fuel-type-form.types";
+import { useCreateFuelTypeForm } from "./hooks";
 
 const CreateFuelTypeFormSubmit = ({
   state,

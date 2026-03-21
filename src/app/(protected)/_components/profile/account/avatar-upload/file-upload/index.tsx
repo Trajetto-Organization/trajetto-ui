@@ -9,9 +9,9 @@ import { IconUpload } from "@tabler/icons-react";
 import Cropper from "react-easy-crop";
 import { Slider } from "@/components/ui/slider";
 
-import { ZoomIn, ZoomOut } from "lucide-react";
-import { FileUploadProps } from "./dto";
+import type { FileUploadProps } from "./file-upload.types";
 
+import { ZoomIn, ZoomOut } from "lucide-react";
 import { useFileUpload } from "./hooks";
 
 const mainVariant = {

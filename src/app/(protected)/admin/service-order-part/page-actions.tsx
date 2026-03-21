@@ -1,9 +1,9 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { CreateServiceOrderPartForm } from "../../_components/admin/service-order-part/create-service-order-part-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { CreateServiceOrderPartForm } from "@/app/(protected)/_components/admin/service-order-part/create-service-order-part-form";
 
-const ServiceOrderPartActions = () => {
+const ServiceOrderPartActions = (): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap

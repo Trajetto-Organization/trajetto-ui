@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { fuelTypeTableSchema } from "@/schemas/fuel-type-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { DataTableFuelTypeRowActions } from "../data-table-row-actions";

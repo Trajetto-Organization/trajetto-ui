@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteVehicleTypeFormState } from "../dto";
+import type { DeleteVehicleTypeFormState } from "../delete-vehicle-type-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteVehicleTypeForm(state: DeleteVehicleTypeFormState | null) {
   const toastShownRef = useRef(false);

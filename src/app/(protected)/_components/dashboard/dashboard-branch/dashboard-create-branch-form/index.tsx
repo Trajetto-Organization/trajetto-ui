@@ -11,18 +11,18 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateBranch } from "@/actions/branch/create-branch";
-import {
+import type {
   DashboardCreateBranchFormSubmitProps,
   DashboardCreateBranchFormState,
-} from "./dto";
+} from "./dashboard-create-branch-form.types";
 
-import { useDashboardCreateBusinessForm } from "./hooks";
+import { useDashboardCreateBranchForm } from "./hooks";
 
 import { useHasPermission } from "@/lib/user-has-permission";
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 
 import { permissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth-store";
@@ -83,7 +83,7 @@ const DashboardCreateBranchForm = (): JSX.Element => {
   >(handleCreateBranch, defaultState);
 
   const { isCreateBranchForm, formRef, handleOpenCreateBranchForm } =
-    useDashboardCreateBusinessForm(state);
+    useDashboardCreateBranchForm(state);
 
   const { businessId } = useAuthStore();
   const hasUserPermission = useHasPermission(

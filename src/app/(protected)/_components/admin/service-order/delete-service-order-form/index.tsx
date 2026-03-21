@@ -1,4 +1,5 @@
 import { useFormState, useFormStatus } from "react-dom";
+import { Loader, ShieldAlert, Trash } from "lucide-react";
 
 import {
   AlertDialog,
@@ -10,12 +11,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
 import { Button } from "@/components/ui/button";
-import { Loader, ShieldAlert, Trash } from "lucide-react";
 
-import { useDeleteServiceOrderForm } from "./hooks";
 import { handleDeleteServiceOrder } from "@/actions/service-order/delete-service-order";
+import { useDeleteServiceOrderForm } from "./hooks";
 
 interface DeleteServiceOrderProps {
   businessId: string;

@@ -14,9 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { businessTableSchema } from "@/schemas/business-table-schema";
-import { DeleteBusinessForm } from "../delete-business-form";
 
+import { DeleteBusinessForm } from "../delete-business-form";
 import { UpdateBusinessForm } from "../update-business-form";
+
+import { UpdateAILimitForm } from "../update-ai-limit-form";
 import { useUpdateBusinessForm } from "./hooks";
 
 import { toast } from "sonner";
@@ -32,6 +34,8 @@ export function DataTableBusinessRowActions<TData>({
   const {
     isUpdateBusinessOpen,
     handleCloseUpdateBusiness,
+    isAILimitOpen,
+    handleCloseAILimit,
     handleOpenDropdown,
     isDropdownOpen,
   } = useUpdateBusinessForm();
@@ -51,6 +55,10 @@ export function DataTableBusinessRowActions<TData>({
     {
       label: "Editar Empresa",
       onClick: handleCloseUpdateBusiness,
+    },
+    {
+      label: "Configurar Limite IA",
+      onClick: handleCloseAILimit,
     },
     {
       label: "Copiar ID",
@@ -74,8 +82,8 @@ export function DataTableBusinessRowActions<TData>({
           {menuActions.map((action) => (
             <DropdownMenuItem
               key={action.label}
-              className="cursor-pointer 
-              truncate block"
+              className="flex cursor-pointer 
+              justify-between"
               onClick={action.onClick}
             >
               {action.label}
@@ -91,6 +99,15 @@ export function DataTableBusinessRowActions<TData>({
           businessData={collumnRowAction}
           handleCloseUpdateBusiness={handleCloseUpdateBusiness}
           isUpdateBusinessOpen={isUpdateBusinessOpen}
+        />
+      )}
+
+      {isAILimitOpen && (
+        <UpdateAILimitForm
+          businessId={collumnRowAction.id}
+          businessName={collumnRowAction.corporate_reason}
+          isAILimitOpen={isAILimitOpen}
+          handleCloseAILimit={handleCloseAILimit}
         />
       )}
     </>

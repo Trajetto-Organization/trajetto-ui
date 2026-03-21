@@ -50,7 +50,10 @@ const Loading = (): JSX.Element => {
                 </div>
 
                 {/* Card footer */}
-                <div className="px-6 pb-6 pt-0 flex flex-wrap justify-between gap-y-2">
+                <div
+                  className="px-6 pb-6 pt-0 flex 
+                  flex-wrap justify-between gap-y-2"
+                >
                   <div className="flex flex-wrap gap-2">
                     <Skeleton className="h-9 w-32" />{" "}
                     {/* View details button */}
@@ -67,11 +70,17 @@ const Loading = (): JSX.Element => {
 
         {/* Bottom filters */}
         <div className="flex flex-col sm:flex-row sm:justify-end gap-4 mt-6">
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+          <div
+            className="flex items-center justify-between 
+            sm:justify-start gap-2 w-full sm:w-auto"
+          >
             <Skeleton className="h-4 w-12" /> {/* Status label */}
             <Skeleton className="h-8 w-[150px]" /> {/* Status dropdown */}
           </div>
-          <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+          <div
+            className="flex items-center justify-between 
+            sm:justify-start gap-2 w-full sm:w-auto"
+          >
             <Skeleton className="h-4 w-12" /> {/* Display label */}
             <Skeleton className="h-8 w-[110px]" /> {/* Display dropdown */}
           </div>

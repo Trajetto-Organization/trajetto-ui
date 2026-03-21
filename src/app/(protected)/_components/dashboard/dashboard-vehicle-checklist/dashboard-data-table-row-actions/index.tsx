@@ -2,7 +2,7 @@
 
 import { Row } from "@tanstack/react-table";
 
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -12,26 +12,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import { ChecklistDetailsDialog } from "@/app/(protected)/_components/shared/checklist-details-dialog";
 import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
 
-import { useDashboardVehicleChecklistRowActions } from "./hooks";
 import { DashboardDeleteVehicleChecklistForm } from "../dashboard-delete-vehicle-checklist-form";
-
 import { DashboardUpdateVehicleChecklistForm } from "../dashboard-update-vehicle-checklist-form";
-import { toast } from "sonner";
+
+import { useDashboardVehicleChecklistRowActions } from "./hooks";
 
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-import { permissions } from "@/lib/permissions";
-
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { permissions } from "@/lib/permissions";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;
@@ -47,6 +49,8 @@ export function DataTableVehicleChecklistRowActions<TData>({
     isDropdownOpen,
     handleCloseUpdateChecklist,
     isUpdateChecklistOpen,
+    isDetailsOpen,
+    handleToggleDetails,
   } = useDashboardVehicleChecklistRowActions();
 
   const handleCopyID = (column: string) => {
@@ -123,6 +127,14 @@ export function DataTableVehicleChecklistRowActions<TData>({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px]">
+          <DropdownMenuItem
+            onClick={handleToggleDetails}
+            className="flex cursor-pointer justify-between"
+          >
+            Ver Detalhes
+            <Eye />
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           {menuActions.map((action) => (
             <TooltipProvider key={action.label}>
               <Tooltip>
@@ -152,6 +164,14 @@ export function DataTableVehicleChecklistRowActions<TData>({
           />
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {isDetailsOpen && (
+        <ChecklistDetailsDialog
+          checklistData={columnRowAction}
+          isOpen={isDetailsOpen}
+          onOpenChange={handleToggleDetails}
+        />
+      )}
 
       {isUpdateChecklistOpen && (
         <DashboardUpdateVehicleChecklistForm

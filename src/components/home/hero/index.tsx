@@ -143,7 +143,7 @@ const Hero = (): JSX.Element => {
                   <ArrowRight
                     size={20}
                     className="group-hover:translate-x-1
-                     transition-all duration-300"
+                    transition-all duration-300"
                   />
                 </div>
               </Link>

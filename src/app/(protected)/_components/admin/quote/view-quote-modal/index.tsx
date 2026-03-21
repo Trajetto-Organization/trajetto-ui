@@ -12,8 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-import { QuoteProps } from "../dto";
-
+import type { QuoteProps } from "../quote.types";
 import {
   Building2,
   Mail,
@@ -24,6 +23,7 @@ import {
   FileText,
   Contact,
 } from "lucide-react";
+
 import { formatNotificationDate } from "@/lib/format-values";
 
 interface ViewQuoteModalProps {

@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardCreatePartFormState } from "../dto";
 
-import { CommandSupplierInputValue } from "../../../../dto";
+import type { CommandSupplierInputValue } from "@/app/(protected)/_components/shared/common.types";
+import type { DashboardCreatePartFormState } from "../dashboard-create-part-form.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
-import { queryClientProps } from "@/lib/query-client-props";
+import { toast } from "sonner";
 
 function useDashboardCreatePartForm(
   state: DashboardCreatePartFormState | null,

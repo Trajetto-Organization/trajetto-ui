@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { serviceOrderPartTableSchema } from "@/schemas/service-order-part-table-schema";
 
-import { useUpdateServiceOrderPartForm } from "./hooks";
 import { DeleteServiceOrderPartForm } from "../delete-service-order-part-form";
-
 import { UpdateServiceOrderPartForm } from "../update-service-order-part-form";
+
+import { useUpdateServiceOrderPartForm } from "./hooks";
 import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {

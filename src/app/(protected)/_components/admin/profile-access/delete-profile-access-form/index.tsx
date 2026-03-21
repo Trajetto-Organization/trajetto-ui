@@ -1,4 +1,6 @@
 import { useFormState, useFormStatus } from "react-dom";
+import { Loader, ShieldAlert, Trash } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -9,12 +11,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-import { Loader, ShieldAlert, Trash } from "lucide-react";
-import { useDeleteProfileAccessForm } from "./hooks";
-
 import { Button } from "@/components/ui/button";
+
 import { handleDeleteProfileAccess } from "@/actions/profile-access/delete-profile-access";
+import { useDeleteProfileAccessForm } from "./hooks";
 
 interface DeleteProfileAccessProps {
   profileAccessId: string;

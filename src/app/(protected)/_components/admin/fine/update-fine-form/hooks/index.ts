@@ -4,15 +4,15 @@ import {
   CommandDriverInputValue,
   CommandTrafficViolationCodeInputValue,
   CommandVehicleInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { FineProps } from "../../dto";
-import { UpdateFineFormState } from "../dto";
+import type { UpdateFineFormState } from "../update-fine-form.types";
+import type { FineProps } from "../../fine.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseUpdateFineFormProps {
   state: UpdateFineFormState | null;

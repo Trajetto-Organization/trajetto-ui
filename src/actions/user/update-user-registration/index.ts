@@ -34,7 +34,6 @@ const handleUpdateUserRegistration = async (
 
   if (updateUserValidation.error) {
     const formatError = updateUserValidation.error.flatten();
-
     return {
       updateUserError: formatError.fieldErrors,
     };

@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
+import type {
   CommandBusinessInputValue,
   CommandPartInputValue,
   CommandServiceOrderInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { ServiceOrderPartProps } from "../../dto";
-import { UpdateServiceOrderPartFormState } from "../dto";
+import type { ServiceOrderPartProps } from "../../service-order-part.types";
+import type { UpdateServiceOrderPartFormState } from "../update-service-order-part-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { formatServiceOrderDisplay } from "@/lib/format-values";
+
+import { toast } from "sonner";
 
 interface UseUpdateServiceOrderPartFormProps {
   state: UpdateServiceOrderPartFormState | null;

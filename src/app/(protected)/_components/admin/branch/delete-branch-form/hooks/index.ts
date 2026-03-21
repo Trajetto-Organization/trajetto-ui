@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteBranchFormState } from "../dto";
+import type { DeleteBranchFormState } from "../delete-branch-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteBranchForm(state: DeleteBranchFormState | null) {
   const [isOpenDeleteBranchForm, setIsOpenDeleteBranchForm] =

@@ -9,16 +9,19 @@ import {
 } from "@/components/ui/dialog";
 import { handleUpdateVehicle } from "@/actions/vehicle/update-vehicle";
 
-import { useUpdateVehicleForm } from "./hooks";
-import { UpdateVehicleFormState, UpdateVehicleFormProps } from "./dto";
+import type {
+  UpdateVehicleFormState,
+  UpdateVehicleFormProps,
+} from "./update-vehicle-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 import { UpdateVehicleFormSubmit } from "./update-vehicle-form-submit";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/steps/select-driver-vehicle-type-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/shared/steps/select-driver-vehicle-type-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
+import { useUpdateVehicleForm } from "./hooks";
 
 const UpdateVehicleForm = ({
   vehicleData,

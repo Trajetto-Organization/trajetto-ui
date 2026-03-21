@@ -3,7 +3,9 @@ import { useState } from "react";
 function useDashboardVehicleChecklistRowActions() {
   const [isUpdateChecklistOpen, setIsUpdateChecklistOpen] =
     useState<boolean>(false);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
 
   const handleCloseUpdateChecklist = () => {
     setIsDropdownOpen(false);
@@ -14,11 +16,18 @@ function useDashboardVehicleChecklistRowActions() {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
+  const handleToggleDetails = () => {
+    setIsDropdownOpen(false);
+    setIsDetailsOpen(!isDetailsOpen);
+  };
+
   return {
     handleOpenDropdown,
     isDropdownOpen,
     isUpdateChecklistOpen,
     handleCloseUpdateChecklist,
+    isDetailsOpen,
+    handleToggleDetails,
   };
 }
 

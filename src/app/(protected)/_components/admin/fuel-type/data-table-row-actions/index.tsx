@@ -18,8 +18,8 @@ import { fuelTypeTableSchema } from "@/schemas/fuel-type-table-schema";
 import { UpdateFuelTypeForm } from "../update-fuel-type-form";
 import { DeleteFuelTypeForm } from "../delete-fuel-type-form";
 
-import { toast } from "sonner";
 import { useUpdateFuelTypeForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

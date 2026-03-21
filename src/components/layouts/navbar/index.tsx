@@ -1,7 +1,7 @@
 import { getCookies } from "@/actions/cookies";
 
 import { parseJwt } from "@/lib/decode-jwt";
-import { UserRole } from "@/app/(protected)/_components/dto";
+import { UserRole } from "@/app/(protected)/_components/shared/common.types";
 
 import { NavBarContent } from "./navbar-content";
 

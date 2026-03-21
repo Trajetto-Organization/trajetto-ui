@@ -5,15 +5,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import { Badge } from "@/components/ui/badge";
 
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 import { DataTableQuoteRowActions } from "../data-table-row-actions";
 
+import type { QuoteProps } from "../quote.types";
 import {
   displayValue,
   formatNotificationDate,
   formatTelephone,
 } from "@/lib/format-values";
-import { QuoteProps } from "../dto";
 
 const statusColors = {
   PENDING: "bg-yellow-500/10 text-yellow-600",
@@ -76,26 +76,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
-  },
-  {
-    accessorKey: "status",
-    meta: {
-      title: "Status",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => {
-      const status = row.getValue("status") as keyof typeof statusLabels;
-      return (
-        <Badge variant="outline" className={statusColors[status]}>
-          {statusLabels[status]}
-        </Badge>
-      );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "name",
@@ -200,6 +180,26 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
           )}
         </p>
       );
+    },
+  },
+  {
+    accessorKey: "status",
+    meta: {
+      title: "Status",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => {
+      const status = row.getValue("status") as keyof typeof statusLabels;
+      return (
+        <Badge variant="outline" className={statusColors[status]}>
+          {statusLabels[status]}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
     },
   },
   {

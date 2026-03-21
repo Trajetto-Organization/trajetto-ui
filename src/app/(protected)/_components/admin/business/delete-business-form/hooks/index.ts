@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteBusinessFormState } from "../dto";
+import type { DeleteBusinessFormState } from "../delete-business-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteBusinessForm(state: DeleteBusinessFormState | null) {
   const toastShownRef = useRef(false);

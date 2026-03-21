@@ -177,7 +177,11 @@ const BlogPagination = ({
   );
 };
 
-const PageButton = ({ page, isActive, onClick }: PageButtonProps) => {
+const PageButton = ({
+  page,
+  isActive,
+  onClick,
+}: PageButtonProps): JSX.Element => {
   return (
     <motion.button
       onClick={onClick}

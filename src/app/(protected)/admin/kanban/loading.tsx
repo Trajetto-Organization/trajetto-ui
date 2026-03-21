@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import PageContainer from "../../_components/layout/protected-page-container";
+import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 
 const Loading = (): JSX.Element => {
   return (

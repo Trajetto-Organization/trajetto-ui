@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
-import { UserBusinessRole } from "@/app/(protected)/_components/dto";
+import { UserBusinessRole } from "@/app/(protected)/_components/shared/common.types";
 
 const roleEnum = z.nativeEnum(UserBusinessRole, {
   errorMap: () => ({ message: "Nível de acesso do usuário inválido." }),
@@ -112,6 +112,7 @@ const updateUserSchema = z
             path: ["profileAccessId"],
           });
         }
+
         return;
       }
 
@@ -123,6 +124,7 @@ const updateUserSchema = z
             "Não é possível ter perfil de acesso e motorista vinculado ao mesmo tempo. Escolha apenas um.",
           path: ["driverId"],
         });
+
         return;
       }
     }

@@ -18,13 +18,13 @@ import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 import { handleReorderKanbanColumns } from "@/actions/kanban/reorder-kanban-columns";
 import { handleReorderKanbanCards } from "@/actions/kanban/reorder-kanban-cards";
 
-import { KanbanCard, KanbanColumn } from "../../dto";
-import {
+import type { KanbanCard, KanbanColumn } from "../../shared/common.types";
+import type {
   OriginalPositions,
   ReorderKanbanCardsState,
   ReorderKanbanColumnState,
   UseKanbanBoardProps,
-} from "../dto";
+} from "../board.types";
 
 function useKanbanBoard({ initialBoard }: UseKanbanBoardProps) {
   const safeBoard = {

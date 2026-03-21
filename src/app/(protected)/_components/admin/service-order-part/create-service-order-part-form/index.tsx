@@ -12,20 +12,19 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateServiceOrderPart } from "@/actions/service-order-part/create-service-order-part";
+import { SelectBusinessStep } from "@/app/(protected)/_components/shared/steps/select-business-step";
 
-import {
+import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/shared/steps/select-service-order-part-step";
+import type {
   CreateServiceOrderPartFormState,
   CreateServiceOrderPartFormSubmitProps,
-} from "./dto";
-import { useCreateServiceOrderPartForm } from "./hooks";
-
-import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
-import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/steps/select-service-order-part-step";
+} from "./create-service-order-part-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
+import { useCreateServiceOrderPartForm } from "./hooks";
 
 import {
   formatCurrencyToNumber,

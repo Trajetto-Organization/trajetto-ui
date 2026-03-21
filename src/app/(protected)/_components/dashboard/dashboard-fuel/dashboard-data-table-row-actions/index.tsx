@@ -17,8 +17,8 @@ import { fuelTableSchema } from "@/schemas/fuel-table-schema";
 import { useDashboardUpdateFuelForm } from "./hooks";
 import { DashboardDeleteFuelForm } from "../dashboard-delete-fuel-form";
 
-import { FuelDetailsDialog } from "../../../fuel-details-dialog";
-import { useFuelDetailsDialog } from "../../../fuel-details-dialog/hooks";
+import { FuelDetailsDialog } from "@/app/(protected)/_components/shared/fuel-details-dialog";
+import { useFuelDetailsDialog } from "@/app/(protected)/_components/shared/fuel-details-dialog/hooks";
 
 import { DashboardUpdateFuelForm } from "../dashboard-update-fuel-form";
 

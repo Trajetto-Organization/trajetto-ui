@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-const BlogTitleSubtitle = () => {
+const BlogTitleSubtitle = (): JSX.Element => {
   return (
     <div
       className="text-center max-w-3xl 

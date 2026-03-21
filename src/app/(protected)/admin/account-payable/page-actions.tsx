@@ -1,9 +1,9 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { CreateAccountPayableForm } from "../../_components/admin/account-payable/create-account-payable-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { CreateAccountPayableForm } from "@/app/(protected)/_components/admin/account-payable/create-account-payable-form";
 
-const AccountPayableActions = () => {
+const AccountPayableActions = (): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap

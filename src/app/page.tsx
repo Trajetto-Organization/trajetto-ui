@@ -4,7 +4,13 @@ import { Features } from "@/components/home/features";
 import { Hero } from "@/components/home/hero";
 
 import { AIVerificationShowcase } from "@/components/home/ai-verification";
-import { Stats } from "@/components/home/stats";
+import { AIUsageLimits } from "@/components/home/ai-usage-limits";
+
+import { ActivityMonitoring } from "@/components/home/activity-monitoring";
+import { KanbanShowcase } from "@/components/home/kanban-showcase";
+
+import { TutorialShowcase } from "@/components/home/tutorial-showcase";
+import { DataExportShowcase } from "@/components/home/data-export";
 
 import { FleetManagementDashboard } from "@/components/home/fleet-management-dashboard";
 import { InteractiveDemo } from "@/components/home/interactive-demo";
@@ -12,6 +18,7 @@ import { InteractiveDemo } from "@/components/home/interactive-demo";
 import { Reviews } from "@/components/home/reviews";
 import { AppShowcase } from "@/components/home/app-show-case";
 
+import { Stats } from "@/components/home/stats";
 import { WhatsApp } from "@/components/home/whatsapp";
 
 import { Banner } from "@/components/home/banner";
@@ -27,6 +34,11 @@ const Home = (): JSX.Element => {
       </main>
       <Stats />
       <AIVerificationShowcase />
+      <AIUsageLimits />
+      <ActivityMonitoring />
+      <KanbanShowcase />
+      <TutorialShowcase />
+      <DataExportShowcase />
       <FleetManagementDashboard />
       <InteractiveDemo />
       <Reviews />

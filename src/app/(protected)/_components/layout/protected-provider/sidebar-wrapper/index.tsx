@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { ReactNode, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
-import { SafeSidebarProviderProps } from "../../dto";
+interface SafeSidebarProviderProps {
+  children: ReactNode;
+}
 
 const SidebarWrapper = ({
   children,
@@ -11,7 +13,6 @@ const SidebarWrapper = ({
   useEffect(() => {
     // 🔧 Patch to prevent react-remove-scroll error
     const originalContains = Node.prototype.contains;
-
     Node.prototype.contains = function (other) {
       try {
         // Check if both nodes are valid

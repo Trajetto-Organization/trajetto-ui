@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { UserBusinessRole } from "@/app/(protected)/_components/dto";
+import { UserBusinessRole } from "@/app/(protected)/_components/shared/common.types";
 import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
 
 const roleEnum = z.nativeEnum(UserBusinessRole, {

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { DashboardCreateServiceOrderFormState } from "./dto";
+import type { DashboardCreateServiceOrderFormState } from "./dashboard-create-service-order-form.types";
 
 import { handleCreateServiceOrder } from "@/actions/service-order/create-service-order";
 import { useDashboardCreateServiceOrderForm } from "./hooks";
@@ -23,7 +23,6 @@ import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-
 import {
   Tooltip,
   TooltipContent,
@@ -34,10 +33,10 @@ import {
 import { appendDataToForm } from "@/lib/append-data-form";
 import { DashboardCreateServiceOrderFormSubmit } from "./dashboard-create-service-order-form-submit";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
 
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
-import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/steps/select-vehicle-supplier-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-supplier-step";
 
 const DashboardCreateServiceOrderForm = (): JSX.Element => {
   const defaultState: DashboardCreateServiceOrderFormState = {};

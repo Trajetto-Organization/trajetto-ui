@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { CommandBusinessInputValue } from "../../../../dto";
+import type { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
 
-import { UpdateFuelTypeFormState } from "../dto";
-import { FuelTypeProps } from "../../dto";
+import type { UpdateFuelTypeFormState } from "../update-fuel-type.types";
+import type { FuelTypeProps } from "../../fuel-type.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseUpdateFuelTypeFormProps {
   state: UpdateFuelTypeFormState | null;

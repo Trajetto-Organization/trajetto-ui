@@ -6,7 +6,7 @@ import { getCookies } from "@/actions/cookies";
 import { ProtectedLayout } from "@/app/(protected)/_components/layout";
 import { ProtectedCommandBar } from "../protected-command-bar-provider";
 
-import { UserRole, UserLoggedProps } from "../../dto";
+import type { UserRole, UserLoggedProps } from "../../shared/common.types";
 import { SyncNotificationsProvider } from "./sync-notifications-wrapper";
 
 import { parseJwt } from "@/lib/decode-jwt";
@@ -18,7 +18,7 @@ const ProtectedProvider = async ({
   children,
 }: {
   children: React.ReactNode;
-}) => {
+}): Promise<JSX.Element> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {

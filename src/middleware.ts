@@ -22,18 +22,13 @@ export default async function middleware(req: NextRequest) {
 
   // ============================================
   // 0. FORCE LOGOUT (from ProtectedProvider security checks)
-  // Deletes cookies and redirects to clean login URL
+  // Redirects to /login?reason=errorType for toast display
   // ============================================
   if (req.nextUrl.searchParams.get("force_logout") === "true") {
-    const cleanUrl = new URL(req.url);
-    cleanUrl.searchParams.delete("force_logout");
+    const errorType =
+      req.nextUrl.searchParams.get("error") || "session_expired";
 
-    const response = NextResponse.redirect(cleanUrl);
-
-    response.cookies.delete("tkey");
-    response.cookies.delete("rkey");
-
-    return response;
+    return handleLogout(req, errorType);
   }
 
   // ============================================
@@ -41,7 +36,6 @@ export default async function middleware(req: NextRequest) {
   // ============================================
   if (decodeJwt && refreshToken) {
     const currentTime = Date.now() / 1000;
-
     if (decodeJwt.exp < currentTime) {
       try {
         const refreshResponse = await fetch(
@@ -175,9 +169,10 @@ export default async function middleware(req: NextRequest) {
 }
 
 const handleLogout = (req: NextRequest, errorType: string) => {
-  const response = NextResponse.redirect(
-    new URL(`/login?error=${errorType}`, req.url),
-  );
+  const url = new URL("/login", req.url);
+  url.searchParams.set("reason", errorType);
+
+  const response = NextResponse.redirect(url);
 
   response.cookies.delete("tkey");
   response.cookies.delete("rkey");

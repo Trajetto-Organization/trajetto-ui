@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 
-import {
+import type {
   CommandBranchInputValue,
   CommandBusinessInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { DriverProps } from "../../dto";
-import { UpdateDriverFormState } from "../dto";
+import type { DriverProps } from "../../driver.types";
+import type { UpdateDriverFormState } from "../update-driver-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";

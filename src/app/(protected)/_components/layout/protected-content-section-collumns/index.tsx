@@ -1,4 +1,4 @@
-import { ProtectedSectionColumnsType } from "../dto";
+import type { ProtectedSectionColumnsType } from "./protected-content-section-collumns.types";
 
 const ProtectedContentSectionColumns = ({
   title,

@@ -10,14 +10,17 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import { UpdateBusinessFormSubmitProps, UpdateBusinessFormState } from "./dto";
+import type {
+  UpdateBusinessFormSubmitProps,
+  UpdateBusinessFormState,
+} from "./update-business-form.types";
+import type { BusinessProps } from "@/app/(protected)/_components/shared/common.types";
+
 import { handleUpdateBusiness } from "@/actions/business/update-business";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 
-import { BusinessProps } from "../../../dto";
-
-import { useCepValidation } from "../../../hooks";
 import { useUpdateBusinessForm } from "./hooks";
 
 interface UpdateBusinessProps {

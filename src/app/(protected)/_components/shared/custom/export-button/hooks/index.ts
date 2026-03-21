@@ -1,0 +1,96 @@
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+import type { ExportButtonProps, ExportFormat } from "../export-button.types";
+import { toast } from "sonner";
+
+function formatBytes(bytes?: number) {
+  if (!bytes || bytes === 0) return "";
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+  const value = bytes / Math.pow(1024, i);
+
+  return `${value.toFixed(2)} ${sizes[i]}`;
+}
+
+function useExportButton({ exportAction, entityName }: ExportButtonProps) {
+  const [isExporting, setIsExporting] = useState(false);
+  const searchParams = useSearchParams();
+
+  async function handleExport(format: ExportFormat) {
+    setIsExporting(true);
+
+    try {
+      const search = searchParams.get("search") || "";
+      const result = await exportAction(search, format);
+
+      if (!result.success || !result.base64Data) {
+        toast.error(
+          result.message || `Erro ao exportar ${entityName}. Tente novamente.`,
+        );
+
+        return;
+      }
+
+      // Convert base64 -> Uint8Array
+      const byteCharacters = atob(result.base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+
+      // Use mimeType if provided
+      const blob = new Blob([byteArray], {
+        type:
+          result.mimeType ||
+          (format === "csv" ? "text/csv" : "application/octet-stream"),
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.style.display = "none";
+      a.href = url;
+
+      // use filename returned by server or fallback
+      a.download =
+        result.filename ||
+        `${entityName}-${new Date().toISOString().split("T")[0]}`;
+
+      document.body.appendChild(a);
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      // compute size, prefer server-provided fileSize
+      const sizeInBytes = result.fileSize ?? byteArray.length;
+      const sizeLabel = formatBytes(sizeInBytes);
+
+      // Assemble the final message including filename and size
+      const filenameLabel = result.filename ? ` "${result.filename}"` : "";
+      const sizeSuffix = sizeLabel ? ` (${sizeLabel})` : "";
+
+      toast.success(
+        result.message && result.message.length > 0
+          ? `${result.message}${sizeSuffix}`
+          : `${entityName}${filenameLabel} exportado com sucesso!${sizeSuffix}`,
+      );
+    } catch (error) {
+      toast.error(`Erro ao exportar ${entityName}. Tente novamente.`);
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  return {
+    handleExport,
+    isExporting,
+  };
+}
+
+export { useExportButton };

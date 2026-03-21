@@ -17,13 +17,13 @@ import { UpdateChecklistFormSubmit } from "./update-vehicle-checklist-form-submi
 
 import { validateUpdatePhotoRequirements } from "../create-vehicle-checklist-form/utils/photo-requirements";
 
-import { SelectBranchStep } from "../../../steps/select-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import {
+import type {
   UpdateVehicleChecklistFormState,
   UpdateVehicleChecklistFormProps,
-} from "./dto";
+} from "./update-vehicle-checklist-form.types";
 import { toast } from "sonner";
 
 const UpdateVehicleChecklistForm = ({

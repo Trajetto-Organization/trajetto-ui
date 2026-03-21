@@ -5,14 +5,13 @@ import { useInView, motion } from "framer-motion";
 
 import Image from "next/image";
 
-const AboutTeamSection = () => {
+const AboutTeamSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
   const [imageLoaded, setImageLoaded] = useState<{ [key: number]: boolean }>(
     {},
   );
-
   const team = [
     {
       name: "Michael Sivori",

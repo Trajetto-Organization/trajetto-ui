@@ -6,7 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-import { CardProps } from "./dto";
+import type { CardProps } from "./card.types";
 import { cn } from "@/lib/utils";
 
 import { AlertCircle, CalendarIcon, CheckCircle2, Tag } from "lucide-react";

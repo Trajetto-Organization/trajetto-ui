@@ -10,21 +10,21 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateVehicleType } from "@/actions/vehicle-type/update-vehicle-type";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   DashboardUpdateVehicleTypeFormSubmitProps,
   DashboardUpdateVehicleTypeFormState,
-} from "./dto";
-
-import { DashboardVehicleTypeProps } from "../dto";
-import { useDashboardUpdateVehicleTypeForm } from "./hooks";
+} from "./dashboard-update-vehicle-type-form.types";
+import type { DashboardVehicleTypeProps } from "../dashboard-vehicle-type.types";
 
 import { useAuthStore } from "@/store/auth-store";
 import { formatNumericInput } from "@/lib/format-values";
+
+import { useDashboardUpdateVehicleTypeForm } from "./hooks";
 
 interface DashboardUpdateVehicleTypeProps {
   vehicleTypeData: DashboardVehicleTypeProps;

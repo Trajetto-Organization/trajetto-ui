@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 
-import { CommandBusinessInputValue } from "../../../../dto";
-import { UpdateSupplierFormState } from "../dto";
+import type { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
+import type { UpdateSupplierFormState } from "../update-supplier-form.types";
 
-import { SupplierProps } from "../../dto";
+import type { SupplierProps } from "../../supplier.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
-
 import { queryClientProps } from "@/lib/query-client-props";
+
+import { toast } from "sonner";
 
 interface UseUpdateSupplierFormProps {
   state: UpdateSupplierFormState | null;

@@ -1,10 +1,10 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import PageContainer from "../../_components/layout/protected-page-container";
-import { ProtectedHeading } from "../../_components/layout/protected-heading";
+import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
+import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { DriverVehiclesList } from "../../_components/driver/vehicles";
+import { DriverVehiclesList } from "@/app/(protected)/_components/driver/vehicles";
 import { getCookies } from "@/actions/cookies";
 
 export async function generateMetadata(): Promise<Metadata> {

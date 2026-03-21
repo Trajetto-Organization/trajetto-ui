@@ -1,7 +1,7 @@
 "use client";
 
 import { Users, UserCheck, Shield, Mail } from "lucide-react";
-import { StatConfig } from "../../_components/stats/dto";
+import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shared/common.types";
 
 /**
  * Configuring stats for the user-registration page

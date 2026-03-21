@@ -30,7 +30,6 @@ const handleUpdateFuelType = async (
   const businessId = updateFuelTypeValues.get("businessId");
 
   const updateFuelType = `${process.env.HTTP_REQUEST}/fuel-type/update-fuel-type/${fuelTypeId}/business/${businessId}`;
-
   const fuelTypeValues = Object.fromEntries(updateFuelTypeValues.entries());
 
   const updateFuelTypeValidation =

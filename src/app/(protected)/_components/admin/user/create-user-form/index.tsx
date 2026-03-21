@@ -12,25 +12,31 @@ import {
 
 import { Button, buttonVariants } from "@/components/ui/button";
 
-import FormInput from "@/components/custom/form-input";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import FormInput from "@/components/shared/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+
+import type {
+  CreateUserFormSubmitProps,
+  CreateUserFormState,
+} from "./create-user-form.types";
+import {
+  roleLabels,
+  UserBusinessRole,
+} from "@/app/(protected)/_components/shared/common.types";
 
 import { handleCreateUser } from "@/actions/user/create-user";
-import { CreateUserFormSubmitProps, CreateUserFormState } from "./dto";
+import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SearchProfileAccess } from "../../../search-profile-access";
+import { SearchProfileAccess } from "@/app/(protected)/_components/shared/searches/search-profile-access";
 
-import { SearchBusiness } from "../../../search-business";
-import { SearchDriver } from "../../../search-driver";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
+import { SearchDriver } from "@/app/(protected)/_components/shared/searches/search-driver";
 
 import {
   useCreateUserForm,
   useGenerateRandomPassword,
   useSelectUserRole,
 } from "./hooks";
-
-import { appendDataToForm } from "@/lib/append-data-form";
-import { roleLabels, UserBusinessRole } from "../../../dto";
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";

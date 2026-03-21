@@ -6,8 +6,8 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
-import { DataTableFacetedFilter } from "../../../tanstack-table/data-table-faceted-filter";
-import { DataTableViewOptions } from "../../../tanstack-table/data-table-view-options";
+import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
+import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
 
 import { useSearch } from "@/lib/search-params";
 import { twoFactor } from "../data";

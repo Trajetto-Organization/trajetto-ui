@@ -1,4 +1,7 @@
-import { ProtectedHeadingProps } from "../dto";
+interface ProtectedHeadingProps {
+  title: string;
+  description: string;
+}
 
 const ProtectedHeading = ({
   title,

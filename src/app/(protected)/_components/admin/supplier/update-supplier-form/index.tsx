@@ -12,20 +12,22 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateSupplier } from "@/actions/supplier/update-supplier";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { UpdateSupplierFormSubmitProps, UpdateSupplierFormState } from "./dto";
+import { SelectBusinessStep } from "@/app/(protected)/_components/shared/steps/select-business-step";
+import type {
+  UpdateSupplierFormSubmitProps,
+  UpdateSupplierFormState,
+} from "./update-supplier-form.types";
 
-import { BusinessProps } from "../../../dto";
-import { SupplierProps } from "../dto";
+import type { BusinessProps } from "@/app/(protected)/_components/shared/common.types";
+import type { SupplierProps } from "../supplier.types";
 
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useUpdateSupplierForm } from "./hooks";
-import { useCepValidation } from "../../../hooks";
-
-import { SelectBusinessStep } from "@/app/(protected)/_components/steps/select-business-step";
 
 interface UpdateSupplierProps {
   supplierData: SupplierProps;

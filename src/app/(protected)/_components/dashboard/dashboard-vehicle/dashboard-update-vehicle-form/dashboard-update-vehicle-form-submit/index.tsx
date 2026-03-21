@@ -4,12 +4,14 @@ import { useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
+import type { DashboardUpdateVehicleFormSubmitProps } from "../dashboard-update-vehicle-form.types";
 import { formatNumericInput } from "@/lib/format-values";
-import { DashboardUpdateVehicleFormSubmitProps } from "../dto";
 
-import { DatePickerField, SelectField } from "../../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+
 import { useAuthStore } from "@/store/auth-store";
 
 // Helper function to normalize values for comparison (moved outside component)

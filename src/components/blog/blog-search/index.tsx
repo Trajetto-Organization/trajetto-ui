@@ -23,7 +23,10 @@ interface BlogSearchProps {
   totalPosts: number;
 }
 
-const BlogSearch = ({ categories, totalPosts }: BlogSearchProps) => {
+const BlogSearch = ({
+  categories,
+  totalPosts,
+}: BlogSearchProps): JSX.Element => {
   const router = useRouter();
 
   const pathname = usePathname();
@@ -34,8 +37,8 @@ const BlogSearch = ({ categories, totalPosts }: BlogSearchProps) => {
     searchParams.get("category") || "",
   );
 
-  const [showFilters, setShowFilters] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
 
   const prevSearchQuery = useRef(searchQuery);
   const prevSelectedCategory = useRef(selectedCategory);

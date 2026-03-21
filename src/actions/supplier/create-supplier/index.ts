@@ -27,7 +27,6 @@ const handleCreateSupplier = async (
   }
 
   const businessId = createSupplierValues.get("businessId");
-
   if (!businessId) {
     return {
       createBranchError: {
@@ -44,7 +43,6 @@ const handleCreateSupplier = async (
 
   if (createSupplierValidation.error) {
     const formatError = createSupplierValidation.error.flatten();
-
     return {
       createSupplierError: formatError.fieldErrors,
     };

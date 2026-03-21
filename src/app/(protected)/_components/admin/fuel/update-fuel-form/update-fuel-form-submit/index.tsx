@@ -23,8 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-import FormInput from "@/components/custom/form-input";
-
+import FormInput from "@/components/shared/custom/form-input";
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
@@ -36,14 +35,14 @@ import {
 } from "@/lib/format-values";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
-import { DatePickerField } from "../../../../custom";
-import { UpdateFuelFormSubmitProps } from "../dto";
+import type { UpdateFuelFormSubmitProps } from "../update-fuel-form.types";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

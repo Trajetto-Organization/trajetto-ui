@@ -1,4 +1,4 @@
-import { PermissionKey } from "@/app/(protected)/_components/dto";
+import type { PermissionKey } from "@/app/(protected)/_components/shared/common.types";
 import { useAuthStore } from "../store/auth-store";
 
 import { useEffect, useMemo } from "react";

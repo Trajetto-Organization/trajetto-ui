@@ -13,15 +13,15 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { handleCreateFuelType } from "@/actions/fuel-type/create-fuel-type";
 import { allowedFuelTypes } from "@/schemas/create-update-fuel-type-schema";
 
-import {
+import type {
   DashboardCreateFuelTypeSubmitProps,
   DashboardCreateFuelTypeFormState,
-} from "./dto";
+} from "./dashboard-create-fuel-type.types";
 
 import { useDashboardCreateFuelTypeForm } from "./hooks";
 import { useAuthStore } from "@/store/auth-store";

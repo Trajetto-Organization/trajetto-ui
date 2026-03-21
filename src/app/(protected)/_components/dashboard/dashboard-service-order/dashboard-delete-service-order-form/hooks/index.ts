@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteServiceOrderFormState } from "../dto";
+import type { DashboardDeleteServiceOrderFormState } from "../dashboard-delete-service-order-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDashboardDeleteServiceOrderForm(
   state: DashboardDeleteServiceOrderFormState | null,

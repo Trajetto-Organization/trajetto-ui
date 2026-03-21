@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { CreateVehicleTypeFormState } from "../dto";
 
-import { CommandBusinessInputValue } from "../../../../dto";
+import type { CommandBusinessInputValue } from "@/app/(protected)/_components/shared/common.types";
+import type { CreateVehicleTypeFormState } from "../create-vehicle-type-form.types";
+
+import { queryClientProps } from "@/lib/query-client-props";
+import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
-
-import { revalidateTagName } from "@/actions/revalidate";
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useCreateVehicleTypeForm(state: CreateVehicleTypeFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

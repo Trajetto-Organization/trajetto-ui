@@ -24,7 +24,7 @@ const DashboardAnimatedList = ({
   children: React.ReactNode;
   delay?: number;
   maxItems?: number;
-}) => {
+}): JSX.Element => {
   const [index, setIndex] = useState<number>(0);
   const childrenArray = React.Children.toArray(children);
 

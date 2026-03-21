@@ -9,27 +9,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-
-import {
+import type {
   DashboardCreateDriverFormSubmitProps,
   DashboardCreateDriverFormState,
-} from "./dto";
+} from "./dashboard-create-driver-form.types";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateDriver } from "@/actions/driver/create-driver";
 
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useDashboardCreateDriverForm } from "./hooks";
 
-import { DatePickerField, SelectField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 
 import { permissions } from "@/lib/permissions";
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
 const DashboardCreateDriverFormSubmit = ({
   state,

@@ -11,14 +11,17 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateBusiness } from "@/actions/business/create-business";
 
 import { useCreateBusinessForm } from "./hooks";
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 
-import { CreateBusinessSubmitProps, CreateBusinessFormState } from "./dto";
+import type {
+  CreateBusinessSubmitProps,
+  CreateBusinessFormState,
+} from "./create-business-form.types";
 
 const CreateBusinessFormSubmit = ({
   state,

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteServiceOrderPartFormState } from "../dto";
+
+import type { DeleteServiceOrderPartFormState } from "../delete-service-order-part-form.types";
+import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
 
 function useDeleteServiceOrderPartForm(
   state: DeleteServiceOrderPartFormState | null,

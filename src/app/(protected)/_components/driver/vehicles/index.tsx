@@ -1,11 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-import { useAuthStore } from "@/store/auth-store";
-import { useVehicleInfiniteScroll } from "../../search-vehicle/hooks/vehicle-infinite-scroll";
-
 import {
   Command,
   CommandEmpty,
@@ -25,52 +20,25 @@ import { Loader } from "lucide-react";
 import { VehicleActionModal } from "./vehicle-action-modal";
 
 import { displayValue } from "@/lib/format-values";
-
-interface SelectedVehicleProps {
-  id: string;
-  brand: string;
-  model: string;
-  license_plate: string;
-}
+import { useDriverVehicles } from "./hooks";
 
 const DriverVehiclesList = (): JSX.Element => {
   const router = useRouter();
-  const { businessId, isLoaded } = useAuthStore();
-
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  const [selectedVehicle, setSelectedVehicle] =
-    useState<SelectedVehicleProps | null>(null);
-
   const {
-    vehicles,
+    errorMessage,
+    isModalOpen,
     lastElementRef,
+    refetch,
+    selectedVehicle,
+    setIsModalOpen,
+    setSelectedVehicle,
+    showSpinner,
+    vehicles,
+    hasError,
     isFetching,
     isLoading,
-    refetch,
-    hasError,
-    errorMessage,
-  } = useVehicleInfiniteScroll(businessId!);
-
-  useEffect(() => {
-    if (hasError) {
-      setShowSpinner(false);
-      return;
-    }
-
-    // Show spinner while auth is loading OR while data is loading
-    if (!isLoaded || isLoading || isFetching) {
-      setShowSpinner(true);
-    } else {
-      setShowSpinner(false);
-    }
-  }, [isLoading, isFetching, hasError, isLoaded]);
-
-  // Initialize spinner as true to avoid blank screen
-  useEffect(() => {
-    setShowSpinner(true);
-  }, []);
+    isLoaded,
+  } = useDriverVehicles();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -102,19 +70,21 @@ const DriverVehiclesList = (): JSX.Element => {
     }
   };
 
-  const formatMileage = (mileage: number | null | undefined) => {
-    if (mileage === null || mileage === undefined) return null;
+  const formatMileage = (mileage: number | null | undefined): string => {
+    if (mileage === null || mileage === undefined) return "N/A";
     return mileage.toLocaleString("pt-BR") + " km";
   };
 
-  const getYearFromDate = (dateString: string | Date | null | undefined) => {
-    if (!dateString) return null;
+  const getYearFromDate = (
+    dateString: string | Date | null | undefined,
+  ): string => {
+    if (!dateString) return "N/A";
 
     try {
       const year = new Date(dateString).getFullYear();
-      return isNaN(year) ? null : year.toString();
+      return isNaN(year) ? "N/A" : year.toString();
     } catch {
-      return null;
+      return "N/A";
     }
   };
 
@@ -185,16 +155,14 @@ const DriverVehiclesList = (): JSX.Element => {
                       >
                         {/* Header: Brand/Model and Status */}
                         <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-bold text-gray-900">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold text-gray-900 truncate">
                               {displayValue(vehicle.brand)} |{" "}
                               {displayValue(vehicle.model)}
                             </h3>
-                            <p className="text-sm text-gray-600">
-                              {displayValue(
-                                getYearFromDate(vehicle.model_year),
-                              )}{" "}
-                              • {displayValue(vehicle.description)}
+                            <p className="text-sm text-gray-600 truncate">
+                              {getYearFromDate(vehicle.model_year)} •{" "}
+                              {displayValue(vehicle.description)}
                             </p>
                           </div>
                           <Badge
@@ -231,9 +199,7 @@ const DriverVehiclesList = (): JSX.Element => {
                               Quilometragem Atual
                             </p>
                             <p className="text-base font-semibold text-gray-900">
-                              {displayValue(
-                                formatMileage(vehicle.current_mileage),
-                              )}
+                              {formatMileage(vehicle.current_mileage)}
                             </p>
                           </div>
 
@@ -262,10 +228,8 @@ const DriverVehiclesList = (): JSX.Element => {
                                 Última Manutenção
                               </p>
                               <p className="text-sm text-gray-700">
-                                {displayValue(
-                                  formatMileage(
-                                    vehicle.last_maintenance_mileage,
-                                  ),
+                                {formatMileage(
+                                  vehicle.last_maintenance_mileage,
                                 )}
                               </p>
                             </div>
@@ -277,11 +241,7 @@ const DriverVehiclesList = (): JSX.Element => {
                                 Intervalo
                               </p>
                               <p className="text-sm text-gray-700">
-                                {displayValue(
-                                  formatMileage(
-                                    vehicle.maintenance_interval_km,
-                                  ),
-                                )}
+                                {formatMileage(vehicle.maintenance_interval_km)}
                               </p>
                             </div>
                           </div>

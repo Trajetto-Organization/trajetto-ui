@@ -11,14 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { handleCreateVehicle } from "@/actions/vehicle/create-vehicle";
 
-import { useCreateVehicleForm } from "./hooks";
-import { CreateVehicleFormState } from "./dto";
+import type { CreateVehicleFormState } from "./create-vehicle-form.types";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
-import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/steps/select-driver-vehicle-type-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
+import { SelectDriverVehicleTypeStep } from "@/app/(protected)/_components/shared/steps/select-driver-vehicle-type-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
 import { CreateVehicleFormSubmit } from "./create-vehicle-form-submit";
+
+import { useCreateVehicleForm } from "./hooks";
 
 const CreateVehicleForm = (): JSX.Element => {
   const defaultState: CreateVehicleFormState = {};

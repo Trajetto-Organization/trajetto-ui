@@ -4,6 +4,7 @@ import {
   CircuitBoardIcon,
   Command,
   Container,
+  Crown,
   Fuel,
   Gauge,
   Handshake,
@@ -22,10 +23,10 @@ import {
   UserX2Icon,
 } from "lucide-react";
 
-import { UserRole } from "@/app/(protected)/_components/dto";
-import { permissions } from "@/lib/permissions";
+import type { UserRole } from "@/app/(protected)/_components/shared/common.types";
+import type { ProtectedNavItem } from "../shared/common.types";
 
-import { ProtectedNavItem } from "../dto";
+import { permissions } from "@/lib/permissions";
 
 const protectedNavIcons = {
   dashboard: LayoutDashboardIcon,
@@ -34,6 +35,7 @@ const protectedNavIcons = {
   employee: UserX2Icon,
   userPen: UserPen,
   user: User,
+  master: Crown,
   laptop: Laptop,
   business: Building2,
   split: Split,
@@ -121,6 +123,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
           title: "Cadastro de usuário",
           url: "/admin/user-registration",
           icon: "user",
+        },
+        {
+          title: "Usuários masters",
+          url: "/admin/master-users",
+          icon: "master",
         },
       ],
     },

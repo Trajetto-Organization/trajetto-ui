@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteDriverFormState } from "../dto";
+import type { DeleteDriverFormState } from "../delete-driver-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteDriverForm(state: DeleteDriverFormState | null) {
   const [isOpenDeleteDriverForm, setIsOpenDeleteDriverForm] =

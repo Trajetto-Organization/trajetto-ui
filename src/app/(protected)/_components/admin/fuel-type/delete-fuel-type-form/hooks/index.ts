@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteFuelTypeFormState } from "../dto";
+import type { DeleteFuelTypeFormState } from "../delete-fuel-type.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteFuelTypeForm(state: DeleteFuelTypeFormState | null) {
   const toastShownRef = useRef(false);

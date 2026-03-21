@@ -11,15 +11,15 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import { handleCreateSupplier } from "@/actions/supplier/create-supplier";
-import {
+import type {
   DashboardCreateSupplierFormSubmitProps,
   DashboardCreateSupplierFormState,
-} from "./dto";
+} from "./dashboard-create-supplier-form.types";
+import { handleCreateSupplier } from "@/actions/supplier/create-supplier";
 
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
 import { useDashboardCreateSupplierForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";

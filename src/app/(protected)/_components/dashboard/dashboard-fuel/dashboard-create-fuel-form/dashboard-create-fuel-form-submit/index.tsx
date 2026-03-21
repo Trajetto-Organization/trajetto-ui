@@ -7,7 +7,7 @@ import { Info, Loader, X, Upload, Image as ImageIcon } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import {
   formatCurrencyToNumber,
@@ -17,10 +17,10 @@ import {
   mileageToNumber,
   litersToNumber,
 } from "@/lib/format-values";
-import { DatePickerField } from "../../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
 import {
   Tooltip,
@@ -28,12 +28,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-import { DashboardCreateFuelFormSubmitProps } from "../dto";
+import type { DashboardCreateFuelFormSubmitProps } from "../dashboard-create-fuel-form.types";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (
@@ -325,7 +324,7 @@ const DashboardCreateFuelFormSubmit = ({
                 <TooltipTrigger asChild>
                   <div
                     className="block text-sm font-medium
-                  text-red-500 mb-2 h-5 truncate"
+                  text-red-500 mb-2 h-5 truncate cursor-default"
                   >
                     {fileError || state.createFuelError?.odometer_photo?.[0]}
                   </div>
@@ -376,13 +375,13 @@ const DashboardCreateFuelFormSubmit = ({
                   ) : (
                     <>
                       <p>
-                        Arraste e solte uma foto do odômetro aqui, ou{" "}
-                        <span className="font-medium text-blue-600 hover:text-blue-500">
-                          clique para selecionar
-                        </span>
+                        <span className="font-medium">
+                          Clique para selecionar
+                        </span>{" "}
+                        ou arraste a imagem
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        PNG, JPG, JPEG ou WebP até 5MB
+                      <p className="text-xs mt-1">
+                        PNG, JPG, JPEG, WebP (máx. 5MB)
                       </p>
                     </>
                   )}

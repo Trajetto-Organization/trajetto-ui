@@ -6,32 +6,32 @@ import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 import { serviceOrderPartTableSchema } from "@/schemas/service-order-part-table-schema";
 
-import { useDashboardUpdateServiceOrderPartForm } from "./hooks";
 import { DashboardDeleteServiceOrderPartForm } from "../dashboard-delete-service-order-part-form";
-
 import { DashboardUpdateServiceOrderPartForm } from "../dashboard-update-service-order-part-form";
-import { toast } from "sonner";
 
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-
 import { permissions } from "@/lib/permissions";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
+import { useDashboardUpdateServiceOrderPartForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

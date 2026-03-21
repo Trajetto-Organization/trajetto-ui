@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { validateLoginUserFormSchema } from "@/schemas/login-schema";
 
 import { handleAuthenticateUser } from "../user-authentication";
-import { UserRole } from "@/app/(protected)/_components/dto";
+import { UserRole } from "@/app/(protected)/_components/shared/common.types";
 
 import { parseJwt } from "@/lib/decode-jwt";
 import { getCookies } from "../../cookies";
@@ -35,7 +35,6 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
   }
 
   const userSession = `${process.env.HTTP_REQUEST}/user/session`;
-
   const loginValidation = validateLoginUserFormSchema.safeParse({
     email: loginValues.get("email"),
     password: loginValues.get("password"),
@@ -43,7 +42,6 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
 
   if (loginValidation.error) {
     const formatError = loginValidation.error.flatten();
-
     return {
       loginError: formatError.fieldErrors,
     };

@@ -32,7 +32,6 @@ const handleUpdateVehicle = async (
   const vehicleId = updateVehicleValues.get("vehicleId");
 
   const updateVehicle = `${process.env.HTTP_REQUEST}/vehicle/update-vehicle/${vehicleId}/business/${businessId}`;
-
   let vehicleValues = Object.fromEntries(updateVehicleValues.entries());
 
   // Check user role from token

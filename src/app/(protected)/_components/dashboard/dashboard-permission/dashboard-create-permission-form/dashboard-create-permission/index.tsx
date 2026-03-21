@@ -1,15 +1,15 @@
 import { useFormStatus } from "react-dom";
 
-import FormInput from "@/components/custom/form-input";
-import { SelectField } from "@/app/(protected)/_components/custom";
+import FormInput from "@/components/shared/custom/form-input";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
+import type { DashboardCreatePermissionFormState } from "../dashboard-create-permission-form.types";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DashboardCreatePermissionFormState } from "../dto";
-
-import { useDashboardCheckBox } from "./hooks";
 
 import { Label } from "@/components/ui/label";
 import { permissionLabels, permissions } from "@/lib/permissions";
+
+import { useDashboardCheckBox } from "./hooks";
 
 interface PermissionCheckboxProps {
   state: DashboardCreatePermissionFormState;

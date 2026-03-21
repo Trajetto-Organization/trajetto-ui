@@ -14,7 +14,6 @@ function useNewVerificationValidationToken() {
   const tokenRef = useRef<string | null>(searchParams.get("token"));
 
   const verificationAttemptedRef = useRef(false);
-
   const processVerification = useCallback(async () => {
     if (verificationAttemptedRef.current || success || error) {
       return;

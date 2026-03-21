@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KanbanColumn as ColumnType, KanbanCard } from "../dto";
+import { KanbanColumn as ColumnType, KanbanCard } from "../shared/common.types";
 
 import { Card } from "../card";
 import { Button } from "@/components/ui/button";

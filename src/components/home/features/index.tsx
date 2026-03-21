@@ -38,7 +38,7 @@ const Features = (): JSX.Element => {
       icon: Settings,
       title: "Multi-Filiais",
       description:
-        "Gerencie múltiplas filiais em uma única plataforma com isolamento total de dados e permissões específicas.",
+        "Gerencie múltiplas filiais em uma única plataforma com segurança segmentada de dados e permissões específicas.",
     },
     {
       icon: BarChart3,

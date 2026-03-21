@@ -17,8 +17,9 @@ import { profileAccessTableSchema } from "@/schemas/profile-access-schema";
 import { DeleteProfileAccessForm } from "../delete-profile-access-form";
 
 import { UpdateProfileAccessForm } from "../update-profile-access-form";
-import { useUpdateProfileAccessForm } from "./hooks";
+import { BulkConfigurePermissionsDialog } from "@/app/(protected)/_components/shared/bulk-configure-permissions-dialog";
 
+import { useUpdateProfileAccessForm } from "./hooks";
 import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
@@ -34,6 +35,8 @@ export function DataTableProfileAccessRowActions<TData>({
     handleOpenUpdateProfileAccess,
     handleOpenDropdown,
     isDropdownOpen,
+    isBulkConfigureOpen,
+    handleOpenBulkConfigure,
   } = useUpdateProfileAccessForm();
 
   const handleCopyID = (collumn: string) => {
@@ -48,6 +51,11 @@ export function DataTableProfileAccessRowActions<TData>({
   };
 
   const menuActions = [
+    {
+      label: "Configurar Permissões",
+      onClick: handleOpenBulkConfigure,
+      disabled: !collumnRowAction.businessId,
+    },
     {
       label: "Editar Perfil",
       onClick: handleOpenUpdateProfileAccess,
@@ -78,9 +86,10 @@ export function DataTableProfileAccessRowActions<TData>({
           {menuActions.map((action) => (
             <DropdownMenuItem
               key={action.label}
-              className="cursor-pointer 
+              className="cursor-pointer
               truncate block"
               onClick={action.onClick}
+              disabled={action.disabled}
             >
               {action.label}
             </DropdownMenuItem>
@@ -95,6 +104,16 @@ export function DataTableProfileAccessRowActions<TData>({
           profileAccessData={collumnRowAction}
           handleCloseUpdateProfileAccess={handleOpenUpdateProfileAccess}
           isUpdateProfileAccess={isUpdateProfileAccessOpen}
+        />
+      )}
+
+      {isBulkConfigureOpen && (
+        <BulkConfigurePermissionsDialog
+          profileAccessId={collumnRowAction.id}
+          businessId={collumnRowAction.businessId as string}
+          profileName={collumnRowAction.name}
+          isOpen={isBulkConfigureOpen}
+          onClose={handleOpenBulkConfigure}
         />
       )}
     </>

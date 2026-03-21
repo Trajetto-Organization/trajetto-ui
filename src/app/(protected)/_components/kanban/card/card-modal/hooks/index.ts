@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import { UseCardModalProps } from "../dto";
+import type { UseCardModalProps } from "../card-modal.types";
 
-import { useKanbanQueryClient } from "../../../hooks/use-query-client";
+import { useKanbanQueryClient } from "../../../hooks/query-client";
 import { toast } from "sonner";
 
 function useCardModal({

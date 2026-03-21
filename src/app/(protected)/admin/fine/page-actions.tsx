@@ -1,16 +1,16 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { CreateFineForm } from "../../_components/admin/fine/create-fine-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { CreateFineForm } from "@/app/(protected)/_components/admin/fine/create-fine-form";
 
-import { ExportExcelButton } from "../../_components/custom/export-excel-button";
-import { handleExportFineExcel } from "@/actions/fine/export-fine-excel";
+import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
+import { handleExportFine } from "@/actions/fine/export-fine";
 
 interface FineActionsProps {
   hasData: boolean;
 }
 
-const FineActions = ({ hasData }: FineActionsProps) => {
+const FineActions = ({ hasData }: FineActionsProps): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -18,11 +18,10 @@ const FineActions = ({ hasData }: FineActionsProps) => {
       sm:gap-2 justify-end mt-6 mb-6"
     >
       <div className="w-full sm:w-auto">
-        <ExportExcelButton
+        <ExportButton
           hasData={hasData}
-          exportAction={handleExportFineExcel}
+          exportAction={handleExportFine}
           entityName="relatório de multas"
-          buttonText="Exportar (Excel)"
         />
       </div>
       <div className="w-full sm:w-auto">

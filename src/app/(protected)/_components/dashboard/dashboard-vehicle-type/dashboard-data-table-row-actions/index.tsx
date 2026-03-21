@@ -21,8 +21,8 @@ import { UpdateVehicleTypeForm } from "../dashboard-update-vehicle-type-form";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
-import { toast } from "sonner";
 import { useDashboardUpdateVehicleTypeForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

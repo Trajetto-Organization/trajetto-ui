@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { InstagramLogoIcon, LinkedInLogoIcon } from "@radix-ui/react-icons";
+import {
+  InstagramLogoIcon,
+  LinkedInLogoIcon,
+  TwitterLogoIcon,
+} from "@radix-ui/react-icons";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -8,7 +12,6 @@ import { cn } from "@/lib/utils";
 
 const Footer = (): JSX.Element => {
   const currentYear = new Date().getFullYear();
-
   const footerLinks = [
     {
       title: "Navegação",
@@ -57,7 +60,7 @@ const Footer = (): JSX.Element => {
               >
                 <InstagramLogoIcon className="h-5 w-5" />
               </Link>
-              {/* <Link
+              <Link
                 aria-label="Redirecionar para o twitter"
                 className={cn(
                   buttonVariants({ size: "icon", variant: "ghost" }),
@@ -66,7 +69,7 @@ const Footer = (): JSX.Element => {
                 href=""
               >
                 <TwitterLogoIcon className="h-5 w-5" />
-              </Link> */}
+              </Link>
             </div>
           </div>
 

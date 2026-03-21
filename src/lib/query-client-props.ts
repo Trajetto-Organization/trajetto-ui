@@ -28,7 +28,6 @@ const queryClientProps = new QueryClient({
       keepPreviousData: true, // Smooth transitions without flickering
       useErrorBoundary: false, // Handle errors locally
     },
-
     mutations: {
       // 🚀 Mutation Strategy
       retry: false, // Mutations do not automatically retry

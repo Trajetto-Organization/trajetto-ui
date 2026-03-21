@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteFineFormState } from "../dto";
+import type { DeleteFineFormState } from "../delete-fine-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteFineForm(state: DeleteFineFormState | null) {
   const [isOpenDeleteFineForm, setIsOpenDeleteFineForm] =

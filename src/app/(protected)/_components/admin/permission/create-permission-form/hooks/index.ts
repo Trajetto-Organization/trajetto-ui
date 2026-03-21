@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { CreatePermissionFormState } from "../dto";
 
-import {
+import type { CreatePermissionFormState } from "../create-permission-form.types";
+import type {
   CommandBusinessInputValue,
   CommandProfileAccessInputValue,
-} from "../../../../dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 function useCreatePermissionForm(state: CreatePermissionFormState | null) {
   const formRef = useRef<HTMLFormElement>(null);

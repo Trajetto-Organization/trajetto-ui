@@ -7,8 +7,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { useInView, motion, animate } from "framer-motion";
 
+import { useInView, motion, animate } from "framer-motion";
 import { Building, Globe, LucideProps, TrendingUp, Truck } from "lucide-react";
 
 interface StatCardProps {
@@ -26,7 +26,7 @@ interface StatCardProps {
   isInView: boolean;
 }
 
-const AboutStatsSection = () => {
+const AboutStatsSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 

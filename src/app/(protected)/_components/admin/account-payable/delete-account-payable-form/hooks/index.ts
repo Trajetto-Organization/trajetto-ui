@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteAccountPayableFormState } from "../dto";
+import type { DeleteAccountPayableFormState } from "../delete-account-payable-form.types";
 
 import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";

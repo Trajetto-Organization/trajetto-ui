@@ -24,10 +24,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { handleUpdateQuoteStatus } from "@/actions/quote/update-quote-status";
 
-import { QuoteProps, QuoteStatus } from "../dto";
-import { useFormState, useFormStatus } from "react-dom";
+import type { QuoteProps, QuoteStatus } from "../quote.types";
+import type {
+  UpdateQuoteFormSubmitProps,
+  UpdateQuoteFormState,
+} from "./update-quote-status-modal.types";
 
-import { UpdateQuoteFormSubmitProps, UpdateQuoteFormState } from "./dto";
+import { useFormState, useFormStatus } from "react-dom";
 import { appendDataToForm } from "@/lib/append-data-form";
 
 import { useQuoteFormStatus } from "./hooks";

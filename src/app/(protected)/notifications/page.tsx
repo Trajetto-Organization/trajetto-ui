@@ -12,7 +12,7 @@ export function generateMetadata(): Metadata {
   };
 }
 
-const Notifications = () => {
+const Notifications = (): JSX.Element => {
   return (
     <PageContainer>
       <ProtectedHeading

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 
+import type { CreateServiceOrderFormState } from "./create-service-order-form.types";
 import {
   Dialog,
   DialogScrollContent,
@@ -10,18 +11,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { CreateServiceOrderFormState } from "./dto";
-
 import { Button } from "@/components/ui/button";
 import { handleCreateServiceOrder } from "@/actions/service-order/create-service-order";
 
 import { useCreateServiceOrderForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
-import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/steps/select-vehicle-supplier-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
+import { SelectVehicleSupplierStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-supplier-step";
 
 import { CreateServiceOrderFormSubmit } from "./create-service-order-form-submit";
 

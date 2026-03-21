@@ -27,7 +27,6 @@ const handleCreateServiceOrder = async (
   }
 
   const businessId = createServiceOrderValues.get("businessId");
-
   const createServiceOrder = `${process.env.HTTP_REQUEST}/service-order/create-service-order/${businessId}`;
 
   const serviceOrderValues = Object.fromEntries(

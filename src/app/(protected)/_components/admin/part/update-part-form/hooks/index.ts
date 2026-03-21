@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import {
+import type {
   CommandBusinessInputValue,
   CommandSupplierInputValue,
-} from "@/app/(protected)/_components/dto";
+} from "@/app/(protected)/_components/shared/common.types";
 
-import { UpdatePartFormState } from "../dto";
-import { PartProps } from "../../dto";
+import type { UpdatePartFormState } from "../update-part-form.types";
+import type { PartProps } from "../../part.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
-import { toast } from "sonner";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
-import { queryClientProps } from "@/lib/query-client-props";
+import { toast } from "sonner";
 
 interface UseUpdatePartFormProps {
   state: UpdatePartFormState | null;

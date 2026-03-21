@@ -10,23 +10,23 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateSupplier } from "@/actions/supplier/update-supplier";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   DashboardUpdateSupplierSubmitProps,
   DashboardUpdateSupplierFormState,
-} from "./dto";
+} from "./dashboard-update-supplier-form.types";
 
-import { DashboardSupplierProps } from "../dto";
-import { BusinessProps } from "../../../dto";
+import type { DashboardSupplierProps } from "../dashboard-supplier.types";
+import type { BusinessProps } from "@/app/(protected)/_components/shared/common.types";
+
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
+import { useAuthStore } from "@/store/auth-store";
 
 import { useDashboardUpdateSupplierForm } from "./hooks";
-import { useCepValidation } from "../../../hooks";
-
-import { useAuthStore } from "@/store/auth-store";
 
 interface DashboardUpdateSupplierProps {
   supplierData: DashboardSupplierProps;

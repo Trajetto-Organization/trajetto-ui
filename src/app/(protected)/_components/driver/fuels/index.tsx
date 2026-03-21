@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { useAuthStore } from "@/store/auth-store";
-import { useFuelInfiniteScroll } from "../../search-fuel/hooks/fuel-infinite-scroll";
-
 import {
   Command,
   CommandEmpty,
@@ -20,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import type { DriverFuelsListProps } from "./fuels.types";
 import { Loader, Fuel as FuelIcon } from "lucide-react";
 
 import {
@@ -28,47 +24,23 @@ import {
   formatToBrazilianCurrency,
   displayValue,
 } from "@/lib/format-values";
-
-interface DriverFuelsListProps {
-  vehicleId: string;
-  driverId: string;
-}
+import { useDriverFuelsList } from "./hooks";
 
 const DriverFuelsList = ({
   vehicleId,
   driverId,
 }: DriverFuelsListProps): JSX.Element => {
-  const { businessId, isLoaded } = useAuthStore();
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
-
   const {
     fuels,
-    lastElementRef,
-    isFetching,
-    isLoading,
-    refetch,
-    hasError,
     errorMessage,
-  } = useFuelInfiniteScroll(vehicleId, businessId!);
-
-  useEffect(() => {
-    if (hasError) {
-      setShowSpinner(false);
-      return;
-    }
-
-    // Show spinner while auth is loading OR while data is loading
-    if (!isLoaded || isLoading || isFetching) {
-      setShowSpinner(true);
-    } else {
-      setShowSpinner(false);
-    }
-  }, [isLoading, isFetching, hasError, isLoaded]);
-
-  // Initialize spinner as true to avoid blank screen
-  useEffect(() => {
-    setShowSpinner(true);
-  }, []);
+    lastElementRef,
+    refetch,
+    showSpinner,
+    hasError,
+    isLoading,
+    isLoaded,
+    isFetching,
+  } = useDriverFuelsList(vehicleId);
 
   return (
     <div className="space-y-6 mt-7">
@@ -122,10 +94,15 @@ const DriverFuelsList = ({
                               <p className="text-xs text-gray-500">
                                 Registrado em:
                               </p>
-                              <p className="text-sm font-semibold text-gray-900">
-                                {formatNotificationDate(
-                                  fuel.created_at,
-                                  "pt-BR",
+                              <p
+                                className="text-sm font-semibold 
+                                text-gray-900 truncate"
+                              >
+                                {displayValue(
+                                  formatNotificationDate(
+                                    fuel.created_at,
+                                    "pt-BR",
+                                  ),
                                 )}
                               </p>
                               <p className="text-xs text-gray-600">
@@ -152,7 +129,9 @@ const DriverFuelsList = ({
                             Data do Abastecimento
                           </p>
                           <p className="text-sm font-medium text-gray-900">
-                            {formatDate(fuel.refueling_date, "pt-BR")}
+                            {displayValue(
+                              formatDate(fuel.refueling_date, "pt-BR"),
+                            )}
                           </p>
                         </div>
 
@@ -179,8 +158,11 @@ const DriverFuelsList = ({
                               Litros
                             </p>
                             <p className="text-base font-semibold text-gray-900">
-                              {fuel.liters_amount?.toFixed(3).replace(".", ",")}{" "}
-                              L
+                              {displayValue(
+                                fuel.liters_amount != null
+                                  ? `${fuel.liters_amount.toFixed(3).replace(".", ",")} L`
+                                  : null,
+                              )}
                             </p>
                           </div>
                           <div className="text-right">
@@ -191,7 +173,9 @@ const DriverFuelsList = ({
                               Total
                             </p>
                             <p className="text-base font-semibold text-primary">
-                              {formatToBrazilianCurrency(fuel.total_amount)}
+                              {displayValue(
+                                formatToBrazilianCurrency(fuel.total_amount),
+                              )}
                             </p>
                           </div>
                         </div>
@@ -202,37 +186,43 @@ const DriverFuelsList = ({
                             <div>
                               <span className="text-gray-500">KM: </span>
                               <span className="font-medium text-gray-900">
-                                {fuel.current_mileage?.toLocaleString("pt-BR")}
+                                {displayValue(
+                                  fuel.current_mileage != null
+                                    ? fuel.current_mileage.toLocaleString(
+                                        "pt-BR",
+                                      )
+                                    : null,
+                                )}
                               </span>
                             </div>
                             <div>
                               <span className="text-gray-500">Preço/L: </span>
                               <span className="font-medium text-gray-900">
-                                {formatToBrazilianCurrency(
-                                  fuel.price_per_liter,
+                                {displayValue(
+                                  formatToBrazilianCurrency(
+                                    fuel.price_per_liter,
+                                  ),
                                 )}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Notes if available */}
-                        {fuel.notes && (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <p
-                              className="text-xs text-gray-500
-                              uppercase tracking-wide mb-1"
-                            >
-                              Observações
-                            </p>
-                            <p
-                              className="text-sm text-gray-700
-                              line-clamp-2 w-full truncate"
-                            >
-                              {fuel.notes}
-                            </p>
-                          </div>
-                        )}
+                        {/* Notes */}
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p
+                            className="text-xs text-gray-500
+                            uppercase tracking-wide mb-1"
+                          >
+                            Observações
+                          </p>
+                          <p
+                            className="text-sm text-gray-700
+                            line-clamp-2 w-full truncate"
+                          >
+                            {displayValue(fuel.notes)}
+                          </p>
+                        </div>
                       </Card>
                     </CommandItem>
                   );

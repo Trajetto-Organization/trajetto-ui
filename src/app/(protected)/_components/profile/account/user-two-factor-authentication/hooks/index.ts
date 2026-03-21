@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { UserTwoFactorFormState } from "../dto";
+import type { UserTwoFactorFormState } from "../user-two-factor-authentication.types";
 
 function useTwoFactorAuthenticationForm(state: UserTwoFactorFormState | null) {
   const [isOpenTwoFactorModal, setIsOpenTwoFactorModal] =

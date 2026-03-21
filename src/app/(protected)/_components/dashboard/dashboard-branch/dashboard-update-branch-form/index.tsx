@@ -10,19 +10,19 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateBranch } from "@/actions/branch/update-branch";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import {
+import type {
   DashboardUpdateBranchContainerProps,
   DashboardUpdateBranchFormState,
-} from "./dto";
-import { DashboardBranchProps } from "../dto";
+} from "./dashboard-update-branch-form.types";
+import type { DashboardBranchProps } from "../dashboard-branch.types";
 
-import { useUpdateBranchForm } from "./hooks";
-import { useCepValidation } from "../../../hooks";
+import { useCepValidation } from "@/app/(protected)/_components/hooks";
+import { useDashboardUpdateBranchForm } from "./hooks";
 
 interface DashboardUpdateBranchProps {
   branchData: DashboardBranchProps;
@@ -91,7 +91,7 @@ const DashboardUpdateBranchForm = ({
     FormData
   >(handleUpdateBranch, defaultState);
 
-  const { formRef } = useUpdateBranchForm({
+  const { formRef } = useDashboardUpdateBranchForm({
     state,
     handleCloseUpdateBranch,
   });

@@ -17,28 +17,28 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateFine } from "@/actions/fine/update-fine";
 import { useUpdateFineForm } from "./hooks";
 
-import {
+import type {
   UpdateFineFormProps,
   UpdateFineFormSubmitProps,
   UpdateFineFormState,
-} from "./dto";
+} from "./update-fine-form.types";
 
-import { DatePickerField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import { SelectViolationCodeStep } from "@/app/(protected)/_components/steps/select-violation-code-step";
-import { SelectBranchStep } from "../../../steps/select-branch-step";
+import { SelectViolationCodeStep } from "@/app/(protected)/_components/shared/steps/select-violation-code-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

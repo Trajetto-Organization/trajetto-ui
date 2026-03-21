@@ -7,7 +7,6 @@ import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
-
 import {
   Dialog,
   DialogScrollContent,
@@ -17,16 +16,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import {
+import type {
   DashboardCreateAccountPayableFormSubmitProps,
   DashboardCreateAccountPayableFormState,
-} from "./dto";
+} from "./dashboard-create-account-payable-form.types";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateAccountPayable } from "@/actions/account-payable/create-account-payable";
-import { DatePickerField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
 import { useDashboardCreateAccountPayableForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
@@ -46,10 +45,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
-import { SelectBranchStep } from "@/app/(protected)/_components/steps/select-branch-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
+import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
-import { SelectServiceOrderStep } from "@/app/(protected)/_components/steps/select-service-order-step";
+import { SelectServiceOrderStep } from "@/app/(protected)/_components/shared/steps/select-service-order-step";
 
 const DashboardCreateAccountPayableFormSubmit = ({
   state,

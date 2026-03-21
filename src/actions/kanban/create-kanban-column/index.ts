@@ -27,7 +27,6 @@ const handleCreateKanbanColumn = async (
   }
 
   const businessId = createColumnValues.get("businessId");
-
   if (!businessId) {
     return {
       createColumnError: {

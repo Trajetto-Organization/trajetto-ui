@@ -4,32 +4,30 @@ import { useFormStatus } from "react-dom";
 import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
-
-import { CheckCircle, Edit, Loader } from "lucide-react";
-import { UpdateServiceOrderFormSubmitProps } from "../dto";
-
-import { InfoBox } from "./info-box";
-
-import { useFetchVehicleData } from "@/app/(protected)/_components/search-vehicle-by-id-business";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import FormInput from "@/components/custom/form-input";
-import {
-  DatePickerField,
-  SelectField,
-} from "@/app/(protected)/_components/custom";
+import type { UpdateServiceOrderFormSubmitProps } from "../update-service-order-form.types";
+import { CheckCircle, Edit, Loader } from "lucide-react";
 
+import FormInput from "@/components/shared/custom/form-input";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
+
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+
+import { InfoBox } from "./info-box";
 import {
   formatCurrencyToNumber,
   formatDate,
   formatNumericInput,
   formatToBrazilianCurrency,
 } from "@/lib/format-values";
+
 import { cn } from "@/lib/utils";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (

@@ -4,11 +4,12 @@ import { useFormStatus } from "react-dom";
 import { CheckCircle, Info, Loader } from "lucide-react";
 
 import dynamic from "next/dynamic";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import type { DashboardUpdateServiceOrderFormSubmitProps } from "../dashboard-update-service-order-form.types";
 import {
   formatCurrencyToNumber,
   formatNumericInput,
@@ -16,17 +17,18 @@ import {
   formatDate,
 } from "@/lib/format-values";
 
-import { DashboardUpdateServiceOrderFormSubmitProps } from "../dto";
-import { DatePickerField, SelectField } from "../../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
 import { useAuthStore } from "@/store/auth-store";
+import { InfoBox } from "./info-box";
 
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
-  () => import("@/app/(protected)/_components/custom/location-picker"),
+  () => import("@/app/(protected)/_components/shared/custom/location-picker"),
   {
     ssr: false,
     loading: () => (
@@ -58,6 +60,7 @@ const DashboardUpdateServiceOrderFormSubmit = ({
   const toStringValue = (value: Date | string | null | undefined): string => {
     if (!value) return "";
     if (value instanceof Date) return value.toISOString().split("T")[0];
+
     return value.toString();
   };
 
@@ -72,6 +75,7 @@ const DashboardUpdateServiceOrderFormSubmit = ({
     }
     return {} as Record<string, string>;
   });
+
   const [isDirty, setIsDirty] = useState<boolean>(() => {
     // Check if persisted values are different from original
     if (Object.keys(initialFormValues).length > 0) {
@@ -602,44 +606,33 @@ const DashboardUpdateServiceOrderFormSubmit = ({
 
         {/* History Information */}
         <div className="col-span-1 md:col-span-2 mt-4">
-          <div
-            className="bg-purple-50 dark:bg-purple-900/20 
-            p-4 rounded-lg border border-purple-200"
-          >
-            <h4
-              className="font-semibold text-purple-700 
-              dark:text-purple-300 mb-2"
-            >
-              📊 Informações de Controle:
-            </h4>
-            <div
-              className="text-sm text-purple-600 
-              dark:text-purple-400 space-y-1"
-            >
-              <div>
-                • <strong>Data de criação:</strong>{" "}
-                {formatDate(serviceOrderData.created_at, "pt-BR")}
-              </div>
-              <div>
-                • <strong>Última atualização:</strong>{" "}
-                {formatDate(serviceOrderData.updated_at, "pt-BR")}
-              </div>
-              <div>
-                • <strong>Status:</strong>{" "}
-                {wasCompleted ? "✅ Finalizada" : "🔄 Em andamento"}
-              </div>
-              {serviceOrderData.current_mileage_at_service && (
-                <div>
-                  • <strong>Snapshot capturado:</strong>{" "}
-                  {serviceOrderData.current_mileage_at_service} km
-                </div>
-              )}
-              <div>
-                • <strong>Visualização de snapshot:</strong> 📖 (somente
-                leitura)
-              </div>
-            </div>
-          </div>
+          <InfoBox
+            title="📊 Informações de Controle:"
+            items={[
+              {
+                label: "Data de criação",
+                value: formatDate(serviceOrderData.created_at, "pt-BR"),
+              },
+              {
+                label: "Última atualização",
+                value: formatDate(serviceOrderData.updated_at, "pt-BR"),
+              },
+              {
+                label: "Status",
+                value: wasCompleted ? "✅ Finalizada" : "🔄 Em andamento",
+              },
+              {
+                label: "Snapshot capturado",
+                value: `${serviceOrderData.current_mileage_at_service} km`,
+                condition: !!serviceOrderData.current_mileage_at_service,
+              },
+              {
+                label: "Visualização de snapshot",
+                value: "📖 (somente leitura)",
+              },
+            ]}
+            variant="purple"
+          />
         </div>
       </div>
 

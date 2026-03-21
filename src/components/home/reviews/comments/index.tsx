@@ -13,7 +13,7 @@ const ReviewCard = ({
   name: string;
   username: string;
   body: string;
-}) => {
+}): JSX.Element => {
   return (
     <figure
       className={cn(

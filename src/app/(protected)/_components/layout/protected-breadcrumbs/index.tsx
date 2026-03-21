@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import { Slash } from "lucide-react";
-import { useBreadcrumbs } from "./hooks/use-breadcrumbs";
+import { useBreadcrumbs } from "./hooks";
 
 const ProtectedBreadCrumbs = (): JSX.Element | null => {
   const { breadcrumbs } = useBreadcrumbs();

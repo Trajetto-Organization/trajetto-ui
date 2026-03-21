@@ -23,10 +23,14 @@ import {
   UserPlus,
   Wallet,
   CalendarCheckIcon,
+  Crown,
 } from "lucide-react";
 
-import { UserRole } from "../../../dto";
-import { Action, UseCommandBarActions } from "../../dto";
+import type { UserRole } from "@/app/(protected)/_components/shared/common.types";
+import type {
+  Action,
+  UseCommandBarActions,
+} from "../protected-command-bar-provider.types";
 
 import { permissions } from "@/lib/permissions";
 
@@ -230,6 +234,15 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "cadastro usuário",
         icon: <UserPlus className="w-5 h-5" />,
         perform: () => router.push("/admin/user-registration"),
+      },
+      {
+        id: "admin_master_users",
+        name: "Usuários masters",
+        section: "usuário",
+        shortcut: ["m", "u"],
+        keywords: "cadastro usuário",
+        icon: <Crown className="w-5 h-5" />,
+        perform: () => router.push("/admin/master-users"),
       },
     ],
     BUSINESS_ADMIN: [

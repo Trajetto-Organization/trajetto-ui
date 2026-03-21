@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { QuoteProps } from "../dto";
+import type { QuoteProps } from "../quote.types";
 import { ViewQuoteModal } from "../view-quote-modal";
 
 import { UpdateQuoteStatusModal } from "../update-quote-status-modal";

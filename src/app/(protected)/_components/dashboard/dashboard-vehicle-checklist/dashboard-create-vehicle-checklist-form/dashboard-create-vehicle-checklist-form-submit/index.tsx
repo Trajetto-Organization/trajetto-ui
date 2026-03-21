@@ -3,16 +3,18 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 import { Button } from "@/components/ui/button";
 
 import { formatMileage } from "@/lib/format-values";
-import { DatePickerField, SelectField } from "../../../../custom";
 
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
-import { DashboardCreateVehicleChecklistSubmitProps } from "../dto";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
-import { PhotoUpload } from "../components/photo-upload";
+import type { DashboardCreateVehicleChecklistSubmitProps } from "../dashboard-create-vehicle-checklist-form.types";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
+
+import { PhotoUpload } from "../photo-upload";
 import {
   getPhotoRequirements,
   validateChecklistForm,
@@ -50,11 +52,10 @@ const DashboardCreateVehicleChecklistFormSubmit = ({
   onFormValuesChange,
 }: DashboardCreateVehicleChecklistSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const [formValues, setFormValues] = useState<Record<string, any>>(
-    () =>
-      Object.keys(initialFormValues).length > 0
-        ? initialFormValues
-        : { checklist_date: new Date().toISOString() },
+  const [formValues, setFormValues] = useState<Record<string, any>>(() =>
+    Object.keys(initialFormValues).length > 0
+      ? initialFormValues
+      : { checklist_date: new Date().toISOString() },
   );
 
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({

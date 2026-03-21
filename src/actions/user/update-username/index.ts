@@ -25,7 +25,6 @@ const handleUpdateUserName = async (state: any, userNameValues: FormData) => {
 
   if (userNameValidation.error) {
     const formatError = userNameValidation.error.flatten();
-
     return {
       userNameError: formatError.fieldErrors.userName,
     };

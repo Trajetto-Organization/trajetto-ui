@@ -9,9 +9,12 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Loader, MailIcon } from "lucide-react";
 
-import { ForgotPasswordContainerProps, ForgotPasswordFormState } from "./dto";
-import FormInput from "../../custom/form-input";
+import type {
+  ForgotPasswordContainerProps,
+  ForgotPasswordFormState,
+} from "./forgot-password-form.types";
 
+import FormInput from "../../shared/custom/form-input";
 import { handleForgotPassword } from "@/actions/user/forgot-password-user";
 
 import { ErrorForm } from "../error-form";

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader } from "lucide-react";
 
+import { Loader } from "lucide-react";
 import {
   Dialog,
   DialogScrollContent,
@@ -12,32 +12,32 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import { handleCreateServiceOrderPart } from "@/actions/service-order-part/create-service-order-part";
-import {
+import type {
   DashboardCreateServiceOrderPartFormState,
   DashboardCreateServiceOrderPartFormSubmitProps,
-} from "./dto";
+} from "./dashboard-create-service-order-part-form.types";
+import { handleCreateServiceOrderPart } from "@/actions/service-order-part/create-service-order-part";
 
-import { useDashboardCreateServiceOrderPartForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 
 import { useAuthStore } from "@/store/auth-store";
+import { permissions } from "@/lib/permissions";
 
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
-import { permissions } from "@/lib/permissions";
-
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/steps/select-service-order-part-step";
+
+import { SelectServiceOrderPartStep } from "@/app/(protected)/_components/shared/steps/select-service-order-part-step";
+import { useDashboardCreateServiceOrderPartForm } from "./hooks";
 
 import {
   formatCurrencyToNumber,

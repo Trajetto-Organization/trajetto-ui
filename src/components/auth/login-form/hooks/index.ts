@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+import { useAuthStore } from "@/store/auth-store";
+import { disconnectSocket } from "@/socket";
 
 import { toast } from "sonner";
-import { disconnectSocket } from "@/socket";
 
 type MessageType = "error" | "success";
 
@@ -40,33 +42,59 @@ const messages: Record<string, MessageInfo> = {
     text: "Suas permissões de acesso foram atualizadas. Por favor, faça login novamente para continuar.",
     type: "error",
   },
+  logout: {
+    text: "Você saiu da sua conta com sucesso!",
+    type: "success",
+  },
 };
 
 type MessageKey = keyof typeof messages;
 
 function useLoginMessages() {
   const searchParams = useSearchParams();
-
-  const router = useRouter();
-  const mounted = useRef(false);
+  const hasShownRef = useRef(false);
 
   useEffect(() => {
-    if (mounted.current) return;
-    mounted.current = true;
+    const reason = searchParams.get("reason");
 
-    const error = searchParams.get("error");
+    if (!reason || !(reason in messages)) return;
+    if (hasShownRef.current) return;
 
-    if (error && error in messages) {
-      const { text, type } = messages[error as MessageKey];
+    // Client-triggered redirects (logout button, security checks) set this
+    // flag before redirecting. On refresh the flag is already consumed.
+    const hasPendingToast = sessionStorage.getItem("pending_login_toast");
 
-      if (type === "error") {
-        toast.error(text);
-        disconnectSocket();
-      } else {
-        toast.success(text);
-      }
+    if (hasPendingToast) {
+      sessionStorage.removeItem("pending_login_toast");
+    } else {
+      // Fallback for server-triggered redirects (middleware token refresh failure)
+      // These cause full page loads where performance.navigation.type is reliable
+      const navEntries = performance.getEntriesByType(
+        "navigation",
+      ) as PerformanceNavigationTiming[];
+
+      if (navEntries.length > 0 && navEntries[0].type === "reload") return;
     }
-  }, [searchParams, router]);
+
+    hasShownRef.current = true;
+
+    const key = reason as MessageKey;
+    const { text, type } = messages[key];
+
+    if (type === "success") {
+      if (key === "logout") {
+        toast.success(text);
+        disconnectSocket();
+
+        useAuthStore.getState().logout();
+      }
+    } else {
+      toast.error(text);
+      disconnectSocket();
+
+      useAuthStore.getState().logout();
+    }
+  }, [searchParams]);
 }
 
 export { useLoginMessages };

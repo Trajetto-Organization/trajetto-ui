@@ -3,12 +3,11 @@
 import { getCookies } from "@/actions/cookies";
 import { revalidateTagName } from "@/actions/revalidate";
 
-import {
+import type {
   UpdateWhatsAppSettingsRequest,
   WhatsAppResponse,
   WhatsAppSettings,
-} from "@/app/(protected)/_components/profile/notifications/whatsapp/dto";
-
+} from "@/app/(protected)/_components/profile/notifications/whatsapp/shared/common.types";
 import { updateWhatsAppSettingsSchema } from "@/schemas/phone-validation-schema";
 
 /**

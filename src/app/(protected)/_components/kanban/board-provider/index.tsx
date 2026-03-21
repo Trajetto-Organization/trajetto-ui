@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, Loader2, Plus, Search, X } from "lucide-react";
 import { debounce } from "lodash";
 
-import { BusinessSelector } from "../business-selector";
+import { BusinessSelector } from "../../shared/business-selector";
 import { useKanbanInfiniteScroll } from "./hooks/kanban-infinite-scroll";
 
 import { KanbanEmptyState } from "../empty-state";
@@ -25,7 +25,7 @@ import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
 import { useAuthStore } from "@/store/auth-store";
-import { KanbanBoardProviderProps } from "./dto";
+import type { KanbanBoardProviderProps } from "./board-provider.types";
 
 const KanbanBoardProvider = ({
   businessId: businessIdProp,
@@ -430,6 +430,7 @@ const KanbanBoardProvider = ({
           />
         </div>
       )}
+
       {isCreateColumnModalOpen && businessId && !hasLimitedAccess && (
         <CreateColumnModal
           isOpen={isCreateColumnModalOpen}

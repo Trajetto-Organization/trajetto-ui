@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { CreateFuelFormState } from "./dto";
+import type { CreateFuelFormState } from "./create-fuel-form.types";
 import { Button } from "@/components/ui/button";
 
 import { handleCreateFuel } from "@/actions/fuel/create-fuel";
@@ -18,10 +18,10 @@ import { useCreateFuelForm } from "./hooks";
 
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
-import { SelectVehicleDriverStep } from "@/app/(protected)/_components/steps/select-vehicle-driver-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
+import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
-import { SelectFuelTypeStep } from "@/app/(protected)/_components/steps/select-fuel-type-step";
+import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
 import { CreateFuelFormSubmit } from "./create-fuel-form-submit";
 
 const CreateFuelForm = (): JSX.Element => {

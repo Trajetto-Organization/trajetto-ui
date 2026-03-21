@@ -1,12 +1,11 @@
 "use client";
 
 import { useFormStatus, useFormState } from "react-dom";
-
-import {
+import type {
   UpdatePasswordProps,
   UpdateUserPasswordFormSubmitProps,
   UpdateUserPasswordFormState,
-} from "./dto";
+} from "./user-password-form.types";
 
 import {
   Dialog,
@@ -22,7 +21,7 @@ import { ProtectedContentSectionColumns } from "../../../layout/protected-conten
 import { Loader } from "lucide-react";
 
 import { handleUpdateUserPassword } from "@/actions/user/update-user-password";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { MdLockOutline } from "react-icons/md";
 import { useUpdatePasswordForm } from "./hooks";

@@ -29,37 +29,40 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
 import { Loader, ShieldAlert, Trash2, CheckCircle2, Copy } from "lucide-react";
+import FormInput from "@/components/shared/custom/form-input";
 
-import FormInput from "@/components/custom/form-input";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { handleCreateKanbanCard } from "@/actions/kanban/create-kanban-card";
 import { handleUpdateKanbanCard } from "@/actions/kanban/update-kanban-card";
 
 import { handleDeleteKanbanCard } from "@/actions/kanban/delete-kanban-card";
-
-import {
+import type {
   CardModalFormProps,
   CardModalFormState,
   CardModalProps,
   PriorityProps,
-} from "./dto";
+} from "./card-modal.types";
 
 import { useCardModal } from "./hooks";
 import { UserSelector } from "../../user-selector";
 
 import { toast } from "sonner";
 
-import { useKanbanQueryClient } from "../../hooks/use-query-client";
+import { useKanbanQueryClient } from "../../hooks/query-client";
 import { useHasPermission } from "@/lib/user-has-permission";
 
 import { permissions } from "@/lib/permissions";
-import { useCardModalForm } from "./hooks/use-card-modal-form";
+import { useCardModalForm } from "./hooks/card-modal-form";
 
-import {
-  DatePickerField,
-  SelectField,
-} from "@/app/(protected)/_components/custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 const CardModalForm = ({
   card,
@@ -143,13 +146,32 @@ const CardModalForm = ({
 
         {/* Description */}
         <div className="space-y-2">
-          <Label
-            className={errorState?.description ? "text-red-500" : ""}
-            htmlFor="description"
-          >
-            {errorState?.description ? errorState.description : "Descrição"}{" "}
-            <span className="text-red-500 ml-0.5">*</span>
-          </Label>
+          {errorState?.description ? (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Label
+                    className={cn("h-4 truncate text-red-500")}
+                    htmlFor="description"
+                  >
+                    {errorState.description}
+                  </Label>
+                </TooltipTrigger>
+                <TooltipContent
+                  align="start"
+                  className="max-w-[300px]
+                  whitespace-normal break-words p-2"
+                >
+                  {errorState.description}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <Label className="h-4 truncate" htmlFor="description">
+              Descrição
+              <span className="text-red-500 ml-0.5">*</span>
+            </Label>
+          )}
           <Textarea
             id="description"
             name="description"

@@ -12,14 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import { vehicleTypeTableSchema } from "@/schemas/vehicle-type-table-schema";
 
 import { DeleteVehicleTypeForm } from "../delete-vehicle-type-form";
 import { UpdateVehicleTypeForm } from "../update-vehicle-type-form";
 
-import { toast } from "sonner";
 import { useUpdateVehicleTypeForm } from "./hooks";
+import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;

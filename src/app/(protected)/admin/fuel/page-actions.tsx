@@ -1,16 +1,16 @@
 "use client";
 
-import { DataTableRevalidate } from "../../_components/tanstack-table/data-table-revalidate";
-import { CreateFuelForm } from "../../_components/admin/fuel/create-fuel-form";
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { CreateFuelForm } from "@/app/(protected)/_components/admin/fuel/create-fuel-form";
 
-import { ExportExcelButton } from "../../_components/custom/export-excel-button";
-import { handleExportFuelExcel } from "@/actions/fuel/export-fuel-excel";
+import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
+import { handleExportFuel } from "@/actions/fuel/export-fuel";
 
 interface FuelActionsProps {
   hasData: boolean;
 }
 
-const FuelActions = ({ hasData }: FuelActionsProps) => {
+const FuelActions = ({ hasData }: FuelActionsProps): JSX.Element => {
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -18,11 +18,10 @@ const FuelActions = ({ hasData }: FuelActionsProps) => {
       sm:gap-2 justify-end mt-6 mb-6"
     >
       <div className="w-full sm:w-auto">
-        <ExportExcelButton
+        <ExportButton
           hasData={hasData}
-          exportAction={handleExportFuelExcel}
+          exportAction={handleExportFuel}
           entityName="relatório de abastecimentos"
-          buttonText="Exportar (Excel)"
         />
       </div>
       <div className="w-full sm:w-auto">

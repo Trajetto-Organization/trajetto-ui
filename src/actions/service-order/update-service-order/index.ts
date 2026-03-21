@@ -30,7 +30,6 @@ const handleUpdateServiceOrder = async (
   const serviceOrderId = updateServiceOrderValues.get("serviceOrderId");
 
   const updateServiceOrder = `${process.env.HTTP_REQUEST}/service-order/update-service-order/${serviceOrderId}/business/${businessId}`;
-
   const serviceOrderValues = Object.fromEntries(
     updateServiceOrderValues.entries(),
   );

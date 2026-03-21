@@ -30,7 +30,6 @@ const handleCreateServiceOrderPart = async (
   const serviceOrderId = createServiceOrderPartValues.get("serviceOrderId");
 
   const createServiceOrderPart = `${process.env.HTTP_REQUEST}/service-order-part/create-service-order-part/${serviceOrderId}/business/${businessId}`;
-
   const serviceOrderPartValues = Object.fromEntries(
     createServiceOrderPartValues.entries(),
   );
@@ -40,7 +39,6 @@ const handleCreateServiceOrderPart = async (
 
   if (createServiceOrderPartValidation.error) {
     const formatError = createServiceOrderPartValidation.error.flatten();
-
     return {
       createServiceOrderPartError: formatError.fieldErrors,
     };

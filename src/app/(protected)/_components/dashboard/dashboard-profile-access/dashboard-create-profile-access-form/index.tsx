@@ -13,20 +13,19 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import {
+import type {
   DashboardCreateProfileAccessFormState,
   DashboardCreateProfileAccessFormSubmitProps,
-} from "./dto";
-
+} from "./dashboard-create-profile-access-form.types";
 import { handleCreateProfileAccess } from "@/actions/profile-access/create-profile-access";
-import { useCreateDashboardProfileAccessForm } from "./hooks";
 
 import { useAuthStore } from "@/store/auth-store";
 import { useHasPermission } from "@/lib/user-has-permission";
 
 import { permissions } from "@/lib/permissions";
+import { useCreateDashboardProfileAccessForm } from "./hooks";
 
 const DashboardCreateProfileAccessFormSubmit = ({
   state,
@@ -85,7 +84,6 @@ const DashboardCreateProfileAccessForm = (): JSX.Element => {
   } = useCreateDashboardProfileAccessForm(state);
 
   const { businessId } = useAuthStore();
-
   const hasUserPermission = useHasPermission(
     permissions.PROFILE_ACCESS_MANAGE,
     "write",

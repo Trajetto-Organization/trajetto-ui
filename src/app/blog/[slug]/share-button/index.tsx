@@ -9,7 +9,11 @@ interface ShareButtonProps {
   className?: string;
 }
 
-const ShareButton = ({ title, description, className }: ShareButtonProps) => {
+const ShareButton = ({
+  title,
+  description,
+  className,
+}: ShareButtonProps): JSX.Element => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({

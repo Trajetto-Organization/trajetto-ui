@@ -4,7 +4,10 @@ import { persist } from "zustand/middleware";
 import { parseJwt } from "../lib/decode-jwt";
 import { getCookies } from "@/actions/cookies";
 
-import { PermissionKey, UserRole } from "@/app/(protected)/_components/dto";
+import type {
+  PermissionKey,
+  UserRole,
+} from "@/app/(protected)/_components/shared/common.types";
 
 interface PermissionData {
   permissionKey: PermissionKey;

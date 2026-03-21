@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { useKanbanQueryClient } from "../../../hooks/use-query-client";
-import { UseDeleteColumnDialogProps } from "../dto";
+import { useKanbanQueryClient } from "../../../hooks/query-client";
+import type { UseDeleteColumnDialogProps } from "../delete-column-dialog.types";
 
 import { toast } from "sonner";
 

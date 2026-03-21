@@ -11,25 +11,24 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { Loader } from "lucide-react";
-import { DatePickerField } from "../../../custom";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 
-import {
+import type {
   CreateAccountPayableFormState,
   CreateAccountPayableFormSubmitProps,
-} from "./dto";
+} from "./create-account-payable-form.types";
 import { handleCreateAccountPayable } from "@/actions/account-payable/create-account-payable";
 
 import { useCreateAccountPayableForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SelectUserStep } from "@/app/(protected)/_components/steps/select-user-step";
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/steps/select-business-branch-step";
+import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/select-user-step";
+import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
 
-import { SelectServiceOrderStep } from "@/app/(protected)/_components/steps/select-service-order-step";
-
+import { SelectServiceOrderStep } from "@/app/(protected)/_components/shared/steps/select-service-order-step";
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,

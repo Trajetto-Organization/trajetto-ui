@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useNotificationsContext } from "../notifications-provider";
 
-import { SyncNotificationsProviderProps } from "../../dto";
+import type { SyncNotificationsProviderProps } from "./sync-notifications-wrapper.types";
 
 const SyncNotificationsProvider = ({
   children,

@@ -6,7 +6,7 @@ import { getCookies } from "@/actions/cookies";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { KanbanBoardProvider } from "../../_components/kanban/board-provider";
+import { KanbanBoardProvider } from "@/app/(protected)/_components/kanban/board-provider";
 
 export const metadata: Metadata = {
   title: "Kanban",

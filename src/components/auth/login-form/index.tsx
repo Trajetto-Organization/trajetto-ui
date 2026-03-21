@@ -12,11 +12,14 @@ import { Button } from "@/components/ui/button";
 import { Loader, LockIcon, MailIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
-import FormInput from "../../custom/form-input";
+import FormInput from "../../shared/custom/form-input";
 import { TwoFactorAuthenticationForm } from "../two-factor-authentication-form";
 
+import type {
+  LoginFormContainerProps,
+  LogInFormState,
+} from "./login-form.types";
 import { ErrorForm } from "../error-form";
-import { LoginFormContainerProps, LogInFormState } from "./dto";
 
 import { useLoginMessages } from "./hooks";
 import { Terms } from "@/components/layouts/terms";

@@ -12,8 +12,8 @@ import {
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
+import type { KanbanBoardProps } from "./board.types";
 import { Loader } from "lucide-react";
-import { KanbanBoardProps } from "../board/dto";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";

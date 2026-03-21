@@ -7,10 +7,10 @@ const ProtectedPageLoading = (): JSX.Element => {
       {/* Sidebar Skeleton */}
       <div className="w-64 border-r p-4 hidden md:flex flex-col">
         <Skeleton className="h-8 w-32 mb-4" /> {/* Company Name */}
-        {/* Simulating the real quantity of menu items */}
+        {/* Simulating the quantity of menu items */}
         <div className="flex flex-col space-y-3 mt-3">
           <Skeleton className="h-6 w-16" />
-          {protectedNavItemsByRole.MASTER.map((item, index) => (
+          {protectedNavItemsByRole.BUSINESS_USER.map((item, index) => (
             <Skeleton key={index} className="h-6 w-full" />
           ))}
         </div>

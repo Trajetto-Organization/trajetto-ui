@@ -3,8 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 import { profileAccessTableSchema } from "@/schemas/profile-access-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
 
 import { DashboardDataTableProfileAccessRowActions } from "../dashboard-data-table-row-actions";
 import { displayValue, formatNotificationDate } from "@/lib/format-values";

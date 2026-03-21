@@ -4,10 +4,9 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { supplierTableSchema } from "@/schemas/supplier-table-schema";
-import { DataTableColumnHeader } from "../../../tanstack-table/data-table-collumn-header";
+import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { DataTableSupplierRowActions } from "../data-table-row-actions";
-
 import {
   displayValue,
   formatCnpj,

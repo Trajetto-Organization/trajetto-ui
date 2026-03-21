@@ -15,22 +15,22 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { handleCreatePart } from "@/actions/part/create-part";
 
-import {
+import type {
   DashboardCreatePartFormState,
   DashboardCreatePartSubmitProps,
-} from "./dto";
-
+} from "./dashboard-create-part-form.types";
 import { useDashboardCreatePartForm } from "./hooks";
+
+import FormInput from "@/components/shared/custom/form-input";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { cn } from "@/lib/utils";
-import FormInput from "@/components/custom/form-input";
-
-import { SearchSupplier } from "../../../search-supplier";
+import { SearchSupplier } from "@/app/(protected)/_components/shared/searches/search-supplier";
 import { useAuthStore } from "@/store/auth-store";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+
+import { cn } from "@/lib/utils";
 
 const DashboardCreatePartFormSubmit = ({
   state,

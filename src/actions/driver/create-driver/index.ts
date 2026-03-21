@@ -24,7 +24,6 @@ const handleCreateDriver = async (state: any, createDriverValues: FormData) => {
   }
 
   const businessId = createDriverValues.get("businessId");
-
   const createDriver = `${process.env.HTTP_REQUEST}/driver/create-driver/${businessId}`;
 
   const driverValues = Object.fromEntries(createDriverValues.entries());

@@ -1,7 +1,7 @@
 import { getCookies } from "@/actions/cookies";
 import { parseJwt } from "./decode-jwt";
 
-import { PermissionKey } from "@/app/(protected)/_components/dto";
+import type { PermissionKey } from "@/app/(protected)/_components/shared/common.types";
 
 interface PermissionData {
   permissionKey: PermissionKey;

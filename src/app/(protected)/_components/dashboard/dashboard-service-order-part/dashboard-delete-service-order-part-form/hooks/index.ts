@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteServiceOrderPartFormState } from "../dto";
+import type { DashboardDeleteServiceOrderPartFormState } from "../dashboard-delete-service-order-part-form.types";
 
-import { toast } from "sonner";
 import { revalidateTagName } from "@/actions/revalidate";
+import { toast } from "sonner";
 
 function useDashboardDeleteServiceOrderPartForm(
   state: DashboardDeleteServiceOrderPartFormState | null,

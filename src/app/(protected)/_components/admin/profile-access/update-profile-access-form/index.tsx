@@ -8,24 +8,22 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-
 import { Loader, X } from "lucide-react";
-import { ProfileAccessProps } from "../dto";
 
-import {
+import type { ProfileAccessProps } from "../profile-access.types";
+import type {
   UpdateProfileAccessFormSubmitProps,
   UpdateProfileAccessFormState,
-} from "./dto";
+} from "./update-profile-access-form.types";
 
-import FormInput from "@/components/custom/form-input";
+import { SearchBusiness } from "@/app/(protected)/_components/shared/searches/search-business";
+import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateProfileAccess } from "@/actions/profile-access/update-profile-access";
-import { useUpdateProfileAccessForm } from "./hooks";
-
-import { cn } from "@/lib/utils";
 import { appendDataToForm } from "@/lib/append-data-form";
 
-import { SearchBusiness } from "../../../search-business";
+import { useUpdateProfileAccessForm } from "./hooks";
+import { cn } from "@/lib/utils";
 
 interface UpdateProfileAccessProps {
   profileAccessData: ProfileAccessProps;

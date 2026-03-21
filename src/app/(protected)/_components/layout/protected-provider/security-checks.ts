@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
-import { Permission, PermissionKey, UserLoggedProps } from "../../dto";
+import type { Permission, PermissionKey } from "../../shared/common.types";
+import type { ValidateUserAccessParams } from "./protected-provider.types";
+
 import { appRoutes } from "@/app/app-routes";
 
 // Build page permissions map once at module level
@@ -11,7 +13,7 @@ appRoutes.forEach((route) => {
   }
 });
 
-export async function handleUserResponseError(response: Response) {
+async function handleUserResponseError(response: Response) {
   if (response.status === 401) {
     redirect("/login?error=session_expired&force_logout=true");
   }
@@ -34,14 +36,7 @@ export async function handleUserResponseError(response: Response) {
   }
 }
 
-interface ValidateUserAccessParams {
-  user: UserLoggedProps["user"];
-  jwtRole: string;
-  jwtDriverId: string | null;
-  pathname: string;
-}
-
-export function validateUserAccess({
+function validateUserAccess({
   user,
   jwtRole,
   jwtDriverId,
@@ -85,3 +80,5 @@ export function validateUserAccess({
     }
   }
 }
+
+export { handleUserResponseError, validateUserAccess };

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DeleteFuelFormState } from "../dto";
+import type { DeleteFuelFormState } from "../delete-fuel-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDeleteFuelForm(state: DeleteFuelFormState | null) {
   const [isOpenDeleteFuelForm, setIsOpenDeleteFuelForm] =

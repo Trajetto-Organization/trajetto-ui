@@ -1,4 +1,4 @@
-import { ProtectedStatsPageLoading } from "../../_components/loading-page/protected-stats-page-loading";
+import { ProtectedStatsPageLoading } from "@/app/(protected)/_components/loading-page/protected-stats-page-loading";
 
 const Loading = (): JSX.Element => {
   return <ProtectedStatsPageLoading />;

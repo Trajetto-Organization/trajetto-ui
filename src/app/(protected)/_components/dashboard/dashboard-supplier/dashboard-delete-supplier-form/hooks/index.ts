@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { DashboardDeleteSupplierFormState } from "../dto";
+import type { DashboardDeleteSupplierFormState } from "../dashboard-selete-supplier-form.types";
+
+import { revalidateTagName } from "@/actions/revalidate";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
-
-import { queryClientProps } from "@/lib/query-client-props";
 
 function useDashboardDeleteSupplierForm(
   state: DashboardDeleteSupplierFormState | null,

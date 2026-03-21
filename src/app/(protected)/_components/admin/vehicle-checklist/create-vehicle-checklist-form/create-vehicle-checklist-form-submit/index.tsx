@@ -5,18 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Loader } from "lucide-react";
 
 import { formatMileage } from "@/lib/format-values";
-import FormInput from "@/components/custom/form-input";
+import FormInput from "@/components/shared/custom/form-input";
 
-import { DatePickerField, SelectField } from "../../../../custom";
-import { useFetchVehicleData } from "../../../../search-vehicle-by-id-business";
+import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
-import { PhotoUpload } from "../components/photo-upload";
+import type { CreateVehicleChecklistFormSubmitProps } from "../create-vehicle-checklist-form.types";
+import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
+
+import { PhotoUpload } from "../photo-upload";
 import {
   getPhotoRequirements,
   validateChecklistForm,
 } from "../utils/photo-requirements";
-
-import { CreateVehicleChecklistFormSubmitProps } from "../dto";
 
 // Reusable select options
 const CONDITION_OPTIONS = [

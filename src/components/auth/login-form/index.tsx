@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Turnstile from "react-turnstile";
 import Link from "next/link";
@@ -30,7 +30,17 @@ const LoginFormContainer = ({
   state,
 }: LoginFormContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
+
   const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
+  const [turnstileKey, setTurnstileKey] = useState<number>(0);
+
+  // Reset Turnstile after each form submission (tokens are single-use)
+  useEffect(() => {
+    if (state?.loginError) {
+      setIsCaptchaValid(false);
+      setTurnstileKey((prev) => prev + 1);
+    }
+  }, [state]);
 
   return (
     <motion.section
@@ -97,6 +107,7 @@ const LoginFormContainer = ({
       {process.env.NODE_ENV === "production" && (
         <>
           <Turnstile
+            key={turnstileKey}
             sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => {
               const input = document.getElementById(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import Link from "next/link";
@@ -55,7 +55,17 @@ const QuoteFormContainer = ({
   state,
 }: CreateQuoteContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
+
   const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
+  const [turnstileKey, setTurnstileKey] = useState<number>(0);
+
+  // Reset Turnstile after each form submission (tokens are single-use)
+  useEffect(() => {
+    if (state?.createQuoteError) {
+      setIsCaptchaValid(false);
+      setTurnstileKey((prev) => prev + 1);
+    }
+  }, [state]);
 
   const inputFields = [
     {
@@ -220,6 +230,7 @@ const QuoteFormContainer = ({
       {process.env.NODE_ENV === "production" && (
         <>
           <Turnstile
+            key={turnstileKey}
             sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => {
               const input = document.getElementById(

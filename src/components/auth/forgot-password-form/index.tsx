@@ -30,9 +30,9 @@ const ForgotPasswordContainer = ({
   const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
   const [turnstileKey, setTurnstileKey] = useState<number>(0);
 
-  // Reset Turnstile after each form submission (tokens are single-use)
+  // Reset Turnstile only when the token was consumed (server/turnstile errors, not Zod validation)
   useEffect(() => {
-    if (state?.forgotPasswordError) {
+    if (state?.forgotPasswordError?.forgotPasswordErrorMessage) {
       setIsCaptchaValid(false);
       setTurnstileKey((prev) => prev + 1);
     }

@@ -8,6 +8,17 @@ const handleQuoteSubmit = async (state: any, formData: FormData) => {
     return {};
   }
 
+  const createQuote = `${process.env.HTTP_REQUEST}/quote/create-quote`;
+
+  const quoteData = Object.fromEntries(formData.entries());
+  const validation = quoteSchema.safeParse(quoteData);
+
+  if (validation.error) {
+    return {
+      createQuoteError: validation.error.flatten().fieldErrors,
+    };
+  }
+
   if (process.env.NODE_ENV === "production") {
     const turnstileToken = formData.get("turnstileToken") as string | null;
     const turnstileOk = await validateTurnstile(turnstileToken);
@@ -19,17 +30,6 @@ const handleQuoteSubmit = async (state: any, formData: FormData) => {
         },
       };
     }
-  }
-
-  const createQuote = `${process.env.HTTP_REQUEST}/quote/create-quote`;
-
-  const quoteData = Object.fromEntries(formData.entries());
-  const validation = quoteSchema.safeParse(quoteData);
-
-  if (validation.error) {
-    return {
-      createQuoteError: validation.error.flatten().fieldErrors,
-    };
   }
 
   const quoteDataValidation = validation.data;

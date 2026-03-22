@@ -7,6 +7,18 @@ const handleForgotPassword = async (
   state: any,
   forgotPasswordValues: FormData,
 ) => {
+  const forgotPassword = `${process.env.HTTP_REQUEST}/user/forgot/password`;
+  const forgotPasswordValidation = validateForgotFormSchema.safeParse({
+    email: forgotPasswordValues.get("email"),
+  });
+
+  if (forgotPasswordValidation.error) {
+    const formatError = forgotPasswordValidation.error.flatten();
+    return {
+      forgotPasswordError: formatError.fieldErrors,
+    };
+  }
+
   if (process.env.NODE_ENV === "production") {
     const turnstileToken = forgotPasswordValues.get("turnstileToken") as string;
     const turnstileOk = await validateTurnstile(turnstileToken);
@@ -18,18 +30,6 @@ const handleForgotPassword = async (
         },
       };
     }
-  }
-
-  const forgotPassword = `${process.env.HTTP_REQUEST}/user/forgot/password`;
-  const forgotPasswordValidation = validateForgotFormSchema.safeParse({
-    email: forgotPasswordValues.get("email"),
-  });
-
-  if (forgotPasswordValidation.error) {
-    const formatError = forgotPasswordValidation.error.flatten();
-    return {
-      forgotPasswordError: formatError.fieldErrors,
-    };
   }
 
   const { email } = forgotPasswordValidation.data;

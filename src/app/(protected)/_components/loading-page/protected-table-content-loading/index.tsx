@@ -4,7 +4,7 @@ const ProtectedTableContentLoading = (): JSX.Element => {
   return (
     <>
       {/* Toolbar skeleton */}
-      <div className="flex flex-wrap items-center gap-2 w-full mb-4">
+      <div className="flex flex-wrap items-center gap-2 w-full mb-4 mt-6">
         <Skeleton className="h-8 w-full sm:w-[270px]" />
         {[...Array(3)].map((_, i) => (
           <Skeleton key={i} className="h-8 w-32" />

@@ -46,7 +46,7 @@ const Footer = (): JSX.Element => {
                   buttonVariants({ size: "icon", variant: "ghost" }),
                 )}
                 target="_blank"
-                href="https://www.linkedin.com/company/intrajetto"
+                href="https://www.linkedin.com/company/trajetto-official"
               >
                 <LinkedInLogoIcon className="h-5 w-5" />
               </Link>
@@ -66,7 +66,7 @@ const Footer = (): JSX.Element => {
                   buttonVariants({ size: "icon", variant: "ghost" }),
                 )}
                 target="_blank"
-                href=""
+                href="https://x.com/Trajetto"
               >
                 <TwitterLogoIcon className="h-5 w-5" />
               </Link>

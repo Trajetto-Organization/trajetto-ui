@@ -11,7 +11,7 @@ const ProtectedStatsContentLoading = ({
     <>
       {/* Stats cards skeleton */}
       <div
-        className={`grid gap-4 md:grid-cols-2 lg:grid-cols-${statsColumns} mb-6`}
+        className={`grid gap-4 md:grid-cols-2 lg:grid-cols-${statsColumns} mb-6 mt-6`}
       >
         {[...Array(statsColumns)].map((_, i) => (
           <Skeleton key={i} className="h-32 w-full rounded-lg" />

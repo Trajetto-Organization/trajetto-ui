@@ -69,7 +69,7 @@ const trustIndicators = [
 const Hero = (): JSX.Element => {
   return (
     <div
-      className="relative overflow-hidden py-32 md:py-[120px]
+      className="relative overflow-hidden py-32 md:py-36
       bg-gradient-to-br from-[#d81b60]/[0.03] 
       via-background to-[#880e4f]/[0.04]"
     >

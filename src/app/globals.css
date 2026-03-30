@@ -333,7 +333,7 @@ html {
    TUTORIAL ENHANCED STYLES 
    =========================================== */
 
-/* Tooltip compacto */
+/* Compact tip */
 .tutorial-tooltip-compact {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);

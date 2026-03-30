@@ -37,6 +37,13 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
 
     // Categories for SEO
-    categories: ["business", "productivity", "logistics", "fleet-management"],
+    categories: [
+      "negócios",
+      "produtividade",
+      "logística",
+      "gestão de frota",
+      "empresas",
+      "sistema empresarial",
+    ],
   };
 }

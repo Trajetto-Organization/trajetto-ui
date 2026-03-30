@@ -154,7 +154,10 @@ const LimitsContent = ({
           {/* Limit cards — 2 columns */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* AI Verification Card */}
-            <Card className="shadow-sm hover:shadow-md transition-shadow" data-tutorial="ai-usage-card">
+            <Card
+              className="shadow-sm hover:shadow-md transition-shadow"
+              data-tutorial="ai-usage-card"
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="space-y-1">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -162,8 +165,7 @@ const LimitsContent = ({
                     Verificação IA
                   </CardTitle>
                   <CardDescription>
-                    Leitura inteligente de odômetros em abastecimentos e
-                    checklists
+                    Leitura inteligente de abastecimentos e checklists
                   </CardDescription>
                 </div>
                 {getStatusBadge()}

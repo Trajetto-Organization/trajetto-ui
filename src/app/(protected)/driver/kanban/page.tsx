@@ -31,7 +31,7 @@ const DriverKanban = async () => {
       <div className="space-y-4">
         <ProtectedHeading
           title="Kanban"
-          description="Monitore e gerencie os boards Kanban de todas as empresas do sistema."
+          description="Monitore e gerencie os boards Kanban do sistema."
         />
 
         <KanbanBoardProvider mode="dashboard" showBusinessSelector={false} />

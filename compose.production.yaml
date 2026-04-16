@@ -11,6 +11,23 @@ services:
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
       SANITY_WEBHOOK_SECRET: ${SANITY_WEBHOOK_SECRET}
     deploy:
+      mode: replicated
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+        order: start-first
+        monitor: 30s
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
       labels:
         - traefik.enable=true
         # Main router for www.intrajetto.com
@@ -33,7 +50,6 @@ services:
         - traefik.docker.network=minha_rede
     networks:
       - minha_rede
-    restart: unless-stopped
     healthcheck:
       test:
         [
@@ -46,6 +62,8 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
+
+    stop_grace_period: 30s
 
 networks:
   minha_rede:

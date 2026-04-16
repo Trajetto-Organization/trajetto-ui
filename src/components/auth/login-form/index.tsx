@@ -118,7 +118,8 @@ const LoginFormContainer = ({
               setIsCaptchaValid(true);
             }}
             theme="auto"
-            size="normal"
+            size="flexible"
+            className="mt-5"
             appearance="interaction-only"
           />
 

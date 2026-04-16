@@ -6,6 +6,9 @@ import { DashboardCreateServiceOrderForm } from "@/app/(protected)/_components/d
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import { handleExportServiceOrder } from "@/actions/service-order/export-service-order";
 
+import { useHasPermission } from "@/lib/user-has-permission";
+import { permissions } from "@/lib/permissions";
+
 interface ServiceOrderActionsProps {
   hasData: boolean;
 }
@@ -13,6 +16,11 @@ interface ServiceOrderActionsProps {
 const ServiceOrderActions = ({
   hasData,
 }: ServiceOrderActionsProps): JSX.Element => {
+  const hasUserPermission = useHasPermission(
+    permissions.SERVICE_ORDER_MANAGE,
+    "write",
+  );
+
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -24,6 +32,7 @@ const ServiceOrderActions = ({
           hasData={hasData}
           exportAction={handleExportServiceOrder}
           entityName="relatório de ordens de serviço"
+          writePermission={hasUserPermission}
         />
       </div>
       <div className="w-full sm:w-auto">

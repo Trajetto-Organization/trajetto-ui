@@ -14,6 +14,7 @@ interface BranchProps {
   responsible_name: string;
   telephone: string;
   email: string;
+  is_active?: boolean;
   businessId: string;
   business?: {
     corporate_reason: string;

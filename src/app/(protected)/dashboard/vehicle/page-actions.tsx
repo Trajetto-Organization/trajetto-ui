@@ -6,11 +6,19 @@ import { DashboardCreateVehicleForm } from "@/app/(protected)/_components/dashbo
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import { handleExportVehicle } from "@/actions/vehicle/export-vehicle";
 
+import { useHasPermission } from "@/lib/user-has-permission";
+import { permissions } from "@/lib/permissions";
+
 interface VehicleActionsProps {
   hasData: boolean;
 }
 
 const VehicleActions = ({ hasData }: VehicleActionsProps): JSX.Element => {
+  const hasUserPermission = useHasPermission(
+    permissions.VEHICLE_MANAGE,
+    "write",
+  );
+
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -22,6 +30,7 @@ const VehicleActions = ({ hasData }: VehicleActionsProps): JSX.Element => {
           hasData={hasData}
           exportAction={handleExportVehicle}
           entityName="relatório de veículos"
+          writePermission={hasUserPermission}
         />
       </div>
       <div className="w-full sm:w-auto">

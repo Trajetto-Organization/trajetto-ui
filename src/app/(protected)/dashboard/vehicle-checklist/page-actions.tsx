@@ -6,6 +6,9 @@ import { DashboardCreateVehicleChecklistForm } from "@/app/(protected)/_componen
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import { handleExportVehicleChecklist } from "@/actions/vehicle-checklist/export-vehicle-checklist";
 
+import { useHasPermission } from "@/lib/user-has-permission";
+import { permissions } from "@/lib/permissions";
+
 interface FuelActionsProps {
   hasData: boolean;
 }
@@ -13,6 +16,11 @@ interface FuelActionsProps {
 const VehicleChecklistActions = ({
   hasData,
 }: FuelActionsProps): JSX.Element => {
+  const hasUserPermission = useHasPermission(
+    permissions.VEHICLE_CHECKLIST_MANAGE,
+    "write",
+  );
+
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -24,6 +32,7 @@ const VehicleChecklistActions = ({
           hasData={hasData}
           exportAction={handleExportVehicleChecklist}
           entityName="relatório de checklist veicular"
+          writePermission={hasUserPermission}
         />
       </div>
       <div className="w-full sm:w-auto">

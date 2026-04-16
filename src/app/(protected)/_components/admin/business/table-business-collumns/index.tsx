@@ -7,6 +7,8 @@ import { businessTableSchema } from "@/schemas/business-table-schema";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { DataTableBusinessRowActions } from "../data-table-row-actions";
+import { ToggleBusinessActiveCell } from "../toggle-active-cell";
+
 import {
   formatCep,
   formatCnpj,
@@ -62,6 +64,26 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+  },
+  {
+    accessorKey: "is_active",
+    meta: {
+      title: "Status",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => (
+      <ToggleBusinessActiveCell
+        businessId={row.getValue("id")}
+        isActive={row.getValue("is_active") ?? true}
+        corporateReason={row.getValue("corporate_reason")}
+      />
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "corporate_reason",

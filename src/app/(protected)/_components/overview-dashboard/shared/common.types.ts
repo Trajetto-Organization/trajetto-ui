@@ -60,7 +60,8 @@ interface DashboardData {
     };
     business?: {
       corporate_reason: string;
-    };
+    } | null;
+    tenantName?: string | null;
     created_at: string | Date;
     updated_at: string | Date;
   }[];

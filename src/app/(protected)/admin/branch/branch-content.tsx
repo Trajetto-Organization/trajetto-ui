@@ -54,7 +54,12 @@ const BranchContent = async ({
           Authorization: `Bearer ${token}`,
         },
         next: {
-          tags: ["create-branch", "delete-branch", "update-branch"],
+          tags: [
+            "create-branch",
+            "delete-branch",
+            "update-branch",
+            "toggle-branch-active",
+          ],
         },
       },
     );

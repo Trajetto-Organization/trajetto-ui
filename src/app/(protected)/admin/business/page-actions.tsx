@@ -12,7 +12,7 @@ const BusinessActions = (): JSX.Element => {
     >
       <div className="w-full sm:w-auto">
         <DataTableRevalidate
-          revalidateData="update-business"
+          revalidateData={["update-business", "toggle-business-active"]}
           rateLimit={{
             storageKey: "business",
             maxClicks: 3,

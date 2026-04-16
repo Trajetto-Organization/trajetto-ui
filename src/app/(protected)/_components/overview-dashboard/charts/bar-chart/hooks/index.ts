@@ -25,7 +25,7 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
   const displayCosts = useMemo(() => {
     // If we have trends data for daily periods, use it
     if (trendsData && ["7d", "30d"].includes(timeRange)) {
-      return trendsData.maintenanceCosts.map((item) => ({
+      return (trendsData.maintenanceCosts ?? []).map((item) => ({
         ...item,
         month: item.date, // Map date to month for consistency
       }));

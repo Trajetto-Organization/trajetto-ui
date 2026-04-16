@@ -12,7 +12,7 @@ const BranchActions = (): JSX.Element => {
     >
       <div className="w-full sm:w-auto">
         <DataTableRevalidate
-          revalidateData="update-branch"
+          revalidateData={["update-branch", "toggle-branch-active"]}
           rateLimit={{
             storageKey: "dashboard-branch",
             maxClicks: 3,

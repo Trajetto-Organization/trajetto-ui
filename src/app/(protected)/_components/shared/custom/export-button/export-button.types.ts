@@ -18,6 +18,7 @@ interface ExportButtonProps {
     format?: ExportFormat,
   ) => Promise<ExportActionResponse>;
   entityName?: string;
+  writePermission?: boolean;
 }
 
 export type { ExportButtonProps, ExportFormat, ExportActionResponse };

@@ -90,7 +90,10 @@ export function DataTableBusinessRowActions<TData>({
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DeleteBusinessForm bussinessId={collumnRowAction.id} />
+          <DeleteBusinessForm
+            bussinessId={collumnRowAction.id}
+            businessName={collumnRowAction.corporate_reason}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
 

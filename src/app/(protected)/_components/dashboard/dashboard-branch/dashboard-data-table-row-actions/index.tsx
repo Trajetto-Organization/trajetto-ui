@@ -95,6 +95,7 @@ export function DashboardDataTableBranchRowActions<TData>({
           <DashboardDeleteBranchForm
             businessId={collumnRowAction.businessId}
             branchId={collumnRowAction.id}
+            branchName={collumnRowAction.corporate_reason}
           />
         </DropdownMenuContent>
       </DropdownMenu>

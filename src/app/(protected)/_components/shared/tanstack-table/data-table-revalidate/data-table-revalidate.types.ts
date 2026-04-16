@@ -12,7 +12,7 @@ type RateLimitConfig = {
 };
 
 interface DataTableRevalidateProps {
-  revalidateData: RevalidateDataProps;
+  revalidateData: RevalidateDataProps | RevalidateDataProps[];
   rateLimit?: {
     maxClicks?: number;
     timeWindowMs?: number;

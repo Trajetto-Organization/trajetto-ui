@@ -6,11 +6,19 @@ import { DashboardCreateDriverForm } from "@/app/(protected)/_components/dashboa
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import { handleExportDriver } from "@/actions/driver/export-driver";
 
+import { useHasPermission } from "@/lib/user-has-permission";
+import { permissions } from "@/lib/permissions";
+
 interface DriverActionsProps {
   hasData: boolean;
 }
 
 const DriverActions = ({ hasData }: DriverActionsProps): JSX.Element => {
+  const hasUserPermission = useHasPermission(
+    permissions.DRIVER_MANAGE,
+    "write",
+  );
+
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -22,6 +30,7 @@ const DriverActions = ({ hasData }: DriverActionsProps): JSX.Element => {
           hasData={hasData}
           exportAction={handleExportDriver}
           entityName="relatório de motoristas"
+          writePermission={hasUserPermission}
         />
       </div>
       <div className="w-full sm:w-auto">

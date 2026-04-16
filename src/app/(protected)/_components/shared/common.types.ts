@@ -215,6 +215,7 @@ interface BusinessProps {
   responsible_name: string;
   telephone: string;
   email: string;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }

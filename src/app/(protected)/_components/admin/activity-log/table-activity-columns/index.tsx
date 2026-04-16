@@ -225,7 +225,7 @@ const tableActivityColumns: ColumnDef<activityTableSchema>[] = [
   },
   {
     accessorKey: "business_name",
-    accessorFn: (row) => row.business?.corporate_reason || "",
+    accessorFn: (row) => row.business?.corporate_reason || row.tenantName || "",
     meta: {
       title: "Empresa",
     },
@@ -233,10 +233,8 @@ const tableActivityColumns: ColumnDef<activityTableSchema>[] = [
       <DataTableColumnHeader column={column} title="Empresa" />
     ),
     cell: ({ row }) => {
-      const businessName = row.original.business?.corporate_reason;
-
-      // Only show if business exists (only for MASTER users)
-      if (!businessName) return null;
+      const businessName =
+        row.original.business?.corporate_reason ?? row.original.tenantName;
 
       return (
         <TooltipProvider>

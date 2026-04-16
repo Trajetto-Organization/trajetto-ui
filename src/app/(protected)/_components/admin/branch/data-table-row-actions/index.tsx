@@ -89,6 +89,7 @@ export function DataTableBranchRowActions<TData>({
           <DeleteBranchForm
             businessId={collumnRowAction.businessId}
             branchId={collumnRowAction.id}
+            branchName={collumnRowAction.corporate_reason}
           />
         </DropdownMenuContent>
       </DropdownMenu>

@@ -14,6 +14,7 @@ import {
   formatTelephone,
   displayValue,
 } from "@/lib/format-values";
+import { ToggleBranchActiveCell } from "../toggle-active-cell";
 
 const dashboardTableBranchCollumns: ColumnDef<branchTableSchema>[] = [
   {
@@ -62,6 +63,26 @@ const dashboardTableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+  },
+  {
+    accessorKey: "is_active",
+    meta: {
+      title: "Status",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => (
+      <ToggleBranchActiveCell
+        branchId={row.getValue("id")}
+        businessId={row.original.businessId}
+        isActive={row.getValue("is_active") ?? true}
+      />
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "corporate_reason",

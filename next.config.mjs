@@ -78,6 +78,11 @@ const nextConfig = {
         key: "Referrer-Policy",
         value: "origin-when-cross-origin",
       },
+      {
+        key: "Permissions-Policy",
+        value:
+          "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), xr-spatial-tracking=()",
+      },
     ];
 
     return [

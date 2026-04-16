@@ -118,9 +118,10 @@ const LoginFormContainer = ({
               setIsCaptchaValid(true);
             }}
             theme="auto"
-            size="flexible"
-            className="mt-5"
+            size="normal"
+            appearance="interaction-only"
           />
+
           <input id="turnstile-token" type="hidden" name="turnstileToken" />
         </>
       )}

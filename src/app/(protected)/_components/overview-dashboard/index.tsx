@@ -313,7 +313,10 @@ const OverviewDashboard = ({
                         </TableCell>
                         {!hasUserError && userLogged?.role === "MASTER" && (
                           <TableCell>
-                            {displayValue(activity.business?.corporate_reason)}
+                            {displayValue(
+                              activity.business?.corporate_reason ??
+                                activity.tenantName,
+                            )}
                           </TableCell>
                         )}
                         <TableCell>

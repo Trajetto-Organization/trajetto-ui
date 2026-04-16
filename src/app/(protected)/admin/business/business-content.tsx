@@ -54,7 +54,12 @@ const BusinessContent = async ({
           Authorization: `Bearer ${token}`,
         },
         next: {
-          tags: ["create-business", "delete-business", "update-business"],
+          tags: [
+            "create-business",
+            "delete-business",
+            "update-business",
+            "toggle-business-active",
+          ],
         },
       },
     );

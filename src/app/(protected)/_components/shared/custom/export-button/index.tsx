@@ -11,6 +11,7 @@ import {
 import type { ExportButtonProps } from "./export-button.types";
 import { Loader2, Download, FileSpreadsheet, FileText } from "lucide-react";
 
+import { useAuthStore } from "@/store/auth-store";
 import { useExportButton } from "./hooks";
 
 const ExportButton = ({
@@ -18,10 +19,13 @@ const ExportButton = ({
   hasData = false,
   exportAction,
   entityName = "relatório",
+  writePermission,
 }: ExportButtonProps): JSX.Element => {
+  const { role } = useAuthStore();
   const { handleExport, isExporting } = useExportButton({
     exportAction,
     entityName,
+    writePermission,
   });
 
   return (
@@ -30,7 +34,9 @@ const ExportButton = ({
         <Button
           variant="outline"
           size="sm"
-          disabled={isExporting || !hasData}
+          disabled={
+            isExporting || !hasData || (!writePermission && role !== "MASTER")
+          }
           className={`h-8 w-full gap-2 ${className}`}
           data-tutorial="export-button"
         >

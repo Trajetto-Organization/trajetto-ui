@@ -9,12 +9,12 @@ import { toast } from "sonner";
 function useDashboardDeleteBranchForm(
   state: DashboardDeleteBranchFormState | null,
 ) {
-  const toastShownRef = useRef(false);
-  const [isOpenDeleteBusinessForm, setIsOpenDeleteBusinessForm] =
+  const [isOpenDeleteBranchForm, setIsOpenDeleteBranchForm] =
     useState<boolean>(false);
+  const toastShownRef = useRef(false);
 
-  const handleDeleteBusinessForm = () => {
-    setIsOpenDeleteBusinessForm(!isOpenDeleteBusinessForm);
+  const handleDeleteBranchForm = () => {
+    setIsOpenDeleteBranchForm(!isOpenDeleteBranchForm);
   };
 
   useEffect(() => {
@@ -60,7 +60,7 @@ function useDashboardDeleteBranchForm(
       performRevalidation();
 
       // Close the modal immediately after showing toast
-      handleDeleteBusinessForm();
+      handleDeleteBranchForm();
     }
 
     // Cleanup function to reset the ref when the component unmounts
@@ -70,8 +70,8 @@ function useDashboardDeleteBranchForm(
   }, [state]);
 
   return {
-    handleDeleteBusinessForm,
-    isOpenDeleteBusinessForm,
+    handleDeleteBranchForm,
+    isOpenDeleteBranchForm,
   };
 }
 

@@ -52,7 +52,7 @@ export function useDataTableRevalidate(
     timeWindowMs: 30000, // in 30 seconds
     cooldownTimeMs: 15000, // 15 second cooldown
   },
-  revalidateDataKey?: RevalidateDataProps,
+  revalidateDataKey?: RevalidateDataProps | RevalidateDataProps[],
 ) {
   // Initial states without accessing localStorage, avoiding hydration error
   const [isClient, setIsClient] = useState<boolean>(false);
@@ -109,9 +109,15 @@ export function useDataTableRevalidate(
     }
 
     if (state && !state.revalidateDataError && revalidateDataKey) {
-      const queryKeys = revalidateDataToQueryKeyMap[revalidateDataKey];
+      const keys = Array.isArray(revalidateDataKey)
+        ? revalidateDataKey
+        : [revalidateDataKey];
 
-      if (queryKeys && queryKeys.length > 0) {
+      const queryKeys = Array.from(
+        new Set(keys.flatMap((key) => revalidateDataToQueryKeyMap[key] ?? [])),
+      );
+
+      if (queryKeys.length > 0) {
         // Invalidate all matching queries
         Promise.all(
           queryKeys.map((queryKey) =>

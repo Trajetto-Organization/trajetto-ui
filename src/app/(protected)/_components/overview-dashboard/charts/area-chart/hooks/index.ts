@@ -25,7 +25,7 @@ function useChartArea({ activityTrends }: ChartAreaInteractiveProps) {
   const displayData = useMemo(() => {
     // If we have trends data for daily periods, use it
     if (trendsData && ["7d", "30d"].includes(timeRange)) {
-      return trendsData.activityTrends.map((item) => ({
+      return (trendsData.activityTrends ?? []).map((item) => ({
         ...item,
         month: item.date, // Map date to month for consistency
       }));

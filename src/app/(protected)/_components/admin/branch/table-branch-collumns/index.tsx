@@ -7,6 +7,8 @@ import { branchTableSchema } from "@/schemas/branch-table-schema";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import { DataTableBranchRowActions } from "../data-table-row-actions";
+import { ToggleBranchActiveCell } from "../toggle-active-cell";
+
 import {
   formatCep,
   formatCnpj,
@@ -62,6 +64,26 @@ const tableBranchCollumns: ColumnDef<branchTableSchema>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+  },
+  {
+    accessorKey: "is_active",
+    meta: {
+      title: "Status",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" />
+    ),
+    cell: ({ row }) => (
+      <ToggleBranchActiveCell
+        branchId={row.getValue("id")}
+        businessId={row.original.businessId}
+        isActive={row.getValue("is_active") ?? true}
+      />
+    ),
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "corporate_reason",

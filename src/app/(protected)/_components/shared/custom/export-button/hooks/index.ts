@@ -6,7 +6,7 @@ import { toast } from "sonner";
 
 function formatBytes(bytes?: number) {
   if (!bytes || bytes === 0) return "";
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
 
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   const value = bytes / Math.pow(1024, i);
@@ -15,7 +15,7 @@ function formatBytes(bytes?: number) {
 }
 
 function useExportButton({ exportAction, entityName }: ExportButtonProps) {
-  const [isExporting, setIsExporting] = useState(false);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
   async function handleExport(format: ExportFormat) {

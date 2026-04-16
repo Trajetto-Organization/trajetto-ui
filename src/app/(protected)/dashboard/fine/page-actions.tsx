@@ -6,11 +6,16 @@ import { DashboardCreateFineForm } from "@/app/(protected)/_components/dashboard
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import { handleExportFine } from "@/actions/fine/export-fine";
 
+import { useHasPermission } from "@/lib/user-has-permission";
+import { permissions } from "@/lib/permissions";
+
 interface FineActionsProps {
   hasData: boolean;
 }
 
 const FineActions = ({ hasData }: FineActionsProps): JSX.Element => {
+  const hasUserPermission = useHasPermission(permissions.FINE_MANAGE, "write");
+
   return (
     <div
       className="flex flex-col sm:flex-row sm:flex-wrap
@@ -22,6 +27,7 @@ const FineActions = ({ hasData }: FineActionsProps): JSX.Element => {
           hasData={hasData}
           exportAction={handleExportFine}
           entityName="relatório de multas"
+          writePermission={hasUserPermission}
         />
       </div>
       <div className="w-full sm:w-auto">

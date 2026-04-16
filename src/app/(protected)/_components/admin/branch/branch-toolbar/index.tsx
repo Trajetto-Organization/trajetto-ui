@@ -11,6 +11,8 @@ import { useSearch } from "@/lib/search-params";
 import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
 import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
 
+import { isActive } from "../data";
+
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   error: boolean;
@@ -45,6 +47,7 @@ export function BranchToolbar<TData>({
       title: "Razão Social",
       dynamicOptionIcon: BookUser,
     },
+    { key: "is_active", title: "Filiais Ativas", options: isActive },
     { key: "email", title: "E-mail" },
     { key: "erp_code", title: "Código ERP" },
     { key: "city", title: "Cidade", dynamicOptionIcon: Building2 },
@@ -64,7 +67,7 @@ export function BranchToolbar<TData>({
         sm:min-w-[270px] sm:max-w-[270px]"
       />
 
-      {filters.map(({ key, title, dynamicOptionIcon }) => {
+      {filters.map(({ key, title, dynamicOptionIcon, options }) => {
         const column = table.getColumn(key);
         if (!column) return null;
 
@@ -74,6 +77,7 @@ export function BranchToolbar<TData>({
             column={column}
             title={title}
             dynamicOptionIcon={dynamicOptionIcon}
+            options={options}
           />
         );
       })}

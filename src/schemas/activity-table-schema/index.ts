@@ -7,20 +7,21 @@ export const activityTableSchema = z.object({
   entityId: z.string(),
   description: z.string(),
   status: z.string(),
-  performedBy: z.string(),
+  performedBy: z.string().nullable(),
   businessId: z.string().nullable(),
+  tenantName: z.string().nullable().optional(),
   user: z
     .object({
       email: z.string(),
       role: z.string(),
       name: z.string(),
     })
-    .optional(),
+    .nullish(),
   business: z
     .object({
       corporate_reason: z.string(),
     })
-    .optional(),
+    .nullish(),
   created_at: z.union([z.string(), z.date()]),
   updated_at: z.union([z.string(), z.date()]),
 });

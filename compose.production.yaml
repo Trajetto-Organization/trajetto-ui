@@ -12,7 +12,7 @@ services:
       SANITY_WEBHOOK_SECRET: ${SANITY_WEBHOOK_SECRET}
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
       update_config:
         parallelism: 1
         delay: 5s

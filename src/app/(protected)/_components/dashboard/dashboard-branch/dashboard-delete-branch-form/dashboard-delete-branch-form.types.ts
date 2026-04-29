@@ -3,4 +3,15 @@ interface DashboardDeleteBranchFormState {
   successMessage?: string;
 }
 
-export type { DashboardDeleteBranchFormState };
+interface RequestDeletionFormState {
+  requestBranchDeletionError?: string;
+  successMessage?: string;
+}
+
+type DeletionStep = "confirm-name" | "enter-code";
+
+export type {
+  DashboardDeleteBranchFormState,
+  RequestDeletionFormState,
+  DeletionStep,
+};

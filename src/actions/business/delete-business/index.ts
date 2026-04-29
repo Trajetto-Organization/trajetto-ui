@@ -3,16 +3,30 @@
 import { getCookies } from "../../cookies";
 
 interface DeleteBusinessProps {
+  businessId: string;
+  code: string;
+}
+
+interface DeleteBusinessResponseProps {
   message: string;
 }
 
-const handleDeleteBusiness = async (businessId: string) => {
+const handleDeleteBusiness = async ({
+  businessId,
+  code,
+}: DeleteBusinessProps) => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
     return {
       deleteBusinessError:
         "Token de acesso não encontrado. Faça login novamente.",
+    };
+  }
+
+  if (!code) {
+    return {
+      deleteBusinessError: "Código de confirmação é obrigatório.",
     };
   }
 
@@ -24,10 +38,12 @@ const handleDeleteBusiness = async (businessId: string) => {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ code }),
     });
 
-    const { message } = (await response.json()) as DeleteBusinessProps;
+    const { message } = (await response.json()) as DeleteBusinessResponseProps;
 
     if (!response.ok && message) {
       return { deleteBusinessError: message };

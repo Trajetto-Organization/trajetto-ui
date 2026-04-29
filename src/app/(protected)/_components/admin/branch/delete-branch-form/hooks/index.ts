@@ -1,36 +1,69 @@
 import { useEffect, useRef, useState } from "react";
-import type { DeleteBranchFormState } from "../delete-branch-form.types";
+import type {
+  DeleteBranchFormState,
+  DeletionStep,
+} from "../delete-branch-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
 function useDeleteBranchForm(state: DeleteBranchFormState | null) {
   const [isOpenDeleteBranchForm, setIsOpenDeleteBranchForm] =
     useState<boolean>(false);
+
+  const [step, setStep] = useState<DeletionStep>("confirm-name");
+  const [otpCode, setOtpCode] = useState<string>("");
+
+  const [resendTimer, setResendTimer] = useState<number>(0);
   const toastShownRef = useRef(false);
 
   const handleDeleteBranchForm = () => {
     setIsOpenDeleteBranchForm(!isOpenDeleteBranchForm);
   };
 
+  const resetForm = () => {
+    setStep("confirm-name");
+    setOtpCode("");
+
+    setResendTimer(0);
+  };
+
+  const goToCodeStep = () => {
+    setStep("enter-code");
+    setResendTimer(RESEND_COOLDOWN_SECONDS);
+  };
+
+  const handleOtpChange = (value: string) => {
+    setOtpCode(value);
+  };
+
+  const startResendCooldown = () => {
+    setResendTimer(RESEND_COOLDOWN_SECONDS);
+  };
+
   useEffect(() => {
-    // Handle error case first
+    if (resendTimer <= 0) return;
+
+    const timeoutId = setTimeout(() => setResendTimer((t) => t - 1), 1000);
+    return () => clearTimeout(timeoutId);
+  }, [resendTimer]);
+
+  useEffect(() => {
     if (state?.deleteBranchError) {
       toast.error(state.deleteBranchError);
+      setOtpCode("");
+
       return;
     }
 
-    // Handle success case
     if (state?.successMessage && !toastShownRef.current) {
-      // Mark toast as shown to prevent duplicates
       toastShownRef.current = true;
-
-      // Show the toast first
       toast.success(state.successMessage);
 
-      // Start revalidation in background
       const performRevalidation = async () => {
         try {
           await Promise.all([
@@ -54,14 +87,12 @@ function useDeleteBranchForm(state: DeleteBranchFormState | null) {
         }
       };
 
-      // Start revalidation in background without waiting
       performRevalidation();
-
-      // Close the modal immediately after showing toast
       handleDeleteBranchForm();
+
+      resetForm();
     }
 
-    // Cleanup function to reset the ref when the component unmounts
     return () => {
       toastShownRef.current = false;
     };
@@ -70,6 +101,13 @@ function useDeleteBranchForm(state: DeleteBranchFormState | null) {
   return {
     handleDeleteBranchForm,
     isOpenDeleteBranchForm,
+    step,
+    otpCode,
+    resendTimer,
+    goToCodeStep,
+    handleOtpChange,
+    startResendCooldown,
+    resetForm,
   };
 }
 

@@ -3,4 +3,11 @@ interface DeleteBusinessFormState {
   successMessage?: string;
 }
 
-export type { DeleteBusinessFormState };
+interface RequestDeletionFormState {
+  requestBusinessDeletionError?: string;
+  successMessage?: string;
+}
+
+type DeletionStep = "confirm-name" | "enter-code";
+
+export type { DeleteBusinessFormState, RequestDeletionFormState, DeletionStep };

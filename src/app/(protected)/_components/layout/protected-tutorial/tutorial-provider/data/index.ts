@@ -428,7 +428,7 @@ const tutorialConfigs: TutorialConfig = {
       • CSV: arquivo de texto separado por vírgulas, compatível com qualquer editor de planilhas
       • Excel (.xlsx): planilha formatada, ideal para análises e filtros avançados
       PERMISSÕES NECESSÁRIAS:
-      • LEITURA em Gerenciar Multas
+      • ESCRITA em Gerenciar Multas
       O relatório exportado contém todas as multas filtradas atualmente na tabela, com informações detalhadas como:
       • Dados do veículo e motorista envolvidos
       • Código de infração e valor da multa
@@ -515,6 +515,23 @@ const tutorialConfigs: TutorialConfig = {
       placement: "center",
     },
     createPageStatsTutorialStep(),
+    {
+      target: "[data-tutorial='export-button']",
+      title: "Exportar Relatório de Motoristas 📊",
+      content: `Clique aqui para exportar um relatório completo de motoristas. Ao clicar, escolha o formato desejado:
+      • CSV: arquivo de texto separado por vírgulas, compatível com qualquer editor de planilhas
+      • Excel (.xlsx): planilha formatada, ideal para análises e filtros avançados
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Motoristas
+      O relatório exportado contém todos os motoristas filtrados atualmente na tabela, com informações detalhadas como:
+      • Nome completo e dados pessoais (CPF, RG)
+      • Dados da CNH (número, categoria e validade)
+      • Telefone e contato
+      • Filial vinculada
+      • Status do motorista
+      IMPORTANTE: O botão fica desabilitado quando não há dados na tabela para exportar.`,
+      placement: "bottom",
+    },
     {
       target: "[data-revalidate]",
       title: "Atualização de Dados 🔄",
@@ -929,6 +946,24 @@ const tutorialConfigs: TutorialConfig = {
     },
     createPageStatsTutorialStep(),
     {
+      target: "[data-tutorial='export-button']",
+      title: "Exportar Relatório de Ordens de Serviço 📊",
+      content: `Clique aqui para exportar um relatório completo de ordens de serviço. Ao clicar, escolha o formato desejado:
+      • CSV: arquivo de texto separado por vírgulas, compatível com qualquer editor de planilhas
+      • Excel (.xlsx): planilha formatada, ideal para análises e filtros avançados
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Ordens de Serviço
+      O relatório exportado contém todas as ordens de serviço filtradas atualmente na tabela, com informações detalhadas como:
+      • Veículo e motorista vinculados
+      • Tipo de serviço (preventivo ou corretivo)
+      • Status (aberta, em andamento, concluída)
+      • Datas de abertura, previsão e conclusão
+      • Fornecedor responsável (quando aplicável)
+      • Custos e observações
+      IMPORTANTE: O botão fica desabilitado quando não há dados na tabela para exportar.`,
+      placement: "bottom",
+    },
+    {
       target: "[data-revalidate]",
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
@@ -1210,6 +1245,24 @@ const tutorialConfigs: TutorialConfig = {
     },
     createPageStatsTutorialStep(),
     {
+      target: "[data-tutorial='export-button']",
+      title: "Exportar Relatório de Veículos 📊",
+      content: `Clique aqui para exportar um relatório completo de veículos. Ao clicar, escolha o formato desejado:
+      • CSV: arquivo de texto separado por vírgulas, compatível com qualquer editor de planilhas
+      • Excel (.xlsx): planilha formatada, ideal para análises e filtros avançados
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Veículos
+      O relatório exportado contém todos os veículos filtrados atualmente na tabela, com informações detalhadas como:
+      • Placa, modelo, marca e ano de fabricação
+      • Tipo de veículo e tipo de combustível
+      • Status operacional (ativo, inativo, em manutenção)
+      • Quilometragem atual e da última revisão
+      • Filial vinculada e motorista atribuído
+      • Documentação (Renavam) e dados técnicos
+      IMPORTANTE: O botão fica desabilitado quando não há dados na tabela para exportar.`,
+      placement: "bottom",
+    },
+    {
       target: "[data-revalidate]",
       title: "Atualização de Dados 🔄",
       content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
@@ -1368,7 +1421,7 @@ const tutorialConfigs: TutorialConfig = {
       • CSV: arquivo de texto separado por vírgulas, compatível com qualquer editor de planilhas
       • Excel (.xlsx): planilha formatada, ideal para análises e filtros avançados
       PERMISSÕES NECESSÁRIAS:
-      • LEITURA em Gerenciar Abastecimento
+      • ESCRITA em Gerenciar Abastecimento
       O relatório exportado contém todos os abastecimentos filtrados atualmente na tabela, com informações detalhadas como:
       • Dados do veículo e motorista responsável
       • Tipo de combustível utilizado
@@ -1463,7 +1516,7 @@ const tutorialConfigs: TutorialConfig = {
       • CSV: arquivo de texto separado por vírgulas, compatível com qualquer editor de planilhas
       • Excel (.xlsx): planilha formatada, ideal para análises e filtros avançados
       PERMISSÕES NECESSÁRIAS:
-      • LEITURA em Gerenciar Checklist dos Veículos
+      • ESCRITA em Gerenciar Checklist dos Veículos
       O relatório exportado contém todos os checklists filtrados atualmente na tabela, com informações detalhadas como:
       • Dados do veículo e motorista responsável
       • Condição dos pneus e funcionamento dos faróis
@@ -1553,4 +1606,5 @@ export {
   shouldDisplayDashboardCard,
   hasPermission,
 };
+
 export type { TutorialStep };

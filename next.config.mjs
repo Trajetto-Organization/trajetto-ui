@@ -17,6 +17,14 @@ const nextConfig = {
       fullUrl: true,
     },
   },
+  compiler: {
+    removeConsole:
+      process.env.NODE_ENV === "production"
+        ? {
+            exclude: ["error"], // Keep only console.error if something goes wrong
+          }
+        : false,
+  },
 
   // Don't advertise the framework in HTTP headers (small security win).
   poweredByHeader: false,
@@ -60,6 +68,8 @@ const nextConfig = {
 
   experimental: {
     gzipSize: true,
+    scrollRestoration: true,
+    typedRoutes: true,
 
     // Tree-shake aggressively for libraries with heavy index files.
     // Cuts ~30-40% off bundle for landing pages using lucide-react.

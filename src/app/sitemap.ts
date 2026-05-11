@@ -29,25 +29,25 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       url: `${baseUrl}/about`,
       lastModified: currentDate,
       changeFrequency: "monthly",
-      priority: 0.9, // About - high priority for conversion
+      priority: 1.0, // About - high priority for conversion
     },
     {
       url: `${baseUrl}/quote`,
       lastModified: currentDate,
       changeFrequency: "monthly",
-      priority: 0.95, // Budget - very high priority (conversion)
+      priority: 1.0, // Budget - very high priority (conversion)
     },
     {
       url: `${baseUrl}/contact`,
       lastModified: currentDate,
       changeFrequency: "monthly",
-      priority: 0.8, // Contact - important for conversion
+      priority: 1.0, // Contact - important for conversion
     },
     {
       url: `${baseUrl}/blog`,
       lastModified: currentDate,
       changeFrequency: "weekly", // Updates frequently with new posts
-      priority: 0.9, // Content Hub - Critical for SEO
+      priority: 1.0, // Content Hub - Critical for SEO
     },
   ];
 
@@ -78,7 +78,7 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
       lastModified: post.lastModified || currentDate,
       changeFrequency: "monthly" as const,
       // Featured posts have higher priority
-      priority: post.featured ? 0.9 : 0.8,
+      priority: post.featured ? 1.0 : 0.9,
     }));
   } catch (error) {
     console.log("Erro ao carregar posts do blog para sitemap:", error);

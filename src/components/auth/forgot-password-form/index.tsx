@@ -3,8 +3,8 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useState } from "react";
 
-import Turnstile from "react-turnstile";
 import { motion } from "framer-motion";
+import { CaptchaTurnstile } from "@/components/shared/custom/captcha-turnstile";
 
 import { Button } from "@/components/ui/button";
 import { Loader, MailIcon } from "lucide-react";
@@ -82,8 +82,8 @@ const ForgotPasswordContainer = ({
 
       {process.env.NODE_ENV === "production" && (
         <>
-          <Turnstile
-            key={turnstileKey}
+          <CaptchaTurnstile
+            resetSignal={turnstileKey}
             sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => {
               const input = document.getElementById(
@@ -93,10 +93,8 @@ const ForgotPasswordContainer = ({
               if (input) input.value = token;
               setIsCaptchaValid(true);
             }}
-            theme="auto"
             size="flexible"
-            className="mt-5"
-            appearance="interaction-only"
+            theme="auto"
           />
 
           <input id="turnstile-token" type="hidden" name="turnstileToken" />

@@ -7,3 +7,33 @@ README.md
 !.next/static
 !.next/standalone
 .git
+.gitignore
+.github
+
+# Environment files - NEVER ship secrets in the image
+.env
+.env.*
+!.env.example
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Tests
+tests
+playwright-report
+test-results
+playwright.config.*
+
+# Dev scripts
+scripts/dev-with-tunnel.js
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+coverage
+*.log

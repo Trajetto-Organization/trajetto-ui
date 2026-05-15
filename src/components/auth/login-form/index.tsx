@@ -3,7 +3,6 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useState } from "react";
 
-import Turnstile from "react-turnstile";
 import Link from "next/link";
 
 import { handleLoginUser } from "@/actions/user/login-user";
@@ -13,7 +12,9 @@ import { Loader, LockIcon, MailIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
 import FormInput from "../../shared/custom/form-input";
+
 import { TwoFactorAuthenticationForm } from "../two-factor-authentication-form";
+import { CaptchaTurnstile } from "@/components/shared/custom/captcha-turnstile";
 
 import type {
   LoginFormContainerProps,
@@ -106,8 +107,8 @@ const LoginFormContainer = ({
 
       {process.env.NODE_ENV === "production" && (
         <>
-          <Turnstile
-            key={turnstileKey}
+          <CaptchaTurnstile
+            resetSignal={turnstileKey}
             sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => {
               const input = document.getElementById(
@@ -117,10 +118,8 @@ const LoginFormContainer = ({
               if (input) input.value = token;
               setIsCaptchaValid(true);
             }}
-            theme="auto"
             size="flexible"
-            className="mt-5"
-            appearance="interaction-only"
+            theme="auto"
           />
 
           <input id="turnstile-token" type="hidden" name="turnstileToken" />

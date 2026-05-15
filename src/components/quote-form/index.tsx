@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import Link from "next/link";
-import Turnstile from "react-turnstile";
-
 import type {
   CreateQuoteContainerProps,
   CreateQuoteFormState,
@@ -50,6 +48,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { CaptchaTurnstile } from "../shared/custom/captcha-turnstile";
 
 const QuoteFormContainer = ({
   state,
@@ -229,7 +228,7 @@ const QuoteFormContainer = ({
 
       {process.env.NODE_ENV === "production" && (
         <>
-          <Turnstile
+          <CaptchaTurnstile
             key={turnstileKey}
             sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => {
@@ -242,8 +241,6 @@ const QuoteFormContainer = ({
             }}
             theme="auto"
             size="flexible"
-            className="mt-5"
-            appearance="interaction-only"
           />
 
           <input

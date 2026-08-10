@@ -7,8 +7,6 @@ import { Footer } from "@/components/layouts/footer";
 import { Step } from "@/components/step";
 import { Map } from "@/components/contact-form/map";
 
-import { WhatsApp } from "@/components/home/whatsapp";
-
 export const metadata: Metadata = {
   title: "Contato",
   description: `
@@ -86,9 +84,9 @@ const Contact = (): JSX.Element => {
         <div className="mt-16 mb-24">
           <div className="container px-4 md:px-6">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold">Onde Estamos</h2>
+              <h2 className="text-3xl font-bold">Onde Atendemos</h2>
               <p className="text-muted-foreground mt-2">
-                Saiba onde estamos localizados
+                Operação 100% digital, para frotas em todo o Brasil
               </p>
             </div>
 
@@ -97,7 +95,7 @@ const Contact = (): JSX.Element => {
         </div>
       </main>
       <Footer />
-      <WhatsApp />
+      {/* <WhatsApp /> */}
     </>
   );
 };

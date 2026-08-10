@@ -169,6 +169,76 @@ const DashboardCreateServiceOrderFormSubmit = ({
 
   return (
     <>
+      {/* Regras do fluxo ficam ANTES dos campos: explicam como a quilometragem
+          e o kanban se comportam ao salvar, o que muda a forma de preencher. */}
+      <div className="mt-5">
+        <InfoBox
+          title="ℹ️ Como Funciona o Sistema de Quilometragem:"
+          items={[
+            {
+              icon: "📸",
+              label: "Snapshot",
+              description:
+                "Os dados atuais do veículo são fotografados automaticamente",
+            },
+            {
+              icon: "🔒",
+              label: "Proteção",
+              description:
+                "Dados do snapshot nunca podem ser alterados (auditoria)",
+            },
+            {
+              icon: "🔧",
+              label: "Atualização",
+              description:
+                "Somente a nova quilometragem é editável, apenas na conclusão",
+            },
+            {
+              icon: "🔄",
+              label: "Sincronização",
+              description:
+                "O veículo é atualizado automaticamente quando a OS é finalizada",
+            },
+            {
+              icon: "📋",
+              label: "Kanban",
+              description:
+                "A ordem será automaticamente adicionada ao seu kanban (colunas padrão criadas se necessário)",
+            },
+          ]}
+          variant="blue"
+        />
+
+        <InfoBox
+          title="📋 Integração Automática com Kanban:"
+          items={[
+            {
+              icon: "🏗️",
+              label: "Criação",
+              description:
+                "Colunas padrão criadas automaticamente se não existirem",
+            },
+            {
+              icon: "📍",
+              label: "Posicionamento",
+              description: 'Card adicionado na coluna "Pendente" ou "Concluído"',
+            },
+            {
+              icon: "🎯",
+              label: "Prioridade",
+              description: "Definida automaticamente pelo valor da manutenção",
+            },
+            {
+              icon: "📅",
+              label: "Vencimento",
+              description: "Data calculada automaticamente (7 dias)",
+            },
+          ]}
+          variant="green"
+          className="mt-4"
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Date */}
         <DatePickerField
@@ -382,76 +452,6 @@ const DashboardCreateServiceOrderFormSubmit = ({
           />
         </div>
 
-        {/* Useful Information */}
-        <div className="col-span-1 md:col-span-2 mt-4">
-          <InfoBox
-            title="ℹ️ Como Funciona o Sistema de Quilometragem:"
-            items={[
-              {
-                icon: "📸",
-                label: "Snapshot",
-                description:
-                  "Os dados atuais do veículo são fotografados automaticamente",
-              },
-              {
-                icon: "🔒",
-                label: "Proteção",
-                description:
-                  "Dados do snapshot nunca podem ser alterados (auditoria)",
-              },
-              {
-                icon: "🔧",
-                label: "Atualização",
-                description:
-                  "Somente a nova quilometragem é editável, apenas na conclusão",
-              },
-              {
-                icon: "🔄",
-                label: "Sincronização",
-                description:
-                  "O veículo é atualizado automaticamente quando a OS é finalizada",
-              },
-              {
-                icon: "📋",
-                label: "Kanban",
-                description:
-                  "A ordem será automaticamente adicionada ao seu kanban (colunas padrão criadas se necessário)",
-              },
-            ]}
-            variant="blue"
-          />
-
-          <InfoBox
-            title="📋 Integração Automática com Kanban:"
-            items={[
-              {
-                icon: "🏗️",
-                label: "Criação",
-                description:
-                  "Colunas padrão criadas automaticamente se não existirem",
-              },
-              {
-                icon: "📍",
-                label: "Posicionamento",
-                description:
-                  'Card adicionado na coluna "Pendente" ou "Concluído"',
-              },
-              {
-                icon: "🎯",
-                label: "Prioridade",
-                description:
-                  "Definida automaticamente pelo valor da manutenção",
-              },
-              {
-                icon: "📅",
-                label: "Vencimento",
-                description: "Data calculada automaticamente (7 dias)",
-              },
-            ]}
-            variant="green"
-            className="mt-4"
-          />
-        </div>
       </div>
 
       <div className="flex justify-end mt-6 gap-2">

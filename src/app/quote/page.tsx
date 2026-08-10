@@ -4,7 +4,6 @@ import { Navbar } from "@/components/layouts/navbar";
 import { Footer } from "@/components/layouts/footer";
 
 import { QuoteForm } from "@/components/quote-form";
-import { WhatsApp } from "@/components/home/whatsapp";
 
 export const metadata: Metadata = {
   title: "Orçamento Gratuito | Trajetto - Solicite Sua Cotação Personalizada",
@@ -75,7 +74,6 @@ const Quote = (): JSX.Element => {
         <QuoteForm />
       </main>
       <Footer />
-      <WhatsApp />
     </>
   );
 };

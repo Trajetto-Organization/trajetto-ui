@@ -6,10 +6,18 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { motion, useInView } from "framer-motion";
-import { QRCodeSVG } from "qrcode.react";
+import { Camera, MapPin, ShieldCheck, WifiOff } from "lucide-react";
 
 import { Step } from "@/components/step";
 import { AndroidIcon } from "@/components/icons/brand";
+
+// Import estático: o Next lê as dimensões no build e gera o `blurDataURL`
+// sozinho, então o blur sai de graça e sem CLS. Com `src="/arquivo.webp"`
+// (string) nada disso acontece.
+import dashboardScreen from "@/../public/mobile-app-dashboard.webp";
+import fuelScreen from "@/../public/mobile-app-fuel.webp";
+
+import checklistScreen from "@/../public/mobile-app-vehicle-checklist.webp";
 
 const AppShowcase = (): JSX.Element => {
   const sectionRef = useRef(null);
@@ -25,22 +33,54 @@ const AppShowcase = (): JSX.Element => {
       title: "Selecione seu Veículo",
       description:
         "Encontre rapidamente o veículo da frota, visualize o status dos veículos e escolha entre abastecimento ou checklist.",
-      image: "/mobile-app-dashboard.webp",
+      image: dashboardScreen,
       color: "from-blue-500/20 to-purple-500/20",
     },
     {
       title: "Abastecimento Inteligente",
       description:
         "Registre abastecimentos em segundos com foto do odômetro, calcule custos automaticamente e mantenha seu controle em dia.",
-      image: "/mobile-app-fuel.webp",
+      image: fuelScreen,
       color: "from-purple-500/20 to-pink-500/20",
     },
     {
       title: "Checklist Completo",
       description:
         "Realize inspeções veiculares detalhadas com fotos obrigatórias, garanta a segurança da frota e documente tudo no app.",
-      image: "/mobile-app-vehicle-checklist.webp",
+      image: checklistScreen,
       color: "from-green-500/20 to-blue-500/20",
+    },
+  ];
+
+  // Capacidades que o app realmente entrega hoje — nada aqui é promessa.
+  const appCapabilities = [
+    {
+      icon: WifiOff,
+      title: "Funciona sem internet",
+      description:
+        "O formulário e as fotos ficam salvos no aparelho. Se o app fechar ou o sinal cair, nada se perde.",
+      color: "#2563eb",
+    },
+    {
+      icon: Camera,
+      title: "Foto direto do campo",
+      description:
+        "Odômetro e checklist são registrados com foto tirada na hora, otimizada antes do envio.",
+      color: "#7c3aed",
+    },
+    {
+      icon: MapPin,
+      title: "Localização no registro",
+      description:
+        "O abastecimento captura a posição no momento do envio, não uma posição antiga guardada.",
+      color: "#059669",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Envio sem duplicar",
+      description:
+        "Se a conexão falhar no meio, tentar de novo não cria um segundo lançamento no sistema.",
+      color: "#d81b60",
     },
   ];
 
@@ -162,7 +202,8 @@ const AppShowcase = (): JSX.Element => {
                       src={screen.image}
                       alt={screen.title}
                       className="w-full h-full object-cover"
-                      loading="lazy"
+                      placeholder="blur"
+                      sizes="(max-width: 768px) 280px, (max-width: 1024px) 30vw, 280px"
                       fill
                     />
                   </div>
@@ -177,6 +218,54 @@ const AppShowcase = (): JSX.Element => {
                   </h3>
                   <p className="text-muted-foreground">{screen.description}</p>
                 </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Capacidades reais do app de campo */}
+          <motion.div
+            className="mt-24 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            initial="hidden"
+            animate={isPhonesInView ? "visible" : "hidden"}
+            variants={phoneContainerVariants}
+          >
+            {appCapabilities.map((capability) => (
+              <motion.div
+                key={capability.title}
+                variants={phoneTextVariants}
+                // Hover em CSS, não em `whileHover`: ao sair do hover o
+                // framer-motion volta usando a transição do estado base — que
+                // aqui é a variante de entrada, com `delay: 0.2` e `duration:
+                // 0.6`. Era isso que fazia a volta parecer travada. Em CSS ida
+                // e volta usam a mesma curva e a mesma duração.
+                className="group h-full rounded-2xl border border-zinc-200/80
+                bg-white/60 p-6 shadow-sm backdrop-blur-sm
+                transition-[transform,box-shadow] duration-200 ease-out
+                hover:-translate-y-1.5 hover:shadow-lg"
+              >
+                <div
+                  className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl
+                  transition-transform duration-300 group-hover:scale-110"
+                  style={{ backgroundColor: `${capability.color}15` }}
+                >
+                  <capability.icon
+                    className="h-5 w-5"
+                    style={{ color: capability.color }}
+                  />
+                </div>
+
+                <h3 className="mb-2 text-base font-semibold tracking-tight text-slate-800">
+                  {capability.title}
+                </h3>
+                <p className="text-sm leading-relaxed text-zinc-500">
+                  {capability.description}
+                </p>
+
+                <div
+                  className="mt-4 h-0.5 w-8 rounded-full transition-[width]
+                  duration-200 ease-out group-hover:w-full"
+                  style={{ backgroundColor: capability.color }}
+                />
               </motion.div>
             ))}
           </motion.div>
@@ -208,12 +297,12 @@ const AppShowcase = (): JSX.Element => {
                 }}
               >
                 <Link
-                  href="#"
+                  href="/contact"
                   className="button-shine bg-[#d81b60] text-white rounded-full 
                   px-8 py-3 text-base font-medium shadow-lg inline-block
                   text-center w-full relative overflow-hidden"
                 >
-                  <span className="relative z-10">Baixe o nosso app</span>
+                  <span className="relative z-10">Quero ser avisado!</span>
                   <div className="shine-effect" />
                 </Link>
               </motion.div>
@@ -233,26 +322,34 @@ const AppShowcase = (): JSX.Element => {
                 }}
               >
                 <div className="flex-shrink-0">
-                  <QRCodeSVG
-                    value="https://app.com/download"
-                    size={130}
-                    bgColor="#ffffff"
-                    fgColor="#000000"
-                    level="H"
-                    className="border-4 border-white shadow-md rounded-xl"
-                  />
+                  <div
+                    className="flex h-[130px] w-[130px] items-center justify-center
+                    rounded-2xl border border-zinc-200 bg-gradient-to-br
+                    from-zinc-50 to-blue-50/60 shadow-sm"
+                  >
+                    <AndroidIcon size={56} color="#3DDC84" />
+                  </div>
                 </div>
 
                 <div className="flex flex-col text-left">
+                  <span
+                    className="mb-2 w-fit rounded-full bg-blue-50 px-3 py-1
+                    text-[11px] font-semibold uppercase tracking-widest text-blue-700"
+                  >
+                    Em breve
+                  </span>
+
                   <h3 className="font-bold text-lg">
-                    Baixe o aplicativo gratuito
+                    Aplicativo Android a caminho
                   </h3>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Leia o código com a câmera do seu smartphone para baixar o
-                    nosso aplicativo gratuitamente.
+                    O app de campo está em fase final de testes. Deixe seu
+                    contato e avisamos assim que a publicação sair.
                   </p>
 
-                  <p className="mt-4 text-base font-semibold">Disponível em:</p>
+                  <p className="mt-4 text-base font-semibold">
+                    Plataforma prevista:
+                  </p>
 
                   <div className="flex items-center mt-1 space-x-2">
                     <span className="font-medium">Android</span>

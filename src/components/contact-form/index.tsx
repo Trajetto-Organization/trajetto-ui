@@ -16,7 +16,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { Loader, Mail, MessageSquare, Send, MapPin, Clock } from "lucide-react";
+import {
+  Clock,
+  ClipboardCheck,
+  Fuel,
+  Globe,
+  LayoutGrid,
+  Loader,
+  Mail,
+  MessageSquare,
+  Send,
+  ShieldCheck,
+} from "lucide-react";
 import { WhatsappIcon } from "@/components/icons/brand";
 
 const ContactForm = (): JSX.Element => {
@@ -33,37 +44,40 @@ const ContactForm = (): JSX.Element => {
     handleUpdateMessage,
   } = useContact();
 
+  // Recursos que o sistema realmente entrega hoje. Substitui os depoimentos
+  // de clientes fictícios: enquanto não houver caso real para contar, o
+  // produto fala por si.
   const testimonials = [
     {
       quote:
-        "A Trajetto transformou completamente nossa logística. Reduzimos custos operacionais em 30% no primeiro trimestre!",
-      name: "Roberto Martins",
-      role: "Diretor de Operações, LogTech",
-      initials: "RM",
+        "Inspeção veicular com foto obrigatória, localização e assinatura — preenchida direto no celular, mesmo sem sinal no pátio.",
+      name: "Checklist em campo",
+      role: "Aplicativo Android",
+      icon: ClipboardCheck,
       color: "#d81b60",
     },
     {
       quote:
-        "O sistema de gestão da Trajetto nos permitiu otimizar rotas e economizar combustível. Resultado imediato na nossa operação!",
-      name: "Camila Souza",
-      role: "Gerente de Frotas, TransporteMax",
-      initials: "CS",
+        "Abastecimento registrado com foto do odômetro e cálculo automático de custo, sem planilha e sem digitação em duplicidade.",
+      name: "Controle de combustível",
+      role: "App e painel web",
+      icon: Fuel,
       color: "#d81b60",
     },
     {
       quote:
-        "Após implementar as soluções da Trajetto, conseguimos reduzir o tempo de inatividade dos veículos em 45%. Impressionante!",
-      name: "Fernando Almeida",
-      role: "CEO, ExpressLog",
-      initials: "FA",
+        "Cada empresa enxerga apenas os próprios dados, com perfis de acesso e permissões definidos por você para cada função.",
+      name: "Multi-empresa e permissões",
+      role: "Segurança de acesso",
+      icon: ShieldCheck,
       color: "#d81b60",
     },
     {
       quote:
-        "A interface intuitiva e os relatórios detalhados nos deram visibilidade total da nossa operação. Recomendo fortemente.",
-      name: "Juliana Costa",
-      role: "Supervisora de Logística, CargoNet",
-      initials: "JC",
+        "Ordens de serviço, manutenções, multas e contas a pagar reunidas no mesmo lugar, com histórico por veículo e por motorista.",
+      name: "Gestão completa da frota",
+      role: "Painel web",
+      icon: LayoutGrid,
       color: "#d81b60",
     },
   ];
@@ -137,7 +151,12 @@ const ContactForm = (): JSX.Element => {
                     </div>
                     <div>
                       <p className="text-sm text-white/70">WhatsApp</p>
-                      <p className="font-medium">+55 (31) 999999-9999</p>
+                      <p className="font-medium text-white/60">
+                        Em breve
+                        <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 text-[10px] uppercase tracking-wider">
+                          a definir
+                        </span>
+                      </p>
                     </div>
                   </div>
 
@@ -147,18 +166,23 @@ const ContactForm = (): JSX.Element => {
                     </div>
                     <div>
                       <p className="text-sm text-white/70">Email</p>
-                      <p className="font-medium">contato@intrajetto.com</p>
+                      <p className="font-medium text-white/60">
+                        Em breve
+                        <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 text-[10px] uppercase tracking-wider">
+                          a definir
+                        </span>
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/10 p-3 rounded-full">
-                      <MapPin className="h-5 w-5" />
+                      <Globe className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm text-white/70">Endereço</p>
+                      <p className="text-sm text-white/70">Atendimento</p>
                       <p className="font-medium">
-                        Av. Afonso Pena, 1500 - Belo Horizonte, MG
+                        100% digital, em todo o Brasil
                       </p>
                     </div>
                   </div>
@@ -204,7 +228,7 @@ const ContactForm = (): JSX.Element => {
                       items-center justify-center text-white font-bold"
                       style={{ backgroundColor: currentTestimonial.color }}
                     >
-                      {currentTestimonial.initials}
+                      <currentTestimonial.icon className="h-5 w-5" />
                     </motion.div>
                     <div className="ml-3">
                       <p className="font-medium">{currentTestimonial.name}</p>

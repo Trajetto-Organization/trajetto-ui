@@ -278,6 +278,53 @@ const DashboardUpdateFuelFormSubmit = ({
 
   return (
     <>
+      {/* Regras e dados de referência ficam ANTES dos campos: a restrição de
+          quilometragem e a quilometragem atual do veículo precisam ser lidas
+          durante o preenchimento, não depois de errar. */}
+      <div className="mt-5">
+        <Alert
+          className="border-blue-200
+          bg-blue-50 dark:bg-blue-950/20"
+        >
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription
+            className="text-blue-700
+            dark:text-blue-300"
+          >
+            <strong>ℹ️ Informações importantes:</strong>
+            <br />
+            • A quilometragem não pode ser menor que a atual do veículo
+            <br />
+            • O valor total será recalculado automaticamente (litros × preço por
+            litro)
+            <br />• Alterações na quilometragem atualizarão o veículo
+          </AlertDescription>
+        </Alert>
+      </div>
+
+      {data && (
+        <div
+          className="mt-4 p-4 bg-green-50
+          dark:bg-green-900/20 rounded-lg border border-green-200"
+        >
+          <p className="text-sm text-green-700 dark:text-green-300">
+            <strong>🚗 Dados Atuais do Veículo:</strong>
+            <br />
+            Quilometragem atual: {data.current_mileage.toLocaleString()} km
+            <br />
+            Intervalo de manutenção:{" "}
+            {data.maintenance_interval_km.toLocaleString()} km
+            {data.last_maintenance_mileage && (
+              <>
+                <br />
+                Última manutenção:{" "}
+                {data.last_maintenance_mileage.toLocaleString()} km
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {/* Refueling Date */}
         <DatePickerField
@@ -512,51 +559,6 @@ const DashboardUpdateFuelFormSubmit = ({
           />
         </div>
 
-        {/* Information Alert */}
-        <div className="col-span-1 md:col-span-2 mt-4">
-          <Alert
-            className="border-blue-200 
-            bg-blue-50 dark:bg-blue-950/20"
-          >
-            <Info className="h-4 w-4 text-blue-600" />
-            <AlertDescription
-              className="text-blue-700 
-              dark:text-blue-300"
-            >
-              <strong>ℹ️ Informações importantes:</strong>
-              <br />
-              • A quilometragem não pode ser menor que a atual do veículo
-              <br />
-              • O valor total será recalculado automaticamente (litros × preço
-              por litro)
-              <br />• Alterações na quilometragem atualizarão o veículo
-            </AlertDescription>
-          </Alert>
-        </div>
-
-        {/* Current Vehicle Info */}
-        {data && (
-          <div
-            className="col-span-1 md:col-span-2 mt-4 p-4 bg-green-50 
-            dark:bg-green-900/20 rounded-lg border border-green-200"
-          >
-            <p className="text-sm text-green-700 dark:text-green-300">
-              <strong>🚗 Dados Atuais do Veículo:</strong>
-              <br />
-              Quilometragem atual: {data.current_mileage.toLocaleString()} km
-              <br />
-              Intervalo de manutenção:{" "}
-              {data.maintenance_interval_km.toLocaleString()} km
-              {data.last_maintenance_mileage && (
-                <>
-                  <br />
-                  Última manutenção:{" "}
-                  {data.last_maintenance_mileage.toLocaleString()} km
-                </>
-              )}
-            </p>
-          </div>
-        )}
 
         {/* History Information */}
         <div className="col-span-1 md:col-span-2 mt-4">

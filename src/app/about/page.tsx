@@ -10,7 +10,6 @@ import { AboutTimelineSection } from "@/components/about/about-timeline-section"
 import { AboutStatsSection } from "@/components/about/about-stats-section";
 
 import { AboutTeamSection } from "@/components/about/about-team-section";
-import { WhatsApp } from "@/components/home/whatsapp";
 
 export const metadata: Metadata = {
   title: "Sobre Nós",
@@ -85,7 +84,7 @@ const About = (): JSX.Element => {
         <AboutTeamSection />
       </main>
       <Footer />
-      <WhatsApp />
+      {/* <WhatsApp /> */}
     </>
   );
 };

@@ -21,9 +21,11 @@ const MapComponent = dynamic(() => import("./map-component"), {
 const Map = (): JSX.Element => {
   const controls = useAnimation();
 
-  // Coordinates of Av. Afonso Pena, 1500, Belo Horizonte
-  const latitude = -19.926786;
-  const longitude = -43.934763;
+  // Centro geográfico aproximado do Brasil. O Trajetto é uma operação digital:
+  // não há escritório para apontar, então o mapa comunica alcance nacional em
+  // vez de fingir um endereço.
+  const latitude = -14.235;
+  const longitude = -51.9253;
 
   useEffect(() => {
     // Initialize animation when component mounts
@@ -35,9 +37,9 @@ const Map = (): JSX.Element => {
   }, [controls]);
 
   const contactInformation = [
-    { title: "Endereço", content: "Av. Afonso Pena, 1500 - Centro" },
-    { title: "WhatsApp", content: "+55 (31) 99999-9999" },
-    { title: "Email", content: "contato@intrajetto.com" },
+    { title: "Atendimento", content: "100% digital, sem instalação local" },
+    { title: "Cobertura", content: "Todo o território nacional" },
+    { title: "Horário", content: "Seg-Sex: 09:00 - 18:00" },
   ];
 
   return (
@@ -47,7 +49,13 @@ const Map = (): JSX.Element => {
     >
       {/* Container for Leaflet map */}
       <div className="absolute inset-0 z-0">
-        <MapComponent latitude={latitude} longitude={longitude} />
+        <MapComponent
+          latitude={latitude}
+          longitude={longitude}
+          zoom={4}
+          popupTitle="Trajetto"
+          popupSubtitle="Atendemos frotas em todo o Brasil"
+        />
       </div>
 
       {/* Container for perfectly centered ping effect */}

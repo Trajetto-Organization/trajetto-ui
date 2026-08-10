@@ -2,6 +2,7 @@
   "name": "trajetto-fleet-manager-ui",
   "version": "0.1.0",
   "private": true,
+  "description": "Front-end do Trajetto (Next.js App Router): gestão de frotas com áreas de dashboard e administração, autenticação com perfis de acesso e verificação em duas etapas, blog e páginas legais. Consome a trajetto-api; o conteúdo editorial vem do trajetto-studio.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

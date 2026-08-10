@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 
 import { Loader, Mail, MessageSquare, Send, MapPin, Clock } from "lucide-react";
-import { FaWhatsapp } from "react-icons/fa6";
+import { WhatsappIcon } from "@/components/icons/brand";
 
 const ContactForm = (): JSX.Element => {
   const {
@@ -133,7 +133,7 @@ const ContactForm = (): JSX.Element => {
                 <div className="space-y-6">
                   <div className="flex items-center space-x-4">
                     <div className="bg-white/10 p-3 rounded-full">
-                      <FaWhatsapp className="h-5 w-5" />
+                      <WhatsappIcon className="h-5 w-5" />
                     </div>
                     <div>
                       <p className="text-sm text-white/70">WhatsApp</p>

@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 
 import { sfPro, inter } from "./fonts";
 
-import cx from "classnames";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -139,7 +138,8 @@ const RootLayout = ({
         className={cn(
           `flex min-h-screen flex-col bg-background 
           text-foreground antialiased`,
-          cx(sfPro.variable, inter.variable),
+          sfPro.variable,
+          inter.variable,
         )}
       >
         <ThemeProvider>{children}</ThemeProvider>

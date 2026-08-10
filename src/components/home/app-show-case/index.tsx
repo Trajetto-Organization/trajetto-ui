@@ -9,7 +9,7 @@ import { motion, useInView } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 
 import { Step } from "@/components/step";
-import { FaAndroid } from "react-icons/fa6";
+import { AndroidIcon } from "@/components/icons/brand";
 
 const AppShowcase = (): JSX.Element => {
   const sectionRef = useRef(null);
@@ -256,7 +256,7 @@ const AppShowcase = (): JSX.Element => {
 
                   <div className="flex items-center mt-1 space-x-2">
                     <span className="font-medium">Android</span>
-                    <FaAndroid size={18} color="#3DDC84" />
+                    <AndroidIcon size={18} color="#3DDC84" />
                   </div>
                 </div>
               </motion.div>

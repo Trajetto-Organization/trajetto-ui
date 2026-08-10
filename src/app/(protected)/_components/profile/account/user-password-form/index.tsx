@@ -23,7 +23,7 @@ import { Loader } from "lucide-react";
 import { handleUpdateUserPassword } from "@/actions/user/update-user-password";
 import FormInput from "@/components/shared/custom/form-input";
 
-import { MdLockOutline } from "react-icons/md";
+import { Lock } from "lucide-react";
 import { useUpdatePasswordForm } from "./hooks";
 
 const UpdatePasswordFormSubmit = ({
@@ -121,7 +121,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
           >
             <DialogTrigger asChild>
               <Button type="submit" variant="outline" disabled={error}>
-                <MdLockOutline className="mr-1 size-6" />
+                <Lock className="mr-1 size-6" />
                 <span>Atualizar Senha</span>
               </Button>
             </DialogTrigger>

@@ -23,12 +23,13 @@ const MapComponent = ({
       // @ts-ignore
       delete L.Icon.Default.prototype._getIconUrl;
 
+      // Served from `public/` instead of a CDN: the markers stay available
+      // offline and behind restrictive networks, and they match the Leaflet
+      // version actually installed.
       L.Icon.Default.mergeOptions({
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
+        iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+        iconUrl: "/leaflet/marker-icon.png",
+        shadowUrl: "/leaflet/marker-shadow.png",
       });
     };
 

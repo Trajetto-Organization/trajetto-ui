@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 import { Info, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
-import { FaWhatsapp } from "react-icons/fa6";
+import { WhatsappIcon } from "@/components/icons/brand";
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -90,7 +90,7 @@ const WhatsAppSettings = ({
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <FaWhatsapp className="h-7 w-7 text-green-500" />
+          <WhatsappIcon className="h-7 w-7 text-green-500" />
           <div>
             <h3 className="text-lg font-semibold">WhatsApp</h3>
             <p className="text-sm text-muted-foreground">

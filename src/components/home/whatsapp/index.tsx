@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaSquareWhatsapp } from "react-icons/fa6";
+import { WhatsappSquareIcon } from "@/components/icons/brand";
 
 const WhatsApp = (): JSX.Element => {
   const phoneNumber = "5524999999999";
@@ -14,7 +14,7 @@ const WhatsApp = (): JSX.Element => {
         title="Fale com a gente no WhatsApp"
         className="block"
       >
-        <FaSquareWhatsapp
+        <WhatsappSquareIcon
           size={60}
           className="text-[#25D366] hover:text-[#1da851] transition-colors"
         />

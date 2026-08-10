@@ -15,11 +15,8 @@ import { DataExportShowcase } from "@/components/home/data-export";
 import { FleetManagementDashboard } from "@/components/home/fleet-management-dashboard";
 import { InteractiveDemo } from "@/components/home/interactive-demo";
 
-import { Reviews } from "@/components/home/reviews";
 import { AppShowcase } from "@/components/home/app-show-case";
-
 import { Stats } from "@/components/home/stats";
-import { WhatsApp } from "@/components/home/whatsapp";
 
 import { Banner } from "@/components/home/banner";
 import { Footer } from "@/components/layouts/footer";
@@ -41,11 +38,11 @@ const Home = (): JSX.Element => {
       <DataExportShowcase />
       <FleetManagementDashboard />
       <InteractiveDemo />
-      <Reviews />
+      {/* <Reviews /> */}
       <AppShowcase />
       <Banner />
       <Footer />
-      <WhatsApp />
+      {/* <WhatsApp /> */}
     </>
   );
 };

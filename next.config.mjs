@@ -38,25 +38,17 @@ const nextConfig = {
         protocol: "https",
         hostname: "cdn.sanity.io",
       },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "avatar.vercel.sh",
-      },
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
       // Local backend development
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "3333",
-        pathname: "/tmp/**",
-      },
+      ...(process.env.NODE_ENV === "development"
+        ? [
+            {
+              protocol: "http",
+              hostname: "localhost",
+              port: "3333",
+              pathname: "/tmp/**",
+            },
+          ]
+        : []),
       // Cloudflare R2 production storage
       {
         protocol: "https",

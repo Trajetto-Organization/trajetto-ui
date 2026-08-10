@@ -28,7 +28,7 @@ test-results
 playwright.config.*
 
 # Dev scripts
-scripts/dev-with-tunnel.js
+scripts/optimize-images.js
 
 # OS
 .DS_Store

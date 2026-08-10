@@ -3,7 +3,7 @@
 # ---------------------------------------------------------
 # STAGE 1: Base (Node, certs, dumb-init)
 # ---------------------------------------------------------
-FROM node:20-slim AS base
+FROM node:22.21.1-slim AS base
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates dumb-init \

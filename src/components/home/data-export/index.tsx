@@ -316,7 +316,7 @@ const DataExportShowcase = (): JSX.Element => {
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.8 }}
+                transition={{ delay: 0.3 }}
               >
                 <motion.div
                   animate={{ y: [0, 4, 0] }}
@@ -343,12 +343,12 @@ const DataExportShowcase = (): JSX.Element => {
                   className="group relative rounded-2xl border
                 bg-slate-900 dark:bg-slate-950
                   p-4 overflow-hidden shadow-lg hover:shadow-xl
-                  transition-shadow duration-300"
+                  transition-[transform,box-shadow] duration-200 ease-out
+                  hover:-translate-y-1"
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.7 }}
-                  whileHover={{ y: -2 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
                 >
                   {/* Glow */}
                   <div
@@ -387,7 +387,7 @@ const DataExportShowcase = (): JSX.Element => {
                           initial={{ opacity: 0 }}
                           whileInView={{ opacity: 1 }}
                           viewport={{ once: true }}
-                          transition={{ delay: 0.9 + i * 0.1 }}
+                          transition={{ delay: 0.34 + i * 0.05 }}
                         >
                           {line}
                         </motion.div>
@@ -406,14 +406,14 @@ const DataExportShowcase = (): JSX.Element => {
                 <motion.div
                   className="group relative rounded-2xl border bg-card
                   p-4 overflow-hidden shadow-lg hover:shadow-xl
-                  transition-shadow duration-300
+                  transition-[transform,box-shadow] duration-200 ease-out
+                  hover:-translate-y-1
                   bg-gradient-to-br from-background via-background
                 to-indigo-500/[0.04] dark:to-indigo-500/[0.08]"
                   initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.8 }}
-                  whileHover={{ y: -2 }}
+                  transition={{ delay: 0.28, duration: 0.4 }}
                 >
                   {/* Glow */}
                   <div
@@ -453,7 +453,7 @@ const DataExportShowcase = (): JSX.Element => {
                           initial={{ opacity: 0 }}
                           whileInView={{ opacity: 1 }}
                           viewport={{ once: true }}
-                          transition={{ delay: 1.0 + i * 0.1 }}
+                          transition={{ delay: 0.4 + i * 0.05 }}
                         >
                           {row.slice(0, 4).map((cell, j) => (
                             <div
@@ -488,7 +488,7 @@ const DataExportShowcase = (): JSX.Element => {
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: 1.2 }}
+                transition={{ delay: 0.55 }}
               >
                 <Sparkles size={12} className="text-[#d81b60]" />
                 <span>

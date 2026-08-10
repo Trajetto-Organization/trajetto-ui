@@ -1,41 +1,46 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useInView, motion } from "framer-motion";
 
 import Image from "next/image";
+
+// Imports estáticos: o Next gera o `blurDataURL` no build. O padrão anterior
+// (`useState` + fade + skeleton cinza) dependia de JS no cliente e piscava.
+import michaelPhoto from "@/../public/about/michael-about-co-founder.webp";
+import gabrielPhoto from "@/../public/about/gabriel-about-co-founder.webp";
+
+import thiagoPhoto from "@/../public/about/thiago-about-co-founder.webp";
+import jomarPhoto from "@/../public/about/jomar-about-co-founder.webp";
 
 const AboutTeamSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
 
-  const [imageLoaded, setImageLoaded] = useState<{ [key: number]: boolean }>(
-    {},
-  );
   const team = [
     {
       name: "Michael Sivori",
       role: "CPO & Co-Fundador",
       bio: "Lidera design e experiência do usuário da plataforma com foco em interface e front-end.",
-      image: "/about/michael-about-co-founder.webp",
+      image: michaelPhoto,
     },
     {
       name: "Gabriel Mesquita",
       role: "CTO & Co-Fundador",
       bio: "Arquiteto técnico da plataforma. Especialista em desenvolvimento full-stack.",
-      image: "/about/gabriel-about-co-founder.webp",
+      image: gabrielPhoto,
     },
     {
       name: "Thiago Baptista",
       role: "Head de Infraestrutura & Co-Fundador",
       bio: "Especialista em automação, IA e arquitetura de sistemas. CEO da THS Tecnologia.",
-      image: "/about/thiago-about-co-founder.webp",
+      image: thiagoPhoto,
     },
     {
       name: "Jomar Pereira",
       role: "Head Comercial & Co-Fundador",
       bio: "Lidera estratégias de vendas e relacionamento com clientes no mercado B2B de gestão de frotas.",
-      image: "/about/jomar-about-co-founder.webp",
+      image: jomarPhoto,
     },
   ];
 
@@ -66,24 +71,11 @@ const AboutTeamSection = (): JSX.Element => {
                   src={member.image}
                   alt={`${member.name} - ${member.role}`}
                   fill
-                  className={`object-cover transition-opacity duration-700 ${
-                    imageLoaded[index] ? "opacity-100" : "opacity-0"
-                  }`}
+                  className="object-cover"
                   quality={85}
-                  onLoad={() =>
-                    setImageLoaded((prev) => ({ ...prev, [index]: true }))
-                  }
+                  placeholder="blur"
                   sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
-
-                {/* Loading skeleton */}
-                {!imageLoaded[index] && (
-                  <div
-                    className="absolute inset-0
-                    bg-gradient-to-br from-gray-300
-                    to-gray-400 animate-pulse"
-                  />
-                )}
 
                 {/* Gradient overlay */}
                 <div

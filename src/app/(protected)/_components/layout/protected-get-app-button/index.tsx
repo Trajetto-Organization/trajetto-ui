@@ -8,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Smartphone } from "lucide-react";
 
-import { QRCodeSVG } from "qrcode.react";
 import { useSidebar } from "@/components/ui/sidebar";
 
 const ProtectedGetAppButton = (): JSX.Element => {
@@ -34,16 +33,18 @@ const ProtectedGetAppButton = (): JSX.Element => {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          <div className="flex flex-col items-center w-40 py-1">
-            <QRCodeSVG
-              value="https://app.com/download"
-              size={160}
-              bgColor="#ffffff"
-              fgColor="#000000"
-              level="H"
-            />
+          {/* Sem QR code enquanto o app não estiver publicado: um código que
+              aponta para lugar nenhum frustra mais do que ajuda. */}
+          <div className="flex flex-col items-center w-44 py-1">
+            <span
+              className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px]
+              font-semibold uppercase tracking-wider text-primary"
+            >
+              Em breve
+            </span>
             <p className="mt-2 text-xs text-center text-muted-foreground">
-              Escaneie para baixar o nosso app
+              O aplicativo Android está em fase final de testes. Avisaremos por
+              aqui assim que a publicação sair.
             </p>
           </div>
         </TooltipContent>

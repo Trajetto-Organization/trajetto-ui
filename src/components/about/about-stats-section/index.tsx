@@ -9,7 +9,13 @@ import {
 } from "react";
 
 import { useInView, motion, animate } from "framer-motion";
-import { Building, Globe, LucideProps, TrendingUp, Truck } from "lucide-react";
+import {
+  LayoutGrid,
+  LucideProps,
+  ShieldCheck,
+  Smartphone,
+  WifiOff,
+} from "lucide-react";
 
 interface StatCardProps {
   stat: {
@@ -30,43 +36,45 @@ const AboutStatsSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
-  // More detailed stats with colors and descriptions
+  // Números do PRODUTO, não da base de clientes. Cada um é verificável dentro
+  // do próprio sistema — nada aqui depende de tração comercial que ainda não
+  // existe.
   const stats = [
     {
-      value: 500,
+      value: 20,
       suffix: "+",
-      label: "Clientes",
-      icon: Building,
+      label: "Módulos de Gestão",
+      icon: LayoutGrid,
       color1: "#0ea5e9", // Sky blue
       color2: "#2563eb", // Blue
-      description: "Empresas que confiam na Trajetto",
+      description: "Frota, ordens de serviço, custos, multas e muito mais",
     },
     {
-      value: 30,
-      suffix: "K+",
-      label: "Veículos Gerenciados",
-      icon: Truck,
+      value: 2,
+      suffix: "",
+      label: "Plataformas",
+      icon: Smartphone,
       color1: "#16a34a", // Green
       color2: "#059669", // Emerald
-      description: "Monitorados em tempo real",
+      description: "Painel web completo e app Android de campo",
     },
     {
-      value: 15,
-      suffix: "M+",
-      label: "Km Otimizados Mensalmente",
-      icon: TrendingUp,
+      value: 100,
+      suffix: "%",
+      label: "Isolamento por Empresa",
+      icon: ShieldCheck,
       color1: "#d81b60", // Pink
       color2: "#9d174d", // Rose
-      description: "Economizando combustível e tempo",
+      description: "Cada empresa enxerga apenas os próprios dados",
     },
     {
-      value: 99,
-      suffix: "%",
-      label: "Satisfação dos Clientes",
-      icon: Globe,
+      value: 24,
+      suffix: "/7",
+      label: "Registro em Campo",
+      icon: WifiOff,
       color1: "#8b5cf6", // Purple
       color2: "#6d28d9", // Violet
-      description: "Clientes recomendam nossa solução",
+      description: "O app funciona mesmo sem conexão no momento do registro",
     },
   ];
 
@@ -99,7 +107,7 @@ const AboutStatsSection = (): JSX.Element => {
               transition: "all 0.8s cubic-bezier(0.17, 0.55, 0.55, 1)",
             }}
           >
-            Trajetto em Números
+            O que o Trajetto entrega
           </motion.h2>
           <motion.p
             className="text-xl text-muted-foreground max-w-2xl mx-auto"
@@ -109,8 +117,8 @@ const AboutStatsSection = (): JSX.Element => {
               transition: "all 0.8s cubic-bezier(0.17, 0.55, 0.55, 1) 0.2s",
             }}
           >
-            O impacto positivo da nossa solução em empresas de todos os
-            segmentos
+            Uma plataforma completa de gestão de frotas, do escritório ao
+            motorista em campo
           </motion.p>
         </div>
 

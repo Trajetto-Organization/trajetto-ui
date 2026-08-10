@@ -3,8 +3,8 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 
-import { motion } from "motion/react";
-import { IconUpload } from "@tabler/icons-react";
+import { motion } from "framer-motion";
+import { Upload } from "lucide-react";
 
 import Cropper from "react-easy-crop";
 import { Slider } from "@/components/ui/slider";
@@ -223,14 +223,14 @@ const FileUpload = ({
                         flex-col items-center"
                       >
                         Soltar
-                        <IconUpload
+                        <Upload
                           className="h-4 w-4 text-neutral-600 
                           dark:text-neutral-400"
                         />
                       </motion.p>
                     ) : (
-                      <IconUpload
-                        className="h-4 w-4 text-neutral-600 
+                      <Upload
+                        className="h-4 w-4 text-neutral-600
                         dark:text-neutral-300"
                       />
                     )}

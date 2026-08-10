@@ -1,9 +1,5 @@
 import Link from "next/link";
-import {
-  InstagramLogoIcon,
-  LinkedInLogoIcon,
-  TwitterLogoIcon,
-} from "@radix-ui/react-icons";
+import { Instagram, Linkedin, Twitter } from "lucide-react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -48,7 +44,7 @@ const Footer = (): JSX.Element => {
                 target="_blank"
                 href="https://www.linkedin.com/company/trajetto-official"
               >
-                <LinkedInLogoIcon className="h-5 w-5" />
+                <Linkedin className="h-5 w-5" />
               </Link>
               <Link
                 aria-label="Redirecionar para o instagram"
@@ -58,7 +54,7 @@ const Footer = (): JSX.Element => {
                 target="_blank"
                 href="https://www.instagram.com/trajetto_official"
               >
-                <InstagramLogoIcon className="h-5 w-5" />
+                <Instagram className="h-5 w-5" />
               </Link>
               <Link
                 aria-label="Redirecionar para o twitter"
@@ -68,7 +64,7 @@ const Footer = (): JSX.Element => {
                 target="_blank"
                 href="https://x.com/Trajetto"
               >
-                <TwitterLogoIcon className="h-5 w-5" />
+                <Twitter className="h-5 w-5" />
               </Link>
             </div>
           </div>

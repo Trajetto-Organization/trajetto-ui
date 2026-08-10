@@ -5,6 +5,9 @@ import Link from "next/link";
 
 import Image from "next/image";
 
+// Import estático: o Next gera o `blurDataURL` no build (ver app-show-case).
+import managementDashboard from "@/../public/trajetto-management-dashboard.webp";
+
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -126,12 +129,13 @@ const FleetManagementDashboard = (): JSX.Element => {
           {/* Dashboard image */}
           <div className="relative w-full h-full">
             <Image
-              src="/trajetto-management-dashboard.webp"
+              src={managementDashboard}
               alt="Dashboard de Gerenciamento de Frota"
-              layout="fill"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 1200px"
+              placeholder="blur"
               className="z-10 will-change-transform object-cover"
               style={{
-                imageRendering: "crisp-edges",
                 backfaceVisibility: "hidden",
                 transform: "translateZ(0)",
               }}

@@ -4,8 +4,6 @@ import { Metadata } from "next";
 import { Navbar } from "@/components/layouts/navbar";
 import { Footer } from "@/components/layouts/footer";
 
-import { WhatsApp } from "@/components/home/whatsapp";
-
 type BlogLayoutProps = Readonly<{
   children: ReactNode;
 }>;
@@ -30,7 +28,7 @@ const BlogLayout = async ({
         {children}
       </div>
       <Footer />
-      <WhatsApp />
+      {/* <WhatsApp /> */}
     </>
   );
 };

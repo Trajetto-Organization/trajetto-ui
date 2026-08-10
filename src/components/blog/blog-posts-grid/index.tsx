@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 import { motion } from "framer-motion";
 
 import { BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { SanityImage } from "@/components/blog/sanity-image";
+import type { SanityImage as SanityImageType } from "@/sanity/types";
+
 interface ProcessedPost {
   _id: string;
   title: string;
   slug: string;
   excerpt: string;
-  featuredImage: {
-    url: string;
-    blurUrl: string;
-  } | null;
+  featuredImage: SanityImageType | null;
   publishedAt: string;
   readTime: number | null;
   author: string;
@@ -71,9 +70,6 @@ const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
           },
         );
 
-        const blurDataURL =
-          post.featuredImage?.blurUrl || generateBlurDataURL();
-
         return (
           <motion.div key={post._id} variants={itemVariants}>
             <Link
@@ -81,44 +77,41 @@ const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
               className="group flex flex-col h-full"
             >
               <Card
-                className="overflow-hidden hover:shadow-lg 
+                className="overflow-hidden hover:shadow-lg
                 transition-shadow duration-300 flex flex-col h-full p-0"
               >
                 <div
-                  className="aspect-video relative 
+                  className="aspect-video relative
                   overflow-hidden bg-gray-100"
                 >
-                  {post.featuredImage?.url ? (
-                    <Image
-                      src={post.featuredImage.url}
+                  {post.featuredImage?.asset?.url ? (
+                    <SanityImage
+                      image={post.featuredImage}
                       alt={post.title}
                       fill
-                      className="object-cover transform group-hover:scale-105 
+                      className="object-cover transform group-hover:scale-105
                       transition-transform duration-300"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       priority={index < 3}
-                      placeholder="blur"
-                      blurDataURL={blurDataURL}
-                      quality={85}
                     />
                   ) : (
                     <div
-                      className="w-full h-full bg-gradient-to-br 
-                      from-gray-100 to-gray-200 flex 
+                      className="w-full h-full bg-gradient-to-br
+                      from-gray-100 to-gray-200 flex
                       items-center justify-center"
                     >
                       <BookOpen className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
                   <div
-                    className="absolute inset-0 bg-gradient-to-t from-black/50 
-                    to-transparent opacity-0 group-hover:opacity-100 
+                    className="absolute inset-0 bg-gradient-to-t from-black/50
+                    to-transparent opacity-0 group-hover:opacity-100
                     transition-opacity duration-300"
                   />
                 </div>
 
                 <CardContent
-                  className="flex flex-col mt-4 
+                  className="flex flex-col mt-4
                   justify-between flex-1 pb-6"
                 >
                   <div>
@@ -131,24 +124,24 @@ const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
                     </div>
 
                     <h2
-                      className="text-xl font-semibold mb-3 
-                      group-hover:text-[#7c3aed] transition-colors 
-                      duration-300 line-clamp-2"
+                      className="text-xl font-semibold mb-3 tracking-tight
+                      group-hover:text-blue-600 transition-colors
+                      duration-300 line-clamp-2 text-slate-800"
                     >
                       {post.title}
                     </h2>
 
                     <p
-                      className="text-gray-600 dark:text-gray-400 
-                      text-sm line-clamp-3 mb-4 leading-relaxed"
+                      className="text-zinc-500 text-sm
+                      line-clamp-3 mb-4 leading-relaxed"
                     >
                       {post.excerpt}
                     </p>
                   </div>
 
                   <div
-                    className="flex items-center justify-between 
-                    text-sm text-gray-500 dark:text-gray-300"
+                    className="flex items-center justify-between
+                    text-sm text-zinc-400"
                   >
                     <span className="truncate mr-2">{post.author}</span>
                     <span className="flex-shrink-0">
@@ -165,18 +158,6 @@ const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
       })}
     </motion.div>
   );
-};
-
-// Helper function
-const generateBlurDataURL = (width: number = 8, height: number = 6) => {
-  const canvas = `
-    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="${width}" height="${height}" fill="#f3f4f6"/>
-      <rect x="1" y="1" width="${width - 2}" height="${height - 2}" fill="#e5e7eb"/>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;base64,${Buffer.from(canvas).toString("base64")}`;
 };
 
 export { BlogPostsGrid };

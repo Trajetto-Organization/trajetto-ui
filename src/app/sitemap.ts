@@ -1,5 +1,18 @@
 import { MetadataRoute } from "next";
-import { client } from "@/sanity/lib/client";
+
+import { sanityFetch } from "@/sanity/fetch";
+import { BLOG_SITEMAP_QUERY, LEGAL_SITEMAP_QUERY } from "@/sanity/queries";
+
+interface SitemapPost {
+  slug: string;
+  lastModified?: string;
+  featured?: boolean;
+}
+
+interface SitemapPolicy {
+  slug: string;
+  lastModified?: string;
+}
 
 const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
   const baseUrl = process.env.METADATA_BASE as string;
@@ -51,70 +64,36 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => {
     },
   ];
 
-  // Blog Posts URLs - Sanity Dynamic
-  let blogRoutes: MetadataRoute.Sitemap = [];
+  // Blog Posts URLs - Sanity Dynamic. `sanityFetch` já trata projeto não
+  // configurado e falha de rede devolvendo `null`, então o sitemap continua
+  // saindo com as rotas estáticas em vez de quebrar.
+  const posts = await sanityFetch<SitemapPost[]>(
+    BLOG_SITEMAP_QUERY,
+    {},
+    { tags: ["blog"], revalidate: 86400 },
+  );
 
-  try {
-    // Query to search all published posts
-    const posts = await client.fetch(
-      `*[_type == "blogPost" && !(_id in path("drafts.**"))] {
-        "slug": slug.current,
-        "lastModified": coalesce(publishedAt, _updatedAt, _createdAt),
-        "publishedAt": publishedAt,
-        "featured": featured
-      }`,
-      {},
-      {
-        cache: "force-cache",
-        next: {
-          tags: ["blog-posts"],
-          revalidate: 86400, // Revalidates once a day
-        },
-      },
-    );
-
-    blogRoutes = posts.map((post: any) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: post.lastModified || currentDate,
-      changeFrequency: "monthly" as const,
-      // Featured posts have higher priority
-      priority: post.featured ? 1.0 : 0.9,
-    }));
-  } catch (error) {
-    console.log("Erro ao carregar posts do blog para sitemap:", error);
-    // Continue without blog posts if there is an error
-  }
+  const blogRoutes: MetadataRoute.Sitemap = (posts ?? []).map((post) => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: post.lastModified || currentDate,
+    changeFrequency: "monthly" as const,
+    // Featured posts have higher priority
+    priority: post.featured ? 1.0 : 0.9,
+  }));
 
   // Legal Policy URLs - Sanity Dynamic
-  let legalRoutes: MetadataRoute.Sitemap = [];
+  const policies = await sanityFetch<SitemapPolicy[]>(
+    LEGAL_SITEMAP_QUERY,
+    {},
+    { tags: ["legal"], revalidate: 86400 },
+  );
 
-  try {
-    // Query to search for legal policies
-    const policies = await client.fetch(
-      `*[_type == "legalPolicy"] {
-        "slug": slug.current,
-        "lastModified": coalesce(_updatedAt, _createdAt)
-      }`,
-      {},
-      {
-        cache: "force-cache",
-        next: {
-          tags: ["legal-policies"],
-          revalidate: 86400, // Revalidates once a day
-        },
-      },
-    );
-
-    legalRoutes = policies.map((policy: any) => ({
-      url: `${baseUrl}/legal/${policy.slug}`,
-      lastModified: policy.lastModified || currentDate,
-      changeFrequency: "yearly" as const,
-      priority: 0.3, // Low priority, but necessary for compliance
-    }));
-  } catch (error) {
-    console.log("Erro ao carregar políticas legais para sitemap:", error);
-    // Continue without policies if error occurs
-  }
+  const legalRoutes: MetadataRoute.Sitemap = (policies ?? []).map((policy) => ({
+    url: `${baseUrl}/legal/${policy.slug}`,
+    lastModified: policy.lastModified || currentDate,
+    changeFrequency: "yearly" as const,
+    priority: 0.3, // Low priority, but necessary for compliance
+  }));
 
   // Combine all routes
   const allRoutes = [...staticRoutes, ...blogRoutes, ...legalRoutes];

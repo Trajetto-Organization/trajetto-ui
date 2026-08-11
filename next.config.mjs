@@ -49,11 +49,9 @@ const nextConfig = {
             },
           ]
         : []),
-      // Cloudflare R2 production storage
-      {
-        protocol: "https",
-        hostname: "assets.intrajetto.com",
-      },
+      // Sem entrada para o R2: as fotos de odometro/checklist/avatar vem por
+      // URL assinada do endpoint nativo (assinatura diferente a cada leitura),
+      // entao passam com `unoptimized` e nao usam o /_next/image.
     ],
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },

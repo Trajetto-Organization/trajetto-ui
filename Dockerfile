@@ -3,12 +3,16 @@
 # ---------------------------------------------------------
 # STAGE 1: Base (Node, certs, dumb-init)
 # ---------------------------------------------------------
-FROM node:22.21.1-slim AS base
+# Node 22 LTS on Alpine; version pinned for reproducible builds. Alpine keeps
+# the base around 100 MB smaller than Debian slim, which dominated this image:
+# the Next standalone output is only ~65 MB.
+#
+# Alpine uses musl instead of glibc. The one native dependency that matters here
+# is sharp, used by the Next image optimizer at runtime — yarn resolves the
+# musl variant automatically because the install runs inside this container.
+FROM node:22.21.1-alpine AS base
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates dumb-init \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+RUN apk add --no-cache ca-certificates dumb-init
 
 # ---------------------------------------------------------
 # STAGE 2: Builder (Install and Compile)
@@ -41,6 +45,18 @@ ENV NEXT_PUBLIC_SANITY_DATASET=$NEXT_PUBLIC_SANITY_DATASET
 
 RUN yarn build
 
+# sharp publishes one package per platform and the standalone trace carries both
+# the glibc and the musl builds. On Alpine only the musl one is ever loaded, so
+# the glibc pair is ~17 MB of dead weight. This runs BEFORE the runner copies
+# the output — deleting after the COPY would only add a whiteout layer and
+# reclaim nothing, since image layers are additive.
+#
+# If the base image ever goes back to Debian, REMOVE this step — otherwise sharp
+# is left without a binary and the Next image optimizer breaks at runtime.
+RUN rm -rf \
+    .next/standalone/node_modules/@img/sharp-libvips-linux-x64 \
+    .next/standalone/node_modules/@img/sharp-linux-x64
+
 # ---------------------------------------------------------
 # STAGE 3: Runner (Production)
 # ---------------------------------------------------------
@@ -57,8 +73,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs \
+# busybox syntax. `--ingroup` is explicit here: without it the user lands in
+# `nogroup`, which the previous Debian build warned about on every run.
+RUN addgroup --gid 1001 --system nodejs \
+    && adduser --uid 1001 --system --ingroup nodejs --shell /bin/sh nextjs \
     && mkdir .next \
     && chown nextjs:nodejs .next
 

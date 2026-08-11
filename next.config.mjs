@@ -1,6 +1,5 @@
 import analyzer from "@next/bundle-analyzer";
 
-import { v4 as uuidv4 } from "uuid";
 import plugins from "next-compose-plugins";
 
 const withBundleAnalyzer = analyzer({
@@ -9,7 +8,10 @@ const withBundleAnalyzer = analyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  generateBuildId: async () => uuidv4(),
+  // No custom `generateBuildId`: a random id per build changes the build hash
+  // every time, invalidating every client chunk on each deploy even when the
+  // code did not change. Next's default derives a stable id from the build
+  // output, so unchanged chunks keep their hash and stay cached in the browser.
   output: "standalone",
   compress: true,
   logging: {
@@ -49,9 +51,6 @@ const nextConfig = {
             },
           ]
         : []),
-      // Sem entrada para o R2: as fotos de odometro/checklist/avatar vem por
-      // URL assinada do endpoint nativo (assinatura diferente a cada leitura),
-      // entao passam com `unoptimized` e nao usam o /_next/image.
     ],
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },

@@ -264,10 +264,10 @@ const DashboardUpdateFuelForm = ({
                 width={800}
                 height={600}
                 className="max-w-full max-h-96 object-contain rounded-lg"
-                unoptimized={
-                  fuelData.odometer_photo.startsWith("data:") ||
-                  fuelData.odometer_photo.includes("blob:")
-                }
+                // Sempre sem o otimizador do Next — ver update-fuel-form-submit
+                // do admin: a URL assinada do R2 nao passa por remotePatterns
+                // e a imagem ja vem redimensionada em WebP da API.
+                unoptimized
               />
             </div>
           </DialogContent>

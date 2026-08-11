@@ -444,6 +444,9 @@ const DashboardUpdateFuelFormSubmit = ({
                   onClick={() => setShowImageModal(true)}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   priority={false}
+                  // Mesma razao do modal abaixo: URL assinada do R2 nao passa
+                  // pelo otimizador do Next.
+                  unoptimized
                 />
               </div>
             </div>
@@ -558,7 +561,6 @@ const DashboardUpdateFuelFormSubmit = ({
             }
           />
         </div>
-
 
         {/* History Information */}
         <div className="col-span-1 md:col-span-2 mt-4">

@@ -332,10 +332,10 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
                 width={800}
                 height={600}
                 className="max-w-full max-h-96 object-contain rounded-lg"
-                unoptimized={
-                  imageModalOpen.startsWith("data:") ||
-                  imageModalOpen.includes("blob:")
-                }
+                // Sempre sem o otimizador do Next — ver update-fuel-form-submit
+                // do admin: a URL assinada do R2 nao passa por remotePatterns
+                // e a imagem ja vem redimensionada em WebP da API.
+                unoptimized
               />
             )}
           </div>

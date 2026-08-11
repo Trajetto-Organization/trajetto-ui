@@ -442,6 +442,9 @@ const UpdateFuelFormSubmit = ({
                   onClick={() => setShowImageModal(true)}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   priority={false}
+                  // Mesma razao do modal abaixo: URL assinada do R2 nao passa
+                  // pelo otimizador do Next.
+                  unoptimized
                 />
               </div>
             </div>
@@ -560,7 +563,6 @@ const UpdateFuelFormSubmit = ({
           />
         </div>
 
-
         {/* History Information */}
         <div className="col-span-1 md:col-span-2 mt-4">
           <div
@@ -639,10 +641,15 @@ const UpdateFuelFormSubmit = ({
                 width={800}
                 height={600}
                 className="max-w-full max-h-96 object-contain rounded-lg"
-                unoptimized={
-                  fuelData.odometer_photo.startsWith("data:") ||
-                  fuelData.odometer_photo.includes("blob:")
-                }
+                // Sempre sem o otimizador do Next. A foto pode ser preview
+                // local (data:/blob:) ou URL assinada do R2 — e a assinada
+                // aponta para o endpoint nativo do R2, que nao esta em
+                // `images.remotePatterns`, resultando em 400 "url parameter is
+                // not allowed". Liberar o host tambem nao compensaria: a
+                // assinatura muda a cada leitura, entao o cache do
+                // /_next/image nunca acertaria, e a API ja devolve a imagem
+                // redimensionada em WebP.
+                unoptimized
               />
             </div>
           </DialogContent>

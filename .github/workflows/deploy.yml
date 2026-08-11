@@ -8,6 +8,39 @@ on:
   workflow_dispatch: # Creates the run button
 
 jobs:
+  release:
+    name: Release (semantic-release)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write # criar a tag, a release e commitar o CHANGELOG
+      issues: write # comentar nas issues fechadas pela versão
+      pull-requests: write # comentar nos PRs incluídos na versão
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # semantic-release precisa do histórico completo: ele descobre a
+          # última tag e analisa os commits desde então para decidir se a versão
+          # sobe em patch, minor ou major. Com o clone raso padrão não há o que
+          # analisar e nenhuma release é criada.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release
+
   build-and-push:
     runs-on: ubuntu-latest
     permissions:

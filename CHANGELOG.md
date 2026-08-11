@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.0...v1.0.1) (2026-08-11)
+
+
+### Performance Improvements
+
+* migra a imagem do front-end para Alpine e enxuga o sharp ([ac5bcd3](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/commit/ac5bcd3efdf299d142e761beb37087e293bdb428))
+* remove generateBuildId aleatorio e a dependencia uuid ([a2f3de4](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/commit/a2f3de4d205ea801c15640eed144f77fd2b6e2d1))
+
 # 1.0.0 (2026-08-11)
 
 

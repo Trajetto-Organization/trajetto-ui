@@ -43,6 +43,27 @@ async function initializeSocket(): Promise<Socket> {
         auth: {
           token,
         },
+
+        // WebSocket only, no HTTP long-polling fallback.
+        //
+        // Socket.IO defaults to ["polling", "websocket"]: it opens with
+        // long-polling and upgrades afterwards. The polling handshake creates a
+        // session id that lives IN MEMORY on the replica that answered it, and
+        // every following poll must reach that same replica. With more than one
+        // API replica the next poll is load balanced to the other one, which
+        // does not know the id and answers 400 {"code":1,"message":"Session ID
+        // unknown"} — the client retries forever and the notification service
+        // never connects.
+        //
+        // The Redis adapter does NOT solve this: it propagates emits between
+        // replicas, it does not give the polling handshake any affinity.
+        //
+        // Traefik does set a sticky cookie, but the browser never sends it: the
+        // app runs on a different domain than the API, and a cross-site cookie
+        // requires both `withCredentials` here and `SameSite=None` on the
+        // cookie. A single WebSocket connection sidesteps the whole problem —
+        // it stays on one replica by nature, with no session to look up.
+        transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,

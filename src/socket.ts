@@ -64,7 +64,6 @@ async function initializeSocket(): Promise<Socket> {
         // cookie. A single WebSocket connection sidesteps the whole problem —
         // it stays on one replica by nature, with no session to look up.
         transports: ["websocket"],
-
         reconnection: true,
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,

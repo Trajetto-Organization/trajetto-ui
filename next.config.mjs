@@ -1,5 +1,4 @@
 import analyzer from "@next/bundle-analyzer";
-
 import plugins from "next-compose-plugins";
 
 const withBundleAnalyzer = analyzer({
@@ -8,10 +7,6 @@ const withBundleAnalyzer = analyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // No custom `generateBuildId`: a random id per build changes the build hash
-  // every time, invalidating every client chunk on each deploy even when the
-  // code did not change. Next's default derives a stable id from the build
-  // output, so unchanged chunks keep their hash and stay cached in the browser.
   output: "standalone",
   compress: true,
   logging: {

@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.1...v1.0.2) (2026-08-11)
+
+
+### Bug Fixes
+
+* conecta o socket so por WebSocket, sem o fallback de long-polling ([1d553dc](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/commit/1d553dc5c0f0e2df297dae2505ec8127970083f3))
+
 ## [1.0.1](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.0...v1.0.1) (2026-08-11)
 
 

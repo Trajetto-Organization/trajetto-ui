@@ -24,10 +24,7 @@ const ChecklistAIVerificationSection = ({
   > | null;
 
   const serverAnalyzedAt = checklistData.ai_verified_at as
-    | string
-    | Date
-    | null
-    | undefined;
+    string | Date | null | undefined;
 
   // Determine active status: real-time takes priority
   const isTerminalStep =

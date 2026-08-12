@@ -1,8 +1,7 @@
 declare module "react-input-mask" {
   import * as React from "react";
 
-  export interface ReactInputMaskProps
-    extends React.InputHTMLAttributes<HTMLInputElement> {
+  export interface ReactInputMaskProps extends React.InputHTMLAttributes<HTMLInputElement> {
     mask: string;
     maskChar?: string | null;
     alwaysShowMask?: boolean;

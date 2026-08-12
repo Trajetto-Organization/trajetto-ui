@@ -6,8 +6,7 @@ import { Input } from "./input";
 
 import { Button } from "./button";
 
-export interface SearchInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface SearchInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   isLoading?: boolean;
   wrapperClassName?: string;
 }

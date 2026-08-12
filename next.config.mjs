@@ -56,16 +56,20 @@ const nextConfig = {
 
     // Tree-shake aggressively for libraries with heavy index files.
     // Cuts ~30-40% off bundle for landing pages using lucide-react.
-    optimizePackageImports: [
-      "lucide-react",
-      "react-icons",
-      "@radix-ui/react-icons",
-      "@tabler/icons-react",
-      "@sanity/icons",
-      "@sanity/ui",
-      "framer-motion",
-      "radix-ui",
-    ],
+    // Only packages actually installed AND imported by name here. The option
+    // is keyed on the import specifier in our own source, so listing a package
+    // we do not import — or one that only shows up as a transitive dependency
+    // of another library — does nothing at all.
+    //
+    // The six entries removed here (react-icons, @radix-ui/react-icons,
+    // @tabler/icons-react, @sanity/icons, @sanity/ui, radix-ui) were leftovers:
+    // the icon libraries went away with the consolidation onto lucide-react,
+    // and the Sanity packages moved to trajetto-studio.
+    //
+    // Note that @radix-ui/react-icons is an icon set, NOT the @radix-ui/react-*
+    // primitives we do use — those already ship one small entry point per
+    // package, so there is no barrel for this option to optimize.
+    optimizePackageImports: ["lucide-react", "framer-motion"],
     outputFileTracingExcludes: {
       "*": [
         // Excludes SWC binaries for systems that are NOT the server (Mac and Windows)

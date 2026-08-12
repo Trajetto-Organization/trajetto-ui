@@ -18,16 +18,11 @@ const AIVerificationSection = ({
 
   const aiStatus = fuelData.odometer_ai_status as string | undefined;
   const serverAiReading = fuelData.odometer_ai_reading as
-    | number
-    | null
-    | undefined;
+    number | null | undefined;
 
   const aiDetails = fuelData.odometer_ai_details as any | null | undefined;
   const serverAnalyzedAt = fuelData.odometer_ai_analyzed_at as
-    | string
-    | Date
-    | null
-    | undefined;
+    string | Date | null | undefined;
 
   // Determine active status: real-time takes priority
   const isTerminalStep =

@@ -45,9 +45,8 @@ const DashboardAnimatedList = ({
 
   // Items that just left stay mounted while they collapse, so the rows below
   // slide up instead of snapping into place.
-  const entries = usePresenceList(
-    itemsToShow,
-    (item) => String((item as React.ReactElement).key),
+  const entries = usePresenceList(itemsToShow, (item) =>
+    String((item as React.ReactElement).key),
   );
 
   return (

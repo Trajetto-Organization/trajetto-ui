@@ -319,8 +319,7 @@ const SvgChart = ({
                     <g key={i}>
                       {visible.map((s, si) => {
                         const value = read(point, s.key);
-                        const segment =
-                          (value / maxValue) * VIEWBOX_HEIGHT;
+                        const segment = (value / maxValue) * VIEWBOX_HEIGHT;
 
                         const y = stacked ? stackTop - segment : toY(value);
                         if (stacked) stackTop -= segment;

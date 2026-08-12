@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef } from "react";
-import { useInView, motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 
 import Image from "next/image";
 
@@ -14,9 +13,6 @@ import thiagoPhoto from "@/../public/about/thiago-about-co-founder.webp";
 import jomarPhoto from "@/../public/about/jomar-about-co-founder.webp";
 
 const AboutTeamSection = (): JSX.Element => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-
   const team = [
     {
       name: "Michael Sivori",
@@ -45,7 +41,7 @@ const AboutTeamSection = (): JSX.Element => {
   ];
 
   return (
-    <section className="py-20 bg-background" ref={ref}>
+    <section className="py-20 bg-background">
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Nossa Equipe</h2>
@@ -56,14 +52,11 @@ const AboutTeamSection = (): JSX.Element => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {team.map((member, index) => (
-            <motion.div
+            <Reveal
               key={index}
+              delay={200 + index * 100}
+              duration={700}
               className="relative group"
-              style={{
-                transform: isInView ? "none" : "translateY(50px)",
-                opacity: isInView ? 1 : 0,
-                transition: `all 0.7s cubic-bezier(0.17, 0.55, 0.55, 1) ${0.2 + index * 0.1}s`,
-              }}
             >
               <div className="relative h-80 overflow-hidden rounded-lg mb-4">
                 {/* Optimized team member image */}
@@ -92,7 +85,7 @@ const AboutTeamSection = (): JSX.Element => {
                 </div>
               </div>
               <p className="text-muted-foreground text-sm">{member.bio}</p>
-            </motion.div>
+            </Reveal>
           ))}
         </div>
       </div>

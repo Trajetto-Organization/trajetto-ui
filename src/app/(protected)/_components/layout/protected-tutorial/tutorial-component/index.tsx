@@ -1,6 +1,5 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   ChevronLeft,
@@ -150,163 +149,151 @@ const TutorialComponent = (): JSX.Element | null => {
   } = tutorial;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[99999]"
+    // The overlay fades in on mount. The old `exit` fade is gone: the parent
+    // unmounts this component when the tutorial closes, and CSS cannot animate
+    // a node React has already removed. Closing is now instant, which for a
+    // dismissal reads fine.
+    <div className="animate-fade-in fixed inset-0 z-[99999]">
+      {/* Dark overlay with cutout */}
+      <div
+        className="absolute inset-0 tutorial-backdrop"
+        style={{
+          backgroundColor: spotlightPosition
+            ? "transparent"
+            : "rgba(0, 0, 0, 0.6)",
+          backdropFilter: spotlightPosition ? "none" : "blur(2px)",
+        }}
       >
-        {/* Dark overlay with cutout */}
-        <div
-          className="absolute inset-0 tutorial-backdrop"
-          style={{
-            backgroundColor: spotlightPosition
-              ? "transparent"
-              : "rgba(0, 0, 0, 0.6)",
-            backdropFilter: spotlightPosition ? "none" : "blur(2px)",
-          }}
-        >
-          {spotlightPosition && (
-            <svg
-              className="absolute inset-0 w-full h-full"
-              style={{ pointerEvents: "none" }}
-            >
-              <defs>
-                <mask id="spotlight-mask">
-                  <rect x="0" y="0" width="100%" height="100%" fill="white" />
-                  <rect
-                    x={spotlightPosition.left}
-                    y={spotlightPosition.top}
-                    width={spotlightPosition.width}
-                    height={spotlightPosition.height}
-                    rx="8"
-                    fill="black"
-                  />
-                </mask>
-              </defs>
-              <rect
-                x="0"
-                y="0"
-                width="100%"
-                height="100%"
-                fill="rgba(0, 0, 0, 0.6)"
-                mask="url(#spotlight-mask)"
-              />
-            </svg>
-          )}
-        </div>
-
-        {/* Highlight border */}
-        {spotlightPosition && currentStepData.placement !== "center" && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.2 }}
-            className="absolute tutorial-enhanced-spotlight pointer-events-none"
-            style={{
-              top: spotlightPosition.top,
-              left: spotlightPosition.left,
-              width: spotlightPosition.width,
-              height: spotlightPosition.height,
-            }}
-          />
+        {spotlightPosition && (
+          <svg
+            className="absolute inset-0 w-full h-full"
+            style={{ pointerEvents: "none" }}
+          >
+            <defs>
+              <mask id="spotlight-mask">
+                <rect x="0" y="0" width="100%" height="100%" fill="white" />
+                <rect
+                  x={spotlightPosition.left}
+                  y={spotlightPosition.top}
+                  width={spotlightPosition.width}
+                  height={spotlightPosition.height}
+                  rx="8"
+                  fill="black"
+                />
+              </mask>
+            </defs>
+            <rect
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              fill="rgba(0, 0, 0, 0.6)"
+              mask="url(#spotlight-mask)"
+            />
+          </svg>
         )}
+      </div>
 
-        {/* Tooltip */}
-        <motion.div
-          ref={tooltipRef}
-          initial={{
-            opacity: 0,
-            y: currentStepData.placement === "center" ? 0 : 20,
-            scale: currentStepData.placement === "center" ? 0.95 : 1,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-            scale: 1,
-          }}
-          transition={{
-            delay: currentStepData.placement === "center" ? 0.05 : 0.1,
-            duration: currentStepData.placement === "center" ? 0.25 : 0.3,
-            ease: "easeOut",
-          }}
-          className="absolute tutorial-tooltip-compact 
-          rounded-lg shadow-2xl max-w-md z-[99999999] 
-          max-h-[70vh] overflow-hidden"
+      {/* Highlight border */}
+      {spotlightPosition && currentStepData.placement !== "center" && (
+        <div
+          className="animate-scale-in [animation-duration:200ms]
+            absolute tutorial-enhanced-spotlight pointer-events-none"
           style={{
-            top: tooltipPosition.top,
-            left: tooltipPosition.left,
+            top: spotlightPosition.top,
+            left: spotlightPosition.left,
+            width: spotlightPosition.width,
+            height: spotlightPosition.height,
           }}
-        >
-          {/* Compact header */}
-          <div
-            className="flex items-center 
+        />
+      )}
+
+      {/* Tooltip */}
+      <div
+        ref={tooltipRef}
+        className={`${
+          currentStepData.placement === "center"
+            ? "animate-scale-in"
+            : "animate-fade-up"
+        } absolute tutorial-tooltip-compact
+          rounded-lg shadow-2xl max-w-md z-[99999999]
+          max-h-[70vh] overflow-hidden`}
+        style={{
+          top: tooltipPosition.top,
+          left: tooltipPosition.left,
+          animationDelay:
+            currentStepData.placement === "center" ? "50ms" : "100ms",
+          animationDuration:
+            currentStepData.placement === "center" ? "250ms" : "300ms",
+        }}
+      >
+        {/* Compact header */}
+        <div
+          className="flex items-center 
             justify-between p-3 pb-2 
             border-b border-border/50"
-          >
-            <div className="flex items-center gap-2 flex-1">
-              <div
-                className="p-1.5 bg-gradient-to-br 
+        >
+          <div className="flex items-center gap-2 flex-1">
+            <div
+              className="p-1.5 bg-gradient-to-br 
                 from-primary/20 to-primary/10 rounded-md shrink-0"
-              >
-                <Sparkles className="w-5 h-5 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3
-                  className="text-base font-semibold 
-                  text-foreground leading-tight"
-                >
-                  {currentStepData.title}
-                </h3>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-xs text-muted-foreground">
-                    {currentStep + 1} de {steps.length}
-                  </span>
-                  <Settings className="w-2.5 h-2.5 text-muted-foreground" />
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0"
-              onClick={skipTutorial}
             >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          {/* Compact content */}
-          <div
-            className="p-4 max-h-[40vh] 
-            overflow-y-auto tutorial-content-scroll"
-          >
-            <div className="space-y-3">
-              {parsedContent.map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <ContentRenderer item={item} />
-                </motion.div>
-              ))}
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3
+                className="text-base font-semibold 
+                  text-foreground leading-tight"
+              >
+                {currentStepData.title}
+              </h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="text-xs text-muted-foreground">
+                  {currentStep + 1} de {steps.length}
+                </span>
+                <Settings className="w-2.5 h-2.5 text-muted-foreground" />
+              </div>
             </div>
           </div>
-
-          {/* Compact Footer */}
-          <div
-            className="p-3 pt-2 space-y-3 border-t 
-            border-border/50 bg-muted/20"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            onClick={skipTutorial}
           >
-            {/* Progress */}
-            <div className="flex gap-1">
-              {steps.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-1.5 flex-1 rounded-full 
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+
+        {/* Compact content */}
+        <div
+          className="p-4 max-h-[40vh] 
+            overflow-y-auto tutorial-content-scroll"
+        >
+          <div className="space-y-3">
+            {parsedContent.map((item, index) => (
+              <div
+                key={index}
+                className="animate-fade-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <ContentRenderer item={item} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Compact Footer */}
+        <div
+          className="p-3 pt-2 space-y-3 border-t 
+            border-border/50 bg-muted/20"
+        >
+          {/* Progress */}
+          <div className="flex gap-1">
+            {steps.map((_, index) => (
+              <div
+                key={index}
+                className={`h-1.5 flex-1 rounded-full 
                   transition-all duration-500 ${
                     index === currentStep
                       ? "tutorial-progress-enhanced"
@@ -314,64 +301,63 @@ const TutorialComponent = (): JSX.Element | null => {
                         ? "bg-primary/60"
                         : "bg-muted"
                   }`}
-                />
-              ))}
-            </div>
+              />
+            ))}
+          </div>
 
-            {/* Navigation buttons */}
-            <div
-              className="flex items-center 
+          {/* Navigation buttons */}
+          <div
+            className="flex items-center 
               justify-between"
-            >
-              <div>
-                {currentStep > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrevStep}
-                    className="h-8 text-sm"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Anterior
-                  </Button>
-                )}
-              </div>
-
-              <Button
-                size="sm"
-                onClick={handleNextStep}
-                className="ml-auto text-sm
-                tutorial-button-primary h-8"
-              >
-                {currentStep === steps.length - 1 ? (
-                  "Concluir"
-                ) : (
-                  <>
-                    Próximo
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </>
-                )}
-              </Button>
+          >
+            <div>
+              {currentStep > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrevStep}
+                  className="h-8 text-sm"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+              )}
             </div>
 
-            {/* Skip button */}
-            {currentStep === 0 && (
-              <div className="w-full text-center pt-1.5">
-                <button
-                  onClick={skipTutorial}
-                  className="tutorial-skip-hover text-xs
+            <Button
+              size="sm"
+              onClick={handleNextStep}
+              className="ml-auto text-sm
+                tutorial-button-primary h-8"
+            >
+              {currentStep === steps.length - 1 ? (
+                "Concluir"
+              ) : (
+                <>
+                  Próximo
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Skip button */}
+          {currentStep === 0 && (
+            <div className="w-full text-center pt-1.5">
+              <button
+                onClick={skipTutorial}
+                className="tutorial-skip-hover text-xs
                   text-muted-foreground hover:text-foreground
                   transition-colors inline-block"
-                >
-                  Pular tutorial • Pressione{" "}
-                  <span className="tutorial-keyboard-hint">ESC</span> para sair
-                </button>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+              >
+                Pular tutorial • Pressione{" "}
+                <span className="tutorial-keyboard-hint">ESC</span> para sair
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

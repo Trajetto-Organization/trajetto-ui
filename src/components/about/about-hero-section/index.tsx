@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 import Image from "next/image";
 
 // Import estático: o Next gera o `blurDataURL` no build, então o blur aparece
@@ -39,24 +37,18 @@ const AboutHeroSection = (): JSX.Element => {
         className="container relative z-20
         text-white text-center px-4"
       >
-        <motion.h1
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-4xl md:text-6xl
+        <h1
+          className="animate-fade-in [animation-delay:300ms] text-4xl md:text-6xl
           font-bold mb-6"
         >
           Nossa Jornada
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4, type: "tween" }}
-          className="text-xl md:text-2xl max-w-3xl
+        </h1>
+        <p
+          className="animate-fade-left [animation-delay:400ms] text-xl md:text-2xl max-w-3xl
           mx-auto leading-relaxed"
         >
           Transformando a gestão de frotas com tecnologia e inovação
-        </motion.p>
+        </p>
       </div>
     </section>
   );

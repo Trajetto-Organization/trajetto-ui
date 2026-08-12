@@ -1,8 +1,4 @@
-"use client";
-
 import Link from "next/link";
-
-import { motion } from "framer-motion";
 
 import { BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,36 +26,15 @@ interface BlogPostsGridProps {
   posts: ProcessedPost[];
 }
 
+// Cap the stagger so a long page of posts does not leave the last card
+// waiting seconds to appear. framer's `staggerChildren` had no such limit
+// because the list was always short; this keeps it honest for any length.
+const STAGGER_MS = 100;
+const MAX_STAGGER_STEPS = 8;
+
 const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="grid md:grid-cols-3 gap-8 mb-16 mt-8"
-    >
+    <div className="grid md:grid-cols-3 gap-8 mb-16 mt-8">
       {posts.map((post, index) => {
         const formattedDate = new Date(post.publishedAt).toLocaleDateString(
           "pt-BR",
@@ -71,7 +46,13 @@ const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
         );
 
         return (
-          <motion.div key={post._id} variants={itemVariants}>
+          <div
+            key={post._id}
+            className="animate-fade-up"
+            style={{
+              animationDelay: `${Math.min(index, MAX_STAGGER_STEPS) * STAGGER_MS}ms`,
+            }}
+          >
             <Link
               href={`/blog/${post.slug}`}
               className="group flex flex-col h-full"
@@ -153,10 +134,10 @@ const BlogPostsGrid = ({ posts }: BlogPostsGridProps): JSX.Element => {
                 </CardContent>
               </Card>
             </Link>
-          </motion.div>
+          </div>
         );
       })}
-    </motion.div>
+    </div>
   );
 };
 

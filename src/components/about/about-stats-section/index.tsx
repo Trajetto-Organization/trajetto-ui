@@ -8,7 +8,9 @@ import {
   useState,
 } from "react";
 
-import { useInView, motion, animate } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
+import { useInView } from "@/hooks/use-in-view";
+import { useCountUp } from "@/hooks/use-count-up";
 import {
   LayoutGrid,
   LucideProps,
@@ -99,41 +101,24 @@ const AboutStatsSection = (): JSX.Element => {
 
       <div className="container relative z-10 px-4 md:px-6">
         <div className="text-center mb-16">
-          <motion.h2
-            className="text-3xl md:text-4xl font-bold mb-4 text-gray-900"
-            style={{
-              transform: isInView ? "none" : "translateY(20px)",
-              opacity: isInView ? 1 : 0,
-              transition: "all 0.8s cubic-bezier(0.17, 0.55, 0.55, 1)",
-            }}
-          >
-            O que o Trajetto entrega
-          </motion.h2>
-          <motion.p
-            className="text-xl text-muted-foreground max-w-2xl mx-auto"
-            style={{
-              transform: isInView ? "none" : "translateY(20px)",
-              opacity: isInView ? 1 : 0,
-              transition: "all 0.8s cubic-bezier(0.17, 0.55, 0.55, 1) 0.2s",
-            }}
-          >
-            Uma plataforma completa de gestão de frotas, do escritório ao
-            motorista em campo
-          </motion.p>
+          <Reveal duration={800}>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              O que o Trajetto entrega
+            </h2>
+          </Reveal>
+          <Reveal duration={800} delay={200}>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Uma plataforma completa de gestão de frotas, do escritório ao
+              motorista em campo
+            </p>
+          </Reveal>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              style={{
-                transform: isInView ? "none" : "translateY(50px)",
-                opacity: isInView ? 1 : 0,
-                transition: `all 0.7s cubic-bezier(0.17, 0.55, 0.55, 1) ${0.2 + index * 0.15}s`,
-              }}
-            >
+            <Reveal key={index} delay={200 + index * 150} duration={700}>
               <StatCard stat={stat} isInView={isInView} />
-            </motion.div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -142,24 +127,7 @@ const AboutStatsSection = (): JSX.Element => {
 };
 
 const StatCard = ({ stat, isInView }: StatCardProps) => {
-  const [count, setCount] = useState<number>(0);
-
-  // Animate the counter when in view
-  useEffect(() => {
-    if (isInView) {
-      const duration = 2;
-
-      const controls = animate(0, stat.value, {
-        duration: duration,
-        onUpdate: (value) => {
-          setCount(Math.floor(value));
-        },
-        ease: "easeOut",
-      });
-
-      return () => controls.stop();
-    }
-  }, [isInView, stat.value]);
+  const count = useCountUp(stat.value, { enabled: isInView });
 
   return (
     <div className="relative group">
@@ -193,18 +161,9 @@ const StatCard = ({ stat, isInView }: StatCardProps) => {
                 background: `linear-gradient(135deg, ${stat.color1}30, ${stat.color2}30)`,
               }}
             >
-              <motion.div
-                animate={{
-                  scale: [1, 1.05, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatType: "loop",
-                }}
-              >
+              <div className="animate-pulse-scale-sm">
                 <stat.icon className="h-6 w-6 text-white" />
-              </motion.div>
+              </div>
             </div>
 
             {/* Small decorative element */}

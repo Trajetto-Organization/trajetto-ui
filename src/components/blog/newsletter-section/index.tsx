@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+
+import { Reveal } from "@/components/shared/reveal";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,13 +36,10 @@ const NewsletterSection = (): JSX.Element => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      viewport={{ once: true }}
-      className="bg-gradient-to-r from-[#f5f3ff] 
-      to-[#ecfdf5] rounded-2xl p-8 md:p-12 
+    <Reveal
+      direction="up"
+      className="bg-gradient-to-r from-[#f5f3ff]
+      to-[#ecfdf5] rounded-2xl p-8 md:p-12
       relative overflow-hidden"
     >
       {/* Background decoration */}
@@ -51,15 +49,14 @@ const NewsletterSection = (): JSX.Element => {
       />
 
       <div className="max-w-2xl mx-auto text-center relative z-10">
-        <motion.div
-          initial={{ scale: 0 }}
-          whileInView={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="inline-flex items-center justify-center w-16 h-16 
+        <Reveal
+          direction="scale"
+          delay={200}
+          className="inline-flex items-center justify-center w-16 h-16
           bg-white rounded-full shadow-lg mb-6"
         >
           <Mail className="w-8 h-8 text-[#7c3aed]" />
-        </motion.div>
+        </Reveal>
 
         <h2
           className="text-2xl md:text-3xl 
@@ -73,16 +70,17 @@ const NewsletterSection = (): JSX.Element => {
           gestão de frotas e inovações do setor.
         </p>
 
+        {/* The success block mounts only after a successful submit, so a plain
+            entrance animation is enough — there is nothing to wait for on
+            scroll. */}
         {isSubmitted ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center justify-center gap-3 
+          <div
+            className="animate-scale-in flex items-center justify-center gap-3
             text-green-600 font-medium"
           >
             <CheckCircle className="w-5 h-5" />
             <span>Inscrição realizada com sucesso!</span>
-          </motion.div>
+          </div>
         ) : (
           <form
             onSubmit={handleSubmit}
@@ -128,7 +126,7 @@ const NewsletterSection = (): JSX.Element => {
           Cancele a qualquer momento.
         </p>
       </div>
-    </motion.div>
+    </Reveal>
   );
 };
 

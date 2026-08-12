@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
-import { motion, AnimatePresence } from "framer-motion";
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -139,12 +137,7 @@ const BlogSearch = ({
   return (
     <div className="w-full space-y-6">
       {/* Search Bar */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative"
-      >
+      <div className="animate-fade-up relative">
         <div className="relative group">
           <div
             className="absolute inset-0 bg-gradient-to-r 
@@ -179,28 +172,23 @@ const BlogSearch = ({
               />
 
               {/* Animated search indicator with gradient blur edges */}
-              <AnimatePresence>
-                {isSearching && (
-                  <motion.div
-                    initial={{ scaleX: 0, opacity: 0 }}
-                    animate={{ scaleX: 1, opacity: 1 }}
-                    exit={{ scaleX: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                    className="absolute bottom-0 left-0 right-0 h-1"
-                    style={{ originX: 0.5 }}
-                  >
-                    {/* Glowing effect */}
-                    <div
-                      className="absolute inset-0 bg-gradient-to-r from-purple-500 
+              <div
+                hidden={!isSearching}
+                className="toggle toggle-scale-x
+                absolute bottom-0 left-0 right-0 h-1"
+              >
+                {/* Glowing effect */}
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-purple-500 
                       via-pink-500 to-blue-500 blur-sm opacity-60"
-                    />
+                />
 
-                    {/* Main gradient bar with soft edges */}
-                    <div
-                      className="absolute inset-0 h-0.5 
+                {/* Main gradient bar with soft edges */}
+                <div
+                  className="absolute inset-0 h-0.5 
                       top-1/2 -translate-y-1/2"
-                      style={{
-                        background: `linear-gradient(90deg, 
+                  style={{
+                    background: `linear-gradient(90deg, 
                           transparent 0%, 
                           rgba(168, 85, 247, 0.3) 2%,
                           rgba(168, 85, 247, 0.8) 10%,
@@ -211,32 +199,23 @@ const BlogSearch = ({
                           rgba(59, 130, 246, 0.3) 98%,
                           transparent 100%
                         )`,
-                      }}
-                    />
+                  }}
+                />
 
-                    {/* Animated shimmer effect */}
-                    <motion.div
-                      className="absolute inset-0 h-0.5 
+                {/* Animated shimmer effect */}
+                <div
+                  className="animate-shimmer absolute inset-0 h-0.5
                       top-1/2 -translate-y-1/2"
-                      initial={{ x: "-100%" }}
-                      animate={{ x: "100%" }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                      style={{
-                        background: `linear-gradient(90deg, 
+                  style={{
+                    background: `linear-gradient(90deg, 
                           transparent 0%, 
                           rgba(255, 255, 255, 0.3) 50%, 
                           transparent 100%
                         )`,
-                        width: "30%",
-                      }}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    width: "30%",
+                  }}
+                />
+              </div>
             </div>
 
             <div className="relative">
@@ -264,117 +243,109 @@ const BlogSearch = ({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Filters Section */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
-          >
-            <div className="p-6 bg-muted/30 rounded-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  Filtrar por Categoria
-                </h3>
-                {activeFiltersCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSearch}
-                    className="text-muted-foreground 
+      {/* Kept mounted and collapsed with a grid row instead of being unmounted:
+          `height: auto` cannot be animated, which is why framer had to measure
+          the panel in JavaScript. `0fr` to `1fr` needs no measuring. */}
+      <div className="expand" data-open={showFilters}>
+        <div>
+          <div className="p-6 bg-muted/30 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Filtrar por Categoria
+              </h3>
+              {activeFiltersCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSearch}
+                  className="text-muted-foreground 
                     hover:text-foreground"
-                  >
-                    Limpar filtros
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category, index) => (
-                  <motion.div
-                    key={category.slug}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Badge
-                      variant={
-                        selectedCategory === category.slug
-                          ? "default"
-                          : "outline"
-                      }
-                      className={cn(
-                        "cursor-pointer transition-all hover:scale-105 px-4 py-2",
-                        selectedCategory === category.slug &&
-                          "shadow-lg shadow-primary/20",
-                      )}
-                      style={{
-                        backgroundColor:
-                          selectedCategory === category.slug
-                            ? category.color
-                            : "transparent",
-                        borderColor: category.color,
-                        color:
-                          selectedCategory === category.slug
-                            ? "white"
-                            : category.color,
-                      }}
-                      onClick={() => handleCategorySelect(category.slug)}
-                    >
-                      {category.title}
-                      {category.count && (
-                        <span className="ml-2 opacity-70">
-                          ({category.count})
-                        </span>
-                      )}
-                    </Badge>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div
-                className="pt-2 flex items-center 
-                justify-between text-sm text-muted-foreground"
-              >
-                <span>
-                  {totalPosts}{" "}
-                  {totalPosts === 1 ? "post encontrado" : "posts encontrados"}
-                </span>
-
-                {(searchQuery || selectedCategory) && (
-                  <span className="flex items-center gap-2">
-                    Filtrando por:
-                    {searchQuery && (
-                      <Badge
-                        variant="secondary"
-                        className="text-xs max-w-[150px]"
-                      >
-                        <span className="truncate">
-                          &quot;{searchQuery}&quot;
-                        </span>
-                      </Badge>
-                    )}
-                    {selectedCategory && (
-                      <Badge variant="secondary" className="text-xs">
-                        {
-                          categories.find((c) => c.slug === selectedCategory)
-                            ?.title
-                        }
-                      </Badge>
-                    )}
-                  </span>
-                )}
-              </div>
+                >
+                  Limpar filtros
+                </Button>
+              )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category, index) => (
+                <div
+                  key={category.slug}
+                  className="animate-scale-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <Badge
+                    variant={
+                      selectedCategory === category.slug ? "default" : "outline"
+                    }
+                    className={cn(
+                      "cursor-pointer transition-all hover:scale-105 px-4 py-2",
+                      selectedCategory === category.slug &&
+                        "shadow-lg shadow-primary/20",
+                    )}
+                    style={{
+                      backgroundColor:
+                        selectedCategory === category.slug
+                          ? category.color
+                          : "transparent",
+                      borderColor: category.color,
+                      color:
+                        selectedCategory === category.slug
+                          ? "white"
+                          : category.color,
+                    }}
+                    onClick={() => handleCategorySelect(category.slug)}
+                  >
+                    {category.title}
+                    {category.count && (
+                      <span className="ml-2 opacity-70">
+                        ({category.count})
+                      </span>
+                    )}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            <div
+              className="pt-2 flex items-center 
+                justify-between text-sm text-muted-foreground"
+            >
+              <span>
+                {totalPosts}{" "}
+                {totalPosts === 1 ? "post encontrado" : "posts encontrados"}
+              </span>
+
+              {(searchQuery || selectedCategory) && (
+                <span className="flex items-center gap-2">
+                  Filtrando por:
+                  {searchQuery && (
+                    <Badge
+                      variant="secondary"
+                      className="text-xs max-w-[150px]"
+                    >
+                      <span className="truncate">
+                        &quot;{searchQuery}&quot;
+                      </span>
+                    </Badge>
+                  )}
+                  {selectedCategory && (
+                    <Badge variant="secondary" className="text-xs">
+                      {
+                        categories.find((c) => c.slug === selectedCategory)
+                          ?.title
+                      }
+                    </Badge>
+                  )}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

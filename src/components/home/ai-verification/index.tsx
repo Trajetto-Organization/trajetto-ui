@@ -1,6 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 import {
   Camera,
   CheckCircle,
@@ -10,17 +8,6 @@ import {
   Sparkles,
   BrainCircuit,
 } from "lucide-react";
-
-const scanLineVariants = {
-  animate: {
-    y: [0, 178, 0],
-    transition: {
-      duration: 2.5,
-      repeat: Infinity,
-      ease: "easeInOut",
-    },
-  },
-};
 
 const verificationSteps = [
   { label: "Imagem capturada", number: "01" },
@@ -40,13 +27,7 @@ const AIVerificationShowcase = (): JSX.Element => {
   return (
     <section className="relative pt-24 pb-36 overflow-hidden">
       <div className="container relative">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-16"
-        >
+        <Reveal className="text-center mb-16">
           <div
             className="inline-flex items-center gap-2
             rounded-full border px-4 py-1.5 mb-6"
@@ -73,20 +54,14 @@ const AIVerificationShowcase = (): JSX.Element => {
               computacional. Sem fraudes, sem erros manuais.
             </p>
           </div>
-        </motion.div>
+        </Reveal>
 
         <div
           className="grid gap-8 lg:gap-12
           lg:grid-cols-2 items-stretch"
         >
           {/* Odometer AI Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="group"
-          >
+          <Reveal direction="left" className="group">
             <div
               className="relative h-full rounded-2xl border
               bg-gradient-to-br from-background via-background to-[#d81b60]/[0.04]
@@ -133,28 +108,20 @@ const AIVerificationShowcase = (): JSX.Element => {
                         size={32}
                         className="text-[#d81b60] mx-auto mb-2"
                       />
-                      <motion.div
-                        className="font-mono text-2xl
+                      <div
+                        className="animate-pulse-soft font-mono text-2xl
                         font-bold text-white tracking-wider"
-                        animate={{ opacity: [0.7, 1, 0.7] }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
                       >
                         087.432
-                      </motion.div>
+                      </div>
                       <p className="text-[10px] text-slate-400 mt-1">km</p>
                     </div>
 
                     {/* Scan line */}
-                    <motion.div
-                      className="absolute top-0 left-0 right-0 h-[2px]
+                    <div
+                      className="animate-scan-line absolute top-0 left-0 right-0 h-[2px]
                       bg-gradient-to-r from-transparent
                       via-[#d81b60] to-transparent opacity-80"
-                      variants={scanLineVariants}
-                      animate="animate"
                     />
                   </div>
 
@@ -172,30 +139,19 @@ const AIVerificationShowcase = (): JSX.Element => {
                 {/* Verification timeline */}
                 <div className="flex-1 w-full space-y-1">
                   {verificationSteps.map((step, index) => (
-                    <motion.div
+                    <Reveal
                       key={step.label}
+                      direction="right"
+                      delay={index * 150}
                       className="flex items-center gap-3 rounded-lg px-3 py-2.5
                       hover:bg-[#d81b60]/[0.04] transition-colors"
-                      initial={{ opacity: 0, x: 10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: index * 0.15 }}
                     >
-                      <motion.div
-                        className="flex-shrink-0 w-7 h-7 rounded-full
+                      <div
+                        className="animate-pulse-scale flex-shrink-0 w-7 h-7 rounded-full
                         bg-[#d81b60]/10 flex items-center justify-center"
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          opacity: [0.6, 1, 0.6],
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          delay: index * 0.5,
-                        }}
                       >
                         <CheckCircle size={14} className="text-[#d81b60]" />
-                      </motion.div>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium text-foreground/80">
                           {step.label}
@@ -204,7 +160,7 @@ const AIVerificationShowcase = (): JSX.Element => {
                       <span className="text-[10px] font-mono text-muted-foreground/50">
                         {step.number}
                       </span>
-                    </motion.div>
+                    </Reveal>
                   ))}
                 </div>
               </div>
@@ -217,16 +173,10 @@ const AIVerificationShowcase = (): JSX.Element => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </Reveal>
 
           {/* Checklist AI Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="group"
-          >
+          <Reveal direction="right" delay={200} className="group">
             <div
               className="relative h-full rounded-2xl border
               bg-gradient-to-br from-background via-background to-emerald-500/[0.04]
@@ -278,15 +228,10 @@ const AIVerificationShowcase = (): JSX.Element => {
 
                     {["Pneus", "Faróis", "Freios", "Nível óleo"].map(
                       (item, i) => (
-                        <motion.div
+                        <div
                           key={item}
-                          className="flex items-center gap-1.5 w-full"
-                          animate={{ opacity: [0.4, 1, 0.4] }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: i * 0.4,
-                          }}
+                          className="animate-pulse-soft flex items-center gap-1.5 w-full"
+                          style={{ animationDelay: `${i * 400}ms` }}
                         >
                           <div
                             className="w-3 h-3 rounded-sm bg-emerald-500/80
@@ -297,17 +242,15 @@ const AIVerificationShowcase = (): JSX.Element => {
                           <span className="text-[10px] text-slate-300">
                             {item}
                           </span>
-                        </motion.div>
+                        </div>
                       ),
                     )}
 
                     {/* Scan line */}
-                    <motion.div
-                      className="absolute top-0 left-0 right-0 h-[2px]
+                    <div
+                      className="animate-scan-line absolute top-0 left-0 right-0 h-[2px]
                       bg-gradient-to-r from-transparent
                       via-emerald-400 to-transparent opacity-80"
-                      variants={scanLineVariants}
-                      animate="animate"
                     />
                   </div>
 
@@ -325,30 +268,19 @@ const AIVerificationShowcase = (): JSX.Element => {
                 {/* Checklist timeline */}
                 <div className="flex-1 w-full space-y-1">
                   {checklistSteps.map((step, index) => (
-                    <motion.div
+                    <Reveal
                       key={step.label}
+                      direction="right"
+                      delay={(index + 1) * 150}
                       className="flex items-center gap-3 rounded-lg px-3 py-2.5
                       hover:bg-emerald-500/[0.04] transition-colors"
-                      initial={{ opacity: 0, x: 10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: (index + 1) * 0.15 }}
                     >
-                      <motion.div
-                        className="flex-shrink-0 w-7 h-7 rounded-full
+                      <div
+                        className="animate-pulse-scale flex-shrink-0 w-7 h-7 rounded-full
                         bg-emerald-500/10 flex items-center justify-center"
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          opacity: [0.6, 1, 0.6],
-                        }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          delay: index * 0.5,
-                        }}
                       >
                         <CheckCircle size={14} className="text-emerald-500" />
-                      </motion.div>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium text-foreground/80">
                           {step.label}
@@ -357,7 +289,7 @@ const AIVerificationShowcase = (): JSX.Element => {
                       <span className="text-[10px] font-mono text-muted-foreground/50">
                         {step.number}
                       </span>
-                    </motion.div>
+                    </Reveal>
                   ))}
                 </div>
               </div>
@@ -370,7 +302,7 @@ const AIVerificationShowcase = (): JSX.Element => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </div>
     </section>

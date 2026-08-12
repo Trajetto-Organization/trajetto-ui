@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
@@ -119,12 +118,7 @@ const BlogPagination = ({
   const endPost = Math.min(currentPage * postsPerPage, totalPosts);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-      className="mt-16 space-y-4"
-    >
+    <div className="animate-fade-up [animation-delay:200ms] mt-16 space-y-4">
       {/* Posts counter */}
       <div className="text-center text-sm text-muted-foreground">
         Mostrando {startPost} - {endPost} de {totalPosts} posts
@@ -164,16 +158,18 @@ const BlogPagination = ({
       {/* Progress bar */}
       <div className="max-w-xs mx-auto">
         <div className="h-1 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r 
-            from-purple-500 via-pink-500 to-blue-500"
-            initial={{ width: 0 }}
-            animate={{ width: `${(currentPage / totalPages) * 100}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+          {/* Scaled rather than resized. framer animated `width`, which forces
+              a layout pass on every frame; `scaleX` is handled by the
+              compositor and leaves the main thread alone. */}
+          <div
+            className="h-full w-full origin-left bg-gradient-to-r
+            from-purple-500 via-pink-500 to-blue-500
+            transition-transform duration-500 ease-out"
+            style={{ transform: `scaleX(${currentPage / totalPages})` }}
           />
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -183,7 +179,7 @@ const PageButton = ({
   onClick,
 }: PageButtonProps): JSX.Element => {
   return (
-    <motion.button
+    <button
       onClick={onClick}
       className={cn(
         "h-9 w-9 rounded-md font-medium transition-all",
@@ -194,7 +190,7 @@ const PageButton = ({
       )}
     >
       {page}
-    </motion.button>
+    </button>
   );
 };
 

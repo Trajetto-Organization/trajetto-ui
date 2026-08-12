@@ -5,7 +5,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-import { motion, useInView } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 import { Camera, MapPin, ShieldCheck, WifiOff } from "lucide-react";
 
 import { Step } from "@/components/step";
@@ -21,12 +21,6 @@ import checklistScreen from "@/../public/mobile-app-vehicle-checklist.webp";
 
 const AppShowcase = (): JSX.Element => {
   const sectionRef = useRef(null);
-  const phonesRef = useRef(null);
-
-  const downloadRef = useRef(null);
-
-  const isPhonesInView = useInView(phonesRef, { once: true, amount: 0.3 });
-  const isDownloadInView = useInView(downloadRef, { once: true, amount: 0.5 });
 
   const phoneScreens = [
     {
@@ -84,54 +78,12 @@ const AppShowcase = (): JSX.Element => {
     },
   ];
 
-  const phoneContainerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3,
-      },
-    },
-  };
-
-  const phoneItemVariants = {
-    hidden: { opacity: 0, y: 80, scale: 0.9 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.6,
-        ease: [0.215, 0.61, 0.15, 1], // Ease out cubic
-      },
-    },
-  };
-
-  const phoneTextVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        delay: 0.2,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const downloadVariants = {
-    hidden: { opacity: 0, y: 40 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.7,
-        ease: "easeOut",
-      },
-    },
-  };
+  // The old `staggerChildren: 0.2` + `delayChildren: 0.3` on the container is
+  // now expressed per child, as `PHONE_DELAY_BASE + index * PHONE_STAGGER`.
+  // Each child observes itself, which for a row of three is visually the same
+  // as the container observing once and cascading.
+  const PHONE_DELAY_BASE = 300;
+  const PHONE_STAGGER = 200;
 
   return (
     <>
@@ -163,27 +115,18 @@ const AppShowcase = (): JSX.Element => {
             </p>
           </div>
 
-          <motion.div
-            ref={phonesRef}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 lg:gap-8"
-            initial="hidden"
-            animate={isPhonesInView ? "visible" : "hidden"}
-            variants={phoneContainerVariants}
-          >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 lg:gap-8">
             {phoneScreens.map((screen, index) => (
-              <motion.div
+              <Reveal
                 key={index}
+                direction="scale"
+                delay={PHONE_DELAY_BASE + index * PHONE_STAGGER}
                 className="flex flex-col items-center"
-                variants={phoneItemVariants}
-                custom={index}
               >
-                <motion.div
-                  className="relative mb-8 w-full 
-                  max-w-[280px] mx-auto"
-                  whileHover={{
-                    y: -10,
-                    transition: { duration: 0.3 },
-                  }}
+                <div
+                  className="relative mb-8 w-full
+                  max-w-[280px] mx-auto
+                  transition-transform duration-300 hover:-translate-y-2.5"
                 >
                   <div
                     className={`
@@ -207,37 +150,24 @@ const AppShowcase = (): JSX.Element => {
                       fill
                     />
                   </div>
-                </motion.div>
+                </div>
 
-                <motion.div
-                  className="text-center px-4"
-                  variants={phoneTextVariants}
-                >
+                <div className="text-center px-4">
                   <h3 className="text-xl font-display font-semibold mb-2">
                     {screen.title}
                   </h3>
                   <p className="text-muted-foreground">{screen.description}</p>
-                </motion.div>
-              </motion.div>
+                </div>
+              </Reveal>
             ))}
-          </motion.div>
+          </div>
 
           {/* Capacidades reais do app de campo */}
-          <motion.div
-            className="mt-24 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-            initial="hidden"
-            animate={isPhonesInView ? "visible" : "hidden"}
-            variants={phoneContainerVariants}
-          >
-            {appCapabilities.map((capability) => (
-              <motion.div
+          <div className="mt-24 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {appCapabilities.map((capability, index) => (
+              <Reveal
                 key={capability.title}
-                variants={phoneTextVariants}
-                // Hover em CSS, não em `whileHover`: ao sair do hover o
-                // framer-motion volta usando a transição do estado base — que
-                // aqui é a variante de entrada, com `delay: 0.2` e `duration:
-                // 0.6`. Era isso que fazia a volta parecer travada. Em CSS ida
-                // e volta usam a mesma curva e a mesma duração.
+                delay={PHONE_DELAY_BASE + index * PHONE_STAGGER}
                 className="group h-full rounded-2xl border border-zinc-200/80
                 bg-white/60 p-6 shadow-sm backdrop-blur-sm
                 transition-[transform,box-shadow] duration-200 ease-out
@@ -266,35 +196,19 @@ const AppShowcase = (): JSX.Element => {
                   duration-200 ease-out group-hover:w-full"
                   style={{ backgroundColor: capability.color }}
                 />
-              </motion.div>
+              </Reveal>
             ))}
-          </motion.div>
+          </div>
 
-          <motion.div
-            className="mt-24"
-            ref={downloadRef}
-            initial="hidden"
-            animate={isDownloadInView ? "visible" : "hidden"}
-            variants={downloadVariants}
-          >
+          <Reveal duration={700} className="mt-24">
             <div
               className="flex flex-col md:flex-row items-center 
               justify-center w-full gap-8 md:gap-16 max-w-3xl mx-auto"
             >
-              <motion.div
-                className="w-full md:w-auto md:min-w-[220px]"
-                whileHover={{
-                  scale: 1.03,
-                  y: -2,
-                }}
-                whileTap={{
-                  scale: 0.98,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 10,
-                }}
+              <div
+                className="w-full md:w-auto md:min-w-[220px]
+                transition-transform duration-200 ease-out
+                hover:scale-[1.03] hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 <Link
                   href="/contact"
@@ -305,21 +219,14 @@ const AppShowcase = (): JSX.Element => {
                   <span className="relative z-10">Quero ser avisado!</span>
                   <div className="shine-effect" />
                 </Link>
-              </motion.div>
+              </div>
 
               {/* Card do QR Code */}
-              <motion.div
+              <div
                 className="flex flex-col md:flex-row items-center gap-6 
-                p-6 rounded-xl shadow-sm w-full"
-                whileHover={{
-                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
-                  y: -5,
-                }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 20,
-                }}
+                p-6 rounded-xl shadow-sm w-full
+                transition-[transform,box-shadow] duration-200 ease-out
+                hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="flex-shrink-0">
                   <div
@@ -356,9 +263,9 @@ const AppShowcase = (): JSX.Element => {
                     <AndroidIcon size={18} color="#3DDC84" />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
     </>

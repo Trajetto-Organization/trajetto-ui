@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { motion } from "framer-motion";
 
 import { Card, CardTitle } from "@/components/ui/card";
 import type { QuickLinkCardProps } from "./quick-link-card.types";
@@ -10,11 +9,7 @@ const QuickLinkCard = ({
   href,
   color,
 }: QuickLinkCardProps): JSX.Element => (
-  <motion.div
-    whileHover={{ scale: 1.05 }}
-    transition={{ type: "spring", stiffness: 300 }}
-    className="h-full"
-  >
+  <div className="h-full transition-transform duration-200 ease-out hover:scale-105">
     <Card
       className="shadow-md transition-all 
       hover:bg-muted/50 h-full min-h-[120px] 
@@ -40,7 +35,7 @@ const QuickLinkCard = ({
         </CardTitle>
       </Link>
     </Card>
-  </motion.div>
+  </div>
 );
 
 export { QuickLinkCard };

@@ -1,7 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 
 import { ArrowRight, MessageCircleMore, Zap, Lock } from "lucide-react";
 
@@ -16,17 +14,11 @@ const AnimatedBadge = (): JSX.Element => {
       className="relative inline-flex 
       rounded-full p-[2px] overflow-hidden"
     >
-      <motion.div
-        className="absolute inset-0"
+      <div
+        className="animate-spin-slow absolute inset-0"
         style={{
           background:
             "conic-gradient(from 0deg, #d81b60, #f06292, #880e4f, #e91e63, #d81b60)",
-        }}
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 3,
-          repeat: Infinity,
-          ease: "linear",
         }}
       />
 
@@ -88,13 +80,9 @@ const Hero = (): JSX.Element => {
           lg:gap-16 lg:grid-cols-[1fr_1.15fr]"
         >
           <div className="space-y-8">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
+            <Reveal direction="up" delay={100}>
               <AnimatedBadge />
-            </motion.div>
+            </Reveal>
 
             <h1
               className="text-5xl font-bold tracking-tighter
@@ -107,22 +95,17 @@ const Hero = (): JSX.Element => {
             <p className="text-xl text-muted-foreground">
               Clareza para gerenciar e confiança para decidir. <br /> Uma
               plataforma pensada para quem move o{" "}
-              <motion.span
-                className="inline-block font-semibold bg-clip-text text-transparent"
+              <span
+                className="animate-gradient-slide inline-block font-semibold
+                bg-clip-text text-transparent"
                 style={{
                   backgroundImage:
                     "linear-gradient(90deg, #009739, #FEDD00, #009739, #FEDD00, #009739)",
                   backgroundSize: "200% 100%",
                 }}
-                animate={{ backgroundPosition: ["100% 50%", "0% 50%"] }}
-                transition={{
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "linear",
-                }}
               >
                 Brasil
-              </motion.span>
+              </span>
               .
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -162,10 +145,8 @@ const Hero = (): JSX.Element => {
               </Link>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+            <Reveal
+              delay={300}
               className="flex flex-wrap items-start gap-6 pt-4"
             >
               {trustIndicators.map((item) => (
@@ -186,7 +167,7 @@ const Hero = (): JSX.Element => {
                   </div>
                 </div>
               ))}
-            </motion.div>
+            </Reveal>
           </div>
           <HeroDashboardShowcase />
         </div>

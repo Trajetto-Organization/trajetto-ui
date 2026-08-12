@@ -1,7 +1,5 @@
-"use client";
-
 import { Step } from "@/components/step";
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 
 import {
   Download,
@@ -119,13 +117,7 @@ const DataExportShowcase = (): JSX.Element => {
 
         <div className="container relative">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16"
-          >
+          <Reveal className="text-center mb-16">
             <div
               className="inline-flex items-center gap-2 
               rounded-full border px-4 py-1.5 mb-6"
@@ -146,17 +138,12 @@ const DataExportShowcase = (): JSX.Element => {
               <span className="font-semibold text-indigo-500">Excel</span> com
               um clique. Sem configuração, sem complicação.
             </p>
-          </motion.div>
+          </Reveal>
 
           {/* Two-column layout */}
           <div className="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
             {/* Left: exportable modules*/}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+            <Reveal direction="left">
               <h3 className="text-2xl font-semibold mb-2">Tudo exportável.</h3>
               <p className="text-muted-foreground mb-8 text-base leading-relaxed">
                 Cada módulo da plataforma permite exportar seus dados completos,
@@ -165,12 +152,10 @@ const DataExportShowcase = (): JSX.Element => {
 
               <div className="grid grid-cols-2 gap-3 mb-8">
                 {exportableEntities.map((entity, index) => (
-                  <motion.div
+                  <Reveal
                     key={entity.label}
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.08, duration: 0.4 }}
+                    delay={index * 80}
+                    duration={400}
                     className="flex items-center gap-3 rounded-xl border bg-card
                     p-3 hover:shadow-md transition-all duration-200
                     hover:-translate-y-0.5 cursor-default"
@@ -182,7 +167,7 @@ const DataExportShowcase = (): JSX.Element => {
                       <entity.icon size={16} className={entity.color} />
                     </div>
                     <span className="text-sm font-medium">{entity.label}</span>
-                  </motion.div>
+                  </Reveal>
                 ))}
               </div>
 
@@ -221,14 +206,12 @@ const DataExportShowcase = (): JSX.Element => {
                   nada a mais, nada a menos.
                 </span>
               </div>
-            </motion.div>
+            </Reveal>
 
             {/* Right: visual flow demo */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            <Reveal
+              direction="right"
+              delay={200}
               className="relative flex flex-col items-center gap-4"
             >
               {/* Table card */}
@@ -252,21 +235,14 @@ const DataExportShowcase = (): JSX.Element => {
                   </div>
 
                   {/* Export button */}
-                  <motion.div
-                    className="flex items-center gap-1.5 text-xs font-medium
-                    px-3 py-1.5 rounded-md border bg-background
-                    shadow-sm select-none"
-                    animate={{ scale: [1, 1.04, 1] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                      repeatDelay: 1.5,
-                    }}
+                  <div
+                    className="animate-pulse-scale-sm flex items-center gap-1.5
+                    text-xs font-medium px-3 py-1.5 rounded-md border
+                    bg-background shadow-sm select-none"
                   >
                     <Download size={11} />
                     Exportar
-                  </motion.div>
+                  </div>
                 </div>
 
                 {/* Table header row */}
@@ -284,14 +260,12 @@ const DataExportShowcase = (): JSX.Element => {
 
                 {/* Data rows */}
                 {tableRows.map((row, index) => (
-                  <motion.div
+                  <Reveal
                     key={row.plate}
+                    direction="left"
+                    delay={350 + index * 80}
                     className="grid grid-cols-4 border-b border-border/40
                     last:border-0 hover:bg-muted/20 transition-colors"
-                    initial={{ opacity: 0, x: -8 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.35 + index * 0.08 }}
                   >
                     <div className="px-3 py-2.5 text-xs font-mono font-semibold">
                       {row.plate}
@@ -305,50 +279,39 @@ const DataExportShowcase = (): JSX.Element => {
                     <div className="px-3 py-2.5 text-xs text-muted-foreground">
                       {row.date}
                     </div>
-                  </motion.div>
+                  </Reveal>
                 ))}
               </div>
 
               {/* Arrow connector */}
-              <motion.div
-                className="flex flex-col items-center 
+              <Reveal
+                direction="none"
+                delay={300}
+                className="flex flex-col items-center
                 gap-1 text-muted-foreground/50"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
               >
-                <motion.div
-                  animate={{ y: [0, 4, 0] }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
+                <div className="animate-bob-y">
                   <ArrowDown size={18} className="text-muted-foreground/40" />
-                </motion.div>
+                </div>
                 <span
                   className="text-[10px] font-medium 
                   tracking-wide uppercase"
                 >
                   escolha o formato
                 </span>
-              </motion.div>
+              </Reveal>
 
               {/* Format output cards */}
               <div className="grid grid-cols-2 gap-3 w-full">
                 {/* CSV card */}
-                <motion.div
+                <Reveal
+                  delay={200}
+                  duration={400}
                   className="group relative rounded-2xl border
                 bg-slate-900 dark:bg-slate-950
                   p-4 overflow-hidden shadow-lg hover:shadow-xl
                   transition-[transform,box-shadow] duration-200 ease-out
                   hover:-translate-y-1"
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
                 >
                   {/* Glow */}
                   <div
@@ -377,20 +340,18 @@ const DataExportShowcase = (): JSX.Element => {
 
                     <div className="space-y-0.5">
                       {csvLines.map((line, i) => (
-                        <motion.div
+                        <Reveal
                           key={i}
+                          direction="none"
+                          delay={340 + i * 50}
                           className={`text-[9px] font-mono truncate leading-relaxed ${
                             i === 0
                               ? "text-emerald-400 font-bold"
                               : "text-slate-400"
                           }`}
-                          initial={{ opacity: 0 }}
-                          whileInView={{ opacity: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.34 + i * 0.05 }}
                         >
                           {line}
-                        </motion.div>
+                        </Reveal>
                       ))}
                     </div>
 
@@ -400,20 +361,18 @@ const DataExportShowcase = (): JSX.Element => {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </Reveal>
 
                 {/* Excel card */}
-                <motion.div
+                <Reveal
+                  delay={280}
+                  duration={400}
                   className="group relative rounded-2xl border bg-card
                   p-4 overflow-hidden shadow-lg hover:shadow-xl
                   transition-[transform,box-shadow] duration-200 ease-out
                   hover:-translate-y-1
                   bg-gradient-to-br from-background via-background
                 to-indigo-500/[0.04] dark:to-indigo-500/[0.08]"
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.28, duration: 0.4 }}
                 >
                   {/* Glow */}
                   <div
@@ -446,14 +405,12 @@ const DataExportShowcase = (): JSX.Element => {
                     {/* Mini spreadsheet grid */}
                     <div className="rounded-md border border-border/60 overflow-hidden">
                       {excelRows.map((row, i) => (
-                        <motion.div
+                        <Reveal
                           key={i}
+                          direction="none"
+                          delay={400 + i * 50}
                           className={`flex border-b border-border/40 last:border-0
                           ${i === 0 ? "bg-indigo-500/10" : i % 2 === 0 ? "bg-muted/20" : ""}`}
-                          initial={{ opacity: 0 }}
-                          whileInView={{ opacity: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: 0.4 + i * 0.05 }}
                         >
                           {row.slice(0, 4).map((cell, j) => (
                             <div
@@ -469,7 +426,7 @@ const DataExportShowcase = (): JSX.Element => {
                               {cell}
                             </div>
                           ))}
-                        </motion.div>
+                        </Reveal>
                       ))}
                     </div>
 
@@ -479,23 +436,21 @@ const DataExportShowcase = (): JSX.Element => {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </Reveal>
               </div>
 
               {/* Bottom note */}
-              <motion.div
+              <Reveal
+                direction="none"
+                delay={550}
                 className="flex items-center gap-2 text-xs text-muted-foreground"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.55 }}
               >
                 <Sparkles size={12} className="text-[#d81b60]" />
                 <span>
                   Um clique no botão Exportar — você escolhe o formato na hora
                 </span>
-              </motion.div>
-            </motion.div>
+              </Reveal>
+            </Reveal>
           </div>
         </div>
       </section>

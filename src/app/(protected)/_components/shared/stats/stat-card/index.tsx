@@ -13,7 +13,6 @@ import {
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-import { motion } from "framer-motion";
 import { StatCardProps } from "../shared/common.types";
 
 const variantStyles = {
@@ -210,11 +209,7 @@ function StatCard({
   );
 
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      transition={{ type: "spring", stiffness: 300 }}
-      className="h-full z-40"
-    >
+    <div className="h-full z-40 transition-transform duration-200 ease-out hover:-translate-y-1">
       {shouldShowTooltip ? (
         <TooltipProvider delayDuration={200}>
           <Tooltip>
@@ -231,7 +226,7 @@ function StatCard({
       ) : (
         cardContent
       )}
-    </motion.div>
+    </div>
   );
 }
 

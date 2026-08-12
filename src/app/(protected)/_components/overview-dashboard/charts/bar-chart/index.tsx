@@ -1,7 +1,6 @@
 "use client";
 
 import { Minus, TrendingUp, Loader2 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import {
   Card,
@@ -11,11 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-} from "@/components/ui/chart";
+import { SvgChart } from "@/components/ui/svg-chart";
 
 import {
   Select,
@@ -27,17 +22,6 @@ import {
 
 import { useBarChart } from "./hooks";
 import type { ChartBarDefaultProps } from "./bar-chart.types";
-
-const chartConfig = {
-  preventive: {
-    label: "Manutenção Interna",
-    color: "#3b82f6",
-  },
-  corrective: {
-    label: "Manutenção Externa",
-    color: "#ef4444",
-  },
-} satisfies ChartConfig;
 
 const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
   const {
@@ -105,76 +89,31 @@ const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
             />
           </div>
         ) : chartData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="h-[240px] w-full">
-            <BarChart accessibilityLayer data={chartData}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="month"
-                tickLine={false}
-                tickMargin={10}
-                axisLine={false}
-                tickFormatter={(value) => value.slice(0, 3)}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    const data = payload[0];
-                    return (
-                      <div
-                        className="rounded-lg border bg-background 
-                        p-3 shadow-md min-w-[220px]"
-                      >
-                        <section className="grid gap-2">
-                          <div className="flex flex-col">
-                            <span
-                              className="text-[0.70rem] uppercase 
-                              text-muted-foreground"
-                            >
-                              Período
-                            </span>
-                            <span
-                              className="font-bold 
-                              text-muted-foreground"
-                            >
-                              {label}
-                            </span>
-                          </div>
-
-                          <div className="flex flex-col">
-                            <span
-                              className="text-[0.70rem] uppercase 
-                              text-muted-foreground"
-                            >
-                              Total de Custos
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: "#3b82f6" }}
-                              />
-                              <span
-                                className="font-bold"
-                                style={{ color: "#3b82f6" }}
-                              >
-                                R${" "}
-                                {Number(data.value).toLocaleString("pt-BR", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </span>
-                            </div>
-                          </div>
-                        </section>
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar dataKey="total" fill="#3b82f6" radius={8} name="total" />
-            </BarChart>
-          </ChartContainer>
+          <SvgChart
+            data={chartData}
+            series={[
+              {
+                key: "preventive",
+                label: "Manutenção Interna",
+                color: "#3b82f6",
+              },
+              {
+                key: "corrective",
+                label: "Manutenção Externa",
+                color: "#ef4444",
+              },
+            ]}
+            xKey="month"
+            variant="bar"
+            stacked
+            height={240}
+            formatValue={(value) =>
+              `R$ ${value.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`
+            }
+          />
         ) : (
           <div
             className="flex items-center justify-center 

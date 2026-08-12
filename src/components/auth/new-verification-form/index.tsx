@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { motion } from "framer-motion";
 
 import { ErrorForm } from "../error-form";
 import { SuccessForm } from "../success-form";
@@ -20,22 +19,12 @@ const NewVerificationForm = (): JSX.Element => {
   return (
     <>
       <div className="mb-7 grid gap-2 text-center">
-        <motion.h1
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-3xl font-bold"
-        >
+        <h1 className="animate-fade-in [animation-delay:200ms] text-3xl font-bold">
           Verificação de E-mail
-        </motion.h1>
+        </h1>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: -30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, type: "tween" }}
-        className="w-full flex justify-center"
-      >
+      <div className="animate-fade-down [animation-delay:500ms] w-full flex justify-center">
         <Card className="w-full max-w-[27rem] p-3">
           <CardHeader className="space-y-3 flex items-center justify-center">
             <CardTitle className="flex justify-center items-center">
@@ -59,7 +48,7 @@ const NewVerificationForm = (): JSX.Element => {
             {!success && <ErrorForm message={error} />}
           </div>
         </Card>
-      </motion.div>
+      </div>
 
       {(success || error) && countdown !== null && (
         <p

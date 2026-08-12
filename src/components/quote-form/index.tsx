@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
+import { Reveal } from "@/components/shared/reveal";
 import Link from "next/link";
 import type {
   CreateQuoteContainerProps,
@@ -35,7 +36,6 @@ import {
   SelectValue,
 } from "../ui/select";
 
-import { motion } from "framer-motion";
 import { ErrorForm } from "../auth/error-form";
 
 import { useQuoteForm } from "./hooks";
@@ -287,26 +287,6 @@ const QuoteForm = (): JSX.Element => {
     },
   ];
 
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
-    },
-  };
-
-  const itemVariant = {
-    hidden: { opacity: 0, y: 20 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5, ease: "easeOut" },
-    },
-  };
-
   return (
     <>
       <section
@@ -320,31 +300,19 @@ const QuoteForm = (): JSX.Element => {
 
         <div className="container px-4 mx-auto relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <motion.h1
-              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 
+            <h1
+              className="animate-fade-down text-4xl md:text-5xl lg:text-6xl font-bold mb-6 
               bg-clip-text text-transparent bg-gradient-to-r pb-1 md:pb-2 lg:pb-3
               from-foreground to-foreground/70"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
             >
               Transforme sua Gestão de Frotas Hoje
-            </motion.h1>
-            <motion.p
-              className="text-xl text-muted-foreground mb-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
+            </h1>
+            <p className="animate-fade-in [animation-delay:200ms] text-xl text-muted-foreground mb-8">
               Solicite um orçamento personalizado e descubra como o Trajetto
               pode revolucionar a eficiência da sua operação com tecnologia de
               ponta.
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
+            </p>
+            <div className="animate-scale-in [animation-delay:300ms]">
               <Link
                 href={"#budget"}
                 className={cn(
@@ -362,36 +330,24 @@ const QuoteForm = (): JSX.Element => {
                   />
                 </div>
               </Link>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
 
       <section className="py-11 bg-muted/30">
         <div className="container px-4 mx-auto">
-          <motion.h2
-            className="text-3xl font-bold text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-          >
+          <h2 className="animate-fade-up text-3xl font-bold text-center mb-12">
             Por que escolher o Trajetto?
-          </motion.h2>
+          </h2>
 
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-          >
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
-              <motion.div
+              <Reveal
                 key={index}
-                className="bg-white dark:bg-gray-900/60 p-6 
+                delay={300 + index * 100}
+                className="bg-white dark:bg-gray-900/60 p-6
                 rounded-xl shadow-sm border border-border/50"
-                variants={itemVariant}
               >
                 <div className="flex flex-col items-center text-center">
                   <div className="p-3 bg-primary/5 rounded-full mb-4">
@@ -402,22 +358,16 @@ const QuoteForm = (): JSX.Element => {
                   </h3>
                   <p className="text-muted-foreground">{benefit.description}</p>
                 </div>
-              </motion.div>
+              </Reveal>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       <section id="budget" className="py-20 bg-background">
         <div className="container px-4 mx-auto">
           <div className="flex flex-col lg:flex-row gap-12 items-start">
-            <motion.div
-              className="flex-1 w-full"
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+            <div className="animate-fade-left flex-1 w-full">
               <div
                 className="bg-white dark:bg-gray-900/50 
                 p-8 rounded-2xl shadow-lg border border-border/50"
@@ -470,15 +420,9 @@ const QuoteForm = (): JSX.Element => {
                   </form>
                 )}
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              className="lg:w-2/5"
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+            <div className="animate-fade-right lg:w-2/5">
               <div
                 className="bg-[#d81b60]/5 dark:bg-[#d81b60]/10 
                 p-8 rounded-2xl border border-[#d81b60]/20"
@@ -521,7 +465,7 @@ const QuoteForm = (): JSX.Element => {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>

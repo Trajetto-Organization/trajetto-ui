@@ -955,3 +955,371 @@ html {
 .dark .custom-popup .leaflet-popup-tip {
   background-color: hsl(var(--card));
 }
+
+/* ================================================================
+   Scroll reveal
+   ----------------------------------------------------------------
+   Replaces framer-motion's `initial` + `whileInView`. The element
+   starts offset and transparent, and the `is-in` class — added by
+   the `Reveal` component once the IntersectionObserver fires — moves
+   it to its resting state.
+
+   Only `opacity` and `transform` are animated, so the whole thing
+   runs on the compositor thread and never triggers layout.
+   ================================================================ */
+
+.reveal {
+  opacity: 0;
+  transition:
+    opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-up {
+  transform: translateY(24px);
+}
+
+.reveal-down {
+  transform: translateY(-24px);
+}
+
+.reveal-left {
+  transform: translateX(-30px);
+}
+
+.reveal-right {
+  transform: translateX(30px);
+}
+
+.reveal-scale {
+  transform: scale(0.9);
+}
+
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Dropping `will-change` after the transition frees the layer the
+   browser promoted for it. Keeping it forever on dozens of elements
+   costs memory for no benefit. */
+.reveal.is-in {
+  will-change: auto;
+}
+
+/* ================================================================
+   Reduced motion
+   ----------------------------------------------------------------
+   framer-motion honoured this automatically; with plain CSS it has
+   to be declared. Users who ask the OS for less motion get the final
+   state immediately instead of the movement.
+   ================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ================================================================
+   Toggle with exit — the AnimatePresence replacement
+   ----------------------------------------------------------------
+   CSS cannot animate a node React has already unmounted, which is the
+   whole reason AnimatePresence existed. Two modern features remove the
+   need for it:
+
+     - `transition-behavior: allow-discrete` makes the browser hold
+       `display: none` until the transition finishes, so the element
+       animates out and only then leaves the layout.
+     - `@starting-style` defines the state it animates FROM the first
+       time it is rendered, which covers the way in.
+
+   This requires rendering the element and toggling the `hidden`
+   attribute instead of `{open && <El />}`. That is a better trade here
+   anyway: no remount cost, and `display: none` already drops the node
+   from the accessibility tree.
+
+   Support: Chrome 117+, Safari 17.4+, Firefox 129+. Older browsers skip
+   the animation and show/hide instantly — degraded, never broken.
+
+   On Tailwind v4 these become the `starting:` variant and can be written
+   inline; v3 has no such variant, so they live here next to `.reveal`.
+   ================================================================ */
+
+.toggle {
+  transition:
+    opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    display 300ms allow-discrete;
+}
+
+.toggle[hidden] {
+  display: none;
+  opacity: 0;
+}
+
+@starting-style {
+  .toggle:not([hidden]) {
+    opacity: 0;
+  }
+}
+
+/* Modifiers. The same transform serves both directions: it is where the
+   element comes from and where it goes back to. */
+
+.toggle-scale[hidden] {
+  transform: scale(0.95);
+}
+
+@starting-style {
+  .toggle-scale:not([hidden]) {
+    transform: scale(0.95);
+  }
+}
+
+.toggle-up[hidden] {
+  transform: translateY(-10px);
+}
+
+@starting-style {
+  .toggle-up:not([hidden]) {
+    transform: translateY(-10px);
+  }
+}
+
+.toggle-right[hidden] {
+  transform: translateX(20px);
+}
+
+@starting-style {
+  .toggle-right:not([hidden]) {
+    transform: translateX(20px);
+  }
+}
+
+.toggle-scale-x[hidden] {
+  transform: scaleX(0);
+}
+
+@starting-style {
+  .toggle-scale-x:not([hidden]) {
+    transform: scaleX(0);
+  }
+}
+
+/* ================================================================
+   Expand / collapse to automatic height
+   ----------------------------------------------------------------
+   `height: auto` is not animatable, which is why framer had to measure
+   the element in JavaScript. A grid row sized in `fr` IS animatable, so
+   going from `0fr` to `1fr` reproduces it with no measuring at all.
+
+   The child needs `overflow: hidden` and `min-height: 0`, otherwise it
+   refuses to shrink below its content.
+   ================================================================ */
+
+.expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 300ms allow-discrete;
+}
+
+.expand[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+
+.expand > * {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Vertical growth, for the connector lines between steps. Uses `scaleY`
+   rather than `height`: the visual result is the same, but height forces a
+   layout pass on every frame while a transform does not. */
+.reveal-scale-y {
+  transform: scaleY(0);
+  transform-origin: top;
+}
+
+/* Horizontal growth, for progress bars. Same reasoning as `reveal-scale-y`:
+   the element keeps its real width and is scaled into view, so the browser
+   never has to reflow it mid-animation. */
+.reveal-scale-x {
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+/* Extends the toggle transition to cover `top`/`left`, so an element that also
+   MOVES while visible slides instead of jumping. Used by the demo tooltip,
+   which repositions itself over each highlighted step.
+
+   These two do trigger layout, unlike opacity and transform — acceptable for a
+   single small floating element, and it is what framer was animating anyway. */
+.toggle-pos {
+  transition-property: opacity, transform, top, left, display;
+}
+
+/* ================================================================
+   Rolling stack
+   ----------------------------------------------------------------
+   Replaces `<AnimatePresence mode="popLayout">` plus the `layout` prop
+   on a list where new items are prepended and push the others down.
+
+   Two variants, because the two lists that use this want different
+   things and share nothing but the reflow:
+
+     .stack-item       auth notifications — row and card grow together
+                       out of nothing, which is the look signed off there.
+     .stack-item-rise  hero dashboard — two phases, see below.
+
+   In both, the row that leaves collapses its own grid track back to
+   `0fr`. That collapse is what makes the rows below slide up instead of
+   snapping — the job framer-motion needed `layout` and FLIP measuring
+   for.
+   ================================================================ */
+
+.stack-item {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: scale(1);
+
+  /* Anchored to the top, matching the old `originY: 0`: the card grows
+     downwards out of the row above instead of expanding from its middle. */
+  transform-origin: top center;
+
+  /* The overshoot in the transform curve stands in for the spring the
+     framer version used. Size and opacity keep an ordinary ease-out,
+     because overshooting a grid track would make the list jump. */
+  transition:
+    grid-template-rows 450ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 450ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 450ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@starting-style {
+  .stack-item {
+    grid-template-rows: 0fr;
+    opacity: 0;
+
+    /* Grows from nothing, as the original `initial: { scale: 0 }` did. */
+    transform: scale(0);
+  }
+}
+
+.stack-item > * {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.stack-item[data-exiting="true"] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: scale(0) translateY(-20px);
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------
+   Hero dashboard variant — two phases.
+
+   Its cards are wide and short, so the clip edge that `overflow: hidden`
+   requires was visible while the track opened: the icon appeared to slide
+   out from behind the background. Splitting the motion fixes it. The track
+   opens FIRST with the card still invisible, and only then does the card
+   materialise; on the way out the order reverses. The 200ms delay on the
+   card is the whole trick.
+   ---------------------------------------------------------------- */
+
+.stack-item-rise {
+  opacity: 1;
+  transform: none;
+  transition: grid-template-rows 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@starting-style {
+  .stack-item-rise {
+    grid-template-rows: 0fr;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stack-item-rise > * {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transform-origin: top center;
+  transition:
+    opacity 280ms cubic-bezier(0.22, 1, 0.36, 1) 200ms,
+    transform 340ms cubic-bezier(0.34, 1.4, 0.64, 1) 200ms;
+}
+
+@starting-style {
+  .stack-item-rise > * {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+.stack-item-rise[data-exiting="true"] {
+  grid-template-rows: 0fr;
+  opacity: 1;
+  transform: none;
+
+  /* Waits for the card to fade before taking the space back. */
+  transition-delay: 170ms;
+}
+
+.stack-item-rise[data-exiting="true"] > * {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.96);
+  transition-delay: 0ms;
+}
+
+/* ================================================================
+   Pointer tilt
+   ----------------------------------------------------------------
+   Paired with the `useTilt` hook, which writes `--tilt-x` / `--tilt-y`
+   and toggles `data-tilting`.
+
+   The spring feel comes from swapping the transition, not from physics:
+   while the pointer is over the element the transition is short enough
+   to read as instant tracking; when it leaves, the values return to zero
+   over a curve whose control point sits above 1, so it overshoots
+   slightly and settles.
+   ================================================================ */
+
+.tilt {
+  transform: perspective(1200px) rotateX(var(--tilt-x, 0deg))
+    rotateY(var(--tilt-y, 0deg));
+  transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+
+.tilt[data-tilting="true"] {
+  transition: transform 100ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt,
+  .tilt[data-tilting="true"] {
+    transform: none;
+  }
+}

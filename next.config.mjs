@@ -69,7 +69,16 @@ const nextConfig = {
     // Note that @radix-ui/react-icons is an icon set, NOT the @radix-ui/react-*
     // primitives we do use — those already ship one small entry point per
     // package, so there is no barrel for this option to optimize.
-    optimizePackageImports: ["lucide-react", "framer-motion"],
+    // Measured, not assumed. Adding `lodash` and `date-fns` here made the kanban
+    // routes 24 kB HEAVIER (246 kB -> 270 kB): the barrel optimizer rewrites
+    // each named import into its own deep import, and those deep modules stop
+    // being shared across chunks. Next 14 already auto-optimizes date-fns and
+    // lucide-react anyway.
+    //
+    // Anything added here must be verified with a real build, in both
+    // directions — @tanstack/react-table failed outright, these two passed the
+    // build and still cost size.
+    optimizePackageImports: ["lucide-react"],
     outputFileTracingExcludes: {
       "*": [
         // Excludes SWC binaries for systems that are NOT the server (Mac and Windows)

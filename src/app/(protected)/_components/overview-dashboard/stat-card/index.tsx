@@ -1,6 +1,4 @@
-import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import type { StatCardProps } from "./stat-card.types";
 
 const StatCard = ({
@@ -10,10 +8,7 @@ const StatCard = ({
   icon,
   color,
 }: StatCardProps): JSX.Element => (
-  <motion.div
-    whileHover={{ y: -5 }}
-    transition={{ type: "spring", stiffness: 300 }}
-  >
+  <div className="transition-transform duration-200 ease-out hover:-translate-y-1">
     <Card className="overflow-hidden shadow-md">
       <div className="flex">
         <div
@@ -50,7 +45,7 @@ const StatCard = ({
         </div>
       </div>
     </Card>
-  </motion.div>
+  </div>
 );
 
 export { StatCard };

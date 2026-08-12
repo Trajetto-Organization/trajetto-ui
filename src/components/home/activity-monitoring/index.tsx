@@ -1,7 +1,5 @@
-"use client";
-
 import { Step } from "@/components/step";
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 
 import {
   ScanEye,
@@ -44,13 +42,7 @@ const ActivityMonitoring = (): JSX.Element => {
         />
 
         <div className="container relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16"
-          >
+          <Reveal className="text-center mb-16">
             <div
               className="inline-flex items-center gap-2
               rounded-full border px-4 py-1.5 mb-6"
@@ -78,15 +70,10 @@ const ActivityMonitoring = (): JSX.Element => {
                 quê e quando.
               </p>
             </div>
-          </motion.div>
+          </Reveal>
 
           {/* Table preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-          >
+          <Reveal duration={700}>
             <div
               className="rounded-2xl border shadow-lg 
               overflow-hidden bg-background"
@@ -163,20 +150,19 @@ const ActivityMonitoring = (): JSX.Element => {
                     As atividades da sua empresa aparecerão aqui conforme
                     veículos, motoristas e registros forem criados.
                   </p>
-                  <motion.button
+                  <button
                     className="inline-flex items-center gap-2 rounded-full
                     bg-[#d81b60] px-5 py-2.5 text-sm font-medium text-white
                     shadow-lg shadow-[#d81b60]/20
-                    hover:bg-[#c2185b] transition-colors duration-300
+                    hover:bg-[#c2185b] transition-all duration-300
                     focus-visible:outline-none focus-visible:ring-2
-                    focus-visible:ring-[#d81b60] focus-visible:ring-offset-2"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    focus-visible:ring-[#d81b60] focus-visible:ring-offset-2
+                    hover:scale-[1.02] active:scale-[0.98]"
                     aria-label="Começar a usar o sistema"
                   >
                     Começar agora
                     <ArrowRight size={14} />
-                  </motion.button>
+                  </button>
                 </div>
               ) : (
                 /* Table */
@@ -212,14 +198,16 @@ const ActivityMonitoring = (): JSX.Element => {
                             "bg-blue-100 text-blue-700 border-blue-200",
                         };
 
+                        // Animated on the row itself rather than through
+                        // `Reveal`: that renders a div, and a div inside a
+                        // tbody is invalid HTML that browsers hoist out of
+                        // the table.
                         return (
-                          <motion.tr
+                          <tr
                             key={row.id}
-                            className="hover:bg-muted/30 transition-colors duration-150"
-                            initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.06 }}
+                            className="animate-fade-in hover:bg-muted/30
+                            transition-colors duration-150"
+                            style={{ animationDelay: `${index * 60}ms` }}
                           >
                             {/* Type */}
                             <td className="px-4 py-3.5 whitespace-nowrap">
@@ -302,7 +290,7 @@ const ActivityMonitoring = (): JSX.Element => {
                                 {row.date}
                               </span>
                             </td>
-                          </motion.tr>
+                          </tr>
                         );
                       })}
                     </tbody>
@@ -320,19 +308,19 @@ const ActivityMonitoring = (): JSX.Element => {
                   <p className="text-xs text-muted-foreground">
                     Exibindo {rows.length} de 1.247 atividades
                   </p>
-                  <motion.button
+                  <button
                     className="inline-flex items-center gap-2
                     text-sm font-medium text-[#d81b60]
-                    hover:text-[#c2185b] transition-colors duration-200
+                    hover:text-[#c2185b] transition-all duration-200
                     focus-visible:outline-none focus-visible:ring-2
                     focus-visible:ring-[#d81b60] focus-visible:ring-offset-2
-                    rounded-lg px-2 py-1"
-                    whileHover={{ x: 4 }}
+                    rounded-lg px-2 py-1
+                    hover:translate-x-1"
                     aria-label="Ver todas as atividades no painel"
                   >
                     Ver todas as atividades
                     <ArrowRight size={14} />
-                  </motion.button>
+                  </button>
                 </div>
               )}
             </div>
@@ -344,7 +332,7 @@ const ActivityMonitoring = (): JSX.Element => {
                 <span>Toda ação é registrada automaticamente</span>
               </div>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
       </section>
     </>

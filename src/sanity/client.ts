@@ -2,13 +2,13 @@ import { createClient } from "@sanity/client";
 import { apiVersion, dataset, safeProjectId } from "./env";
 
 /**
- * Cliente de LEITURA do blog/legal. `useCdn: false` porque servimos via ISR
- * (revalidação por tempo + tag): a query GROQ roda só na revalidação (~1x/h
- * ou no webhook de publish), nunca por visitante — então queremos o dado
- * fresco da API, não o cache do CDN que poderia devolver versão stale.
+ * READ client for the blog/legal section. `useCdn: false` because we serve via ISR
+ * (time-based + tag revalidation): the GROQ query runs only during revalidation
+ * (~once an hour or upon a publish webhook), never per visitor—so we want fresh
+ * data from the API, not the CDN cache, which could return a stale version.
  *
- * `perspective: "published"` ignora rascunhos — o público só vê o que foi
- * publicado no Studio.
+ * `perspective: "published"` ignores drafts—the public only sees what has
+ * been published in the Studio.
  */
 const client = createClient({
   projectId: safeProjectId,

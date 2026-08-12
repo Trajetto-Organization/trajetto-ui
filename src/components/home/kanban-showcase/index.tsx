@@ -1,6 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 import {
   GripVertical,
   Plus,
@@ -34,17 +32,13 @@ const ShowcaseCardComponent = ({
   const isCompleted = card.completed || false;
 
   return (
-    <motion.div
+    <Reveal
+      direction="scale"
+      delay={colIndex * 150 + cardIndex * 100}
       className={`group/card relative rounded-md border bg-background p-3
       shadow-sm hover:shadow-md transition-all duration-300
       hover:-translate-y-0.5 cursor-grab active:cursor-grabbing
       ${isCompleted ? "opacity-70 bg-muted/40 border-dashed border-green-200" : ""}`}
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true }}
-      transition={{
-        delay: colIndex * 0.15 + cardIndex * 0.1,
-      }}
       role="listitem"
     >
       {/* Card Header */}
@@ -123,7 +117,7 @@ const ShowcaseCardComponent = ({
           rounded-md pointer-events-none"
         />
       )}
-    </motion.div>
+    </Reveal>
   );
 };
 
@@ -138,13 +132,7 @@ const KanbanShowcase = (): JSX.Element => {
       </div>
       <section className="relative py-24 overflow-hidden">
         <div className="container relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16"
-          >
+          <Reveal className="text-center mb-16">
             <div
               className="inline-flex items-center gap-2
               rounded-full border px-4 py-1.5 mb-6"
@@ -169,16 +157,10 @@ const KanbanShowcase = (): JSX.Element => {
                 operação.
               </p>
             </div>
-          </motion.div>
+          </Reveal>
 
           {/* Kanban preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
-            className="mb-16"
-          >
+          <Reveal duration={700} className="mb-16">
             <div
               className="rounded-2xl border shadow-lg
               bg-background overflow-hidden"
@@ -239,16 +221,13 @@ const KanbanShowcase = (): JSX.Element => {
                     aria-label="Colunas do Kanban"
                   >
                     {columns.map((column, colIndex) => (
-                      <motion.div
+                      <Reveal
                         key={column.title}
+                        delay={colIndex * 150}
                         className="min-w-[280px] max-w-[280px] bg-muted/30 rounded-lg"
                         style={{
                           borderTop: `3px solid ${column.color}`,
                         }}
-                        initial={{ opacity: 0, y: 15 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: colIndex * 0.15 }}
                       >
                         <div className="p-4">
                           {/* Column header */}
@@ -308,28 +287,25 @@ const KanbanShowcase = (): JSX.Element => {
                             Adicionar Card
                           </button>
                         </div>
-                      </motion.div>
+                      </Reveal>
                     ))}
                   </div>
                 </div>
                 <ScrollBar orientation="horizontal" />
               </ScrollArea>
             </div>
-          </motion.div>
+          </Reveal>
 
           {/* Benefits */}
           <div className="grid gap-6 sm:grid-cols-3 mb-12">
             {benefits.map((benefit, index) => (
-              <motion.div
+              <Reveal
                 key={benefit.title}
+                delay={index * 150}
                 className="group flex flex-col items-center text-center
                 rounded-xl border bg-background p-6 shadow-sm
                 hover:shadow-md transition-all duration-300
                 hover:-translate-y-0.5"
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.15 }}
               >
                 <div
                   className="w-12 h-12 rounded-xl bg-[#d81b60]/10
@@ -342,7 +318,7 @@ const KanbanShowcase = (): JSX.Element => {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {benefit.description}
                 </p>
-              </motion.div>
+              </Reveal>
             ))}
           </div>
 

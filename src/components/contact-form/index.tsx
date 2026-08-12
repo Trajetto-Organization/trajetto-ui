@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 
 import { useContact } from "./hooks";
 
@@ -108,23 +108,17 @@ const ContactForm = (): JSX.Element => {
 
       <div className="container px-4 md:px-6 py-16 sm:py-20 relative z-10">
         <div className="text-center mb-14 sm:mb-20">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-4xl md:text-5xl font-bold tracking-tight"
-          >
-            Entre em Contato
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4, type: "tween" }}
-            className="mt-4 text-xl text-muted-foreground max-w-2xl mx-auto"
-          >
-            Estamos prontos para responder suas dúvidas e ajudar sua empresa a
-            otimizar a gestão de frotas
-          </motion.p>
+          <Reveal direction="none" delay={300}>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
+              Entre em Contato
+            </h2>
+          </Reveal>
+          <Reveal direction="left" delay={400}>
+            <p className="mt-4 text-xl text-muted-foreground max-w-2xl mx-auto">
+              Estamos prontos para responder suas dúvidas e ajudar sua empresa a
+              otimizar a gestão de frotas
+            </p>
+          </Reveal>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-5 lg:gap-16 items-start">
@@ -207,38 +201,35 @@ const ContactForm = (): JSX.Element => {
               className="bg-background/50 backdrop-blur-sm border 
               rounded-lg p-4 shadow-sm relative overflow-hidden h-[190px]"
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentTestimonialIndex}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute inset-0 p-6"
-                >
-                  <p className="italic text-muted-foreground">
-                    &quot;{currentTestimonial.quote}&quot;
-                  </p>
-                  <div className="mt-4 flex items-center">
-                    <motion.div
-                      initial={{ scale: 0.8 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.3, delay: 0.2 }}
-                      className="h-10 w-10 rounded-full flex 
+              {/* Changing the key remounts the node, which restarts the CSS
+                  animation — that is what replaces AnimatePresence here. The
+                  outgoing testimonial is not animated out: the incoming one
+                  fades in over the same absolute box, so the swap reads as a
+                  crossfade without keeping the old node alive. */}
+              <div
+                key={currentTestimonialIndex}
+                className="animate-fade-up absolute inset-0 p-6"
+              >
+                <p className="italic text-muted-foreground">
+                  &quot;{currentTestimonial.quote}&quot;
+                </p>
+                <div className="mt-4 flex items-center">
+                  <div
+                    className="animate-scale-in [animation-delay:200ms]
+                      h-10 w-10 rounded-full flex
                       items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: currentTestimonial.color }}
-                    >
-                      <currentTestimonial.icon className="h-5 w-5" />
-                    </motion.div>
-                    <div className="ml-3">
-                      <p className="font-medium">{currentTestimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {currentTestimonial.role}
-                      </p>
-                    </div>
+                    style={{ backgroundColor: currentTestimonial.color }}
+                  >
+                    <currentTestimonial.icon className="h-5 w-5" />
                   </div>
-                </motion.div>
-              </AnimatePresence>
+                  <div className="ml-3">
+                    <p className="font-medium">{currentTestimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {currentTestimonial.role}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               <div
                 className="absolute bottom-2 left-0 right-0 
@@ -350,9 +341,9 @@ const ContactForm = (): JSX.Element => {
                     </div>
                   </div>
 
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                  <div
+                    className="transition-transform duration-200 ease-out
+                    hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <Button
                       className="w-full h-12 text-base bg-[#d81b60] 
@@ -371,7 +362,7 @@ const ContactForm = (): JSX.Element => {
                         <Send className="ml-2 h-5 w-5" />
                       )}
                     </Button>
-                  </motion.div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

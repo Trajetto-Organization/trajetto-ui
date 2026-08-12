@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { compressImage } from "@/lib/compress-image";
 import Image from "next/image";
 
 import { Upload, Image as ImageIcon, X, Eye } from "lucide-react";
@@ -73,7 +74,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
     maxSize: 5 * 1024 * 1024, // 5MB
     multiple: true,
     disabled: pending,
-    onDrop: (acceptedFiles: File[], rejectedFiles) => {
+    onDrop: async (acceptedFiles: File[], rejectedFiles) => {
       setValidationError(null); // Clear previous errors
 
       // Validate each accepted file
@@ -108,7 +109,11 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
       }
 
       if (validFiles.length > 0) {
-        onFilesChange([...files, ...validFiles]);
+        // Shrunk before they ever reach a FormData. A checklist can carry
+        // twenty camera photos, and untouched that body is large enough to be
+        // rejected before it leaves the Next server.
+        const compressed = await Promise.all(validFiles.map(compressImage));
+        onFilesChange([...files, ...compressed]);
       }
     },
   });

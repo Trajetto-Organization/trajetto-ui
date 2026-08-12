@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.2...v1.0.3) (2026-08-12)
+
+
+### Bug Fixes
+
+* tira o CHANGELOG.md do lint ([800cca1](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/commit/800cca1483a5177459e23ab7fae60db3fd2124b7))
+* versiona o next-env.d.ts para o type-check do CI passar ([fa7abd1](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/commit/fa7abd1853d3f2c17b7ef2914f95fbe2ecdb1383))
+
 ## [1.0.2](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.1...v1.0.2) (2026-08-11)
 
 

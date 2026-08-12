@@ -40,7 +40,12 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+
+# next-env.d.ts is deliberately NOT ignored. tsconfig.json lists it under
+# `include`, and it is what pulls in `next/image-types/global` — the ambient
+# declarations for `*.webp`, `*.png` and friends. Only `next build`/`next dev`
+# generate it, so with the file ignored the CI type-check (which never runs
+# Next) failed on every static image import with TS2307.
 
 # Playwright
 node_modules/

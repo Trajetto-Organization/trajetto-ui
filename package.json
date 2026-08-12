@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "lint:check": "prettier --check .",
     "lint:fix": "prettier --write .",
     "optimize-images": "node scripts/optimize-images.js",

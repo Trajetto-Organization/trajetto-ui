@@ -15,12 +15,7 @@ import { accountPayableStats } from "./stats-config";
 import { AccountPayableActions } from "./page-actions";
 
 type AccountPayableStatus =
-  | "PENDING"
-  | "PAID"
-  | "PARTIAL"
-  | "LATE"
-  | "PARTIAL_LATE"
-  | "OVERDUE";
+  "PENDING" | "PAID" | "PARTIAL" | "LATE" | "PARTIAL_LATE" | "OVERDUE";
 
 function calculateAccountPayableStatus(
   amount: number,

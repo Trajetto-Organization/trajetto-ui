@@ -484,7 +484,6 @@ const DashboardCreateFuelFormSubmit = ({
             }
           />
         </div>
-
       </div>
 
       <div className="flex justify-end mt-6 gap-2">

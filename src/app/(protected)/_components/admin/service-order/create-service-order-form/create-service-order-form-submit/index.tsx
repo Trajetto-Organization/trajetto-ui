@@ -228,7 +228,8 @@ const CreateServiceOrderFormSubmit = ({
             {
               icon: "📍",
               label: "Posicionamento",
-              description: 'Card adicionado na coluna "Pendente" ou "Concluído"',
+              description:
+                'Card adicionado na coluna "Pendente" ou "Concluído"',
             },
             {
               icon: "🎯",
@@ -465,7 +466,6 @@ const CreateServiceOrderFormSubmit = ({
             }
           />
         </div>
-
       </div>
 
       <div className="flex justify-end mt-6 gap-2">

@@ -1,6 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 import { Step } from "@/components/step";
 
 import {
@@ -69,13 +67,7 @@ const TutorialShowcase = (): JSX.Element => {
 
         <div className="container relative">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16"
-          >
+          <Reveal className="text-center mb-16">
             <div
               className="inline-flex items-center gap-2
               rounded-full border px-4 py-1.5 mb-6"
@@ -98,17 +90,12 @@ const TutorialShowcase = (): JSX.Element => {
               </span>{" "}
               e explica exatamente o que cada elemento faz.
             </p>
-          </motion.div>
+          </Reveal>
 
           {/* Two-column layout */}
           <div className="grid gap-12 lg:gap-16 lg:grid-cols-2 items-center">
             {/* Left: benefits + pages */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
+            <Reveal direction="left">
               <h3 className="text-2xl font-semibold mb-2">
                 Zero curva de aprendizado.
               </h3>
@@ -120,16 +107,13 @@ const TutorialShowcase = (): JSX.Element => {
               {/* Benefit cards */}
               <ul className="flex flex-col gap-3 mb-8" role="list">
                 {benefits.map((item, index) => (
-                  <motion.li
+                  <li
                     key={item.title}
-                    className={`group/item flex items-start gap-4 rounded-xl
-                    border bg-card p-4 shadow-sm hover:shadow-md
-                    transition-all duration-300 hover:-translate-y-0.5
-                    ${item.borderAccent}`}
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
+                    className={`animate-fade-up group/item flex items-start
+                    gap-4 rounded-xl border bg-card p-4 shadow-sm
+                    hover:shadow-md transition-all duration-300
+                    hover:-translate-y-0.5 ${item.borderAccent}`}
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div
                       className={`flex-shrink-0 w-10 h-10 rounded-xl
@@ -146,19 +130,13 @@ const TutorialShowcase = (): JSX.Element => {
                         {item.description}
                       </p>
                     </div>
-                  </motion.li>
+                  </li>
                 ))}
               </ul>
-            </motion.div>
+            </Reveal>
 
             {/* Right: visual tutorial mockup */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
-            >
+            <Reveal direction="right" delay={200} className="relative">
               {/* Browser mockup card */}
               <div
                 className="w-full rounded-2xl border 
@@ -231,15 +209,10 @@ const TutorialShowcase = (): JSX.Element => {
                       {/* Highlighted / focused card */}
                       <div className="relative">
                         {/* Inner border ring — opacity loop */}
-                        <motion.div
-                          className="absolute inset-0 rounded-lg border-2
+                        <div
+                          className="animate-pulse-soft absolute inset-0
+                          rounded-lg border-2
                           border-[#d81b60] pointer-events-none"
-                          animate={{ opacity: [0.3, 1, 0.3] }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
                         />
 
                         <div
@@ -290,13 +263,11 @@ const TutorialShowcase = (): JSX.Element => {
                 </div>
 
                 {/* Tutorial tooltip (inside mockup bottom) */}
-                <motion.div
+                <Reveal
+                  delay={750}
+                  duration={400}
                   className="mx-4 mb-4 rounded-xl border bg-background
                   shadow-xl overflow-hidden"
-                  initial={{ opacity: 0, y: 10, scale: 0.97 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.75, duration: 0.4, ease: "easeOut" }}
                 >
                   {/* Gradient accent bar */}
                   <div
@@ -376,22 +347,20 @@ const TutorialShowcase = (): JSX.Element => {
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </Reveal>
               </div>
 
               {/* Bottom note */}
-              <motion.div
+              <Reveal
+                direction="none"
+                delay={1100}
                 className="flex items-center justify-center gap-2
                 text-xs text-muted-foreground mt-4"
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 1.1 }}
               >
                 <Sparkles size={12} className="text-[#d81b60]" />
                 <span>Pule ou reinicie quando quiser</span>
-              </motion.div>
-            </motion.div>
+              </Reveal>
+            </Reveal>
           </div>
         </div>
       </section>

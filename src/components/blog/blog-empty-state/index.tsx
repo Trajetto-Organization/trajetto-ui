@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Search, BookOpen, Filter, TrendingUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,75 +20,39 @@ const BlogEmptyState = ({
     router.push("/blog");
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
   return (
-    <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      className="flex flex-col items-center justify-center py-24 px-4"
-    >
-      {/* Animated icon */}
-      <motion.div variants={itemVariants} className="relative mb-8">
+    <div className="flex flex-col items-center justify-center py-24 px-4">
+      {/* Animated icon. The stagger that framer's `staggerChildren` produced is
+          now an `animation-delay` per block, stepping 100ms at a time. */}
+      <div className="animate-fade-up relative mb-8">
         <div
-          className="absolute inset-0 bg-gradient-to-r 
-         from-purple-500/20 via-pink-500/20 
+          className="absolute inset-0 bg-gradient-to-r
+         from-purple-500/20 via-pink-500/20
          to-blue-500/20 blur-3xl"
         />
-        <motion.div
-          animate={{
-            rotate: [0, -10, 10, -5, 5, 0],
-          }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            repeatType: "reverse",
-          }}
-          className="relative"
-        >
+        <div className="animate-wiggle relative">
           {searchQuery || category ? (
             <Search className="w-24 h-24 text-muted-foreground/50" />
           ) : (
             <BookOpen className="w-24 h-24 text-muted-foreground/50" />
           )}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* Title */}
-      <motion.h3
-        variants={itemVariants}
-        className="text-2xl font-bold text-center mb-3"
+      <h3
+        className="animate-fade-up [animation-delay:100ms]
+        text-2xl font-bold text-center mb-3"
       >
         {searchQuery || category
           ? "Nenhum resultado encontrado"
           : "Ainda não há posts publicados"}
-      </motion.h3>
+      </h3>
 
       {/* Description */}
-      <motion.p
-        variants={itemVariants}
-        className="text-muted-foreground text-center max-w-md mb-8"
+      <p
+        className="animate-fade-up [animation-delay:200ms]
+        text-muted-foreground text-center max-w-md mb-8"
       >
         {category && (
           <>
@@ -108,12 +71,12 @@ const BlogEmptyState = ({
             ? "Tente ajustar seus filtros ou explorar outros tópicos."
             : "Volte em breve para conferir as novidades!"}
         </span>
-      </motion.p>
+      </p>
 
       {/* Actions */}
-      <motion.div
-        variants={itemVariants}
-        className="flex flex-col sm:flex-row gap-4"
+      <div
+        className="animate-fade-up [animation-delay:300ms]
+        flex flex-col sm:flex-row gap-4"
       >
         {(searchQuery || category) && (
           <Button
@@ -132,11 +95,11 @@ const BlogEmptyState = ({
         >
           Voltar ao início
         </Button>
-      </motion.div>
+      </div>
 
       {/* Suggestions */}
       {(searchQuery || category) && (
-        <motion.div variants={itemVariants} className="mt-12 text-center">
+        <div className="animate-fade-up [animation-delay:400ms] mt-12 text-center">
           <p
             className="text-sm text-muted-foreground 
             mb-4 flex items-center justify-center gap-2"
@@ -146,23 +109,22 @@ const BlogEmptyState = ({
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             {["Gestão de Frotas", "Tecnologia"].map((suggestion) => (
-              <motion.button
+              <button
                 key={suggestion}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() =>
                   router.push(`/blog?q=${encodeURIComponent(suggestion)}`)
                 }
-                className="px-4 py-2 text-sm bg-muted hover:bg-muted/80 
-                rounded-full transition-colors"
+                className="px-4 py-2 text-sm bg-muted hover:bg-muted/80
+                rounded-full transition-all duration-200
+                hover:scale-105 active:scale-95"
               >
                 {suggestion}
-              </motion.button>
+              </button>
             ))}
           </div>
-        </motion.div>
+        </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 

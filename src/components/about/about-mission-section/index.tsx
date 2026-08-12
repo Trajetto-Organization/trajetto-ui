@@ -1,9 +1,8 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
 
-import { useInView, motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 import {
   BarChart,
   CheckCircle,
@@ -15,9 +14,6 @@ import {
 } from "lucide-react";
 
 const AboutMissionSection = (): JSX.Element => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.3 });
-
   const missionData = [
     {
       title: "Inovação",
@@ -42,7 +38,7 @@ const AboutMissionSection = (): JSX.Element => {
   ];
 
   return (
-    <section className="py-20 bg-background overflow-x-hidden" ref={ref}>
+    <section className="py-20 bg-background overflow-x-hidden">
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Nossa Missão</h2>
@@ -54,13 +50,11 @@ const AboutMissionSection = (): JSX.Element => {
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-16 mb-16">
           {/* Left column - About us */}
-          <motion.div
+          <Reveal
+            direction="left"
+            delay={200}
+            duration={900}
             className="space-y-6"
-            style={{
-              transform: isInView ? "none" : "translateX(-50px)",
-              opacity: isInView ? 1 : 0,
-              transition: "all 0.9s cubic-bezier(0.17, 0.55, 0.55, 1) 0.2s",
-            }}
           >
             <h3 className="text-2xl font-bold">Quem Somos</h3>
             <p className="leading-relaxed text-muted-foreground">
@@ -83,16 +77,14 @@ const AboutMissionSection = (): JSX.Element => {
                 Conheça nossa história →
               </Link>
             </div>
-          </motion.div>
+          </Reveal>
 
           {/* Right column - Values */}
-          <motion.div
+          <Reveal
+            direction="right"
+            delay={400}
+            duration={900}
             className="space-y-8"
-            style={{
-              transform: isInView ? "none" : "translateX(50px)",
-              opacity: isInView ? 1 : 0,
-              transition: "all 0.9s cubic-bezier(0.17, 0.55, 0.55, 1) 0.4s",
-            }}
           >
             <h3 className="text-2xl font-bold">Nossos Valores</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -110,7 +102,7 @@ const AboutMissionSection = (): JSX.Element => {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </Reveal>
         </div>
 
         {/* Differentials */}
@@ -123,14 +115,12 @@ const AboutMissionSection = (): JSX.Element => {
           </h3>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <motion.div
+            <Reveal
+              direction="up"
+              delay={200}
+              duration={600}
               className="bg-card rounded-xl p-6 shadow-lg 
               border border-muted/10"
-              style={{
-                transform: isInView ? "none" : "translateY(50px)",
-                opacity: isInView ? 1 : 0,
-                transition: "all 0.6s cubic-bezier(0.17, 0.55, 0.55, 1) 0.2s",
-              }}
             >
               <div
                 className="w-12 h-12 bg-gradient-to-br 
@@ -144,16 +134,14 @@ const AboutMissionSection = (): JSX.Element => {
                 Nossa plataforma conecta todos os aspectos da gestão de frotas:
                 manutenção, combustível, rotas, motoristas e documentação.
               </p>
-            </motion.div>
+            </Reveal>
 
-            <motion.div
+            <Reveal
+              direction="up"
+              delay={400}
+              duration={600}
               className="bg-card rounded-xl p-6 
                 shadow-lg border border-muted/10"
-              style={{
-                transform: isInView ? "none" : "translateY(50px)",
-                opacity: isInView ? 1 : 0,
-                transition: "all 0.6s cubic-bezier(0.17, 0.55, 0.55, 1) 0.4s",
-              }}
             >
               <div
                 className="w-12 h-12 bg-gradient-to-br from-blue-400 
@@ -167,16 +155,14 @@ const AboutMissionSection = (): JSX.Element => {
                 Ferramentas de análise de dados que transformam informações em
                 insights acionáveis para otimizar operações.
               </p>
-            </motion.div>
+            </Reveal>
 
-            <motion.div
+            <Reveal
+              direction="up"
+              delay={600}
+              duration={600}
               className="bg-card rounded-xl p-6 
               shadow-lg border border-muted/10"
-              style={{
-                transform: isInView ? "none" : "translateY(50px)",
-                opacity: isInView ? 1 : 0,
-                transition: "all 0.6s cubic-bezier(0.17, 0.55, 0.55, 1) 0.6s",
-              }}
             >
               <div
                 className="w-12 h-12 bg-gradient-to-br from-purple-400 
@@ -190,7 +176,7 @@ const AboutMissionSection = (): JSX.Element => {
                 Equipe especializada disponível de segunda a sexta, das 09h às
                 18h, com atendimento rápido e personalizado.
               </p>
-            </motion.div>
+            </Reveal>
           </div>
         </div>
       </div>

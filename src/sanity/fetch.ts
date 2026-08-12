@@ -2,24 +2,25 @@ import { client } from "./client";
 import { isSanityConfigured } from "./env";
 
 interface SanityFetchOptions {
-  /** Tags de revalidação on-demand (webhook do Sanity no publish invalida). */
+  /** On-demand revalidation tags (Sanity webhook invalidates on publish). */
   tags?: string[];
   /**
-   * Janela de revalidação por tempo (segundos). Default 1h em prod, 1min em
-   * dev. É o fallback: o gatilho principal é a tag via webhook.
+   * Time-based revalidation window (seconds). Defaults to 1 hour in production,
+   * 1 minute in development. This is the fallback; the primary trigger is the
+   * webhook tag.
    */
   revalidate?: number | false;
 }
 
 /**
- * Wrapper único de leitura do Sanity — ISR (revalidação por tempo + tag) num
- * lugar só. Dois cuidados:
+ * Unified Sanity fetch wrapper — ISR (time-based + tag revalidation) in
+ * a single place. Two considerations:
  *
- * 1. GUARD: sem projeto configurado (placeholder em dev/preview), retorna
- *    `null` sem disparar request — as páginas caem no estado vazio, nada
- *    quebra.
- * 2. Falha de rede/Sanity retorna `null` (a página decide: estado vazio ou
- *    notFound). Sem try/catch de 3 camadas fazendo o mesmo fetch de novo.
+ * 1. GUARD: if no project is configured (placeholder in dev/preview), it returns
+ *    `null` without making a request — pages fall back to an empty state; nothing
+ *    breaks.
+ * 2. Network/Sanity failure returns `null` (the page decides: empty state or
+ *    notFound). No 3-layer try/catch blocks re-attempting the same fetch.
  */
 async function sanityFetch<T>(
   query: string,

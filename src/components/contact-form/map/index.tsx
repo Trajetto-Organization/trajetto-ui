@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { motion, useAnimation } from "framer-motion";
 
 import { MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
@@ -19,22 +18,11 @@ const MapComponent = dynamic(() => import("./map-component"), {
 });
 
 const Map = (): JSX.Element => {
-  const controls = useAnimation();
-
   // Centro geográfico aproximado do Brasil. O Trajetto é uma operação digital:
   // não há escritório para apontar, então o mapa comunica alcance nacional em
   // vez de fingir um endereço.
   const latitude = -14.235;
   const longitude = -51.9253;
-
-  useEffect(() => {
-    // Initialize animation when component mounts
-    controls.start({
-      scale: [0, 1],
-      opacity: [0, 1],
-      transition: { duration: 0.3 },
-    });
-  }, [controls]);
 
   const contactInformation = [
     { title: "Atendimento", content: "100% digital, sem instalação local" },
@@ -63,9 +51,9 @@ const Map = (): JSX.Element => {
         className="absolute left-1/2 top-1/2 -translate-x-1/2 
         -translate-y-1/2 pointer-events-none z-10"
       >
-        <motion.div className="relative" animate={controls}>
+        <div className="animate-scale-in relative">
           <PingEffect />
-        </motion.div>
+        </div>
       </div>
 
       {/* Gradient overlay with contact information */}
@@ -94,40 +82,24 @@ const PingEffect = () => {
   return (
     <div className="relative w-0 h-0">
       {/* Animated ping circle */}
-      <motion.div
-        className="absolute rounded-full bg-[#d81b60]/30"
+      <div
+        className="animate-ping absolute rounded-full bg-[#d81b60]/30"
         style={{ width: 30, height: 30, top: -15, left: -15 }}
-        animate={{
-          scale: [0.5, 1.5],
-          opacity: [0.7, 0],
-        }}
-        transition={{
-          duration: 0.9,
-          repeat: Infinity,
-          repeatDelay: 0.3,
-          ease: "easeOut",
-        }}
       />
 
       {/* White base dot */}
-      <motion.div
-        className="absolute rounded-full bg-white shadow-md"
+      <div
+        className="animate-scale-in absolute rounded-full bg-white shadow-md"
         style={{ width: 14, height: 14, top: -7, left: -7 }}
-        initial={{ scale: 0.6 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 10 }}
       />
 
       {/* Pin icon - perfectly centered */}
-      <motion.div
-        initial={{ y: -5, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.2 }}
-        className="absolute"
+      <div
+        className="animate-fade-down [animation-delay:100ms] absolute"
         style={{ top: -24, left: -12 }}
       >
         <MapPin className="h-6 w-6 text-[#d81b60]" strokeWidth={2.5} />
-      </motion.div>
+      </div>
     </div>
   );
 };

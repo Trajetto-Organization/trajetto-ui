@@ -13,7 +13,6 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 
-import { motion } from "framer-motion";
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,11 +42,7 @@ const TwoFactorAuthenticationFormContainer = ({
   const { pending } = useFormStatus();
 
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ delay: 0.4 }}
-    >
+    <section className="animate-fade-in [animation-delay:400ms]">
       <InputOTP
         maxLength={6}
         name="code"
@@ -122,7 +117,7 @@ const TwoFactorAuthenticationFormContainer = ({
       <hr className="mt-5" />
 
       <Terms />
-    </motion.section>
+    </section>
   );
 };
 

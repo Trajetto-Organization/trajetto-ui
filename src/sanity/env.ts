@@ -1,30 +1,30 @@
 /**
- * Config do Sanity (lado CONSUMO — o Studio é um projeto separado, o
+ * Sanity config (consumption side — the Studio is a separate project,
  * trajetto-studio).
  *
- * NÃO lança quando falta env: em dev/preview, com placeholder,
- * `isSanityConfigured` fica `false` e as páginas curto-circuitam pra estado
- * vazio em vez de disparar requisição pra um projeto inexistente. Preencha as
- * envs `NEXT_PUBLIC_SANITY_*` quando o projeto no sanity.io estiver pronto e o
- * conteúdo aparece sozinho.
+ * Does not throw an error when env vars are missing: in dev/preview, with
+ * placeholders, `isSanityConfigured` becomes `false` and pages short-circuit
+ * to an empty state instead of firing a request to a non-existent project.
+ * Fill in the `NEXT_PUBLIC_SANITY_*` env vars once the sanity.io project is
+ * ready, and the content will appear automatically.
  */
-// `||` (não `??`) de propósito: env de template vem como STRING VAZIA, não
-// undefined — um `.env.production` de placeholder sobrepõe o `.env` no
-// `next build` e, com `??`, o "" vazava pro createClient (que lança
-// "Invalid API version string" no load do módulo).
+// Using `||` (not `??`) intentionally: template env vars come through as an
+// EMPTY STRING, not `undefined` — a placeholder `.env.production` overrides
+// `.env` during `next build`, and with `??`, the empty string would leak into
+// `createClient` (which throws "Invalid API version string" upon module load).
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID?.trim() || "";
 
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET?.trim() || "production";
 const apiVersion =
   process.env.NEXT_PUBLIC_SANITY_API_VERSION?.trim() || "2025-05-22";
 
-/** Só há projeto real quando o projectId foi preenchido. */
+/** A real project exists only when the projectId has been filled in. */
 const isSanityConfigured = projectId.trim().length > 0;
 
 /**
- * projectId "seguro" pro `createClient`/`imageUrlBuilder`, que lançam se
- * receberem string vazia. Com placeholder, o cliente existe mas nunca é
- * usado (guardado por `isSanityConfigured`).
+ * A "safe" projectId for `createClient`/`imageUrlBuilder`, which throw an error
+ * if passed an empty string. With the placeholder, the client exists but is
+ * never used (guarded by `isSanityConfigured`).
  */
 const safeProjectId = isSanityConfigured ? projectId : "placeholder";
 

@@ -9,7 +9,6 @@ import { handleLoginUser } from "@/actions/user/login-user";
 import { Button } from "@/components/ui/button";
 
 import { Loader, LockIcon, MailIcon } from "lucide-react";
-import { motion } from "framer-motion";
 
 import FormInput from "../../shared/custom/form-input";
 
@@ -44,11 +43,7 @@ const LoginFormContainer = ({
   }, [state]);
 
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ delay: 0.4 }}
-    >
+    <section className="animate-fade-in [animation-delay:400ms]">
       <div className="space-y-4">
         <FormInput
           label={"Email"}
@@ -129,7 +124,7 @@ const LoginFormContainer = ({
       <hr className="mt-5" />
 
       <Terms />
-    </motion.section>
+    </section>
   );
 };
 
@@ -142,28 +137,22 @@ const LoginForm = (): JSX.Element => {
   return (
     <>
       <div className="mb-7 grid gap-2 text-center">
-        <motion.h1
+        <h1
           key={state?.twoFactor ? "two-factor-title" : "login-title"} // Key to trigger re-animation
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-3xl font-bold"
+          className="animate-fade-in [animation-delay:200ms] text-3xl font-bold"
         >
           {state?.twoFactor ? "Autenticação (2FA)" : "Entrar"}
-        </motion.h1>
-        <motion.p
+        </h1>
+        <p
           key={
             state?.twoFactor ? "two-factor-description" : "login-description"
           } // Key to trigger re-animation
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, type: "tween" }}
-          className="text-muted-foreground"
+          className="animate-fade-left [animation-delay:300ms] text-muted-foreground"
         >
           {state?.twoFactor
             ? "Verifique seu e-mail para continuar"
             : "Entre com sua conta para continuar"}
-        </motion.p>
+        </p>
       </div>
 
       {state?.twoFactor ? (

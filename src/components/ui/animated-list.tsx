@@ -1,7 +1,8 @@
 "use client";
 
 import React, { ReactElement, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+
+import { usePresenceList } from "@/hooks/use-presence-list";
 
 export interface AnimatedListProps {
   className?: string;
@@ -10,7 +11,7 @@ export interface AnimatedListProps {
 }
 
 export const AnimatedList = React.memo(
-  ({ className, children, delay = 1000 }: AnimatedListProps) => {
+  ({ className, children, delay = 1400 }: AnimatedListProps) => {
     const [index, setIndex] = useState(0);
     const childrenArray = React.Children.toArray(children);
 
@@ -27,15 +28,19 @@ export const AnimatedList = React.memo(
       [index, childrenArray],
     );
 
+    // Keeps the outgoing card mounted while it collapses, so the stack below
+    // slides up smoothly rather than jumping.
+    const entries = usePresenceList(itemsToShow, (item) =>
+      String((item as ReactElement).key),
+    );
+
     return (
       <div className={`flex flex-col items-center gap-4 ${className}`}>
-        <AnimatePresence>
-          {itemsToShow.map((item) => (
-            <AnimatedListItem key={(item as ReactElement).key}>
-              {item}
-            </AnimatedListItem>
-          ))}
-        </AnimatePresence>
+        {entries.map(({ key, item, exiting }) => (
+          <AnimatedListItem key={key} exiting={exiting}>
+            {item}
+          </AnimatedListItem>
+        ))}
       </div>
     );
   },
@@ -43,17 +48,25 @@ export const AnimatedList = React.memo(
 
 AnimatedList.displayName = "AnimatedList";
 
-export function AnimatedListItem({ children }: { children: React.ReactNode }) {
-  const animations = {
-    initial: { scale: 0, opacity: 0 },
-    animate: { scale: 1, opacity: 1, originY: 0 },
-    exit: { scale: 0, opacity: 0 },
-    transition: { type: "spring", stiffness: 350, damping: 40 },
-  };
-
+/**
+ * Each item expands from a zero-height grid row on its first render, so the
+ * items already on screen are pushed down by ordinary layout.
+ *
+ * That single CSS rule replaces what framer-motion needed three mechanisms for
+ * here: `AnimatePresence` to keep exiting nodes around, the `layout` prop to
+ * FLIP-animate the displacement, and a spring to drive it. See `.stack-item`
+ * in globals.css.
+ */
+export function AnimatedListItem({
+  children,
+  exiting = false,
+}: {
+  children: React.ReactNode;
+  exiting?: boolean;
+}) {
   return (
-    <motion.div {...animations} layout className="mx-auto w-full">
-      {children}
-    </motion.div>
+    <div data-exiting={exiting} className="stack-item mx-auto w-full">
+      <div>{children}</div>
+    </div>
   );
 }

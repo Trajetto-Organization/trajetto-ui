@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
+import { usePresenceList } from "@/hooks/use-presence-list";
 import Image from "next/image";
 
 import {
@@ -43,28 +43,24 @@ const DashboardAnimatedList = ({
     return childrenArray.slice(startIndex, endIndex).reverse();
   }, [index, childrenArray, maxItems]);
 
+  // Items that just left stay mounted while they collapse, so the rows below
+  // slide up instead of snapping into place.
+  const entries = usePresenceList(itemsToShow, (item) =>
+    String((item as React.ReactElement).key),
+  );
+
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
-      <AnimatePresence mode="popLayout">
-        {itemsToShow.map((item, itemIndex) => (
-          <motion.div
-            key={(item as React.ReactElement).key}
-            initial={{ scale: 0, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0, opacity: 0, y: -20 }}
-            transition={{
-              type: "spring",
-              stiffness: 350,
-              damping: 40,
-              delay: itemIndex * 0.1,
-            }}
-            layout
-            className="w-full"
-          >
-            {item}
-          </motion.div>
-        ))}
-      </AnimatePresence>
+      {entries.map(({ key, item, exiting }, entryIndex) => (
+        <div
+          key={key}
+          data-exiting={exiting}
+          className="stack-item stack-item-rise w-full"
+          style={{ transitionDelay: exiting ? "0ms" : `${entryIndex * 100}ms` }}
+        >
+          <div>{item}</div>
+        </div>
+      ))}
     </div>
   );
 };
@@ -85,13 +81,12 @@ const Activity = ({
   iconColor,
 }: ActivityProps): JSX.Element => {
   return (
-    <motion.div
-      className={`flex items-center space-x-2 
+    // Layered on purpose, as in the original: the row grows and rises while
+    // the content inside slides in from the left. Two movements at once is
+    // what gives this list its character.
+    <div
+      className={`animate-fade-left flex items-center space-x-2
       sm:space-x-3 p-1.5 sm:p-2 rounded-lg ${bgColor}`}
-      initial={{ x: -20, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 20, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 350, damping: 40 }}
     >
       <IconComponent
         className={`w-3 h-3 sm:w-4 sm:h-4 ${iconColor} flex-shrink-0`}
@@ -100,7 +95,7 @@ const Activity = ({
         <p className="text-xs sm:text-sm font-medium truncate">{title}</p>
         <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -183,48 +178,13 @@ const HeroDashboardShowcase = (): JSX.Element => {
     },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-      },
-    },
-  };
-
-  const pulseVariants = {
-    pulse: {
-      scale: [1, 1.05, 1],
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        ease: "easeInOut",
-      },
-    },
-  };
-
   return (
     <div className="relative w-full max-w-4xl mx-auto mt-9">
-      <motion.div
-        className="relative overflow-hidden rounded-xl border bg-gradient-to-br
+      <div
+        className="animate-fade-up relative overflow-hidden rounded-xl border
+        bg-gradient-to-br
         from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800
         p-4 sm:p-5 md:p-6 shadow-2xl lg:h-[440px] flex flex-col"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
       >
         {/* Background Grid */}
         <div
@@ -239,10 +199,9 @@ const HeroDashboardShowcase = (): JSX.Element => {
         />
 
         {/* Header */}
-        <motion.div
-          className="relative z-10 flex items-center
+        <div
+          className="animate-fade-up [animation-delay:200ms] relative z-10 flex items-center
           justify-between mb-4 sm:mb-5 md:mb-6"
-          variants={itemVariants}
         >
           <div className="flex items-center space-x-3">
             <div
@@ -266,30 +225,24 @@ const HeroDashboardShowcase = (): JSX.Element => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <motion.div
-              className="w-2 h-2 bg-green-500 rounded-full"
-              variants={pulseVariants}
-              animate="pulse"
-            />
+            <div className="animate-pulse-scale-sm w-2 h-2 bg-green-500 rounded-full" />
             <span className="text-xs text-muted-foreground">Online</span>
           </div>
-        </motion.div>
+        </div>
 
         {/* Stats Cards */}
-        <motion.div
-          className="grid grid-cols-2 lg:grid-cols-4 
+        <div
+          className="animate-fade-up [animation-delay:300ms] grid grid-cols-2 lg:grid-cols-4 
           gap-2 sm:gap-3 mb-4 sm:mb-5"
-          variants={itemVariants}
         >
           {statsCards.map((card, index) => {
             const IconComponent = card.icon;
             return (
-              <motion.div
+              <div
                 key={index}
-                className="bg-white dark:bg-slate-800 
-                rounded-lg p-2 sm:p-3 shadow-sm border"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
+                className="bg-white dark:bg-slate-800
+                rounded-lg p-2 sm:p-3 shadow-sm border
+                transition-transform duration-200 hover:scale-[1.02]"
               >
                 <div
                   className="flex items-center 
@@ -310,16 +263,15 @@ const HeroDashboardShowcase = (): JSX.Element => {
                     <p className="font-bold text-xs sm:text-sm">{card.value}</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
-        </motion.div>
+        </div>
 
         {/* Main Content - Activities */}
-        <motion.div
-          className="bg-white dark:bg-slate-800
+        <div
+          className="animate-fade-up [animation-delay:400ms] bg-white dark:bg-slate-800
           rounded-lg p-3 sm:p-4 shadow-sm border flex-1"
-          variants={itemVariants}
         >
           <div
             className="flex items-center 
@@ -356,38 +308,20 @@ const HeroDashboardShowcase = (): JSX.Element => {
               ))}
             </DashboardAnimatedList>
           </div>
-        </motion.div>
+        </div>
 
         {/* Floating Elements */}
-        <motion.div
-          className="absolute top-4 right-4 w-3 h-3 
-          bg-green-400 rounded-full opacity-60"
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.6, 1, 0.6],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
+        <div
+          className="animate-pulse-scale absolute top-4 right-4 w-3 h-3
+          bg-green-400 rounded-full"
         />
 
-        <motion.div
-          className="absolute bottom-4 left-4 w-2 h-2 
-          bg-blue-400 rounded-full opacity-40"
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1,
-          }}
+        <div
+          className="animate-pulse-scale absolute bottom-4 left-4 w-2 h-2
+          bg-blue-400 rounded-full [animation-duration:3s]"
+          style={{ animationDelay: "1s" }}
         />
-      </motion.div>
+      </div>
     </div>
   );
 };

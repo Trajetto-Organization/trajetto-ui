@@ -1,7 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 
 import {
   Zap,
@@ -67,13 +65,7 @@ const AIUsageLimits = (): JSX.Element => {
   return (
     <section className="relative mt-10 mb-24 overflow-hidden">
       <div className="container relative">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-16"
-        >
+        <Reveal className="text-center mb-16">
           <div
             className="inline-flex items-center gap-2
             rounded-full border px-4 py-1.5 mb-6"
@@ -100,16 +92,11 @@ const AIUsageLimits = (): JSX.Element => {
               Transparência completa sobre o uso da sua empresa.
             </p>
           </div>
-        </motion.div>
+        </Reveal>
 
         <div className="grid gap-8 lg:gap-12 lg:grid-cols-2 items-stretch">
           {/* Left side: Usage gauge */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
+          <Reveal direction="left">
             <div className="group h-full">
               <div
                 className="relative rounded-2xl border
@@ -146,12 +133,11 @@ const AIUsageLimits = (): JSX.Element => {
                 <div className="relative space-y-6 flex-1">
                   {/* Big numbers */}
                   <div className="text-center">
-                    <motion.div
+                    <Reveal
+                      direction="scale"
+                      delay={200}
+                      duration={400}
                       className="text-5xl font-bold tracking-tight"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      whileInView={{ scale: 1, opacity: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.4, delay: 0.2 }}
                     >
                       <span className="text-[#d81b60]">{displayLeft}</span>
 
@@ -159,7 +145,7 @@ const AIUsageLimits = (): JSX.Element => {
                       <span className="text-muted-foreground/50 text-3xl">
                         {displayTotal}
                       </span>
-                    </motion.div>
+                    </Reveal>
                     <p className="text-sm text-muted-foreground mt-2">
                       verificações realizadas
                     </p>
@@ -175,16 +161,15 @@ const AIUsageLimits = (): JSX.Element => {
                       aria-valuemax={displayTotal}
                       aria-label={`${displayLeft} de ${displayTotal} verificações restantes`}
                     >
-                      <motion.div
+                      {/* Holds its real width and is scaled into view, rather
+                          than growing by `width` as framer did — a transform
+                          never forces the browser to reflow mid-animation. */}
+                      <Reveal
+                        direction="scale-x"
+                        delay={400}
+                        duration={1000}
                         className="h-full rounded-full bg-gradient-to-r from-[#d81b60] to-[#e91e63]"
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${percentage}%` }}
-                        viewport={{ once: true }}
-                        transition={{
-                          duration: 1,
-                          delay: 0.4,
-                          ease: "easeOut",
-                        }}
+                        style={{ width: `${percentage}%` }}
                       />
                     </div>
                     <div className="flex justify-between text-xs text-muted-foreground">
@@ -214,28 +199,19 @@ const AIUsageLimits = (): JSX.Element => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </Reveal>
 
           {/* Right side: Bullets */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="flex flex-col"
-          >
+          <Reveal direction="right" delay={200} className="flex flex-col">
             <ul className="flex flex-col gap-4 flex-1" role="list">
               {bulletItems.map((item, index) => (
-                <motion.li
+                <li
                   key={item.title}
-                  className={`group/item flex items-start gap-4 rounded-xl
-                  border bg-background p-5 sm:p-6 shadow-sm
+                  className={`animate-fade-up group/item flex items-start gap-4
+                  rounded-xl border bg-background p-5 sm:p-6 shadow-sm
                   hover:shadow-md transition-all duration-300
                   hover:-translate-y-0.5 flex-1 ${item.borderAccent}`}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.15 }}
+                  style={{ animationDelay: `${index * 150}ms` }}
                 >
                   <div
                     className={`flex-shrink-0 w-11 h-11 rounded-xl
@@ -252,22 +228,19 @@ const AIUsageLimits = (): JSX.Element => {
                       {item.description}
                     </p>
                   </div>
-                </motion.li>
+                </li>
               ))}
             </ul>
-          </motion.div>
+          </Reveal>
         </div>
 
         {/* CTA full-width */}
-        <motion.div
+        <Reveal
+          delay={300}
           className="mt-10 rounded-2xl border bg-gradient-to-r
           from-[#d81b60]/5 via-violet-500/5 to-blue-500/5
           dark:from-[#d81b60]/10 dark:via-violet-500/10 dark:to-blue-500/10
           p-8 sm:p-10 text-center overflow-hidden relative"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.3 }}
         >
           {/* Subtle glow */}
           <div
@@ -311,7 +284,7 @@ const AIUsageLimits = (): JSX.Element => {
               />
             </Link>
           </div>
-        </motion.div>
+        </Reveal>
       </div>
     </section>
   );

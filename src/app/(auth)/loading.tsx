@@ -1,34 +1,21 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Loading = (): JSX.Element => {
   return (
     <>
       <div className="mb-7 grid gap-2 text-center">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
+        <div className="animate-fade-in [animation-delay:200ms]">
           <Skeleton className="h-9 w-48 mx-auto mb-2" />
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, type: "tween" }}
-        >
+        <div className="animate-fade-left [animation-delay:300ms]">
           <Skeleton className="h-5 w-64 mx-auto" />
-        </motion.div>
+        </div>
       </div>
 
-      <motion.section
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-      >
+      <section className="animate-fade-in [animation-delay:400ms]">
         <div className="space-y-4">
           <div className="grid gap-3 relative">
             <Skeleton className="h-4 w-12" />
@@ -64,7 +51,7 @@ const Loading = (): JSX.Element => {
             <Skeleton className="h-3 w-24" />
           </div>
         </div>
-      </motion.section>
+      </section>
     </>
   );
 };

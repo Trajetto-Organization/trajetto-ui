@@ -1,15 +1,15 @@
 import groq from "groq";
 
 /**
- * Queries GROQ do blog/legal. TUDO por PARÂMETRO (`$q`, `$category`, `$slug`)
- * — nunca interpolando input do usuário na string da query.
+ * GROQ queries for the blog/legal sections. Everything is handled via parameters (`$q`, `$category`, `$slug`)
+ * — never interpolating user input directly into the query string.
  *
- * Os nomes de campo seguem o schema do trajetto-studio, que preservou o schema
- * anterior: o SEO do post vive dentro do objeto `seo`, o autor usa `avatar`
- * (não `image`) e as políticas usam a string `robots` (não um booleano).
+ * Field names follow the trajetto-studio schema, which preserves the previous schema:
+ * post SEO resides within the `seo` object, the author uses `avatar` (not `image`),
+ * and policies use the `robots` string (not a boolean).
  */
 
-/** Projeção reusada do card de post (sem o corpo Portable Text). */
+/** Reusable projection for the post card (excluding the Portable Text body). */
 const POST_CARD = groq`{
   _id,
   title,
@@ -25,12 +25,12 @@ const POST_CARD = groq`{
   category->{ title, "slug": slug.current, color }
 }`;
 
-/** Filtro compartilhado entre a listagem e o count (mantém os dois idênticos). */
+/** Filter shared between the listing and the count (keeps both identical). */
 const LIST_FILTER = groq`_type == "blogPost" && defined(slug.current)
   && (!defined($category) || category->slug.current == $category)
   && (!defined($q) || title match $q || excerpt match $q)`;
 
-/** Lista: posts paginados + total (pro paginador) + categorias (com contagem). */
+/** List: paginated posts + total (for the pager) + categories (with counts). */
 const BLOG_LIST_QUERY = groq`{
   "posts": *[${LIST_FILTER}] | order(publishedAt desc, _createdAt desc)[$start...$end] ${POST_CARD},
   "total": count(*[${LIST_FILTER}]),
@@ -42,10 +42,10 @@ const BLOG_LIST_QUERY = groq`{
   }
 }`;
 
-/** Todos os slugs de post — alimenta o `generateStaticParams`. */
+/** All post slugs — feeds `generateStaticParams`. */
 const BLOG_SLUGS_QUERY = groq`*[_type == "blogPost" && defined(slug.current)].slug.current`;
 
-/** Post completo + 3 relacionados da mesma categoria. */
+/** Full post + 3 related posts from the same category. */
 const BLOG_POST_QUERY = groq`*[_type == "blogPost" && slug.current == $slug][0]{
   _id,
   title,
@@ -76,7 +76,7 @@ const BLOG_POST_QUERY = groq`*[_type == "blogPost" && slug.current == $slug][0]{
   ] | order(publishedAt desc)[0...3] ${POST_CARD}
 }`;
 
-/** Política legal por slug (termos, privacidade, etc). */
+/** Legal policy by slug (terms, privacy, etc.). */
 const LEGAL_POLICY_QUERY = groq`*[_type == "legalPolicy" && slug.current == $slug][0]{
   title,
   "slug": slug.current,
@@ -88,17 +88,17 @@ const LEGAL_POLICY_QUERY = groq`*[_type == "legalPolicy" && slug.current == $slu
   robots
 }`;
 
-/** Slugs de todas as políticas — `generateStaticParams` do /legal. */
+/** Slugs for all policies — `generateStaticParams` for /legal. */
 const LEGAL_SLUGS_QUERY = groq`*[_type == "legalPolicy" && defined(slug.current)].slug.current`;
 
-/** Posts pro sitemap (slug + data + destaque, que define a prioridade). */
+/** Posts for the sitemap (slug + date + featured status, which determines priority). */
 const BLOG_SITEMAP_QUERY = groq`*[_type == "blogPost" && defined(slug.current)]{
   "slug": slug.current,
   "lastModified": coalesce(publishedAt, _updatedAt, _createdAt),
   featured
 }`;
 
-/** Políticas legais pro sitemap. */
+/** Legal policies for the sitemap. */
 const LEGAL_SITEMAP_QUERY = groq`*[_type == "legalPolicy" && defined(slug.current)]{
   "slug": slug.current,
   "lastModified": coalesce(_updatedAt, _createdAt)

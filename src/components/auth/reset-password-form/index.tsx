@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 import { Loader } from "lucide-react";
-import { motion } from "framer-motion";
 
 import type {
   ResetPasswordFormContainerProps,
@@ -28,11 +27,7 @@ const ResetPasswordFormContainer = ({
   const { pending } = useFormStatus();
 
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ delay: 0.4 }}
-    >
+    <section className="animate-fade-in [animation-delay:400ms]">
       <section className="space-y-4">
         <FormInput
           data-test="password"
@@ -79,7 +74,7 @@ const ResetPasswordFormContainer = ({
           )}
         </Button>
       </div>
-    </motion.section>
+    </section>
   );
 };
 
@@ -119,24 +114,18 @@ const ResetPasswordForm = (): JSX.Element => {
   return (
     <>
       <div className="mb-7 grid gap-2 text-center">
-        <motion.h1
+        <h1
           key={"reset-password-title"} // Key to trigger re-animation
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-3xl font-bold"
+          className="animate-fade-in [animation-delay:200ms] text-3xl font-bold"
         >
           Redefinir Senha
-        </motion.h1>
-        <motion.p
+        </h1>
+        <p
           key={"reset-password-description"} // Key to trigger re-animation
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3, type: "tween" }}
-          className="text-muted-foreground"
+          className="animate-fade-left [animation-delay:300ms] text-muted-foreground"
         >
           Defina uma nova senha para recuperar o seu acesso.
-        </motion.p>
+        </p>
       </div>
 
       <form

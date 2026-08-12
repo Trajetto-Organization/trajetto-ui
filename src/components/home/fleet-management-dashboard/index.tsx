@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef, useState } from "react";
 import Link from "next/link";
 
 import Image from "next/image";
@@ -8,52 +7,21 @@ import Image from "next/image";
 // Import estático: o Next gera o `blurDataURL` no build (ver app-show-case).
 import managementDashboard from "@/../public/trajetto-management-dashboard.webp";
 
-import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
+import { useTilt } from "@/hooks/use-tilt";
 import { buttonVariants } from "@/components/ui/button";
 
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FleetManagementDashboard = (): JSX.Element => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [hovered, setHovered] = useState<boolean>(false);
-
-  // Motion values ​​to control rotation in X and Y
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  // Turn mouse movement into rotation with limits
-  const rotateX = useTransform(mouseY, [-300, 300], [5, -5]);
-  const rotateY = useTransform(mouseX, [-300, 300], [-5, 5]);
-
-  // Add spring to smooth out the movement
-  const springConfig = { damping: 15, stiffness: 150 };
-
-  const springRotateX = useSpring(rotateX, springConfig);
-  const springRotateY = useSpring(rotateY, springConfig);
-
-  // Values ​​for the glow effect
-  const glareX = useTransform(mouseX, [-300, 300], ["10%", "90%"]);
-  const glareY = useTransform(mouseY, [-300, 300], ["10%", "90%"]);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-
-    // Calculate distance from center of element
-    mouseX.set(e.clientX - centerX);
-    mouseY.set(e.clientY - centerY);
-  };
+  // Pointer tilt without a physics engine: the hook writes CSS custom
+  // properties and the `.tilt` class swaps its transition depending on whether
+  // the pointer is inside, which is what produces the springy return.
+  const { ref: tiltRef, tiltProps } = useTilt<HTMLDivElement>({ max: 5 });
 
   return (
-    <section
-      className="py-16 sm:py-24 relative overflow-hidden"
-      ref={containerRef}
-    >
+    <section className="py-16 sm:py-24 relative overflow-hidden">
       <div
         className="absolute inset-0 bg-gradient-to-b 
         from-background via-background/90 to-background z-0"
@@ -76,10 +44,8 @@ const FleetManagementDashboard = (): JSX.Element => {
       </div>
 
       <div className="container relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        <Reveal
+          duration={600}
           className="text-center space-y-2 sm:space-y-4 mb-16 max-w-3xl mx-auto"
         >
           <h2
@@ -93,38 +59,19 @@ const FleetManagementDashboard = (): JSX.Element => {
             Experimente o poder da visualização das suas frotas. Monitore seus
             veículos, e tome decisões baseadas em dados.
           </p>
-        </motion.div>
+        </Reveal>
 
         {/* Interactive 3D Box */}
-        <motion.div
-          className="relative mx-auto max-w-5xl h-[250px] sm:h-[300px] 
-          md:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl border 
-          border-white/20 bg-background/80 backdrop-blur-sm"
-          initial={{ scale: 0.9, opacity: 0.8, rotateX: 2 }}
-          animate={{
-            scale: 1,
-            opacity: 1,
-            rotateX: 0,
-            boxShadow: hovered
-              ? "0 20px 80px -10px rgba(216, 27, 96, 0.3), 0 30px 60px -30px rgba(33, 150, 243, 0.4)"
-              : "0 10px 30px -5px rgba(0, 0, 0, 0.3)",
-          }}
-          transition={{ duration: 1.2 }}
-          style={{
-            transformPerspective: "1200px",
-            rotateX: springRotateX,
-            rotateY: springRotateY,
-            transformStyle: "preserve-3d",
-          }}
-          whileHover={{ scale: 1.02 }}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => {
-            setHovered(false);
-
-            mouseX.set(0);
-            mouseY.set(0);
-          }}
+        <div
+          ref={tiltRef}
+          {...tiltProps}
+          className="tilt group/tilt relative mx-auto max-w-5xl
+          h-[250px] sm:h-[300px]
+          md:h-[400px] lg:h-[500px] rounded-2xl overflow-hidden border
+          border-white/20 bg-background/80 backdrop-blur-sm
+          shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)]
+          hover:shadow-[0_20px_80px_-10px_rgba(216,27,96,0.3),0_30px_60px_-30px_rgba(33,150,243,0.4)]"
+          style={{ transformStyle: "preserve-3d" }}
         >
           {/* Dashboard image */}
           <div className="relative w-full h-full">
@@ -142,25 +89,26 @@ const FleetManagementDashboard = (): JSX.Element => {
               priority
             />
 
-            {/* Glare effect */}
-            <motion.div
-              className="absolute inset-0 z-20 bg-gradient-radial 
-              from-white/20 to-transparent opacity-0"
+            {/* Glare effect. Position comes from the same CSS variables the
+                tilt hook already writes, and the opacity is a plain hover on
+                the tilted container — no second listener, no React state. */}
+            <div
+              className="absolute inset-0 z-20 bg-gradient-radial
+              from-white/20 to-transparent opacity-0
+              transition-opacity duration-300 group-hover/tilt:opacity-70"
               style={{
-                opacity: hovered ? 0.7 : 0,
                 backgroundSize: "600px 600px",
-                backgroundPosition: `${glareX}px ${glareY}px`,
+                backgroundPosition: "var(--glare-x, 50%) var(--glare-y, 50%)",
               }}
             />
           </div>
-        </motion.div>
+        </div>
 
         {/* Call to action */}
-        <motion.div
+        <Reveal
           className="text-center mt-12 space-y-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
+          delay={400}
+          duration={500}
         >
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Imagine reunir todas essas informações da sua frota em um só lugar,
@@ -185,7 +133,7 @@ const FleetManagementDashboard = (): JSX.Element => {
               />
             </div>
           </Link>
-        </motion.div>
+        </Reveal>
       </div>
     </section>
   );

@@ -1,15 +1,9 @@
 "use client";
 
-import { useRef } from "react";
-import { motion } from "framer-motion";
-
-import { useInView } from "framer-motion";
+import { Reveal } from "@/components/shared/reveal";
 import { TrendingUp, Award, Truck, Code } from "lucide-react";
 
 const AboutTimelineSection = (): JSX.Element => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
-
   const timelineItems = [
     {
       year: "2024",
@@ -50,7 +44,7 @@ const AboutTimelineSection = (): JSX.Element => {
   ];
 
   return (
-    <section className="py-20 bg-muted/30" id="timeline" ref={ref}>
+    <section className="py-20 bg-muted/30" id="timeline">
       <div className="container px-4 md:px-6">
         <div className="text-center mb-16">
           <h2
@@ -77,16 +71,11 @@ const AboutTimelineSection = (): JSX.Element => {
             />
 
             {timelineItems.map((item, index) => (
-              <motion.div
+              <Reveal
                 key={index}
+                delay={200 + index * 100}
+                duration={700}
                 className="relative mb-12 pl-16"
-                style={{
-                  transform: isInView ? "none" : "translateY(30px)",
-                  opacity: isInView ? 1 : 0,
-                  transition: `all 0.7s cubic-bezier(0.17, 0.55, 0.55, 1) ${
-                    0.2 + index * 0.1
-                  }s`,
-                }}
               >
                 {/* Year bubble for mobile */}
                 <div
@@ -148,7 +137,7 @@ const AboutTimelineSection = (): JSX.Element => {
                     ★ {item.achievement}
                   </div>
                 </div>
-              </motion.div>
+              </Reveal>
             ))}
           </div>
 
@@ -162,20 +151,14 @@ const AboutTimelineSection = (): JSX.Element => {
             />
 
             {timelineItems.map((item, index) => (
-              <motion.div
+              <Reveal
                 key={index}
+                direction={index % 2 === 0 ? "right" : "left"}
+                delay={200 + index * 100}
+                duration={700}
                 className={`relative mb-20 ${
                   index % 2 === 0 ? "pr-16 ml-auto" : "pl-16"
                 } w-1/2`}
-                style={{
-                  transform: isInView
-                    ? "none"
-                    : `translateX(${index % 2 === 0 ? "50px" : "-50px"})`,
-                  opacity: isInView ? 1 : 0,
-                  transition: `all 0.7s cubic-bezier(0.17, 0.55, 0.55, 1) ${
-                    0.2 + index * 0.1
-                  }s`,
-                }}
               >
                 {/* Year Bubble for Desktop - Positioned Like the Original */}
                 <div
@@ -240,7 +223,7 @@ const AboutTimelineSection = (): JSX.Element => {
                     boxShadow: `0 0 0 4px white`,
                   }}
                 />
-              </motion.div>
+              </Reveal>
             ))}
           </div>
         </div>

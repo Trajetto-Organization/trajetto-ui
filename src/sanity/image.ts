@@ -10,16 +10,16 @@ const builder = createImageUrlBuilder({
   dataset,
 });
 
-/** Builder de URL de imagem do Sanity (`urlFor(img).width(800).url()`). */
+/** Sanity image URL builder (`urlFor(img).width(800).url()`). */
 const urlFor = (source: SanityImageSource) => builder.image(source);
 
 /**
- * Loader do `next/image` que devolve a URL do CDN do Sanity já otimizada
- * (`auto=format` → o edge do Sanity serve WebP/AVIF por conta própria).
+ * `next/image` loader that returns the already-optimized Sanity CDN URL
+ * (`auto=format` → Sanity's edge serves WebP/AVIF automatically).
  *
- * `src` chega como a URL base (sem tamanho); o Next chama o loader uma vez
- * por entrada do srcset, variando `width`. Isso bypassa o `/_next/image`
- * (zero re-encode no servidor do app).
+ * `src` arrives as the base URL (without dimensions); Next calls the loader once
+ * per `srcset` entry, varying the `width`. This bypasses `/_next/image`
+ * (zero re-encoding on the app server).
  */
 function sanityImageLoader({ src, width, quality }: ImageLoaderProps): string {
   const sep = src.includes("?") ? "&" : "?";

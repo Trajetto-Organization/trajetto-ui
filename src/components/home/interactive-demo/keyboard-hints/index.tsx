@@ -1,13 +1,9 @@
-import { motion } from "framer-motion";
-
 const KeyboardHints = (): JSX.Element => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1 }}
-      className="absolute bottom-4 right-4 z-[200] 
-      bg-black/80 text-white px-3 py-2 
+    <div
+      className="animate-fade-up [animation-delay:1s]
+      absolute bottom-4 right-4 z-[200]
+      bg-black/80 text-white px-3 py-2
       rounded-lg text-xs backdrop-blur-sm"
     >
       <div className="flex items-center gap-4">
@@ -36,7 +32,7 @@ const KeyboardHints = (): JSX.Element => {
           Play/Pause
         </span>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

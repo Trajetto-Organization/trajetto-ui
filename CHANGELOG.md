@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.3...v1.0.4) (2026-08-12)
+
+
+### Bug Fixes
+
+* apply linting fixes ([d723b90](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/commit/d723b908868ec708ad2be1a9235f6e9226521cae))
+
 ## [1.0.3](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/compare/v1.0.2...v1.0.3) (2026-08-12)
 
 

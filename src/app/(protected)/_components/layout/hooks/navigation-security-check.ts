@@ -2,7 +2,9 @@ import { useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 
 import { getCookies } from "@/actions/cookies";
-import { disconnectSocket } from "@/socket";
+
+import { forceLogout } from "@/lib/force-logout";
+import { useConnectionStore } from "@/lib/connection-status";
 
 import { parseJwt } from "@/lib/decode-jwt";
 
@@ -24,6 +26,8 @@ function useNavigationSecurityCheck() {
   const pathnameRef = useRef(pathname);
 
   const { setAuth } = useAuthStore();
+  const setUnreachable = useConnectionStore((state) => state.setUnreachable);
+
   pathnameRef.current = pathname;
 
   const checkUserAccess = useCallback(async () => {
@@ -46,49 +50,49 @@ function useNavigationSecurityCheck() {
       );
 
       if (!response.ok) {
-        disconnectSocket();
-        sessionStorage.setItem("pending_login_toast", "true");
-
         if (response.status === 403) {
-          const data = await response.json();
+          const data = await response.json().catch(() => ({}));
           const message = data.message || "";
 
           if (message.includes("acesso foi revogado")) {
-            window.location.href =
-              "/login?error=user_revoked&force_logout=true";
-
+            forceLogout("user_revoked");
             return;
           }
 
           if (message.includes("motorista está inativo")) {
-            window.location.href =
-              "/login?error=driver_inactive&force_logout=true";
-
+            forceLogout("driver_inactive");
             return;
           }
 
-          window.location.href = "/login?error=access_denied&force_logout=true";
+          forceLogout("access_denied");
           return;
         }
 
         if (response.status === 401) {
-          window.location.href =
-            "/login?error=session_expired&force_logout=true";
-
+          forceLogout("session_expired");
           return;
         }
 
         if (response.status === 404) {
-          window.location.href = "/login?error=access_denied&force_logout=true";
+          forceLogout("access_denied");
           return;
         }
 
+        // A 5xx is the API failing, not the API saying no. The session was
+        // never judged, so it is not thrown away — the connection screen goes
+        // up and keeps asking until there is a real answer.
+        setUnreachable(true);
         return;
       }
 
       // ============================================
       // Response OK — deep security checks
       // ============================================
+      // The API answered, so whatever the connection screen was waiting for
+      // has happened. Cleared before the checks below, which may well end in a
+      // logout — that is a real answer too.
+      setUnreachable(false);
+
       const data = await response.json();
       const user = data?.user;
 
@@ -102,12 +106,7 @@ function useNavigationSecurityCheck() {
         (decodedJwt?.driverId !== null && user.driverId === null);
 
       if (roleChanged || driverStatusChanged) {
-        disconnectSocket();
-
-        sessionStorage.setItem("pending_login_toast", "true");
-        window.location.href =
-          "/login?error=permissions_changed&force_logout=true";
-
+        forceLogout("permissions_changed");
         return;
       }
 
@@ -118,12 +117,7 @@ function useNavigationSecurityCheck() {
         (!user.profileAccess?.permissions ||
           user.profileAccess.permissions.length === 0)
       ) {
-        disconnectSocket();
-
-        sessionStorage.setItem("pending_login_toast", "true");
-        window.location.href =
-          "/login?error=no_user_permission&force_logout=true";
-
+        forceLogout("no_user_permission");
         return;
       }
 
@@ -161,9 +155,11 @@ function useNavigationSecurityCheck() {
           })) || [],
       });
     } catch {
-      // Network error — don't redirect, let user continue
+      // Could not reach the API at all — container down, DNS, offline. Same
+      // reasoning as the 5xx above: no answer is not a negative answer.
+      setUnreachable(true);
     }
-  }, []);
+  }, [setAuth, setUnreachable]);
 
   // Listen for security events dispatched by NotificationsProvider
   // (Socket.IO securityAction events + reconnect)

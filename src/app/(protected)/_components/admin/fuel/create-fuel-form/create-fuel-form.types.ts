@@ -41,6 +41,8 @@ interface CreateFuelFormSubmitProps {
   setOdometerFile: (file: File | null) => void;
   fileError: string | null;
   setFileError: (error: string | null) => void;
+  uploadProgress: { uploaded: number; total: number } | null;
+  uploadError: string | null;
 }
 
 export type { CreateFuelFormState, CreateFuelFormSubmitProps };

@@ -6,7 +6,6 @@ import type { Permission, UserRole } from "../shared/common.types";
 interface ProtectedLayoutLayoutProps {
   userLogged: UserLogged;
   children: ReactNode;
-  error: boolean;
   notificationError: boolean;
 }
 

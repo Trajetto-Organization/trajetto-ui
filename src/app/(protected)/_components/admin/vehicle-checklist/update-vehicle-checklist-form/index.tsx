@@ -13,6 +13,9 @@ import { handleUpdateVehicleChecklist } from "@/actions/vehicle-checklist/update
 import { useUpdateVehicleChecklistForm } from "./hooks";
 
 import { appendDataToForm } from "@/lib/append-data-form";
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
+
+import { MAX_CHECKLIST_TOTAL_BYTES } from "@/lib/upload-limits";
 import { UpdateChecklistFormSubmit } from "./update-vehicle-checklist-form-submit";
 
 import { validateUpdatePhotoRequirements } from "../create-vehicle-checklist-form/utils/photo-requirements";
@@ -46,6 +49,9 @@ const UpdateVehicleChecklistForm = ({
 
   const [photosToRemove, setPhotosToRemove] = useState<string[]>([]);
 
+  const { uploadProgress, uploadError, resetUpload, uploadPhotos } =
+    usePhotoUpload();
+
   const {
     formRef,
     currentStep,
@@ -69,7 +75,9 @@ const UpdateVehicleChecklistForm = ({
     isUpdateChecklistOpen,
   });
 
-  const updateVehicleChecklistForm = (vehicleChecklistFormData: FormData) => {
+  const updateVehicleChecklistForm = async (
+    vehicleChecklistFormData: FormData,
+  ) => {
     // Ensure mileage is sent unformatted
     const mileageInput = document.querySelector(
       'input[name="current_mileage"]',
@@ -89,13 +97,6 @@ const UpdateVehicleChecklistForm = ({
       vehicleId: commandVehicleInputValue.vehicleId,
       driverId: commandDriverInputValue.driverId,
     };
-
-    // Add files to FormData
-    Object.entries(checklistFiles).forEach(([fieldName, files]) => {
-      files.forEach((file) => {
-        vehicleChecklistFormData.append(fieldName, file);
-      });
-    });
 
     // Add photos to remove
     if (photosToRemove.length > 0) {
@@ -165,6 +166,20 @@ const UpdateVehicleChecklistForm = ({
       return; // Prevent form submission
     }
 
+    // Uploaded only after validation passes — there is no point pushing photos
+    // to storage for a submission that is about to be rejected.
+    const photos = await uploadPhotos({
+      files: checklistFiles,
+      uploadType: "checklistPhotos",
+      maxTotalBytes: MAX_CHECKLIST_TOTAL_BYTES,
+      businessId: checklistData.businessId,
+    });
+
+    // Upload failed and the error is already on screen.
+    if (!photos) return;
+
+    vehicleChecklistFormData.set("photos", JSON.stringify(photos));
+
     appendDataToForm(vehicleChecklistFormData, updateVehicleChacklistData);
     return dispatch(vehicleChecklistFormData);
   };
@@ -177,6 +192,7 @@ const UpdateVehicleChecklistForm = ({
           formRef.current?.reset();
         }
 
+        resetUpload();
         handleCloseUpdateChecklist();
       }}
     >
@@ -235,6 +251,8 @@ const UpdateVehicleChecklistForm = ({
               checklistData={checklistData}
               isEntityDirty={isEntityDirty}
               initialFormValues={checklistFormValues}
+              uploadProgress={uploadProgress}
+              uploadError={uploadError}
               onFormValuesChange={handleFormValuesChange}
               commandBranchInputValue={commandBranchInputValue}
               commandVehicleInputValue={commandVehicleInputValue}

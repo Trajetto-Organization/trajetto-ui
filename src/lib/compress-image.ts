@@ -2,28 +2,38 @@ const MAX_DIMENSION = 1600;
 const QUALITY = 0.82;
 
 /**
- * Shrinks a photo in the browser before it is added to a FormData.
+ * Shrinks a photo in the browser and strips its metadata.
  *
  * Why this exists: a checklist can carry up to twenty photos, and a phone
- * camera produces 3-5 MB files. Sent untouched that is a 60-100 MB request,
- * which nothing in the chain is prepared for — and the resolution is far
- * beyond what the app ever displays. Resized to 1600px and re-encoded to WebP
- * the same photo lands around 200-400 KB with no visible loss at the sizes it
- * is actually rendered at.
+ * camera produces 3-5 MB files. Sent untouched that is 60-100 MB, and the
+ * resolution is far beyond what the app ever displays. Resized to 1600px and
+ * re-encoded to WebP the same photo lands around 200-400 KB with no visible
+ * loss at the sizes it is actually rendered at.
  *
- * Returns the ORIGINAL file whenever the result would not be an improvement:
- * a file that is already small, a format that should not be re-encoded, or any
- * failure along the way. Compression is an optimisation, never a gate — it
- * must not be the reason an upload fails.
+ * It also does something the size numbers do not show. A camera JPEG carries
+ * EXIF, and EXIF carries GPS coordinates. That used to be stripped server-side
+ * by Sharp while the image was re-encoded; with direct-to-storage uploads the
+ * bytes never reach the API, so this canvas round trip — which keeps only
+ * pixels — is now the only thing between a photo's location data and the
+ * bucket. That is why it runs for every image regardless of size, and why the
+ * result is kept even when it is not smaller.
+ *
+ * Returns the ORIGINAL only when the file is not an image we can re-encode, or
+ * when something fails along the way: compression must not be the reason an
+ * upload fails.
  */
 async function compressImage(file: File): Promise<File> {
   const isCompressible = /^image\/(jpeg|jpg|png|webp)$/.test(file.type);
 
-  // Below this the re-encode usually costs more than it saves.
-  if (!isCompressible || file.size < 300 * 1024) return file;
+  if (!isCompressible) return file;
 
   try {
-    const bitmap = await createImageBitmap(file);
+    // Explicit rather than relying on the default: the bitmap must already have
+    // EXIF rotation applied, because the orientation tag is about to be thrown
+    // away with the rest of the metadata.
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    });
 
     const scale = Math.min(
       1,
@@ -34,6 +44,7 @@ async function compressImage(file: File): Promise<File> {
     const height = Math.round(bitmap.height * scale);
 
     const canvas = document.createElement("canvas");
+
     canvas.width = width;
     canvas.height = height;
 
@@ -47,7 +58,10 @@ async function compressImage(file: File): Promise<File> {
       canvas.toBlob(resolve, "image/webp", QUALITY);
     });
 
-    if (!blob || blob.size >= file.size) return file;
+    // Deliberately not "keep whichever is smaller". For an already-small image
+    // the re-encode can come out slightly larger, and returning the original
+    // there would hand back the very metadata this call exists to remove.
+    if (!blob) return file;
 
     const name = file.name.replace(/\.[^.]+$/, "") + ".webp";
     return new File([blob], name, {

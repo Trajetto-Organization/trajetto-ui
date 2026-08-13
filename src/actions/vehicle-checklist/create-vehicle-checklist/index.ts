@@ -7,6 +7,46 @@ interface CreateVehicleChecklistProps {
   message: string;
 }
 
+interface UploadedPhoto {
+  key: string;
+  fieldName?: string;
+}
+
+const REQUIRED_PHOTO_FIELDS = [
+  "current_mileage",
+  "fuel_level_adequate",
+  "tires_condition",
+] as const;
+
+const REQUIRED_PHOTO_LABELS: Record<string, string> = {
+  current_mileage: "quilometragem",
+  fuel_level_adequate: "nível de combustível",
+  tires_condition: "condição dos pneus",
+};
+
+/**
+ * The photos arrive as keys, not as files.
+ *
+ * The browser uploads straight to storage before this action is called, so
+ * what crosses the wire here is a short JSON string. That is deliberate: a
+ * Server Action buffers its whole body in the Next.js server's memory and
+ * rejects anything past 1 MB, which a handful of camera photos passed without
+ * trouble — and the failure showed up as a spinner that never stopped, with
+ * nothing in the network tab and nothing in the API logs.
+ */
+const parseUploadedPhotos = (
+  raw: FormDataEntryValue | null,
+): UploadedPhoto[] => {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as UploadedPhoto[]) : [];
+  } catch {
+    return [];
+  }
+};
+
 const handleCreateVehicleChecklist = async (
   state: any,
   createChecklistValues: FormData,
@@ -27,28 +67,21 @@ const handleCreateVehicleChecklist = async (
   }
 
   const businessId = createChecklistValues.get("businessId");
+  const photos = parseUploadedPhotos(createChecklistValues.get("photos"));
 
-  // Extract form values excluding files
   const formValues: Record<string, any> = {};
-  const fileFields: Record<string, File[]> = {};
 
   for (const [key, value] of createChecklistValues.entries()) {
-    if (value instanceof File) {
-      // Handle file uploads
-      if (!fileFields[key]) {
-        fileFields[key] = [];
-      }
-      fileFields[key].push(value);
-    } else if (typeof value === "string") {
-      // Handle form fields
-      // Convert string booleans to actual booleans
-      if (value === "true") {
-        formValues[key] = true;
-      } else if (value === "false") {
-        formValues[key] = false;
-      } else {
-        formValues[key] = value;
-      }
+    // `photos` carries the uploaded keys and is handled separately; everything
+    // else is a plain checklist field.
+    if (key === "photos" || typeof value !== "string") continue;
+
+    if (value === "true") {
+      formValues[key] = true;
+    } else if (value === "false") {
+      formValues[key] = false;
+    } else {
+      formValues[key] = value;
     }
   }
 
@@ -65,73 +98,20 @@ const handleCreateVehicleChecklist = async (
     Object.assign(allErrors, formatError.fieldErrors);
   }
 
-  // Validate required photos
-  const requiredPhotoFields = [
-    "current_mileage",
-    "fuel_level_adequate",
-    "tires_condition",
-  ];
+  // File type and size were already enforced in the browser and are enforced
+  // again by storage itself, which refuses a PUT that does not match the
+  // signature. What is still worth checking here is presence.
+  const fieldsWithPhotos = new Set(
+    photos.map(({ fieldName }) => fieldName).filter(Boolean),
+  );
 
-  for (const field of requiredPhotoFields) {
-    const files = fileFields[field];
-    if (!files || files.length === 0) {
+  for (const field of REQUIRED_PHOTO_FIELDS) {
+    if (!fieldsWithPhotos.has(field)) {
       allErrors[field] = [
-        `A foto de ${
-          field === "current_mileage"
-            ? "quilometragem"
-            : field === "fuel_level_adequate"
-              ? "nível de combustível"
-              : "condição dos pneus"
-        } é obrigatória.`,
+        `A foto de ${REQUIRED_PHOTO_LABELS[field]} é obrigatória.`,
       ];
-    } else {
-      // Validate each file
-      for (const file of files) {
-        const allowedTypes = [
-          "image/jpeg",
-          "image/jpg",
-          "image/png",
-          "image/webp",
-        ];
-        const maxSize = 5 * 1024 * 1024; // 5MB
-
-        if (!allowedTypes.includes(file.type)) {
-          allErrors[field] = [
-            "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.",
-          ];
-          break;
-        } else if (file.size > maxSize) {
-          allErrors[field] = ["O arquivo deve ter no máximo 5MB."];
-          break;
-        }
-      }
     }
   }
-
-  // Validate optional photos
-  Object.entries(fileFields).forEach(([fieldName, files]) => {
-    if (!requiredPhotoFields.includes(fieldName)) {
-      files.forEach((file) => {
-        const allowedTypes = [
-          "image/jpeg",
-          "image/jpg",
-          "image/png",
-          "image/webp",
-        ];
-        const maxSize = 5 * 1024 * 1024; // 5MB
-
-        if (!allowedTypes.includes(file.type)) {
-          if (!allErrors[fieldName]) allErrors[fieldName] = [];
-          allErrors[fieldName].push(
-            "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.",
-          );
-        } else if (file.size > maxSize) {
-          if (!allErrors[fieldName]) allErrors[fieldName] = [];
-          allErrors[fieldName].push("O arquivo deve ter no máximo 5MB.");
-        }
-      });
-    }
-  });
 
   // Return ALL errors if any exist
   if (Object.keys(allErrors).length > 0) {
@@ -143,33 +123,19 @@ const handleCreateVehicleChecklist = async (
   const createVehicleChecklist = `${process.env.HTTP_REQUEST}/vehicle-checklist/create-vehicle-checklist/${businessId}`;
 
   try {
-    // Create FormData for multipart upload
-    const formData = new FormData();
-
-    // Add all form fields (we know validation.data exists because we validated above)
-    if (createChecklistValidation.success) {
-      Object.entries(createChecklistValidation.data).forEach(([key, value]) => {
-        // Only append non-null values to avoid sending "null" strings
-        if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
-        }
-      });
-    }
-
-    // Add all files
-    Object.entries(fileFields).forEach(([fieldName, files]) => {
-      files.forEach((file) => {
-        formData.append(fieldName, file);
-      });
-    });
-
     const response = await fetch(createVehicleChecklist, {
       credentials: "include",
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify({
+        ...(createChecklistValidation.success
+          ? createChecklistValidation.data
+          : {}),
+        photos,
+      }),
     });
 
     const { message } = (await response.json()) as CreateVehicleChecklistProps;

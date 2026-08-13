@@ -44,6 +44,8 @@ interface DashboardUpdateFuelFormSubmitProps {
   latitude: number | null;
   longitude: number | null;
   isLoadingLocation: boolean;
+  uploadProgress: { uploaded: number; total: number } | null;
+  uploadError: string | null;
 }
 
 interface DashboardUpdateFuelFormProps {

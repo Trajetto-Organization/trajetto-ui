@@ -6,13 +6,15 @@ import { getCookies } from "@/actions/cookies";
 import { ProtectedLayout } from "@/app/(protected)/_components/layout";
 import { ProtectedCommandBar } from "../protected-command-bar-provider";
 
-import type { UserRole, UserLoggedProps } from "../../shared/common.types";
+import type { UserLoggedProps } from "../../shared/common.types";
 import { SyncNotificationsProvider } from "./sync-notifications-wrapper";
 
 import { parseJwt } from "@/lib/decode-jwt";
 
 import { handleUserResponseError, validateUserAccess } from "./security-checks";
 import { fetchNotifications } from "./fetch-notifications";
+
+import { ConnectionRetry } from "@/components/shared/connection-lost-screen/connection-retry";
 
 const ProtectedProvider = async ({
   children,
@@ -35,20 +37,10 @@ const ProtectedProvider = async ({
   const headersList = headers();
   const pathname = headersList.get("x-pathname") || "";
 
-  let userLogged = {
-    id: "",
-    businessId: "",
-    email: "",
-    avatar: "",
-    name: "Usuário",
-    role: jwtRole as UserRole,
-    two_factor_enabled: false,
-    permissions: [],
-    driverId: jwtDriverId as string | null,
-    profileAccess: null as { permissions?: any[] } | null,
-  };
-
-  let userResponseError = false;
+  // No placeholder built from JWT claims any more. It existed so the layout
+  // could still render when `/user/me` failed, which is the failing-open this
+  // file no longer does — every path that would have used it now either logs
+  // the user out or shows the connection screen.
   let notificationResponseError = false;
 
   let serverNotifications: {
@@ -77,47 +69,77 @@ const ProtectedProvider = async ({
         tags: ["update-username"],
       },
     });
-  } catch (error) {
-    userResponseError = true;
+  } catch {
+    // Left undefined on purpose — the check below turns it into the connection
+    // screen.
   }
 
-  if (response) {
-    if (!response.ok) {
-      await handleUserResponseError(response);
-      userResponseError = true;
-    } else {
-      const data: UserLoggedProps = await response.json();
-
-      if (data?.user) {
-        validateUserAccess({
-          user: data.user,
-          jwtRole,
-          jwtDriverId,
-          pathname,
-        });
-
-        userLogged = {
-          id: data.user.id,
-          businessId: data.user.businessId as string,
-          email: data.user.email,
-          name: data.user.name,
-          avatar: data.user.avatar as string,
-          role: data.user.role,
-          two_factor_enabled: data.user.two_factor_enabled as boolean,
-          permissions: data.user.profileAccess?.permissions as [],
-          driverId: data.user.driverId || null,
-          profileAccess: data.user.profileAccess || null,
-        };
-
-        const notificationResult = await fetchNotifications(tokenAccess);
-
-        serverNotifications = notificationResult.notifications;
-        serverNotificationIds = notificationResult.notificationIds;
-
-        notificationResponseError = notificationResult.error;
-      }
-    }
+  // This is the gate the whole protected area rests on: it runs on every
+  // navigation with no cache. It used to fail open — a missing response or an
+  // unmapped status fell through to rendering the layout from stale JWT
+  // claims, leaving the user on a dashboard where nothing worked and nothing
+  // said why.
+  //
+  // It now closes in two different ways, because the two failures mean
+  // different things:
+  //
+  //   the API said no    → an authoritative negative. Log out, throw the
+  //                        session away, send them to the login.
+  //   the API said nothing → we know nothing. Keep the session, show the
+  //                        connection screen, and keep asking.
+  //
+  // Collapsing the second into the first is what would log out every driver in
+  // the field on an ordinary deploy, for no security gain: the API is the
+  // enforcement point, so a stale dashboard grants nothing while it is down.
+  if (!response) {
+    return <ConnectionRetry alwaysVisible />;
   }
+
+  if (!response.ok) {
+    // Maps the statuses we recognise (401, 403 by message, 404) and redirects
+    // from inside — `redirect` throws `NEXT_REDIRECT`, so it must not sit in a
+    // try/catch. Returning means the status was not one of them, which at this
+    // point only leaves 5xx: the API failing rather than answering.
+    await handleUserResponseError(response);
+    return <ConnectionRetry alwaysVisible />;
+  }
+
+  const data: UserLoggedProps = await response
+    .json()
+    .catch(() => ({}) as never);
+
+  // A 200 with no user in it — a proxy error page, a truncated body. The API
+  // did not really answer, so it is treated as not answering.
+  if (!data?.user) {
+    return <ConnectionRetry alwaysVisible />;
+  }
+
+  validateUserAccess({
+    user: data.user,
+    jwtRole,
+    jwtDriverId,
+    pathname,
+  });
+
+  const userLogged = {
+    id: data.user.id,
+    businessId: data.user.businessId as string,
+    email: data.user.email,
+    name: data.user.name,
+    avatar: data.user.avatar as string,
+    role: data.user.role,
+    two_factor_enabled: data.user.two_factor_enabled as boolean,
+    permissions: data.user.profileAccess?.permissions as [],
+    driverId: data.user.driverId || null,
+    profileAccess: data.user.profileAccess || null,
+  };
+
+  const notificationResult = await fetchNotifications(tokenAccess);
+
+  serverNotifications = notificationResult.notifications;
+  serverNotificationIds = notificationResult.notificationIds;
+
+  notificationResponseError = notificationResult.error;
 
   return (
     <ProtectedCommandBar
@@ -134,7 +156,6 @@ const ProtectedProvider = async ({
       >
         <ProtectedLayout
           userLogged={userLogged}
-          error={userResponseError}
           notificationError={notificationResponseError}
         >
           {children}

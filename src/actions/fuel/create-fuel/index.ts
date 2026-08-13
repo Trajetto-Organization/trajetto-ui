@@ -24,13 +24,17 @@ const handleCreateFuel = async (state: any, createFuelValues: FormData) => {
   }
 
   const businessId = createFuelValues.get("businessId");
-  const odometerPhoto = createFuelValues.get("odometer_photo") as File;
 
-  // Extract form values excluding the file FIRST
+  // The photo is already in storage: the browser uploaded it directly before
+  // this action ran, and what arrives here is its key. See the checklist create
+  // action for why the file itself no longer travels through a Server Action.
+  const photoKey = createFuelValues.get("photoKey");
+
+  // Extract form values excluding the photo key FIRST
   const formValues: Record<string, string> = {};
 
   for (const [key, value] of createFuelValues.entries()) {
-    if (key !== "odometer_photo" && typeof value === "string") {
+    if (key !== "photoKey" && typeof value === "string") {
       formValues[key] = value;
     }
   }
@@ -47,21 +51,11 @@ const handleCreateFuel = async (state: any, createFuelValues: FormData) => {
     Object.assign(allErrors, formatError.fieldErrors);
   }
 
-  // Validate file and add file errors
-  if (!odometerPhoto || odometerPhoto.size === 0) {
+  // Type and size were enforced in the browser and are enforced again by
+  // storage, which refuses a PUT that does not match the signature. What is
+  // still worth checking here is presence.
+  if (typeof photoKey !== "string" || photoKey.length === 0) {
     allErrors.odometer_photo = ["A foto do odômetro é obrigatória."];
-  } else {
-    // Validate file type and size only if file exists
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    if (!allowedTypes.includes(odometerPhoto.type)) {
-      allErrors.odometer_photo = [
-        "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.",
-      ];
-    } else if (odometerPhoto.size > maxSize) {
-      allErrors.odometer_photo = ["O arquivo deve ter no máximo 5MB."];
-    }
   }
 
   // Return ALL errors if any exist
@@ -74,32 +68,30 @@ const handleCreateFuel = async (state: any, createFuelValues: FormData) => {
   const createFuel = `${process.env.HTTP_REQUEST}/fuel/create-fuel/${businessId}`;
 
   try {
-    // Create FormData for multipart upload
-    const formData = new FormData();
+    const body: Record<string, unknown> = {
+      // 🆕 Record origin (WEB_DASHBOARD)
+      created_from: "WEB_DASHBOARD",
+      photo: { key: photoKey },
+    };
 
     // Add all form fields (we know validation.data exists because we validated above)
     if (createFuelValidation.success) {
       Object.entries(createFuelValidation.data).forEach(([key, value]) => {
-        // Only append non-null values to avoid sending "null" strings
+        // Only send non-null values to avoid sending "null" strings
         if (value !== null && value !== undefined) {
-          formData.append(key, String(value));
+          body[key] = value;
         }
       });
     }
-
-    // 🆕 Add record origin (WEB_DASHBOARD)
-    formData.append("created_from", "WEB_DASHBOARD");
-
-    // Add the file
-    formData.append("odometer_photo", odometerPhoto);
 
     const response = await fetch(createFuel, {
       credentials: "include",
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify(body),
     });
 
     const { message } = (await response.json()) as CreateFuelProps;

@@ -20,6 +20,7 @@ import type {
 } from "./dashboard-update-fuel-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useAuthStore } from "@/store/auth-store";
 
 import { DashboardUpdateFuelFormSubmit } from "./dashboard-update-fuel-form-submit";
@@ -43,6 +44,9 @@ const DashboardUpdateFuelForm = ({
   >(handleUpdateFuel, defaultState);
 
   const [odometerFile, setOdometerFile] = useState<File | null>(null);
+
+  const { uploadProgress, uploadError, resetUpload, uploadPhotos } =
+    usePhotoUpload();
   const [fileError, setFileError] = useState<string | null>(null);
 
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
@@ -102,7 +106,7 @@ const DashboardUpdateFuelForm = ({
     isUpdateFuelOpen,
   });
 
-  const updateFuelForm = (fuelFormData: FormData) => {
+  const updateFuelForm = async (fuelFormData: FormData) => {
     // Ensure mileage is sent unformatted
     const mileageInput = document.querySelector(
       'input[name="current_mileage"]',
@@ -126,8 +130,19 @@ const DashboardUpdateFuelForm = ({
     };
 
     // Add the odometer photo file to FormData if provided
+    // The photo goes straight from here to storage; only its key reaches the
+    // Server Action.
     if (odometerFile) {
-      fuelFormData.set("odometer_photo", odometerFile);
+      const photos = await uploadPhotos({
+        files: { odometer_photo: [odometerFile] },
+        uploadType: "odometerPhotos",
+        businessId: businessId as string,
+      });
+
+      // Upload failed and the error is already on screen.
+      if (!photos) return;
+
+      fuelFormData.set("photoKey", photos[0].key);
     }
 
     // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
@@ -157,6 +172,8 @@ const DashboardUpdateFuelForm = ({
         }
 
         handleCloseUpdateFuel();
+
+        resetUpload();
       }}
     >
       <DialogScrollContent
@@ -232,6 +249,8 @@ const DashboardUpdateFuelForm = ({
               onFormValuesChange={handleFormValuesChange}
               commandVehicleInputValue={commandVehicleInputValue}
               odometerFile={odometerFile}
+              uploadProgress={uploadProgress}
+              uploadError={uploadError}
               setOdometerFile={setOdometerFile}
               fileError={fileError}
               setFileError={setFileError}

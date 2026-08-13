@@ -16,6 +16,8 @@ import type { DashboardUpdateVehicleChecklistFormSubmitProps } from "../dashboar
 import { getPhotoRequirements } from "../../dashboard-create-vehicle-checklist-form/utils/photo-requirements";
 
 import { PhotoUpload } from "../photo-upload";
+
+import { UploadProgress } from "@/components/shared/upload-progress";
 import { useAuthStore } from "@/store/auth-store";
 
 // Reusable select options
@@ -52,6 +54,8 @@ const DashboardUpdateChecklistFormSubmit = ({
   setFileErrors,
   photosToRemove,
   setPhotosToRemove,
+  uploadProgress,
+  uploadError,
 }: DashboardUpdateVehicleChecklistFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
@@ -882,8 +886,12 @@ const DashboardUpdateChecklistFormSubmit = ({
           />
         </div>
 
+        <div className="mt-6">
+          <UploadProgress progress={uploadProgress} error={uploadError} />
+        </div>
+
         {/* Submit Button */}
-        <div className="flex justify-end mt-6 gap-2">
+        <div className="flex justify-end mt-4 gap-2">
           <Button
             type="button"
             variant="outline"

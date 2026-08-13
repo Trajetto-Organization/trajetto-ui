@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/tooltip";
 import type { DashboardCreateFuelFormSubmitProps } from "../dashboard-create-fuel-form.types";
 
+import { UploadProgress } from "@/components/shared/upload-progress";
+import { compressImage } from "@/lib/compress-image";
+
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
   () => import("@/app/(protected)/_components/shared/custom/location-picker"),
@@ -59,6 +62,8 @@ const DashboardCreateFuelFormSubmit = ({
   latitude,
   longitude,
   isLoadingLocation,
+  uploadProgress,
+  uploadError,
 }: DashboardCreateFuelFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
@@ -190,7 +195,7 @@ const DashboardCreateFuelFormSubmit = ({
     maxFiles: 1,
     multiple: false,
     disabled: pending,
-    onDrop: (acceptedFiles: File[], rejectedFiles) => {
+    onDrop: async (acceptedFiles: File[], rejectedFiles) => {
       setFileError(null);
 
       if (rejectedFiles.length > 0) {
@@ -216,7 +221,12 @@ const DashboardCreateFuelFormSubmit = ({
           setOdometerFile(null);
         } else {
           setFileError(null);
-          setOdometerFile(file);
+
+          // Shrunk and stripped of metadata before it leaves the browser. With
+          // direct-to-storage uploads nothing on the server re-encodes it, so
+          // an untouched camera JPEG would carry its GPS coordinates into the
+          // bucket.
+          setOdometerFile(await compressImage(file));
         }
       }
     },
@@ -486,7 +496,11 @@ const DashboardCreateFuelFormSubmit = ({
         </div>
       </div>
 
-      <div className="flex justify-end mt-6 gap-2">
+      <div className="mt-6">
+        <UploadProgress progress={uploadProgress} error={uploadError} />
+      </div>
+
+      <div className="flex justify-end mt-4 gap-2">
         <Button
           type="button"
           variant="outline"

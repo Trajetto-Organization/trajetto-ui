@@ -18,8 +18,9 @@ import type {
 } from "./update-fuel-form.types";
 
 import { appendDataToForm } from "@/lib/append-data-form";
-import { UpdateFuelFormSubmit } from "./update-fuel-form-submit";
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
 
+import { UpdateFuelFormSubmit } from "./update-fuel-form-submit";
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 
 import { SelectFuelTypeStep } from "@/app/(protected)/_components/shared/steps/select-fuel-type-step";
@@ -37,6 +38,9 @@ const UpdateFuelForm = ({
   );
 
   const [odometerFile, setOdometerFile] = useState<File | null>(null);
+
+  const { uploadProgress, uploadError, resetUpload, uploadPhotos } =
+    usePhotoUpload();
   const [fileError, setFileError] = useState<string | null>(null);
 
   const [showImageModal, setShowImageModal] = useState<boolean>(false);
@@ -96,7 +100,7 @@ const UpdateFuelForm = ({
     isUpdateFuelOpen,
   });
 
-  const updateFuelForm = (fuelFormData: FormData) => {
+  const updateFuelForm = async (fuelFormData: FormData) => {
     // Ensure mileage is sent unformatted
     const mileageInput = document.querySelector(
       'input[name="current_mileage"]',
@@ -120,8 +124,19 @@ const UpdateFuelForm = ({
     };
 
     // Add the odometer photo file to FormData if selected
+    // The photo goes straight from here to storage; only its key reaches the
+    // Server Action.
     if (odometerFile) {
-      fuelFormData.set("odometer_photo", odometerFile);
+      const photos = await uploadPhotos({
+        files: { odometer_photo: [odometerFile] },
+        uploadType: "odometerPhotos",
+        businessId: fuelData.businessId,
+      });
+
+      // Upload failed and the error is already on screen.
+      if (!photos) return;
+
+      fuelFormData.set("photoKey", photos[0].key);
     }
 
     // 📍 GEOLOCATION: Handle latitude/longitude separately to support null values
@@ -151,6 +166,8 @@ const UpdateFuelForm = ({
         }
 
         handleCloseUpdateFuel();
+
+        resetUpload();
       }}
     >
       <DialogScrollContent
@@ -231,6 +248,8 @@ const UpdateFuelForm = ({
               longitude={longitude}
               isLoadingLocation={isLoadingLocation}
               odometerFile={odometerFile}
+              uploadProgress={uploadProgress}
+              uploadError={uploadError}
               setOdometerFile={setOdometerFile}
               fileError={fileError}
               setFileError={setFileError}

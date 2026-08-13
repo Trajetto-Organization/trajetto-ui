@@ -7,6 +7,29 @@ interface UpdateVehicleChecklistProps {
   message: string;
 }
 
+interface UploadedPhoto {
+  key: string;
+  fieldName?: string;
+}
+
+/**
+ * Photos arrive as keys, uploaded by the browser straight to storage before
+ * this action runs. See the create action for why the files no longer travel
+ * through here.
+ */
+const parseUploadedPhotos = (
+  raw: FormDataEntryValue | null,
+): UploadedPhoto[] => {
+  if (typeof raw !== "string" || raw.length === 0) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as UploadedPhoto[]) : [];
+  } catch {
+    return [];
+  }
+};
+
 const handleUpdateVehicleChecklist = async (
   state: any,
   updateChecklistValues: FormData,
@@ -33,37 +56,35 @@ const handleUpdateVehicleChecklist = async (
     "photosToRemove",
   ) as string;
 
-  // Extract form values excluding files
+  const photos = parseUploadedPhotos(updateChecklistValues.get("photos"));
+
   const formValues: Record<string, any> = {};
-  const fileFields: Record<string, File[]> = {};
 
   const photosToRemove: string[] = photosToRemoveStr
     ? JSON.parse(photosToRemoveStr)
     : [];
 
   for (const [key, value] of updateChecklistValues.entries()) {
-    if (value instanceof File) {
-      // Handle file uploads
-      if (!fileFields[key]) {
-        fileFields[key] = [];
-      }
-      fileFields[key].push(value);
-    } else if (
-      typeof value === "string" &&
-      key !== "photosToRemove" &&
-      key !== "businessId" &&
-      key !== "checklistId"
+    // Metadata and the uploaded keys are handled separately; everything else
+    // is a plain checklist field.
+    if (
+      typeof value !== "string" ||
+      key === "photos" ||
+      key === "photosToRemove" ||
+      key === "businessId" ||
+      key === "checklistId"
     ) {
-      // Handle form fields (exclude metadata fields)
-      // Convert string booleans to actual booleans
-      if (value === "true") {
-        formValues[key] = true;
-      } else if (value === "false") {
-        formValues[key] = false;
-      } else {
-        // Include all strings, including empty ones for fields like notes that need to be cleared
-        formValues[key] = value.trim() === "" ? "" : value;
-      }
+      continue;
+    }
+
+    // Convert string booleans to actual booleans
+    if (value === "true") {
+      formValues[key] = true;
+    } else if (value === "false") {
+      formValues[key] = false;
+    } else {
+      // Include all strings, including empty ones for fields like notes that need to be cleared
+      formValues[key] = value.trim() === "" ? "" : value;
     }
   }
 
@@ -80,29 +101,6 @@ const handleUpdateVehicleChecklist = async (
     Object.assign(allErrors, formatError.fieldErrors);
   }
 
-  // Validate optional photos (only if being updated)
-  Object.entries(fileFields).forEach(([fieldName, files]) => {
-    files.forEach((file) => {
-      const allowedTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/webp",
-      ];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-
-      if (!allowedTypes.includes(file.type)) {
-        if (!allErrors[fieldName]) allErrors[fieldName] = [];
-        allErrors[fieldName].push(
-          "Tipo de arquivo não suportado. Use apenas JPEG, JPG, PNG ou WebP.",
-        );
-      } else if (file.size > maxSize) {
-        if (!allErrors[fieldName]) allErrors[fieldName] = [];
-        allErrors[fieldName].push("O arquivo deve ter no máximo 5MB.");
-      }
-    });
-  });
-
   // Return ALL errors if any exist
   if (Object.keys(allErrors).length > 0) {
     return {
@@ -113,41 +111,22 @@ const handleUpdateVehicleChecklist = async (
   const updateVehicleChecklist = `${process.env.HTTP_REQUEST}/vehicle-checklist/update-vehicle-checklist/${checklistId}/business/${businessId}`;
 
   try {
-    // Create FormData for multipart upload
-    const formData = new FormData();
+    const body: Record<string, unknown> = { photos };
 
-    // Add all form fields (only if validation succeeded)
+    // Every validated field is sent, including the empty ones — that is how a
+    // value gets cleared.
     if (updateChecklistValidation.success) {
       Object.entries(updateChecklistValidation.data).forEach(([key, value]) => {
-        // For update, we need to send all fields including empty ones to clear values
-        if (value !== undefined) {
-          // For notes field, preserve null as empty string to trigger backend null conversion
-          // For other fields, convert normally
-          const stringValue = value === null ? "" : String(value);
-          formData.append(key, stringValue);
-        }
+        if (value === undefined) return;
+
+        // `notes` keeps arriving as an empty string so the API converts it to
+        // null instead of leaving the previous text in place.
+        body[key] = value === null ? "" : value;
       });
     }
 
-    // Add all files (if any were provided) with field name prefixed like in create
-    Object.entries(fileFields).forEach(([fieldName, files]) => {
-      files.forEach((file, index) => {
-        // Create new file with mobile-like naming pattern: fieldName_timestamp_index.extension
-        const fileExtension = file.name.split(".").pop() || "jpg";
-        const newFileName = `${fieldName}_${Date.now()}_${index}.${fileExtension}`;
-
-        // Create a new File object with the new name
-        const renamedFile = new File([file], newFileName, {
-          type: file.type,
-        });
-
-        formData.append(fieldName, renamedFile);
-      });
-    });
-
-    // Add photos to remove (if any)
     if (photosToRemove.length > 0) {
-      formData.append("photosToRemove", JSON.stringify(photosToRemove));
+      body.photosToRemove = photosToRemove;
     }
 
     const response = await fetch(updateVehicleChecklist, {
@@ -155,8 +134,9 @@ const handleUpdateVehicleChecklist = async (
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify(body),
     });
 
     const { message } = (await response.json()) as UpdateVehicleChecklistProps;

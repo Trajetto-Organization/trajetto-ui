@@ -15,6 +15,8 @@ import type { DashboardCreateVehicleChecklistSubmitProps } from "../dashboard-cr
 import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
 import { PhotoUpload } from "../photo-upload";
+import { UploadProgress } from "@/components/shared/upload-progress";
+
 import {
   getPhotoRequirements,
   validateChecklistForm,
@@ -50,6 +52,8 @@ const DashboardCreateVehicleChecklistFormSubmit = ({
   setFileErrors,
   initialFormValues,
   onFormValuesChange,
+  uploadProgress,
+  uploadError,
 }: DashboardCreateVehicleChecklistSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const [formValues, setFormValues] = useState<Record<string, any>>(() =>
@@ -719,7 +723,11 @@ const DashboardCreateVehicleChecklistFormSubmit = ({
         </div>
       </div>
 
-      <div className="flex justify-end mt-6 gap-2">
+      <div className="mt-6">
+        <UploadProgress progress={uploadProgress} error={uploadError} />
+      </div>
+
+      <div className="flex justify-end mt-4 gap-2">
         <Button
           type="button"
           variant="outline"

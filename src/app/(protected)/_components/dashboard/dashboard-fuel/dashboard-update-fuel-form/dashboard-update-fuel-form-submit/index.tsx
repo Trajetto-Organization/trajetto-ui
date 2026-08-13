@@ -34,6 +34,9 @@ import { useFetchVehicleData } from "@/app/(protected)/_components/shared/search
 import type { DashboardUpdateFuelFormSubmitProps } from "../dashboard-update-fuel-form.types";
 import { useAuthStore } from "@/store/auth-store";
 
+import { UploadProgress } from "@/components/shared/upload-progress";
+import { compressImage } from "@/lib/compress-image";
+
 // Dynamic import for LocationPicker (client-side only)
 const LocationPicker = dynamic(
   () => import("@/app/(protected)/_components/shared/custom/location-picker"),
@@ -65,6 +68,8 @@ const DashboardUpdateFuelFormSubmit = ({
   latitude,
   longitude,
   isLoadingLocation,
+  uploadProgress,
+  uploadError,
 }: DashboardUpdateFuelFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
   const { businessId } = useAuthStore();
@@ -210,7 +215,7 @@ const DashboardUpdateFuelFormSubmit = ({
     maxFiles: 1,
     multiple: false,
     disabled: pending,
-    onDrop: (acceptedFiles: File[], rejectedFiles) => {
+    onDrop: async (acceptedFiles: File[], rejectedFiles) => {
       setFileError(null);
 
       if (rejectedFiles.length > 0) {
@@ -236,7 +241,12 @@ const DashboardUpdateFuelFormSubmit = ({
           setOdometerFile(null);
         } else {
           setFileError(null);
-          setOdometerFile(file);
+
+          // Shrunk and stripped of metadata before it leaves the browser. With
+          // direct-to-storage uploads nothing on the server re-encodes it, so
+          // an untouched camera JPEG would carry its GPS coordinates into the
+          // bucket.
+          setOdometerFile(await compressImage(file));
         }
       }
     },
@@ -599,7 +609,11 @@ const DashboardUpdateFuelFormSubmit = ({
         </div>
       </div>
 
-      <div className="flex justify-end mt-6 gap-2">
+      <div className="mt-6">
+        <UploadProgress progress={uploadProgress} error={uploadError} />
+      </div>
+
+      <div className="flex justify-end mt-4 gap-2">
         <Button
           type="button"
           variant="outline"

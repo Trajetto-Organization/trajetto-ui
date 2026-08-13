@@ -26,38 +26,18 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
   const businessId = updateFuelValues.get("businessId");
   const fuelId = updateFuelValues.get("fuelId");
 
-  const odometerPhoto = updateFuelValues.get("odometer_photo") as File;
-
-  // Validate file if provided (optional for update)
-  if (odometerPhoto && odometerPhoto.size > 0) {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-
-    if (!allowedTypes.includes(odometerPhoto.type)) {
-      return {
-        updateFuelError: {
-          odometer_photo: [
-            "Tipo de arquivo não suportado. Use apenas JPEG, PNG ou WebP.",
-          ],
-        },
-      };
-    }
-
-    if (odometerPhoto.size > maxSize) {
-      return {
-        updateFuelError: {
-          odometer_photo: ["O arquivo deve ter no máximo 5MB."],
-        },
-      };
-    }
-  }
-
+  // A replacement photo, when there is one, is already in storage: the browser
+  // uploaded it directly and only its key arrives here. Type and size were
+  // enforced in the browser and again by storage, which refuses a PUT that does
+  // not match the signature. An edit that leaves the photo alone omits it, and
+  // the record keeps the one it already has.
+  const photoKey = updateFuelValues.get("photoKey");
   const updateFuel = `${process.env.HTTP_REQUEST}/fuel/update-fuel/${fuelId}/business/${businessId}`;
 
-  // Extract form values excluding the file
+  // Extract form values excluding the photo key
   const formValues: Record<string, string> = {};
   for (const [key, value] of updateFuelValues.entries()) {
-    if (key !== "odometer_photo" && typeof value === "string") {
+    if (key !== "photoKey" && typeof value === "string") {
       formValues[key] = value;
     }
   }
@@ -73,22 +53,20 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
   }
 
   try {
-    // Create FormData for multipart upload
-    const formData = new FormData();
+    const body: Record<string, unknown> = {};
 
     // Add all form fields
     Object.entries(updateFuelValidation.data).forEach(([key, value]) => {
       // For update, we need to send all fields including empty ones to clear values
       if (value !== undefined) {
         // Convert null to empty string for optional fields like notes
-        const stringValue = value === null ? "" : String(value);
-        formData.append(key, stringValue);
+        body[key] = value === null ? "" : value;
       }
     });
 
-    // Add the file if provided
-    if (odometerPhoto && odometerPhoto.size > 0) {
-      formData.append("odometer_photo", odometerPhoto);
+    // Only sent when the photo was actually replaced.
+    if (typeof photoKey === "string" && photoKey.length > 0) {
+      body.photo = { key: photoKey };
     }
 
     const response = await fetch(updateFuel, {
@@ -96,8 +74,9 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
+        "Content-Type": "application/json",
       },
-      body: formData,
+      body: JSON.stringify(body),
     });
 
     const { message } = (await response.json()) as UpdateFuelProps;

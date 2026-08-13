@@ -65,6 +65,8 @@ interface CreateVehicleChecklistFormSubmitProps {
   >;
   initialFormValues: Record<string, any>;
   onFormValuesChange: (values: Record<string, any>) => void;
+  uploadProgress: { uploaded: number; total: number } | null;
+  uploadError: string | null;
 }
 
 export type {

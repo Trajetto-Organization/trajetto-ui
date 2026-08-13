@@ -1323,3 +1323,31 @@ html {
     transform: none;
   }
 }
+
+/*
+ * The upload card sliding aside on hover to reveal the dashed drop target
+ * behind it.
+ *
+ * Replaces a framer `whileHover` spring (stiffness 300, damping 20, so z ~ 0.58
+ * — underdamped, with a visible overshoot that settles in a bit under half a
+ * second). The back-out curve reproduces that overshoot, and matching the
+ * duration to the spring's settling time is what keeps it reading as a spring
+ * rather than a slide.
+ *
+ * Only the timing lives here; the offset itself is a `group-hover/file:`
+ * utility on the element, so Tailwind owns the transform and the two never
+ * disagree about it.
+ */
+.hover-peek {
+  transition:
+    transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 420ms ease-out;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-peek {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

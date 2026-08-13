@@ -44,6 +44,8 @@ interface UpdateFuelFormSubmitProps {
   setFileError: (error: string | null) => void;
   showImageModal: boolean;
   setShowImageModal: (show: boolean) => void;
+  uploadProgress: { uploaded: number; total: number } | null;
+  uploadError: string | null;
 }
 
 interface UpdateFuelFormProps {

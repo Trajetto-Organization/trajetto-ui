@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/tooltip";
 
 import { appendDataToForm } from "@/lib/append-data-form";
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
+
 import { DashboardCreateFuelFormSubmit } from "./dashboard-create-fuel-form-submit";
 
 import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
@@ -46,6 +48,9 @@ const DashboardCreateFuelForm = (): JSX.Element => {
   >(handleCreateFuel, defaultState);
 
   const [odometerFile, setOdometerFile] = useState<File | null>(null);
+
+  const { uploadProgress, uploadError, resetUpload, uploadPhotos } =
+    usePhotoUpload();
   const [fileError, setFileError] = useState<string | null>(null);
 
   // 📍 GEOLOCATION STATE
@@ -119,6 +124,7 @@ const DashboardCreateFuelForm = (): JSX.Element => {
   useEffect(() => {
     if (!isCreateFuelForm) {
       setOdometerFile(null);
+      resetUpload();
       setFileError(null);
 
       setLatitude(null);
@@ -132,6 +138,7 @@ const DashboardCreateFuelForm = (): JSX.Element => {
   useEffect(() => {
     if (state?.successMessage) {
       setOdometerFile(null);
+      resetUpload();
       setFileError(null);
 
       setLatitude(null);
@@ -141,7 +148,7 @@ const DashboardCreateFuelForm = (): JSX.Element => {
     }
   }, [state?.successMessage]);
 
-  const createFuelForm = (fuelFormData: FormData) => {
+  const createFuelForm = async (fuelFormData: FormData) => {
     // Ensure mileage is sent unformatted
     const mileageInput = document.querySelector(
       'input[name="current_mileage"]',
@@ -166,8 +173,19 @@ const DashboardCreateFuelForm = (): JSX.Element => {
     };
 
     // Add the odometer photo file to FormData
+    // The photo goes straight from here to storage; only its key reaches the
+    // Server Action.
     if (odometerFile) {
-      fuelFormData.set("odometer_photo", odometerFile);
+      const photos = await uploadPhotos({
+        files: { odometer_photo: [odometerFile] },
+        uploadType: "odometerPhotos",
+        businessId: businessId as string,
+      });
+
+      // Upload failed and the error is already on screen.
+      if (!photos) return;
+
+      fuelFormData.set("photoKey", photos[0].key);
     }
 
     appendDataToForm(fuelFormData, fuelData);
@@ -275,6 +293,8 @@ const DashboardCreateFuelForm = (): JSX.Element => {
               initialFormValues={fuelFormValues}
               onFormValuesChange={handleFormValuesChange}
               odometerFile={odometerFile}
+              uploadProgress={uploadProgress}
+              uploadError={uploadError}
               setOdometerFile={setOdometerFile}
               fileError={fileError}
               setFileError={setFileError}

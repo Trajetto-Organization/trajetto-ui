@@ -66,6 +66,8 @@ interface UpdateVehicleChecklistFormSubmitProps {
   >;
   photosToRemove: string[];
   setPhotosToRemove: React.Dispatch<React.SetStateAction<string[]>>;
+  uploadProgress: { uploaded: number; total: number } | null;
+  uploadError: string | null;
 }
 
 interface UpdateVehicleChecklistFormProps {

@@ -42,6 +42,10 @@ const messages: Record<string, MessageInfo> = {
     text: "Suas permissões de acesso foram atualizadas. Por favor, faça login novamente para continuar.",
     type: "error",
   },
+  service_unavailable: {
+    text: "Não foi possível confirmar sua sessão com o servidor. Verifique sua conexão e faça login novamente.",
+    type: "error",
+  },
   logout: {
     text: "Você saiu da sua conta com sucesso!",
     type: "success",

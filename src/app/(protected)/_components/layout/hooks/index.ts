@@ -6,10 +6,8 @@ import { toast } from "sonner";
 
 function useProtectedLayout(
   userLogged: UserLoggedData,
-  error: boolean,
   notificationError: boolean = false,
 ) {
-  const userToastDisplayed = useRef<boolean>(false);
   const notificationToastDisplayed = useRef<boolean>(false);
 
   const storeUpdated = useRef<boolean>(false);
@@ -30,15 +28,10 @@ function useProtectedLayout(
     }
   }, [userLogged, setAuth]);
 
-  // Display error toast for user data fetch errors
-  useEffect(() => {
-    if (error && !userToastDisplayed.current) {
-      toast.error("Houve um erro ao tentar recuperar o usuário");
-      userToastDisplayed.current = true;
-    }
-  }, [error]);
-
-  // Display error toast for notification fetch errors
+  // Notifications are not a security gate, so a failure here is a toast and
+  // the app carries on. A failed *user* fetch is the opposite and no longer
+  // reaches this component: the provider redirects to the login rather than
+  // render a session it could not confirm.
   useEffect(() => {
     if (notificationError && !notificationToastDisplayed.current) {
       toast.error("Não foi possível carregar suas notificações!");

@@ -17,6 +17,9 @@ import { handleCreateVehicleChecklist } from "@/actions/vehicle-checklist/create
 import { useDashboardCreateVehicleChecklistForm } from "./hooks";
 import { appendDataToForm } from "@/lib/append-data-form";
 
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
+import { MAX_CHECKLIST_TOTAL_BYTES } from "@/lib/upload-limits";
+
 import { useAuthStore } from "@/store/auth-store";
 import { permissions } from "@/lib/permissions";
 
@@ -49,6 +52,9 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
   const [fileErrors, setFileErrors] = useState<Record<string, string | null>>(
     {},
   );
+
+  const { uploadProgress, uploadError, resetUpload, uploadPhotos } =
+    usePhotoUpload();
 
   const {
     isCreateVehicleChecklistForm,
@@ -98,6 +104,7 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
     if (!isCreateVehicleChecklistForm) {
       setChecklistFiles({});
       setFileErrors({});
+      resetUpload();
     }
   }, [isCreateVehicleChecklistForm]);
 
@@ -106,10 +113,13 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
     if (state?.successMessage) {
       setChecklistFiles({});
       setFileErrors({});
+      resetUpload();
     }
   }, [state?.successMessage]);
 
-  const createVehicleChecklistForm = (vehicleChecklistFormData: FormData) => {
+  const createVehicleChecklistForm = async (
+    vehicleChecklistFormData: FormData,
+  ) => {
     // Ensure mileage is sent unformatted
     const mileageInput = document.querySelector(
       'input[name="current_mileage"]',
@@ -130,21 +140,19 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
       driverId: commandDriverInputValue.driverId,
     };
 
-    // Add all checklist files to FormData with renamed files
-    Object.entries(checklistFiles).forEach(([fieldName, files]) => {
-      files.forEach((file, index) => {
-        // Create new file with mobile-like naming pattern: fieldName_timestamp_index.extension
-        const fileExtension = file.name.split(".").pop() || "jpg";
-        const newFileName = `${fieldName}_${Date.now()}_${index}.${fileExtension}`;
-
-        // Create a new File object with the new name
-        const renamedFile = new File([file], newFileName, {
-          type: file.type,
-        });
-
-        vehicleChecklistFormData.append(fieldName, renamedFile);
-      });
+    // Photos go straight from here to storage, never through the Server
+    // Action — what reaches it is a list of keys.
+    const photos = await uploadPhotos({
+      files: checklistFiles,
+      uploadType: "checklistPhotos",
+      maxTotalBytes: MAX_CHECKLIST_TOTAL_BYTES,
+      businessId: businessId as string,
     });
+
+    // Upload failed and the error is already on screen.
+    if (!photos) return;
+
+    vehicleChecklistFormData.set("photos", JSON.stringify(photos));
 
     appendDataToForm(vehicleChecklistFormData, vehicleChecklistData);
     return dispatch(vehicleChecklistFormData);
@@ -242,6 +250,8 @@ const DashboardCreateVehicleChecklistForm = (): JSX.Element => {
               setFileErrors={setFileErrors}
               initialFormValues={checklistFormValues}
               onFormValuesChange={handleFormValuesChange}
+              uploadProgress={uploadProgress}
+              uploadError={uploadError}
             />
           </form>
         )}

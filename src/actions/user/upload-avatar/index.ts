@@ -7,6 +7,13 @@ interface UploadAvatarResponse {
   message: string;
 }
 
+/**
+ * Records an avatar that is already in storage.
+ *
+ * The image itself never passes through here: the browser uploads it straight
+ * to the bucket and this action only forwards the resulting key. See
+ * `uploadToStorage` for the flow.
+ */
 const handleUploadAvatar = async (state: any, formData: FormData) => {
   const tokenAccess = await getCookies("tkey");
 
@@ -17,43 +24,26 @@ const handleUploadAvatar = async (state: any, formData: FormData) => {
   }
 
   const uploadAvatarUrl = `${process.env.HTTP_REQUEST}/user/avatar`;
-  const avatarFile = formData.get("avatar") as File | Blob;
+  const photoKey = formData.get("photoKey");
 
-  if (!avatarFile) {
+  // Type and size were enforced in the browser and are enforced again by
+  // storage, which refuses a PUT that does not match the signature. What is
+  // still worth checking here is presence.
+  if (typeof photoKey !== "string" || photoKey.length === 0) {
     return {
       avatarError: "Por favor, selecione uma imagem para fazer o upload.",
     };
   }
 
-  // Validate file size (5MB max)
-  const maxSize = 5 * 1024 * 1024; // 5MB
-  if (avatarFile.size > maxSize) {
-    return {
-      avatarError: "A imagem deve ter no máximo 5MB.",
-    };
-  }
-
-  // Validate file type (only for File objects, Blobs from crop are already validated as webp)
-  if (avatarFile instanceof File) {
-    const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-    if (!allowedTypes.includes(avatarFile.type)) {
-      return {
-        avatarError: "Formato de arquivo não suportado. Use JPEG, PNG ou WebP.",
-      };
-    }
-  }
-
   try {
-    const uploadFormData = new FormData();
-    uploadFormData.append("file", avatarFile);
-
     const response = await fetch(uploadAvatarUrl, {
       credentials: "include",
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
+        "Content-Type": "application/json",
       },
-      body: uploadFormData,
+      body: JSON.stringify({ photo: { key: photoKey } }),
     });
 
     const { message } = (await response.json()) as UploadAvatarResponse;

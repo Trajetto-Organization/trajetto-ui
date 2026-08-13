@@ -12,8 +12,9 @@ import {
 import { toast } from "sonner";
 
 import { formatNotificationDate } from "@/lib/format-values";
-import { initializeSocket, getSocket, disconnectSocket } from "@/socket";
+import { initializeSocket, getSocket } from "@/socket";
 
+import { forceLogout, type ForceLogoutReason } from "@/lib/force-logout";
 import { useAIVerificationStore } from "@/store/ai-verification-store";
 
 // ============================================================================
@@ -243,6 +244,20 @@ const NotificationsContext = createContext<NotificationsContextType>(
 // ============================================================================
 // PROVIDER
 // ============================================================================
+/**
+ * The API's socket vocabulary, translated to ours.
+ *
+ * They are not the same list on purpose: `user_updated` covers a handful of
+ * profile changes on the backend but only ever means "your token is stale" to
+ * us. Anything not mapped here is not a kick — it falls through to the
+ * `/user/me` re-check below, which decides with full information.
+ */
+const SOCKET_REASON_TO_LOGOUT: Record<string, ForceLogoutReason | undefined> = {
+  access_revoked: "user_revoked",
+  access_denied: "access_denied",
+  user_updated: "session_expired",
+};
+
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -520,33 +535,13 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Security event listener — handle access revocation, permission changes, etc.
         socket.on("securityAction", (event: { reason: string }) => {
-          if (event.reason === "access_revoked") {
-            disconnectSocket();
+          // `forceLogout` raises the blocking overlay, closes the socket and
+          // does the hard navigate — the three used to be spelled out at every
+          // one of these branches.
+          const reason = SOCKET_REASON_TO_LOGOUT[event.reason];
 
-            sessionStorage.setItem("pending_login_toast", "true");
-            window.location.href =
-              "/login?error=user_revoked&force_logout=true";
-
-            return;
-          }
-
-          if (event.reason === "access_denied") {
-            disconnectSocket();
-
-            sessionStorage.setItem("pending_login_toast", "true");
-            window.location.href =
-              "/login?error=access_denied&force_logout=true";
-
-            return;
-          }
-
-          if (event.reason === "user_updated") {
-            disconnectSocket();
-
-            sessionStorage.setItem("pending_login_toast", "true");
-            window.location.href =
-              "/login?error=session_expired&force_logout=true";
-
+          if (reason) {
+            forceLogout(reason);
             return;
           }
 

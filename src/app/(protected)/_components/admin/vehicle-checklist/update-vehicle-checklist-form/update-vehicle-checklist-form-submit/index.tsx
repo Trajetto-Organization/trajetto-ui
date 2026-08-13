@@ -16,6 +16,7 @@ import type { UpdateVehicleChecklistFormSubmitProps } from "../update-vehicle-ch
 import { getPhotoRequirements } from "../../create-vehicle-checklist-form/utils/photo-requirements";
 
 import { PhotoUpload } from "../photo-upload";
+import { UploadProgress } from "@/components/shared/upload-progress";
 
 // Reusable select options
 const CONDITION_OPTIONS = [
@@ -51,6 +52,8 @@ const UpdateChecklistFormSubmit = ({
   setFileErrors,
   photosToRemove,
   setPhotosToRemove,
+  uploadProgress,
+  uploadError,
 }: UpdateVehicleChecklistFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
@@ -880,9 +883,12 @@ const UpdateChecklistFormSubmit = ({
             maxLength={500}
           />
         </div>
+        <div className="mt-6">
+          <UploadProgress progress={uploadProgress} error={uploadError} />
+        </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end mt-6 gap-2">
+        <div className="flex justify-end mt-4 gap-2">
           <Button
             type="button"
             variant="outline"

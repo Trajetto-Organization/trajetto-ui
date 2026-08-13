@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, TransitionStartFunction } from "react";
+
 import { handleUploadAvatar } from "@/actions/user/upload-avatar";
+import { handleCreatePresignedAvatarUpload } from "@/actions/upload/create-presigned-avatar-upload";
 
 import { toast } from "sonner";
 
@@ -86,8 +88,49 @@ function useAvatarUpload({
       // Generate fresh crop with current crop settings
       const freshBlob = await generateCropRef.current!();
 
+      const file = new File([freshBlob], `avatar-${Date.now()}.webp`, {
+        type: freshBlob.type || "image/webp",
+      });
+
+      // The image goes straight from here to storage; the Server Action only
+      // receives its key.
+      const { upload, errorMessage } = await handleCreatePresignedAvatarUpload({
+        file: {
+          originalFilename: file.name,
+          contentType: file.type,
+          size: file.size,
+        },
+      });
+
+      if (errorMessage || !upload) {
+        setUploadResult({
+          avatarError:
+            errorMessage ?? "Não foi possível autorizar o envio da imagem.",
+        });
+
+        return;
+      }
+
+      const uploaded = await fetch(upload.uploadUrl, {
+        method: "PUT",
+
+        // The signature covers Content-Type, so storage rejects the PUT if
+        // this header does not match what was signed.
+        headers: { "Content-Type": file.type },
+        body: file,
+      }).catch(() => null);
+
+      if (!uploaded?.ok) {
+        setUploadResult({
+          avatarError:
+            "Não foi possível enviar a imagem. Verifique sua conexão e tente novamente.",
+        });
+
+        return;
+      }
+
       const formData = new FormData();
-      formData.append("avatar", freshBlob, `avatar-${Date.now()}.webp`);
+      formData.append("photoKey", upload.key);
 
       const result = await handleUploadAvatar(null, formData);
       setUploadResult(result);

@@ -169,8 +169,14 @@ const FileUpload = ({
                 {!showFileInfo && (
                   <DropBox
                     sharedId="file-upload"
+                    // The wrapper carries the hover offset so the card is free
+                    // to keep its own transform for the shared-layout FLIP.
+                    wrapperClassName={cn(
+                      "hover-peek relative z-40 mt-4 w-full max-w-[8rem] mx-auto",
+                      "group-hover/file:translate-x-5 group-hover/file:-translate-y-5 group-hover/file:opacity-90",
+                    )}
                     className={cn(
-                      "relative group-hover/file:shadow-2xl z-40 bg-white dark:bg-neutral-900 flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md",
+                      "relative group-hover/file:shadow-2xl bg-white dark:bg-neutral-900 flex items-center justify-center h-32 w-full rounded-md",
                       "shadow-[0px_10px_50px_rgba(0,0,0,0.1)]",
                     )}
                   >
@@ -352,6 +358,10 @@ export { FileUpload };
 interface SharedBoxProps {
   sharedId: string;
   className?: string;
+
+  // Applied to an outer element when the box needs a transform of its own —
+  // the box itself cannot carry one, since the FLIP owns its transform.
+  wrapperClassName?: string;
   children?: React.ReactNode;
 }
 
@@ -363,12 +373,19 @@ interface SharedBoxProps {
  * box of whichever rendered last and morphs the new one out of it — the same
  * FLIP that framer-motion's `layoutId` performs, in about forty lines.
  */
-const DropBox = ({ sharedId, className, children }: SharedBoxProps) => {
+const DropBox = ({
+  sharedId,
+  className,
+  wrapperClassName,
+  children,
+}: SharedBoxProps) => {
   const ref = useSharedLayout<HTMLDivElement>(sharedId);
 
   return (
-    <div ref={ref} className={className}>
-      {children}
+    <div className={wrapperClassName}>
+      <div ref={ref} className={className}>
+        {children}
+      </div>
     </div>
   );
 };

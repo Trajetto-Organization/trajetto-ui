@@ -8,22 +8,34 @@ import { DefaultLayout } from "./protected-default-layout";
 
 import { ProtectedLayoutLayoutProps } from "./layout.types";
 
+import { ForceLogoutOverlay } from "@/components/shared/force-logout-overlay";
+import { ConnectionRetry } from "@/components/shared/connection-lost-screen/connection-retry";
+
 const ProtectedLayout = ({
   children,
   userLogged,
-  error,
   notificationError = false,
 }: ProtectedLayoutLayoutProps): JSX.Element => {
   const isDriver = userLogged.role === "BUSINESS_USER" && !!userLogged.driverId;
 
-  useProtectedLayout(userLogged, error, notificationError);
+  useProtectedLayout(userLogged, notificationError);
   useNavigationSecurityCheck();
 
-  if (isDriver) {
-    return <DriverLayout userLogged={userLogged}>{children}</DriverLayout>;
-  }
+  // Rendered alongside both layouts rather than inside them: a forced logout
+  // can happen on any screen, and the driver and the default layout would
+  // otherwise each need their own copy.
+  return (
+    <>
+      {isDriver ? (
+        <DriverLayout userLogged={userLogged}>{children}</DriverLayout>
+      ) : (
+        <DefaultLayout userLogged={userLogged}>{children}</DefaultLayout>
+      )}
 
-  return <DefaultLayout userLogged={userLogged}>{children}</DefaultLayout>;
+      <ForceLogoutOverlay />
+      <ConnectionRetry />
+    </>
+  );
 };
 
 export { ProtectedLayout };

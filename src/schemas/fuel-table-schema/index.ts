@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const fuelTableSchema = z.object({
   id: z.string(),
+  created_from: z.string().nullable().optional(),
   current_mileage: z.number(),
   liters_amount: z.number(),
   price_per_liter: z.number(),

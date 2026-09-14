@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-
 import { usePresenceList } from "@/hooks/use-presence-list";
+
 import Image from "next/image";
+import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 import {
   Car,
@@ -209,11 +210,12 @@ const HeroDashboardShowcase = (): JSX.Element => {
               flex items-center justify-center bg-white shadow-sm"
             >
               <Image
-                src="/trajetto-logo.png"
+                src={trajettoLogo}
                 alt="Trajetto Logo"
                 width={32}
                 height={32}
                 className="object-contain"
+                placeholder="blur"
                 priority
               />
             </div>

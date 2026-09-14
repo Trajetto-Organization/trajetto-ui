@@ -8,6 +8,7 @@ interface CreateServiceOrderValidationError {
   completion_date?: string[];
   maintenance_type?: string[];
   total_amount?: string[];
+  description?: string[];
   current_mileage_at_service?: string[];
   maintenance_interval_km_at_service?: string[];
   last_maintenance_mileage_at_service?: string[];

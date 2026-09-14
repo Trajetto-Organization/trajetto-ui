@@ -10,9 +10,15 @@ import {
 } from "lucide-react";
 import type { DashboardCountData } from "../overview-dashboard.types";
 
+/**
+ * `path` is the access key: the route registry decides whether the card is
+ * shown, so a card can never outlive the permission or the module its page
+ * needs.
+ */
 const statCards = (counts: DashboardCountData) => [
   {
     type: "vehicles",
+    path: "vehicle",
     title: "Veículos",
     value: counts?.vehicles?.value || 0,
     change: counts?.vehicles?.change || 0,
@@ -21,6 +27,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "drivers",
+    path: "driver",
     title: "Motoristas",
     value: counts?.drivers?.value || 0,
     change: counts?.drivers?.change || 0,
@@ -29,6 +36,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "businesses",
+    path: "business",
     title: "Empresas",
     value: counts?.businesses?.value || 0,
     change: counts?.businesses?.change || 0,
@@ -37,6 +45,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "branches",
+    path: "branch",
     title: "Filiais",
     value: counts?.branches?.value || 0,
     change: counts?.branches?.change || 0,
@@ -45,6 +54,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "parts",
+    path: "part",
     title: "Peças",
     value: counts?.parts?.value || 0,
     change: counts?.parts?.change || 0,
@@ -53,6 +63,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "suppliers",
+    path: "supplier",
     title: "Fornecedores",
     value: counts?.suppliers?.value || 0,
     change: counts?.suppliers?.change || 0,
@@ -61,6 +72,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "serviceOrders",
+    path: "service-order",
     title: "Ordens de Serviço",
     value: counts?.serviceOrders?.value || 0,
     change: counts?.serviceOrders?.change || 0,
@@ -69,6 +81,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "users",
+    path: "user-registration",
     title: "Usuários",
     value: counts?.users?.value || 0,
     change: counts?.users?.change || 0,
@@ -77,6 +90,7 @@ const statCards = (counts: DashboardCountData) => [
   },
   {
     type: "fines",
+    path: "fine",
     title: "Multas",
     value: counts?.fines?.value || 0,
     change: counts?.fines?.change || 0,

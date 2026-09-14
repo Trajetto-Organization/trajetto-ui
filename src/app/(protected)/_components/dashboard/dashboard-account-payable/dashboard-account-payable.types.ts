@@ -5,6 +5,8 @@ interface DashboardAccountPayableProps {
   payment_date: Date | string | null;
   amount: number;
   amount_paid: number | null;
+  category?: string | null;
+  category_description?: string | null;
   businessId: string;
   branchId: string;
   serviceOrderId: string | null;

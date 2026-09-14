@@ -327,7 +327,10 @@ const KanbanBoardProvider = ({
           )}
         </div>
         {!(isLoading && !columns) && !hasLimitedAccess && (
-          <div className="flex items-center gap-2 sm:ml-auto">
+          <div
+            className="flex w-full flex-col items-stretch gap-2
+            sm:w-auto sm:flex-row sm:items-center sm:ml-auto"
+          >
             <KanbanRevalidationButton
               businessId={businessId}
               rateLimit={{
@@ -339,7 +342,7 @@ const KanbanBoardProvider = ({
             />
             <Button
               variant="outline"
-              className="flex-1 sm:flex-none sm:w-44
+              className="w-full sm:w-44
               h-10 border-dashed"
               onClick={handleOpenColumnModal}
               disabled={!hasUserPermission}

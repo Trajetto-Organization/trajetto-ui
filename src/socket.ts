@@ -18,8 +18,19 @@ async function initializeSocket(): Promise<Socket> {
   // If it is already initializing, returns the existing promise
   if (connectionPromise) return connectionPromise;
 
-  // If already connected, return the existing instance
-  if (socketInstance && socketInstance.connected) return socketInstance;
+  /**
+   * Any live instance wins, connected or not.
+   *
+   * The old check was `socketInstance && socketInstance.connected`, which
+   * meant a caller arriving while the socket was RECONNECTING built a second
+   * `io()` and overwrote the singleton. The first socket stayed alive with
+   * every listener still attached to it, so features ended up split across
+   * two connections — one emitting, the other listening — and the symptom
+   * was simply "nothing arrives", with no error anywhere. Socket.IO already
+   * reconnects on its own, so handing back the existing instance is both
+   * simpler and correct.
+   */
+  if (socketInstance) return socketInstance;
 
   // Creates a new connection promise
   connectionPromise = new Promise<Socket>(async (resolve, reject) => {
@@ -65,8 +76,16 @@ async function initializeSocket(): Promise<Socket> {
         // it stays on one replica by nature, with no session to look up.
         transports: ["websocket"],
         reconnection: true,
-        reconnectionAttempts: 5,
+
+        // Never stop trying. The previous cap of 5 attempts meant a laptop
+        // closed over lunch, or any outage longer than a few seconds, left
+        // the tab permanently mute until someone reloaded the page — and a
+        // dispatcher keeps this panel open all day. The growing delay is
+        // what protects the server, not a hard stop.
+        reconnectionAttempts: Infinity,
         reconnectionDelay: 1000,
+        reconnectionDelayMax: 10_000,
+        randomizationFactor: 0.5,
       });
 
       // Configure basic listeners

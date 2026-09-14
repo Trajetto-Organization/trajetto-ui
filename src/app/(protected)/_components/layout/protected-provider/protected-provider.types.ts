@@ -5,6 +5,8 @@ interface ValidateUserAccessParams {
   jwtRole: string;
   jwtDriverId: string | null;
   pathname: string;
+  /** Modules the company hired, as reported by /user/me. */
+  enabledModules: string[];
 }
 
 interface ServerNotification {

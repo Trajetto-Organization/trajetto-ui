@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { Badge } from "@/components/ui/badge";
+import { getRecordOriginMeta } from "@/lib/record-origin";
 
 import { fuelTableSchema } from "@/schemas/fuel-table-schema";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
@@ -165,6 +166,27 @@ const tableFuelColumns: ColumnDef<fuelTableSchema>[] = [
           {displayValue(formatDate(row.getValue("refueling_date"), "pt-BR"))}
         </p>
       );
+    },
+  },
+  {
+    accessorKey: "created_from",
+    meta: {
+      title: "Origem",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Origem" />
+    ),
+    cell: ({ row }) => {
+      const origin = getRecordOriginMeta(row.original.created_from);
+
+      return (
+        <Badge variant="outline" className={origin.className}>
+          {origin.label}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id));
     },
   },
   {

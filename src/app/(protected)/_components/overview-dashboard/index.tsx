@@ -6,6 +6,7 @@ import {
   LineChart as LineChartIcon,
   Info,
   ChartArea,
+  ServerCog,
   Zap,
 } from "lucide-react";
 
@@ -31,6 +32,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 import type { OverviewDashboardProps } from "./shared/common.types";
+import type {
+  PermissionKey,
+  UserRole,
+} from "../shared/common.types";
+
+import { useAuthStore } from "@/store/auth-store";
+import { canAccessPath } from "@/lib/route-access";
 import { ButtonRevalidation } from "./revalidation-button";
 
 import { Charts } from "./charts";
@@ -41,9 +49,12 @@ import { quickLinks, statCards } from "./data";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { LimitsContent } from "../shared/limits/limits-content";
+import { SystemMetrics } from "@/features/system-metrics";
 
 import { QuickLinkCard } from "./quick-link-card";
 import { StatCard } from "./stat-card";
+
+import { OverviewEmptyState } from "./empty-state";
 
 const OverviewDashboard = ({
   initialData,
@@ -57,52 +68,42 @@ const OverviewDashboard = ({
   // Hook for monitoring tab changes
   useTabTutorial();
 
-  // Helper function to check if a user has permission
-  const hasPermission = (permissionKey: string): boolean => {
-    if (
-      !userLogged ||
-      !userLogged.profileAccess ||
-      !userLogged.profileAccess.permissions
-    ) {
-      return false;
-    }
+  // Both gates read the auth store, which the security check refreshes on
+  // every socket event — that is what makes a granted or revoked permission
+  // redraw these cards without a reload. The server-rendered props are only
+  // the first-paint fallback, and they go stale the moment anything changes.
+  const storeModules = useAuthStore((state) => state.enabledModules);
+  const storePermissions = useAuthStore((state) => state.permissions);
 
-    return userLogged.profileAccess.permissions.some(
-      (perm) =>
-        perm.permissionKey === permissionKey && (perm.canRead || perm.canWrite),
-    );
-  };
+  const enabledModules = storeModules ?? userLogged?.enabledModules ?? null;
 
-  // Decide whether or not to display each card, based on role and permissions
-  const shouldDisplayCard = (cardType: string): boolean => {
+  const permissionKeys = (
+    storePermissions.length > 0
+      ? storePermissions
+      : (userLogged?.profileAccess?.permissions ?? [])
+  ).map((permission) => permission.permissionKey as PermissionKey);
+
+  /**
+   * A shortcut is worth showing exactly when its page would open, so the
+   * verdict comes from the route registry — permissions and hired modules
+   * included. Unregistered paths are denied on purpose: that is what keeps
+   * "Empresas" off a company dashboard, since /dashboard/business does not
+   * exist.
+   */
+  const canReachCard = (path: string): boolean => {
+    // No user data (the /me call failed) is not a verdict — the dashboard
+    // still renders and the API remains the enforcement point.
     if (!userLogged) return true;
 
-    // MASTER sees everything
-    if (userLogged.role === "MASTER") return true;
-
-    // BUSINESS_ADMIN sees everything except "businesses"
-    if (userLogged.role === "BUSINESS_ADMIN") {
-      return cardType !== "businesses";
-    }
-
-    if (userLogged.role === "BUSINESS_USER") {
-      const permissionMap: Record<string, string> = {
-        vehicles: "vehicle_manage",
-        drivers: "driver_manage",
-        businesses: "business_manage",
-        branches: "branch_manage",
-        parts: "part_manage",
-        suppliers: "supplier_manage",
-        serviceOrders: "service_order_manage",
-        users: "user_registration_manage",
-        fines: "fine_manage",
-      };
-
-      const requiredPermission = permissionMap[cardType];
-      return requiredPermission ? hasPermission(requiredPermission) : false;
-    }
-
-    return true;
+    return canAccessPath(
+      `${basePath}/${path}`,
+      {
+        role: userLogged.role as UserRole,
+        permissions: permissionKeys,
+        enabledModules,
+      },
+      { unregistered: "deny" },
+    );
   };
 
   // Check if the user can see the charts tab
@@ -111,7 +112,23 @@ const OverviewDashboard = ({
     return userLogged.role === "MASTER" || userLogged.role === "BUSINESS_ADMIN";
   };
 
+  // Infrastructure posture is the platform team's business, not a tenant's.
+  const isMaster = userLogged?.role === "MASTER";
+
   const hasUserError = userError?.error || !userLogged;
+
+  const visibleStatCards = statCards(counts).filter((card) =>
+    canReachCard(card.path),
+  );
+
+  const visibleQuickLinks = quickLinks.filter((link) =>
+    canReachCard(link.path),
+  );
+
+  // Both grids answer to the same permissions, so they empty together. When
+  // they do, the screen says why instead of just dropping its content.
+  const hasNoShortcuts =
+    visibleStatCards.length === 0 && visibleQuickLinks.length === 0;
 
   return (
     <div data-tutorial="welcome">
@@ -120,11 +137,18 @@ const OverviewDashboard = ({
           className="flex flex-col gap-4 lg:flex-row
           lg:items-center"
         >
-          <TabsList data-tutorial="dashboard-tabs" className="w-full lg:w-auto">
+          {/* justify-start + overflow-x-auto: with 3 tabs the strip can be
+          wider than small screens — it must scroll inside itself instead of
+          stretching the page (justify-center would clip the first tab). */}
+          <TabsList
+            data-tutorial="dashboard-tabs"
+            className="w-full max-w-full justify-start
+            overflow-x-auto lg:w-auto"
+          >
             <TabsTrigger
               value="overview"
               className="flex items-center space-x-1
-              flex-1 lg:flex-initial"
+              flex-1 px-2 sm:px-3 lg:flex-initial"
               data-tutorial="overview-tab"
             >
               <LineChartIcon className="h-4 w-4" />
@@ -135,7 +159,7 @@ const OverviewDashboard = ({
               <TabsTrigger
                 value="charts"
                 className="flex items-center space-x-1
-                flex-1 lg:flex-initial"
+                flex-1 px-2 sm:px-3 lg:flex-initial"
                 data-tutorial="charts-tab"
               >
                 <ChartArea className="h-4 w-4" />
@@ -147,11 +171,23 @@ const OverviewDashboard = ({
               <TabsTrigger
                 value="limits"
                 className="flex items-center space-x-1
-                flex-1 lg:flex-initial"
+                flex-1 px-2 sm:px-3 lg:flex-initial"
                 data-tutorial="limits-tab"
               >
                 <Zap className="h-4 w-4" />
                 <span>Limites de Uso</span>
+              </TabsTrigger>
+            )}
+
+            {isMaster && (
+              <TabsTrigger
+                value="system"
+                className="flex items-center space-x-1
+                flex-1 px-2 sm:px-3 lg:flex-initial"
+                data-tutorial="system-tab"
+              >
+                <ServerCog className="h-4 w-4" />
+                <span>Sistema</span>
               </TabsTrigger>
             )}
           </TabsList>
@@ -200,6 +236,12 @@ const OverviewDashboard = ({
           </TabsContent>
         )}
 
+        {isMaster && (
+          <TabsContent value="system" data-tutorial="system-content">
+            <SystemMetrics />
+          </TabsContent>
+        )}
+
         <TabsContent value="overview" data-tutorial="overview-content">
           {/* If there is an error fetching data from the dashboard */}
           {dashboardError?.error && (
@@ -225,14 +267,16 @@ const OverviewDashboard = ({
           )}
 
           {/* Count cards (statistics) */}
-          <div
-            className="grid grid-cols-1 gap-4 
-            sm:grid-cols-2 lg:grid-cols-4"
-            data-cards
-          >
-            {statCards(counts).map(
-              (card) =>
-                shouldDisplayCard(card.type) && (
+          {hasNoShortcuts ? (
+            <OverviewEmptyState />
+          ) : (
+            visibleStatCards.length > 0 && (
+              <div
+                className="grid grid-cols-1 gap-4
+                sm:grid-cols-2 lg:grid-cols-4"
+                data-cards
+              >
+                {visibleStatCards.map((card) => (
                   <StatCard
                     key={card.type}
                     title={card.title}
@@ -241,9 +285,10 @@ const OverviewDashboard = ({
                     icon={card.icon}
                     color={card.color}
                   />
-                ),
-            )}
-          </div>
+                ))}
+              </div>
+            )
+          )}
 
           {/* Recent Activity Table */}
           <Card className="shadow-md mt-6" role="table">
@@ -346,24 +391,23 @@ const OverviewDashboard = ({
           </Card>
 
           {/* Quick access links (shortcuts)*/}
-          <div
-            className="grid grid-cols-2 gap-3 
-            sm:gap-4 md:grid-cols-4 mt-6"
-            data-quick-links
-          >
-            {quickLinks.map(
-              (link) =>
-                shouldDisplayCard(link.type) && (
-                  <QuickLinkCard
-                    key={link.type}
-                    title={link.title}
-                    icon={link.icon}
-                    href={`${basePath}/${link.path}`}
-                    color={link.color}
-                  />
-                ),
-            )}
-          </div>
+          {visibleQuickLinks.length > 0 && (
+            <div
+              className="grid grid-cols-2 gap-3
+              sm:gap-4 md:grid-cols-4 mt-6"
+              data-quick-links
+            >
+              {visibleQuickLinks.map((link) => (
+                <QuickLinkCard
+                  key={link.type}
+                  title={link.title}
+                  icon={link.icon}
+                  href={`${basePath}/${link.path}`}
+                  color={link.color}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

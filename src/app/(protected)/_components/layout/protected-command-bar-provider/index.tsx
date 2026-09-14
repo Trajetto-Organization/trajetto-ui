@@ -19,7 +19,13 @@ import { useAuthStore } from "@/store/auth-store";
 const CommandBarDynamicActions = ({
   user,
 }: Pick<ProtectedCommandBarProps, "user">): null => {
-  const { permissions: storePermissions } = useAuthStore();
+  const { permissions: storePermissions, enabledModules: storeModules } =
+    useAuthStore();
+
+  // Modules come from the session (/user/me), seeded by the server render and
+  // refreshed by the security check whenever the master flips one — no fetch
+  // of its own, which also keeps this outside the QueryClientProvider.
+  const enabledModules = storeModules ?? user.enabledModules ?? null;
 
   // Use store permissions (updated by Socket.IO) when available
   const dynamicUser = {
@@ -28,8 +34,16 @@ const CommandBarDynamicActions = ({
       storePermissions.length > 0 ? storePermissions : user.permissions,
   };
 
-  const { actions } = useCommandBarActions({ user: dynamicUser });
-  useRegisterActions(actions, [storePermissions]);
+  const { actions } = useCommandBarActions({
+    user: dynamicUser,
+    enabledModules,
+  });
+
+  useRegisterActions(actions, [
+    storePermissions,
+    // A string key keeps the dependency stable across renders.
+    (enabledModules ?? []).join(","),
+  ]);
 
   return null;
 };

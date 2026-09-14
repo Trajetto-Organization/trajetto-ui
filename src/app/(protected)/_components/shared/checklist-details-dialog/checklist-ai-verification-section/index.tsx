@@ -4,8 +4,16 @@ import { BrainCircuit, AlertTriangle, Loader } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatNotificationDate } from "@/lib/format-values";
 
+import {
+  AIAnalysisProgressFallback,
+  RequestAIVerificationButton,
+} from "@/app/(protected)/_components/shared/ai-verification";
+
 import type { ChecklistDetailsDialogProps } from "../shared/common.types";
 import { aiStatusConfig, fieldLabels, fieldStatusConfig } from "../data";
+
+/** Server statuses where offering a (re-)verification makes sense. */
+const REQUESTABLE_STATUSES = ["pending", "skipped", "error"];
 
 // AI Verification Section
 const ChecklistAIVerificationSection = ({
@@ -32,6 +40,10 @@ const ChecklistAIVerificationSection = ({
 
   const isAnalyzing = realtimeEvent && !isTerminalStep;
   const isRealtimeCompleted = realtimeEvent && isTerminalStep;
+
+  // Server says analyzing but the websocket history died with a refresh:
+  // the durable-progress fallback polls the analysis request instead.
+  const isAnalyzingWithoutRealtime = !realtimeEvent && aiStatus === "analyzing";
 
   const effectiveStatus = realtimeEvent
     ? isRealtimeCompleted
@@ -125,6 +137,27 @@ const ChecklistAIVerificationSection = ({
               </div>
             </div>
           )}
+
+          {/* Durable progress after a refresh killed the websocket history */}
+          {isAnalyzingWithoutRealtime && (
+            <AIAnalysisProgressFallback
+              recordType="checklist"
+              recordId={checklistData.id}
+            />
+          )}
+
+          {/* Manual (re-)verification for records the pipeline never ran or failed */}
+          {!isAnalyzing &&
+            !isAnalyzingWithoutRealtime &&
+            effectiveStatus &&
+            REQUESTABLE_STATUSES.includes(effectiveStatus) && (
+              <RequestAIVerificationButton
+                recordType="checklist"
+                recordId={checklistData.id}
+                businessId={checklistData.businessId}
+                isRetry={effectiveStatus !== "pending"}
+              />
+            )}
 
           {/* Issues found alert */}
           {effectiveStatus === "issues_found" && (

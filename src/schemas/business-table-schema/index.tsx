@@ -17,6 +17,8 @@ export const businessTableSchema = z.object({
   telephone: z.string(),
   email: z.string(),
   is_active: z.boolean().optional(),
+  vehicle_limit: z.number().optional(),
+  vehicle_count: z.number().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

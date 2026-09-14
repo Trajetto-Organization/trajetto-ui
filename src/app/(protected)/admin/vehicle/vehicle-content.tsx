@@ -13,10 +13,18 @@ import { parseNDJSON } from "@/lib/parse-nd-json";
 import { vehicleStats } from "./stats-config";
 import { VehicleActions } from "./page-actions";
 
+interface VehicleStatusCounts {
+  ACTIVE: number;
+  INACTIVE: number;
+  BLOCKED: number;
+  IN_ROUTE: number;
+}
+
 interface MetaInfo {
   total: number;
   page: number;
   pageSize: number;
+  searchMeta?: { statusCounts?: VehicleStatusCounts };
 }
 
 interface VehicleContentProps {
@@ -91,13 +99,23 @@ const VehicleContent = async ({
     }
   }
 
+  // Counted by the API over the whole fleet, under the same filter that
+  // produced `total`, so the four cards always add up to it. Filtering the
+  // rows below instead would count the PAGE — ten vehicles presented as if
+  // they were the fleet ("10 (25%)" on a fleet of forty), with the number
+  // changing every time someone turned the page.
+  const statusCounts = meta.searchMeta?.statusCounts;
+
+  // Left undefined on purpose when the API did not send the tally, so the
+  // cards can say "—" instead of "0". Defaulting to zero here would put three
+  // confident zeros next to a non-zero total — worse than the old bug, and
+  // silent. It happens for real during a rolling deploy, when this page ships
+  // before the API that answers with the counts.
   const statsData = {
     totalVehicles: meta.total,
-    activeVehicles: vehicle.filter((v) => v.status === "ACTIVE").length,
-    inRoute: vehicle.filter((v) => v.status === "IN_ROUTE").length,
-    outOfOperation: vehicle.filter(
-      (v) => v.status === "INACTIVE" || v.status === "BLOCKED",
-    ).length,
+    activeVehicles: statusCounts?.ACTIVE,
+    inRoute: statusCounts?.IN_ROUTE,
+    outOfOperation: statusCounts && statusCounts.INACTIVE + statusCounts.BLOCKED,
   };
 
   return (

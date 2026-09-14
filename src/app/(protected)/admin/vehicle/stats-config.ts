@@ -8,7 +8,18 @@ import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shar
  *
  * This file defines which statistics will be displayed and how.
  * You can easily add, remove, or modify stats here.
+ *
+ * The three derived cards read a tally the API counts over the whole fleet.
+ * When it is absent — an older API during a rolling deploy, or a failed
+ * request — they show "—" rather than 0, because a confident zero beside a
+ * non-zero total is a wrong number presented as a fact.
  */
+const asShare = (value: number | undefined, total: number): string => {
+  if (value === undefined) return "—";
+  if (total <= 0) return "0";
+
+  return `${value} (${Math.round((value / total) * 100)}%)`;
+};
 const vehicleStats: StatConfig[] = [
   {
     key: "total-vehicles",
@@ -24,14 +35,7 @@ const vehicleStats: StatConfig[] = [
     valueKey: "activeVehicles",
     icon: CheckCircle2,
     variant: "success",
-    calculateValue: (data) => {
-      const total = data.totalVehicles || 0;
-      const active = data.activeVehicles || 0;
-
-      return total > 0
-        ? `${active} (${Math.round((active / total) * 100)}%)`
-        : "0";
-    },
+    calculateValue: (data) => asShare(data.activeVehicles, data.totalVehicles || 0),
     description: "Em operação",
   },
   {
@@ -40,14 +44,7 @@ const vehicleStats: StatConfig[] = [
     valueKey: "inRoute",
     icon: Navigation,
     variant: "primary",
-    calculateValue: (data) => {
-      const total = data.totalVehicles || 0;
-      const inRoute = data.inRoute || 0;
-
-      return total > 0
-        ? `${inRoute} (${Math.round((inRoute / total) * 100)}%)`
-        : "0";
-    },
+    calculateValue: (data) => asShare(data.inRoute, data.totalVehicles || 0),
     description: "Em deslocamento",
   },
   {
@@ -56,14 +53,8 @@ const vehicleStats: StatConfig[] = [
     valueKey: "outOfOperation",
     icon: XCircle,
     variant: "danger",
-    calculateValue: (data) => {
-      const total = data.totalVehicles || 0;
-      const outOfOperation = data.outOfOperation || 0;
-
-      return total > 0
-        ? `${outOfOperation} (${Math.round((outOfOperation / total) * 100)}%)`
-        : "0";
-    },
+    calculateValue: (data) =>
+      asShare(data.outOfOperation, data.totalVehicles || 0),
     description: "Inativos e bloqueados",
   },
 ];

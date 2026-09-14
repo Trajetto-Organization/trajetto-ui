@@ -6,6 +6,11 @@ import { useAuthStore } from "@/store/auth-store";
 import { useAIVerificationStore } from "@/store/ai-verification-store";
 import { getAIUsage, type AIUsageData } from "@/actions/business/get-ai-usage";
 
+import {
+  getBusinessEntitlements,
+  type BusinessEntitlementsData,
+} from "@/actions/business/entitlements";
+
 import type { UseLimitsContent } from "../limits-content.types";
 
 function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
@@ -17,6 +22,9 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
     businessIdProp || urlBusinessId || storeBusinessId || undefined;
 
   const [serverUsage, setServerUsage] = useState<AIUsageData | null>(null);
+  const [entitlements, setEntitlements] =
+    useState<BusinessEntitlementsData | null>(null);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -31,6 +39,7 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
   const aiUsage: AIUsageData | null = realtimeUsage
     ? {
         ai_analysis_used: realtimeUsage.used,
+        ai_analysis_in_progress: realtimeUsage.inProgress ?? 0,
         ai_analysis_limit: realtimeUsage.limit,
         ai_analysis_reset_at:
           realtimeUsage.resetAt || serverUsage?.ai_analysis_reset_at || null,
@@ -62,9 +71,15 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
         }
       })
       .finally(() => setIsLoading(false));
+
+    // The company's plan (modules + contracted fleet) rides along: same
+    // page, same refresh triggers.
+    void getBusinessEntitlements(businessId).then((response) => {
+      setEntitlements(response.success ? (response.data ?? null) : null);
+    });
   }, [businessId, refreshTrigger]);
 
-  return { isLoading, errorMessage, aiUsage, businessId };
+  return { isLoading, errorMessage, aiUsage, entitlements, businessId };
 }
 
 export { useLimitsContent };

@@ -22,6 +22,7 @@ function useProtectedLayout(
         businessId: userLogged.businessId || "",
         role: userLogged.role,
         permissions: userLogged.permissions || [],
+        enabledModules: userLogged.enabledModules ?? null,
       });
 
       storeUpdated.current = true;

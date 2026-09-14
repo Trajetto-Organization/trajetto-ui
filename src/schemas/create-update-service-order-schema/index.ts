@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   emptyStringToNull,
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
   isValidDateString,
   parseCurrencyToNumber,
 } from "@/lib/format-values";
@@ -37,6 +39,32 @@ const createUpdateServiceOrderSchema = z
         message: "Tipo de manutenção inválido. Deve ser Interna ou Externa",
       }),
     }),
+    description: z.preprocess(
+      emptyStringToNull,
+      z
+        .string()
+        .max(500, "A descrição deve ter no máximo 500 caracteres.")
+        .superRefine((value, ctx) => {
+          if (hasConsecutiveSpaces(value)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "A descrição não deve conter espaços consecutivos.",
+            });
+
+            return;
+          }
+
+          if (hasSpaceAtEdges(value)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message:
+                "A descrição não pode começar ou terminar com espaço em branco.",
+            });
+          }
+        })
+        .optional()
+        .nullable(),
+    ),
     total_amount: z.preprocess(
       parseCurrencyToNumber,
       z

@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
-import { EnumPermissionKey } from "@/app/(protected)/_components/shared/common.types";
+import { permissionKeys } from "@/lib/permissions";
 
-const permissionKeyEnum = z.nativeEnum(EnumPermissionKey, {
+// Validates against the canonical key list, so a permission added there is
+// immediately accepted here — no second list to remember.
+const permissionKeyEnum = z.enum(permissionKeys, {
   errorMap: () => ({ message: "A permissão é obrigatória." }),
 });
 

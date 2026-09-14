@@ -19,6 +19,10 @@ import { DeleteBusinessForm } from "../delete-business-form";
 import { UpdateBusinessForm } from "../update-business-form";
 
 import { UpdateAILimitForm } from "../update-ai-limit-form";
+import { UpdateVehicleLimitForm } from "@/features/business-vehicle-limit/update-form";
+
+import { ManageEntitlementsForm } from "@/features/business-entitlements/manage-form";
+
 import { useUpdateBusinessForm } from "./hooks";
 
 import { toast } from "sonner";
@@ -36,6 +40,10 @@ export function DataTableBusinessRowActions<TData>({
     handleCloseUpdateBusiness,
     isAILimitOpen,
     handleCloseAILimit,
+    isVehicleLimitOpen,
+    handleToggleVehicleLimit,
+    isEntitlementsOpen,
+    handleToggleEntitlements,
     handleOpenDropdown,
     isDropdownOpen,
   } = useUpdateBusinessForm();
@@ -61,6 +69,14 @@ export function DataTableBusinessRowActions<TData>({
       onClick: handleCloseAILimit,
     },
     {
+      label: "Limite de Veículos",
+      onClick: handleToggleVehicleLimit,
+    },
+    {
+      label: "Módulos Contratados",
+      onClick: handleToggleEntitlements,
+    },
+    {
       label: "Copiar ID",
       onClick: () => handleCopyID(collumnRowAction.id),
     },
@@ -82,8 +98,8 @@ export function DataTableBusinessRowActions<TData>({
           {menuActions.map((action) => (
             <DropdownMenuItem
               key={action.label}
-              className="flex cursor-pointer 
-              justify-between"
+              className="cursor-pointer 
+              truncate block"
               onClick={action.onClick}
             >
               {action.label}
@@ -111,6 +127,24 @@ export function DataTableBusinessRowActions<TData>({
           businessName={collumnRowAction.corporate_reason}
           isAILimitOpen={isAILimitOpen}
           handleCloseAILimit={handleCloseAILimit}
+        />
+      )}
+
+      {isVehicleLimitOpen && (
+        <UpdateVehicleLimitForm
+          businessId={collumnRowAction.id}
+          businessName={collumnRowAction.corporate_reason}
+          isOpen={isVehicleLimitOpen}
+          handleClose={handleToggleVehicleLimit}
+        />
+      )}
+
+      {isEntitlementsOpen && (
+        <ManageEntitlementsForm
+          businessId={collumnRowAction.id}
+          businessName={collumnRowAction.corporate_reason}
+          isOpen={isEntitlementsOpen}
+          onClose={handleToggleEntitlements}
         />
       )}
     </>

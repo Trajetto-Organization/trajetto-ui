@@ -1,11 +1,5 @@
-"use client";
-
 import Image from "next/image";
-
-// Import estático: o Next gera o `blurDataURL` no build, então o blur aparece
-// já no HTML do servidor. O padrão anterior (`useState` + fade de opacidade)
-// dependia de JS no cliente e deixava um bloco cinza piscando antes.
-import aboutBackground from "@/../public/about.webp";
+import aboutBackground from "@/assets/about/about.webp";
 
 const AboutHeroSection = (): JSX.Element => {
   return (

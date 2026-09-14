@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTutorial } from "../../tutorial-provider";
 
 import type {
@@ -75,7 +75,12 @@ function useTutorialComponent() {
   const [spotlightPosition, setSpotlightPosition] =
     useState<SpotlightPosition | null>(null);
 
-  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  // null until the first measurement: the card renders off-screen instead of
+  // flashing at the top-left corner and jumping into place.
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const previousHighlightedElement = useRef<Element | null>(null);
@@ -145,16 +150,54 @@ function useTutorialComponent() {
   };
 
   // Handle next step with optimized sound
-  const handleNextStep = () => {
+  const handleNextStep = useCallback(() => {
     playSound(nextSoundRef);
     nextStep();
-  };
+  }, [nextStep]);
 
-  // Handle previous step with optimized sound
-  const handlePrevStep = () => {
+  // Handle previous step with optimized sound. On the first step there is
+  // nothing behind — holding ArrowLeft must not keep playing the "back"
+  // sound at a wall, so the guard lives HERE, before the sound.
+  const handlePrevStep = useCallback(() => {
+    if (currentStep === 0) return;
+
     playSound(backSoundRef);
     prevStep();
-  };
+  }, [prevStep, currentStep]);
+
+  // Keyboard navigation while the tour is open: →/← move between steps with
+  // the same sounds as the buttons. Captured on the window BEFORE the kbar:
+  // the tour is modal, so Ctrl+K is swallowed too — the palette would open
+  // underneath the overlay and swallow the arrows.
+  useEffect(() => {
+    if (!isActive) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        e.stopPropagation();
+
+        handleNextStep();
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        e.stopPropagation();
+
+        handlePrevStep();
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [isActive, handleNextStep, handlePrevStep]);
 
   // Handle screen size changes
   useEffect(() => {
@@ -198,7 +241,10 @@ function useTutorialComponent() {
     }
   };
 
-  useEffect(() => {
+  // Layout effect on purpose: the measurement and position state land BEFORE
+  // the browser paints, so the card never shows a frame at the wrong spot —
+  // that first mispositioned frame was the occasional opening blink.
+  useLayoutEffect(() => {
     if (!isActive || !currentStepData) return;
 
     const updatePositions = () => {

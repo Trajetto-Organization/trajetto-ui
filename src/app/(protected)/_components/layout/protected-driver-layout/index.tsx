@@ -9,6 +9,8 @@ import { SidebarWrapper } from "../protected-provider/sidebar-wrapper";
 import { ProtectedTrajettoLogo } from "../protected-trajetto-logo";
 import { SearchInput } from "../protected-search-input";
 
+import { ProtectedNotificationsMenu } from "../protected-notifications-menu";
+
 import type { DriverLayoutProps } from "./driver-layout.types";
 
 const DriverLayout = ({
@@ -32,8 +34,11 @@ const DriverLayout = ({
                 </div>
               </div>
             </div>
-            <div className="w-44 sm:w-56 flex-shrink-0">
-              <ProtectedAccountSettings userLogged={userLogged} />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <ProtectedNotificationsMenu />
+              <div className="w-44 sm:w-56">
+                <ProtectedAccountSettings userLogged={userLogged} />
+              </div>
             </div>
           </header>
           <main className="flex-1 px-6 overflow-auto pt-6 mb-7">

@@ -8,6 +8,8 @@ import FormInput from "@/components/shared/custom/form-input";
 
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import dynamic from "next/dynamic";
 import {
@@ -55,6 +57,7 @@ const CreateServiceOrderFormSubmit = ({
     date: initialFormValues.date || "",
     completion_date: initialFormValues.completion_date || "",
     maintenance_type: initialFormValues.maintenance_type || "",
+    description: initialFormValues.description || "",
   }));
 
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
@@ -302,6 +305,32 @@ const CreateServiceOrderFormSubmit = ({
           placeholder={"0,00"}
           disabled={pending}
         />
+
+        {/* Description - what this service order is about */}
+        <div className="col-span-1 md:col-span-2 grid gap-3">
+          <Label
+            className={cn(
+              "h-4 truncate",
+              state.createServiceOrderError?.description && "text-red-500",
+            )}
+            htmlFor="description"
+          >
+            {state.createServiceOrderError?.description?.[0] ??
+              "Descrição (opcional)"}
+          </Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formValues.description || ""}
+            onChange={(e) =>
+              handleCustomFieldChange("description")(e.target.value)
+            }
+            placeholder="Descreva do que se trata esta ordem de serviço"
+            maxLength={500}
+            disabled={pending}
+            className="min-h-[80px]"
+          />
+        </div>
 
         {/* ====== SECTION: VEHICLE DATA SNAPSHOT (EDITABLE FOR MASTER) ====== */}
         <div className="col-span-1 md:col-span-2 mt-6">

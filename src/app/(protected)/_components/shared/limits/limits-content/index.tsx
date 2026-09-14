@@ -9,6 +9,7 @@ import {
   BarChart3,
   TrendingUp,
   Sparkles,
+  Truck,
   Zap,
 } from "lucide-react";
 import {
@@ -35,14 +36,29 @@ const LimitsContent = ({
   mode,
   showBusinessSelector,
 }: LimitsContentProps): JSX.Element => {
-  const { aiUsage, isLoading, errorMessage, businessId } = useLimitsContent({
-    businessId: businessIdProp,
-  });
+  const { aiUsage, entitlements, isLoading, errorMessage, businessId } =
+    useLimitsContent({
+      businessId: businessIdProp,
+    });
+
+  const fleetPercentage =
+    entitlements && entitlements.vehicle_limit_enabled
+      ? Math.min(
+          (entitlements.vehicle_count / entitlements.vehicle_limit) * 100,
+          100,
+        )
+      : 0;
+
+  // Reservations of running analyses count toward the bar/badge (they are
+  // committed spend), but the "realizadas" number shows only what finished.
+  const aiInProgress = aiUsage?.ai_analysis_in_progress ?? 0;
 
   const usagePercentage =
     aiUsage && aiUsage.ai_analysis_limit > 0
       ? Math.min(
-          (aiUsage.ai_analysis_used / aiUsage.ai_analysis_limit) * 100,
+          ((aiUsage.ai_analysis_used + aiInProgress) /
+            aiUsage.ai_analysis_limit) *
+            100,
           100,
         )
       : 0;
@@ -53,7 +69,7 @@ const LimitsContent = ({
       return (
         <Badge
           variant="outline"
-          className="bg-gray-100 
+          className="bg-gray-100 shrink-0 truncate
           text-gray-700 border-gray-200"
         >
           Desabilitado
@@ -65,7 +81,7 @@ const LimitsContent = ({
       return (
         <Badge
           variant="outline"
-          className="bg-red-100 
+          className="bg-red-100 shrink-0 truncate
           text-red-800 border-red-200"
         >
           Limite atingido
@@ -77,7 +93,7 @@ const LimitsContent = ({
       return (
         <Badge
           variant="outline"
-          className="bg-yellow-100 
+          className="bg-yellow-100 shrink-0 truncate
           text-yellow-800 border-yellow-200"
         >
           Uso elevado
@@ -88,7 +104,7 @@ const LimitsContent = ({
     return (
       <Badge
         variant="outline"
-        className="bg-green-100 
+        className="bg-green-100 shrink-0 truncate
         text-green-800 border-green-200"
       >
         Ativo
@@ -188,6 +204,16 @@ const LimitsContent = ({
                             {" "}
                             / {aiUsage.ai_analysis_limit}
                           </span>
+                          {aiInProgress > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="ml-2 text-xs font-normal
+                              bg-blue-50 text-blue-700 border-blue-200
+                              dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
+                            >
+                              {aiInProgress} em análise
+                            </Badge>
+                          )}
                         </span>
                       </div>
 
@@ -198,9 +224,11 @@ const LimitsContent = ({
                       />
 
                       <p className="text-xs text-muted-foreground">
-                        {aiUsage.ai_analysis_limit - aiUsage.ai_analysis_used >
+                        {aiUsage.ai_analysis_limit -
+                          aiUsage.ai_analysis_used -
+                          aiInProgress >
                         0
-                          ? `${aiUsage.ai_analysis_limit - aiUsage.ai_analysis_used} verificações restantes neste período`
+                          ? `${aiUsage.ai_analysis_limit - aiUsage.ai_analysis_used - aiInProgress} verificações restantes neste período`
                           : aiUsage.ai_analysis_limit === 0
                             ? "Verificação IA não habilitada para esta empresa"
                             : "Todas as verificações foram utilizadas neste período"}
@@ -232,6 +260,99 @@ const LimitsContent = ({
                   <p className="text-sm text-muted-foreground">
                     {errorMessage ||
                       "Não foi possível carregar os dados de uso."}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Fleet size card — contracted vehicles vs registered */}
+            <Card className="shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div className="space-y-1">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-primary" />
+                    Veículos da Frota
+                  </CardTitle>
+                  <CardDescription>
+                    Veículos ativos × contratados no plano
+                  </CardDescription>
+                </div>
+                {entitlements &&
+                  (entitlements.vehicle_limit_enabled ? (
+                    fleetPercentage >= 100 ? (
+                      <Badge
+                        variant="outline"
+                        className="bg-red-100 shrink-0 truncate text-red-800 border-red-200"
+                      >
+                        Limite atingido
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="bg-green-100 shrink-0 truncate text-green-800 border-green-200"
+                      >
+                        Ativo
+                      </Badge>
+                    )
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="bg-gray-100 shrink-0 truncate text-gray-700 border-gray-200"
+                    >
+                      Sem limite
+                    </Badge>
+                  ))}
+              </CardHeader>
+
+              <Separator />
+
+              <CardContent className="space-y-4 pt-4">
+                {entitlements ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Veículos ativos
+                      </span>
+                      <span className="font-semibold text-lg">
+                        {entitlements.vehicle_count}
+                        {entitlements.vehicle_limit_enabled && (
+                          <span className="text-muted-foreground font-normal text-sm">
+                            {" "}
+                            / {entitlements.vehicle_limit}
+                          </span>
+                        )}
+                        {(entitlements.vehicle_inactive_count ?? 0) > 0 && (
+                          <span className="ml-2 text-muted-foreground font-normal text-xs">
+                            +{entitlements.vehicle_inactive_count} inativo(s)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
+                    {entitlements.vehicle_limit_enabled ? (
+                      <>
+                        <Progress
+                          value={fleetPercentage}
+                          className="h-2.5"
+                          indicatorClassName="bg-blue-600"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {entitlements.vehicle_limit -
+                            entitlements.vehicle_count >
+                          0
+                            ? `${entitlements.vehicle_limit - entitlements.vehicle_count} vaga(s) restante(s) no plano`
+                            : "Todas as vagas do plano estão em uso — novos cadastros e reativações estão bloqueados. Inativar um veículo libera a vaga."}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Sem limite de veículos configurado para esta empresa.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Não foi possível carregar os dados da frota.
                   </p>
                 )}
               </CardContent>

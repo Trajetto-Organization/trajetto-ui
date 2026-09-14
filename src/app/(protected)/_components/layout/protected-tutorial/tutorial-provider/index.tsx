@@ -52,9 +52,48 @@ const isMobileScreen = (): boolean => {
   return false;
 };
 
+// First step of EVERY tour: how to navigate it. Centralized so every page's
+// tutorial teaches the same controls without repeating it in each config.
+const KEYBOARD_INTRO_STEP: TutorialStep = {
+  target: "body",
+  placement: "center",
+  title: "Como navegar no tutorial",
+  content:
+    "Este tutorial guiado destaca os elementos da tela passo a passo.\n" +
+    "• Use as setas ← e → do teclado para avançar e voltar.\n" +
+    "• Pressione ESC para sair a qualquer momento.\n" +
+    "• Você também pode usar os botões Anterior e Próximo abaixo.\n" +
+    "DICA: Reabra este tutorial quando quiser pressionando ? ou pelo botão de ajuda na barra lateral.",
+};
+
+/** Global shortcuts must not fire while the user is typing in a field. */
+const isEditableTarget = (el: Element | null): boolean => {
+  if (!el) return false;
+
+  const tag = el.tagName;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    (el as HTMLElement).isContentEditable
+  );
+};
+
 // Helper function to detect active tab
 const getActiveTab = (): string => {
   if (typeof window !== "undefined") {
+    // Deliveries keeps three different tables behind one path, so the tab
+    // decides which tour applies — the same split the dashboard already does
+    // for Análise Gráfica and Limites de Uso.
+    const activeDeliveryTab = document.querySelector(
+      '[role="tab"][data-state="active"][data-tutorial^="deliveries-tab-"]',
+    );
+
+    if (activeDeliveryTab) {
+      const attribute = activeDeliveryTab.getAttribute("data-tutorial") ?? "";
+      return attribute.replace("deliveries-tab-", "deliveries:");
+    }
+
     // Search for active tabs in the DOM
     const activeTab = document.querySelector(
       '[role="tab"][data-state="active"]',
@@ -166,6 +205,16 @@ const TutorialProvider: React.FC<TutorialProviderProps> = ({
       return "/dashboard/limits";
     }
 
+    // Each deliveries tab has its own tour, and its own "already seen" flag —
+    // landing on Embarcadores for the first time should teach Embarcadores.
+    if (path === "/dashboard/deliveries" && tab.startsWith("deliveries:")) {
+      const deliveryTab = tab.slice("deliveries:".length);
+
+      return deliveryTab === "deliveries"
+        ? "/dashboard/deliveries"
+        : `/dashboard/deliveries/${deliveryTab}`;
+    }
+
     return path;
   }, []);
 
@@ -183,7 +232,11 @@ const TutorialProvider: React.FC<TutorialProviderProps> = ({
         updateStepContent(step, userPermissions),
       );
 
-      return updatedSteps;
+      if (updatedSteps.length === 0) return updatedSteps;
+
+      // Every tour opens teaching how to drive it — prepended here, in one
+      // place, instead of copy-pasted into every page's config.
+      return [KEYBOARD_INTRO_STEP, ...updatedSteps];
     },
     [userPermissions],
   );
@@ -371,6 +424,36 @@ const TutorialProvider: React.FC<TutorialProviderProps> = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isActive, skipTutorial]);
+
+  // Global "?" shortcut (help/tutorial convention): reopens the tour of the
+  // current page. Deliberately inert on pages without a tutorial — a shortcut
+  // that opens nothing (or the wrong page's tour) reads as broken; the
+  // sidebar item already explains "página direta, sem tutorial".
+  useEffect(() => {
+    const handleShortcut = (e: KeyboardEvent) => {
+      if (e.key !== "?" || e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (isActive) return;
+      if (isEditableTarget(document.activeElement)) return;
+      if (isMobileScreen()) return;
+
+      const tutorialKey = getTutorialKey(pathname, currentTab);
+      if (processTutorialSteps(tutorialKey, currentTab).length === 0) return;
+
+      e.preventDefault();
+      resetTutorial();
+    };
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [
+    isActive,
+    pathname,
+    currentTab,
+    getTutorialKey,
+    processTutorialSteps,
+    resetTutorial,
+  ]);
 
   return (
     <TutorialContext.Provider

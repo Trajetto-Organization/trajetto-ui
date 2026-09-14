@@ -312,6 +312,26 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
     },
   },
   {
+    accessorKey: "vehicle_limit",
+    meta: {
+      title: "Veículos",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Veículos" />
+    ),
+    cell: ({ row }) => {
+      const limit = (row.getValue("vehicle_limit") as number | undefined) ?? 0;
+      const count = row.original.vehicle_count ?? 0;
+
+      return (
+        <p className="truncate font-medium w-24">
+          {limit > 0 ? `${count} / ${limit}` : `${count} / —`}
+        </p>
+      );
+    },
+    enableSorting: false,
+  },
+  {
     accessorKey: "created_at",
     meta: {
       title: "Criação",

@@ -4,6 +4,8 @@ interface CreateAccountPayableValidationError {
   payment_date?: string[];
   amount?: string[];
   amount_paid?: string[];
+  category?: string[];
+  category_description?: string[];
   branchId?: string[];
   serviceOrderId?: string[];
   registrationUserId?: string[];

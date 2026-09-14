@@ -3,7 +3,15 @@
 import Link from "next/link";
 
 import { usePathname } from "next/navigation";
+
 import { ChevronRight } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+import { useAuthStore } from "@/store/auth-store";
+import { canAccessPath } from "@/lib/route-access";
+
+import { useChatUnreadCount } from "@/features/deliveries/chat/lib/use-chat-unread";
 
 import {
   Collapsible,
@@ -12,6 +20,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -19,7 +28,9 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-import type { PermissionKey } from "../../shared/common.types";
+import { NOTIFICATION_ACCENT_CLASS } from "../../shared/notification-visuals";
+
+import type { PermissionKey, UserRole } from "../../shared/common.types";
 import type { ProtectedNavItem } from "../shared/common.types";
 
 import type {
@@ -47,25 +58,39 @@ function isDriver(user: User): boolean {
   return hasDriverId && !hasProfileAccess;
 }
 
+interface NavFilterContext {
+  role: UserRole;
+  permissions: PermissionKey[];
+  enabledModules: string[] | null;
+  isDriver: boolean;
+}
+
+/**
+ * Drops what this session may not reach. The verdict comes from the route
+ * registry (app-routes) rather than from tags on each entry — a menu that
+ * declared its own rules is what let the command bar drift out of sync with
+ * the sidebar for the whole FLEET module.
+ *
+ * A group ("#") has no page of its own, so it survives only while at least
+ * one child does.
+ */
 const filterNavItems = (
   items: ProtectedNavItem[],
-  userPermissions: PermissionKey[],
+  context: NavFilterContext,
 ): ProtectedNavItem[] => {
   return items.reduce<ProtectedNavItem[]>((acc, item) => {
-    if (
-      item.requiredPermission &&
-      !userPermissions.includes(item.requiredPermission)
-    ) {
+    const isGroup = !item.url || item.url === "#";
+
+    if (!isGroup && !canAccessPath(item.url, context)) {
       return acc;
     }
 
     const newItem = { ...item };
 
     if (newItem.items?.length) {
-      newItem.items = filterNavItems(newItem.items, userPermissions);
+      newItem.items = filterNavItems(newItem.items, context);
     }
 
-    const isGroup = newItem.url === "#" || !newItem.url;
     if (isGroup && (!newItem.items || newItem.items.length === 0)) {
       return acc;
     }
@@ -77,6 +102,12 @@ const filterNavItems = (
 
 const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
   const pathname = usePathname();
+
+  // The chat is a tab inside Entregas, so its unread count rides on that
+  // entry: the dispatcher sees it from the Kanban, from Multas, from
+  // anywhere. Zero for anyone without the module, the permission, or a read
+  // cursor of their own — support included.
+  const chatUnread = useChatUnreadCount();
 
   return (
     <SidebarMenu>
@@ -138,6 +169,31 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
+
+              {/* The bell's badge, to the class: same accent constant, same
+              ring lifting it off its surface — here the sidebar's own, since
+              that is what sits behind it. The hover and active overrides
+              `SidebarMenuBadge` carries for text colour have to be answered
+              at the same variant, or the number turns grey under the
+              pointer. */}
+              {item.url.endsWith("/deliveries") && chatUnread > 0 && (
+                <SidebarMenuBadge
+                  className={cn(
+                    `h-5 min-w-5 rounded-full px-1 text-[10px] font-bold
+                    text-white ring-2 ring-sidebar
+                    peer-hover/menu-button:text-white
+                    peer-data-[active=true]/menu-button:text-white`,
+                    NOTIFICATION_ACCENT_CLASS,
+                  )}
+                  aria-label={`${chatUnread} ${
+                    chatUnread === 1
+                      ? "conversa não lida"
+                      : "conversas não lidas"
+                  }`}
+                >
+                  {chatUnread > 99 ? "99+" : chatUnread}
+                </SidebarMenuBadge>
+              )}
             </SidebarMenuItem>
           );
         }
@@ -149,6 +205,13 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
 const ProtectedSidebarMenuItems = ({
   user,
 }: ProtectedSidebarMenuItemsProps): JSX.Element => {
+  // Modules arrive with the server render and are kept fresh by the security
+  // check, which re-reads /user/me on every socket event. No fetch of its own:
+  // the endpoint that manages plans is back-office only, and asking it from
+  // here is what used to erase every gated item from an employee's menu.
+  const storeModules = useAuthStore((state) => state.enabledModules);
+  const enabledModules = storeModules ?? user.enabledModules ?? null;
+
   const items =
     protectedNavItemsByRole[user.role] ||
     protectedNavItemsByRole["BUSINESS_USER"];
@@ -163,8 +226,13 @@ const ProtectedSidebarMenuItems = ({
     return <ProtectedNavItems items={[]} />;
   }
 
-  // Filter items by employee permissions
-  const filteredItems = filterNavItems(items, user.permissions || []);
+  const filteredItems = filterNavItems(items, {
+    role: user.role,
+    permissions: user.permissions || [],
+    enabledModules,
+    isDriver: false,
+  });
+
   return <ProtectedNavItems items={filteredItems} />;
 };
 

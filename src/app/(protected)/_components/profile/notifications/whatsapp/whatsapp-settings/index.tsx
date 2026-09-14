@@ -1,122 +1,51 @@
 "use client";
 
-import { useCallback } from "react";
-
-import { Info, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
 import { WhatsappIcon } from "@/components/icons/brand";
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 
 import { useWhatsAppSettings } from "./hooks";
-import { useWhatsAppContext } from "../shared/provider";
-
-import { useWhatsAppConnection } from "../shared/hooks/whatsapp-connection";
-import { useWhatsAppGlobalEvents } from "../shared/hooks/whatsapp-global-events";
-
 import type { WhatsAppSettingsProps } from "../shared/common.types";
 
 const WhatsAppSettings = ({
   userRole,
   driverId,
+  initialSettings,
 }: WhatsAppSettingsProps): JSX.Element => {
-  // Check if you are a driver
   const isDriver = userRole === "BUSINESS_USER" && !!driverId;
-  const { settings, updateSettings } = useWhatsAppContext();
-
-  // Get status of active operations
-  const { isAnyOperationActive } = useWhatsAppConnection();
-
-  // Memoize callback to avoid infinite loop
-  const handleWhatsAppDisabled = useCallback(
-    (data: any) => {
-      if (settings && settings.enabled) {
-        const updatedSettings = {
-          ...settings,
-          enabled: false,
-          instanceConnected: false,
-        };
-        updateSettings(updatedSettings);
-      }
-    },
-    [settings, updateSettings],
-  );
-
-  // Listen to global events for auto-disable
-  useWhatsAppGlobalEvents({
-    onWhatsAppDisabled: handleWhatsAppDisabled,
-  });
 
   const {
+    settings,
     isUpdating,
     phoneNumber,
+    isPhoneModified,
+    isPhoneValid,
     handlePhoneChange,
     handleToggleNotifications,
-  } = useWhatsAppSettings({
-    initialSettings: settings,
-    isAnyOperationActive,
-  });
+    handleSavePhone,
+  } = useWhatsAppSettings({ initialSettings });
 
-  // Phone validation
-  const cleanedPhone = phoneNumber.replace(/\D/g, "");
-  const isPhoneValid = cleanedPhone.length === 10 || cleanedPhone.length === 11;
-
-  const canEnableNotifications = isPhoneValid;
-
-  // Determine whether fields should be disabled
-  const isNotificationsEnabled = settings?.enabled || false;
-  const isPhoneInputDisabled =
-    isUpdating || isNotificationsEnabled || isAnyOperationActive;
-  const isSwitchDisabled =
-    isUpdating ||
-    (!settings?.enabled && !canEnableNotifications) ||
-    isAnyOperationActive;
-
-  /**
-   * 🔄 Handler for toggle
-   */
-  const onToggleNotifications = async (enabled: boolean) => {
-    await handleToggleNotifications(enabled, (newSettings) => {
-      updateSettings(newSettings);
-    });
-  };
+  const isEnabled = settings?.enabled || false;
+  const isSwitchDisabled = isUpdating || (!isEnabled && !isPhoneValid);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <WhatsappIcon className="h-7 w-7 text-green-500" />
-          <div>
-            <h3 className="text-lg font-semibold">WhatsApp</h3>
-            <p className="text-sm text-muted-foreground">
-              Receba notificações importantes diretamente no WhatsApp
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <WhatsappIcon className="h-7 w-7 text-green-500" />
+        <div>
+          <h3 className="text-lg font-semibold">WhatsApp</h3>
+          <p className="text-sm text-muted-foreground">
+            Receba notificações importantes diretamente no WhatsApp
+          </p>
         </div>
-
-        {settings?.enabled && (
-          <div
-            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${
-              settings.instanceConnected
-                ? "bg-green-600/10 dark:bg-green-600/10 dark:text-green-500 text-green-600"
-                : "bg-red-600/10 dark:bg-red-500/10 dark:text-red-500 text-red-600"
-            }`}
-          >
-            <div className="rounded-full p-[2px]">
-              {settings.instanceConnected ? (
-                <CheckCircle2 className="size-3" />
-              ) : (
-                <XCircle className="size-3" />
-              )}
-            </div>
-            {settings.instanceConnected ? "Conectado" : "Desconectado"}
-          </div>
-        )}
       </div>
 
       <Separator />
@@ -125,10 +54,10 @@ const WhatsAppSettings = ({
       <div className="space-y-3">
         <Label htmlFor="phone">
           Número de telefone
-          {!settings?.enabled && (
+          {!isEnabled && (
             <span
-              className="text-xs 
-              text-muted-foreground 
+              className="text-xs
+              text-muted-foreground
               ml-1"
             >
               (obrigatório)
@@ -143,36 +72,32 @@ const WhatsAppSettings = ({
             placeholder="(11) 98765-4321"
             value={phoneNumber}
             onChange={(e) => handlePhoneChange(e.target.value)}
-            disabled={isPhoneInputDisabled}
+            disabled={isUpdating}
             className="flex-1"
           />
+
+          {isEnabled && isPhoneModified && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSavePhone}
+              disabled={isUpdating || !isPhoneValid}
+            >
+              Salvar número
+            </Button>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground">
           Celular: (DDD) 9XXXX-XXXX | Fixo: (DDD) XXXX-XXXX
         </p>
-
-        {/* Notice when notifications are enabled */}
-        {isNotificationsEnabled && (
-          <Alert
-            className="bg-amber-50 border-amber-200 
-            dark:bg-amber-950/20 dark:border-amber-800"
-          >
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800 dark:text-amber-200">
-              <strong>Para alterar o número:</strong> Primeiro desabilite as
-              notificações WhatsApp, altere o número e depois reabilite as
-              notificações.
-            </AlertDescription>
-          </Alert>
-        )}
       </div>
 
       <Separator />
 
       {/* Toggle Notifications */}
       <div
-        className="flex items-center 
+        className="flex items-center
         justify-between"
       >
         <div className="space-y-0.5">
@@ -188,28 +113,29 @@ const WhatsAppSettings = ({
 
         <Switch
           id="whatsapp-toggle"
-          checked={settings?.enabled || false}
-          onCheckedChange={onToggleNotifications}
+          checked={isEnabled}
+          onCheckedChange={handleToggleNotifications}
           disabled={isSwitchDisabled}
         />
       </div>
 
-      {/* Notification when there are active operations */}
-      {isAnyOperationActive && (
+      {/* Server not yet configured for the official Meta Cloud API */}
+      {isEnabled && settings && !settings.serviceConfigured && (
         <Alert
-          className="bg-blue-50 border-blue-200 
-          dark:bg-blue-950/20 dark:border-blue-800"
+          className="bg-amber-50 border-amber-200
+          dark:bg-amber-950/20 dark:border-amber-800"
         >
-          <Info className="h-4 w-4 text-blue-600" />
-          <AlertDescription className="text-blue-800 dark:text-blue-200">
-            <strong>Operação em andamento:</strong> Aguarde a conclusão para
-            fazer alterações nas configurações.
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>Envio ainda não configurado:</strong> sua preferência foi
+            salva, mas as mensagens só começam a chegar quando o serviço de
+            WhatsApp for configurado no servidor.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Invalid phone warning */}
-      {!settings?.enabled && !canEnableNotifications && (
+      {!isEnabled && !isPhoneValid && (
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>

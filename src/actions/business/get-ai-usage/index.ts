@@ -4,7 +4,12 @@ import { getCookies } from "../../cookies";
 
 interface AIUsageData {
   ai_analysis_limit: number;
+
+  /** Completed verifications only. */
   ai_analysis_used: number;
+
+  /** Reserved by analyses still running; returns to the pool on failure. */
+  ai_analysis_in_progress?: number;
   ai_analysis_reset_at: string | null;
 }
 

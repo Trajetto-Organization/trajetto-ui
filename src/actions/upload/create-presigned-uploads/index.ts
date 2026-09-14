@@ -2,7 +2,11 @@
 
 import { getCookies } from "../../cookies";
 
-type UploadType = "checklistPhotos" | "odometerPhotos" | "avatars";
+type UploadType =
+  | "checklistPhotos"
+  | "odometerPhotos"
+  | "avatars"
+  | "chatAttachments";
 
 interface PresignedUploadFile {
   originalFilename: string;
@@ -33,9 +37,10 @@ interface CreatePresignedUploadsResult {
  *
  * This runs on the server only because the access token lives in an httpOnly
  * cookie the browser cannot read — not because the files pass through here.
- * They do not: only name, type and size travel, a few hundred bytes, so this
- * never comes near the Server Action body limit that the old multipart flow
- * kept hitting. The bytes go straight from the browser to storage.
+ * They do not: only name, type and size travel, a few hundred bytes. That
+ * matters, because a Server Action buffers its whole body in the Next.js
+ * server's memory and rejects anything past 1 MB. The bytes go straight from
+ * the browser to storage.
  */
 const handleCreatePresignedUploads = async ({
   uploadType,

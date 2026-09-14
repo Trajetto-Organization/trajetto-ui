@@ -208,7 +208,10 @@ const TutorialComponent = (): JSX.Element | null => {
         />
       )}
 
-      {/* Tooltip */}
+      {/* Tooltip. First frame renders off-screen (position still null) so it
+          can be measured without flashing; fill-mode backwards keeps it in
+          the animation's FROM state during the delay instead of blinking at
+          the final state first. */}
       <div
         ref={tooltipRef}
         className={`${
@@ -219,12 +222,13 @@ const TutorialComponent = (): JSX.Element | null => {
           rounded-lg shadow-2xl max-w-md z-[99999999]
           max-h-[70vh] overflow-hidden`}
         style={{
-          top: tooltipPosition.top,
-          left: tooltipPosition.left,
+          top: tooltipPosition?.top ?? -9999,
+          left: tooltipPosition?.left ?? -9999,
           animationDelay:
             currentStepData.placement === "center" ? "50ms" : "100ms",
           animationDuration:
             currentStepData.placement === "center" ? "250ms" : "300ms",
+          animationFillMode: "backwards",
         }}
       >
         {/* Compact header */}
@@ -275,7 +279,12 @@ const TutorialComponent = (): JSX.Element | null => {
               <div
                 key={index}
                 className="animate-fade-up"
-                style={{ animationDelay: `${index * 100}ms` }}
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                  // Without this, staggered items show fully visible during
+                  // their delay and then restart the animation — a blink.
+                  animationFillMode: "backwards",
+                }}
               >
                 <ContentRenderer item={item} />
               </div>

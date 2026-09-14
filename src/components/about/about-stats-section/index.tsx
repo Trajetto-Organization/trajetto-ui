@@ -1,16 +1,11 @@
 "use client";
 
-import {
-  ForwardRefExoticComponent,
-  RefAttributes,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-
+import { ForwardRefExoticComponent, RefAttributes, useRef } from "react";
 import { Reveal } from "@/components/shared/reveal";
+
 import { useInView } from "@/hooks/use-in-view";
 import { useCountUp } from "@/hooks/use-count-up";
+
 import {
   LayoutGrid,
   LucideProps,
@@ -38,9 +33,6 @@ const AboutStatsSection = (): JSX.Element => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
-  // Números do PRODUTO, não da base de clientes. Cada um é verificável dentro
-  // do próprio sistema — nada aqui depende de tração comercial que ainda não
-  // existe.
   const stats = [
     {
       value: 20,

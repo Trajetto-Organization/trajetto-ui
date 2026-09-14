@@ -24,6 +24,13 @@ import { MarkAsReadButton } from "../mark-read-button";
 import type { ExtendedNotificationCardProps } from "../notification-list.types";
 import { useNotificationsContext } from "../../layout/protected-provider/notifications-provider";
 
+import { cn } from "@/lib/utils";
+import {
+  formatNotificationDate,
+  getNotificationVisual,
+  NOTIFICATION_ACCENT_CLASS,
+} from "../../shared/notification-visuals";
+
 const NotificationCard = ({
   notification,
   onRemoveFromCache,
@@ -86,7 +93,9 @@ const NotificationCard = ({
     }
   };
 
-  const formattedDate = notification.created_at as string;
+  // Same visual vocabulary as the bell dropdown: chip color by type, accent
+  // dot for unread — the page is the archive of the same objects.
+  const { icon: Icon, chip } = getNotificationVisual(notification.type);
 
   return (
     <Card
@@ -97,8 +106,35 @@ const NotificationCard = ({
       }
     >
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">{notification.title}</CardTitle>
-        <CardDescription>{formattedDate}</CardDescription>
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              `flex size-9 shrink-0 items-center justify-center
+              rounded-lg`,
+              chip,
+            )}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <span className="min-w-0 truncate">{notification.title}</span>
+              {!notification.read && (
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    NOTIFICATION_ACCENT_CLASS,
+                  )}
+                  aria-label="Não lida"
+                />
+              )}
+            </CardTitle>
+            <CardDescription>
+              {formatNotificationDate(notification.created_at)}
+            </CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="pb-4">
         <p className="text-[0.9rem] text-muted-foreground">

@@ -7,6 +7,8 @@ export const accountPayableTableSchema = z.object({
   payment_date: z.union([z.string(), z.date()]).nullable(),
   amount: z.number(),
   amount_paid: z.number().nullable(),
+  category: z.string().nullable().optional(),
+  category_description: z.string().nullable().optional(),
   businessId: z.string(),
   branchId: z.string(),
   serviceOrderId: z.string().nullable(),

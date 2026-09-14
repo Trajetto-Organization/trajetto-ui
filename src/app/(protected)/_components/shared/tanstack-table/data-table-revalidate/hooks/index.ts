@@ -174,23 +174,47 @@ export function useDataTableRevalidate(
       return () => clearInterval(intervalId);
     }
 
+    // Not limited any more: either the cooldown elapsed or this is a key we
+    // have never been limited under. Both halves have to come down together —
+    // the flag AND the data behind it. Leaving `clickData.isLimited` set with
+    // an elapsed cooldown would re-enable the button while `registerClick`
+    // still refused every click, since it returns early on that same flag.
+    const cooldownElapsed = clickData.isLimited;
+
     // Clear old clicks outside the time window
     const validClicks = clickData.clicks.filter(
       (timestamp: number) => now - timestamp < (config.timeWindowMs as number),
     );
 
-    if (validClicks.length !== clickData.clicks.length) {
+    if (cooldownElapsed || validClicks.length !== clickData.clicks.length) {
       const updatedData = {
         ...clickData,
         clicks: validClicks,
+        isLimited: false,
+        cooldownEndTime: 0,
       };
       setClickData(updatedData);
       // Saves updated clicks to localStorage
       saveStorageData(updatedData, config.storageKey);
     }
 
+    // Without this there is no path back to false other than the interval
+    // above, so a clickData that arrives already unlimited — exactly what
+    // switching tabs produces — used to leave the button stuck on "Aguarde".
+    setIsRateLimited(false);
+    setCooldownRemaining(0);
+
     return () => {};
-  }, [isClient, clickData, config.timeWindowMs, config.storageKey]);
+    // `config.storageKey` is deliberately NOT a dependency here. Reloading on
+    // a key change belongs to the first effect, which is the one that swaps
+    // `clickData`. Listing the key here as well made this effect re-run in the
+    // SAME commit as the change, still closing over the PREVIOUS key's
+    // clickData, and re-assert the cooldown on top of the reset the other
+    // effect had just done — that is how a cooldown started on the Entregas
+    // tab showed up on Ocorrências. Loading always hands back a fresh object,
+    // so the clickData dependency already re-runs this effect with the right
+    // data on the very next render.
+  }, [isClient, clickData, config.timeWindowMs]);
 
   // Function to register a click and check the rate limit
   const registerClick = () => {
@@ -233,35 +257,12 @@ export function useDataTableRevalidate(
         `Muitas solicitações! Aguarde ${Math.ceil((config.cooldownTimeMs as number) / 1000)} segundos.`,
       );
 
-      // Start the countdown timer
-      const intervalId = setInterval(() => {
-        const currentTime = Date.now();
-
-        if (currentTime >= updatedData.cooldownEndTime) {
-          clearInterval(intervalId);
-
-          const resetData = {
-            ...updatedData,
-            isLimited: false,
-            cooldownEndTime: 0,
-          };
-
-          setClickData(resetData);
-          saveStorageData(resetData, config.storageKey);
-
-          setIsRateLimited(false);
-          setCooldownRemaining(0);
-        } else {
-          // We never let the counter reach zero while it is limited
-          const remaining = Math.max(
-            1,
-            Math.ceil((updatedData.cooldownEndTime - currentTime) / 1000),
-          );
-
-          setCooldownRemaining(remaining);
-        }
-      }, 1000);
-
+      // No timer here, on purpose. Setting clickData above re-runs the
+      // cooldown effect, which owns the ticking interval and — unlike this
+      // place — clears it when the component goes away. The timer that used to
+      // live here was a second one counting the same cooldown, never cleared,
+      // still holding the storage key captured at click time. It outlived the
+      // tab it belonged to and drove the counter of whatever tab came next.
       return false;
     } else {
       // If you haven't exceeded the limit, just update the clicks

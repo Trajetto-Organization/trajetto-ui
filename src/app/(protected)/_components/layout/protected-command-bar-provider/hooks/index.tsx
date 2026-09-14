@@ -13,6 +13,7 @@ import {
   LifeBuoy,
   Logs,
   NotepadText,
+  Package,
   Receipt,
   ShieldUser,
   Split,
@@ -32,7 +33,7 @@ import type {
   UseCommandBarActions,
 } from "../protected-command-bar-provider.types";
 
-import { permissions } from "@/lib/permissions";
+import { canAccessPath } from "@/lib/route-access";
 
 /**
  * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
@@ -49,7 +50,10 @@ function isDriver(user: UseCommandBarActions["user"]): boolean {
   return hasDriverId && !hasProfileAccess;
 }
 
-function useCommandBarActions({ user }: UseCommandBarActions) {
+function useCommandBarActions({
+  user,
+  enabledModules = null,
+}: UseCommandBarActions) {
   const router = useRouter();
 
   // Specific actions for each role (excluding common ones)
@@ -63,6 +67,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "administrativo",
         icon: <Laptop className="w-5 h-5" />,
         perform: () => router.push("/admin"),
+        path: "/admin",
       },
       {
         id: "admin_kanban",
@@ -72,6 +77,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "kanban",
         icon: <Kanban className="w-5 h-5" />,
         perform: () => router.push("/admin/kanban"),
+        path: "/admin/kanban",
       },
       {
         id: "admin_fine",
@@ -81,6 +87,17 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "multa",
         icon: <NotepadText className="w-5 h-5" />,
         perform: () => router.push("/admin/fine"),
+        path: "/admin/fine",
+      },
+      {
+        id: "admin_deliveries",
+        name: "Entregas",
+        section: "navegação",
+        shortcut: ["e", "n"],
+        keywords: "entregas embarcadores ocorrências",
+        icon: <Package className="w-5 h-5" />,
+        perform: () => router.push("/admin/deliveries"),
+        path: "/admin/deliveries",
       },
       {
         id: "admin_quote",
@@ -90,6 +107,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "orçamentos",
         icon: <Receipt className="w-5 h-5" />,
         perform: () => router.push("/admin/quote"),
+        path: "/admin/quote",
       },
       {
         id: "admin_business",
@@ -99,6 +117,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "empresas",
         icon: <Building2 className="w-5 h-5" />,
         perform: () => router.push("/admin/business"),
+        path: "/admin/business",
       },
       {
         id: "admin_branches",
@@ -108,6 +127,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "filiais",
         icon: <Split className="w-5 h-5" />,
         perform: () => router.push("/admin/branch"),
+        path: "/admin/branch",
       },
       {
         id: "admin_supplier",
@@ -117,6 +137,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "fornecedores",
         icon: <Handshake className="w-5 h-5" />,
         perform: () => router.push("/admin/supplier"),
+        path: "/admin/supplier",
       },
       {
         id: "admin_part",
@@ -126,6 +147,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "peças",
         icon: <Container className="w-5 h-5" />,
         perform: () => router.push("/admin/part"),
+        path: "/admin/part",
       },
       {
         id: "admin_vehicle",
@@ -135,6 +157,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "veículos",
         icon: <Truck className="w-5 h-5" />,
         perform: () => router.push("/admin/vehicle"),
+        path: "/admin/vehicle",
       },
       {
         id: "admin_type_vehicle",
@@ -144,6 +167,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "tipo de veículo",
         icon: <TruckElectric className="w-5 h-5" />,
         perform: () => router.push("/admin/vehicle-type"),
+        path: "/admin/vehicle-type",
       },
       {
         id: "admin_fuel",
@@ -153,6 +177,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "combustível",
         icon: <Fuel className="w-5 h-5" />,
         perform: () => router.push("/admin/fuel-type"),
+        path: "/admin/fuel-type",
       },
       {
         id: "admin_supply",
@@ -162,6 +187,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "abastecimento",
         icon: <Gauge className="w-5 h-5" />,
         perform: () => router.push("/admin/fuel"),
+        path: "/admin/fuel",
       },
       {
         id: "admin_checklist",
@@ -171,6 +197,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "checklist",
         icon: <CalendarCheckIcon className="w-5 h-5" />,
         perform: () => router.push("/admin/vehicle-checklist"),
+        path: "/admin/vehicle-checklist",
       },
       {
         id: "admin_driver",
@@ -180,6 +207,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "motoristas",
         icon: <LifeBuoy className="w-5 h-5" />,
         perform: () => router.push("/admin/driver"),
+        path: "/admin/driver",
       },
       {
         id: "admin_service_order",
@@ -189,6 +217,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "ordem de serviço",
         icon: <Logs className="w-5 h-5" />,
         perform: () => router.push("/admin/service-order"),
+        path: "/admin/service-order",
       },
       {
         id: "admin_service_order_part",
@@ -198,6 +227,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "ordem de serviço por peça",
         icon: <BadgePercent className="w-5 h-5" />,
         perform: () => router.push("/admin/service-order-part"),
+        path: "/admin/service-order-part",
       },
       {
         id: "admin_account_payable",
@@ -207,6 +237,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "contas a pagar",
         icon: <Wallet className="w-5 h-5" />,
         perform: () => router.push("/admin/account-payable"),
+        path: "/admin/account-payable",
       },
       {
         id: "admin_profile_access",
@@ -216,6 +247,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "perfil acesso",
         icon: <SquareUser className="w-5 h-5" />,
         perform: () => router.push("/admin/profile-access"),
+        path: "/admin/profile-access",
       },
       {
         id: "admin_permission",
@@ -225,6 +257,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "permissão usuário",
         icon: <ShieldUser className="w-5 h-5" />,
         perform: () => router.push("/admin/permission"),
+        path: "/admin/permission",
       },
       {
         id: "admin_user_registration",
@@ -234,6 +267,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "cadastro usuário",
         icon: <UserPlus className="w-5 h-5" />,
         perform: () => router.push("/admin/user-registration"),
+        path: "/admin/user-registration",
       },
       {
         id: "admin_master_users",
@@ -243,6 +277,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "cadastro usuário",
         icon: <Crown className="w-5 h-5" />,
         perform: () => router.push("/admin/master-users"),
+        path: "/admin/master-users",
       },
     ],
     BUSINESS_ADMIN: [
@@ -254,6 +289,17 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "dashboard",
         icon: <LayoutDashboardIcon className="w-5 h-5" />,
         perform: () => router.push("/dashboard"),
+        path: "/dashboard",
+      },
+      {
+        id: "deliveries",
+        name: "Entregas",
+        section: "navegação",
+        shortcut: ["e", "n"],
+        keywords: "entregas embarcadores ocorrências",
+        icon: <Package className="w-5 h-5" />,
+        perform: () => router.push("/dashboard/deliveries"),
+        path: "/dashboard/deliveries",
       },
       {
         id: "kanban",
@@ -263,6 +309,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "kanban",
         icon: <Kanban className="w-5 h-5" />,
         perform: () => router.push("/dashboard/kanban"),
+        path: "/dashboard/kanban",
       },
       {
         id: "fine",
@@ -272,6 +319,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "multa",
         icon: <NotepadText className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fine"),
+        path: "/dashboard/fine",
       },
       {
         id: "branches",
@@ -281,6 +329,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "filiais",
         icon: <Split className="w-5 h-5" />,
         perform: () => router.push("/dashboard/branch"),
+        path: "/dashboard/branch",
       },
       {
         id: "supplier",
@@ -290,6 +339,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "fornecedores",
         icon: <Handshake className="w-5 h-5" />,
         perform: () => router.push("/dashboard/supplier"),
+        path: "/dashboard/supplier",
       },
       {
         id: "part",
@@ -299,6 +349,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "peças",
         icon: <Container className="w-5 h-5" />,
         perform: () => router.push("/dashboard/part"),
+        path: "/dashboard/part",
       },
       {
         id: "vehicle",
@@ -308,6 +359,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "veículos",
         icon: <Truck className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle"),
+        path: "/dashboard/vehicle",
       },
       {
         id: "type_vehicle",
@@ -317,6 +369,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "tipo de veículo",
         icon: <TruckElectric className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle-type"),
+        path: "/dashboard/vehicle-type",
       },
       {
         id: "fuel",
@@ -326,6 +379,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "tipo de combustível",
         icon: <Fuel className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fuel-type"),
+        path: "/dashboard/fuel-type",
       },
       {
         id: "supply",
@@ -335,6 +389,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "abastecimento",
         icon: <Gauge className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fuel"),
+        path: "/dashboard/fuel",
       },
       {
         id: "checklist",
@@ -344,6 +399,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "checklist",
         icon: <CalendarCheckIcon className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle-checklist"),
+        path: "/dashboard/vehicle-checklist",
       },
       {
         id: "driver",
@@ -353,6 +409,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "motoristas",
         icon: <LifeBuoy className="w-5 h-5" />,
         perform: () => router.push("/dashboard/driver"),
+        path: "/dashboard/driver",
       },
       {
         id: "service_order",
@@ -362,6 +419,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "ordem de serviço",
         icon: <Logs className="w-5 h-5" />,
         perform: () => router.push("/dashboard/service-order"),
+        path: "/dashboard/service-order",
       },
       {
         id: "service_order_part",
@@ -371,6 +429,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "ordem de serviço por peça",
         icon: <BadgePercent className="w-5 h-5" />,
         perform: () => router.push("/dashboard/service-order-part"),
+        path: "/dashboard/service-order-part",
       },
       {
         id: "account_payable",
@@ -380,6 +439,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "contas a pagar",
         icon: <Wallet className="w-5 h-5" />,
         perform: () => router.push("/dashboard/account-payable"),
+        path: "/dashboard/account-payable",
       },
       {
         id: "profile_access",
@@ -389,6 +449,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "perfil acesso",
         icon: <SquareUser className="w-5 h-5" />,
         perform: () => router.push("/dashboard/profile-access"),
+        path: "/dashboard/profile-access",
       },
       {
         id: "permission",
@@ -398,6 +459,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "permissão usuário",
         icon: <ShieldUser className="w-5 h-5" />,
         perform: () => router.push("/dashboard/permission"),
+        path: "/dashboard/permission",
       },
       {
         id: "user_registration",
@@ -407,6 +469,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "cadastro usuário",
         icon: <UserPlus className="w-5 h-5" />,
         perform: () => router.push("/dashboard/user-registration"),
+        path: "/dashboard/user-registration",
       },
     ],
     BUSINESS_USER: [
@@ -418,6 +481,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "dashboard",
         icon: <LayoutDashboardIcon className="w-5 h-5" />,
         perform: () => router.push("/dashboard"),
+        path: "/dashboard",
       },
       {
         id: "kanban",
@@ -427,6 +491,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "kanban",
         icon: <Kanban className="w-5 h-5" />,
         perform: () => router.push("/dashboard/kanban"),
+        path: "/dashboard/kanban",
       },
       {
         id: "fine",
@@ -436,7 +501,17 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "multa",
         icon: <NotepadText className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fine"),
-        requiredPermission: permissions.FINE_MANAGE,
+        path: "/dashboard/fine",
+      },
+      {
+        id: "user_deliveries",
+        name: "Entregas",
+        section: "navegação",
+        shortcut: ["e", "n"],
+        keywords: "entregas embarcadores ocorrências",
+        icon: <Package className="w-5 h-5" />,
+        perform: () => router.push("/dashboard/deliveries"),
+        path: "/dashboard/deliveries",
       },
       {
         id: "branches",
@@ -446,7 +521,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "filiais",
         icon: <Split className="w-5 h-5" />,
         perform: () => router.push("/dashboard/branch"),
-        requiredPermission: permissions.BRANCH_MANAGE,
+        path: "/dashboard/branch",
       },
       {
         id: "supplier",
@@ -456,7 +531,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "fornecedores",
         icon: <Handshake className="w-5 h-5" />,
         perform: () => router.push("/dashboard/supplier"),
-        requiredPermission: permissions.SUPPLIER_MANAGE,
+        path: "/dashboard/supplier",
       },
       {
         id: "part",
@@ -466,7 +541,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "peças",
         icon: <Container className="w-5 h-5" />,
         perform: () => router.push("/dashboard/part"),
-        requiredPermission: permissions.PART_MANAGE,
+        path: "/dashboard/part",
       },
       {
         id: "vehicle",
@@ -476,7 +551,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "veículos",
         icon: <Truck className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle"),
-        requiredPermission: permissions.VEHICLE_MANAGE,
+        path: "/dashboard/vehicle",
       },
       {
         id: "type_vehicle",
@@ -486,7 +561,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "tipo de veículo",
         icon: <TruckElectric className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle-type"),
-        requiredPermission: permissions.VEHICLE_TYPE_MANAGE,
+        path: "/dashboard/vehicle-type",
       },
       {
         id: "fuel",
@@ -496,7 +571,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "tipo de combustível",
         icon: <Fuel className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fuel-type"),
-        requiredPermission: permissions.FUEL_TYPE_MANAGE,
+        path: "/dashboard/fuel-type",
       },
       {
         id: "supply",
@@ -506,7 +581,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "abastecimento",
         icon: <Gauge className="w-5 h-5" />,
         perform: () => router.push("/dashboard/fuel"),
-        requiredPermission: permissions.FUEL_MANAGE,
+        path: "/dashboard/fuel",
       },
       {
         id: "checklist",
@@ -516,7 +591,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "checklist",
         icon: <CalendarCheckIcon className="w-5 h-5" />,
         perform: () => router.push("/dashboard/vehicle-checklist"),
-        requiredPermission: permissions.VEHICLE_CHECKLIST_MANAGE,
+        path: "/dashboard/vehicle-checklist",
       },
       {
         id: "driver",
@@ -526,7 +601,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "motoristas",
         icon: <LifeBuoy className="w-5 h-5" />,
         perform: () => router.push("/dashboard/driver"),
-        requiredPermission: permissions.DRIVER_MANAGE,
+        path: "/dashboard/driver",
       },
       {
         id: "service_order",
@@ -536,7 +611,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "ordem de serviço",
         icon: <Logs className="w-5 h-5" />,
         perform: () => router.push("/dashboard/service-order"),
-        requiredPermission: permissions.SERVICE_ORDER_MANAGE,
+        path: "/dashboard/service-order",
       },
       {
         id: "service_order_part",
@@ -546,7 +621,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "ordem de serviço por peça",
         icon: <BadgePercent className="w-5 h-5" />,
         perform: () => router.push("/dashboard/service-order-part"),
-        requiredPermission: permissions.SERVICE_ORDER_PART_MANAGE,
+        path: "/dashboard/service-order-part",
       },
       {
         id: "account_payable",
@@ -556,7 +631,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "contas a pagar",
         icon: <Wallet className="w-5 h-5" />,
         perform: () => router.push("/dashboard/account-payable"),
-        requiredPermission: permissions.ACCOUNT_PAYABLE_MANAGE,
+        path: "/dashboard/account-payable",
       },
       {
         id: "profile_access",
@@ -566,7 +641,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "perfil acesso",
         icon: <SquareUser className="w-5 h-5" />,
         perform: () => router.push("/dashboard/profile-access"),
-        requiredPermission: permissions.PROFILE_ACCESS_MANAGE,
+        path: "/dashboard/profile-access",
       },
       {
         id: "permission",
@@ -576,7 +651,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "permissão usuário",
         icon: <ShieldUser className="w-5 h-5" />,
         perform: () => router.push("/dashboard/permission"),
-        requiredPermission: permissions.USER_PERMISSION_MANAGE,
+        path: "/dashboard/permission",
       },
       {
         id: "user_registration",
@@ -586,7 +661,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
         keywords: "cadastro usuário",
         icon: <UserPlus className="w-5 h-5" />,
         perform: () => router.push("/dashboard/user-registration"),
-        requiredPermission: permissions.USER_REGISTRATION_MANAGE,
+        path: "/dashboard/user-registration",
       },
     ],
   };
@@ -601,6 +676,7 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
       keywords: "conta",
       icon: <User className="w-5 h-5" />,
       perform: () => router.push("/profile"),
+      path: "/profile",
     },
     {
       id: "notifications",
@@ -610,60 +686,71 @@ function useCommandBarActions({ user }: UseCommandBarActions) {
       keywords: "notificações",
       icon: <Bell className="w-5 h-5" />,
       perform: () => router.push("/notifications"),
+      path: "/notifications",
     },
   ];
 
   let roleActions = roleActionsMap[user.role] || [];
+  const driver = isDriver(user);
 
-  if (user.role === "BUSINESS_USER") {
-    // If it is a driver, show driver-specific actions
-    if (isDriver(user)) {
-      roleActions = [
-        {
-          id: "driver_kanban",
-          name: "Kanban",
-          section: "navegação",
-          shortcut: ["k", "b"],
-          keywords: "kanban",
-          icon: <Kanban className="w-5 h-5" />,
-          perform: () => router.push("/driver/kanban"),
-        },
-        {
-          id: "driver_vehicles",
-          name: "Meus Veículos",
-          section: "motorista",
-          shortcut: ["v", "c"],
-          keywords: "veículos motorista",
-          icon: <Truck className="w-5 h-5" />,
-          perform: () => router.push("/driver/vehicles"),
-        },
-        {
-          id: "driver_account_payable",
-          name: "Contas a pagar",
-          section: "ordens",
-          shortcut: ["c", "p"],
-          keywords: "contas a pagar",
-          icon: <Wallet className="w-5 h-5" />,
-          perform: () => router.push("/driver/account-payable"),
-        },
-      ];
-    } else {
-      // If you are an employee, filter by permissions
-      roleActions = roleActions.filter((action) => {
-        if (!action.requiredPermission) return true;
-
-        // Employees must have array permissions
-        if (!user.permissions || user.permissions.length === 0) return false;
-        return user.permissions.some(
-          (perm) => perm.permissionKey === action.requiredPermission,
-        );
-      });
-    }
+  // Drivers navigate a different app entirely, so their entries replace the
+  // role list rather than being filtered out of it.
+  if (user.role === "BUSINESS_USER" && driver) {
+    roleActions = [
+      {
+        id: "driver_kanban",
+        name: "Kanban",
+        section: "navegação",
+        shortcut: ["k", "b"],
+        keywords: "kanban",
+        icon: <Kanban className="w-5 h-5" />,
+        perform: () => router.push("/driver/kanban"),
+        path: "/driver/kanban",
+      },
+      {
+        id: "driver_vehicles",
+        name: "Meus Veículos",
+        section: "motorista",
+        shortcut: ["v", "c"],
+        keywords: "veículos motorista",
+        icon: <Truck className="w-5 h-5" />,
+        perform: () => router.push("/driver/vehicles"),
+        path: "/driver/vehicles",
+      },
+      {
+        id: "driver_account_payable",
+        name: "Contas a pagar",
+        section: "ordens",
+        shortcut: ["c", "p"],
+        keywords: "contas a pagar",
+        icon: <Wallet className="w-5 h-5" />,
+        perform: () => router.push("/driver/account-payable"),
+        path: "/driver/account-payable",
+      },
+    ];
   }
 
-  // Merge common shares (all users can access /profile and /notifications)
-  const actions = [...roleActions, ...commonActions];
-  return { actions };
+  // One verdict for the whole app: an entry survives here exactly when its
+  // page would open. Permissions and hired modules are both read from the
+  // route registry, which is why this list can no longer disagree with the
+  // sidebar — it was offering the entire fleet module to companies that had
+  // it switched off.
+  const permissionKeys = (user.permissions ?? []).map(
+    (permission) => permission.permissionKey,
+  );
+
+  const visibleActions = [...roleActions, ...commonActions].filter(
+    (action) =>
+      !action.path ||
+      canAccessPath(action.path, {
+        role: user.role,
+        permissions: permissionKeys,
+        enabledModules,
+        isDriver: driver,
+      }),
+  );
+
+  return { actions: visibleActions };
 }
 
 export { useCommandBarActions };

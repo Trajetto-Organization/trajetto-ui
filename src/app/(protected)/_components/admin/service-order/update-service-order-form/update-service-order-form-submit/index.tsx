@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import type { UpdateServiceOrderFormSubmitProps } from "../update-service-order-form.types";
 import { CheckCircle, Edit, Loader } from "lucide-react";
@@ -70,6 +72,7 @@ const UpdateServiceOrderFormSubmit = ({
         completion_date: initialFormValues.completion_date || "",
         maintenance_type: initialFormValues.maintenance_type || "",
         total_amount: initialFormValues.total_amount || "",
+        description: initialFormValues.description || "",
       };
     }
     // Format total_amount to match displayTotalAmount
@@ -81,6 +84,7 @@ const UpdateServiceOrderFormSubmit = ({
       completion_date: toStringValue(serviceOrderData.completion_date),
       maintenance_type: serviceOrderData.maintenance_type,
       total_amount: totalAmountFormatted,
+      description: serviceOrderData.description || "",
     };
   });
   const [isDirty, setIsDirty] = useState<boolean>(() => {
@@ -100,7 +104,9 @@ const UpdateServiceOrderFormSubmit = ({
         initialFormValues.completion_date !== originalCompletionDate ||
         initialFormValues.maintenance_type !==
           serviceOrderData.maintenance_type ||
-        initialFormValues.total_amount !== formattedOriginalTotalAmount
+        initialFormValues.total_amount !== formattedOriginalTotalAmount ||
+        (initialFormValues.description || "") !==
+          (serviceOrderData.description || "")
       );
     }
     return false;
@@ -154,15 +160,14 @@ const UpdateServiceOrderFormSubmit = ({
         const originalValue =
           serviceOrderData[key as keyof typeof serviceOrderData];
 
-        // Special handling for completion_date
-        if (key === "completion_date") {
+        // Special handling for nullable fields where "" and null are the same
+        if (key === "completion_date" || key === "description") {
           const originalIsEmpty = !originalValue;
           const newIsEmpty = !val;
 
           if (originalIsEmpty && newIsEmpty) return false;
           if (originalIsEmpty !== newIsEmpty) return true;
 
-          // For completion_date, we know it's Date | string | null
           return toStringValue(originalValue as Date | string | null) !== val;
         }
 
@@ -411,6 +416,32 @@ const UpdateServiceOrderFormSubmit = ({
           placeholder={"0,00"}
           disabled={pending}
         />
+
+        {/* Description - what this service order is about */}
+        <div className="col-span-1 md:col-span-2 grid gap-3">
+          <Label
+            className={cn(
+              "h-4 truncate",
+              state.updateServiceOrderError?.description && "text-red-500",
+            )}
+            htmlFor="description"
+          >
+            {state.updateServiceOrderError?.description?.[0] ??
+              "Descrição (opcional)"}
+          </Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formValues.description || ""}
+            onChange={(e) =>
+              handleCustomFieldChange("description")(e.target.value)
+            }
+            placeholder="Descreva do que se trata esta ordem de serviço"
+            maxLength={500}
+            disabled={pending}
+            className="min-h-[80px]"
+          />
+        </div>
 
         {/* ====== SECTION: HISTORICAL DATA SNAPSHOT ====== */}
         <div className="col-span-1 md:col-span-2 mt-6">

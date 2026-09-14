@@ -29,6 +29,9 @@ import { SelectUserStep } from "@/app/(protected)/_components/shared/steps/selec
 import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
 
 import { SelectServiceOrderStep } from "@/app/(protected)/_components/shared/steps/select-service-order-step";
+import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+
+import { ACCOUNT_PAYABLE_CATEGORY_OPTIONS } from "@/lib/account-payable-category";
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
@@ -57,6 +60,14 @@ const CreateAccountPayableFormSubmit = ({
 
   const [paymentDate, setPaymentDate] = useState<string>(
     () => initialFormValues.payment_date || "",
+  );
+
+  const [category, setCategory] = useState<string>(
+    () => initialFormValues.category || "",
+  );
+
+  const [categoryDescription, setCategoryDescription] = useState<string>(
+    () => initialFormValues.category_description || "",
   );
 
   // Amount handlers
@@ -117,6 +128,8 @@ const CreateAccountPayableFormSubmit = ({
       amount_paid: displayAmountPaid,
       due_date: dueDate,
       payment_date: paymentDate,
+      category,
+      category_description: categoryDescription,
     };
 
     onFormValuesChange(allFormValues);
@@ -126,6 +139,35 @@ const CreateAccountPayableFormSubmit = ({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+        {/* Category */}
+        <SelectField
+          key={category}
+          label="Categoria *"
+          htmlfor="category"
+          name="category"
+          value={category}
+          errorName={state.createAccountPayableError?.category}
+          disabled={pending}
+          placeholder="Selecione a categoria da conta"
+          options={ACCOUNT_PAYABLE_CATEGORY_OPTIONS}
+          onChange={setCategory}
+        />
+
+        {/* Category description - only meaningful with OTHER */}
+        {category === "OTHER" && (
+          <FormInput
+            label="Descrição da categoria *"
+            htmlfor="category_description"
+            name="category_description"
+            type="text"
+            errorName={state.createAccountPayableError?.category_description}
+            value={categoryDescription}
+            onChange={(e) => setCategoryDescription(e.target.value)}
+            placeholder="Ex.: taxa de licenciamento"
+            disabled={pending}
+          />
+        )}
+
         {/* Due Date */}
         <DatePickerField
           label="Data de vencimento *"

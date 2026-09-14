@@ -9,6 +9,18 @@ import { ActivityToolbar } from "@/app/(protected)/_components/admin/activity-lo
 
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
+import { getActivitySummary } from "@/actions/activity/get-activity-summary";
+import { ActivityStats } from "@/features/activity/stats";
+
+import { ActivityTimelineFeed } from "@/features/activity/timeline-feed";
+import { listActivitiesCursor } from "@/actions/activity/list-activities-cursor";
+import {
+  ActivityViewSwitch,
+  type ActivityView,
+} from "@/features/activity/view-switch";
+
+import { ActivityPeriodSwitch } from "@/features/activity/period-switch";
+
 interface MetaInfo {
   total: number;
   page: number;
@@ -16,7 +28,13 @@ interface MetaInfo {
 }
 
 interface ActivityContentProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+  searchParams: {
+    page?: string;
+    pageSize?: string;
+    search?: string;
+    view?: string;
+    period?: string;
+  };
   token: string;
 }
 
@@ -29,6 +47,16 @@ const ActivityContent = async ({
 
   const search = searchParams.search || "";
 
+  const activeView: ActivityView =
+    searchParams.view === "table" ? "table" : "timeline";
+
+  const period: "7d" | "30d" = searchParams.period === "30d" ? "30d" : "7d";
+
+  // Aggregates for the cards come from the API over the whole period —
+  // counting the loaded page would describe the page, not the operation.
+  const summaryResponse = await getActivitySummary(period);
+  const summary = summaryResponse.success ? (summaryResponse.data ?? null) : null;
+
   let activityResponseError = {
     error: false,
     errorMessage: "",
@@ -36,6 +64,18 @@ const ActivityContent = async ({
 
   let activity: ActivityProps[] = [];
   let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
+
+  // The timeline reads its own feed: cursor paginated and bounded by the
+  // same window the cards describe. Fetching it only for the view that shows
+  // it keeps the table's request untouched.
+  const timelineResponse =
+    activeView === "timeline"
+      ? await listActivitiesCursor({
+          period,
+          search: search || undefined,
+          businessId: undefined,
+        })
+      : null;
 
   let response: Response | undefined;
 
@@ -89,6 +129,33 @@ const ActivityContent = async ({
 
   return (
     <>
+      <div
+        className="flex flex-col gap-3 mt-9 mb-6 sm:flex-row
+        sm:items-center sm:justify-between"
+      >
+        <ActivityViewSwitch activeView={activeView} />
+        <ActivityPeriodSwitch period={period} />
+      </div>
+
+      <ActivityStats summary={summary} />
+
+      {activeView === "timeline" ? (
+        <div className="my-9">
+          <ActivityTimelineFeed
+            initialActivities={timelineResponse?.data ?? []}
+            initialCursor={timelineResponse?.nextCursor ?? null}
+            initialHasMore={timelineResponse?.hasMore ?? false}
+            period={period}
+            search={search || undefined}
+            showBusiness={true}
+            responseError={
+              timelineResponse && !timelineResponse.success
+                ? { error: true, errorMessage: timelineResponse.message }
+                : activityResponseError
+            }
+          />
+        </div>
+      ) : (
       <DataTable
         data={activity}
         meta={meta}
@@ -96,6 +163,7 @@ const ActivityContent = async ({
         responseError={activityResponseError}
         toolbar={createElement(ActivityToolbar)}
       />
+      )}
     </>
   );
 };

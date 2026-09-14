@@ -27,6 +27,7 @@ import { ProtectedAccountSettings } from "../protected-account-settings";
 import { ProtectedGetAppButton } from "../protected-get-app-button";
 
 import { SearchInput } from "../protected-search-input";
+import { ProtectedNotificationsMenu } from "../protected-notifications-menu";
 
 import { TutorialProvider } from "../protected-tutorial/tutorial-provider";
 import TutorialComponent from "../protected-tutorial/tutorial-component";
@@ -37,6 +38,9 @@ import { useAuthStore } from "@/store/auth-store";
 import { SidebarWrapper } from "../protected-provider/sidebar-wrapper";
 
 import { ProtectedTrajettoLogo } from "../protected-trajetto-logo";
+
+import { ChatGlobalListener } from "@/features/deliveries/chat/global-listener";
+
 import type { DefaultLayoutProps } from "./default-layout.types";
 
 const DefaultLayout = ({
@@ -74,10 +78,17 @@ const DefaultLayout = ({
     permissions: userPermissions,
     driverId: userLogged.driverId,
     profileAccess: userLogged.profileAccess,
+    enabledModules: userLogged.enabledModules,
   };
 
   return (
     <QueryClientProvider client={queryClientProps}>
+      {/* Renders nothing. It is the chat listening on every screen, so the
+      unread badge and the driver's delivered check stop depending on the
+      chat tab being open — it sits inside the provider because it lives on
+      the same thread-list query the panel uses. */}
+      <ChatGlobalListener />
+
       <TutorialProvider userPermissions={tutorialUserPermissions}>
         <SidebarWrapper>
           <TutorialComponent />
@@ -157,7 +168,10 @@ const DefaultLayout = ({
                 <ProtectedBreadCrumbs />
               </div>
 
-              <SearchInput />
+              <div className="flex items-center gap-2 pr-4">
+                <SearchInput />
+                <ProtectedNotificationsMenu />
+              </div>
             </header>
             <main className="px-6 pt-6 h-full w-full">{children}</main>
           </SidebarInset>

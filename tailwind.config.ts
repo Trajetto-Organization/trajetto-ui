@@ -190,6 +190,22 @@ export default {
           "0%, 100%": { transform: "scale(1)", opacity: "0.6" },
           "50%": { transform: "scale(1.1)", opacity: "1" },
         },
+        // The three dots of the chat "typing" bubble. Each dot runs the same
+        // 1.4s cycle staggered by 200ms, which is what makes the bounce read
+        // as a wave travelling left to right instead of three dots blinking.
+        "typing-dot": {
+          "0%, 60%, 100%": { transform: "translateY(0)", opacity: "0.35" },
+          "30%": { transform: "translateY(-4px)", opacity: "1" },
+        },
+        // The waveform of the chat "recording" bubble, the counterpart of
+        // the dots above. Each bar runs the same 1s cycle staggered by
+        // 120ms, and squashes rather than moves: bars of different heights
+        // rising and falling out of phase is what reads as a voice, where
+        // the same bars bouncing as a block would read as loading.
+        "recording-wave": {
+          "0%, 100%": { transform: "scaleY(0.35)" },
+          "50%": { transform: "scaleY(1)" },
+        },
         wiggle: {
           "0%, 100%": { transform: "rotate(0deg)" },
           "20%": { transform: "rotate(-10deg)" },
@@ -224,6 +240,8 @@ export default {
         "pulse-scale": "pulse-scale 2s ease-in-out infinite",
         "pulse-scale-sm": "pulse-scale-sm 2s ease-in-out infinite",
         "bob-y": "bob-y 2s ease-in-out infinite",
+        "typing-dot": "typing-dot 1.4s ease-in-out infinite",
+        "recording-wave": "recording-wave 1s ease-in-out infinite",
         wiggle: "wiggle 5s ease-in-out infinite alternate",
       },
     },

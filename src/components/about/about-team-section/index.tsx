@@ -1,16 +1,11 @@
-"use client";
-
 import { Reveal } from "@/components/shared/reveal";
-
 import Image from "next/image";
 
-// Imports estáticos: o Next gera o `blurDataURL` no build. O padrão anterior
-// (`useState` + fade + skeleton cinza) dependia de JS no cliente e piscava.
-import michaelPhoto from "@/../public/about/michael-about-co-founder.webp";
-import gabrielPhoto from "@/../public/about/gabriel-about-co-founder.webp";
+import michaelPhoto from "@/assets/about/michael-about-co-founder.webp";
+import gabrielPhoto from "@/assets/about/gabriel-about-co-founder.webp";
 
-import thiagoPhoto from "@/../public/about/thiago-about-co-founder.webp";
-import jomarPhoto from "@/../public/about/jomar-about-co-founder.webp";
+import thiagoPhoto from "@/assets/about/thiago-about-co-founder.webp";
+import jomarPhoto from "@/assets/about/jomar-about-co-founder.webp";
 
 const AboutTeamSection = (): JSX.Element => {
   const team = [

@@ -24,7 +24,9 @@ interface AIVerificationEvent {
 }
 
 interface BusinessUsageData {
+  /** Completed verifications only — running analyses ride in inProgress. */
   used: number;
+  inProgress?: number;
   limit: number;
   remaining: number;
   resetAt: string | null;

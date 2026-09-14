@@ -48,6 +48,7 @@ type NotificationAction =
   | { type: "ADD_BATCH"; payload: Notification[] }
   | { type: "DELETE"; payload: string }
   | { type: "MARK_READ"; payload: string }
+  | { type: "MARK_ALL_READ" }
   | { type: "REPLACE_ALL"; payload: Notification[] }
   | {
       type: "SYNC_WITH_SERVER";
@@ -68,18 +69,13 @@ interface NotificationsContextType {
   addNotification: (notification: Notification) => void;
   removeNotification: (notificationId: string) => void;
   markNotificationAsRead: (notificationId: string) => void;
+  markAllNotificationsAsRead: () => void;
   clearNotifications: () => void;
   syncWithServerData: (
     serverNotifications: Notification[],
     serverIds: string[],
   ) => void;
   replaceAllNotifications: (notifications: Notification[]) => void;
-
-  // WhatsApp support
-  subscribeToWhatsAppEvents: (
-    eventType: string,
-    callback: (data: any) => void,
-  ) => () => void;
 }
 
 // ============================================================================
@@ -139,6 +135,18 @@ function notificationReducer(
       if (notification && !notification.read) {
         newMap.set(action.payload, { ...notification, read: true });
       }
+
+      return { ...state, notifications: newMap };
+    }
+
+    case "MARK_ALL_READ": {
+      const newMap = new Map(state.notifications);
+
+      newMap.forEach((notification, id) => {
+        if (!notification.read) {
+          newMap.set(id, { ...notification, read: true });
+        }
+      });
 
       return { ...state, notifications: newMap };
     }
@@ -273,11 +281,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   const pendingToasts = useRef(new Set<string>());
   const toastTimeouts = useRef(new Map<string, NodeJS.Timeout>());
 
-  // WhatsApp event dispatcher (unchanged)
-  const whatsAppEventDispatcher = useRef<{
-    [key: string]: ((data: any) => void)[];
-  }>({});
-
   // ============================================================================
   // DERIVED STATE (computed from Map)
   // ============================================================================
@@ -347,74 +350,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
     pendingToasts.current.delete(notificationId);
   }, []);
-
-  // ============================================================================
-  // WHATSAPP HANDLING
-  // ============================================================================
-  const handleWhatsAppNotification = useCallback((notification: any) => {
-    const eventType = notification.type;
-    if (whatsAppEventDispatcher.current[eventType]) {
-      whatsAppEventDispatcher.current[eventType].forEach((callback) => {
-        callback(notification);
-      });
-    }
-
-    const getToastMessage = (type: string, data: any) => {
-      switch (type) {
-        case "whatsapp_connection":
-          return data?.connected
-            ? { message: "WhatsApp conectado com sucesso!", type: "success" }
-            : { message: "WhatsApp foi desconectado", type: "warning" };
-        case "whatsapp_disabled":
-          return {
-            message: "WhatsApp foi desabilitado automaticamente",
-            type: "warning",
-          };
-        case "whatsapp_instance_cleanup":
-          return {
-            message:
-              notification.message ||
-              "Seu WhatsApp foi desconectado porque outro usuário se conectou com este número",
-            type: "warning",
-          };
-        default:
-          return {
-            message: notification.message || "Atualização WhatsApp",
-            type: "info",
-          };
-      }
-    };
-
-    const toastData = getToastMessage(eventType, notification.data);
-
-    if (toastData.type === "success") {
-      toast.success(toastData.message, { id: `whatsapp-${eventType}` });
-    } else if (toastData.type === "warning") {
-      toast.warning(toastData.message, { id: `whatsapp-${eventType}` });
-    } else {
-      toast.info(toastData.message, { id: `whatsapp-${eventType}` });
-    }
-  }, []);
-
-  const subscribeToWhatsAppEvents = useCallback(
-    (eventType: string, callback: (data: any) => void) => {
-      if (!whatsAppEventDispatcher.current[eventType]) {
-        whatsAppEventDispatcher.current[eventType] = [];
-      }
-
-      whatsAppEventDispatcher.current[eventType].push(callback);
-
-      return () => {
-        if (whatsAppEventDispatcher.current[eventType]) {
-          whatsAppEventDispatcher.current[eventType] =
-            whatsAppEventDispatcher.current[eventType].filter(
-              (cb) => cb !== callback,
-            );
-        }
-      };
-    },
-    [],
-  );
 
   // ============================================================================
   // FORMAT NOTIFICATION DATE
@@ -493,12 +428,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         });
 
         socket.on("pushNotification", (notification: Notification) => {
-          // WhatsApp handling
-          if (notification.type?.startsWith("whatsapp_")) {
-            handleWhatsAppNotification(notification);
-            return;
-          }
-
           // IDEMPOTENCY: Skip if already processed
           if (processedIds.current.has(notification.id)) {
             return;
@@ -595,6 +524,29 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         });
 
+        // Hired modules changed — the session stays valid (the API is the
+        // enforcement point); the UI just refreshes what it may show.
+        socket.on(
+          "entitlementsChanged",
+          (event: { module: string; enabled: boolean }) => {
+            window.dispatchEvent(
+              new CustomEvent("entitlements-changed", { detail: event }),
+            );
+
+            // Same path a revoked permission takes: re-read /user/me, refresh
+            // the menus from the answer and walk the user out of the page if
+            // it just stopped being theirs.
+            window.dispatchEvent(new CustomEvent("security-check-required"));
+
+            toast.info(
+              event.enabled
+                ? "Um novo módulo foi habilitado para a sua empresa."
+                : "Um módulo foi desabilitado para a sua empresa.",
+              { id: `entitlement-${event.module}` },
+            );
+          },
+        );
+
         // On reconnect, trigger a security check to catch events missed during disconnection
         socket.io.on("reconnect", () => {
           dispatch({ type: "SET_CONNECTED", payload: true });
@@ -624,6 +576,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         socket.off("securityAction");
 
         socket.off("aiVerification");
+        socket.off("entitlementsChanged");
 
         socket.off("connect");
         socket.off("disconnect");
@@ -634,11 +587,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     };
     // CRITICAL: Only run once on mount - no dependencies that change
     // We use stateRef to access current state without creating new closures
-  }, [
-    formatNotificationForDisplay,
-    handleWhatsAppNotification,
-    showToastSafely,
-  ]);
+  }, [formatNotificationForDisplay, showToastSafely]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -673,6 +622,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const markNotificationAsRead = useCallback((notificationId: string) => {
     dispatch({ type: "MARK_READ", payload: notificationId });
+  }, []);
+
+  const markAllNotificationsAsRead = useCallback(() => {
+    dispatch({ type: "MARK_ALL_READ" });
   }, []);
 
   const clearNotifications = useCallback(() => {
@@ -731,12 +684,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     addNotification,
     removeNotification,
     markNotificationAsRead,
+    markAllNotificationsAsRead,
     clearNotifications,
     syncWithServerData,
     replaceAllNotifications,
-
-    // WhatsApp
-    subscribeToWhatsAppEvents,
   };
 
   return (
@@ -747,4 +698,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 const useNotificationsContext = () => useContext(NotificationsContext);
+
 export { NotificationsProvider, useNotificationsContext };
+export type { Notification };

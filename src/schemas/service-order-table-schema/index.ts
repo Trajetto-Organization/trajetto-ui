@@ -6,6 +6,7 @@ export const serviceOrderTableSchema = z.object({
   completion_date: z.union([z.string(), z.date()]).nullable(),
   maintenance_type: z.enum(["INTERNAL", "EXTERNAL"]),
   total_amount: z.union([z.number(), z.string()]),
+  description: z.string().nullable().optional(),
   current_mileage_at_service: z.number().nullable(),
   maintenance_interval_km_at_service: z.number().nullable(),
   last_maintenance_mileage_at_service: z.number().nullable(),

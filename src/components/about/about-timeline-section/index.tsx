@@ -1,5 +1,3 @@
-"use client";
-
 import { Reveal } from "@/components/shared/reveal";
 import { TrendingUp, Award, Truck, Code } from "lucide-react";
 

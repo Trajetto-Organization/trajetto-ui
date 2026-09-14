@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-
 import { Bell, Settings } from "lucide-react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,10 +16,9 @@ import { UserPasswordForm } from "@/app/(protected)/_components/profile/account/
 import { UserTwoFactorAuthentication } from "@/app/(protected)/_components/profile/account/user-two-factor-authentication";
 
 import { WhatsAppNotifications } from "@/app/(protected)/_components/profile/notifications/whatsapp/whatsapp-notifications";
-import { WhatsAppProvider } from "@/app/(protected)/_components/profile/notifications/whatsapp/shared/provider";
+import { NotificationPreferences } from "@/app/(protected)/_components/profile/notifications/preferences";
 
-import { EmailNotifications } from "@/app/(protected)/_components/profile/notifications/email";
-import { ActivityNotifications } from "@/app/(protected)/_components/profile/notifications/activity";
+import type { NotificationPreferenceRow } from "@/actions/notifications";
 
 interface ProfileContentProps {
   token: string;
@@ -62,6 +60,7 @@ async function getProfileData(token: string) {
       if (response.status === 401) {
         redirect("/login");
       }
+
       userResponseError = true;
     }
 
@@ -86,6 +85,33 @@ async function getProfileData(token: string) {
   }
 
   return { userLogged, userResponseError };
+}
+
+async function getNotificationPreferences(
+  token: string,
+): Promise<NotificationPreferenceRow[] | null> {
+  try {
+    const response = await fetch(
+      `${process.env.HTTP_REQUEST}/notification/preferences`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        next: { tags: ["notification-preferences"] },
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const { preferences } = await response.json();
+    return preferences;
+  } catch (error) {
+    return null;
+  }
 }
 
 async function getWhatsAppSettings(token: string) {
@@ -127,75 +153,68 @@ const ProfileContent = async ({
     ? await getWhatsAppSettings(token)
     : null;
 
+  const notificationPreferences = await getNotificationPreferences(token);
+
   return (
-    <WhatsAppProvider initialSettings={whatsappSettings}>
-      <Tabs defaultValue="account" className="mt-6">
-        <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="account" className="flex-1 sm:flex-auto gap-2">
-            <Settings className="h-4 w-4" />
-            Configurações
-          </TabsTrigger>
+    <Tabs defaultValue="account" className="mt-6">
+      <TabsList className="w-full sm:w-auto">
+        <TabsTrigger value="account" className="flex-1 sm:flex-auto gap-2">
+          <Settings className="h-4 w-4" />
+          Configurações
+        </TabsTrigger>
 
-          <TabsTrigger
-            value="notifications"
-            className="flex-1 sm:flex-auto gap-2"
-          >
-            <Bell className="h-4 w-4" />
-            Notificações
-          </TabsTrigger>
-        </TabsList>
+        <TabsTrigger
+          value="notifications"
+          className="flex-1 sm:flex-auto gap-2"
+        >
+          <Bell className="h-4 w-4" />
+          Notificações
+        </TabsTrigger>
+      </TabsList>
 
-        <TabsContent value="account" className="mt-6">
-          <Card>
-            <CardContent className="px-6">
-              <AvatarUpload
+      <TabsContent value="account" className="mt-6">
+        <Card>
+          <CardContent className="px-6">
+            <AvatarUpload
+              userName={userLogged.name}
+              avatarUrl={userLogged.avatar}
+            />
+            <div className="divide-y divide-muted">
+              <UserNameForm
                 userName={userLogged.name}
-                avatarUrl={userLogged.avatar}
+                error={userResponseError}
               />
-              <div className="divide-y divide-muted">
-                <UserNameForm
-                  userName={userLogged.name}
-                  error={userResponseError}
-                />
-                <UserPasswordForm error={userResponseError} />
-                <UserTwoFactorAuthentication
-                  error={userResponseError}
-                  isTwoFactorEnabled={userLogged.two_factor_enabled}
-                />
-              </div>
+              <UserPasswordForm error={userResponseError} />
+              <UserTwoFactorAuthentication
+                error={userResponseError}
+                isTwoFactorEnabled={userLogged.two_factor_enabled}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="notifications" className="mt-6">
+        <div className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <NotificationPreferences
+                initialPreferences={notificationPreferences}
+              />
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="notifications" className="mt-6">
-          <div className="space-y-6">
-            {canSeeWhatsApp && (
-              <WhatsAppNotifications
-                error={userResponseError}
-                userRole={userLogged.role}
-                driverId={userLogged.driverId}
-              />
-            )}
-
-            <Card>
-              <CardContent className="p-6">
-                <EmailNotifications
-                  initialEnabled={userLogged.email_notifications_enabled}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <ActivityNotifications
-                  initialEnabled={userLogged.activity_notifications_enabled}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </WhatsAppProvider>
+          {canSeeWhatsApp && (
+            <WhatsAppNotifications
+              error={userResponseError}
+              userRole={userLogged.role}
+              driverId={userLogged.driverId}
+              initialSettings={whatsappSettings}
+            />
+          )}
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 };
 

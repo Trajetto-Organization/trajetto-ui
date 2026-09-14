@@ -4,6 +4,8 @@ import { useRef, useEffect, useCallback } from "react";
 import { Reveal } from "@/components/shared/reveal";
 
 import Image from "next/image";
+import trajettoLogo from "@/assets/logo/trajetto-logo.png";
+
 import {
   LineChart,
   BarChart3,
@@ -229,36 +231,37 @@ const InteractiveDemo = (): JSX.Element => {
             <div
               ref={containerRef}
               className="relative bg-background rounded-2xl
-            shadow-2xl overflow-hidden border border-border/50"
+              shadow-2xl overflow-hidden border border-border/50"
               id="interactive-demo-container"
             >
               {/* Layout with Sidebar */}
               <div
                 className="flex h-[400px] sm:h-[500px] 
-              md:h-[600px] lg:h-[700px] xl:h-[800px]"
+                md:h-[600px] lg:h-[700px] xl:h-[800px]"
               >
                 {/* Sidebar */}
                 <div
                   className="hidden lg:flex w-48 xl:w-64 bg-sidebar 
-                border-r border-sidebar-border flex-col overflow-hidden pt-2"
+                  border-r border-sidebar-border flex-col overflow-hidden pt-2"
                 >
                   {/* Sidebar Header */}
                   <div
                     className="flex gap-2 py-2 
-                  text-sidebar-accent-foreground 
-                  px-2 xl:px-4"
+                    text-sidebar-accent-foreground 
+                    px-2 xl:px-4"
                   >
                     <div
                       className="flex aspect-square size-6 xl:size-8 
-                    items-center justify-center rounded-lg 
-                    bg-sidebar-primary text-sidebar-primary-foreground"
+                      items-center justify-center rounded-lg 
+                      bg-sidebar-primary text-sidebar-primary-foreground"
                     >
                       <Image
-                        src="/trajetto-logo.png"
+                        src={trajettoLogo}
                         alt="Trajetto"
                         width={16}
                         height={16}
                         className="size-3 xl:size-4"
+                        placeholder="blur"
                       />
                     </div>
                     <div
@@ -283,12 +286,12 @@ const InteractiveDemo = (): JSX.Element => {
                         <div
                           key={index}
                           className={`flex items-center rounded-md px-2 
-                        xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm 
-                        font-medium ${
-                          item.isActive
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                        }`}
+                          xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm 
+                          font-medium ${
+                            item.isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          }`}
                         >
                           <item.icon className="mr-1.5 xl:mr-2 h-3 xl:h-4 w-3 xl:w-4" />
                           <span className="hidden xl:inline">{item.title}</span>
@@ -309,20 +312,20 @@ const InteractiveDemo = (): JSX.Element => {
                   <div className="mt-auto p-2 xl:p-3">
                     <div
                       className="flex items-center gap-1 xl:gap-2 
-                    rounded-md px-2 xl:px-3 py-1.5 xl:py-2 
-                    hover:bg-sidebar-accent"
+                      rounded-md px-2 xl:px-3 py-1.5 xl:py-2 
+                      hover:bg-sidebar-accent"
                     >
                       <div
                         className="flex h-6 w-6 xl:h-8 xl:w-8 items-center 
-                      justify-center rounded-lg bg-sidebar-primary 
-                      text-sidebar-primary-foreground 
-                      text-xs font-bold"
+                        justify-center rounded-lg bg-sidebar-primary 
+                        text-sidebar-primary-foreground 
+                        text-xs font-bold"
                       >
                         JS
                       </div>
                       <div
                         className="grid flex-1 text-left 
-                      text-xs xl:text-sm leading-tight"
+                        text-xs xl:text-sm leading-tight"
                       >
                         <span className="truncate font-semibold hidden xl:block">
                           João Silva
@@ -340,8 +343,8 @@ const InteractiveDemo = (): JSX.Element => {
                   {/* Header */}
                   <header
                     className="flex h-10 sm:h-12 lg:h-14 shrink-0 
-                  items-center justify-between gap-2 border-b 
-                  border-border px-2 sm:px-4"
+                    items-center justify-between gap-2 border-b 
+                    border-border px-2 sm:px-4"
                   >
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Menu className="hidden lg:flex -ml-1 h-3 sm:h-4 w-3 sm:w-4" />
@@ -353,14 +356,14 @@ const InteractiveDemo = (): JSX.Element => {
                     <div className="relative ">
                       <Search
                         className="absolute left-2 sm:left-3 top-1/2 h-3 
-                      sm:h-4 w-3 sm:w-4 -translate-y-1/2 text-muted-foreground"
+                        sm:h-4 w-3 sm:w-4 -translate-y-1/2 text-muted-foreground"
                       />
                       <input
                         className="h-7 sm:h-9 w-32 sm:w-40 lg:w-64 rounded-md border 
-                      border-input bg-background pl-7 sm:pl-9 pr-2 sm:pr-3 text-xs 
-                      sm:text-sm ring-offset-background placeholder:text-muted-foreground 
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
-                      focus-visible:ring-offset-2"
+                        border-input bg-background pl-7 sm:pl-9 pr-2 sm:pr-3 text-xs 
+                        sm:text-sm ring-offset-background placeholder:text-muted-foreground 
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+                        focus-visible:ring-offset-2"
                         placeholder="Buscar..."
                         readOnly
                       />
@@ -378,33 +381,33 @@ const InteractiveDemo = (): JSX.Element => {
                       {/* Tabs */}
                       <div
                         className="flex flex-col gap-2 sm:gap-4 sm:flex-row 
-                      sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6"
+                        sm:items-center sm:justify-between mb-3 sm:mb-4 lg:mb-6"
                         data-demo-target="overview"
                       >
                         <div
                           className="flex bg-muted p-0.5 sm:p-1 
-                        rounded-lg w-full sm:w-auto"
+                          rounded-lg w-full sm:w-auto"
                         >
                           <button
                             className="flex items-center space-x-1 
-                          flex-1 sm:flex-initial rounded-md bg-background 
-                          px-2 sm:px-3 py-1 shadow-sm text-xs sm:text-sm"
+                            flex-1 sm:flex-initial rounded-md bg-background 
+                            px-2 sm:px-3 py-1 shadow-sm text-xs sm:text-sm"
                           >
                             <LineChart className="h-3 sm:h-4 w-3 sm:w-4" />
                             <span>Overview</span>
                           </button>
                           <button
                             className="flex items-center space-x-1 flex-1
-                          sm:flex-initial px-2 sm:px-3 py-1 text-xs
-                          sm:text-sm text-muted-foreground"
+                            sm:flex-initial px-2 sm:px-3 py-1 text-xs
+                            sm:text-sm text-muted-foreground"
                           >
                             <BarChart3 className="h-3 sm:h-4 w-3 sm:w-4" />
                             <span>Análise Gráfica</span>
                           </button>
                           <button
                             className="flex items-center space-x-1 flex-1
-                          sm:flex-initial px-2 sm:px-3 py-1 text-xs
-                          sm:text-sm text-muted-foreground"
+                            sm:flex-initial px-2 sm:px-3 py-1 text-xs
+                            sm:text-sm text-muted-foreground"
                           >
                             <Zap className="h-3 sm:h-4 w-3 sm:w-4" />
                             <span>Limites de Uso</span>
@@ -427,18 +430,18 @@ const InteractiveDemo = (): JSX.Element => {
                       <div
                         data-demo-target="stats"
                         className={`grid grid-cols-2 gap-1.5 sm:gap-2 lg:gap-4 
-                      sm:grid-cols-2 lg:grid-cols-4 mb-3 sm:mb-4 
-                      lg:mb-6 transition-all duration-500 ${
-                        currentStep === 1
-                          ? "ring-2 ring-[#d81b60] rounded-lg p-2 bg-[#d81b60]/5 shadow-lg"
-                          : ""
-                      }`}
+                        sm:grid-cols-2 lg:grid-cols-4 mb-3 sm:mb-4 
+                        lg:mb-6 transition-all duration-500 ${
+                          currentStep === 1
+                            ? "ring-2 ring-[#d81b60] rounded-lg p-2 bg-[#d81b60]/5 shadow-lg"
+                            : ""
+                        }`}
                       >
                         {fakeStats.map((stat, index) => (
                           <Card
                             key={index}
                             className="overflow-hidden 
-                          shadow-sm sm:shadow-md"
+                            shadow-sm sm:shadow-md"
                           >
                             <div className="flex">
                               <div
@@ -465,7 +468,7 @@ const InteractiveDemo = (): JSX.Element => {
                                 </CardHeader>
                                 <CardContent
                                   className="pb-1.5 sm:pb-2 lg:pb-4 
-                                pt-0 px-2 sm:px-4 lg:px-6"
+                                  pt-0 px-2 sm:px-4 lg:px-6"
                                 >
                                   <div
                                     className="text-lg sm:text-xl 
@@ -538,37 +541,37 @@ const InteractiveDemo = (): JSX.Element => {
                                   <TableRow>
                                     <TableHead
                                       className="text-xs sm:text-sm 
-                                    px-1 sm:px-2 lg:px-4"
+                                      px-1 sm:px-2 lg:px-4"
                                     >
                                       Tipo
                                     </TableHead>
                                     <TableHead
                                       className="w-[30%] sm:w-[25%] text-xs 
-                                    sm:text-sm px-1 sm:px-2 lg:px-4"
+                                      sm:text-sm px-1 sm:px-2 lg:px-4"
                                     >
                                       Descrição
                                     </TableHead>
                                     <TableHead
                                       className="hidden lg:table-cell text-xs 
-                                    sm:text-sm px-1 sm:px-2 lg:px-4"
+                                      sm:text-sm px-1 sm:px-2 lg:px-4"
                                     >
                                       Nome do usuário
                                     </TableHead>
                                     <TableHead
                                       className="hidden xl:table-cell text-xs 
-                                    sm:text-sm px-1 sm:px-2 lg:px-4"
+                                      sm:text-sm px-1 sm:px-2 lg:px-4"
                                     >
                                       E-mail do usuário
                                     </TableHead>
                                     <TableHead
                                       className="text-xs sm:text-sm 
-                                    px-1 sm:px-2 lg:px-4"
+                                      px-1 sm:px-2 lg:px-4"
                                     >
                                       Data
                                     </TableHead>
                                     <TableHead
                                       className="text-xs sm:text-sm 
-                                    px-1 sm:px-2 lg:px-4"
+                                      px-1 sm:px-2 lg:px-4"
                                     >
                                       Status
                                     </TableHead>
@@ -586,31 +589,31 @@ const InteractiveDemo = (): JSX.Element => {
                                       </TableCell>
                                       <TableCell
                                         className="text-xs sm:text-sm px-1 
-                                      sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                        sm:px-2 lg:px-4 py-1.5 sm:py-2"
                                       >
                                         {activity.description}
                                       </TableCell>
                                       <TableCell
                                         className="hidden lg:table-cell text-xs 
-                                      sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                        sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2"
                                       >
                                         {activity.user}
                                       </TableCell>
                                       <TableCell
                                         className="hidden xl:table-cell text-xs 
-                                      sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                        sm:text-sm px-1 sm:px-2 lg:px-4 py-1.5 sm:py-2"
                                       >
                                         {activity.email}
                                       </TableCell>
                                       <TableCell
                                         className="text-xs sm:text-sm px-1 
-                                      sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                        sm:px-2 lg:px-4 py-1.5 sm:py-2"
                                       >
                                         {activity.date}
                                       </TableCell>
                                       <TableCell
                                         className="text-xs sm:text-sm px-1 
-                                      sm:px-2 lg:px-4 py-1.5 sm:py-2"
+                                        sm:px-2 lg:px-4 py-1.5 sm:py-2"
                                       >
                                         {getStatusBadge(activity.status)}
                                       </TableCell>
@@ -640,8 +643,8 @@ const InteractiveDemo = (): JSX.Element => {
                             <Card
                               key={index}
                               className="shadow-sm sm:shadow-md transition-all 
-                            hover:bg-muted/50 h-full min-h-[80px] sm:min-h-[100px] 
-                            lg:min-h-[120px] xl:min-h-[140px]"
+                              hover:bg-muted/50 h-full min-h-[80px] sm:min-h-[100px] 
+                              lg:min-h-[120px] xl:min-h-[140px]"
                             >
                               <CardContent
                                 className="flex h-full flex-col 
@@ -650,8 +653,8 @@ const InteractiveDemo = (): JSX.Element => {
                               >
                                 <div
                                   className="mb-1 sm:mb-2 lg:mb-3 
-                                rounded-full p-1 sm:p-2 lg:p-3 
-                                flex-shrink-0"
+                                  rounded-full p-1 sm:p-2 lg:p-3 
+                                  flex-shrink-0"
                                   style={{
                                     backgroundColor: `${link.color}20`,
                                     color: link.color,
@@ -659,12 +662,12 @@ const InteractiveDemo = (): JSX.Element => {
                                 >
                                   <link.icon
                                     className="h-3 sm:h-4 lg:h-5 
-                                  xl:h-6 w-3 sm:w-4 lg:w-5 xl:w-6"
+                                    xl:h-6 w-3 sm:w-4 lg:w-5 xl:w-6"
                                   />
                                 </div>
                                 <CardTitle
                                   className="text-xs sm:text-sm 
-                                font-medium leading-tight"
+                                  font-medium leading-tight"
                                 >
                                   <span className="hidden sm:inline">
                                     {link.title}

@@ -1,17 +1,7 @@
 import { redirect } from "next/navigation";
 
-import type { Permission, PermissionKey } from "../../shared/common.types";
 import type { ValidateUserAccessParams } from "./protected-provider.types";
-
-import { appRoutes } from "@/app/app-routes";
-
-// Build page permissions map once at module level
-const PAGE_PERMISSIONS: Record<string, PermissionKey> = {};
-appRoutes.forEach((route) => {
-  if (route.requiredPermission) {
-    PAGE_PERMISSIONS[route.path] = route.requiredPermission;
-  }
-});
+import { accessDeniedRedirect, canAccessPath } from "@/lib/route-access";
 
 async function handleUserResponseError(response: Response) {
   if (response.status === 401) {
@@ -41,6 +31,7 @@ function validateUserAccess({
   jwtRole,
   jwtDriverId,
   pathname,
+  enabledModules,
 }: ValidateUserAccessParams) {
   // Critical changes that require re-authentication:
   // Role changed or driver status changed
@@ -63,21 +54,27 @@ function validateUserAccess({
     redirect("/login?error=no_user_permission&force_logout=true");
   }
 
-  // Page-level permission check for BUSINESS_USER employees
-  if (pathname && user.role === "BUSINESS_USER" && !user.driverId) {
-    const requiredPermission = Object.entries(PAGE_PERMISSIONS).find(
-      ([path]) => pathname === path || pathname.startsWith(`${path}/`),
-    )?.[1];
+  // Page-level gate, run before anything renders: missing permission or a
+  // module the company does not have both end the same way, as a redirect.
+  //
+  // Letting the page render and having the API answer 403 was the older
+  // behaviour, and it read as a broken screen rather than as a boundary —
+  // the same reason an employee never sees a page outside their profile.
+  if (!pathname) return;
 
-    if (requiredPermission) {
-      const hasPermission = user.profileAccess?.permissions?.some(
-        (perm: Permission) => perm.permissionKey === requiredPermission,
-      );
+  const isDriver = Boolean(user.driverId);
 
-      if (!hasPermission) {
-        redirect("/dashboard");
-      }
-    }
+  const allowed = canAccessPath(pathname, {
+    role: user.role,
+    permissions: user.profileAccess?.permissions?.map(
+      (permission) => permission.permissionKey,
+    ),
+    enabledModules,
+    isDriver,
+  });
+
+  if (!allowed) {
+    redirect(accessDeniedRedirect(user.role, isDriver));
   }
 }
 

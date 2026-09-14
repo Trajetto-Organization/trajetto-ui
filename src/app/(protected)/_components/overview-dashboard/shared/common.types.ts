@@ -90,6 +90,8 @@ interface OverviewDashboardProps {
         canWrite: boolean;
       }>;
     };
+    /** Server-rendered fallback while the auth store has not confirmed yet. */
+    enabledModules?: string[];
   };
   dashboardError?: {
     error: boolean;

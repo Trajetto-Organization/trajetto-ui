@@ -3,12 +3,11 @@
 import Link from "next/link";
 
 import Image from "next/image";
-
-// Import estático: o Next gera o `blurDataURL` no build (ver app-show-case).
-import managementDashboard from "@/../public/trajetto-management-dashboard.webp";
+import managementDashboard from "@/assets/home/trajetto-management-dashboard.webp";
 
 import { Reveal } from "@/components/shared/reveal";
 import { useTilt } from "@/hooks/use-tilt";
+
 import { buttonVariants } from "@/components/ui/button";
 
 import { ArrowRight } from "lucide-react";

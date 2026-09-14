@@ -8,18 +8,10 @@ import { useConnectionStore } from "@/lib/connection-status";
 
 import { parseJwt } from "@/lib/decode-jwt";
 
-import { appRoutes } from "@/app/app-routes";
 import { useAuthStore } from "@/store/auth-store";
+import { accessDeniedRedirect, canAccessPath } from "@/lib/route-access";
 
-import type { Permission, PermissionKey } from "../../shared/common.types";
-
-// Build page permissions map once at module level
-const PAGE_PERMISSIONS: Record<string, PermissionKey> = {};
-appRoutes.forEach((route) => {
-  if (route.requiredPermission) {
-    PAGE_PERMISSIONS[route.path] = route.requiredPermission;
-  }
-});
+import type { Permission } from "../../shared/common.types";
 
 function useNavigationSecurityCheck() {
   const pathname = usePathname();
@@ -121,28 +113,34 @@ function useNavigationSecurityCheck() {
         return;
       }
 
-      // Page-level permission check for BUSINESS_USER employees
+      // Page-level gate, re-evaluated whenever something moved: a revoked
+      // permission and a module the master just switched off are the same
+      // event from the page's point of view — you are standing somewhere you
+      // no longer belong, so you leave.
       const currentPathname = pathnameRef.current;
-      if (currentPathname && user.role === "BUSINESS_USER" && !user.driverId) {
-        const requiredPermission = Object.entries(PAGE_PERMISSIONS).find(
-          ([path]) =>
-            currentPathname === path || currentPathname.startsWith(`${path}/`),
-        )?.[1];
+      const enabledModules: string[] = user.enabledModules ?? [];
 
-        if (requiredPermission) {
-          const hasPermission = user.profileAccess?.permissions?.some(
-            (perm: Permission) => perm.permissionKey === requiredPermission,
-          );
+      const isDriver = Boolean(user.driverId);
 
-          if (!hasPermission) {
-            window.location.href = "/dashboard";
-            return;
-          }
+      if (currentPathname) {
+        const allowed = canAccessPath(currentPathname, {
+          role: user.role,
+          permissions: user.profileAccess?.permissions?.map(
+            (perm: Permission) => perm.permissionKey,
+          ),
+          enabledModules,
+          isDriver,
+        });
+
+        if (!allowed) {
+          window.location.href = accessDeniedRedirect(user.role, isDriver);
+          return;
         }
       }
 
-      // All checks passed — sync fresh permissions to auth store
-      // This updates the sidebar in real-time when permissions change
+      // All checks passed — sync fresh permissions and modules to the auth
+      // store, which is what redraws the sidebar, the command bar and the
+      // dashboard shortcuts without a reload.
       setAuth({
         id: user.id,
         businessId: user.businessId,
@@ -153,6 +151,7 @@ function useNavigationSecurityCheck() {
             canRead: perm.canRead,
             canWrite: perm.canWrite,
           })) || [],
+        enabledModules,
       });
     } catch {
       // Could not reach the API at all — container down, DNS, offline. Same

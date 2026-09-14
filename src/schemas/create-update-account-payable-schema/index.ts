@@ -1,12 +1,56 @@
 import { z } from "zod";
 import {
   emptyStringToNull,
+  hasConsecutiveSpaces,
+  hasSpaceAtEdges,
   isValidDateString,
   parseCurrencyToNumber,
 } from "@/lib/format-values";
 
+const ACCOUNT_PAYABLE_CATEGORIES = [
+  "FUEL",
+  "MAINTENANCE",
+  "INSURANCE",
+  "TAXES_FEES",
+  "FINES",
+  "TOLLS",
+  "RENTAL",
+  "PAYROLL",
+  "OTHER",
+] as const;
+
 const createUpdateAccountPayableSchema = z
   .object({
+    category: z.enum(ACCOUNT_PAYABLE_CATEGORIES, {
+      errorMap: () => ({ message: "Selecione a categoria da conta." }),
+    }),
+    category_description: z.preprocess(
+      emptyStringToNull,
+      z
+        .string()
+        .max(120, "A descrição da categoria deve ter no máximo 120 caracteres.")
+        .superRefine((value, ctx) => {
+          if (hasConsecutiveSpaces(value)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message:
+                "A descrição da categoria não deve conter espaços consecutivos.",
+            });
+
+            return;
+          }
+
+          if (hasSpaceAtEdges(value)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message:
+                "A descrição da categoria não pode começar ou terminar com espaço em branco.",
+            });
+          }
+        })
+        .optional()
+        .nullable(),
+    ),
     due_date: z
       .string()
       .min(1, "Data de vencimento é obrigatória.")
@@ -104,6 +148,13 @@ const createUpdateAccountPayableSchema = z
         "Se há data de pagamento, deve haver valor pago e vice-versa. O valor pago não pode ser maior que o valor total.",
       path: ["amount_paid"],
     },
+  )
+  .refine(
+    (data) => data.category !== "OTHER" || Boolean(data.category_description),
+    {
+      message: 'Descreva a categoria ao selecionar "Outros".',
+      path: ["category_description"],
+    },
   );
 
-export { createUpdateAccountPayableSchema };
+export { createUpdateAccountPayableSchema, ACCOUNT_PAYABLE_CATEGORIES };

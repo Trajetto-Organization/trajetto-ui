@@ -4,6 +4,7 @@ import { Table } from "@tanstack/react-table";
 import {
   Activity,
   AlertCircle,
+  Building2,
   CheckCircle2,
   Clock,
   Edit,
@@ -85,6 +86,9 @@ export function DashboardActivityToolbar<TData>({
       options: [
         { value: "BUSINESS_ADMIN", label: "Admin", icon: User },
         { value: "BUSINESS_USER", label: "Colaborador", icon: User },
+        // Mudanças de plano feitas pela plataforma aparecem nesta tabela, e
+        // um valor visível na coluna precisa ser filtrável.
+        { value: "PLATFORM", label: "Trajetto", icon: Building2 },
       ],
     },
   ];

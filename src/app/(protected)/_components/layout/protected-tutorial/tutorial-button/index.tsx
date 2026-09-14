@@ -37,8 +37,15 @@ const TutorialButton = (): JSX.Element => {
             <HelpCircle className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent className="flex items-center gap-1.5">
           <p>Iniciar Tutorial</p>
+          <kbd
+            className="inline-flex h-4 min-w-4 items-center justify-center
+            rounded border bg-muted px-1 font-mono text-[10px] font-medium
+            text-muted-foreground"
+          >
+            ?
+          </kbd>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -102,11 +109,25 @@ const TutorialMenuItem = (): JSX.Element => {
         </TooltipTrigger>
         <TooltipContent>
           <p
-            className="text-xs text-center 
+            className="text-xs text-center
             text-muted-foreground max-w-48"
           >
             {getTooltipText()}
           </p>
+          {hasTutorial && (
+            <p
+              className="mt-1 flex items-center justify-center gap-1
+              text-[10px] text-muted-foreground"
+            >
+              Atalho:
+              <kbd
+                className="inline-flex h-4 min-w-4 items-center justify-center
+                rounded border bg-muted px-1 font-mono text-[10px] font-medium"
+              >
+                ?
+              </kbd>
+            </p>
+          )}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

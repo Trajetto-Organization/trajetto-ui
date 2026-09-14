@@ -65,29 +65,29 @@ const BusinessSelector = ({
   }
 
   return (
-    <div className="flex items-center gap-2 w-full sm:w-[300px]">
-      {selectedBusiness && (
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-      )}
-
+    <div className="w-full sm:w-[300px]">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="flex-1 sm:w-[300px] justify-between"
+            className="w-full justify-between"
             disabled={isLoading}
           >
-            {selectedBusiness ? (
-              <span className="truncate">
-                {selectedBusiness.corporate_reason}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">
-                Selecione uma empresa para visualizar
-              </span>
-            )}
+            <span className="flex items-center gap-2 min-w-0">
+              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+              {selectedBusiness ? (
+                <span className="truncate">
+                  {selectedBusiness.corporate_reason}
+                </span>
+              ) : (
+                <span className="truncate text-muted-foreground">
+                  Selecione uma empresa
+                </span>
+              )}
+            </span>
             {isLoading ? (
               <Loader className="h-4 w-4 animate-spin opacity-50" />
             ) : (
@@ -96,7 +96,12 @@ const BusinessSelector = ({
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-[300px] p-0" align="start">
+        {/* Follows the field instead of a fixed 300px: on a phone the
+        trigger is full width and a narrower panel looked detached. */}
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+          align="start"
+        >
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Buscar empresa..."

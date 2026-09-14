@@ -24,7 +24,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
@@ -108,13 +108,25 @@ const DatePickerField: React.FC<FormFieldProps> = ({
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent align="start" className="w-full">
-          <div className="flex w-full justify-around mb-2">
+        {/* `w-full` would be a no-op here: the popover lives in a portal, so
+        100% resolves against its own content box. Matching the field is what
+        the Radix trigger-width variable is for — the same mechanism
+        SelectContent already uses, which is why selects line up and this
+        did not.
+
+        The content below stretches with it (selects share the row, day cells
+        flex), so a wide field gets a wide calendar instead of a small grid
+        floating in white space. */}
+        <PopoverContent
+          align="start"
+          className="w-[var(--radix-popover-trigger-width)] min-w-[300px]"
+        >
+          <div className="flex w-full items-center gap-2 mb-2">
             <Select
               value={displayYear.toString()}
               onValueChange={handleYearChange}
             >
-              <SelectTrigger className="w-[110px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Ano" />
               </SelectTrigger>
               <SelectContent>
@@ -130,7 +142,7 @@ const DatePickerField: React.FC<FormFieldProps> = ({
               value={displayMonth.toString()}
               onValueChange={handleMonthChange}
             >
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Mês" />
               </SelectTrigger>
               <SelectContent>
@@ -144,6 +156,29 @@ const DatePickerField: React.FC<FormFieldProps> = ({
           </div>
 
           <Calendar
+            className="w-full p-0"
+            // The base calendar sizes each day to a fixed 36px, which leaves
+            // dead space once the popover follows a wide field. Flexing the
+            // cells makes the grid share whatever width it is given.
+            classNames={{
+              months: "w-full",
+              month: "w-full space-y-4",
+              table: "w-full border-collapse",
+              head_row: "flex w-full",
+              head_cell:
+                "flex-1 text-muted-foreground rounded-md font-normal text-[0.8rem]",
+              row: "flex w-full mt-2",
+              cell: `flex-1 h-9 text-center text-sm p-0 relative
+                [&:has([aria-selected].day-outside)]:bg-accent/50
+                [&:has([aria-selected])]:bg-accent
+                first:[&:has([aria-selected])]:rounded-l-md
+                last:[&:has([aria-selected])]:rounded-r-md
+                focus-within:relative focus-within:z-20`,
+              day: cn(
+                buttonVariants({ variant: "ghost" }),
+                "h-9 w-full p-0 font-normal aria-selected:opacity-100",
+              ),
+            }}
             mode="single"
             selected={selectedDate ?? undefined}
             onSelect={handleSelect}

@@ -1,0 +1,144 @@
+import { useFormState, useFormStatus } from "react-dom";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+import { Button } from "@/components/ui/button";
+import { Loader, ShieldAlert, Trash } from "lucide-react";
+
+import { useDeleteVehicleChecklistForm } from "./hooks";
+import { handleDeleteVehicleChecklist } from "@/actions/vehicle-checklist/delete-vehicle-checklist";
+
+interface DeleteVehicleChecklistProps {
+  businessId: string;
+  checklistId: string;
+
+  /** Business users are gated by granular permissions; a MASTER never is. */
+  disabled?: boolean;
+
+  /**
+   * Extra caution line for the cross-tenant (MASTER) view, where deleting on
+   * behalf of the wrong company is an actual possibility.
+   */
+  warnBusinessOwnership?: boolean;
+}
+
+const DeleteVehicleChecklistFormSubmit = ({
+  warnBusinessOwnership,
+}: {
+  warnBusinessOwnership?: boolean;
+}): JSX.Element => {
+  const { pending } = useFormStatus();
+
+  const deleteVehicleChecklistList = [
+    ...(warnBusinessOwnership
+      ? [
+          {
+            data: "Verifique se o checklist pertence à empresa antes de deletar",
+          },
+        ]
+      : []),
+    {
+      data: "Todos os dados do checklist (condições, inspeções, fotos) serão excluídos permanentemente",
+    },
+    {
+      data: "O histórico de inspeções do veículo será impactado",
+    },
+    {
+      data: "Esta ação será registrada nos logs de atividade do sistema",
+    },
+    {
+      data: "Esta ação não pode ser desfeita",
+    },
+  ];
+
+  return (
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Deletar Checklist Veicular</AlertDialogTitle>
+        <AlertDialogDescription asChild>
+          <div>
+            A exclusão deste checklist veicular removerá permanentemente todos
+            os seus dados e informações associadas.
+            <span className="block mt-4 font-medium text-foreground">
+              Consequências imediatas:
+            </span>
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              {deleteVehicleChecklistList.map(({ data }, idx) => (
+                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+              ))}
+            </ul>
+          </div>
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter className="mt-6">
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+        <Button
+          type="submit"
+          disabled={pending}
+          variant={"secondary"}
+          className="bg-red-600/10 dark:bg-red-500/10
+          dark:text-red-500 text-red-600"
+        >
+          <ShieldAlert className="mr-1 size-5" />
+          <span>Deletar Checklist</span>
+
+          {pending && (
+            <div className="animate-spin">
+              <Loader />
+            </div>
+          )}
+        </Button>
+      </AlertDialogFooter>
+    </>
+  );
+};
+
+const DeleteVehicleChecklistForm = ({
+  businessId,
+  checklistId,
+  disabled,
+  warnBusinessOwnership,
+}: DeleteVehicleChecklistProps): JSX.Element => {
+  const [state, dispatch] = useFormState(
+    () => handleDeleteVehicleChecklist({ businessId, checklistId }),
+    null,
+  );
+
+  const { handleDeleteVehicleChecklistForm, isOpenDeleteVehicleChecklistForm } =
+    useDeleteVehicleChecklistForm(state);
+
+  return (
+    <AlertDialog
+      open={isOpenDeleteVehicleChecklistForm}
+      onOpenChange={handleDeleteVehicleChecklistForm}
+    >
+      <AlertDialogTrigger asChild disabled={disabled}>
+        <Button
+          className="w-full text-sm rounded-sm px-2
+          h-8 font-normal flex justify-between"
+          variant={"ghost"}
+        >
+          Deletar
+          <Trash size={17} className="dark:text-red-500 text-red-600" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="bg-white dark:bg-[#121214]">
+        <form action={dispatch}>
+          <DeleteVehicleChecklistFormSubmit
+            warnBusinessOwnership={warnBusinessOwnership}
+          />
+        </form>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
+export { DeleteVehicleChecklistForm };

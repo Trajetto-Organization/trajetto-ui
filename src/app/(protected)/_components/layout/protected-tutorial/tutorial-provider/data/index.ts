@@ -1596,6 +1596,385 @@ const tutorialConfigs: TutorialConfig = {
       placement: "left",
     },
   ],
+  "/dashboard/deliveries": [
+    {
+      target: "[data-tutorial='welcome']",
+      title: "Módulo de Entregas 📦",
+      content: `Esta é a central de distribuição da sua operação: aqui você cadastra as entregas, acompanha cada uma até a porta do destinatário e registra o que sai do previsto.
+      Uma entrega nasce de duas formas: cadastrada manualmente ou importada do XML da NF-e, que preenche destinatário, endereço e itens automaticamente.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Entregas para visualizar esta página
+      IMPORTANTE: Este módulo precisa estar contratado pela empresa. Se o módulo Entregas for desabilitado, a página deixa de ser acessível para todos os usuários da empresa, mesmo os que possuem a permissão.`,
+      placement: "center",
+    },
+    {
+      target: "[data-tutorial='deliveries-tabs']",
+      title: "As Três Abas do Módulo 📑",
+      content: `O módulo é organizado em três tabelas independentes, cada uma com sua própria busca, filtros e paginação:
+      • Entregas: as entregas em si, com status, destinatário e ocorrências
+      • Embarcadores: quem envia a carga — o remetente vinculado a cada entrega
+      • Tipos de Ocorrência: o catálogo de imprevistos que a operação pode registrar
+      DICA: A aba escolhida fica na URL, então o link que você compartilha reabre exatamente na tabela que você estava vendo.
+      NOTA: Cada aba tem o seu próprio tutorial, que abre na primeira vez que você entrar nela.`,
+      placement: "bottom",
+      spotlightPadding: 8,
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Se os dados parecerem desatualizados, clique aqui para recarregar as informações mais recentes do servidor sem precisar atualizar a página inteira.
+      É especialmente útil neste módulo, onde motoristas e outros operadores alteram status ao longo do dia.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='import-xml-button']",
+      title: "Importar XML da NF-e 📄",
+      content: `A forma mais rápida de cadastrar uma entrega: envie o arquivo XML da nota fiscal e o sistema extrai tudo sozinho.
+      São lidos automaticamente:
+      • Destinatário, documento e endereço completo de entrega
+      • Número da nota e chave de acesso de 44 dígitos
+      • Os itens da carga, com quantidade e valor unitário
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Entregas
+      IMPORTANTE: A chave de acesso impede duplicidade — se a mesma nota for importada duas vezes, a segunda é recusada em vez de criar uma entrega repetida.
+      DICA: Você pode arrastar o arquivo para dentro do modal em vez de procurá-lo no computador.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='create-button']",
+      title: "Nova Entrega 🆕",
+      content: `Cadastre uma entrega manualmente quando não houver nota fiscal — ou quando ela ainda não tiver sido emitida.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Entregas
+      O formulário pede:
+      • Embarcador responsável pela carga (obrigatório)
+      • Destinatário e endereço de entrega, com o CEP preenchendo cidade, bairro e rua automaticamente
+      • Itens da carga, com quantidade e valor unitário
+      • Data prevista de entrega, quando houver
+      IMPORTANTE: Se o botão estiver desabilitado, passe o mouse sobre ele — o sistema informa exatamente qual permissão está faltando.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-search']",
+      title: "Buscar Entregas 🔍",
+      content: `Encontre uma entrega específica digitando nome do destinatário, número do pedido, chave da NF-e ou cidade de destino.
+      NOTA: A busca não requer permissões especiais e está sempre disponível.
+      DICA: A busca percorre todas as entregas da empresa, não apenas as da página atual.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-filters']",
+      title: "Filtros da Operação 🎯",
+      content: `Os filtros respondem às perguntas do dia a dia da distribuição:
+      • Status: separa o que está pendente, em rota, entregue, com insucesso ou cancelado
+      • Embarcador: isola a carga de um remetente específico
+      • Destino: agrupa as entregas por cidade
+      • Motorista: mostra a carga de um condutor
+      DICA: Os filtros se combinam — "em rota" + "motorista X" responde onde está a carga daquele condutor agora.
+      NOTA: Quando algum filtro está ativo aparece o botão Resetar, que limpa todos de uma vez.`,
+      placement: "bottom",
+    },
+    {
+      target: "[role='table']",
+      title: "Tabela de Entregas 📋",
+      content: `Todas as entregas da empresa, com o essencial em cada linha: destinatário, embarcador, destino, status atual e data prevista.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Entregas
+      O status segue um caminho definido e não aceita saltos:
+      • Pendente → Em Rota ou Cancelada
+      • Em Rota → Entregue, Insucesso, de volta para Pendente, ou Cancelada
+      • Insucesso → Pendente (para nova tentativa) ou Cancelada
+      IMPORTANTE: Entregue e Cancelada são estados finais — uma vez lá, a entrega não muda mais de status.`,
+      placement: "left",
+      spotlightPadding: 20,
+    },
+    {
+      target: "[data-tutorial='deliveries-select-all']",
+      title: "Atribuir Motorista em Lote 🚚",
+      content: `Marque as caixas de seleção das entregas pendentes e a ação "Atribuir motorista" surge numa barra flutuante sobre a base da tela.
+      Na prática da distribuição, o despachante separa a carga do dia e manda um bloco inteiro para o mesmo motorista — por isso a atribuição é em lote, não uma a uma.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Entregas
+      Como funciona:
+      • Só entregas pendentes entram — se a seleção tiver outra, o botão explica antes mesmo de enviar
+      • O motorista é obrigatório e precisa estar ativo; o veículo é opcional
+      • Atribuir NÃO muda o status: a entrega ganha o selo "Designada" e só entra Em Rota quando o motorista iniciar a rota pelo aplicativo
+      DICA: Para reatribuir, selecione de novo e escolha outro motorista — o par anterior é substituído; veículo omitido é limpo.`,
+      placement: "right",
+    },
+    {
+      target: "[role='table'] th:last-child",
+      title: "Ações da Entrega ⚙️",
+      content: `Nesta coluna ficam o ícone de olho e o menu de três pontos (⋮) de cada entrega.
+      Ambos abrem os Detalhes, que é onde a operação acontece:
+      • Histórico completo, com itens da carga e endereço de entrega
+      • Ocorrências já registradas, com data, autor e localização
+      • Registrar ocorrência: informa um imprevisto (avaria, ausência do destinatário, endereço não localizado)
+      • Mudar status: avança a entrega, e ao marcar como Entregue você pode informar quem recebeu
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Entregas para mudar o status
+      • ESCRITA em Gerenciar Ocorrências de Entrega para registrar ocorrências
+      IMPORTANTE: Os botões continuam visíveis mesmo sem permissão, porém desabilitados — passe o mouse para ver o que falta.
+      NOTA: Os botões de ação só aparecem quando há registros na tabela.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Clique aqui para personalizar quais colunas da tabela deseja visualizar.
+      Você pode:
+      • Mostrar ou ocultar colunas específicas conforme sua necessidade
+      • Focar apenas nas informações relevantes para a sua rotina
+      • Otimizar o espaço da tela removendo colunas desnecessárias
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+  ],
+  "/dashboard/deliveries/occurrences": [
+    {
+      target: "[data-tutorial='deliveries-tabs']",
+      title: "Feed de Ocorrências 📋",
+      content: `Todas as ocorrências da operação em uma tabela só — o que antes exigia abrir entrega por entrega.
+      Cada linha mostra o tipo (com o triângulo vermelho nas impeditivas), a entrega afetada, quem registrou, as fotos e o local.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Ocorrências
+      NOTA: Ocorrência impeditiva também toca o sininho do gestor na hora em que acontece — aqui é onde você revisa o histórico completo.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-filters']",
+      title: "Filtrar o que importa 🎯",
+      content: `Os filtros separam o ruído do urgente:
+      • Gravidade: impeditivas (derrubaram a entrega) ou informativas
+      • Tipo: isola um tipo de ocorrência específico
+      • Status da entrega: veja só o que ainda está em aberto
+      DICA: A busca encontra por destinatário ou pelo nome do tipo.`,
+      placement: "bottom",
+    },
+    {
+      target: "[role='table']",
+      title: "Fotos e local 📸",
+      content: `Clique em qualquer miniatura para ver a foto em tamanho grande sem sair da tela.
+      O "Ver no mapa" abre o ponto exato onde o motorista registrou a ocorrência.
+      IMPORTANTE: As linhas chegam da mais recente para a mais antiga — o topo da tabela é o agora da operação.`,
+      placement: "left",
+      spotlightPadding: 20,
+    },
+  ],
+  "/dashboard/deliveries/monitoring": [
+    {
+      target: "[data-tutorial='deliveries-tabs']",
+      title: "Monitoramento da Operação 📊",
+      content: `A resposta rápida para "como está a operação agora?":
+      • Sem Motorista: pendentes que ainda precisam de rota — o número que o despachante zera
+      • Designadas e Em Rota: o que está com motorista, parado ou na rua
+      • Entregues e Insucessos de hoje: o que o dia produziu
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Entregas
+      NOTA: "Hoje" conta a partir da meia-noite.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='monitoring-board']",
+      title: "Quadro por Motorista 🚚",
+      content: `Cada motorista com carga aparece aqui, o mais ocupado primeiro:
+      • Os selos mostram designadas, em rota, entregues e insucessos do dia
+      • A barra verde é o progresso da rota: entregas comprovadas sobre a carga do dia
+      DICA: Use o botão Atualizar para trazer os números mais recentes — a posição ao vivo no mapa chega na torre de controle.`,
+      placement: "top",
+    },
+  ],
+  "/dashboard/deliveries/chat": [
+    {
+      target: "[data-tutorial='deliveries-tabs']",
+      title: "Chat com os motoristas 💬",
+      content: `A conversa da operação sai do grupo de WhatsApp e entra na plataforma, registrada e ligada às entregas.
+      Cada motorista tem UMA conversa — as mensagens podem referenciar uma entrega específica, que aparece como um cartãozinho clicável.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Entregas para ver as conversas
+      • ESCRITA em Gerenciar Entregas para enviar
+      NOTA: O motorista recebe no aplicativo — e no celular via notificação quando o app está fechado.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='chat-threads']",
+      title: "Suas conversas 📋",
+      content: `A lista mostra quem está online (bolinha verde), a última mensagem e quantas você ainda não leu.
+      • O botão de nova conversa abre o chat com qualquer motorista ativo
+      • O megafone envia um aviso em massa: o mesmo texto, individual, para vários motoristas
+      DICA: A busca encontra por nome do motorista e também dentro das mensagens.`,
+      placement: "right",
+    },
+    {
+      target: "[data-tutorial='chat-conversation']",
+      title: "A conversa 🚚",
+      content: `Tudo em tempo real: "digitando...", presença e os checks de leitura — ✓ enviada, ✓✓ lida pelo motorista.
+      • O motorista pode responder com texto, foto e áudio (a voz é o jeito seguro de falar dirigindo)
+      • O cartão de entrega dentro da mensagem abre o detalhe completo
+      IMPORTANTE: As mensagens são registro da operação — não há como editar nem apagar.`,
+      placement: "left",
+      spotlightPadding: 12,
+    },
+  ],
+  "/dashboard/deliveries/shippers": [
+    {
+      target: "[data-tutorial='welcome']",
+      title: "Embarcadores 🏭",
+      content: `O embarcador é quem envia a carga — o remetente por trás de cada entrega. Pode ser a sua própria empresa, um cliente que contrata o seu transporte ou um parceiro comercial.
+      Cadastrar embarcadores aqui é o que permite, na aba Entregas, responder rapidamente "de quem é esta carga?" e filtrar a operação por remetente.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Entregas para visualizar esta aba
+      NOTA: Embarcadores usam a mesma permissão das entregas — quem gerencia entregas gerencia embarcadores.`,
+      placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Recarrega a lista de embarcadores com as informações mais recentes do servidor, sem atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='create-button']",
+      title: "Novo Embarcador 🆕",
+      content: `Cadastre quem envia a carga.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Entregas
+      O formulário pede:
+      • Nome do embarcador (obrigatório e único dentro da empresa)
+      • CNPJ, e-mail e telefone para contato
+      • Endereço, com o CEP preenchendo cidade, bairro e rua automaticamente
+      IMPORTANTE: Dois embarcadores não podem ter o mesmo nome na mesma empresa — é isso que evita duplicidade na hora de escolher o remetente de uma entrega.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-search']",
+      title: "Buscar Embarcadores 🔍",
+      content: `Digite nome, CNPJ ou e-mail para localizar um embarcador específico.
+      NOTA: A busca não requer permissões especiais e está sempre disponível.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-filters']",
+      title: "Filtro de Status 🎯",
+      content: `Separa os embarcadores ativos dos inativos.
+      Um embarcador inativo continua no sistema com todo o seu histórico, mas sai do caminho de quem está cadastrando uma entrega nova.
+      DICA: Inativar é o caminho recomendado para um remetente que parou de operar — preserva as entregas antigas, que continuam vinculadas a ele.`,
+      placement: "bottom",
+    },
+    {
+      target: "[role='table']",
+      title: "Tabela de Embarcadores 📋",
+      content: `Todos os embarcadores cadastrados, com identificador, nome, CNPJ, contato, cidade e as datas de criação e atualização.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Entregas
+      DICA: O identificador é útil para suporte — você pode copiá-lo pelo menu de ações de cada linha.`,
+      placement: "left",
+      spotlightPadding: 20,
+    },
+    {
+      target: "[role='table'] th:last-child",
+      title: "Ações do Embarcador ⚙️",
+      content: `O menu de três pontos (⋮) de cada linha oferece:
+      • Editar Embarcador: atualiza dados cadastrais e de contato
+      • Copiar ID: coloca o identificador na área de transferência
+      • Excluir: remove o embarcador do sistema
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Entregas para editar e excluir
+      IMPORTANTE: Um embarcador que já possui entregas vinculadas não pode ser excluído — o sistema informa quantas entregas dependem dele. Nesse caso, inative-o em vez de excluir: o histórico das entregas continua íntegro.
+      NOTA: Sem a permissão de escrita os itens aparecem desabilitados, e o motivo surge ao passar o mouse.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Personalize quais colunas da tabela deseja visualizar, ocultando o que não faz parte da sua rotina.
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+  ],
+  "/dashboard/deliveries/occurrence-types": [
+    {
+      target: "[data-tutorial='welcome']",
+      title: "Tipos de Ocorrência ⚠️",
+      content: `Aqui você define o vocabulário de imprevistos da sua operação: destinatário ausente, endereço não localizado, carga avariada, recusa no recebimento.
+      Cadastrar os tipos antes tem um motivo prático: na hora da ocorrência, quem está na rua escolhe de uma lista em vez de escrever texto livre — e isso é o que torna possível medir depois quantas entregas falharam por cada motivo.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Ocorrências de Entrega para visualizar esta aba
+      IMPORTANTE: Esta aba usa uma permissão própria, diferente da permissão de entregas. É possível dar a um usuário o direito de registrar ocorrências sem deixá-lo mexer no catálogo de tipos.`,
+      placement: "center",
+    },
+    createPageStatsTutorialStep(),
+    {
+      target: "[data-revalidate]",
+      title: "Atualização de Dados 🔄",
+      content: `Recarrega os tipos de ocorrência com as informações mais recentes do servidor, sem atualizar a página inteira.
+      NOTA: Esta ação não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+    {
+      target: "[data-tutorial='create-button']",
+      title: "Novo Tipo de Ocorrência 🆕",
+      content: `Cadastre um novo motivo que a operação poderá registrar.
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Ocorrências de Entrega
+      Além do nome e da descrição, duas opções mudam o comportamento da entrega:
+      • Exige foto: quem registrar a ocorrência precisará anexar uma imagem como comprovação
+      • Impeditiva: sinaliza que a ocorrência bloqueia a conclusão da entrega, como uma avaria grave
+      DICA: Nomes curtos e claros funcionam melhor — quem escolhe está na rua, muitas vezes no celular.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-search']",
+      title: "Buscar Tipos 🔍",
+      content: `Digite nome ou descrição para localizar um tipo de ocorrência específico.
+      NOTA: A busca não requer permissões especiais e está sempre disponível.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='deliveries-filters']",
+      title: "Filtros do Catálogo 🎯",
+      content: `Três filtros ajudam a revisar o catálogo:
+      • Status: separa os tipos ativos dos inativos
+      • Impeditiva: isola os motivos que bloqueiam a conclusão da entrega
+      • Foto: mostra quais exigem comprovação por imagem
+      DICA: Filtrar por "impeditiva" é uma boa forma de revisar periodicamente se a régua da operação continua adequada.`,
+      placement: "bottom",
+    },
+    {
+      target: "[role='table']",
+      title: "Tabela de Tipos de Ocorrência 📋",
+      content: `O catálogo completo, com identificador, nome, descrição, se exige foto, se é impeditiva, status e as datas de criação e atualização.
+      PERMISSÕES NECESSÁRIAS:
+      • LEITURA em Gerenciar Ocorrências de Entrega
+      NOTA: Estes tipos alimentam a lista que aparece em Registrar ocorrência, dentro dos detalhes de cada entrega.`,
+      placement: "left",
+      spotlightPadding: 20,
+    },
+    {
+      target: "[role='table'] th:last-child",
+      title: "Ações do Tipo ⚙️",
+      content: `O menu de três pontos (⋮) de cada linha oferece:
+      • Editar Tipo: ajusta nome, descrição e as opções de foto e impedimento
+      • Copiar ID: coloca o identificador na área de transferência
+      • Excluir: remove o tipo do catálogo
+      PERMISSÕES NECESSÁRIAS:
+      • ESCRITA em Gerenciar Ocorrências de Entrega para editar e excluir
+      IMPORTANTE: Um tipo que já foi usado em alguma ocorrência não pode ser excluído — o sistema informa quantas ocorrências dependem dele. Inative-o em vez de excluir: ele sai da lista de escolha e o histórico continua legível.
+      NOTA: Sem a permissão de escrita os itens aparecem desabilitados, e o motivo surge ao passar o mouse.`,
+      placement: "bottom",
+    },
+    {
+      target: "[data-tutorial='view-options']",
+      title: "Opções de Visualização 👁️",
+      content: `Personalize quais colunas da tabela deseja visualizar, ocultando o que não faz parte da sua rotina.
+      NOTA: Esta funcionalidade não requer permissões especiais e está sempre disponível.`,
+      placement: "left",
+    },
+  ],
 };
 
 export {

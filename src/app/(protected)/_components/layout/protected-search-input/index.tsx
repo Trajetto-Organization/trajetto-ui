@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 const SearchInput = (): JSX.Element => {
   const { query } = useKBar();
 
+  // Spacing belongs to the header that places this button — it sits next to
+  // the notifications bell now, so padding here would push them apart.
   return (
-    <div className="flex items-center pr-8">
+    <div className="flex items-center">
       <Button
         variant="outline"
         className="relative h-9 w-[87px] justify-start rounded-[0.5rem] bg-background 

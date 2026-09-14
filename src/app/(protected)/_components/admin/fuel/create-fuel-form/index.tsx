@@ -83,6 +83,7 @@ const CreateFuelForm = (): JSX.Element => {
     if (!isCreateFuelForm) {
       setOdometerFile(null);
       resetUpload();
+
       setFileError(null);
 
       setLatitude(null);

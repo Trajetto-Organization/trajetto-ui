@@ -53,10 +53,16 @@ const UpdateAILimitFormSubmit = ({
     setCurrentValue(aiUsage?.ai_analysis_limit ?? 0);
   }, [aiUsage]);
 
+  // Running analyses count toward the bar (their quota is committed) but are
+  // labeled separately — they are not completed verifications.
+  const aiInProgress = aiUsage?.ai_analysis_in_progress ?? 0;
+
   const usagePercentage =
     aiUsage && aiUsage.ai_analysis_limit > 0
       ? Math.min(
-          (aiUsage.ai_analysis_used / aiUsage.ai_analysis_limit) * 100,
+          ((aiUsage.ai_analysis_used + aiInProgress) /
+            aiUsage.ai_analysis_limit) *
+            100,
           100,
         )
       : 0;
@@ -77,6 +83,11 @@ const UpdateAILimitFormSubmit = ({
             <span className="text-muted-foreground">Uso atual</span>
             <span className="font-medium">
               {aiUsage.ai_analysis_used} / {aiUsage.ai_analysis_limit}
+              {aiInProgress > 0 && (
+                <span className="ml-2 text-xs font-normal text-blue-600">
+                  +{aiInProgress} em análise
+                </span>
+              )}
             </span>
           </div>
 
@@ -191,6 +202,7 @@ const UpdateAILimitForm = ({
   const aiUsage: AIUsageData | null = realtimeUsage
     ? {
         ai_analysis_used: realtimeUsage.used,
+        ai_analysis_in_progress: realtimeUsage.inProgress ?? 0,
         ai_analysis_limit: realtimeUsage.limit,
         ai_analysis_reset_at:
           realtimeUsage.resetAt || serverUsage?.ai_analysis_reset_at || null,

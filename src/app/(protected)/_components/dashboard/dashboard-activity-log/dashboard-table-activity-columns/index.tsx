@@ -30,20 +30,33 @@ const actionColors: Record<string, string> = {
 };
 
 // Status colors
+// Soft palette, same shape as the type/action badges above: the solid fills
+// used before were the only badges in the table shouting for attention.
 const statusColors: Record<string, string> = {
-  Ativo: "bg-green-600 text-white border-green-600 hover:bg-green-700",
-  Inativo: "bg-slate-400 text-white border-slate-400 hover:bg-slate-500",
-  Bloqueado: "bg-red-600 text-white border-red-600 hover:bg-red-700",
-  "Em Rota": "bg-blue-500 text-white border-blue-500 hover:bg-blue-600",
-  Completo: "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600",
-  Pendente: "bg-yellow-400 text-white border-yellow-400 hover:bg-yellow-500",
-  Atualizado: "bg-indigo-500 text-white border-indigo-500 hover:bg-indigo-600",
-  Deletado: "bg-red-600 text-white border-red-600 hover:bg-red-700",
-  Criado: "bg-green-600 text-white border-green-600 hover:bg-green-700",
+  Ativo: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  Inativo: "bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200",
+  Bloqueado: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+  "Em Rota": "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200",
+  Completo:
+    "bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200",
+  Pendente:
+    "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+  Atualizado:
+    "bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200",
+  Deletado: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+  Criado: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+  Entregue:
+    "bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200",
+  Insucesso: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+  Cancelada: "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200",
 };
 
 // Role colors
 const roleColors: Record<string, string> = {
+  // Actions the platform performed on this company's plan. The operator
+  // behind them is collapsed server side — the customer needs to know it came
+  // from Trajetto, not which employee clicked it.
+  PLATFORM: "bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-200",
   MASTER: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200",
   BUSINESS_ADMIN: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200",
   BUSINESS_USER: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200",
@@ -51,6 +64,7 @@ const roleColors: Record<string, string> = {
 
 // Role labels
 const roleLabels: Record<string, string> = {
+  PLATFORM: "Trajetto",
   MASTER: "Master",
   BUSINESS_ADMIN: "Admin",
   BUSINESS_USER: "Colaborador",

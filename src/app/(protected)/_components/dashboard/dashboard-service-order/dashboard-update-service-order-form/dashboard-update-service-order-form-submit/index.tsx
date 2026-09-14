@@ -21,6 +21,8 @@ import { DatePickerField } from "@/app/(protected)/_components/shared/custom/dat
 import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
 import { useAuthStore } from "@/store/auth-store";
@@ -71,6 +73,7 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         completion_date: initialFormValues.completion_date || "",
         maintenance_type: initialFormValues.maintenance_type || "",
         total_amount: initialFormValues.total_amount || "",
+        description: initialFormValues.description || "",
       };
     }
     return {} as Record<string, string>;
@@ -94,7 +97,9 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         initialFormValues.completion_date !== originalCompletionDate ||
         initialFormValues.maintenance_type !==
           serviceOrderData.maintenance_type ||
-        initialFormValues.total_amount !== formattedOriginalTotalAmount
+        initialFormValues.total_amount !== formattedOriginalTotalAmount ||
+        (initialFormValues.description || "") !==
+          (serviceOrderData.description || "")
       );
     }
     return false;
@@ -145,6 +150,7 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         completion_date: completionDateValue,
         maintenance_type: serviceOrderData.maintenance_type,
         total_amount: formattedTotalAmount,
+        description: serviceOrderData.description || "",
       });
 
       setServiceOrderMileageAfterService(
@@ -174,8 +180,12 @@ const DashboardUpdateServiceOrderFormSubmit = ({
         const originalValue =
           serviceOrderData[key as keyof typeof serviceOrderData];
 
-        // Special handling for dates (convert Date to string for comparison)
-        if (key === "date" || key === "completion_date") {
+        // Special handling for dates and nullable text ("" and null are equal)
+        if (
+          key === "date" ||
+          key === "completion_date" ||
+          key === "description"
+        ) {
           const originalStringValue =
             originalValue instanceof Date
               ? originalValue.toISOString()
@@ -405,6 +415,32 @@ const DashboardUpdateServiceOrderFormSubmit = ({
           placeholder={"0,00"}
           disabled={pending}
         />
+
+        {/* Description - what this service order is about */}
+        <div className="col-span-1 md:col-span-2 grid gap-3">
+          <Label
+            className={cn(
+              "h-4 truncate",
+              state.updateServiceOrderError?.description && "text-red-500",
+            )}
+            htmlFor="description"
+          >
+            {state.updateServiceOrderError?.description?.[0] ??
+              "Descrição (opcional)"}
+          </Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formValues.description || ""}
+            onChange={(e) =>
+              handleCustomFieldChange("description")(e.target.value)
+            }
+            placeholder="Descreva do que se trata esta ordem de serviço"
+            maxLength={500}
+            disabled={pending}
+            className="min-h-[80px]"
+          />
+        </div>
 
         {/* ====== SECTION: HISTORICAL DATA SNAPSHOT ====== */}
         <div className="col-span-1 md:col-span-2 mt-6">

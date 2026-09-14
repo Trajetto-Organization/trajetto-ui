@@ -164,7 +164,12 @@ const UserSelector = ({
           </Button>
         </PopoverTrigger>
 
-        <PopoverContent className="w-full p-0" align="start">
+        {/* A searchable list has no natural width, so it takes the field's:
+        `w-full` reads as the content's own width inside the portal. */}
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+          align="start"
+        >
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Buscar usuário..."

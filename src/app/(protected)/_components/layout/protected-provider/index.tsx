@@ -119,6 +119,7 @@ const ProtectedProvider = async ({
     jwtRole,
     jwtDriverId,
     pathname,
+    enabledModules: data.user.enabledModules ?? [],
   });
 
   const userLogged = {
@@ -132,6 +133,7 @@ const ProtectedProvider = async ({
     permissions: data.user.profileAccess?.permissions as [],
     driverId: data.user.driverId || null,
     profileAccess: data.user.profileAccess || null,
+    enabledModules: data.user.enabledModules ?? [],
   };
 
   const notificationResult = await fetchNotifications(tokenAccess);
@@ -148,6 +150,7 @@ const ProtectedProvider = async ({
         permissions: userLogged.permissions,
         driverId: userLogged.driverId,
         profileAccess: userLogged.profileAccess,
+        enabledModules: userLogged.enabledModules,
       }}
     >
       <SyncNotificationsProvider

@@ -29,6 +29,8 @@ import { cn } from "@/lib/utils";
 import type { UserRole } from "@/app/(protected)/_components/shared/common.types";
 import { useIsMobile } from "@/hooks/use-mobile";
 
+import trajettoLogo from "@/assets/logo/trajetto-logo.png";
+
 interface NavbarContentProps {
   token: string;
   role: UserRole;
@@ -104,11 +106,12 @@ const NavBarContent = ({
             flex items-center"
           >
             <Image
-              src="/trajetto-logo.png"
+              src={trajettoLogo}
               alt="Trajetto Logo"
               width={120}
               height={32}
               className="h-10 w-auto"
+              placeholder="blur"
               priority
             />
             Trajetto
@@ -133,11 +136,12 @@ const NavBarContent = ({
                 flex items-center"
               >
                 <Image
-                  src="/trajetto-logo.png"
+                  src={trajettoLogo}
                   alt="Trajetto Logo"
                   width={120}
                   height={32}
                   className="h-10 w-auto"
+                  placeholder="blur"
                   priority
                 />
                 Trajetto

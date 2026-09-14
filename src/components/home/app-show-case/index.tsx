@@ -11,13 +11,10 @@ import { Camera, MapPin, ShieldCheck, WifiOff } from "lucide-react";
 import { Step } from "@/components/step";
 import { AndroidIcon } from "@/components/icons/brand";
 
-// Import estático: o Next lê as dimensões no build e gera o `blurDataURL`
-// sozinho, então o blur sai de graça e sem CLS. Com `src="/arquivo.webp"`
-// (string) nada disso acontece.
-import dashboardScreen from "@/../public/mobile-app-dashboard.webp";
-import fuelScreen from "@/../public/mobile-app-fuel.webp";
+import dashboardScreen from "@/assets/home/mobile-app-dashboard.webp";
+import fuelScreen from "@/assets/home/mobile-app-fuel.webp";
 
-import checklistScreen from "@/../public/mobile-app-vehicle-checklist.webp";
+import checklistScreen from "@/assets/home/mobile-app-vehicle-checklist.webp";
 
 const AppShowcase = (): JSX.Element => {
   const sectionRef = useRef(null);
@@ -46,7 +43,6 @@ const AppShowcase = (): JSX.Element => {
     },
   ];
 
-  // Capacidades que o app realmente entrega hoje — nada aqui é promessa.
   const appCapabilities = [
     {
       icon: WifiOff,
@@ -162,12 +158,11 @@ const AppShowcase = (): JSX.Element => {
             ))}
           </div>
 
-          {/* Capacidades reais do app de campo */}
+          {/* Real-world capabilities of the field app */}
           <div className="mt-24 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {appCapabilities.map((capability, index) => (
+            {appCapabilities.map((capability, _) => (
               <Reveal
                 key={capability.title}
-                delay={PHONE_DELAY_BASE + index * PHONE_STAGGER}
                 className="group h-full rounded-2xl border border-zinc-200/80
                 bg-white/60 p-6 shadow-sm backdrop-blur-sm
                 transition-[transform,box-shadow] duration-200 ease-out

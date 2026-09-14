@@ -9,7 +9,10 @@ import { RevalidateButtonUI } from "@/app/(protected)/_components/shared/revalid
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bell, Loader } from "lucide-react";
+import { Bell, CheckCheck, Loader } from "lucide-react";
+
+import { toast } from "sonner";
+import { handleMarkAllNotificationsAsRead } from "@/actions/notifications";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -45,8 +48,13 @@ const NotificationList = ({
     useNotificationStatus();
 
   // Get notifications from context (single source of truth for display)
-  const { notifications: contextNotifications, unreadCount } =
-    useNotificationsContext();
+  const {
+    notifications: contextNotifications,
+    unreadCount,
+    markAllNotificationsAsRead,
+  } = useNotificationsContext();
+
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
 
   // Infinite scroll hook - fetches data and syncs with context
   const {
@@ -199,6 +207,36 @@ const NotificationList = ({
           className="flex flex-col sm:flex-row items-stretch
           sm:items-center gap-2 w-full sm:w-auto"
         >
+          <Button
+            variant="outline"
+            type="button"
+            disabled={unreadCount === 0 || isMarkingAll}
+            onClick={async () => {
+              if (isMarkingAll) return;
+              setIsMarkingAll(true);
+
+              try {
+                const result = await handleMarkAllNotificationsAsRead();
+
+                if (result.successMessage) {
+                  // Both sources of truth: the realtime context and the
+                  // page's own scroll cache (via refetch).
+                  markAllNotificationsAsRead();
+                  refetch();
+
+                  toast.success(result.successMessage);
+                } else if (result.markAllError) {
+                  toast.error(result.markAllError);
+                }
+              } finally {
+                setIsMarkingAll(false);
+              }
+            }}
+          >
+            <CheckCheck className="mr-1.5 h-4 w-4" />
+            {isMarkingAll ? "Marcando..." : "Marcar todas como lidas"}
+          </Button>
+
           <RevalidateButtonUI
             isLoading={isFetching}
             isRateLimited={isRateLimited}

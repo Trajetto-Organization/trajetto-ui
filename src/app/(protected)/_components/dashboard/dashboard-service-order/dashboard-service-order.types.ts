@@ -4,6 +4,7 @@ interface DashboardServiceOrderProps {
   completion_date: Date | string | null;
   maintenance_type: "INTERNAL" | "EXTERNAL";
   total_amount: number | string;
+  description?: string | null;
   current_mileage_at_service: number | null;
   maintenance_interval_km_at_service: number | null;
   last_maintenance_mileage_at_service: number | null;

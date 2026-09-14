@@ -4,8 +4,16 @@ import { useAIVerificationStore } from "@/store/ai-verification-store";
 import { Badge } from "@/components/ui/badge";
 import { formatNotificationDate } from "@/lib/format-values";
 
+import {
+  AIAnalysisProgressFallback,
+  RequestAIVerificationButton,
+} from "@/app/(protected)/_components/shared/ai-verification";
+
 import type { FuelDetailsDialogProps } from "../shared/common.types";
 import { aiStatusConfig } from "../data";
+
+/** Server statuses where offering a (re-)verification makes sense. */
+const REQUESTABLE_STATUSES = ["pending", "skipped", "error"];
 
 const AIVerificationSection = ({
   fuelData,
@@ -29,6 +37,10 @@ const AIVerificationSection = ({
     realtimeEvent?.step === "completed" || realtimeEvent?.step === "skipped";
   const isAnalyzing = realtimeEvent && !isTerminalStep;
   const isRealtimeCompleted = realtimeEvent && isTerminalStep;
+
+  // Server says analyzing but the websocket history died with a refresh:
+  // the durable-progress fallback polls the analysis request instead.
+  const isAnalyzingWithoutRealtime = !realtimeEvent && aiStatus === "analyzing";
 
   const effectiveStatus = realtimeEvent
     ? isRealtimeCompleted
@@ -117,7 +129,7 @@ const AIVerificationSection = ({
           {/* Real-time analyzing progress */}
           {isAnalyzing && realtimeEvent && (
             <div
-              className="bg-blue-50 dark:bg-blue-900/20 border 
+              className="bg-blue-50 dark:bg-blue-900/20 border
               border-blue-200 dark:border-blue-800 rounded-md p-3"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -137,6 +149,28 @@ const AIVerificationSection = ({
               </div>
             </div>
           )}
+
+          {/* Durable progress after a refresh killed the websocket history */}
+          {isAnalyzingWithoutRealtime && (
+            <AIAnalysisProgressFallback
+              recordType="fuel"
+              recordId={fuelData.id}
+            />
+          )}
+
+          {/* Manual (re-)verification for records the pipeline never ran or failed */}
+          {!isAnalyzing &&
+            !isAnalyzingWithoutRealtime &&
+            effectiveStatus &&
+            REQUESTABLE_STATUSES.includes(effectiveStatus) &&
+            fuelData.odometer_photo && (
+              <RequestAIVerificationButton
+                recordType="fuel"
+                recordId={fuelData.id}
+                businessId={fuelData.businessId}
+                isRetry={effectiveStatus !== "pending"}
+              />
+            )}
 
           {/* Verified: show AI reading vs reported value */}
           {(effectiveStatus === "verified" || effectiveStatus === "mismatch") &&

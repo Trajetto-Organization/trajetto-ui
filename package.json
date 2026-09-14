@@ -13,6 +13,8 @@
     "lint:fix": "prettier --write .",
     "optimize-images": "node scripts/optimize-images.js",
     "test": "playwright test",
+    "test:unit": "vitest run --dir tests/unitaires",
+    "test:unit:watch": "vitest --dir tests/unitaires",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
@@ -89,10 +91,12 @@
     "@types/react-input-mask": "3.0.2",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
+    "happy-dom": "^20.14.5",
     "postcss": "^8",
     "prettier": "^3.5.3",
     "semantic-release": "^25.0.9",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "1.6.0"
   }
 }

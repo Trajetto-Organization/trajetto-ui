@@ -53,6 +53,9 @@ jobs:
       - name: Type-check
         run: yarn typecheck
 
+      - name: Unit tests
+        run: yarn test:unit
+
   release:
     name: Release (semantic-release)
     runs-on: ubuntu-latest

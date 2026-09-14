@@ -87,6 +87,11 @@ const useAuthStore = create<AuthState>()(
       logout: async () => {
         set({
           id: null,
+          // businessId was missing from this list. clearStorage() below wipes
+          // the persisted copy, but the in-memory state survives a logout that
+          // is a soft navigation — so the previous user's carrier stayed in
+          // the store, readable by anything that mounts before setAuth runs.
+          businessId: null,
           role: null,
           permissions: [],
           enabledModules: null,

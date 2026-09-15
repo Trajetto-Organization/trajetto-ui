@@ -8,6 +8,7 @@ import {
   MessageCircle,
   MessageSquareWarning,
   Package,
+  ScanEye,
   Send,
   TriangleAlert,
   Users,
@@ -31,6 +32,7 @@ const TAB_ICONS = {
   "status-change-reasons": MessageSquareWarning,
   imports: FileSpreadsheet,
   "message-templates": Send,
+  "proof-audits": ScanEye,
 } as const;
 
 interface DeliveriesTabsProps {

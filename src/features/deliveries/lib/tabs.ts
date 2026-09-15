@@ -7,7 +7,8 @@ type DeliveryTab =
   | "occurrence-types"
   | "status-change-reasons"
   | "imports"
-  | "message-templates";
+  | "message-templates"
+  | "proof-audits";
 
 const DELIVERY_TABS: Array<{ value: DeliveryTab; label: string }> = [
   { value: "deliveries", label: "Entregas" },
@@ -19,6 +20,7 @@ const DELIVERY_TABS: Array<{ value: DeliveryTab; label: string }> = [
   { value: "status-change-reasons", label: "Motivos de Status" },
   { value: "imports", label: "Importações" },
   { value: "message-templates", label: "Mensagens ao Cliente" },
+  { value: "proof-audits", label: "Auditoria de Comprovantes" },
 ];
 
 /** Anything unknown in the URL falls back to the deliveries table. */

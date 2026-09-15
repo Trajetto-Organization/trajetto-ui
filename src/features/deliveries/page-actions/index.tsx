@@ -84,6 +84,7 @@ const REVALIDATE_TAG: Record<DeliveryTab, RevalidateDataProps> = {
   // after a save; the tag exists so the shared refresh button has
   // something to name.
   "message-templates": "update-delivery",
+  "proof-audits": "update-delivery",
 };
 
 const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
@@ -96,6 +97,7 @@ const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
   "status-change-reasons": "deliveries-status-change-reasons-table",
   imports: "deliveries-imports-table",
   "message-templates": "deliveries-message-templates-panel",
+  "proof-audits": "deliveries-proof-audits-panel",
 };
 
 /**
@@ -121,6 +123,9 @@ const WRITE_PERMISSION: Record<DeliveryTab, PermissionKey> = {
   // Writing what the company says to its own customers is the
   // dispatcher's, on the same key everything else about a delivery is.
   "message-templates": permissions.DELIVERY_MANAGE,
+
+  // Auditing a receipt is deciding about a delivery, on the same key.
+  "proof-audits": permissions.DELIVERY_MANAGE,
 };
 
 /** Empty = read-only tab (panels): no create button to offer. */
@@ -141,6 +146,9 @@ const CREATE_LABEL: Record<DeliveryTab, string> = {
 
   // Six fixed slots, written in place. There is nothing to create.
   "message-templates": "",
+
+  // A card appears when a driver proves a delivery. Nothing to create.
+  "proof-audits": "",
 };
 
 /**

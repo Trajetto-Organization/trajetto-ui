@@ -343,6 +343,10 @@ const STATS_BY_TAB: Record<DeliveryTab, StatConfig[]> = {
   // Six cards would be six numbers about six rows the screen already
   // shows in full.
   "message-templates": [],
+
+  // The panel carries its own counters, next to the filter they belong
+  // to — three cards above a queue would repeat them out of context.
+  "proof-audits": [],
 };
 
 /** Maps the API's meta line into the keys the cards above read. */

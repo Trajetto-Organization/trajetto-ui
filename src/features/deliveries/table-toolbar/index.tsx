@@ -101,6 +101,7 @@ const FILTERS_BY_TAB: Record<DeliveryTab, FilterDescriptor[]> = {
     { key: "source", title: "Origem", dynamicOptionIcon: FileSpreadsheet },
   ],
   "message-templates": [],
+  "proof-audits": [],
 };
 
 const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
@@ -116,6 +117,7 @@ const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
   // field that types into nothing is worse than no field.
   imports: "",
   "message-templates": "",
+  "proof-audits": "",
 };
 
 export function DeliveriesTableToolbar<TData>({

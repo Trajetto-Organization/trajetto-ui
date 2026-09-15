@@ -15,6 +15,7 @@ import { MonitoringPanel } from "../monitoring";
 import { ChatPanel } from "../chat";
 
 import { MessageTemplatesPanel } from "../message-templates/panel";
+import { ProofAuditsPanel } from "../proof-audits/panel";
 
 import type { OperationSummaryData } from "../lib/panels";
 
@@ -87,6 +88,13 @@ const TAB_SOURCES: Record<
     path: "/delivery/message-templates",
     tag: "update-delivery",
     errorMessage: "Houve um erro ao carregar as mensagens ao cliente",
+  },
+  // Never fetched either: the queue is a client panel with its own paging and
+  // its own counters. The entry only satisfies the map.
+  "proof-audits": {
+    path: "/delivery/proof-audits",
+    tag: "update-delivery",
+    errorMessage: "Houve um erro ao carregar a fila de auditoria",
   },
 };
 
@@ -199,6 +207,29 @@ const DeliveriesContent = async ({
         {renderHeader(true)}
 
         <ChatPanel businessId={businessId} />
+      </div>
+    );
+  }
+
+  // The queue a person works through. A client panel with its own paging and
+  // its own counters, like the chat.
+  if (activeTab === "proof-audits") {
+    return (
+      <div className="space-y-4 my-6" data-tutorial="welcome">
+        {renderHeader(true)}
+
+        {businessId || mode === "dashboard" ? (
+          <ProofAuditsPanel businessId={businessId ?? ""} />
+        ) : (
+          <div
+            className="flex h-72 items-center justify-center rounded-lg
+            border-2 border-dashed"
+          >
+            <p className="text-center text-sm text-muted-foreground">
+              Selecione uma empresa para auditar os comprovantes
+            </p>
+          </div>
+        )}
       </div>
     );
   }

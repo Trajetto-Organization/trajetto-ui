@@ -74,6 +74,59 @@ interface DeliveryDetail extends DeliveryListItem {
   }>;
   occurrences: DeliveryOccurrenceDetail[];
   events: DeliveryEventDetail[];
+
+  /**
+   * Everything that ever happened to this delivery, newest first, already
+   * merged and phrased by the API.
+   *
+   * `occurrences` and `events` stay because the existing tabs read them; this
+   * is the single list support reads when a customer calls. The titles arrive
+   * in Portuguese and ready to render — the web must not re-derive them, or
+   * the sentence the SAC reads and the sentence the driver's app shows start
+   * drifting apart.
+   */
+  timeline: TimelineEntry[];
+}
+
+type TimelineKind =
+  | "ARRIVAL"
+  | "PROOF"
+  | "STATUS_CHANGE"
+  | "NOTE"
+  | "OCCURRENCE"
+  | "MESSAGE";
+
+type TimelineActor = "USER" | "DRIVER_APP" | "INTEGRATION" | "SYSTEM";
+
+interface TimelineEntry {
+  id: string;
+  kind: TimelineKind;
+  at: string;
+
+  /** One line, already in Portuguese. */
+  title: string;
+
+  /** The detail under it, when there is one. */
+  detail: string | null;
+
+  author: {
+    kind: TimelineActor;
+    name: string | null;
+
+    /** DRIVER_APP only — support is regularly asked to tell two phones apart. */
+    device: string | null;
+  };
+
+  photos: string[];
+  location: { latitude: number; longitude: number } | null;
+
+  /** STATUS_CHANGE only. */
+  statusFrom: DeliveryStatus | null;
+  statusTo: DeliveryStatus | null;
+  reason: string | null;
+
+  /** OCCURRENCE only: whether the type flipped the delivery to Insucesso. */
+  blocking: boolean;
 }
 
 interface ActionResponse<T = undefined> {
@@ -133,6 +186,9 @@ const getDelivery = async (
 
 export { getDelivery };
 export type {
+  TimelineActor,
+  TimelineEntry,
+  TimelineKind,
   DeliveryStatus,
   DeliveryListItem,
   DeliveryDetail,

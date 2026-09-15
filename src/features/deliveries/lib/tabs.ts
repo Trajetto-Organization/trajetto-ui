@@ -4,7 +4,9 @@ type DeliveryTab =
   | "monitoring"
   | "chat"
   | "shippers"
-  | "occurrence-types";
+  | "occurrence-types"
+  | "status-change-reasons"
+  | "imports";
 
 const DELIVERY_TABS: Array<{ value: DeliveryTab; label: string }> = [
   { value: "deliveries", label: "Entregas" },
@@ -13,6 +15,8 @@ const DELIVERY_TABS: Array<{ value: DeliveryTab; label: string }> = [
   { value: "chat", label: "Chat" },
   { value: "shippers", label: "Embarcadores" },
   { value: "occurrence-types", label: "Tipos de Ocorrência" },
+  { value: "status-change-reasons", label: "Motivos de Status" },
+  { value: "imports", label: "Importações" },
 ];
 
 /** Anything unknown in the URL falls back to the deliveries table. */

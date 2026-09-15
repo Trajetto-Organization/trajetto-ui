@@ -24,6 +24,8 @@ type RevalidateDataProps =
   | "update-chat"
   | "update-shipper"
   | "update-occurrence-type"
+  | "update-status-change-reason"
+  | "update-import"
   | "toggle-business-active"
   | "toggle-branch-active";
 
@@ -68,6 +70,19 @@ const revalidateDataToQueryKeyMap: Record<RevalidateDataProps, string[]> = {
 
   "update-shipper": ["shipper"],
   "update-occurrence-type": ["occurrence_type"],
+
+  /**
+   * The catalogue feeds a picker that is open somewhere else on the screen —
+   * a reason created from the settings tab has to appear in the status dialog
+   * without a reload, or the operator creates it twice.
+   */
+  "update-status-change-reason": ["status_change_reason"],
+
+  /**
+   * An upload creates deliveries and routes, so its own list is not the only
+   * thing that went stale.
+   */
+  "update-import": ["import", "delivery", "route-detail"],
   "toggle-business-active": ["business"],
   "toggle-branch-active": ["branch"],
   "update-service-order-part": [],

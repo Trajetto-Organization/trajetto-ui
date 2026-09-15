@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { FileUp, Plus } from "lucide-react";
+import { FileSpreadsheet, FileText, FileUp, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -25,14 +31,35 @@ import {
 import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
 import type { DeliveryTab } from "../lib/tabs";
 
+import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
+import type {
+  ExportActionResponse,
+  ExportFormat,
+} from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
+
+import { handleExportDelivery } from "@/actions/delivery/export-delivery";
+import { handleExportOccurrence } from "@/actions/delivery/export-occurrence";
+
 import { DeliveryFormDialog } from "../deliveries/form-dialog";
 import { ImportXmlDialog } from "../deliveries/import-xml-dialog";
+
+import { ImportSpreadsheetDialog } from "../deliveries/import-spreadsheet-dialog";
+import { StatusChangeReasonFormDialog } from "../status-change-reasons/form-dialog";
 
 import { ShipperFormDialog } from "../shippers/form-dialog";
 import { OccurrenceTypeFormDialog } from "../occurrence-types/form-dialog";
 
 interface DeliveriesPageActionsProps {
   activeTab: DeliveryTab;
+
+  /**
+   * Whether the table behind the bar has any row.
+   *
+   * The export button reads it: offering "Exportar" over an empty table hands
+   * the operator a file with a header and nothing under it, and they open it
+   * before they realise the filter was the problem.
+   */
+  hasData?: boolean;
 }
 
 /**
@@ -50,6 +77,8 @@ const REVALIDATE_TAG: Record<DeliveryTab, RevalidateDataProps> = {
   chat: "update-chat",
   shippers: "update-shipper",
   "occurrence-types": "update-occurrence-type",
+  "status-change-reasons": "update-status-change-reason",
+  imports: "update-import",
 };
 
 const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
@@ -59,6 +88,8 @@ const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
   chat: "deliveries-chat-panel",
   shippers: "deliveries-shippers-table",
   "occurrence-types": "deliveries-occurrence-types-table",
+  "status-change-reasons": "deliveries-status-change-reasons-table",
+  imports: "deliveries-imports-table",
 };
 
 /**
@@ -72,6 +103,14 @@ const WRITE_PERMISSION: Record<DeliveryTab, PermissionKey> = {
   chat: permissions.DELIVERY_MANAGE,
   shippers: permissions.DELIVERY_MANAGE,
   "occurrence-types": permissions.OCCURRENCE_MANAGE,
+
+  // The catalogue exists only to explain a delivery, so it rides on the same
+  // key the deliveries do — exactly like the API guard.
+  "status-change-reasons": permissions.DELIVERY_MANAGE,
+
+  // An upload creates deliveries: whoever may not create one by hand may not
+  // create two hundred from a file.
+  imports: permissions.DELIVERY_MANAGE,
 };
 
 /** Empty = read-only tab (panels): no create button to offer. */
@@ -84,15 +123,41 @@ const CREATE_LABEL: Record<DeliveryTab, string> = {
   chat: "",
   shippers: "Novo Embarcador",
   "occurrence-types": "Novo Tipo",
+  "status-change-reasons": "Novo Motivo",
+
+  // The imports tab is a record of what was uploaded — the way to add one is
+  // the Importar button, not a generic create dialog.
+  imports: "",
+};
+
+/**
+ * Which tabs can leave as a file, and through which action.
+ *
+ * Only the two that are lists of operational records. A catalogue of six
+ * reasons is not a report, and an export button over it would be a button
+ * nobody presses twice.
+ */
+const EXPORT_ACTION: Partial<
+  Record<
+    DeliveryTab,
+    (search?: string, format?: ExportFormat) => Promise<ExportActionResponse>
+  >
+> = {
+  deliveries: handleExportDelivery,
+  occurrences: handleExportOccurrence,
 };
 
 const DeliveriesPageActions = ({
   activeTab,
+  hasData = false,
 }: DeliveriesPageActionsProps): JSX.Element => {
   const businessId = useDeliveriesBusinessId();
 
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
   const [isImportOpen, setIsImportOpen] = useState<boolean>(false);
+
+  const [isImportSpreadsheetOpen, setIsImportSpreadsheetOpen] =
+    useState<boolean>(false);
 
   // Same contract as the rest of the app: the button stays on screen and
   // explains itself on hover. Hiding it left the user with no way to learn
@@ -116,22 +181,59 @@ const DeliveriesPageActions = ({
       sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center
       sm:gap-2 sm:justify-end sm:ml-auto"
     >
-      {activeTab === "deliveries" && businessId && (
+      {EXPORT_ACTION[activeTab] && (
+        <div className="w-full sm:w-auto">
+          <ExportButton
+            exportAction={EXPORT_ACTION[activeTab]!}
+            entityName={
+              activeTab === "occurrences" ? "ocorrencias" : "entregas"
+            }
+            hasData={hasData}
+            writePermission={canWrite}
+          />
+        </div>
+      )}
+
+      {/* One menu instead of two buttons. The XML and the spreadsheet are two
+          doors into the same room, and a bar with "Importar XML" next to
+          "Importar Planilha" makes people stop and read instead of act. */}
+      {(activeTab === "deliveries" || activeTab === "imports") && businessId && (
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="w-full sm:w-auto">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 w-full"
-                  disabled={!canWrite}
-                  data-tutorial="import-xml-button"
-                  onClick={() => setIsImportOpen(true)}
-                >
-                  <FileUp className="mr-1 h-4 w-4" />
-                  Importar XML
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-full"
+                      disabled={!canWrite}
+                      data-tutorial="import-xml-button"
+                    >
+                      <FileUp className="mr-1 h-4 w-4" />
+                      Importar
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => setIsImportSpreadsheetOpen(true)}
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Planilha (.xlsx ou .csv)
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => setIsImportOpen(true)}
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      XML da NF-e
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </TooltipTrigger>
             {!canWrite && (
@@ -207,11 +309,28 @@ const DeliveriesPageActions = ({
         />
       )}
 
+      {businessId && isCreateOpen && activeTab === "status-change-reasons" && (
+        <StatusChangeReasonFormDialog
+          businessId={businessId}
+          reason={null}
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+        />
+      )}
+
       {businessId && isImportOpen && (
         <ImportXmlDialog
           businessId={businessId}
           isOpen={isImportOpen}
           onClose={() => setIsImportOpen(false)}
+        />
+      )}
+
+      {businessId && isImportSpreadsheetOpen && (
+        <ImportSpreadsheetDialog
+          businessId={businessId}
+          isOpen={isImportSpreadsheetOpen}
+          onClose={() => setIsImportSpreadsheetOpen(false)}
         />
       )}
     </div>

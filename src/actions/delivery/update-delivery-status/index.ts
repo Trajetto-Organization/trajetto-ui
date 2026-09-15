@@ -10,11 +10,30 @@ interface ActionResponse<T = undefined> {
   data?: T;
 }
 
+interface StatusOverride {
+  /**
+   * Required by the API, and this is the one endpoint in the module that
+   * demands it.
+   *
+   * Everything the driver's app does carries its own evidence — a photo, a
+   * geolocation, a typed occurrence. Moving a status by hand from the panel
+   * carries none, so the reason IS the evidence, and three days later it is
+   * the only thing support has to answer "por que essa está assim?".
+   */
+  reasonId: string;
+
+  /** The detail the catalogue cannot carry: "cliente ligou às 14h". */
+  note?: string;
+
+  /** Only meaningful on DELIVERED. */
+  receivedBy?: string;
+}
+
 const updateDeliveryStatus = async (
   businessId: string,
   deliveryId: string,
   status: DeliveryStatus,
-  receivedBy?: string,
+  override: StatusOverride,
 ): Promise<ActionResponse> => {
   const tokenAccess = await getCookies("tkey");
 
@@ -37,7 +56,9 @@ const updateDeliveryStatus = async (
         },
         body: JSON.stringify({
           status,
-          ...(receivedBy && { received_by: receivedBy }),
+          reasonId: override.reasonId,
+          ...(override.note && { note: override.note }),
+          ...(override.receivedBy && { received_by: override.receivedBy }),
         }),
       },
     );
@@ -62,3 +83,4 @@ const updateDeliveryStatus = async (
 };
 
 export { updateDeliveryStatus };
+export type { StatusOverride };

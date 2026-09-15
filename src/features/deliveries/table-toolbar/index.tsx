@@ -7,6 +7,7 @@ import {
   Building2,
   Camera,
   CircleDot,
+  FileSpreadsheet,
   MapPin,
   ShieldAlert,
   TriangleAlert,
@@ -92,6 +93,13 @@ const FILTERS_BY_TAB: Record<DeliveryTab, FilterDescriptor[]> = {
     },
     { key: "requires_photo", title: "Foto", dynamicOptionIcon: Camera },
   ],
+  "status-change-reasons": [
+    { key: "is_active", title: "Status", dynamicOptionIcon: CircleDot },
+  ],
+  imports: [
+    { key: "status", title: "Status", dynamicOptionIcon: CircleDot },
+    { key: "source", title: "Origem", dynamicOptionIcon: FileSpreadsheet },
+  ],
 };
 
 const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
@@ -101,6 +109,11 @@ const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
   chat: "",
   shippers: "Nome, CNPJ ou e-mail...",
   "occurrence-types": "Nome ou descrição...",
+  "status-change-reasons": "Nome ou descrição...",
+
+  // Empty hides the box: the listing endpoint takes no search term, and a
+  // field that types into nothing is worse than no field.
+  imports: "",
 };
 
 export function DeliveriesTableToolbar<TData>({
@@ -155,16 +168,18 @@ export function DeliveriesTableToolbar<TData>({
 
   return (
     <div className="flex flex-wrap items-center gap-2 w-full">
-      <SearchInputWithLoading
-        data-tutorial="deliveries-search"
-        placeholder={SEARCH_PLACEHOLDER[activeTab]}
-        defaultValue={searchParams.get("search") || ""}
-        onChange={handleSearchWithLoading}
-        disabled={error}
-        isLoading={isPending || isLoading}
-        wrapperClassName="w-full sm:w-auto
-        sm:min-w-[270px] sm:max-w-[270px]"
-      />
+      {SEARCH_PLACEHOLDER[activeTab] !== "" && (
+        <SearchInputWithLoading
+          data-tutorial="deliveries-search"
+          placeholder={SEARCH_PLACEHOLDER[activeTab]}
+          defaultValue={searchParams.get("search") || ""}
+          onChange={handleSearchWithLoading}
+          disabled={error}
+          isLoading={isPending || isLoading}
+          wrapperClassName="w-full sm:w-auto
+          sm:min-w-[270px] sm:max-w-[270px]"
+        />
+      )}
 
       <div
         className="flex flex-wrap items-center gap-2"

@@ -16,6 +16,12 @@ import { buildShipperColumns } from "../shippers/table-columns";
 import { buildOccurrenceTypeColumns } from "../occurrence-types/table-columns";
 import { buildOccurrenceColumns } from "../occurrences/table-columns";
 
+import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
+import type { ImportData } from "@/actions/import/list-imports";
+
+import { buildStatusChangeReasonColumns } from "../status-change-reasons/table-columns";
+import { buildImportColumns } from "../imports/table-columns";
+
 import type { OccurrenceRow } from "../lib/panels";
 import { DeliveriesTableToolbar } from "../table-toolbar";
 
@@ -69,6 +75,30 @@ const DeliveriesTable = ({
         data={data as OccurrenceTypeData[]}
         meta={meta}
         columns={buildOccurrenceTypeColumns()}
+        responseError={responseError}
+        toolbar={toolbar}
+      />
+    );
+  }
+
+  if (activeTab === "status-change-reasons") {
+    return (
+      <DataTable
+        data={data as StatusChangeReasonData[]}
+        meta={meta}
+        columns={buildStatusChangeReasonColumns()}
+        responseError={responseError}
+        toolbar={toolbar}
+      />
+    );
+  }
+
+  if (activeTab === "imports") {
+    return (
+      <DataTable
+        data={data as ImportData[]}
+        meta={meta}
+        columns={buildImportColumns()}
         responseError={responseError}
         toolbar={toolbar}
       />

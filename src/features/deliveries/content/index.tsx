@@ -69,6 +69,16 @@ const TAB_SOURCES: Record<
     errorMessage:
       "Houve um erro ao tentar recuperar os tipos de ocorrência",
   },
+  "status-change-reasons": {
+    path: "/status-change-reason/list-status-change-reason",
+    tag: "update-status-change-reason",
+    errorMessage: "Houve um erro ao tentar recuperar os motivos de status",
+  },
+  imports: {
+    path: "/import/list-imports",
+    tag: "update-import",
+    errorMessage: "Houve um erro ao tentar recuperar as importações",
+  },
 };
 
 const DeliveriesContent = async ({
@@ -91,14 +101,16 @@ const DeliveriesContent = async ({
    * actions drop under the tabs instead of squeezing them, and on phones
    * each button spans the width.
    */
-  const renderHeader = (withActions: boolean) => (
+  const renderHeader = (withActions: boolean, hasData = false) => (
     <div className="space-y-4">
       {mode === "admin" && <BusinessSelector currentBusinessId={businessId} />}
 
       <div className="flex flex-wrap items-center gap-3">
         <DeliveriesTabs activeTab={activeTab} />
 
-        {withActions && <DeliveriesPageActions activeTab={activeTab} />}
+        {withActions && (
+          <DeliveriesPageActions activeTab={activeTab} hasData={hasData} />
+        )}
       </div>
     </div>
   );
@@ -330,7 +342,7 @@ const DeliveriesContent = async ({
 
   return (
     <div className="space-y-4 my-6" data-tutorial="welcome">
-      {renderHeader(true)}
+      {renderHeader(true, meta.total > 0)}
 
       <DeliveriesStats
         activeTab={activeTab}

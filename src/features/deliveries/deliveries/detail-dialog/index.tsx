@@ -7,7 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "react-query";
 
 import { toast } from "sonner";
-import { Loader, MapPin, MessageCircle, TriangleAlert } from "lucide-react";
+import { Loader, MessageCircle, TriangleAlert } from "lucide-react";
 
 import {
   Dialog,
@@ -38,6 +38,10 @@ import {
 import { getDelivery, type DeliveryStatus } from "@/actions/delivery/get-delivery";
 
 import { updateDeliveryStatus } from "@/actions/delivery/update-delivery-status";
+
+import { StatusReasonSelector } from "@/app/(protected)/_components/shared/selectors/status-reason-selector";
+
+import { DeliveryTimeline } from "../timeline";
 import { reportDeliveryOccurrence } from "@/actions/delivery/report-delivery-occurrence";
 
 import { listOccurrenceTypes } from "@/actions/occurrence-type/list-occurrence-type";
@@ -102,6 +106,12 @@ const DeliveryDetailDialog = ({
   const [nextStatus, setNextStatus] = useState<DeliveryStatus | "">("");
   const [receivedBy, setReceivedBy] = useState<string>("");
 
+  // Moving a status by hand carries no evidence of its own, so the reason is
+  // it. Required by the API and required here, rather than letting the request
+  // go and showing the refusal as a toast.
+  const [reasonId, setReasonId] = useState<string>("");
+  const [statusNote, setStatusNote] = useState<string>("");
+
   // Lightbox for the driver's photos — the fuel/checklist pattern: a
   // nested dialog instead of a new tab, so the manager never leaves the
   // detail.
@@ -146,7 +156,7 @@ const DeliveryDetailDialog = ({
   };
 
   const handleStatusChange = async () => {
-    if (!delivery || !nextStatus) return;
+    if (!delivery || !nextStatus || !reasonId) return;
     setIsSaving(true);
 
     try {
@@ -154,13 +164,23 @@ const DeliveryDetailDialog = ({
         businessId,
         delivery.id,
         nextStatus,
-        nextStatus === "DELIVERED" ? receivedBy || undefined : undefined,
+        {
+          reasonId,
+          note: statusNote || undefined,
+          receivedBy:
+            nextStatus === "DELIVERED" ? receivedBy || undefined : undefined,
+        },
       );
 
       if (result.success) {
         toast.success(result.message);
+
         setNextStatus("");
         setReceivedBy("");
+
+        setReasonId("");
+        setStatusNote("");
+
         await refreshDetail();
       } else {
         toast.error(result.message);
@@ -382,7 +402,8 @@ const DeliveryDetailDialog = ({
                               disabled={
                                 !canWriteDelivery ||
                                 isSaving ||
-                                nextStatus === ""
+                                nextStatus === "" ||
+                                reasonId === ""
                               }
                               onClick={() => void handleStatusChange()}
                             >
@@ -403,6 +424,21 @@ const DeliveryDetailDialog = ({
                       </Tooltip>
                     </TooltipProvider>
                   </div>
+
+                  {/* Only once a status is picked: asking why before asking
+                      what would be asking a question with no subject. */}
+                  {nextStatus !== "" && (
+                    <div className="pt-2">
+                      <StatusReasonSelector
+                        businessId={businessId}
+                        reasonId={reasonId}
+                        onReasonChange={setReasonId}
+                        note={statusNote}
+                        onNoteChange={setStatusNote}
+                        disabled={!canWriteDelivery || isSaving}
+                      />
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -410,198 +446,28 @@ const DeliveryDetailDialog = ({
             <Separator />
 
             <div>
-              <p className="mb-2 text-sm font-medium">
-                Apontamentos do motorista ({(delivery.events ?? []).length})
+              <p className="mb-3 text-sm font-medium">
+                Histórico ({(delivery.timeline ?? []).length})
               </p>
 
-              {(delivery.events ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum apontamento ainda — chegada e comprovação aparecem
-                  aqui quando o motorista registra pelo aplicativo.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {(delivery.events ?? []).map((event) => (
-                    <li
-                      key={event.id}
-                      className="rounded-lg border p-3 text-sm"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium">
-                          {event.type === "PROOF"
-                            ? "Entrega comprovada"
-                            : "Chegou ao endereço"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatNotificationDate(event.created_at, "pt-BR")}
-                        </span>
-                      </div>
-
-                      <p
-                        className="mt-1 flex flex-wrap items-center gap-2
-                        text-xs text-muted-foreground"
-                      >
-                        Por {event.reportedBy.name}
-                        {event.received_by && (
-                          <span>· Recebido por {event.received_by}</span>
-                        )}
-                        {event.latitude !== null && (
-                          <a
-                            href={`https://www.google.com/maps?q=${event.latitude},${event.longitude}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-0.5 underline
-                            underline-offset-2"
-                          >
-                            <MapPin className="h-3 w-3" />
-                            Ver no mapa
-                          </a>
-                        )}
-                      </p>
-
-                      {(event.photo || event.signature) && (
-                        <div className="mt-2 flex flex-wrap gap-3">
-                          {event.photo && (
-                            <button
-                              type="button"
-                              className="block cursor-pointer"
-                              onClick={() =>
-                                setPreviewImage({
-                                  url: event.photo!,
-                                  label: "Foto do canhoto",
-                                })
-                              }
-                            >
-                              {/* Signed URL, thumbnail only — the lightbox
-                              shows it big without leaving the detail. */}
-                              <img
-                                src={event.photo}
-                                alt="Foto do canhoto"
-                                className="h-20 w-20 rounded-md border
-                                object-cover"
-                              />
-                              <span
-                                className="mt-0.5 block text-center
-                                text-[10px] text-muted-foreground"
-                              >
-                                Canhoto
-                              </span>
-                            </button>
-                          )}
-                          {event.signature && (
-                            <button
-                              type="button"
-                              className="block cursor-pointer"
-                              onClick={() =>
-                                setPreviewImage({
-                                  url: event.signature!,
-                                  label: "Assinatura do recebedor",
-                                })
-                              }
-                            >
-                              <img
-                                src={event.signature}
-                                alt="Assinatura do recebedor"
-                                className="h-20 w-28 rounded-md border
-                                bg-white object-contain"
-                              />
-                              <span
-                                className="mt-0.5 block text-center
-                                text-[10px] text-muted-foreground"
-                              >
-                                Assinatura
-                              </span>
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {/* One list instead of the two this dialog used to show.
+                  Apontamentos and Ocorrências were separate sections built
+                  from separate tables, and a status changed by hand appeared
+                  in neither — so the screen support opens while the customer
+                  is on the phone was the one screen that could not answer
+                  "por que essa entrega está assim?". The API merges the
+                  tables and phrases each line; showing the old sections
+                  alongside this would print the same fact twice, which is how
+                  people start doubting which copy is right. */}
+              <DeliveryTimeline
+                entries={delivery.timeline ?? []}
+                onPreviewImage={(url, label) => setPreviewImage({ url, label })}
+              />
             </div>
 
             <Separator />
 
             <div>
-              <p className="mb-2 text-sm font-medium">
-                Ocorrências ({delivery.occurrences.length})
-              </p>
-
-              {delivery.occurrences.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma ocorrência registrada.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {delivery.occurrences.map((occurrence) => (
-                    <li
-                      key={occurrence.id}
-                      className="rounded-lg border p-3 text-sm"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          {occurrence.occurrenceType.blocks_delivery && (
-                            <TriangleAlert className="h-3.5 w-3.5 text-red-600" />
-                          )}
-                          {occurrence.occurrenceType.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatNotificationDate(
-                            occurrence.created_at,
-                            "pt-BR",
-                          )}
-                        </span>
-                      </div>
-                      {occurrence.description && (
-                        <p className="mt-1 text-muted-foreground">
-                          {occurrence.description}
-                        </p>
-                      )}
-                      {occurrence.photos.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {occurrence.photos.map((photoUrl, index) => (
-                            <button
-                              key={index}
-                              type="button"
-                              className="cursor-pointer"
-                              onClick={() =>
-                                setPreviewImage({
-                                  url: photoUrl,
-                                  label: `Foto da ocorrência ${index + 1}`,
-                                })
-                              }
-                            >
-                              <img
-                                src={photoUrl}
-                                alt={`Foto da ocorrência ${index + 1}`}
-                                className="h-16 w-16 rounded-md border
-                                object-cover"
-                              />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                        Por {occurrence.reportedBy.name}
-                        {occurrence.latitude !== null && (
-                          <a
-                            href={`https://www.google.com/maps?q=${occurrence.latitude},${occurrence.longitude}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-0.5 underline
-                            underline-offset-2"
-                          >
-                            <MapPin className="h-3 w-3" />
-                            Ver no mapa
-                          </a>
-                        )}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
               {!["CANCELLED"].includes(delivery.status) && (
                 <div className="mt-3 space-y-2 rounded-lg border border-dashed p-3">
                   <Label className="text-sm">Registrar ocorrência</Label>

@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import { updateDeliveryStatus } from "@/actions/delivery/update-delivery-status";
 import { revalidateTagName } from "@/actions/revalidate";
 
+import { StatusReasonSelector } from "@/app/(protected)/_components/shared/selectors/status-reason-selector";
+
 interface CancelDeliveryDialogProps {
   businessId: string;
   deliveryId: string;
@@ -48,7 +50,15 @@ const CancelDeliveryDialog = ({
 }: CancelDeliveryDialogProps): JSX.Element => {
   const [isPending, setIsPending] = useState<boolean>(false);
 
+  // Cancelling is a status override like any other, and the one whose reason
+  // gets asked about most: three days later this is the only record of why a
+  // delivery the customer was expecting never went out.
+  const [reasonId, setReasonId] = useState<string>("");
+  const [note, setNote] = useState<string>("");
+
   const handleCancel = async () => {
+    if (!reasonId) return;
+
     setIsPending(true);
 
     try {
@@ -56,6 +66,7 @@ const CancelDeliveryDialog = ({
         businessId,
         deliveryId,
         "CANCELLED",
+        { reasonId, note: note || undefined },
       );
 
       if (!result.success) {
@@ -108,6 +119,15 @@ const CancelDeliveryDialog = ({
           </p>
         </div>
 
+        <StatusReasonSelector
+          businessId={businessId}
+          reasonId={reasonId}
+          onReasonChange={setReasonId}
+          note={note}
+          onNoteChange={setNote}
+          disabled={isPending}
+        />
+
         <ul className="space-y-1.5 text-sm text-muted-foreground">
           <li>• Cancelada é um estado final: não há como voltar atrás.</li>
           <li>• A entrega deixa de aparecer para o motorista no app.</li>
@@ -123,7 +143,7 @@ const CancelDeliveryDialog = ({
           </AlertDialogCancel>
 
           <AlertDialogAction
-            disabled={isPending}
+            disabled={isPending || !reasonId}
             onClick={(event) => {
               // Kept open until the request settles, so a failure is visible
               // instead of closing over a delivery that did not change.

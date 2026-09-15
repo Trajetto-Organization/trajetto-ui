@@ -4,7 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   ClipboardList,
+  FileSpreadsheet,
   MessageCircle,
+  MessageSquareWarning,
   Package,
   TriangleAlert,
   Users,
@@ -25,6 +27,8 @@ const TAB_ICONS = {
   chat: MessageCircle,
   shippers: Users,
   "occurrence-types": TriangleAlert,
+  "status-change-reasons": MessageSquareWarning,
+  imports: FileSpreadsheet,
 } as const;
 
 interface DeliveriesTabsProps {

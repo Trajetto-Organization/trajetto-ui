@@ -2,13 +2,15 @@
 
 import {
   Building2,
-  CheckCircle2,
   Camera,
+  CheckCircle2,
+  History,
   IdCard,
+  MessageSquareWarning,
   Package,
   ShieldAlert,
-  Truck,
   TriangleAlert,
+  Truck,
 } from "lucide-react";
 
 import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shared/common.types";
@@ -281,6 +283,48 @@ const monitoringStats: StatConfig[] = [
   },
 ];
 
+/**
+ * The catalogue's own numbers.
+ *
+ * `used` is the one worth a card: it separates the vocabulary the company
+ * actually speaks from the words somebody typed once and forgot — and it is
+ * what says which reasons can still be deleted.
+ */
+const statusChangeReasonStats: StatConfig[] = [
+  {
+    key: "total-reasons",
+    title: "Total de Motivos",
+    valueKey: "totalReasons",
+    description: "No catálogo da empresa",
+    icon: MessageSquareWarning,
+    variant: "primary",
+  },
+  {
+    key: "active-reasons",
+    title: "Ativos",
+    valueKey: "activeReasons",
+    icon: CheckCircle2,
+    variant: "success",
+    calculateValue: (data) => {
+      const total = data.totalReasons || 0;
+      const active = data.activeReasons || 0;
+
+      return total > 0
+        ? `${active} (${Math.round((active / total) * 100)}%)`
+        : "0";
+    },
+    description: "Disponíveis no seletor",
+  },
+  {
+    key: "used-reasons",
+    title: "Em uso",
+    valueKey: "usedReasons",
+    icon: History,
+    variant: "warning",
+    description: "Já explicam alguma mudança — não podem ser excluídos",
+  },
+];
+
 const STATS_BY_TAB: Record<DeliveryTab, StatConfig[]> = {
   deliveries: deliveryStats,
   occurrences: occurrenceFeedStats,
@@ -289,6 +333,12 @@ const STATS_BY_TAB: Record<DeliveryTab, StatConfig[]> = {
   chat: [],
   shippers: shipperStats,
   "occurrence-types": occurrenceTypeStats,
+  "status-change-reasons": statusChangeReasonStats,
+
+  // No cards: the listing endpoint sends no aggregate, and counting the rows
+  // of the page on screen would print "12 importações" to a company that has
+  // four hundred. A number that is wrong is worse than no number.
+  imports: [],
 };
 
 /** Maps the API's meta line into the keys the cards above read. */
@@ -326,6 +376,14 @@ function buildStatsData(
       withCnpj: Number(searchMeta?.withCnpj ?? 0),
       inactiveShippers:
         Number(searchMeta?.total ?? total) - Number(searchMeta?.active ?? 0),
+    };
+  }
+
+  if (activeTab === "status-change-reasons") {
+    return {
+      totalReasons: Number(searchMeta?.total ?? total),
+      activeReasons: Number(searchMeta?.active ?? 0),
+      usedReasons: Number(searchMeta?.used ?? 0),
     };
   }
 

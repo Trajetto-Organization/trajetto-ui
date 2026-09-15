@@ -330,9 +330,21 @@ const applyMask = (value: string, mask: string): string => {
   const cleanedValue = value.replace(/\D/g, "");
 
   for (let i = 0; i < mask.length; i++) {
+    /**
+     * Stop when the digits run out, instead of trailing the punctuation.
+     *
+     * Without this, a value shorter than the mask kept collecting the literal
+     * characters after it: an eight-digit RG — which is a normal length, the
+     * issuing state decides — rendered as `12.345.678-` in the edit form, and
+     * a half-typed CPF as `123..-`. The person then deletes a dash they never
+     * typed, or saves a field that looks malformed.
+     */
+    if (valueIndex >= cleanedValue.length) break;
+
     const maskChar = mask[i];
+
     if (maskChar === "9") {
-      masked += cleanedValue[valueIndex] || "";
+      masked += cleanedValue[valueIndex];
       valueIndex++;
     } else {
       masked += maskChar;

@@ -17,6 +17,7 @@ import {
   NotepadText,
   Package,
   Plug,
+  Radar,
   Receipt,
   Route,
   Split,
@@ -55,6 +56,7 @@ const protectedNavIcons = {
   package: Package,
   route: Route,
   integration: Plug,
+  tower: Radar,
 };
 
 const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
@@ -85,6 +87,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       title: "Rotas",
       url: "/admin/routes",
       icon: "route",
+    },
+    {
+      title: "Torre de Controle",
+      url: "/admin/control-tower",
+      icon: "tower",
     },
     {
       title: "Integrações",
@@ -262,6 +269,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       title: "Rotas",
       url: "/dashboard/routes",
       icon: "route",
+    },
+    {
+      title: "Torre de Controle",
+      url: "/dashboard/control-tower",
+      icon: "tower",
     },
     {
       title: "Integrações",

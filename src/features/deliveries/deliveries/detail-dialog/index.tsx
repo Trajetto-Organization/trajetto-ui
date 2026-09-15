@@ -42,6 +42,7 @@ import { updateDeliveryStatus } from "@/actions/delivery/update-delivery-status"
 import { StatusReasonSelector } from "@/app/(protected)/_components/shared/selectors/status-reason-selector";
 
 import { DeliveryTimeline } from "../timeline";
+import { ProofDocumentSection } from "../proof-document";
 import { reportDeliveryOccurrence } from "@/actions/delivery/report-delivery-occurrence";
 
 import { listOccurrenceTypes } from "@/actions/occurrence-type/list-occurrence-type";
@@ -442,6 +443,14 @@ const DeliveryDetailDialog = ({
                 </div>
               </>
             )}
+
+            <Separator />
+
+            <ProofDocumentSection
+              businessId={businessId}
+              deliveryId={delivery.id}
+              status={delivery.status}
+            />
 
             <Separator />
 

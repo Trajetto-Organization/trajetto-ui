@@ -221,9 +221,8 @@ const TutorialComponent = (): JSX.Element | null => {
          * A real dialog, not a floating card.
          *
          * `aria-modal` is only honest because the hook traps Tab inside this
-         * element and Escape closes it; without the trap it would tell a
-         * screen reader to ignore the rest of the page while the keyboard
-         * still walked into it.
+         * element; without the trap it would tell a screen reader to ignore
+         * the rest of the page while the keyboard still walked into it.
          */
         role="dialog"
         aria-modal="true"
@@ -381,9 +380,9 @@ const TutorialComponent = (): JSX.Element | null => {
                 onClick={skipTutorial}
                 /**
                  * A bare <button>, so it inherits none of the focus ring the
-                 * Button component carries. It was the only visible way out
-                 * of the tutorial and a keyboard user could not see where
-                 * they were on it. The ESC it advertises works now too.
+                 * Button component carries. It is the only visible way out of
+                 * the tutorial and a keyboard user could not see where they
+                 * were on it.
                  */
                 className="tutorial-skip-hover text-xs
                   text-muted-foreground hover:text-foreground

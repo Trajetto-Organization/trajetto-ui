@@ -417,25 +417,17 @@ function useTutorialComponent() {
   }, []);
 
   /**
-   * The tutorial covers the screen, so it has to behave like a dialog.
+   * The tutorial covers the screen, so Tab has to stay inside it.
    *
-   * Escape dismisses it and Tab cycles inside it. Without this a keyboard
-   * user was left tabbing through the page underneath a full-screen overlay
-   * they could see through but not reach, with no way to close it: the card
-   * was never focused, so Escape had nothing listening and the only exit was
-   * a mouse click on the X.
+   * Escape already worked — the provider listens for it on `window` — but a
+   * keyboard user could still tab straight through the page underneath a
+   * full-screen overlay, landing on controls they could not see and could not
+   * tell they were on. This is the half that was missing.
    */
   useEffect(() => {
     if (!isActive) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.stopPropagation();
-        skipTutorial();
-
-        return;
-      }
-
       if (event.key !== "Tab") return;
 
       const card = tooltipRef.current;
@@ -477,7 +469,7 @@ function useTutorialComponent() {
     document.addEventListener("keydown", onKeyDown);
 
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isActive, skipTutorial]);
+  }, [isActive]);
 
   /**
    * Focus enters the card on open and goes back where it was on close.
@@ -497,7 +489,27 @@ function useTutorialComponent() {
 
     return () => {
       cancelAnimationFrame(frame);
-      restoreTo?.focus?.();
+
+      if (restoreTo && restoreTo !== document.body && restoreTo.isConnected) {
+        restoreTo.focus();
+
+        return;
+      }
+
+      /**
+       * The tour opens by itself, so there is usually nothing to go back to.
+       *
+       * Handing focus back to `<body>` is the same as dropping it: the next
+       * Tab restarts at the top of the document, which on this app means
+       * walking the entire sidebar again to reach the screen the tour was
+       * just describing. The main region is where that content is.
+       */
+      const main = document.querySelector("main");
+
+      if (main instanceof HTMLElement) {
+        main.setAttribute("tabindex", "-1");
+        main.focus();
+      }
     };
   }, [isActive]);
 

@@ -153,8 +153,12 @@ function DataTable<TData, TValue>({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
+  // No role on the wrapper. The <table> inside already carries table
+  // semantics; declaring role="table" here made the search box, the filter
+  // buttons and the pager into "table children", which is invalid ARIA — a
+  // screen reader entered table mode and read the toolbar as cells.
   return (
-    <div className="space-y-4 my-9" role="table">
+    <div className="space-y-4 my-9">
       {toolbar
         ? React.cloneElement(toolbar, {
             table,

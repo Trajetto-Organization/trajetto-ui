@@ -34,7 +34,11 @@ const TutorialButton = (): JSX.Element => {
             className="h-8 w-8"
             onClick={handleClick}
           >
-            <HelpCircle className="h-4 w-4" />
+            {/* The tooltip is not a name: it only reaches the accessibility
+                tree while it is open, so the button announced itself as
+                "button" and nothing else. */}
+            <span className="sr-only">Iniciar tutorial</span>
+            <HelpCircle className="h-4 w-4" aria-hidden="true" />
           </Button>
         </TooltipTrigger>
         <TooltipContent className="flex items-center gap-1.5">
@@ -93,18 +97,24 @@ const TutorialMenuItem = (): JSX.Element => {
               open ? "justify-start" : "justify-center h-8"
             } ${
               !hasTutorial
-                ? "opacity-50 cursor-not-allowed"
+                ? "text-muted-foreground cursor-not-allowed"
                 : "hover:bg-accent hover:text-accent-foreground"
             }`}
+            /**
+             * Announced as unavailable instead of only looking it.
+             *
+             * `aria-disabled` rather than `disabled` on purpose: a disabled
+             * button is not focusable, and the tooltip that explains WHY
+             * there is no tutorial would then be unreachable by keyboard.
+             */
+            aria-disabled={!hasTutorial}
           >
-            <HelpCircle className={!hasTutorial ? "opacity-50" : ""} />
-            {open && (
-              <span
-                className={`ml-2 truncate ${!hasTutorial ? "opacity-50" : ""}`}
-              >
-                {getButtonText()}
-              </span>
-            )}
+            {/* One `opacity-50` used to sit on the button, another on the
+                icon and a third on the label. Opacity multiplies, so the text
+                landed at 1.55:1 against its background — legally invisible.
+                The muted token says "secondary" and stays readable. */}
+            <HelpCircle aria-hidden="true" />
+            {open && <span className="ml-2 truncate">{getButtonText()}</span>}
           </Button>
         </TooltipTrigger>
         <TooltipContent>

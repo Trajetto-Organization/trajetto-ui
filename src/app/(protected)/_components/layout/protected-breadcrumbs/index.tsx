@@ -34,8 +34,16 @@ const ProtectedBreadCrumbs = (): JSX.Element | null => {
               </BreadcrumbSeparator>
             )}
 
+            {/* The last crumb needs its wrapper like every other one: an
+                <ol> may only hold <li>, and BreadcrumbPage renders a <span
+                role="link">. Straight inside the list it broke the list
+                semantics, so a screen reader stopped announcing "item 3 of
+                3" — the position of the current page, which is the one thing
+                a breadcrumb exists to convey. */}
             {index === breadcrumbs.length - 1 && (
-              <BreadcrumbPage>{item.title}</BreadcrumbPage>
+              <BreadcrumbItem>
+                <BreadcrumbPage>{item.title}</BreadcrumbPage>
+              </BreadcrumbItem>
             )}
           </Fragment>
         ))}

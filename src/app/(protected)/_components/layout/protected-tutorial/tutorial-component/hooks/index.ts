@@ -416,6 +416,91 @@ function useTutorialComponent() {
     };
   }, []);
 
+  /**
+   * The tutorial covers the screen, so it has to behave like a dialog.
+   *
+   * Escape dismisses it and Tab cycles inside it. Without this a keyboard
+   * user was left tabbing through the page underneath a full-screen overlay
+   * they could see through but not reach, with no way to close it: the card
+   * was never focused, so Escape had nothing listening and the only exit was
+   * a mouse click on the X.
+   */
+  useEffect(() => {
+    if (!isActive) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        skipTutorial();
+
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const card = tooltipRef.current;
+
+      if (!card) return;
+
+      const focusable = Array.from(
+        card.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), ' +
+            'select:not([disabled]), textarea:not([disabled]), ' +
+            '[tabindex]:not([tabindex="-1"])',
+        ),
+      );
+
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      // Focus escaped the card entirely — a click on the backdrop, or the
+      // page behind it stealing focus. Bring it back.
+      if (!active || !card.contains(active)) {
+        event.preventDefault();
+        first.focus();
+
+        return;
+      }
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isActive, skipTutorial]);
+
+  /**
+   * Focus enters the card on open and goes back where it was on close.
+   *
+   * Deliberately keyed on `isActive` alone: moving between steps should not
+   * yank focus, because the buttons that move between steps live inside the
+   * card already.
+   */
+  useEffect(() => {
+    if (!isActive) return;
+
+    const restoreTo = document.activeElement as HTMLElement | null;
+
+    // The card is positioned off-screen until the first measurement pass, so
+    // focusing it synchronously would scroll the page to nowhere.
+    const frame = requestAnimationFrame(() => tooltipRef.current?.focus());
+
+    return () => {
+      cancelAnimationFrame(frame);
+      restoreTo?.focus?.();
+    };
+  }, [isActive]);
+
   if (!isActive || !currentStepData || isSmallScreen) return null;
 
   return {

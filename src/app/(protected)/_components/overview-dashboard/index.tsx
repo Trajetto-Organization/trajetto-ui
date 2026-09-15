@@ -291,7 +291,8 @@ const OverviewDashboard = ({
           )}
 
           {/* Recent Activity Table */}
-          <Card className="shadow-md mt-6" role="table">
+          {/* A Card is not a table — the table it contains is. */}
+          <Card className="shadow-md mt-6">
             <CardHeader>
               <div
                 className="flex flex-col gap-3 

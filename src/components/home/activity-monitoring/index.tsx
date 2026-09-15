@@ -167,7 +167,7 @@ const ActivityMonitoring = (): JSX.Element => {
               ) : (
                 /* Table */
                 <ScrollArea className="w-full">
-                  <table className="w-full" role="table">
+                  <table className="w-full">
                     <thead>
                       <tr className="border-b bg-muted/10">
                         {tableHeaders.map((header) => (

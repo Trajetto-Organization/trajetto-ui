@@ -135,7 +135,9 @@ const PunctualityWidget = ({
         <dt>Atrasadas</dt>
         <dd
           className={`font-medium ${
-            punctuality.late > 0 ? "text-amber-600" : "text-foreground"
+            punctuality.late > 0
+              ? "text-amber-700 dark:text-amber-400"
+              : "text-foreground"
           }`}
         >
           {asNumber(punctuality.late)}

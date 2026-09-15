@@ -18,6 +18,9 @@ import { Badge } from "@/components/ui/badge";
 import type { ParsedContent } from "./tutorial-component.types";
 import { useTutorialComponent } from "./hooks";
 
+/** Only one tutorial card is ever mounted, so a constant id is enough. */
+const TUTORIAL_TITLE_ID = "tutorial-step-title";
+
 const ContentRenderer = ({ item }: { item: ParsedContent }): JSX.Element => {
   switch (item.type) {
     case "permissions":
@@ -214,6 +217,18 @@ const TutorialComponent = (): JSX.Element | null => {
           the final state first. */}
       <div
         ref={tooltipRef}
+        /**
+         * A real dialog, not a floating card.
+         *
+         * `aria-modal` is only honest because the hook traps Tab inside this
+         * element and Escape closes it; without the trap it would tell a
+         * screen reader to ignore the rest of the page while the keyboard
+         * still walked into it.
+         */
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={TUTORIAL_TITLE_ID}
+        tabIndex={-1}
         className={`${
           currentStepData.placement === "center"
             ? "animate-scale-in"
@@ -246,6 +261,7 @@ const TutorialComponent = (): JSX.Element | null => {
             </div>
             <div className="min-w-0 flex-1">
               <h3
+                id={TUTORIAL_TITLE_ID}
                 className="text-base font-semibold 
                   text-foreground leading-tight"
               >
@@ -265,12 +281,20 @@ const TutorialComponent = (): JSX.Element | null => {
             className="h-7 w-7 shrink-0"
             onClick={skipTutorial}
           >
-            <X className="h-3.5 w-3.5" />
+            {/* The icon alone announced itself as just "button". */}
+            <span className="sr-only">Fechar tutorial</span>
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
           </Button>
         </div>
 
         {/* Compact content */}
+        {/* Focusable on purpose: a region that scrolls but cannot be
+            focused is unreachable with a keyboard, because there is nothing
+            inside it to tab to — the content is plain text. WCAG 2.1.1. */}
         <div
+          role="region"
+          aria-label="Conteúdo do tutorial"
+          tabIndex={0}
           className="p-4 max-h-[40vh] 
             overflow-y-auto tutorial-content-scroll"
         >
@@ -355,9 +379,18 @@ const TutorialComponent = (): JSX.Element | null => {
             <div className="w-full text-center pt-1.5">
               <button
                 onClick={skipTutorial}
+                /**
+                 * A bare <button>, so it inherits none of the focus ring the
+                 * Button component carries. It was the only visible way out
+                 * of the tutorial and a keyboard user could not see where
+                 * they were on it. The ESC it advertises works now too.
+                 */
                 className="tutorial-skip-hover text-xs
                   text-muted-foreground hover:text-foreground
-                  transition-colors inline-block"
+                  transition-colors inline-block rounded-sm
+                  ring-offset-background focus-visible:outline-none
+                  focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:ring-offset-2"
               >
                 Pular tutorial • Pressione{" "}
                 <span className="tutorial-keyboard-hint">ESC</span> para sair

@@ -30,12 +30,15 @@ const StatCard = ({
           <CardContent className="pb-4 pt-0">
             <div className="text-2xl font-bold">{value}</div>
             <p
+              // The 600 shades read at 3.29:1 on a white card at 12px, under
+              // the 4.5:1 that small text needs. The 700 shades carry the same
+              // meaning and clear it.
               className={`mt-1 text-xs ${
                 change > 0
-                  ? "text-green-600"
+                  ? "text-green-700 dark:text-green-400"
                   : change < 0
-                    ? "text-red-600"
-                    : "text-gray-500"
+                    ? "text-red-700 dark:text-red-400"
+                    : "text-gray-600 dark:text-gray-400"
               }`}
             >
               {change > 0 ? "+" : ""}

@@ -19,8 +19,11 @@ import { revalidateTagName } from "@/actions/revalidate";
 
 import type { DeliveryListItem } from "@/actions/delivery/get-delivery";
 
-import { DriverSelector } from "../driver-selector";
-import { VehicleSelector } from "../vehicle-selector";
+// Shared, not delivery-specific: the route form picks a driver and a vehicle
+// the same way, and two copies of a paged combobox would drift the first time
+// one of them learned something about the endpoint behind it.
+import { DriverSelector } from "@/app/(protected)/_components/shared/selectors/driver-selector";
+import { VehicleSelector } from "@/app/(protected)/_components/shared/selectors/vehicle-selector";
 
 interface AssignDeliveriesDialogProps {
   businessId: string;

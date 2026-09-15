@@ -100,6 +100,11 @@ const appRoutes: AppRoute[] = [
     title: "Entregas",
     requiredModule: "DELIVERIES",
   },
+  {
+    path: "/admin/routes",
+    title: "Rotas",
+    requiredModule: "DELIVERIES",
+  },
 
   // DASHBOARD Routes (to BUSINESS_ADMIN and BUSINESS_USER)
   { path: "/dashboard", title: "Dashboard", exact: true },
@@ -196,6 +201,17 @@ const appRoutes: AppRoute[] = [
   {
     path: "/dashboard/deliveries",
     title: "Entregas",
+    requiredPermission: "delivery_manage",
+    requiredModule: "DELIVERIES",
+  },
+  {
+    /**
+     * The same permission and module as Entregas, on purpose: a route is HOW
+     * deliveries are dispatched, and whoever can write deliveries can already
+     * assign a driver to twelve of them from that screen — the same act.
+     */
+    path: "/dashboard/routes",
+    title: "Rotas",
     requiredPermission: "delivery_manage",
     requiredModule: "DELIVERIES",
   },

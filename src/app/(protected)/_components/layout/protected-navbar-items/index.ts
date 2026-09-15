@@ -17,6 +17,7 @@ import {
   NotepadText,
   Package,
   Receipt,
+  Route,
   Split,
   Truck,
   User,
@@ -51,6 +52,7 @@ const protectedNavIcons = {
   supply: Gauge,
   check: CalendarCheckIcon,
   package: Package,
+  route: Route,
 };
 
 const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
@@ -76,6 +78,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       title: "Entregas",
       url: "/admin/deliveries",
       icon: "package",
+    },
+    {
+      title: "Rotas",
+      url: "/admin/routes",
+      icon: "route",
     },
     {
       title: "Suporte",
@@ -245,6 +252,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       icon: "package",
     },
     {
+      title: "Rotas",
+      url: "/dashboard/routes",
+      icon: "route",
+    },
+    {
       title: "Usuários",
       url: "#",
       icon: "user",
@@ -374,6 +386,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       title: "Entregas",
       url: "/dashboard/deliveries",
       icon: "package",
+    },
+    {
+      title: "Rotas",
+      url: "/dashboard/routes",
+      icon: "route",
     },
     {
       title: "Usuários",

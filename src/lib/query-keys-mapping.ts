@@ -20,6 +20,7 @@ type RevalidateDataProps =
   | "update-vehicle-checklist"
   | "update-activity"
   | "update-delivery"
+  | "update-route"
   | "update-chat"
   | "update-shipper"
   | "update-occurrence-type"
@@ -45,6 +46,13 @@ const revalidateDataToQueryKeyMap: Record<RevalidateDataProps, string[]> = {
   "update-vehicle-checklist": ["vehicle_checklist"],
   "update-activity": ["activity"],
   "update-delivery": ["delivery"],
+
+  /**
+   * The route table is server-rendered, so the tag is what refreshes it. The
+   * key covers the detail dialog, which keeps its own react-query cache and
+   * would otherwise still show the stops as they were before the change.
+   */
+  "update-route": ["route-detail"],
 
   /**
    * The chat has no server cache to revalidate: it is a live client surface

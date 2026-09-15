@@ -31,6 +31,16 @@ const robots = (): MetadataRoute.Robots => {
           "/profile*",
           "/notifications*",
 
+          // Tokenised public pages. These have NO login by design — the token
+          // in the URL is the whole authorisation — which is exactly why a
+          // crawler must never reach one: indexing a tracking link would put
+          // somebody's delivery, their name and their city into a search
+          // engine, permanently, for a link meant only for them. The pages
+          // also carry `robots: noindex` in their own metadata; this is the
+          // belt to that pair of braces.
+          "/verificar/*",
+          "/acompanhar/*",
+
           // Verification Pages
           "/new-verification*",
 
@@ -98,6 +108,8 @@ const robots = (): MetadataRoute.Robots => {
           "/profile*",
           "/notifications*",
           "/new-verification*",
+          "/verificar/*",
+          "/acompanhar/*",
           "/api/*",
           "/_next/*",
         ],
@@ -124,6 +136,8 @@ const robots = (): MetadataRoute.Robots => {
           "/profile*",
           "/notifications*",
           "/new-verification*",
+          "/verificar/*",
+          "/acompanhar/*",
           "/api/*",
           "/_next/*",
         ],

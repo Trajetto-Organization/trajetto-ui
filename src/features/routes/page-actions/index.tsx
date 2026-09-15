@@ -50,8 +50,18 @@ const RoutesPageActions = (): JSX.Element => {
 
   return (
     <div
-      className="flex w-full flex-col items-stretch gap-3
-      sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center
+      /**
+       * `sm:flex-wrap` and `min-w-0`, because the bar does not fit on its own.
+       *
+       * `nowrap` is already the flex default — the `sm:flex-nowrap` that used
+       * to be here added nothing and hid the problem: from `sm` up the
+       * buttons became a single row that neither wraps nor shrinks (each with
+       * a `whitespace-nowrap` label and `min-width: auto`), needing 505px
+       * where an iPad in portrait offers 400. Because the shell clips, the
+       * rightmost buttons sat off-screen with no scrollbar.
+       */
+      className="flex w-full min-w-0 flex-col items-stretch gap-3
+      sm:w-auto sm:flex-row sm:flex-wrap sm:items-center
       sm:gap-2 sm:justify-end sm:ml-auto"
     >
       <div className="w-full sm:w-auto">

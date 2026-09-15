@@ -42,7 +42,17 @@ const IntegrationsTabs = ({ activeTab }: IntegrationsTabsProps): JSX.Element => 
     <Tabs
       value={activeTab}
       onValueChange={handleChangeTab}
-      className="w-full lg:w-auto"
+      /**
+       * `min-w-0` + `max-w-full` is what makes the list's `overflow-x-auto`
+       * work at all.
+       *
+       * With only `lg:w-auto`, from 1024px up the tab strip started sizing to
+       * its content — 1431px inside a 768px area — and `TabsList`'s
+       * `overflow-x-auto` never engaged, because a container that grows to
+       * fit its content has nothing left to scroll. The trailing tabs ended
+       * up off-screen and unreachable.
+       */
+      className="w-full min-w-0 max-w-full lg:w-auto"
     >
       <TabsList
         className="w-full max-w-full justify-start

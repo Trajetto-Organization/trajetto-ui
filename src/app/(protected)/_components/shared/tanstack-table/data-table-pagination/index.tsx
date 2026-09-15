@@ -51,11 +51,22 @@ function DataTablePagination<TData>({
 
   return (
     <div
-      className="flex flex-col items-center gap-4 
-      justify-between px-2 sm:flex-row sm:gap-0"
+      /**
+       * `flex-wrap` is load-bearing: without it the row overflows and is lost.
+       *
+       * From `sm` up the two groups become one `justify-between` row, and
+       * neither can shrink — the selection text, the "Linhas por página"
+       * label and the four buttons are all `whitespace-nowrap`, and a flex
+       * item has `min-width: auto`. Together they need 428px where an iPad in
+       * portrait offers 400, and because the shell's `<main>` clips, the
+       * pager buttons sat off-screen with no scrollbar: the table was there
+       * and turning the page was impossible. Wrapping stacks the groups.
+       */
+      className="flex flex-col flex-wrap items-center gap-4 
+      justify-between px-2 sm:flex-row sm:gap-x-4 sm:gap-y-3"
     >
       <div
-        className="text-sm text-muted-foreground 
+        className="text-sm text-muted-foreground min-w-0 
         w-full sm:w-auto text-center sm:text-left"
       >
         {table.getFilteredSelectedRowModel().rows.length} de{" "}
@@ -63,7 +74,7 @@ function DataTablePagination<TData>({
       </div>
 
       <div
-        className="flex flex-col w-full items-center 
+        className="flex flex-col w-full min-w-0 items-center 
         gap-4 sm:w-auto sm:flex-row sm:gap-6 lg:gap-8"
       >
         <div

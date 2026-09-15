@@ -328,8 +328,10 @@ const KanbanBoardProvider = ({
         </div>
         {!(isLoading && !columns) && !hasLimitedAccess && (
           <div
-            className="flex w-full flex-col items-stretch gap-2
-            sm:w-auto sm:flex-row sm:items-center sm:ml-auto"
+            // Same bar, same reason as the Deliveries page-actions: without
+            // `flex-wrap` the button row neither wraps nor shrinks.
+            className="flex w-full min-w-0 flex-col items-stretch gap-2
+            sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:ml-auto"
           >
             <KanbanRevalidationButton
               businessId={businessId}

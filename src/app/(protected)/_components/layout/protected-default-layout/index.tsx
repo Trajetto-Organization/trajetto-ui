@@ -173,7 +173,11 @@ const DefaultLayout = ({
                 <ProtectedNotificationsMenu />
               </div>
             </header>
-            <main className="px-6 pt-6 h-full w-full">{children}</main>
+            {/* The div is deliberate: SidebarInset already renders the
+                <main>, and two nested main landmarks are invalid HTML — a
+                screen reader announces two primary regions and the
+                skip-to-content shortcut becomes ambiguous. */}
+            <div className="px-6 pt-6 h-full w-full">{children}</div>
           </SidebarInset>
         </SidebarWrapper>
       </TutorialProvider>

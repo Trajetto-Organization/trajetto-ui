@@ -14,6 +14,8 @@ import { DeliveriesTable } from "../table";
 import { MonitoringPanel } from "../monitoring";
 import { ChatPanel } from "../chat";
 
+import { MessageTemplatesPanel } from "../message-templates/panel";
+
 import type { OperationSummaryData } from "../lib/panels";
 
 interface DeliveriesContentProps {
@@ -78,6 +80,13 @@ const TAB_SOURCES: Record<
     path: "/import/list-imports",
     tag: "update-import",
     errorMessage: "Houve um erro ao tentar recuperar as importações",
+  },
+  // Never fetched: the panel is a client surface over six fixed slots and
+  // owns its own loading. The entry only satisfies the map.
+  "message-templates": {
+    path: "/delivery/message-templates",
+    tag: "update-delivery",
+    errorMessage: "Houve um erro ao carregar as mensagens ao cliente",
   },
 };
 
@@ -190,6 +199,29 @@ const DeliveriesContent = async ({
         {renderHeader(true)}
 
         <ChatPanel businessId={businessId} />
+      </div>
+    );
+  }
+
+  // Six fixed slots, written in place. A client panel with its own fetching,
+  // like the chat — there is no list to page and nothing to search.
+  if (activeTab === "message-templates") {
+    return (
+      <div className="space-y-4 my-6" data-tutorial="welcome">
+        {renderHeader(true)}
+
+        {businessId || mode === "dashboard" ? (
+          <MessageTemplatesPanel businessId={businessId ?? ""} />
+        ) : (
+          <div
+            className="flex h-72 items-center justify-center rounded-lg
+            border-2 border-dashed"
+          >
+            <p className="text-center text-sm text-muted-foreground">
+              Selecione uma empresa para configurar as mensagens
+            </p>
+          </div>
+        )}
       </div>
     );
   }

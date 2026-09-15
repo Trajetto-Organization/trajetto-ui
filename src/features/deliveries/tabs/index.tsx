@@ -8,6 +8,7 @@ import {
   MessageCircle,
   MessageSquareWarning,
   Package,
+  Send,
   TriangleAlert,
   Users,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const TAB_ICONS = {
   "occurrence-types": TriangleAlert,
   "status-change-reasons": MessageSquareWarning,
   imports: FileSpreadsheet,
+  "message-templates": Send,
 } as const;
 
 interface DeliveriesTabsProps {

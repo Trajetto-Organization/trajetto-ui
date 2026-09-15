@@ -100,6 +100,7 @@ const FILTERS_BY_TAB: Record<DeliveryTab, FilterDescriptor[]> = {
     { key: "status", title: "Status", dynamicOptionIcon: CircleDot },
     { key: "source", title: "Origem", dynamicOptionIcon: FileSpreadsheet },
   ],
+  "message-templates": [],
 };
 
 const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
@@ -114,6 +115,7 @@ const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
   // Empty hides the box: the listing endpoint takes no search term, and a
   // field that types into nothing is worse than no field.
   imports: "",
+  "message-templates": "",
 };
 
 export function DeliveriesTableToolbar<TData>({

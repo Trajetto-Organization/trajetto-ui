@@ -339,6 +339,10 @@ const STATS_BY_TAB: Record<DeliveryTab, StatConfig[]> = {
   // of the page on screen would print "12 importações" to a company that has
   // four hundred. A number that is wrong is worse than no number.
   imports: [],
+
+  // Six cards would be six numbers about six rows the screen already
+  // shows in full.
+  "message-templates": [],
 };
 
 /** Maps the API's meta line into the keys the cards above read. */

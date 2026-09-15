@@ -79,6 +79,11 @@ const REVALIDATE_TAG: Record<DeliveryTab, RevalidateDataProps> = {
   "occurrence-types": "update-occurrence-type",
   "status-change-reasons": "update-status-change-reason",
   imports: "update-import",
+
+  // The panel keeps its own react-query cache and refetches itself
+  // after a save; the tag exists so the shared refresh button has
+  // something to name.
+  "message-templates": "update-delivery",
 };
 
 const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
@@ -90,6 +95,7 @@ const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
   "occurrence-types": "deliveries-occurrence-types-table",
   "status-change-reasons": "deliveries-status-change-reasons-table",
   imports: "deliveries-imports-table",
+  "message-templates": "deliveries-message-templates-panel",
 };
 
 /**
@@ -111,6 +117,10 @@ const WRITE_PERMISSION: Record<DeliveryTab, PermissionKey> = {
   // An upload creates deliveries: whoever may not create one by hand may not
   // create two hundred from a file.
   imports: permissions.DELIVERY_MANAGE,
+
+  // Writing what the company says to its own customers is the
+  // dispatcher's, on the same key everything else about a delivery is.
+  "message-templates": permissions.DELIVERY_MANAGE,
 };
 
 /** Empty = read-only tab (panels): no create button to offer. */
@@ -128,6 +138,9 @@ const CREATE_LABEL: Record<DeliveryTab, string> = {
   // The imports tab is a record of what was uploaded — the way to add one is
   // the Importar button, not a generic create dialog.
   imports: "",
+
+  // Six fixed slots, written in place. There is nothing to create.
+  "message-templates": "",
 };
 
 /**

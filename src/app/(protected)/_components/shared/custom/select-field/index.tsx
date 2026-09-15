@@ -74,7 +74,11 @@ const SelectField: React.FC<SelectFieldProps> = ({
         </SelectTrigger>
         <SelectContent>
           {options.map((option, index) => (
-            <SelectItem key={index} value={option.value}>
+            <SelectItem
+              key={index}
+              value={option.value}
+              disabled={option.disabled}
+            >
               {option.label}
             </SelectItem>
           ))}

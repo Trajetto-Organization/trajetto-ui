@@ -11,6 +11,7 @@ import { SelectField } from "@/app/(protected)/_components/shared/custom/select-
 
 import type { CreateVehicleFormSubmitProps } from "../create-vehicle-form.types";
 import { formatNumericInput } from "@/lib/format-values";
+import { vehicleStatusOptions } from "@/lib/vehicle-status";
 
 const CreateVehicleFormSubmit = ({
   state,
@@ -321,12 +322,7 @@ const CreateVehicleFormSubmit = ({
           errorName={state.createVehicleError?.status}
           disabled={pending}
           placeholder="Selecione o status do veículo"
-          options={[
-            { value: "ACTIVE", label: "Ativo" },
-            { value: "INACTIVE", label: "Inativo" },
-            { value: "BLOCKED", label: "Bloqueado" },
-            { value: "IN_ROUTE", label: "Em rota" },
-          ]}
+          options={vehicleStatusOptions()}
         />
       </div>
 

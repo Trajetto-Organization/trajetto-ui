@@ -13,6 +13,7 @@ import { DatePickerField } from "@/app/(protected)/_components/shared/custom/dat
 import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
 
 import { useAuthStore } from "@/store/auth-store";
+import { vehicleStatusOptions } from "@/lib/vehicle-status";
 
 // Helper function to normalize values for comparison (moved outside component)
 const normalizeValue = (value: any): any => {
@@ -457,12 +458,7 @@ const DashboardUpdateVehicleFormSubmit = ({
           errorName={state.updateVehicleError?.status}
           disabled={pending}
           placeholder="Selecione o status do veículo"
-          options={[
-            { value: "ACTIVE", label: "Ativo" },
-            { value: "INACTIVE", label: "Inativo" },
-            { value: "BLOCKED", label: "Bloqueado" },
-            { value: "IN_ROUTE", label: "Em rota" },
-          ]}
+          options={vehicleStatusOptions(formValues.status)}
         />
       </div>
 

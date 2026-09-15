@@ -352,10 +352,16 @@ const createUpdateVehicleSchema = z
         .min(1, "O número de eixos deve ser no mínimo 1.")
         .max(10, "O número de eixos deve ser no máximo 10."),
     ),
+    /**
+     * IN_ROUTE stays parseable, and only because this schema is shared with
+     * the EDIT form: a vehicle that is genuinely out carries that value, and a
+     * schema that refused it would make the truck uneditable until it came
+     * back. It is not offered as a choice in either form — the route writes
+     * it — and the API refuses it as a change with VEHICLE_STATUS_DERIVED.
+     */
     status: z.enum(["ACTIVE", "INACTIVE", "BLOCKED", "IN_ROUTE"], {
       errorMap: () => ({
-        message:
-          "Status inválido. Deve ser Ativo, Inativo, Bloqueado ou Em rota",
+        message: "Status inválido. Deve ser Ativo, Inativo ou Bloqueado.",
       }),
     }),
     vehicleTypeId: z.preprocess(

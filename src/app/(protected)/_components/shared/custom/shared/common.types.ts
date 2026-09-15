@@ -12,6 +12,13 @@ interface FormFieldProps {
 interface SelectOption {
   value: string;
   label: string;
+
+  /**
+   * Shown but not choosable. For a value the system owns rather than the
+   * user: the field still displays the truth instead of going blank, and the
+   * option cannot be picked.
+   */
+  disabled?: boolean;
 }
 
 interface SelectFieldProps extends FormFieldProps {
@@ -19,4 +26,4 @@ interface SelectFieldProps extends FormFieldProps {
   placeholder: string;
 }
 
-export type { SelectFieldProps, FormFieldProps };
+export type { SelectFieldProps, SelectOption, FormFieldProps };

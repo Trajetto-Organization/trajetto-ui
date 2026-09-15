@@ -16,6 +16,7 @@ import {
   Logs,
   NotepadText,
   Package,
+  Plug,
   Receipt,
   Route,
   Split,
@@ -53,6 +54,7 @@ const protectedNavIcons = {
   check: CalendarCheckIcon,
   package: Package,
   route: Route,
+  integration: Plug,
 };
 
 const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
@@ -83,6 +85,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       title: "Rotas",
       url: "/admin/routes",
       icon: "route",
+    },
+    {
+      title: "Integrações",
+      url: "/admin/integrations",
+      icon: "integration",
     },
     {
       title: "Suporte",
@@ -255,6 +262,11 @@ const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
       title: "Rotas",
       url: "/dashboard/routes",
       icon: "route",
+    },
+    {
+      title: "Integrações",
+      url: "/dashboard/integrations",
+      icon: "integration",
     },
     {
       title: "Usuários",

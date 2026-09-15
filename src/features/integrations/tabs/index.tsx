@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Activity, KeyRound, Webhook } from "lucide-react";
+import { Activity, ArrowDownUp, KeyRound, Webhook } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -11,6 +11,7 @@ const TAB_ICONS = {
   "api-keys": KeyRound,
   webhooks: Webhook,
   monitor: Activity,
+  usage: ArrowDownUp,
 } as const;
 
 interface IntegrationsTabsProps {

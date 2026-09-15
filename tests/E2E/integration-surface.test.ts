@@ -35,6 +35,17 @@ test.describe("the integrations screen", () => {
 
     expect(parseIntegrationTab("monitor")).toBe("monitor");
     expect(parseIntegrationTab("webhooks")).toBe("webhooks");
+    expect(parseIntegrationTab("usage")).toBe("usage");
+  });
+
+  test("keeps the two directions as two tabs", () => {
+    // "O que mandamos" and "o que eles pediram" are different questions with
+    // different answers, and one screen trying to be both would answer
+    // neither: the monitor is per event, the usage is per day.
+    const values = INTEGRATION_TABS.map((tab) => tab.value);
+
+    expect(values).toContain("monitor");
+    expect(values).toContain("usage");
   });
 
   test("names each tab for what a person is going to do there", () => {
@@ -42,6 +53,7 @@ test.describe("the integrations screen", () => {
       "api-keys",
       "webhooks",
       "monitor",
+      "usage",
     ]);
 
     for (const tab of INTEGRATION_TABS) {

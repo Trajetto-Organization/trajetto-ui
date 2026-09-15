@@ -80,6 +80,26 @@ interface WebhookDeliveryPage {
   meta?: WebhookDeliveryMeta;
 }
 
+interface ApiUsageRouteRow {
+  method: string;
+  route: string;
+
+  ok: number;
+  clientError: number;
+  serverError: number;
+}
+
+interface ApiUsageData {
+  totals: { ok: number; clientError: number; serverError: number };
+
+  byRoute: ApiUsageRouteRow[];
+
+  /** Every day in the window, zeros included. */
+  byDay: Array<{ day: string; total: number }>;
+
+  keys: Array<{ id: string; name: string; prefix: string }>;
+}
+
 interface CatalogueTopic {
   topic: string;
   family: "route" | "document";
@@ -476,6 +496,58 @@ const listWebhookDeliveries = async (
 };
 
 /**
+ * What the customer's system asked of US, which is the question support gets
+ * before "did you send it".
+ *
+ * Read off a daily aggregate, so the answer costs the same whether they made
+ * forty calls or four hundred thousand.
+ */
+const listApiUsage = async (
+  days: number,
+  filters: { apiKeyId?: string; businessId?: string } = {},
+): Promise<ActionResponse<ApiUsageData>> => {
+  const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) return NO_TOKEN;
+
+  try {
+    const params = new URLSearchParams({ days: String(days) });
+
+    if (filters.apiKeyId) params.set("apiKeyId", filters.apiKeyId);
+    if (filters.businessId) params.set("businessId", filters.businessId);
+
+    const response = await fetch(
+      `${process.env.HTTP_REQUEST}/integrations/api-usage?${params}`,
+      {
+        credentials: "include",
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${tokenAccess}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      },
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || "Houve um erro ao carregar o uso da API.",
+      };
+    }
+
+    return { success: true, message: result.message, data: result.data };
+  } catch (error) {
+    return {
+      success: false,
+      message: "Ocorreu um erro inesperado ao carregar o uso da API.",
+    };
+  }
+};
+
+/**
  * A resend writes a NEW row rather than reopening the old one.
  *
  * What we sent and what their server answered the first time is the first
@@ -526,6 +598,7 @@ export {
   deleteWebhookEndpoint,
   getIntegrationCatalogue,
   listApiKeys,
+  listApiUsage,
   listWebhookDeliveries,
   listWebhookEndpoints,
   resendWebhookDelivery,
@@ -536,6 +609,8 @@ export {
 export type {
   ApiKeyRow,
   ApiScope,
+  ApiUsageData,
+  ApiUsageRouteRow,
   CatalogueTopic,
   IntegrationCatalogue,
   SaveWebhookEndpointPayload,

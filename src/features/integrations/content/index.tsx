@@ -8,6 +8,7 @@ import { IntegrationsTabs } from "../tabs";
 import { ApiKeysPanel } from "../api-keys/panel";
 import { WebhooksPanel } from "../webhooks/panel";
 import { MonitorPanel } from "../monitor/panel";
+import { UsagePanel } from "../usage/panel";
 
 import { useIntegrationsBusinessId } from "../hooks/use-integrations-business-id";
 
@@ -59,8 +60,10 @@ const IntegrationsContent = ({
         <ApiKeysPanel businessId={businessId} />
       ) : activeTab === "webhooks" ? (
         <WebhooksPanel businessId={businessId} />
-      ) : (
+      ) : activeTab === "monitor" ? (
         <MonitorPanel businessId={businessId} />
+      ) : (
+        <UsagePanel businessId={businessId} />
       )}
     </div>
   );

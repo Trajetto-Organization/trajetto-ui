@@ -31,8 +31,8 @@ test.describe("the criteria on a card", () => {
   });
 
   test("says what a failure MEANS, not only that it failed", () => {
-    // "Tem assinatura: Não" is a fact. "Um canhoto sem assinatura não comprova
-    // recebimento" is what lets somebody decide.
+    // "Signature present: no" is a fact. "A slip with no signature does not
+    // prove receipt" is what lets somebody decide.
     for (const criterion of CRITERIA) {
       expect(criterion.label.length, criterion.key).toBeGreaterThan(5);
       expect(criterion.meaning.length, criterion.key).toBeGreaterThan(20);

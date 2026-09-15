@@ -4,10 +4,10 @@ import type { PortableTextBlock } from "@portabletext/types";
 import { ContentImage } from "./content-image";
 
 /**
- * Renderer de Portable Text no visual do Trajetto (paleta slate/zinc/blue).
- * Compartilhado entre post do blog e páginas legais. Server component: a
- * imagem inline é um client component filho (`ContentImage`), então nenhuma
- * função cruza a fronteira server→client.
+ * A Portable Text renderer in the Trajetto look (the slate/zinc/blue palette).
+ * Shared between blog posts and the legal pages. A server component: the
+ * inline image is a child client component (`ContentImage`), so no function
+ * ever crosses the server→client boundary.
  */
 const components: PortableTextComponents = {
   types: {

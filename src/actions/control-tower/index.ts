@@ -20,7 +20,7 @@ interface TowerPosition {
 
   recordedAt: string;
 
-  /** Whether the dot still means "onde ele está" or "onde ele esteve". */
+  /** Whether the dot still means "where they are" or "where they were". */
   fresh: boolean;
 }
 

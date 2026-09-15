@@ -6,25 +6,25 @@ import { sanityImageLoader } from "@/sanity/image";
 import type { SanityImage as SanityImageType } from "@/sanity/types";
 
 interface SanityImageProps {
-  /** Imagem já DEREFERENCIADA na query (`asset->{ url, metadata }`). */
+  /** An image already DEREFERENCED in the query (`asset->{ url, metadata }`). */
   image?: SanityImageType | null;
-  /** Sobrescreve o alt do documento (senão usa `image.alt`). */
+  /** Overrides the document's alt (otherwise `image.alt` is used). */
   alt?: string;
   className?: string;
   sizes?: string;
   priority?: boolean;
-  /** Modo `fill` pra containers com aspect-ratio (cards). */
+  /** `fill` mode, for containers with an aspect-ratio (cards). */
   fill?: boolean;
-  /** Dimensões fixas (senão usa as intrínsecas da metadata). */
+  /** Fixed dimensions (otherwise the intrinsic ones from the metadata). */
   width?: number;
   height?: number;
 }
 
 /**
- * Imagem do Sanity servida via CDN otimizado (`auto=format`), SEM passar pelo
- * otimizador do Next — zero re-encode no servidor (ver `@/sanity/image`).
- * Usa a `asset.url` já dereferenciada como base e o LQIP nativo do Sanity
- * como blur placeholder instantâneo.
+ * A Sanity image served through their optimised CDN (`auto=format`), WITHOUT
+ * going through Next's optimiser — no re-encoding on our server at all (see
+ * `@/sanity/image`). It uses the already-dereferenced `asset.url` as the base
+ * and Sanity's native LQIP as an instant blur placeholder.
  *
  * `"use client"`: o `loader` é uma função, que não cruza a fronteira
  * server→client como prop. Mantendo o componente client, o Image ainda

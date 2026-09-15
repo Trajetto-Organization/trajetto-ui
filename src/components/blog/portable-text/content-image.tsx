@@ -18,9 +18,9 @@ function dimsFromRef(ref?: string): { width: number; height: number } {
 }
 
 /**
- * Imagem inline dentro do Portable Text. Aqui o asset vem como REFERÊNCIA
- * crua (não dereferenciada), então usamos `urlFor` pra montar a base — mas o
- * loader do Sanity segue no comando, bypassando o `/_next/image`.
+ * An inline image inside Portable Text. Here the asset arrives as a raw
+ * REFERENCE rather than dereferenced, so `urlFor` builds the base — but
+ * Sanity's loader is still in charge, bypassing `/_next/image`.
  */
 const ContentImage = ({
   value,

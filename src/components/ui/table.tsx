@@ -2,78 +2,40 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+import { TableScroller } from "./table-scroller";
+
 /**
- * Whether this box has more inside it than it can show.
+ * The table primitives, and where the client boundary sits around them.
  *
- * A table wider than its column of the page scrolls sideways, and a
- * scrollable box that nothing can focus is unreachable by keyboard: the rows
- * are on the page, the person cannot get to them, and no error is shown. Axe
- * calls it `scrollable-region-focusable`, and the dashboard's activity table
- * fails it on a phone.
+ * This file carries no directive on purpose, which makes it UNIVERSAL: it
+ * compiles into whichever graph imports it. A `loading.tsx` renders it on the
+ * server as static markup; a data table renders it in the browser. Both are
+ * correct, and neither pays for the other.
  *
- * Measured rather than assumed, because the answer changes with the data and
- * the viewport: a table that fits needs no tab stop, and adding one to every
- * table in the product would put a stop with nothing in it in front of every
- * keyboard user, on every screen.
+ * It used to measure its own overflow here, with `useRef` and `useEffect`,
+ * and that one detail put the whole family on the client side of the line:
+ * `useRef` does not exist on the server, so every Server Component that
+ * rendered a `<Table>` crashed. It took down the /admin skeleton, and it was
+ * latent on /dashboard too — the same import, from a route that happened not
+ * to render its fallback in practice.
+ *
+ * The measurement now lives in `table-scroller.tsx`, which is one small client
+ * leaf. `Table` hands it the `<table>` as children, and a React element is
+ * exactly the kind of thing that crosses a Server -> Client boundary safely.
  */
-function useOverflows(ref: React.RefObject<HTMLElement>): boolean {
-  const [overflows, setOverflows] = React.useState(false);
-
-  React.useEffect(() => {
-    const node = ref.current;
-
-    if (!node) return;
-
-    const measure = () =>
-      setOverflows(node.scrollWidth - node.clientWidth > 2);
-
-    measure();
-
-    // Both matter: the window resizing, and the table itself changing — a
-    // filter that drops a column, a page of rows with longer names.
-    const observer = new ResizeObserver(measure);
-
-    observer.observe(node);
-
-    if (node.firstElementChild) observer.observe(node.firstElementChild);
-
-    return () => observer.disconnect();
-  }, [ref]);
-
-  return overflows;
-}
 
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => {
-  const scroller = React.useRef<HTMLDivElement>(null);
-
-  const overflows = useOverflows(scroller);
-
-  return (
-    <div
-      ref={scroller}
-      className="relative w-full overflow-auto"
-      // Only when there is something to scroll to. `role` and the name come
-      // with it, so a screen reader announces what the tab stop is for
-      // instead of landing on an anonymous box.
-      {...(overflows
-        ? {
-            tabIndex: 0,
-            role: "region",
-            "aria-label": "Tabela com rolagem horizontal",
-          }
-        : {})}
-    >
-      <table
-        ref={ref}
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
-    </div>
-  );
-});
+>(({ className, ...props }, ref) => (
+  <TableScroller>
+    <table
+      ref={ref}
+      className={cn("w-full caption-bottom text-sm", className)}
+      {...props}
+    />
+  </TableScroller>
+));
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<

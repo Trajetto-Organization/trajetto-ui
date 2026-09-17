@@ -1,3 +1,5 @@
+import { managerToken } from "../ui/support/operation";
+
 import { test, expect, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
@@ -30,7 +32,7 @@ async function open(page: Page, width: number): Promise<void> {
   await page.context().addCookies([
     {
       name: "tkey",
-      value: CONTEXT.managerTokens[0],
+      value: managerToken(),
       domain: "localhost",
       path: "/",
     },
@@ -305,7 +307,7 @@ test.describe("as mesmas seções numa tela grande", () => {
     await page.context().addCookies([
       {
         name: "tkey",
-        value: CONTEXT.managerTokens[0],
+        value: managerToken(),
         domain: "localhost",
         path: "/",
       },

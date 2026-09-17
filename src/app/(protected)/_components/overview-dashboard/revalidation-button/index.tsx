@@ -1,3 +1,10 @@
+"use client";
+
+/*
+  Same reason as its sibling in `tanstack-table/data-table-revalidate`:
+  `useFormState` is a client hook and this module declared nothing, so it was
+  safe by accident of who imports it rather than by design.
+*/
 import { useFormState } from "react-dom";
 
 import { RevalidateButtonFormInner } from "@/app/(protected)/_components/shared/revalidate-button-ui";

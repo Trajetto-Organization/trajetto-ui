@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 import { ErrorSurface } from "@/components/shared/error-surface";
 
 /**
@@ -20,10 +22,27 @@ const ProtectedError = ({
   error: Error & { digest?: string };
   reset: () => void;
 }): JSX.Element => {
+  const router = useRouter();
+
+  /**
+   * Refresh, then reset, and the order is the behaviour.
+   *
+   * `reset` alone re-renders from the RSC payload the client already holds,
+   * which for a server-render failure is the failure itself — so the button
+   * would be a button that does nothing, forever. `refresh` discards that
+   * payload and asks the server again, which is what a person pressing "try
+   * again" means by it.
+   */
+  const retry = (): void => {
+    router.refresh();
+    reset();
+  };
+
   return (
     <ErrorSurface
       error={error}
       reset={reset}
+      onRetry={retry}
       homeHref="/dashboard"
       homeLabel="Voltar ao painel"
     />

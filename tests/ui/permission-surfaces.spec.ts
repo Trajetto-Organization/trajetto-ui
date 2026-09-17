@@ -1,6 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { CONTEXT, BASE } from "./support/operation";
+import {
+  BASE,
+  driverToken,
+  managerToken,
+} from "./support/operation";
 
 /**
  * A page you may not open must not be offered to you either.
@@ -22,8 +26,15 @@ import { CONTEXT, BASE } from "./support/operation";
  * everything would pass just as well with the permissions ignored entirely —
  * so every assertion here has a counterpart that must NOT be there.
  */
-const MANAGER = CONTEXT.managerTokens[0] as string;
-const DRIVER = CONTEXT.driverTokens[0] as string;
+/*
+  Long-lived sessions, not the load seed's. Those expire in an hour, and a
+  suite that runs later signs in with a dead token: the app reads the 401 as
+  "your session ended", redirects to /login, and this file — which exists to
+  prove a driver cannot reach the office — fails saying the driver "caiu no
+  login". A security assertion reporting a fixture's age.
+*/
+const MANAGER = managerToken();
+const DRIVER = driverToken();
 
 /**
  * Where a driver lands in the WEB app.

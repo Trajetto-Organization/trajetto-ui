@@ -48,7 +48,17 @@ function TableLoadingOverlay({
                 <Skeleton
                   className="h-4 w-full"
                   style={{
-                    maxWidth: `${Math.floor(Math.random() * 40) + 60}%`,
+                    /*
+                      Derived from the cell's position rather than drawn at
+                      random. The ragged widths are what make a skeleton read
+                      as text instead of as bars, so the variety matters — but
+                      `Math.random()` in a render gives the server one number
+                      and the client another, and React calls that a hydration
+                      mismatch and throws the server's markup away. The
+                      sequence below is just as uneven and is the same on both
+                      sides.
+                    */
+                    maxWidth: `${60 + ((rowIndex * 7 + colIndex * 13) % 40)}%`,
                     animationDelay: `${(rowIndex * columnCount + colIndex) * 0.03}s`,
                   }}
                 />

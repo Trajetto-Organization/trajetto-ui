@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { managerForThisSpec } from "./support/operation";
+import { managerForThisSpec, managerToken } from "./support/operation";
 
 import { readFileSync } from "node:fs";
 
@@ -60,7 +60,7 @@ async function open(page: Page, path: string, width = 1440): Promise<void> {
 /** What the API says, so the screen can be held to the same numbers. */
 async function operationFromApi(): Promise<Record<string, number> | null> {
   const response = await fetch("http://localhost:3334/dashboard/overview", {
-    headers: { authorization: `Bearer ${CONTEXT.managerTokens[0]}` },
+    headers: { authorization: `Bearer ${managerToken()}` },
   });
 
   expect(response.status).toBe(200);

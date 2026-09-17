@@ -1,3 +1,13 @@
+"use client";
+
+/*
+  The directive is load-bearing, not decoration. `useFormState` is a client
+  hook, and this module had none — which made it exactly the shape that broke
+  /admin: a shared primitive that works only because everything importing it
+  today happens to be a Client Component. Twenty-one `page-actions.tsx` files
+  are what stand between this file and the same crash, and one Server
+  Component importing it is all it would take.
+*/
 import { useFormState } from "react-dom";
 
 import { handleRevalidateData } from "@/actions/revalidate-data";

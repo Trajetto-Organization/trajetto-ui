@@ -1,3 +1,5 @@
+import { managerToken } from "../ui/support/operation";
+
 import { test, expect, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
@@ -44,7 +46,7 @@ async function signIn(page: Page): Promise<void> {
   await page.context().addCookies([
     {
       name: "tkey",
-      value: CONTEXT.managerTokens[0],
+      value: managerToken(),
       domain: "localhost",
       path: "/",
     },
@@ -87,6 +89,20 @@ async function open(
   // The same trap the responsive suite fell into: a logged-out screen passes
   // every accessibility check and proves nothing about the app.
   expect(page.url(), `fell through to login: ${path}`).not.toContain("/login");
+
+  /**
+   * A screen that crashed is not a screen that passed.
+   *
+   * The error surface renders a heading, a button and a correct layout, so it
+   * satisfies almost anything a test asks of "the page". Two render-fatal
+   * bugs in /admin were green in the accessibility and responsive suites for
+   * exactly that reason. One assertion, in every place a test arrives at a
+   * URL, closes it.
+   */
+  await expect(
+    page.locator("[data-error-surface]"),
+    `a tela caiu no limite de erro: ${path}`,
+  ).toHaveCount(0);
 }
 
 test.describe.configure({ mode: "parallel" });

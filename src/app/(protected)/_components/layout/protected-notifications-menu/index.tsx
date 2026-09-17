@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
+
 import { Bell, BellOff, CheckCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -304,13 +306,23 @@ const ProtectedNotificationsMenu = (): JSX.Element => {
           </Button>
 
           <DropdownMenuItem asChild className="p-0">
-            <a
+            {/*
+              `Link`, not `<a>`: a plain anchor inside the app is a full page
+              load, so "Ver todas" threw away the session's client state and
+              re-fetched the whole shell to move one screen. It is also the
+              one lint error that fails `next build` in this repository.
+
+              The deliberate `<a>` in `error-surface` is the exception and
+              stays one — leaving an active error boundary by client
+              navigation does not reliably work.
+            */}
+            <Link
               href="/notifications"
               className="cursor-pointer rounded-md px-3 py-2
               text-xs font-semibold text-primary"
             >
               Ver todas
-            </a>
+            </Link>
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>

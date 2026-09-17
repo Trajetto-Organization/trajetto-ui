@@ -84,7 +84,16 @@ test.describe("a screen that throws", () => {
   test("is caught, explained, and leaves a way out", async ({ page }) => {
     await open(page, "/dashboard/boundary-probe");
 
-    const surface = page.getByRole("alert").first();
+    /*
+      Keyed on the surface's own attribute, not on `role="alert"`.
+
+      `getByRole("alert").first()` resolves to whichever alert the DOM offers
+      first, and Next renders its own — an empty `__next-route-announcer__` —
+      on every navigation. Whether that one or the boundary comes first is a
+      race, so the test failed about one run in five with "element(s) not
+      found" while the error page was plainly on screen.
+    */
+    const surface = page.locator("[data-error-surface]");
 
     await expect(
       surface,
@@ -107,7 +116,7 @@ test.describe("a screen that throws", () => {
   test("leaves the way out working", async ({ page }) => {
     await open(page, "/dashboard/boundary-probe");
 
-    await expect(page.getByRole("alert").first()).toContainText(
+    await expect(page.locator("[data-error-surface]")).toContainText(
       /quebrou nesta tela/i,
       { timeout: 30_000 },
     );
@@ -135,10 +144,106 @@ test.describe("a screen that throws", () => {
     await expect(page).toHaveURL(/\/dashboard(\?|$)/, { timeout: 30_000 });
 
     // And the dashboard really rendered, rather than the boundary following
-    // along to the next screen.
-    await expect(page.getByRole("alert").first()).not.toContainText(
-      /quebrou nesta tela/i,
-      { timeout: 30_000 },
-    );
+    // along to the next screen. Keyed on the attribute the surface carries
+    // for this: `role="alert"` is used legitimately elsewhere in the product,
+    // so "the alert does not say quebrou" passes on a page with no alert at
+    // all — and would have passed on a second crash that said something else.
+    await expect(
+      page.locator("[data-error-surface]"),
+      "o limite de erro seguiu para a tela seguinte",
+    ).toHaveCount(0, { timeout: 30_000 });
+  });
+
+  test("e Tentar novamente busca de novo no servidor, não repete o payload", async ({
+    page,
+  }) => {
+    /**
+     * The button was asserted VISIBLE and never pressed, which is the
+     * difference between "there is a retry" and "the retry works".
+     *
+     * It mattered more than it sounds. Next's `reset()` clears the boundary's
+     * own state and re-renders from the RSC payload it already holds — so for
+     * a failure that happened during the SERVER render, retrying replays the
+     * same cached failure and the button does nothing, forever. Both boundary
+     * bugs found in /admin were exactly that: the payload carried the error.
+     *
+     * The surface now calls `router.refresh()` first, which throws the payload
+     * away and asks the server again. This presses it and watches the wire.
+     */
+    const asked: string[] = [];
+
+    page.on("request", (request) => {
+      if (request.url().includes("boundary-probe")) asked.push(request.url());
+    });
+
+    await open(page, "/dashboard/boundary-probe");
+
+    await expect(page.locator("[data-error-surface]")).toHaveCount(1, {
+      timeout: 30_000,
+    });
+
+    const before = asked.length;
+
+    // Next's dev overlay sits on top of the boundary; a real user in
+    // production has nothing in the way.
+    await page.keyboard.press("Escape");
+
+    await page
+      .getByRole("button", { name: /tentar novamente/i })
+      .click({ timeout: 15_000 });
+
+    await expect
+      .poll(() => asked.length, {
+        message:
+          "Tentar novamente não pediu a tela de novo ao servidor — " +
+          "reset() sozinho só reaproveita o payload que já falhou",
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(before);
+
+    /*
+      And the probe throws every time, deliberately, so the boundary must
+      still be there afterwards. A retry that "succeeded" against a screen
+      that always fails would mean the boundary had stopped catching.
+    */
+    await expect(page.locator("[data-error-surface]")).toHaveCount(1, {
+      timeout: 30_000,
+    });
+  });
+
+  test("e uma tela boa continua boa depois de uma que quebrou", async ({
+    page,
+  }) => {
+    /**
+     * Recovery by navigation, which is what a person actually does after the
+     * second retry: they go somewhere else. The question is whether the
+     * boundary stays behind.
+     */
+    await open(page, "/dashboard/boundary-probe");
+
+    await expect(page.locator("[data-error-surface]")).toHaveCount(1, {
+      timeout: 30_000,
+    });
+
+    await open(page, "/dashboard/integrations?tab=webhooks");
+
+    await expect(
+      page.locator("[data-error-surface]"),
+      "o limite de erro sobreviveu à navegação para outra tela",
+    ).toHaveCount(0);
+
+    // The screen is not merely free of the boundary — it rendered its own
+    // content.
+    await expect(
+      page.getByRole("button", { name: "Novo endpoint" }),
+    ).toBeVisible({ timeout: 30_000 });
+
+    // And back to the broken one: the boundary catches again rather than
+    // having been consumed.
+    await open(page, "/dashboard/boundary-probe");
+
+    await expect(page.locator("[data-error-surface]")).toHaveCount(1, {
+      timeout: 30_000,
+    });
   });
 });

@@ -1,3 +1,5 @@
+import { managerToken } from "../ui/support/operation";
+
 import { test, expect, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
@@ -44,7 +46,7 @@ async function signIn(page: Page): Promise<void> {
   await page.context().addCookies([
     {
       name: "tkey",
-      value: CONTEXT.managerTokens[0],
+      value: managerToken(),
       domain: "localhost",
       path: "/",
     },
@@ -176,6 +178,18 @@ for (const target of PAGES) {
           page.url(),
           `${target.name} @ ${width}px fell through to login`,
         ).not.toContain("/login");
+
+        /**
+         * And not the error screen either, which is the same trap one step
+         * further in. The error surface is a centred column that fits any
+         * width and clips nothing, so it passes both measurements below
+         * perfectly — two render-fatal bugs in /admin were green here for
+         * exactly that reason.
+         */
+        await expect(
+          page.locator("[data-error-surface]"),
+          `${target.name} @ ${width}px caiu no limite de erro`,
+        ).toHaveCount(0);
 
         // A page that scrolls horizontally on a phone is the most common and
         // most visible failure: the user drags and the content slides under

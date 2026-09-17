@@ -31,6 +31,25 @@ interface ErrorSurfaceProps {
   /** Next's own retry: re-renders the segment that threw. */
   reset: () => void;
 
+  /**
+   * What "Tentar novamente" should actually do, when `reset` alone is not
+   * enough.
+   *
+   * `reset` clears the boundary's state and re-renders from the RSC payload
+   * the client already holds — so for a failure that happened during the
+   * SERVER render, pressing it replays the same cached failure and nothing
+   * ever changes. Both boundary bugs found in /admin were exactly that.
+   *
+   * The recovery is `router.refresh()` first, which throws the payload away
+   * and asks the server again. It lives in the BOUNDARY rather than here
+   * because `useRouter` is only mounted under the app router: calling it from
+   * this component broke `global-error.tsx`, which replaces the root layout
+   * and therefore has no router at all ("invariant expected app router to be
+   * mounted"). A presentational component that cannot be rendered by one of
+   * its three callers is not presentational.
+   */
+  onRetry?: () => void;
+
   /** Where "leave this screen" goes. The protected area has its own. */
   homeHref?: string;
   homeLabel?: string;
@@ -45,6 +64,7 @@ const ErrorSurface = ({
   homeHref = "/",
   homeLabel = "Ir para o início",
   standalone = false,
+  onRetry,
 }: ErrorSurfaceProps): JSX.Element => {
   useEffect(() => {
     /*
@@ -61,6 +81,23 @@ const ErrorSurface = ({
 
   return (
     <div
+      /**
+       * A handle every test suite can check for, and the reason it exists is
+       * uncomfortable: this component is well-designed enough to pass for a
+       * working screen.
+       *
+       * The two boundary bugs found by hand in /admin were caught here and
+       * answered with a calm apology, a heading, a button and a correct
+       * layout — so axe found no violations, the responsive suite found no
+       * overflow, and a completely dead screen reported green in both. The
+       * suites were not wrong about what they measured; they were measuring
+       * the error page.
+       *
+       * `role="alert"` was already here and is not enough to key on: other
+       * things in the product legitimately use it. This attribute means
+       * exactly one thing.
+       */
+      data-error-surface
       className={
         standalone
           ? "flex min-h-screen w-full items-center justify-center p-6"
@@ -94,8 +131,17 @@ const ErrorSurface = ({
           {/*
             Tentar novamente primeiro: it is the action that costs nothing and
             works for the common case, a request that failed once.
+
+            What it DOES is the boundary's decision, not this component's —
+            see `onRetry`. Bare `reset` cannot recover a failure that happened
+            during the server render, and the two boundaries that have a
+            router pass something that can.
           */}
-          <Button type="button" onClick={reset} className="gap-2">
+          <Button
+            type="button"
+            onClick={onRetry ?? reset}
+            className="gap-2"
+          >
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             Tentar novamente
           </Button>

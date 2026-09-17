@@ -20,6 +20,16 @@ interface RevalidateButtonUIProps {
    * false → no icon in normal state, Loader spinner only when loading
    */
   alwaysShowIcon?: boolean;
+  /**
+   * Below `sm`, the button keeps the icon and drops the words.
+   *
+   * On a phone an actions bar of four full-width buttons pushes the content
+   * off the first screen — "Revalidar Dados" is fourteen characters of a
+   * control the user already recognises by its arrows. The accessible name
+   * stays, so nothing is lost to a screen reader, and the cooldown still
+   * shows its seconds, because that number IS the feedback.
+   */
+  hideLabelOnMobile?: boolean;
   type?: "button" | "submit";
   size?: "default" | "sm";
   onClick?: () => void;
@@ -32,6 +42,7 @@ const RevalidateButtonUI = ({
   label = "Atualizar",
   className,
   alwaysShowIcon = true,
+  hideLabelOnMobile = false,
   type = "button",
   size = "sm",
   onClick,
@@ -46,6 +57,12 @@ const RevalidateButtonUI = ({
   const displayCooldown =
     isRateLimited && cooldownRemaining <= 0 ? 1 : cooldownRemaining;
 
+  // Hiding the words only works if the icon takes their place; otherwise the
+  // phone gets an empty box.
+  const showIcon = alwaysShowIcon || hideLabelOnMobile;
+
+  const wordsClass = hideLabelOnMobile ? "hidden sm:inline" : undefined;
+
   return (
     <Button
       type={type}
@@ -53,25 +70,29 @@ const RevalidateButtonUI = ({
       size={size}
       disabled={isDisabled}
       className={className}
+      // The name survives the label being hidden.
+      aria-label={hideLabelOnMobile ? label : undefined}
       onClick={onClick}
       data-revalidate
     >
       {!isMounted ? (
-        <span>{label}</span>
+        <span className={wordsClass}>{label}</span>
       ) : isRateLimited ? (
         <>
-          Aguarde {displayCooldown}s
+          <span className={wordsClass}>Aguarde </span>
+          {displayCooldown}s
           <Clock className="ml-2 h-4 w-4" />
         </>
-      ) : alwaysShowIcon ? (
+      ) : showIcon ? (
         <>
           <RefreshCw
             className={cn(
-              "h-4 w-4 mr-2 flex-shrink-0",
+              "h-4 w-4 flex-shrink-0",
+              hideLabelOnMobile ? "sm:mr-2" : "mr-2",
               isLoading && "animate-spin",
             )}
           />
-          <span>{label}</span>
+          <span className={wordsClass}>{label}</span>
         </>
       ) : (
         <>

@@ -9,6 +9,8 @@ import { useDataTableRevalidate } from "./hooks";
 const DataTableRevalidate = ({
   revalidateData,
   rateLimit,
+  hideLabelOnMobile = false,
+  className = "h-8 w-full",
 }: DataTableRevalidateProps) => {
   /**
    * `?? {}` is load-bearing, and was the reason no button on any table ever
@@ -45,7 +47,8 @@ const DataTableRevalidate = ({
         isRateLimited={isRateLimited}
         cooldownRemaining={cooldownRemaining}
         label="Revalidar Dados"
-        className="h-8 w-full"
+        className={className}
+        hideLabelOnMobile={hideLabelOnMobile}
         alwaysShowIcon={false}
       />
     </form>

@@ -13,6 +13,9 @@ type RateLimitConfig = {
 
 interface DataTableRevalidateProps {
   revalidateData: RevalidateDataProps | RevalidateDataProps[];
+  /** Below `sm` the button keeps the arrows and drops the words. */
+  hideLabelOnMobile?: boolean;
+  className?: string;
   rateLimit?: {
     maxClicks?: number;
     timeWindowMs?: number;

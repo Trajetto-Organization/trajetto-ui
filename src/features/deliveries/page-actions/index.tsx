@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { FileSpreadsheet, FileText, FileUp, Plus } from "lucide-react";
+import {
+  Download,
+  FileSpreadsheet,
+  FileText,
+  FileUp,
+  MoreHorizontal,
+  Plus,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +39,7 @@ import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
 import type { DeliveryTab } from "../lib/tabs";
 
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
+import { useExportButton } from "@/app/(protected)/_components/shared/custom/export-button/hooks";
 import type {
   ExportActionResponse,
   ExportFormat,
@@ -196,29 +204,54 @@ const DeliveriesPageActions = ({
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
+  const exportAction = EXPORT_ACTION[activeTab];
+  const entityName = activeTab === "occurrences" ? "ocorrencias" : "entregas";
+
+  /**
+   * The export handler, reached directly so the phone's overflow menu can
+   * offer the same two formats the desk button does.
+   *
+   * A hook cannot be conditional, so a tab with nothing to export gets a stub
+   * — and the menu never offers it, because `exportAction` is what decides
+   * whether those items are rendered at all.
+   */
+  const { handleExport, isExporting } = useExportButton({
+    exportAction: exportAction ?? (async () => ({ success: false })),
+    entityName,
+    writePermission: canWrite,
+  });
+
+  const canImport =
+    (activeTab === "deliveries" || activeTab === "imports") &&
+    Boolean(businessId);
+
   return (
     <div
       /**
-       * `sm:flex-wrap` and `min-w-0`, because the bar does not fit on its own.
+       * One row on a phone, a wrapping bar from `sm` up.
        *
-       * `nowrap` is already the flex default — the `sm:flex-nowrap` that used
-       * to be here added nothing and hid the problem: from `sm` up the
-       * buttons became a single row that neither wraps nor shrinks (each with
-       * a `whitespace-nowrap` label and `min-width: auto`), needing 505px
-       * where an iPad in portrait offers 400. Because the shell clips, the
-       * rightmost buttons sat off-screen with no scrollbar.
+       * It used to stack every action full-width below `sm`: four buttons,
+       * about 160px of vertical space, and the table began below the fold on
+       * a 360px screen before a single delivery was visible. Exportar and
+       * Importar are desk work — nobody maps a spreadsheet at a bus stop — so
+       * on a phone they move into an overflow menu and the row carries what
+       * is actually used there: refresh, and the one thing being created.
+       *
+       * From `sm` up, `flex-wrap` and `min-w-0` are load-bearing. `nowrap` is
+       * the flex default, and the `sm:flex-nowrap` that used to be here hid
+       * the problem: the buttons became a single row that neither wraps nor
+       * shrinks, needing 505px where an iPad in portrait offers 400. Because
+       * the shell clips, the rightmost buttons sat off-screen with no
+       * scrollbar.
        */
-      className="flex w-full min-w-0 flex-col items-stretch gap-3
-      sm:w-auto sm:flex-row sm:flex-wrap sm:items-center
-      sm:gap-2 sm:justify-end sm:ml-auto"
+      className="flex w-full min-w-0 items-center gap-2 sm:w-auto
+      sm:flex-wrap sm:justify-end sm:ml-auto"
     >
-      {EXPORT_ACTION[activeTab] && (
-        <div className="w-full sm:w-auto">
+      {exportAction && (
+        <div className="hidden sm:block">
           <ExportButton
-            exportAction={EXPORT_ACTION[activeTab]!}
-            entityName={
-              activeTab === "occurrences" ? "ocorrencias" : "entregas"
-            }
+            exportAction={exportAction}
+            entityName={entityName}
             hasData={hasData}
             writePermission={canWrite}
           />
@@ -228,11 +261,11 @@ const DeliveriesPageActions = ({
       {/* One menu instead of two buttons. The XML and the spreadsheet are two
           doors into the same room, and a bar with "Importar XML" next to
           "Importar Planilha" makes people stop and read instead of act. */}
-      {(activeTab === "deliveries" || activeTab === "imports") && businessId && (
+      {canImport && (
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-full sm:w-auto">
+              <div className="hidden sm:block">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -276,9 +309,11 @@ const DeliveriesPageActions = ({
         </TooltipProvider>
       )}
 
-      <div className="w-full sm:w-auto">
+      <div className="shrink-0 sm:w-auto">
         <DataTableRevalidate
           revalidateData={REVALIDATE_TAG[activeTab]}
+          hideLabelOnMobile
+          className="h-9 w-9 p-0 sm:h-8 sm:w-full sm:px-3"
           rateLimit={{
             storageKey: RATE_LIMIT_KEY[activeTab],
             maxClicks: 3,
@@ -288,20 +323,83 @@ const DeliveriesPageActions = ({
         />
       </div>
 
+      {/*
+        The phone's overflow. Flat rather than nested: a submenu is a bad
+        target on touch, and four items is not a list worth folding.
+      */}
+      {(exportAction || canImport) && (
+        <div className="shrink-0 sm:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="h-9 w-9 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Mais ações desta seção</span>
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="min-w-[200px]">
+              {exportAction && (
+                <>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    disabled={!hasData || isExporting}
+                    onSelect={() => void handleExport("csv")}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar CSV
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    disabled={!hasData || isExporting}
+                    onSelect={() => void handleExport("excel")}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Exportar Excel
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {canImport && (
+                <>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    disabled={!canWrite}
+                    onSelect={() => setIsImportSpreadsheetOpen(true)}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Importar planilha
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    disabled={!canWrite}
+                    onSelect={() => setIsImportOpen(true)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Importar XML da NF-e
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
       {businessId && CREATE_LABEL[activeTab] !== "" && (
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-full sm:w-auto">
+              <div className="min-w-0 flex-1 sm:w-auto sm:flex-initial">
                 <Button
                   size="sm"
-                  className="h-8 w-full"
+                  className="h-9 w-full sm:h-8"
                   disabled={!canWrite}
                   data-tutorial="create-button"
                   onClick={() => setIsCreateOpen(true)}
                 >
-                  <Plus className="mr-1 h-4 w-4" />
-                  {CREATE_LABEL[activeTab]}
+                  <Plus className="mr-1 h-4 w-4 shrink-0" />
+                  <span className="truncate">{CREATE_LABEL[activeTab]}</span>
                 </Button>
               </div>
             </TooltipTrigger>

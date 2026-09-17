@@ -1395,3 +1395,25 @@ html {
     opacity: 1 !important;
   }
 }
+
+/*
+ * A scroll container without the operating system's scrollbar.
+ *
+ * The tab strip is 40px tall. On Windows a native horizontal scrollbar is a
+ * grey slab drawn INSIDE that box, and it ate enough of the 40px that the
+ * content no longer fit vertically either — so a row of tabs ended up with a
+ * horizontal scrollbar, a vertical scrollbar and two little arrows. The strip
+ * still scrolls; it scrolls with the product's own controls.
+ *
+ * Only for containers that offer another way to reach what is off-screen.
+ * Hiding a scrollbar with nothing in its place hides the fact that there is
+ * more.
+ */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

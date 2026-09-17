@@ -114,12 +114,27 @@ test.describe("axe", () => {
 
         const violations = await page.evaluate(async () => {
           // @ts-expect-error injected above
-          const report = await window.axe.run(document, {
-            runOnly: {
-              type: "tag",
-              values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+          const report = await window.axe.run(
+            {
+              /**
+               * The product, not the toolbox around it.
+               *
+               * `nextjs-portal` is the dev server's own overlay — the build
+               * indicator and the error dialog. It appears whenever a page is
+               * being recompiled, so a run that happened to land during a
+               * rebuild failed on the CONTRAST OF THE NEXT.JS LOGO, which
+               * ships in no production bundle and which nobody here can fix.
+               * A test that fails on the weather is worse than no test.
+               */
+              exclude: [["nextjs-portal"]],
             },
-          });
+            {
+              runOnly: {
+                type: "tag",
+                values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+              },
+            },
+          );
 
           return (report.violations as Array<Record<string, any>>).map(
             (rule) => ({

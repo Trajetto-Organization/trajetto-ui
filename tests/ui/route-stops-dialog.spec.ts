@@ -200,9 +200,17 @@ test.describe("o modal de paradas da rota", () => {
 
     await openStopsDialog(page, routeName);
 
+    /**
+     * The first stop's own row, not "somewhere on the page".
+     *
+     * A bare text locator is strict: the moment two rows carry the same
+     * street — and every delivery this suite creates does — it resolves to
+     * several elements and fails for a reason that has nothing to do with the
+     * address being shown. Which row is asked is part of the question.
+     */
     await expect(
-      page.getByRole("dialog").getByText(/Rua do Tempo Real, 1 — São Paulo\/SP/),
-    ).toBeVisible();
+      page.getByRole("dialog").locator("ol > li").first(),
+    ).toContainText("Rua do Tempo Real, 1 — São Paulo/SP");
   });
 
   test("não fecha com um clique fora quando há ordem não salva", async ({

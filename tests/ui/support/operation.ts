@@ -1,6 +1,7 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
+import { basename } from "node:path";
 
 /**
  * Setting up an operation through the API, the way another user would.
@@ -16,12 +17,50 @@ const CONTEXT = JSON.parse(
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
 const API = process.env.LOAD_BASE_URL ?? "http://localhost:3334";
 
-const TOKEN: string = CONTEXT.managerTokens[0];
+/**
+ * A manager of this spec FILE's own, out of the fifty the fixture seeds.
+ *
+ * Every socket handshake is counted per user — thirty a minute, which is
+ * several tabs plus socket.io's reconnect backoff with room to spare. Run
+ * three workers over forty-odd tests that all sign in as
+ * `managerTokens[0]`, each navigation opening a connection, and the suite
+ * spends one person's budget: the API starts refusing handshakes, the board
+ * hears nothing, and the realtime test fails with "a rota liberada não
+ * apareceu" — a message about the product for a problem that is entirely
+ * about the fixture.
+ *
+ * Chosen by file name so a given spec always gets the same user (its data is
+ * stable between runs) and different specs never share one.
+ */
+function managerForThisSpec(): string {
+  const managers: string[] = CONTEXT.managerTokens;
+
+  let name = "default";
+
+  try {
+    name = basename(test.info().file);
+  } catch {
+    // Outside a test (a helper imported at module load); the first is fine.
+  }
+
+  let hash = 0;
+
+  for (const character of name) {
+    hash = (hash * 31 + character.charCodeAt(0)) % 100_000;
+  }
+
+  return managers[hash % managers.length];
+}
 
 /** Signs in as the fixture's manager and lands on a screen. */
 async function open(page: Page, path: string): Promise<void> {
   await page.context().addCookies([
-    { name: "tkey", value: TOKEN, domain: "localhost", path: "/" },
+    {
+      name: "tkey",
+      value: managerForThisSpec(),
+      domain: "localhost",
+      path: "/",
+    },
   ]);
 
   await page.addInitScript(() => {
@@ -48,7 +87,7 @@ async function api(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API}${path}`, {
     ...init,
     headers: {
-      authorization: `Bearer ${TOKEN}`,
+      authorization: `Bearer ${managerForThisSpec()}`,
       "content-type": "application/json",
       ...(init?.headers ?? {}),
     },
@@ -154,7 +193,7 @@ export {
   CONTEXT,
   API,
   BASE,
-  TOKEN,
+  managerForThisSpec,
   api,
   anyVehicle,
   createRoute,

@@ -51,6 +51,21 @@ function findAppRoute(pathname: string): AppRoute | undefined {
 }
 
 /**
+ * Where a driver is allowed to be, mirroring the edge middleware's allow-list.
+ *
+ * Kept as a list of prefixes rather than derived from the registry: the
+ * middleware runs before any of this and decides by prefix, and two rules that
+ * are supposed to agree should be written the same way.
+ */
+const DRIVER_SURFACE = ["/driver", "/profile", "/notifications"];
+
+function isDriverSurface(pathname: string): boolean {
+  return DRIVER_SURFACE.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+/**
  * The one access verdict for a page, shared by every surface that shows or
  * guards one. Role decides which gates apply:
  *
@@ -68,6 +83,24 @@ function canAccessPath(
 
   if (!route) return options.unregistered !== "deny";
   if (context.role === "MASTER") return true;
+
+  /**
+   * A driver's surface is the driver's surface.
+   *
+   * The edge middleware already refuses anything outside `/driver`,
+   * `/profile` and `/notifications` for a driver, and that is what actually
+   * stops the request. This rule exists so the two agree: without it
+   * `canAccessPath` answered TRUE for a driver on Entregas, Rotas, Torre and
+   * Integrações — the permission gate is skipped for drivers, because they
+   * carry no profile access — and every surface that asks this function
+   * instead of the middleware would have offered them the whole office.
+   *
+   * Nothing was leaking, because the palette builds a different action list
+   * per role and the edge blocks the URL. Both are layers ON TOP of a rule
+   * that said yes, and a rule that says yes is one refactor from being the
+   * only one left.
+   */
+  if (context.isDriver && !isDriverSurface(pathname)) return false;
 
   const { enabledModules } = context;
 

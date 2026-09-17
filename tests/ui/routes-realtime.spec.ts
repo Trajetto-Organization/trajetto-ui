@@ -31,11 +31,38 @@ test.describe("the Rotas board while a route is created elsewhere", () => {
   test("shows the new route without anybody touching the page", async ({
     page,
   }) => {
+    /**
+     * The socket, waited for instead of assumed.
+     *
+     * The first version slept 2.5 seconds and hoped. Under three parallel
+     * workers that was sometimes not enough, and the failure said "a rota
+     * liberada não apareceu sozinha no quadro" — which reads as a broken
+     * product and was a browser that had not finished connecting. Worse, it
+     * also covers a real refusal: the handshake is rate limited per user, and
+     * a refused connection looks exactly the same from the assertion's side.
+     *
+     * The listener is attached BEFORE the navigation, or the connection the
+     * page opens on load happens before anything is watching.
+     */
+    const socketOpened = page.waitForEvent("websocket", {
+      // `next dev` opens its own hot-reload socket on the same page, and it
+      // wins the race every time.
+      predicate: (candidate) => candidate.url().includes("socket.io"),
+      timeout: 45_000,
+    });
+
     await open(page, "/dashboard/routes");
 
-    // The socket connects after the first paint; the room is joined by the
-    // server at handshake for a user with a company of their own.
+    const socket = await socketOpened;
+
+    // Connected is not the same as in the room: the server reads the user, the
+    // driver eligibility and the refresh family before joining anything.
     await page.waitForTimeout(2_500);
+
+    expect(
+      socket.isClosed(),
+      "o socket foi fechado logo depois de abrir — handshake recusado?",
+    ).toBe(false);
 
     /**
      * A name nothing else on the page can be: the assertion below used to
@@ -75,6 +102,14 @@ test.describe("the Rotas board while a route is created elsewhere", () => {
     await expect(
       page.getByText(routeName, { exact: true }).first(),
       "a rota liberada não apareceu sozinha no quadro",
-    ).toBeVisible({ timeout: 25_000 });
+      /*
+        The whole chain, end to end: the API write, the outbox/socket emit, the
+        permissioned room, the browser's listener, the 1.2s settle window, the
+        cache tag and the refetch. Twenty-five seconds was enough alone and
+        not with three workers and a loaded API on the same machine — and a
+        timeout that only holds on an idle laptop is a timeout that fails in
+        CI for no reason anybody can act on.
+      */
+    ).toBeVisible({ timeout: 45_000 });
   });
 });

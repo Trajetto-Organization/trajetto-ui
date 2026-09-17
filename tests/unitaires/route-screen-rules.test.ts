@@ -233,3 +233,75 @@ describe("who can reach the route screens", () => {
     ).toBe(true);
   });
 });
+
+describe("a driver is only ever on the driver's surface", () => {
+  const driver = {
+    role: "BUSINESS_USER" as const,
+    permissions: [],
+    enabledModules: ["DELIVERIES", "FLEET"],
+    isDriver: true,
+  };
+
+  /**
+   * This used to answer TRUE for every one of them.
+   *
+   * The permission gate is skipped for drivers — they carry no profile access
+   * — so a route whose only requirement was a permission waved them straight
+   * through. Nothing leaked, because the edge middleware refuses anything
+   * outside `/driver`, `/profile` and `/notifications`, and the palette builds
+   * a different action list per role. Both of those are layers on top of a
+   * rule that said yes.
+   */
+  it.each([
+    "/dashboard/deliveries",
+    "/dashboard/routes",
+    "/dashboard/control-tower",
+    "/dashboard/integrations",
+    "/dashboard/vehicle",
+    "/admin",
+
+    /*
+      The two that look like the driver's surface and are not. `/dashboard/driver`
+      is the company's driver REGISTRY — hiring, documents, contracts — and
+      `/dashboard/profile-access` is where permissions themselves are handed
+      out. A prefix check written with `includes` instead of a segment boundary
+      lets a driver into both, and the difference is invisible against any
+      path that does not contain the word.
+    */
+    "/dashboard/driver",
+    "/dashboard/profile-access",
+  ])("%s is not theirs", (path) => {
+    expect(canAccessPath(path, driver)).toBe(false);
+  });
+
+  it.each(["/driver/kanban", "/driver/vehicles", "/profile", "/notifications"])(
+    "%s is",
+    (path) => {
+      expect(canAccessPath(path, driver)).toBe(true);
+    },
+  );
+
+  it("and the module gate still applies inside it", () => {
+    // Being on the right surface is not the same as having the plan for it:
+    // Contas a pagar is fleet paperwork, and a company without FLEET has none.
+    expect(
+      canAccessPath("/driver/account-payable", {
+        ...driver,
+        enabledModules: ["DELIVERIES"],
+      }),
+    ).toBe(false);
+  });
+
+  it("and an office user is unaffected by the rule", () => {
+    // The mirror image: the driver check must not catch anybody else, or
+    // every employee loses the office to a one-line guard.
+    expect(
+      canAccessPath("/dashboard/deliveries", {
+        role: "BUSINESS_USER",
+        permissions: ["delivery_manage"],
+        enabledModules: ["DELIVERIES"],
+        isDriver: false,
+      }),
+    ).toBe(true);
+  });
+});

@@ -1,6 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { readFileSync } from "node:fs";
 
 /**
  * Revoking an API key, from the click to the row.
@@ -18,20 +17,13 @@ import { readFileSync } from "node:fs";
  *   cancel really cancels → confirm really calls the API → the key is really
  *   revoked in the database → the list on screen says so without a reload
  */
-const CONTEXT = JSON.parse(
-  readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
-);
-
-const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
-const API = process.env.LOAD_BASE_URL ?? "http://localhost:3334";
-
-const TOKEN = CONTEXT.managerTokens[0];
+import { CONTEXT, API, BASE, managerForThisSpec } from "./support/operation";
 
 async function api(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API}${path}`, {
     ...init,
     headers: {
-      authorization: `Bearer ${TOKEN}`,
+      authorization: `Bearer ${managerForThisSpec()}`,
       "content-type": "application/json",
       ...(init?.headers ?? {}),
     },
@@ -71,7 +63,12 @@ async function isRevoked(id: string): Promise<boolean> {
 
 async function open(page: Page, path: string): Promise<void> {
   await page.context().addCookies([
-    { name: "tkey", value: TOKEN, domain: "localhost", path: "/" },
+    {
+      name: "tkey",
+      value: managerForThisSpec(),
+      domain: "localhost",
+      path: "/",
+    },
   ]);
 
   await page.addInitScript(() => {

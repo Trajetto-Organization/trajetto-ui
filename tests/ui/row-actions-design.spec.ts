@@ -1,5 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
+import { managerForThisSpec } from "./support/operation";
+
 import { readFileSync } from "node:fs";
 
 /**
@@ -26,7 +28,7 @@ async function open(page: Page, path: string): Promise<void> {
   await page.context().addCookies([
     {
       name: "tkey",
-      value: CONTEXT.managerTokens[0],
+      value: managerForThisSpec(),
       domain: "localhost",
       path: "/",
     },

@@ -66,7 +66,20 @@ const RETRY_MS = 2_000;
 function isCoveredByDialog(): boolean {
   if (typeof document === "undefined") return false;
 
-  return document.querySelector('[role="dialog"], [role="alertdialog"]') !== null;
+  const panels = document.querySelectorAll<HTMLElement>(
+    '[role="dialog"], [role="alertdialog"]',
+  );
+
+  /**
+   * Visible, not merely present.
+   *
+   * Some overlays keep a `role="dialog"` node mounted and hidden — the
+   * command palette is one. Counting those would hold the refresh back
+   * FOREVER on every page that renders one, which is a worse bug than the one
+   * this function exists to prevent: instead of a panel closing unexpectedly,
+   * the board would silently stop following the operation.
+   */
+  return [...panels].some((panel) => panel.getClientRects().length > 0);
 }
 
 function useRouteEvents(businessId?: string, tags = ["update-route"]): void {

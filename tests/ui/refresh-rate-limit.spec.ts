@@ -16,18 +16,55 @@ import { open } from "./support/operation";
  */
 const PANEL = "/dashboard/integrations?tab=webhooks";
 
-/** Server-action calls, which is how a panel asks for its list again. */
-function countActions(page: Page): { count: () => number } {
-  let count = 0;
+/**
+ * Calls of ONE server action, which is how a panel asks for its list again.
+ *
+ * Counting every POST to the page URL counted the wrong things: the shell runs
+ * its own server actions on the same URL — the session check, the
+ * notifications — and under three parallel workers that turned "exactly three
+ * refreshes" into nine. Next stamps each action with a `Next-Action` header,
+ * so the first call after the first press names the one being measured and
+ * everything else is somebody else's traffic.
+ */
+function countActions(page: Page): {
+  count: () => number;
+  identify: (id: string) => void;
+} {
+  const seen: string[] = [];
+
+  let watching: string | null = null;
 
   page.on("request", (request) => {
     if (request.method() !== "POST") return;
     if (!request.url().includes("/dashboard/integrations")) return;
 
-    count += 1;
+    const action = request.headers()["next-action"];
+
+    if (!action) return;
+
+    seen.push(action);
   });
 
-  return { count: () => count };
+  return {
+    count: () => seen.filter((action) => action === watching).length,
+    identify: (id: string) => {
+      watching = id;
+    },
+  };
+}
+
+/** The action id behind the refresh button, learnt from one press. */
+async function actionBehind(page: Page, press: () => Promise<void>): Promise<string> {
+  const request = page.waitForRequest(
+    (candidate) =>
+      candidate.method() === "POST" &&
+      Boolean(candidate.headers()["next-action"]),
+    { timeout: 20_000 },
+  );
+
+  await press();
+
+  return (await request).headers()["next-action"];
 }
 
 const refreshOn = (page: Page) =>
@@ -70,6 +107,14 @@ test.describe("o botão Atualizar de um painel", () => {
     // Counted from here: the page's own first load is not what is being
     // measured.
     const traffic = countActions(page);
+
+    // One press to learn which action the button runs, then the rest.
+    traffic.identify(
+      await actionBehind(page, async () => {
+        await expect(button).toBeEnabled({ timeout: 15_000 });
+        await button.click();
+      }),
+    );
 
     await pressUntilLocked(page);
 

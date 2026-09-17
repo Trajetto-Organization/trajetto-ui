@@ -217,3 +217,44 @@ describe("a dialog holding something the user typed", () => {
     ).toBe(true);
   });
 });
+
+/**
+ * "Voltar" is not a word for "Cancelar".
+ *
+ * They look interchangeable and they are the opposite of interchangeable. In a
+ * dialog with one step, Voltar promises a previous screen that does not exist,
+ * so the person presses it expecting to go back and instead loses what they
+ * were doing — and, worse, they press it BELIEVING nothing was discarded,
+ * because going back is not a destructive word. Cancelar says what actually
+ * happens.
+ *
+ * It is only right where there is somewhere to go back TO: a multi-step flow,
+ * where the previous step is on screen a second later with its answers intact.
+ *
+ * So the rule is not "never Voltar" — it is "Voltar only next to Avançar".
+ * Zero dialogs break it today; this is what keeps the next one from being
+ * written, because the mistake is a very natural one to make.
+ */
+const STEP_FORWARD = /(Avançar|Próximo|Continuar|Concluir|step|Step)/;
+
+const WITH_BACK = ALL.filter((dialog) =>
+  />\s*Voltar\s*<|name="Voltar"|label="Voltar"|title="Voltar"/.test(dialog.body),
+);
+
+describe("um diálogo que oferece Voltar", () => {
+  it("é sempre multi-step, ou não deveria dizer Voltar", () => {
+    const wrong = WITH_BACK.filter(
+      (dialog) => !STEP_FORWARD.test(dialog.body),
+    ).map(
+      (dialog) =>
+        `${relative(SOURCE, dialog.file).split("\\").join("/")}:${dialog.line}`,
+    );
+
+    expect(
+      wrong,
+      "Voltar num diálogo de uma etapa promete uma tela anterior que não " +
+        "existe: a pessoa aperta esperando voltar e perde o que estava " +
+        "fazendo, acreditando que não perdeu. Use Cancelar.",
+    ).toEqual([]);
+  });
+});

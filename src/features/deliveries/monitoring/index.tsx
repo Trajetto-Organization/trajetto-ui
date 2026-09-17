@@ -2,6 +2,8 @@
 
 import { CheckCircle2, IdCard, Truck, UserRound } from "lucide-react";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
+
 import type { OperationSummaryData } from "../lib/panels";
 
 interface MonitoringPanelProps {
@@ -24,16 +26,12 @@ const MonitoringPanel = ({ summary }: MonitoringPanelProps): JSX.Element => {
       </p>
 
       {drivers.length === 0 ? (
-        <div
-          className="flex h-40 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <Truck className="mb-2 h-8 w-8 text-muted-foreground/40" />
-          <p className="max-w-sm text-center text-sm text-muted-foreground">
-            Nenhum motorista com carga hoje. Atribua entregas na aba Entregas
-            e o quadro ganha vida.
-          </p>
-        </div>
+        <EmptyState
+          icon={Truck}
+          size="inline"
+          title="Nenhum motorista com carga hoje"
+          description="Atribua entregas na aba Entregas e o quadro ganha vida."
+        />
       ) : (
         <ul className="space-y-2">
           {drivers.map((driver) => {

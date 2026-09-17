@@ -30,6 +30,8 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { formatDuration, formatMoment } from "../lib/format";
 import {
   STATUS_FILTERS,
@@ -137,19 +139,12 @@ const MonitorPanel = ({ businessId }: MonitorPanelProps): JSX.Element => {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {STATUS_FILTERS.map((filter) => (
-            <Button
-              key={filter.value}
-              type="button"
-              size="sm"
-              variant={status === filter.value ? "default" : "outline"}
-              onClick={() => changeStatus(filter.value)}
-            >
-              {filter.label}
-            </Button>
-          ))}
-        </div>
+        <FilterChips
+          label="Situação dos envios"
+          value={status}
+          options={STATUS_FILTERS}
+          onChange={changeStatus}
+        />
 
         <Button
           type="button"
@@ -171,16 +166,11 @@ const MonitorPanel = ({ businessId }: MonitorPanelProps): JSX.Element => {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <div
-          className="flex h-64 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <Activity className="mb-4 h-12 w-12 text-muted-foreground/40" />
-
-          <p className="max-w-md text-center text-sm text-muted-foreground">
-            Nada enviado ainda com este filtro.
-          </p>
-        </div>
+        <EmptyState
+          icon={Activity}
+          title="Nada enviado com este filtro"
+          description="Trocar o filtro acima mostra o resto. Se nem em “Todos” houver nada, nenhum endpoint recebeu um evento ainda."
+        />
       ) : (
         <div className="space-y-2">
           {rows.map((row) => {

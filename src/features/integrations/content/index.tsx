@@ -1,5 +1,8 @@
 "use client";
 
+import { Building2 } from "lucide-react";
+
+import { EmptyState } from "@/components/shared/custom/empty-state";
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
 
 import { parseIntegrationTab } from "../lib/tabs";
@@ -34,12 +37,7 @@ const IntegrationsContent = ({
   const businessId = useIntegrationsBusinessId();
 
   const renderNeedsBusiness = (sentence: string) => (
-    <div
-      className="flex h-72 items-center justify-center rounded-lg
-      border-2 border-dashed"
-    >
-      <p className="text-center text-sm text-muted-foreground">{sentence}</p>
-    </div>
+    <EmptyState icon={Building2} title="Selecione uma empresa" description={sentence} />
   );
 
   return (

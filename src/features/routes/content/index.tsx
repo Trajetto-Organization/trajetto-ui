@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
+
 import { RoutesPageActions } from "../page-actions";
 import { RoutesRealtime } from "../realtime";
 import { RoutesStats } from "../stats";
@@ -46,16 +48,16 @@ const RoutesContent = async ({
     <div className="space-y-6 my-6">
       {renderHeader(false)}
 
-      <div
-        className="flex h-72 flex-col items-center justify-center
-        rounded-lg border-2 border-dashed"
-      >
-        <PackageX className="mb-4 h-12 w-12 text-muted-foreground/40" />
-        <p className="max-w-md text-center text-sm text-muted-foreground">
-          O módulo <strong>Entregas</strong> não está habilitado para esta
-          empresa. Fale com o suporte para contratar.
-        </p>
-      </div>
+      <EmptyState
+        icon={PackageX}
+        title="Módulo Entregas não contratado"
+        description={
+          <>
+            O módulo <strong>Entregas</strong> não está habilitado para esta
+            empresa. Fale com o suporte para contratar.
+          </>
+        }
+      />
     </div>
   );
 
@@ -67,15 +69,11 @@ const RoutesContent = async ({
       <div className="space-y-6 my-6">
         {renderHeader(false)}
 
-        <div
-          className="flex h-72 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <RouteIcon className="mb-4 h-12 w-12 text-muted-foreground/40" />
-          <p className="max-w-md text-center text-sm text-muted-foreground">
-            Selecione uma empresa para ver as rotas da operação dela.
-          </p>
-        </div>
+        <EmptyState
+          icon={RouteIcon}
+          title="Selecione uma empresa"
+          description="Não existe um quadro de rotas de todas as empresas: escolha a operação acima."
+        />
       </div>
     );
   }

@@ -19,6 +19,7 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
 import { ApiKeyDialog } from "./create-dialog";
@@ -133,17 +134,11 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
           ))}
         </div>
       ) : keys.length === 0 ? (
-        <div
-          className="flex h-64 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <KeyRound className="mb-4 h-12 w-12 text-muted-foreground/40" />
-
-          <p className="max-w-md text-center text-sm text-muted-foreground">
-            Nenhuma chave emitida. Um sistema só conversa com o Trajetto depois
-            que alguém aqui decide o que ele pode ver.
-          </p>
-        </div>
+        <EmptyState
+          icon={KeyRound}
+          title="Nenhuma chave emitida"
+          description="Um sistema só conversa com o Trajetto depois que alguém aqui decide o que ele pode ver."
+        />
       ) : (
         <div className="space-y-3">
           {keys.map((key) => {

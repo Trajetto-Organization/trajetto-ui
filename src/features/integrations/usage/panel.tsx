@@ -8,17 +8,25 @@ import { ArrowDownUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { listApiUsage } from "@/actions/integration";
 
 interface UsagePanelProps {
   businessId: string;
 }
 
-const WINDOWS: Array<{ days: number; label: string }> = [
-  { days: 1, label: "Hoje" },
-  { days: 7, label: "7 dias" },
-  { days: 30, label: "30 dias" },
-];
+/**
+ * The window, as chip values.
+ *
+ * Strings rather than numbers because that is what a group of toggles
+ * exchanges; the number is parsed back where the query needs it.
+ */
+const WINDOWS = [
+  { value: "1", label: "Hoje" },
+  { value: "7", label: "7 dias" },
+  { value: "30", label: "30 dias" },
+] as const;
 
 const asNumber = (value: number): string => value.toLocaleString("pt-BR");
 
@@ -50,19 +58,12 @@ const UsagePanel = ({ businessId }: UsagePanelProps): JSX.Element => {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-1.5">
-          {WINDOWS.map((window) => (
-            <Button
-              key={window.days}
-              type="button"
-              size="sm"
-              variant={days === window.days ? "default" : "outline"}
-              onClick={() => setDays(window.days)}
-            >
-              {window.label}
-            </Button>
-          ))}
-        </div>
+        <FilterChips
+          label="Período"
+          value={String(days)}
+          options={WINDOWS}
+          onChange={(value) => setDays(Number(value))}
+        />
 
         <Button
           type="button"
@@ -107,17 +108,11 @@ const UsagePanel = ({ businessId }: UsagePanelProps): JSX.Element => {
           <Skeleton className="h-48 w-full rounded-lg" />
         </div>
       ) : grandTotal === 0 ? (
-        <div
-          className="flex h-64 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <ArrowDownUp className="mb-4 h-12 w-12 text-muted-foreground/40" />
-
-          <p className="max-w-md text-center text-sm text-muted-foreground">
-            Nenhuma chamada nesta janela. Se um sistema deveria estar
-            conversando com o Trajetto, ele não está.
-          </p>
-        </div>
+        <EmptyState
+          icon={ArrowDownUp}
+          title="Nenhuma chamada nesta janela"
+          description="Se um sistema deveria estar conversando com o Trajetto, ele não está. Confira a chave dele em Chaves de API."
+        />
       ) : (
         <>
           <div className="rounded-lg border p-4">

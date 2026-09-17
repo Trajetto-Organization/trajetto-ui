@@ -2,6 +2,9 @@
 
 import { useSearchParams } from "next/navigation";
 
+import { Building2 } from "lucide-react";
+
+import { EmptyState } from "@/components/shared/custom/empty-state";
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
 import { useAuthStore } from "@/store/auth-store";
 
@@ -39,14 +42,11 @@ const ControlTowerContent = ({
       {businessId ? (
         <ControlTowerPanel businessId={businessId} />
       ) : (
-        <div
-          className="flex h-72 items-center justify-center rounded-lg
-          border-2 border-dashed"
-        >
-          <p className="text-center text-sm text-muted-foreground">
-            Selecione uma empresa para abrir a torre de controle
-          </p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="Selecione uma empresa"
+          description="A torre acompanha os veículos de uma operação por vez; escolha a empresa acima."
+        />
       )}
     </div>
   );

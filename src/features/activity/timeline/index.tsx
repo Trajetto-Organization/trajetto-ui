@@ -1,9 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { FilePlus2, FileX2, PencilLine } from "lucide-react";
+import {
+  FilePlus2,
+  FileX2,
+  History,
+  PencilLine,
+  TriangleAlert,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+
+import { EmptyState } from "@/components/shared/custom/empty-state";
 import { displayValue } from "@/lib/format-values";
 
 import { ACTIVITY_STATUS_CLASSES, groupActivitiesByDay } from "../lib/grouping";
@@ -49,21 +57,21 @@ const ActivityTimeline = ({
 
   if (responseError.error) {
     return (
-      <div className="rounded-md border border-dashed py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          {responseError.errorMessage}
-        </p>
-      </div>
+      <EmptyState
+        icon={TriangleAlert}
+        title="Não foi possível carregar as atividades"
+        description={responseError.errorMessage}
+      />
     );
   }
 
   if (activities.length === 0) {
     return (
-      <div className="rounded-md border border-dashed py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          Nenhuma atividade encontrada para os filtros atuais.
-        </p>
-      </div>
+      <EmptyState
+        icon={History}
+        title="Nenhuma atividade com estes filtros"
+        description="Ampliar o período ou limpar os filtros costuma ser o caminho."
+      />
     );
   }
 

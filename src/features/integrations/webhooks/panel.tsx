@@ -31,6 +31,7 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
 import { WebhookFormDialog } from "./form-dialog";
@@ -146,17 +147,11 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
           ))}
         </div>
       ) : endpoints.length === 0 ? (
-        <div
-          className="flex h-64 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <Webhook className="mb-4 h-12 w-12 text-muted-foreground/40" />
-
-          <p className="max-w-md text-center text-sm text-muted-foreground">
-            Nenhum endpoint cadastrado. Sem um, o sistema do cliente só fica
-            sabendo das entregas quando pergunta.
-          </p>
-        </div>
+        <EmptyState
+          icon={Webhook}
+          title="Nenhum endpoint cadastrado"
+          description="Sem um, o sistema do cliente só fica sabendo das entregas quando pergunta."
+        />
       ) : (
         <div className="space-y-3">
           {endpoints.map((endpoint) => (

@@ -1,6 +1,7 @@
-import { PackageX } from "lucide-react";
+import { Activity, Building2, PackageX } from "lucide-react";
 import { redirect } from "next/navigation";
 
+import { EmptyState } from "@/components/shared/custom/empty-state";
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
@@ -137,16 +138,16 @@ const DeliveriesContent = async ({
     <div className="space-y-6 my-6">
       {renderHeader(false)}
 
-      <div
-        className="flex h-72 flex-col items-center justify-center
-        rounded-lg border-2 border-dashed"
-      >
-        <PackageX className="mb-4 h-12 w-12 text-muted-foreground/40" />
-        <p className="max-w-md text-center text-sm text-muted-foreground">
-          O módulo <strong>Entregas</strong> não está habilitado para esta
-          empresa. Fale com o suporte para contratar.
-        </p>
-      </div>
+      <EmptyState
+        icon={PackageX}
+        title="Módulo Entregas não contratado"
+        description={
+          <>
+            O módulo <strong>Entregas</strong> não está habilitado para esta
+            empresa. Fale com o suporte para contratar.
+          </>
+        }
+      />
     </div>
   );
 
@@ -157,14 +158,11 @@ const DeliveriesContent = async ({
       <div className="space-y-6 my-6">
         {renderHeader(false)}
 
-        <div
-          className="flex h-72 flex-col items-center justify-center
-          rounded-lg border-2 border-dashed"
-        >
-          <p className="text-center text-sm text-muted-foreground">
-            Selecione uma empresa para visualizar as entregas
-          </p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="Selecione uma empresa"
+          description="As entregas são de uma operação específica; escolha a empresa acima para ver as dela."
+        />
       </div>
     );
   }
@@ -222,14 +220,11 @@ const DeliveriesContent = async ({
         {businessId || mode === "dashboard" ? (
           <ProofAuditsPanel businessId={businessId ?? ""} />
         ) : (
-          <div
-            className="flex h-72 items-center justify-center rounded-lg
-            border-2 border-dashed"
-          >
-            <p className="text-center text-sm text-muted-foreground">
-              Selecione uma empresa para auditar os comprovantes
-            </p>
-          </div>
+          <EmptyState
+            icon={Building2}
+            title="Selecione uma empresa"
+            description="A fila de comprovantes é de uma operação específica; escolha a empresa acima."
+          />
         )}
       </div>
     );
@@ -245,14 +240,11 @@ const DeliveriesContent = async ({
         {businessId || mode === "dashboard" ? (
           <MessageTemplatesPanel businessId={businessId ?? ""} />
         ) : (
-          <div
-            className="flex h-72 items-center justify-center rounded-lg
-            border-2 border-dashed"
-          >
-            <p className="text-center text-sm text-muted-foreground">
-              Selecione uma empresa para configurar as mensagens
-            </p>
-          </div>
+          <EmptyState
+            icon={Building2}
+            title="Selecione uma empresa"
+            description="As mensagens ao cliente são escritas por empresa; escolha a empresa acima."
+          />
         )}
       </div>
     );
@@ -330,14 +322,14 @@ const DeliveriesContent = async ({
             <MonitoringPanel summary={summary} />
           </>
         ) : (
-          <div
-            className="flex h-72 items-center justify-center rounded-lg
-            border-2 border-dashed"
-          >
-            <p className="text-center text-sm text-muted-foreground">
-              {monitoringError || "Sem dados da operação."}
-            </p>
-          </div>
+          <EmptyState
+            icon={Activity}
+            title={monitoringError ? "Não foi possível carregar" : "Sem dados da operação"}
+            description={
+              monitoringError ||
+              "O quadro se enche quando houver entregas atribuídas a motoristas hoje."
+            }
+          />
         )}
       </div>
     );

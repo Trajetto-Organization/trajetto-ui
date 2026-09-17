@@ -17,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { Skeleton } from "@/components/ui/skeleton";
+
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { Textarea } from "@/components/ui/textarea";
 
 import {
@@ -151,31 +154,27 @@ const ProofAuditsPanel = ({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {STATUS_TABS.map((tab) => (
-            <Button
-              key={tab.value}
-              type="button"
-              variant={status === tab.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                setStatus(tab.value);
-                setRejecting(null);
-              }}
-            >
-              {tab.label}
-              {meta && (
-                <span className="ml-2 text-xs opacity-80">
-                  {tab.value === "PENDING"
-                    ? meta.pending
-                    : tab.value === "APPROVED"
-                      ? meta.approved
-                      : meta.rejected}
-                </span>
-              )}
-            </Button>
-          ))}
-        </div>
+        <FilterChips
+          label="Situação dos comprovantes"
+          value={status}
+          options={STATUS_TABS.map((tab) => ({
+            ...tab,
+            count: meta
+              ? tab.value === "PENDING"
+                ? meta.pending
+                : tab.value === "APPROVED"
+                  ? meta.approved
+                  : meta.rejected
+              : undefined,
+          }))}
+          onChange={(value) => {
+            setStatus(value);
+
+            // The reason box belongs to the card that was open; carrying it
+            // to another queue would put somebody else's words on it.
+            setRejecting(null);
+          }}
+        />
 
         {meta?.agreementRate !== null && meta?.agreementRate !== undefined && (
           <p className="text-xs text-muted-foreground">
@@ -194,17 +193,21 @@ const ProofAuditsPanel = ({
       )}
 
       {!isLoading && cards.length === 0 && (
-        <div
-          className="flex h-72 flex-col items-center justify-center gap-2
-          rounded-lg border-2 border-dashed"
-        >
-          <Inbox className="h-10 w-10 text-muted-foreground/40" />
-          <p className="text-sm text-muted-foreground">
-            {status === "PENDING"
-              ? "Nenhum comprovante esperando revisão."
-              : "Nada aqui ainda."}
-          </p>
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title={
+            status === "PENDING"
+              ? "Nenhum comprovante esperando revisão"
+              : status === "APPROVED"
+                ? "Nenhum comprovante aprovado ainda"
+                : "Nenhum comprovante rejeitado"
+          }
+          description={
+            status === "PENDING"
+              ? "Um comprovante chega aqui quando o motorista conclui uma entrega pelo aplicativo."
+              : "O que for revisado na fila aparece nesta aba."
+          }
+        />
       )}
 
       <div className="space-y-4">

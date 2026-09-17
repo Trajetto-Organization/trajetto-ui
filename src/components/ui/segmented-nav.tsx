@@ -168,16 +168,29 @@ const SegmentedNav = ({
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
+            {/*
+              The rail with one segment showing, not a select.
+
+              A bordered white control is what the COMPANY selector is, and on
+              /admin the two sat one above the other: same height, same border,
+              same chevron, one saying "business test" and one saying
+              "Entregas". Two different questions wearing the same answer.
+              Built out of the desk strip's own parts instead — the muted
+              track, the chosen section lifted out of it — so the phone shows
+              a smaller version of the same thing rather than a different one.
+            */}
             <button
               type="button"
               data-tutorial={dataTutorial}
-              className="flex h-10 w-full items-center justify-between gap-2
-              rounded-md border bg-background px-3 text-sm font-medium
-              ring-offset-background focus-visible:outline-none
-              focus-visible:ring-2 focus-visible:ring-ring
-              focus-visible:ring-offset-2"
+              className="flex h-10 w-full items-center gap-2 rounded-md
+              bg-muted p-1 text-sm font-medium ring-offset-background
+              focus-visible:outline-none focus-visible:ring-2
+              focus-visible:ring-ring focus-visible:ring-offset-2"
             >
-              <span className="flex min-w-0 items-center gap-2">
+              <span
+                className="flex h-8 min-w-0 flex-1 items-center gap-2
+                rounded-sm bg-background px-3 text-foreground shadow-sm"
+              >
                 {ActiveIcon ? (
                   <ActiveIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 ) : null}
@@ -186,7 +199,7 @@ const SegmentedNav = ({
               </span>
 
               <ChevronDown
-                className="h-4 w-4 shrink-0 text-muted-foreground"
+                className="mr-2 h-4 w-4 shrink-0 text-muted-foreground"
                 aria-hidden="true"
               />
             </button>
@@ -230,29 +243,57 @@ const SegmentedNav = ({
         aria-label={label}
         /**
          * `min-w-0` + `max-w-full` is what makes the list's `overflow-x-auto`
-         * work at all. With only `lg:w-auto`, from 1024px up the strip sized
-         * itself to its content — 1431px inside a 768px area — and the scroll
-         * container never had anything left to scroll, so the trailing items
-         * sat off-screen and unreachable.
+         * work at all. With a `lg:w-auto` that used to be here, from 1024px up
+         * the strip sized itself to its content — 1431px inside a 768px area —
+         * and the scroll container never had anything left to scroll, so the
+         * trailing items sat off-screen and unreachable.
+         *
+         * That `lg:w-auto` is also why a 1920px desk showed a rail that
+         * stopped short with a strip of empty page beside it: content-width on
+         * a screen wide enough to hold the content. The rail is the page's
+         * width at every size now, and the items divide it.
          */
         className={cn(
-          "relative hidden w-full min-w-0 max-w-full md:block lg:w-auto",
+          "relative hidden w-full min-w-0 max-w-full md:block",
           className,
         )}
       >
         <ul
           ref={scroller}
           data-tutorial={dataTutorial}
-          className="scrollbar-none inline-flex h-10 w-full max-w-full
+          className="scrollbar-none flex h-10 w-full max-w-full
           items-center justify-start overflow-x-auto scroll-smooth rounded-md
-          bg-muted p-1 text-muted-foreground lg:w-auto"
+          bg-muted p-1 text-muted-foreground"
         >
           {items.map((item) => {
             const isActive = item.value === activeValue;
             const Icon = item.icon;
 
             return (
-              <li key={item.value} className="flex shrink-0">
+              /*
+                Grow into whatever the rail has spare — never below the label,
+                never past 256px.
+
+                `min-w-max` is the same guarantee the old `shrink-0` gave: an
+                item is never squeezed under its own text, so ten sections
+                still overflow a 1280px rail and still scroll. What changes is
+                the other direction — where the sections DO fit, the leftover
+                width is divided between them instead of being left as a gap
+                to the right of the last one. `flex-auto` rather than `flex-1`
+                so the share is added to each item's natural width, keeping a
+                long label longer than a short one.
+
+                The 256px ceiling is what keeps that from becoming its own
+                defect. Entregas has ten sections and fills a 1920px rail
+                exactly; Integrações has four, and uncapped they came out
+                390px wide each — a segmented control stretched until the
+                labels float in the middle of nothing. Every label in this
+                product is comfortably under 256px, so the cap only ever bites
+                where there are few sections and a very wide screen, and there
+                what is left over reads as the rail continuing rather than as
+                a hole in the page.
+              */
+              <li key={item.value} className="flex min-w-max max-w-64 flex-auto">
                 <Link
                   href={hrefFor(item.value)}
                   // The one the user is on, said out loud rather than only
@@ -289,8 +330,8 @@ const SegmentedNav = ({
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-1 left-1 flex
-            items-center bg-gradient-to-r from-muted via-muted/90 to-transparent
-            pr-6"
+            items-center bg-gradient-to-r from-muted via-muted to-transparent
+            pr-10"
           >
             <button
               type="button"
@@ -309,8 +350,8 @@ const SegmentedNav = ({
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-y-1 right-1 flex
-            items-center bg-gradient-to-l from-muted via-muted/90 to-transparent
-            pl-6"
+            items-center bg-gradient-to-l from-muted via-muted to-transparent
+            pl-10"
           >
             <button
               type="button"

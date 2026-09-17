@@ -22,6 +22,8 @@ import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { Textarea } from "@/components/ui/textarea";
 
+import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+
 import {
   listProofAudits,
   reviewProofAudit,
@@ -153,7 +155,17 @@ const ProofAuditsPanel = ({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/*
+        The queue's own bar: the three counters on the left, the refresh on
+        the right, one line.
+
+        This tab is the exception to the page's layout — every other section
+        keeps its actions up beside the company selector. Here the only action
+        is "Revalidar Dados", and what it changes is these three numbers. Up
+        there it was a button on its own line, between the section strip and
+        the counters, attached to neither.
+      */}
+      <div className="flex flex-wrap items-center gap-3">
         <FilterChips
           label="Situação dos comprovantes"
           value={status}
@@ -174,16 +186,37 @@ const ProofAuditsPanel = ({
             // to another queue would put somebody else's words on it.
             setRejecting(null);
           }}
+          className="min-w-0 flex-1 sm:flex-initial"
         />
 
-        {meta?.agreementRate !== null && meta?.agreementRate !== undefined && (
-          <p className="text-xs text-muted-foreground">
-            A leitura automática concordou com a pessoa em{" "}
-            <strong>{asPercent(meta.agreementRate)}</strong> dos comprovantes
-            revisados.
-          </p>
-        )}
+        <div className="shrink-0 sm:ml-auto">
+          <DataTableRevalidate
+            revalidateData="update-delivery"
+            hideLabelOnMobile
+            className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3"
+            rateLimit={{
+              storageKey: "deliveries-proof-audits-panel",
+              maxClicks: 3,
+              timeWindowMs: 30000,
+              cooldownTimeMs: 15000,
+            }}
+          />
+        </div>
       </div>
+
+      {/*
+        Under the bar rather than beside it: this is a sentence about the
+        queue, not a control over it, and sharing the line with the counters
+        left it competing with them for the eye — and wrapping into the
+        button at 1024px.
+      */}
+      {meta?.agreementRate !== null && meta?.agreementRate !== undefined && (
+        <p className="text-xs text-muted-foreground">
+          A leitura automática concordou com a pessoa em{" "}
+          <strong>{asPercent(meta.agreementRate)}</strong> dos comprovantes
+          revisados.
+        </p>
+      )}
 
       {isLoading && (
         <div className="space-y-3">

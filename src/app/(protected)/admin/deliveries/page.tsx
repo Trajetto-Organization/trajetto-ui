@@ -6,10 +6,10 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
 import { DeliveriesContent } from "@/features/deliveries/content";
+import { DeliveriesSkeleton } from "@/features/deliveries/skeleton";
 
 interface DeliveriesQueryParamsProps {
   searchParams: {
@@ -46,7 +46,7 @@ const AdminDeliveries = async ({
         description="Selecione a empresa e acompanhe suas entregas, embarcadores e tipos de ocorrência."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
+      <Suspense fallback={<DeliveriesSkeleton mode="admin" />}>
         <DeliveriesContent
           mode="admin"
           searchParams={searchParams}

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
+import { ProtectedPageToolbar } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import { parseDeliveryTab, type DeliveryTab } from "../lib/tabs";
@@ -116,22 +117,35 @@ const DeliveriesContent = async ({
   const source = TAB_SOURCES[activeTab];
 
   /**
-   * Tabs and page actions share a line while there is room; below `lg` the
-   * actions drop under the tabs instead of squeezing them, and on phones
-   * each button spans the width.
+   * Company, then actions, then sections — in that order, and the first two
+   * on one line.
+   *
+   * The actions used to sit UNDER the strip, which put them between the
+   * sections and the table and made them read as the table's. They belong to
+   * the section that is open — "Nova Entrega" on Entregas, "Novo Motivo" on
+   * Motivos — so they go above it, beside the company whose deliveries they
+   * would create.
+   *
+   * `withActions` is false on the states where there is nothing to act on
+   * (no company chosen, module not contracted) and on Auditoria de
+   * Comprovantes, whose only action is the refresh and belongs next to that
+   * panel's own queue filters rather than up here away from them.
    */
   const renderHeader = (withActions: boolean, hasData = false) => (
-    <div className="space-y-4">
-      {mode === "admin" && <BusinessSelector currentBusinessId={businessId} />}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <DeliveriesTabs activeTab={activeTab} />
-
-        {withActions && (
+    <ProtectedPageToolbar
+      context={
+        mode === "admin" ? (
+          <BusinessSelector currentBusinessId={businessId} />
+        ) : undefined
+      }
+      actions={
+        withActions ? (
           <DeliveriesPageActions activeTab={activeTab} hasData={hasData} />
-        )}
-      </div>
-    </div>
+        ) : undefined
+      }
+    >
+      <DeliveriesTabs activeTab={activeTab} />
+    </ProtectedPageToolbar>
   );
 
   const renderModuleDisabled = () => (
@@ -202,7 +216,7 @@ const DeliveriesContent = async ({
     }
 
     return (
-      <div className="space-y-4 my-6" data-tutorial="welcome">
+      <div className="space-y-6 my-6" data-tutorial="welcome">
         {renderHeader(true)}
 
         <ChatPanel businessId={businessId} />
@@ -214,8 +228,15 @@ const DeliveriesContent = async ({
   // its own counters, like the chat.
   if (activeTab === "proof-audits") {
     return (
-      <div className="space-y-4 my-6" data-tutorial="welcome">
-        {renderHeader(true)}
+      <div className="space-y-6 my-6" data-tutorial="welcome">
+        {/*
+          No action bar up here on purpose: "Revalidar Dados" is the only one
+          this tab has, and the panel below it has its own row of filters —
+          Na fila, Aprovados, Rejeitados. A refresh button floating two
+          elements above the thing it refreshes is a button nobody connects to
+          the counters it changes.
+        */}
+        {renderHeader(false)}
 
         {businessId || mode === "dashboard" ? (
           <ProofAuditsPanel businessId={businessId ?? ""} />
@@ -234,7 +255,7 @@ const DeliveriesContent = async ({
   // like the chat — there is no list to page and nothing to search.
   if (activeTab === "message-templates") {
     return (
-      <div className="space-y-4 my-6" data-tutorial="welcome">
+      <div className="space-y-6 my-6" data-tutorial="welcome">
         {renderHeader(true)}
 
         {businessId || mode === "dashboard" ? (
@@ -302,7 +323,7 @@ const DeliveriesContent = async ({
     }
 
     return (
-      <div className="space-y-4 my-6" data-tutorial="welcome">
+      <div className="space-y-6 my-6" data-tutorial="welcome">
         {/*
           The six numbers here change with every stop that settles. Without
           this they changed only when somebody pressed Atualizar.
@@ -403,7 +424,7 @@ const DeliveriesContent = async ({
   }
 
   return (
-    <div className="space-y-4 my-6" data-tutorial="welcome">
+    <div className="space-y-6 my-6" data-tutorial="welcome">
       {/*
         Only the tab being shown is invalidated: a dispatcher reading
         Embarcadores has no reason to refetch because a truck arrived, and

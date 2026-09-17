@@ -167,9 +167,16 @@ function StatCard({
         className="flex flex-row items-start
         justify-between space-y-0 pb-1 gap-2 min-h-[60px]"
       >
+        {/*
+          `line-clamp-2` alone. It used to carry `truncate` as well, and
+          `truncate` wins: it sets `white-space: nowrap`, so the two lines the
+          clamp allows could never be used. On a 1024px desk that turned every
+          card in the product into "Total de..." and "Entregu...", and the
+          clamp beside it made it look deliberate.
+        */}
         <h3
-          className="text-sm font-medium truncate
-          text-muted-foreground line-clamp-2 flex-1"
+          className="line-clamp-2 flex-1 text-sm font-medium
+          text-muted-foreground"
         >
           {title}
         </h3>
@@ -183,7 +190,7 @@ function StatCard({
         className="flex-1 flex flex-col
         justify-between"
       >
-        <div className={cn("text-2xl font-bold mb-2 truncate", styles.value)}>
+        <div className={cn("mb-2 truncate text-2xl font-bold", styles.value)}>
           {value}
         </div>
         {(description || trend) && (
@@ -193,8 +200,7 @@ function StatCard({
           >
             {description && (
               <p
-                className="text-xs text-muted-foreground
-                line-clamp-2 flex-1 truncate"
+                className="line-clamp-2 flex-1 text-xs text-muted-foreground"
               >
                 {description}
               </p>

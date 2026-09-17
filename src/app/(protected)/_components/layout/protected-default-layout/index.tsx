@@ -177,7 +177,18 @@ const DefaultLayout = ({
                 <main>, and two nested main landmarks are invalid HTML — a
                 screen reader announces two primary regions and the
                 skip-to-content shortcut becomes ambiguous. */}
-            <div className="px-6 pt-6 h-full w-full">{children}</div>
+            {/*
+              `px-4` on a phone, not `px-6`.
+
+              This 24px sits OUTSIDE the page container's own 16px, so at
+              320px the two together took 80 of the 320 — a quarter of the
+              screen — and every page got 240px to work in. It is what made
+              the three counters on Auditoria de Comprovantes stack one per
+              line beside a button, on a screen that had room for two of
+              them. A desk loses nothing; a phone gets 16px back on each
+              side.
+            */}
+            <div className="h-full w-full px-4 pt-6 sm:px-6">{children}</div>
           </SidebarInset>
         </SidebarWrapper>
       </TutorialProvider>

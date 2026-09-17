@@ -48,8 +48,19 @@ const FilterChips = <T extends string>({
   <div
     role="group"
     aria-label={label}
+    /*
+      Wraps rather than scrolls.
+
+      `overflow-x-auto` is what used to be here, and on a 320px phone the
+      three counters — Na fila, Aprovados, Rejeitados — needed about 276px of
+      the 240 left beside the refresh button. So the group scrolled, with the
+      operating system's own bar drawn inside a 40px rail: the same defect the
+      section strip was rebuilt to get rid of, in a smaller control. There are
+      never more than four of these and they are short; a second line costs
+      28px and hides nothing.
+    */
     className={cn(
-      "inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-md bg-muted p-1",
+      "inline-flex max-w-full flex-wrap items-center gap-1 rounded-md bg-muted p-1",
       className,
     )}
   >
@@ -66,12 +77,18 @@ const FilterChips = <T extends string>({
           disabled={disabled}
           onClick={() => onChange(option.value)}
           className={cn(
+            /*
+              `px-2` on a phone, `px-3` from `sm`. Eight pixels a chip is what
+              decided whether "Na fila" and "Aprovados" share a line at 320px
+              or each take one of their own: three counters stacked vertically
+              beside a refresh button is a column pretending to be a row.
+            */
             `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap
-            rounded-sm px-3 py-1.5 text-sm font-medium text-muted-foreground
+            rounded-sm px-2 py-1.5 text-sm font-medium text-muted-foreground
             ring-offset-background transition-all focus-visible:outline-none
             focus-visible:ring-2 focus-visible:ring-ring
             focus-visible:ring-offset-2 disabled:pointer-events-none
-            disabled:opacity-50`,
+            disabled:opacity-50 sm:px-3`,
             isActive && "bg-background text-foreground shadow-sm",
           )}
         >

@@ -68,14 +68,49 @@ async function open(page: Page, path: string): Promise<void> {
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ browser }) => {
+  /**
+   * Warmed until the PROTECTED boundary is the one answering, not just until
+   * a request finishes.
+   *
+   * The first version fired one navigation and swallowed whatever came back
+   * (`.catch(() => undefined)`). That is a warm-up that cannot tell whether it
+   * warmed anything: with three workers hammering `next dev`, the cold
+   * compile of this route runs past the navigation budget, the request the
+   * test makes next arrives mid-compile, and Next answers it from the ROOT
+   * boundary — whose exit says "Ir para o início" instead of "Voltar ao
+   * painel". The suite then failed claiming the way out was missing, on a
+   * boundary that works, and the file is serial so the other three tests
+   * never ran.
+   *
+   * So it asks the question the tests ask, and keeps asking until the answer
+   * is the right one. Failing here is also better than failing there: a
+   * timeout in a warm-up names the dev server, a timeout in the assertion
+   * names the product.
+   */
   const page = await browser.newPage();
 
-  await page
-    .goto(`${BASE}/dashboard/boundary-probe`, {
-      waitUntil: "domcontentloaded",
-      timeout: 120_000,
-    })
-    .catch(() => undefined);
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      /*
+        Signed in, which the first version of this warm-up was not.
+
+        `browser.newPage()` carries no cookie, so the middleware sent it to
+        /login: the route never compiled, the exit link was never going to
+        appear, and the loop spent its whole budget proving that a signed-out
+        visitor cannot see a dashboard. `open` is the same door the tests use.
+      */
+      await open(page, "/dashboard/boundary-probe");
+
+      await page
+        .getByRole("link", { name: /voltar ao painel/i })
+        .waitFor({ state: "visible", timeout: 20_000 });
+
+      break;
+    } catch {
+      // Still compiling, or still answering from the root boundary. Ask
+      // again — the compile only has to happen once.
+    }
+  }
 
   await page.close();
 });

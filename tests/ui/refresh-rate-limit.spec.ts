@@ -28,9 +28,10 @@ const PANEL = "/dashboard/integrations?tab=webhooks";
  */
 function countActions(page: Page): {
   count: () => number;
+  times: () => number[];
   identify: (id: string) => void;
 } {
-  const seen: string[] = [];
+  const seen: Array<{ action: string; at: number }> = [];
 
   let watching: string | null = null;
 
@@ -42,15 +43,46 @@ function countActions(page: Page): {
 
     if (!action) return;
 
-    seen.push(action);
+    seen.push({ action, at: Date.now() });
   });
 
+  const mine = () => seen.filter((entry) => entry.action === watching);
+
   return {
-    count: () => seen.filter((action) => action === watching).length,
+    count: () => mine().length,
+    times: () => mine().map((entry) => entry.at),
     identify: (id: string) => {
       watching = id;
     },
   };
+}
+
+/** The limit's own window, as `RefreshButton` declares it. */
+const WINDOW_MS = 30_000;
+
+/**
+ * The most refreshes that left the browser inside any thirty-second window.
+ *
+ * Counting the whole run instead was the wrong measurement, and it failed on
+ * the weather. The limit is a SLIDING window, so what it allows depends on
+ * the spacing of the presses — and the spacing here is the test's own, not a
+ * user's: each press waits for the button to come back from its refetch, and
+ * under three parallel workers against a dev server that round trip can take
+ * ten seconds. Three presses spaced like that no longer share a window, the
+ * first one ages out, a fourth is legitimately allowed, and a total of four
+ * was read as a leak that never happened.
+ *
+ * This asks the question the rule actually answers, which no pacing can
+ * distort: was there ever a window with more than three in it?
+ */
+function mostWithinWindow(times: number[]): number {
+  return times.reduce((worst, start) => {
+    const inside = times.filter(
+      (at) => at >= start && at - start < WINDOW_MS,
+    ).length;
+
+    return Math.max(worst, inside);
+  }, 0);
 }
 
 /** The action id behind the refresh button, learnt from one press. */
@@ -71,6 +103,24 @@ const refreshOn = (page: Page) =>
   page.getByRole("button", { name: /Atualizar|Aguarde/ }).first();
 
 /**
+ * Waits for the panel's OWN first load to be over.
+ *
+ * react-query fetches on mount, through the same server action the button
+ * runs — so the panel's arrival puts one call on the wire that nobody pressed
+ * for. On a quiet machine it lands before the listener is attached and is
+ * never seen; under three parallel workers it lands after, and the run reads
+ * as four refreshes where a person made three. The limit was never involved.
+ *
+ * The skeleton is the honest barrier: it is on screen exactly while
+ * `isLoading` is true, which is exactly while that first fetch is in flight.
+ */
+async function panelSettled(page: Page): Promise<void> {
+  await expect(page.locator("main .animate-pulse")).toHaveCount(0, {
+    timeout: 30_000,
+  });
+}
+
+/**
  * Presses Atualizar until the cooldown takes, or gives up.
  *
  * Not a fixed loop of four clicks: the button is ALSO disabled while its
@@ -79,7 +129,7 @@ const refreshOn = (page: Page) =>
  * for the button to come back and presses again — which is exactly the
  * behaviour the limit is for.
  */
-async function pressUntilLocked(page: Page, attempts = 8): Promise<void> {
+async function pressUntilLocked(page: Page, attempts = 12): Promise<void> {
   const button = refreshOn(page);
 
   for (let press = 0; press < attempts; press += 1) {
@@ -103,6 +153,8 @@ test.describe("o botão Atualizar de um painel", () => {
     const button = refreshOn(page);
 
     await expect(button).toBeVisible({ timeout: 30_000 });
+
+    await panelSettled(page);
 
     // Counted from here: the page's own first load is not what is being
     // measured.
@@ -134,19 +186,24 @@ test.describe("o botão Atualizar de um painel", () => {
     const afterLock = traffic.count();
 
     /**
-     * Exactly three, and the count is the assertion.
+     * Three per window, and the window is the assertion.
      *
-     * The limit allows three presses in the window and the FOURTH is the one
-     * that trips it. At that moment the button is still enabled, so the only
-     * thing standing between that press and a fourth refetch is the guard
-     * inside the handler — `if (!registerClick()) return`. Removing it leaves
-     * every visible symptom identical (the button still locks, still counts
-     * down) and quietly sends one more request. The button being disabled
-     * afterwards hides the rest; it cannot hide this one.
+     * The limit allows three presses inside thirty seconds and the one that
+     * follows them is the one that trips it. At that moment the button is
+     * still enabled, so the only thing standing between that press and a
+     * fourth refetch is the guard inside the handler —
+     * `if (!registerClick()) return`. Removing it leaves every visible
+     * symptom identical (the button still locks, still counts down) and
+     * quietly sends one more request. The button being disabled afterwards
+     * hides the rest; it cannot hide that one, because the press that trips
+     * the limit is BY DEFINITION inside the same window as the three before
+     * it — otherwise it would not have tripped anything.
      */
+    const worst = mostWithinWindow(traffic.times());
+
     expect(
-      afterLock,
-      `o limite permite 3 atualizações na janela e saíram ${afterLock}`,
+      worst,
+      `o limite permite 3 atualizações em 30s e saíram ${worst}`,
     ).toBe(3);
 
     // More presses while locked. Forced, because a user with a trackpad will
@@ -161,6 +218,9 @@ test.describe("o botão Atualizar de um painel", () => {
       traffic.count(),
       "apertar durante o cooldown ainda dispara chamadas ao servidor",
     ).toBe(afterLock);
+
+    // And the cooldown presses did not open a window of their own.
+    expect(mostWithinWindow(traffic.times())).toBe(3);
   });
 
   test("e o cooldown não vaza para outro painel", async ({ page }) => {
@@ -176,6 +236,8 @@ test.describe("o botão Atualizar de um painel", () => {
     const button = refreshOn(page);
 
     await expect(button).toBeVisible({ timeout: 30_000 });
+
+    await panelSettled(page);
 
     await pressUntilLocked(page);
 
@@ -204,6 +266,8 @@ test.describe("o botão Atualizar de um painel", () => {
 
     await expect(button).toBeVisible({ timeout: 30_000 });
 
+    await panelSettled(page);
+
     await pressUntilLocked(page);
 
     await expect(button).toBeDisabled();
@@ -230,6 +294,8 @@ test.describe("o botão Atualizar de um painel", () => {
     const button = refreshOn(page);
 
     await expect(button).toBeVisible({ timeout: 30_000 });
+
+    await panelSettled(page);
 
     await pressUntilLocked(page);
 

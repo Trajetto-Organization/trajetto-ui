@@ -35,6 +35,8 @@ const getDashboardData = async (token: string) => {
             "update-service-order-count",
             "update-user-count",
             "update-fine-count",
+            "update-delivery-count",
+            "update-route-count",
           ],
         },
       },
@@ -67,6 +69,16 @@ const getDashboardData = async (token: string) => {
         serviceOrders: calculateCountsWithChange(data.counts.serviceOrders),
         users: calculateCountsWithChange(data.counts.users),
         fines: calculateCountsWithChange(data.counts.fines),
+
+        // Absent rather than zero when the company did not hire the module
+        // or the profile may not read them — the API leaves the keys out,
+        // and a zeroed card would claim an operation that stands still.
+        deliveries: data.counts.deliveries
+          ? calculateCountsWithChange(data.counts.deliveries)
+          : undefined,
+        routes: data.counts.routes
+          ? calculateCountsWithChange(data.counts.routes)
+          : undefined,
       },
       vehicleStatus: [
         {
@@ -112,6 +124,15 @@ const getDashboardData = async (token: string) => {
           color: "#ef4444",
         },
       ],
+      /**
+       * What the operation is doing right now.
+       *
+       * Null on purpose in three cases the API distinguishes — a MASTER with
+       * no single company, a company without the deliveries module, and a
+       * profile that may not read deliveries — and the panel simply does not
+       * draw the block. Zeroes would read as a quiet day.
+       */
+      deliveryOperation: data.deliveryOperation ?? null,
       recentActivity: data.recentActivity,
       vehiclesByType: data.vehiclesByType.map((item: any, index: number) => ({
         name: item.name,
@@ -134,6 +155,7 @@ const getDashboardData = async (token: string) => {
         users: { value: 0, change: 0 },
         fines: { value: 0, change: 0 },
       },
+      deliveryOperation: null,
       vehicleStatus: [],
       activityTrends: [],
       maintenanceStats: [],

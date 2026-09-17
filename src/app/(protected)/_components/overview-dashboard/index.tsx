@@ -55,6 +55,7 @@ import { QuickLinkCard } from "./quick-link-card";
 import { StatCard } from "./stat-card";
 
 import { OverviewEmptyState } from "./empty-state";
+import { OperationPanel } from "./operation-panel";
 
 const OverviewDashboard = ({
   initialData,
@@ -63,7 +64,7 @@ const OverviewDashboard = ({
   userError,
   basePath,
 }: OverviewDashboardProps): JSX.Element => {
-  const { counts, recentActivity } = initialData;
+  const { counts, recentActivity, deliveryOperation } = initialData;
 
   // Hook for monitoring tab changes
   useTabTutorial();
@@ -288,6 +289,24 @@ const OverviewDashboard = ({
                 ))}
               </div>
             )
+          )}
+
+          {/*
+            The operation block, between the counts and the activity feed.
+
+            Two gates, and they answer different questions. The API decides
+            whether there is anything to say at all (module hired, permission
+            held, a single company to summarise) and sends null when there is
+            not. `canReachCard` decides whether THIS tab may show it, and it
+            reads the auth store, which the socket refreshes — so a permission
+            revoked while the page is open makes the block disappear without a
+            reload, exactly like the cards above.
+          */}
+          {deliveryOperation && canReachCard("deliveries") && (
+            <OperationPanel
+              operation={deliveryOperation}
+              basePath={basePath}
+            />
           )}
 
           {/* Recent Activity Table */}

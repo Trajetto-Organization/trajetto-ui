@@ -20,7 +20,29 @@ interface DashboardData {
     serviceOrders: { value: number; change: number };
     users: { value: number; change: number };
     fines: { value: number; change: number };
+
+    // Absent when the company did not hire the deliveries module, or the
+    // profile may not read them. The card is skipped rather than zeroed.
+    deliveries?: { value: number; change: number };
+    routes?: { value: number; change: number };
   };
+
+  /**
+   * The operation right now, or null.
+   *
+   * Null in three distinct cases the API keeps apart — a MASTER, who has no
+   * single company to summarise; a company without the module; a profile
+   * without `delivery_manage`. All three mean "do not draw the block", and
+   * none of them mean "everything is at zero".
+   */
+  deliveryOperation: {
+    unassigned: number;
+    designated: number;
+    inRoute: number;
+    deliveredToday: number;
+    failedToday: number;
+    occurrencesToday: number;
+  } | null;
   vehicleStatus: {
     status: string;
     label: string;

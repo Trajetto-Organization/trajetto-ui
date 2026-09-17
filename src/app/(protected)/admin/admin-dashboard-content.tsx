@@ -35,6 +35,7 @@ const AdminDashboardContent = async ({
       users: { value: 0, change: 0 },
       fines: { value: 0, change: 0 },
     },
+    deliveryOperation: null,
     vehicleStatus: [],
     maintenanceStats: [],
     activityTrends: [],

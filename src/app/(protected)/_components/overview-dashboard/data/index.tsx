@@ -7,6 +7,8 @@ import {
   FileText,
   Container,
   Receipt,
+  PackageCheck,
+  Route as RouteIcon,
 } from "lucide-react";
 import type { DashboardCountData } from "../overview-dashboard.types";
 
@@ -96,6 +98,33 @@ const statCards = (counts: DashboardCountData) => [
     change: counts?.fines?.change || 0,
     icon: <Receipt className="h-4 w-4 text-white" />,
     color: "#dc2626",
+  },
+
+  /*
+    The deliveries module. `path` is the access key, exactly like the cards
+    above: the route registry already knows whether this company hired the
+    module and whether this profile may open the page, so a card cannot
+    outlive either. The API leaves the counts out in the same cases, which is
+    why these two read `undefined` rather than zero when they are not for
+    this user.
+  */
+  {
+    type: "deliveries",
+    path: "deliveries",
+    title: "Entregas",
+    value: counts?.deliveries?.value || 0,
+    change: counts?.deliveries?.change || 0,
+    icon: <PackageCheck className="h-4 w-4 text-white" />,
+    color: "#0ea5e9",
+  },
+  {
+    type: "routes",
+    path: "routes",
+    title: "Rotas",
+    value: counts?.routes?.value || 0,
+    change: counts?.routes?.change || 0,
+    icon: <RouteIcon className="h-4 w-4 text-white" />,
+    color: "#a855f7",
   },
 ];
 

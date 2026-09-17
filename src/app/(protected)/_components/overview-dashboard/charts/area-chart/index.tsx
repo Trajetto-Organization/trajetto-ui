@@ -41,9 +41,27 @@ const ChartArea = ({
     timeRange,
   } = useChartArea({ activityTrends });
 
-  // Filter only the metrics that the user can see.
-  const visibleMetrics = METRICS.filter((m) =>
-    hasPermission(m.roles, userRole),
+  /**
+   * Only the series this user may see AND the data actually carries.
+   *
+   * The role filter was always here. The second half is new and is what the
+   * deliveries series needs: the API leaves `deliveries` and `routes` out
+   * entirely for a company that did not hire the module, and a line drawn
+   * from `undefined` renders as a legend entry with nothing under it — a
+   * chart claiming a metric exists and then showing a gap.
+   *
+   * With no points at all (still loading, or a brand-new company) the role
+   * filter alone decides, because "the data does not carry it" cannot be
+   * distinguished from "there is no data yet".
+   */
+  const carriesSeries = (key: string): boolean =>
+    displayData.length === 0 ||
+    displayData.some(
+      (point) => typeof (point as Record<string, unknown>)[key] === "number",
+    );
+
+  const visibleMetrics = METRICS.filter(
+    (m) => hasPermission(m.roles, userRole) && carriesSeries(m.key),
   );
 
   return (

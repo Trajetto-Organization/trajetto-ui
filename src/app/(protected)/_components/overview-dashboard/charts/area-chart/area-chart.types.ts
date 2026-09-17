@@ -10,6 +10,14 @@ interface ActivityTrend {
   serviceOrders: number;
   users: number;
   fines: number;
+
+  /**
+   * Optional because the API leaves them out for a company that did not hire
+   * the deliveries module. `METRICS` is filtered against the data before the
+   * chart draws, so an absent key means no line rather than a line of gaps.
+   */
+  deliveries?: number;
+  routes?: number;
 }
 
 interface ChartAreaInteractiveProps {

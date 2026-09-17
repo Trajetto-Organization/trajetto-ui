@@ -5,6 +5,7 @@ import { BusinessSelector } from "@/app/(protected)/_components/shared/business-
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import { RoutesPageActions } from "../page-actions";
+import { RoutesRealtime } from "../realtime";
 import { RoutesStats } from "../stats";
 import { RoutesTable } from "../table";
 
@@ -152,6 +153,13 @@ const RoutesContent = async ({
 
   return (
     <div className="space-y-4 my-6" data-tutorial="welcome">
+      {/*
+        Renders nothing; it makes the board follow the operation. The API has
+        emitted `routeEvent` since routes existed and nothing listened, so a
+        route stayed RELEASED on screen while the driver was already out.
+      */}
+      <RoutesRealtime businessId={businessId} />
+
       {renderHeader(true)}
 
       <RoutesStats total={meta.total} searchMeta={searchMeta} />

@@ -6,6 +6,7 @@ import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import { parseDeliveryTab, type DeliveryTab } from "../lib/tabs";
 import { DeliveriesStats } from "../stats";
+import { DeliveriesRealtime } from "../realtime";
 import { DeliveriesTabs } from "../tabs";
 
 import { DeliveriesPageActions } from "../page-actions";
@@ -310,6 +311,12 @@ const DeliveriesContent = async ({
 
     return (
       <div className="space-y-4 my-6" data-tutorial="welcome">
+        {/*
+          The six numbers here change with every stop that settles. Without
+          this they changed only when somebody pressed Atualizar.
+        */}
+        <DeliveriesRealtime businessId={businessId} tag="update-delivery" />
+
         {renderHeader(true)}
 
         {summary ? (
@@ -405,6 +412,13 @@ const DeliveriesContent = async ({
 
   return (
     <div className="space-y-4 my-6" data-tutorial="welcome">
+      {/*
+        Only the tab being shown is invalidated: a dispatcher reading
+        Embarcadores has no reason to refetch because a truck arrived, and
+        these events arrive all day.
+      */}
+      <DeliveriesRealtime businessId={businessId} tag={source.tag} />
+
       {renderHeader(true, meta.total > 0)}
 
       <DeliveriesStats

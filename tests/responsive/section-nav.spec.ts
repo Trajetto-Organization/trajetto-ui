@@ -106,7 +106,11 @@ test.describe("as seções de Entregas num celular", () => {
           );
         }
 
-        return { horizontal, vertical, height: element.offsetHeight };
+        return {
+          horizontal,
+          vertical,
+          height: (element as HTMLElement).offsetHeight,
+        };
       });
 
       expect(
@@ -174,7 +178,9 @@ test.describe("as seções de Entregas num celular", () => {
 
       const bar = page.locator("div", { has: create }).last();
 
-      const height = await bar.evaluate((element) => element.offsetHeight);
+      const height = await bar.evaluate(
+        (element) => (element as HTMLElement).offsetHeight,
+      );
 
       expect(
         height,

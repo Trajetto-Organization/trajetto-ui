@@ -27,9 +27,18 @@ const SOURCE = resolve(__dirname, "../../src");
 
 const OPENERS = ["<DialogContent", "<DialogScrollContent"];
 
-/** Controls that mean the dialog is holding something a person produced. */
+/**
+ * Controls that mean the dialog is holding something a person produced.
+ *
+ * The product's own field components are in the list beside the native ones,
+ * and that is not belt and braces: pulling the two import dialogs' file inputs
+ * into a shared `FileDropzone` quietly took both of them OUT of this rule —
+ * the `<input type="file">` was no longer in their source, so a scan that knew
+ * only about native elements stopped asking them the question. The dialogs had
+ * not become safer; the test had gone blind.
+ */
 const INPUTS =
-  /<(Input|Textarea|Select|Checkbox|Switch|RadioGroup|FormInput|FieldShell|Combobox|InputOTP|form\b)|type="file"/;
+  /<(Input|Textarea|Select|Checkbox|Switch|RadioGroup|FormInput|FieldShell|Combobox|InputOTP|FileDropzone|DatePickerField|ShipperSelector|PhotoUpload|form\b)|type="file"/;
 
 interface DialogBlock {
   file: string;
@@ -186,7 +195,11 @@ describe("the scan itself", () => {
     // assertion below pass over an empty list — which is how a rule quietly
     // stops being a rule.
     expect(ALL.length).toBeGreaterThan(25);
-    expect(WITH_INPUT.length).toBeGreaterThan(5);
+
+    // A floor rather than `> 0`: the rule covered 89 dialogs when it was
+    // written, and the failure mode worth catching is the count SHRINKING
+    // because a control moved behind a component this pattern does not know.
+    expect(WITH_INPUT.length).toBeGreaterThanOrEqual(89);
   });
 });
 

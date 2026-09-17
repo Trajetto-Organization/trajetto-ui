@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -13,12 +13,12 @@ import {
   Route as RouteIcon,
   Trash2,
   TriangleAlert,
-  UploadCloud,
 } from "lucide-react";
 
 import {
   Dialog,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogScrollContent,
   DialogTitle,
@@ -36,6 +36,8 @@ import {
 } from "@/actions/import/import-spreadsheet";
 
 import { downloadImportTemplate } from "@/actions/import/download-template";
+
+import { FileDropzone } from "@/components/shared/custom/file-dropzone";
 
 import { ShipperSelector } from "../shipper-selector";
 import { useImportSpreadsheet } from "./hooks";
@@ -86,10 +88,7 @@ const ImportSpreadsheetDialog = ({
   isOpen,
   onClose,
 }: ImportSpreadsheetDialogProps): JSX.Element => {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const { file, isDragging, isReading, pickFile, clearFile, dragHandlers } =
-    useImportSpreadsheet();
+  const { file, isReading, pickFile, clearFile } = useImportSpreadsheet();
 
   const [shipperId, setShipperId] = useState<string>("");
 
@@ -315,11 +314,11 @@ const ImportSpreadsheetDialog = ({
               </ul>
             </div>
 
-            <div className="flex justify-end">
+            <DialogFooter>
               <Button type="button" onClick={resetAndClose}>
                 Fechar
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         ) : (
           <div className="space-y-4">
@@ -352,51 +351,16 @@ const ImportSpreadsheetDialog = ({
 
             <Separator />
 
-            <div
-              {...dragHandlers}
-              className={cn(
-                `flex flex-col items-center justify-center gap-2 rounded-lg
-                border-2 border-dashed p-6 text-center transition-colors`,
-                isDragging ? "border-primary bg-primary/5" : "border-muted",
-              )}
-            >
-              <UploadCloud className="h-8 w-8 text-muted-foreground" />
-
-              <p className="text-sm">
-                Arraste a planilha aqui ou{" "}
-                <button
-                  type="button"
-                  className="underline underline-offset-2"
-                  onClick={() => inputRef.current?.click()}
-                >
-                  escolha um arquivo
-                </button>
-              </p>
-
-              <p className="text-xs text-muted-foreground">
-                .xlsx ou .csv, até 6 MB
-              </p>
-
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".xlsx,.csv"
-                className="hidden"
-                onChange={(event) => {
-                  void pickFile(event.target.files);
-
-                  // Cleared so picking the same file twice still fires.
-                  event.target.value = "";
-                }}
-              />
-            </div>
-
-            {isReading && (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader className="h-4 w-4 animate-spin" />
-                Lendo o arquivo...
-              </p>
-            )}
+            <FileDropzone
+              accept=".xlsx,.csv"
+              label="Arraste a planilha aqui ou clique para escolher"
+              droppingLabel="Solte a planilha aqui"
+              hint=".xlsx ou .csv, até 6 MB"
+              isBusy={isReading}
+              busyLabel="Lendo o arquivo..."
+              disabled={isImporting}
+              onFiles={(files) => void pickFile(files)}
+            />
 
             {file && (
               <div className="flex items-center gap-2 rounded-lg border p-3">
@@ -423,7 +387,7 @@ const ImportSpreadsheetDialog = ({
               </div>
             )}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <DialogFooter className="gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -442,7 +406,7 @@ const ImportSpreadsheetDialog = ({
                 {isImporting && <Loader className="h-4 w-4 animate-spin" />}
                 Importar
               </Button>
-            </div>
+            </DialogFooter>
           </div>
         )}
       </DialogScrollContent>

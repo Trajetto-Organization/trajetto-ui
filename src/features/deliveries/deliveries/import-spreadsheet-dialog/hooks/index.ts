@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 /**
@@ -50,11 +50,7 @@ async function toBase64(file: File): Promise<string> {
  */
 function useImportSpreadsheet() {
   const [file, setFile] = useState<PickedSpreadsheet | null>(null);
-
-  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isReading, setIsReading] = useState<boolean>(false);
-
-  const dragCounter = useRef(0);
 
   const pickFile = useCallback(async (fileList: FileList | File[] | null) => {
     if (!fileList) return;
@@ -95,42 +91,11 @@ function useImportSpreadsheet() {
 
   const clearFile = useCallback(() => {
     setFile(null);
-
-    dragCounter.current = 0;
-    setIsDragging(false);
   }, []);
 
-  // Drag events fire on children too; counting enter/leave keeps the drop zone
-  // from flickering while the cursor crosses inner elements.
-  const dragHandlers = {
-    onDragEnter: (event: React.DragEvent) => {
-      event.preventDefault();
-
-      dragCounter.current += 1;
-      setIsDragging(true);
-    },
-    onDragLeave: (event: React.DragEvent) => {
-      event.preventDefault();
-      dragCounter.current -= 1;
-
-      if (dragCounter.current <= 0) {
-        dragCounter.current = 0;
-        setIsDragging(false);
-      }
-    },
-    onDragOver: (event: React.DragEvent) => {
-      event.preventDefault();
-    },
-    onDrop: (event: React.DragEvent) => {
-      event.preventDefault();
-      dragCounter.current = 0;
-
-      setIsDragging(false);
-      void pickFile(event.dataTransfer.files);
-    },
-  };
-
-  return { file, isDragging, isReading, pickFile, clearFile, dragHandlers };
+  // The drag state and its enter/leave counter live in `FileDropzone` now:
+  // this hook reads and validates the file, the zone decides when it has one.
+  return { file, isReading, pickFile, clearFile };
 }
 
 export { useImportSpreadsheet, MAX_FILE_SIZE };

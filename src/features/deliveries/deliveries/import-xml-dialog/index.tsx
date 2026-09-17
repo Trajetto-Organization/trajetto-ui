@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -11,12 +11,12 @@ import {
   FileUp,
   Loader,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 
 import {
   Dialog,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogScrollContent,
   DialogTitle,
@@ -35,6 +35,8 @@ import {
 } from "@/actions/delivery/import-delivery-xml";
 
 import { cn } from "@/lib/utils";
+
+import { FileDropzone } from "@/components/shared/custom/file-dropzone";
 import { useImportXmlFiles, MAX_FILES } from "./hooks";
 
 interface ImportXmlDialogProps {
@@ -68,17 +70,8 @@ const ImportXmlDialog = ({
   isOpen,
   onClose,
 }: ImportXmlDialogProps): JSX.Element => {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const {
-    files,
-    isDragging,
-    isReading,
-    addFiles,
-    removeFile,
-    clearFiles,
-    dragHandlers,
-  } = useImportXmlFiles();
+  const { files, isReading, addFiles, removeFile, clearFiles } =
+    useImportXmlFiles();
 
   const [scheduledDate, setScheduledDate] = useState<string>("");
   const [isImporting, setIsImporting] = useState<boolean>(false);
@@ -130,11 +123,11 @@ const ImportXmlDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={resetAndClose}>
       <DialogScrollContent
-        className="max-w-xl max-h-[90vh] overflow-y-auto"
+        className="max-h-[90vh] max-w-2xl overflow-y-auto"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <DialogTitle className="text-xl flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <FileUp className="h-5 w-5" />
             Importar XML de NF-e
           </DialogTitle>
@@ -147,68 +140,16 @@ const ImportXmlDialog = ({
         <div className="space-y-4 mt-2">
           {!summary && (
             <>
-              <div
-                {...dragHandlers}
-                onClick={() => inputRef.current?.click()}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    inputRef.current?.click();
-                  }
-                }}
-                className={cn(
-                  `flex flex-col items-center justify-center gap-2
-                  rounded-lg border-2 border-dashed px-6 py-10
-                  text-center transition-colors cursor-pointer`,
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "hover:border-primary/50 hover:bg-muted/40",
-                )}
-              >
-                <UploadCloud
-                  className={cn(
-                    "h-10 w-10",
-                    isDragging ? "text-primary" : "text-muted-foreground/50",
-                  )}
-                />
-
-                {isDragging ? (
-                  <p className="text-sm font-medium text-primary">
-                    Solte os arquivos aqui
-                  </p>
-                ) : (
-                  <>
-                    <p className="text-sm font-medium">
-                      Arraste os XMLs aqui ou clique para escolher
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Somente arquivos .xml de NF-e — até {MAX_FILES} por
-                      importação, 512 KB cada
-                    </p>
-                  </>
-                )}
-
-                {isReading && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader className="h-3 w-3 animate-spin" />
-                    Lendo arquivos...
-                  </div>
-                )}
-              </div>
-
-              <input
-                ref={inputRef}
-                type="file"
+              <FileDropzone
                 accept=".xml,text/xml,application/xml"
                 multiple
-                className="hidden"
-                onChange={(event) => {
-                  void addFiles(event.target.files);
-                  // Lets the same file be picked again after being removed.
-                  event.target.value = "";
-                }}
+                label="Arraste os XMLs aqui ou clique para escolher"
+                droppingLabel="Solte os arquivos aqui"
+                hint={`Somente arquivos .xml de NF-e — até ${MAX_FILES} por importação, 512 KB cada`}
+                isBusy={isReading}
+                busyLabel="Lendo arquivos..."
+                disabled={isImporting}
+                onFiles={(picked) => void addFiles(picked)}
               />
 
               {files.length > 0 && (
@@ -347,13 +288,8 @@ const ImportXmlDialog = ({
             </>
           )}
 
-          <div className="flex gap-2 mt-6 w-full">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetAndClose}
-              className="flex-1"
-            >
+          <DialogFooter className="mt-6 gap-2">
+            <Button type="button" variant="outline" onClick={resetAndClose}>
               {summary ? "Fechar" : "Cancelar"}
             </Button>
 
@@ -362,7 +298,6 @@ const ImportXmlDialog = ({
                 type="button"
                 onClick={() => void handleImport()}
                 disabled={isImporting || isReading || files.length === 0}
-                className="flex-1"
               >
                 <span>
                   Importar
@@ -370,12 +305,12 @@ const ImportXmlDialog = ({
                 </span>
                 {isImporting && (
                   <div className="ml-2 animate-spin">
-                    <Loader />
+                    <Loader className="h-4 w-4" />
                   </div>
                 )}
               </Button>
             )}
-          </div>
+          </DialogFooter>
         </div>
       </DialogScrollContent>
     </Dialog>

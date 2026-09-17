@@ -39,6 +39,36 @@ import { useOperationsSubscription } from "./use-operations-subscription";
  */
 const SETTLE_MS = 1_200;
 
+/**
+ * How often to look again once a refresh is being held back.
+ *
+ * Only runs while there IS something held back and a dialog is open, so it is
+ * one `querySelector` every couple of seconds during an edit — not a poll the
+ * product pays for the rest of the time.
+ */
+const RETRY_MS = 2_000;
+
+/**
+ * Whether anything is open over the page right now.
+ *
+ * `router.refresh()` re-runs the server component, and every listing in this
+ * product renders behind a Suspense boundary — so a refresh re-suspends it,
+ * swaps in the loading skeleton and UNMOUNTS the table. Any dialog rendered
+ * from a row goes with it, along with whatever the user had typed or
+ * reordered in it.
+ *
+ * That is not a hypothetical. A dispatcher editing a route's stops lost the
+ * panel mid-edit because a colleague released a different route on the other
+ * side of the office: the event arrived, the board refreshed, the panel was
+ * gone. Nobody is reading the board underneath a modal anyway, so the refresh
+ * waits for the modal to close — it is deferred, never dropped.
+ */
+function isCoveredByDialog(): boolean {
+  if (typeof document === "undefined") return false;
+
+  return document.querySelector('[role="dialog"], [role="alertdialog"]') !== null;
+}
+
 function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
   const router = useRouter();
 
@@ -61,6 +91,8 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
     // dashboard surface too, where the room was joined by the server and the
     // id never reaches this component.
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let held: ReturnType<typeof setInterval> | null = null;
+
     let disposed = false;
 
     /**
@@ -78,6 +110,18 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
      */
     const refresh = () => {
       if (disposed) return;
+
+      if (isCoveredByDialog()) {
+        // Held, not dropped: check back until the panel closes.
+        if (!held) held = setInterval(refresh, RETRY_MS);
+
+        return;
+      }
+
+      if (held) {
+        clearInterval(held);
+        held = null;
+      }
 
       void revalidateTags(tagsRef.current).then(() => {
         if (!disposed) router.refresh();
@@ -115,10 +159,11 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
       disposed = true;
 
       if (timer) clearTimeout(timer);
+      if (held) clearInterval(held);
 
       getSocket()?.off("routeEvent", handle);
     };
   }, [businessId, router]);
 }
 
-export { useRouteEvents, SETTLE_MS };
+export { useRouteEvents, SETTLE_MS, RETRY_MS };

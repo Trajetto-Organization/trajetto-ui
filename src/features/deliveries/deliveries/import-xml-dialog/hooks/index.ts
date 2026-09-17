@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 /** Mirrors the API cap so the user hears "no" before uploading. */
@@ -22,10 +22,7 @@ function isXmlFile(file: File): boolean {
 
 function useImportXmlFiles() {
   const [files, setFiles] = useState<PickedFile[]>([]);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-
   const [isReading, setIsReading] = useState<boolean>(false);
-  const dragCounter = useRef(0);
 
   const addFiles = useCallback(
     async (fileList: FileList | File[] | null) => {
@@ -106,48 +103,11 @@ function useImportXmlFiles() {
 
   const clearFiles = useCallback(() => {
     setFiles([]);
-    dragCounter.current = 0;
-    setIsDragging(false);
   }, []);
 
-  // Drag events fire on children too; counting enter/leave keeps the drop
-  // zone from flickering while the cursor crosses inner elements.
-  const dragHandlers = {
-    onDragEnter: (event: React.DragEvent) => {
-      event.preventDefault();
-      dragCounter.current += 1;
-      setIsDragging(true);
-    },
-    onDragLeave: (event: React.DragEvent) => {
-      event.preventDefault();
-      dragCounter.current -= 1;
-
-      if (dragCounter.current <= 0) {
-        dragCounter.current = 0;
-        setIsDragging(false);
-      }
-    },
-    onDragOver: (event: React.DragEvent) => {
-      event.preventDefault();
-    },
-    onDrop: (event: React.DragEvent) => {
-      event.preventDefault();
-      dragCounter.current = 0;
-
-      setIsDragging(false);
-      void addFiles(event.dataTransfer.files);
-    },
-  };
-
-  return {
-    files,
-    isDragging,
-    isReading,
-    addFiles,
-    removeFile,
-    clearFiles,
-    dragHandlers,
-  };
+  // The drag state and its enter/leave counter live in `FileDropzone` now:
+  // this hook reads and validates files, the zone decides when it has some.
+  return { files, isReading, addFiles, removeFile, clearFiles };
 }
 
 export { useImportXmlFiles, MAX_FILES, MAX_FILE_SIZE };

@@ -1,6 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { anyVehicle, createRoute, open, ownDelivery } from "./support/operation";
+import {
+  CONTEXT,
+  api,
+  anyVehicle,
+  createRoute,
+  open,
+  ownDelivery,
+} from "./support/operation";
 
 /**
  * The panel where a dispatcher decides the driver's day.
@@ -23,7 +30,16 @@ async function openStopsDialog(
   page: Page,
   routeName: string,
 ): Promise<void> {
-  await open(page, "/dashboard/routes");
+  /**
+   * The board filtered down to this route, rather than scanned for it.
+   *
+   * The first version opened the unfiltered board and looked for the row. It
+   * passed alone and failed under parallel load, and the reason had nothing to
+   * do with the panel: the board shows ten rows, newest first, and the other
+   * workers of this same file create routes too. By the time the browser
+   * painted, the route this test had just made could be on page two.
+   */
+  await open(page, `/dashboard/routes?search=${encodeURIComponent(routeName)}`);
 
   const row = page.locator("tr", { hasText: routeName }).first();
 
@@ -40,7 +56,10 @@ async function openStopsDialog(
 
 /** A route of this run's own, with as many stops as the test needs. */
 async function routeWith(stops: number): Promise<string> {
-  const stamp = Date.now();
+  // The millisecond is not enough on its own: three workers start together
+  // and two of them can stamp the same one, which puts two routes on the
+  // board under the same name and sends `.first()` to the wrong one.
+  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const routeName = `Paradas ${stamp}`;
 
   const deliveries: string[] = [];
@@ -53,6 +72,92 @@ async function routeWith(stops: number): Promise<string> {
 
   return routeName;
 }
+
+test.describe("o painel enquanto a operação se mexe", () => {
+  test("sobrevive a um colega liberando outra rota", async ({ page }) => {
+    /**
+     * The panel used to close by itself, and the cause had nothing to do with
+     * the panel.
+     *
+     * The Rotas board listens to `routeEvent` and refreshes when the
+     * operation moves. `router.refresh()` re-runs the server component, the
+     * board renders behind a Suspense boundary, and re-suspending it swaps in
+     * the loading skeleton and unmounts the table — including the row this
+     * dialog is rendered from. So a dispatcher halfway through reordering a
+     * route lost the panel, and the new order with it, because somebody on
+     * the other side of the office released a DIFFERENT route.
+     *
+     * Nobody is reading the board underneath a modal. The refresh waits.
+     */
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    const mine = `Paradas ${stamp}`;
+
+    const vehicleId = await anyVehicle();
+
+    await createRoute(
+      [
+        await ownDelivery(`Parada 1 de ${stamp}`),
+        await ownDelivery(`Parada 2 de ${stamp}`),
+      ],
+      vehicleId,
+      mine,
+    );
+
+    // Somebody else's route, which is about to move.
+    const theirs = await createRoute(
+      [await ownDelivery(`Alheia ${stamp}`)],
+      vehicleId,
+      `Alheia ${stamp}`,
+    );
+
+    await openStopsDialog(page, mine);
+
+    const dialog = page.getByRole("dialog");
+
+    await dialog
+      .getByRole("button", { name: /^Mover .* para baixo$/ })
+      .first()
+      .click();
+
+    await expect(
+      dialog.getByText("A nova ordem ainda não foi salva."),
+    ).toBeVisible();
+
+    // The colleague's action, made through the API exactly as their browser
+    // would make it. This is what puts `routeEvent` on the wire.
+    const released = await api(
+      `/route/release-route/${theirs.id}/business/${CONTEXT.businessId}`,
+      { method: "PATCH", body: JSON.stringify({ released: true }) },
+    );
+
+    expect(
+      released.status,
+      `não foi possível liberar a rota do colega: ${await released.text()}`,
+    ).toBe(200);
+
+    /**
+     * Long enough for the whole chain: the socket hop, the 1.2s settle window
+     * and the refetch. Proving the ABSENCE of a refresh needs a wait; there
+     * is nothing to await.
+     */
+    await page.waitForTimeout(8_000);
+
+    await expect(
+      dialog,
+      "o painel fechou porque outra rota foi liberada",
+    ).toBeVisible();
+
+    await expect(
+      dialog.getByText("A nova ordem ainda não foi salva."),
+      "o painel continuou aberto mas a ordem não salva se perdeu",
+    ).toBeVisible();
+
+    // And the stops are still the two this route has, in the order the user
+    // left them — not a list rebuilt from the server mid-edit.
+    await expect(dialog.locator("ol > li")).toHaveCount(2);
+  });
+});
 
 test.describe("o modal de paradas da rota", () => {
   test("se apresenta e oferece uma saída", async ({ page }) => {
@@ -237,7 +342,7 @@ test.describe("o modal de paradas da rota", () => {
      * this panel. The search is also the only way to be sure the stop that
      * turns up on the left is the one that was chosen.
      */
-    const stamp = Date.now();
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const routeName = `Paradas ${stamp}`;
 
     await createRoute(
@@ -271,10 +376,25 @@ test.describe("o modal de paradas da rota", () => {
 
     await dialog.getByRole("button", { name: /Adicionar à rota/ }).click();
 
-    await expect(
-      dialog.getByText("2 paradas"),
-      "a rota continua com uma parada depois de adicionar",
-    ).toBeVisible({ timeout: 20_000 });
+    /**
+     * The failure message carries whatever the product said.
+     *
+     * A bare "2 paradas never appeared" is a mystery: the add may have been
+     * refused by the API — a delivery already on somebody's route answers 409
+     * — and the reason was on screen the whole time, in a toast the assertion
+     * was not looking at.
+     */
+    await expect(async () => {
+      if ((await dialog.getByText("2 paradas").count()) > 0) return;
+
+      const said = await page.locator("[data-sonner-toast]").allInnerTexts();
+
+      throw new Error(
+        `a rota continua com uma parada depois de adicionar. Avisos na tela: ${
+          said.length > 0 ? said.join(" | ") : "nenhum"
+        }`,
+      );
+    }).toPass({ timeout: 20_000 });
 
     /**
      * And the panel is still there.
@@ -328,6 +448,7 @@ test.describe("o modal de paradas da rota", () => {
       .first()
       .locator("td")
       .nth(3);
+
 
     await expect(
       progress,

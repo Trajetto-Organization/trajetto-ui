@@ -41,13 +41,7 @@ import { ErrorForm } from "../auth/error-form";
 import { useQuoteForm } from "./hooks";
 import { cn } from "@/lib/utils";
 
-import { Label } from "@/components/ui/label";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 import { CaptchaTurnstile } from "../shared/custom/captcha-turnstile";
 
 const QuoteFormContainer = ({
@@ -130,83 +124,56 @@ const QuoteFormContainer = ({
         ))}
       </div>
 
-      <div className="mt-5 flex flex-col gap-3">
-        {state.createQuoteError?.fleet_size ? (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Label
-                  className={cn("h-4 truncate text-red-500")}
-                  htmlFor="fleet_size"
-                >
-                  {state.createQuoteError.fleet_size[0]}
-                </Label>
-              </TooltipTrigger>
-              <TooltipContent
-                align="start"
-                className="max-w-[300px] p-2
-                break-words whitespace-normal"
-              >
-                {state.createQuoteError.fleet_size[0]}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <Label htmlFor="fleet_size" className="h-4 truncate">
-            Tamanho da frota <span className="text-red-500">*</span>
-          </Label>
+      <FieldShell
+        label="Tamanho da frota*"
+        htmlFor="fleet_size"
+        error={state.createQuoteError?.fleet_size}
+        className="mt-5"
+      >
+        {(control) => (
+          <Select name="fleet_size" disabled={pending}>
+            <SelectTrigger
+              {...control}
+              className={cn(
+                "w-full h-10",
+                control["aria-invalid"] && "border-red-600 dark:border-red-500",
+              )}
+            >
+              <SelectValue
+                placeholder="Selecione o tamanho da sua frota"
+                className="pl-7"
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {selectOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
-        <Select name="fleet_size" disabled={pending}>
-          <SelectTrigger id="fleet_size" className="w-full h-10">
-            <SelectValue
-              placeholder="Selecione o tamanho da sua frota"
-              className="pl-7"
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {selectOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      </FieldShell>
 
-      <div className="mt-5 flex flex-col gap-3">
-        {state.createQuoteError?.message ? (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Label
-                  className={cn("h-4 truncate text-red-500")}
-                  htmlFor="message"
-                >
-                  {state.createQuoteError.message[0]}
-                </Label>
-              </TooltipTrigger>
-              <TooltipContent
-                align="start"
-                className="max-w-[300px] p-2
-                break-words whitespace-normal"
-              >
-                {state.createQuoteError.message[0]}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <Label htmlFor="message" className="h-4 truncate">
-            Mensagem (opcional)
-          </Label>
+      <FieldShell
+        label="Mensagem (opcional)"
+        htmlFor="message"
+        error={state.createQuoteError?.message}
+        className="mt-5"
+      >
+        {(control) => (
+          <Textarea
+            {...control}
+            name="message"
+            placeholder="Conte-nos mais sobre suas necessidades..."
+            className={cn(
+              "min-h-[120px] resize-none",
+              control["aria-invalid"] && "border-red-600 dark:border-red-500",
+            )}
+            disabled={pending}
+          />
         )}
-        <Textarea
-          name="message"
-          id="message"
-          placeholder="Conte-nos mais sobre suas necessidades..."
-          className="min-h-[120px] resize-none"
-          disabled={pending}
-        />
-      </div>
+      </FieldShell>
 
       <ErrorForm message={state?.createQuoteError?.createQuoteErrorMessage} />
 

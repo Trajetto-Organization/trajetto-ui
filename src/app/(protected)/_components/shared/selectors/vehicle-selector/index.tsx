@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVehicleInfiniteScroll } from "@/app/(protected)/_components/shared/searches/search-vehicle/hooks/vehicle-infinite-scroll";
@@ -91,28 +91,20 @@ const VehicleSelector = ({
   };
 
   return (
-    <div className="grid gap-3 relative">
-      {errorName ? (
-        <Label className="h-4 truncate text-red-500" htmlFor="vehicle-selector">
-          {errorName[0]}
-        </Label>
-      ) : (
-        <Label className="h-4 truncate" htmlFor="vehicle-selector">
-          Veículo (opcional)
-        </Label>
-      )}
+    <FieldShell label="Veículo (opcional)" htmlFor="vehicle-selector" error={errorName}>
+      {(control) => (
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            id="vehicle-selector"
+            {...control}
             type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className={cn(
               "w-full justify-between font-normal",
-              errorName && "border-red-500",
+              control["aria-invalid"] && "border-red-600 dark:border-red-500",
               !selectedVehicle && "text-muted-foreground",
             )}
             disabled={disabled || isLoading}
@@ -239,7 +231,8 @@ const VehicleSelector = ({
           </Command>
         </PopoverContent>
       </Popover>
-    </div>
+      )}
+    </FieldShell>
   );
 };
 

@@ -13,17 +13,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Loader } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/utils";
 import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateKanbanColumn } from "@/actions/kanban/create-kanban-column";
@@ -81,59 +74,51 @@ const CreateColumnForm = ({
         />
 
         {/* Cor */}
-        <div className="space-y-2">
-          {state.createColumnError?.color ? (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label
-                    className={cn("h-4 truncate text-red-500")}
-                    htmlFor="color"
-                  >
-                    {state.createColumnError.color[0]}
-                  </Label>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="max-w-[300px]
-                  whitespace-normal break-words p-2"
-                >
-                  {state.createColumnError.color[0]}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <Label className="h-4 truncate" htmlFor="color">
-              Cor da Coluna
-              <span className="text-red-500 ml-0.5">*</span>
-            </Label>
-          )}
-          <div className="flex gap-2">
-            {predefinedColors.map((presetColor) => (
-              <button
-                key={presetColor}
-                type="button"
-                className="w-8 h-8 rounded-md border-2 transition-all"
-                style={{
-                  backgroundColor: presetColor,
-                  borderColor: color === presetColor ? "#000" : "transparent",
-                }}
-                onClick={() => setColor(presetColor)}
+        <FieldShell
+          label="Cor da Coluna*"
+          htmlFor="color"
+          error={state.createColumnError?.color}
+        >
+          {(control) => (
+            <>
+              <div className="flex gap-2">
+                {predefinedColors.map((presetColor) => (
+                  <button
+                    key={presetColor}
+                    type="button"
+                    /*
+                      A swatch with nothing but a background colour announces
+                      as "button" and nothing else. The name says which colour
+                      it is; `aria-pressed` says which one is chosen, which is
+                      information the black border was carrying visually and
+                      nowhere else.
+                    */
+                    aria-label={`Cor ${presetColor}`}
+                    aria-pressed={color === presetColor}
+                    className="w-8 h-8 rounded-md border-2 transition-all"
+                    style={{
+                      backgroundColor: presetColor,
+                      borderColor:
+                        color === presetColor ? "#000" : "transparent",
+                    }}
+                    onClick={() => setColor(presetColor)}
+                    disabled={pending}
+                  />
+                ))}
+              </div>
+
+              <Input
+                {...control}
+                type="color"
+                name="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="h-10 w-full cursor-pointer rounded-md"
                 disabled={pending}
               />
-            ))}
-          </div>
-
-          <Input
-            id="color"
-            type="color"
-            name="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="h-10 w-full cursor-pointer rounded-md"
-            disabled={pending}
-          />
-        </div>
+            </>
+          )}
+        </FieldShell>
       </div>
 
       <DialogFooter className="mt-6 gap-1">

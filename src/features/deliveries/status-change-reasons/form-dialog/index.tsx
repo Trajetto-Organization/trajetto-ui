@@ -16,6 +16,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -85,26 +86,22 @@ const StatusChangeReasonFormDialogSubmit = ({
           disabled={pending}
         />
 
-        <div className="grid gap-3">
-          {fieldErrors.description ? (
-            <Label className="h-4 truncate text-red-500" htmlFor="description">
-              {fieldErrors.description[0]}
-            </Label>
-          ) : (
-            <Label className="h-4 truncate" htmlFor="description">
-              Descrição (opcional)
-            </Label>
-          )}
-
-          <Textarea
-            id="description"
-            name="description"
+        <FieldShell
+          label="Descrição (opcional)"
+          htmlFor="description"
+          error={fieldErrors.description}
+        >
+          {(control) => (
+            <Textarea
+              {...control}
+              name="description"
             defaultValue={reason?.description ?? ""}
-            placeholder="Quando usar este motivo — aparece como ajuda no seletor"
-            maxLength={255}
-            disabled={pending}
-          />
-        </div>
+              placeholder="Quando usar este motivo — aparece como ajuda no seletor"
+              maxLength={255}
+              disabled={pending}
+            />
+          )}
+        </FieldShell>
 
         {isEditing && (
           <div

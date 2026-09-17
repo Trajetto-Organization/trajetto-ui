@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 import { Textarea } from "@/components/ui/textarea";
 
 import FormInput from "@/components/shared/custom/form-input";
@@ -511,26 +512,23 @@ const DeliveryFormDialogSubmit = ({
       </div>
       )}
 
-      <div className="grid gap-3 mt-4">
-        {fieldErrors.notes ? (
-          <Label className="h-4 truncate text-red-500" htmlFor="notes">
-            {fieldErrors.notes[0]}
-          </Label>
-        ) : (
-          <Label className="h-4 truncate" htmlFor="notes">
-            Observações (opcional)
-          </Label>
+      <FieldShell
+        label="Observações (opcional)"
+        htmlFor="notes"
+        error={fieldErrors.notes}
+        className="mt-4"
+      >
+        {(control) => (
+          <Textarea
+            {...control}
+            name="notes"
+            defaultValue={delivery?.notes ?? ""}
+            maxLength={500}
+            disabled={pending}
+            placeholder="Instruções de entrega, restrições de horário etc."
+          />
         )}
-
-        <Textarea
-          id="notes"
-          name="notes"
-          defaultValue={delivery?.notes ?? ""}
-          maxLength={500}
-          disabled={pending}
-          placeholder="Instruções de entrega, restrições de horário etc."
-        />
-      </div>
+      </FieldShell>
 
       {/* Wide modal, so the footer follows the company form's rule: buttons
       to the right at their natural width. Full-width buttons belong to the

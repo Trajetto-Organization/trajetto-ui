@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDriverInfiniteScroll } from "@/app/(protected)/_components/shared/searches/search-driver/hooks/driver-infinite-scroll";
@@ -89,29 +89,20 @@ const DriverSelector = ({
   };
 
   return (
-    <div className="grid gap-3 relative">
-      {errorName ? (
-        <Label className="h-4 truncate text-red-500" htmlFor="driver-selector">
-          {errorName[0]}
-        </Label>
-      ) : (
-        <Label className="h-4 truncate" htmlFor="driver-selector">
-          Motorista
-          <span className="text-red-500 ml-0.5">*</span>
-        </Label>
-      )}
+    <FieldShell label="Motorista*" htmlFor="driver-selector" error={errorName}>
+      {(control) => (
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            id="driver-selector"
+            {...control}
             type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className={cn(
               "w-full justify-between font-normal",
-              errorName && "border-red-500",
+              control["aria-invalid"] && "border-red-600 dark:border-red-500",
               !selectedDriver && "text-muted-foreground",
             )}
             disabled={disabled || isLoading}
@@ -234,7 +225,8 @@ const DriverSelector = ({
           </Command>
         </PopoverContent>
       </Popover>
-    </div>
+      )}
+    </FieldShell>
   );
 };
 

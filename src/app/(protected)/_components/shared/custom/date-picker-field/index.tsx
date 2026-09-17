@@ -4,14 +4,6 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
-
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -28,6 +20,9 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 
 import { cn } from "@/lib/utils";
+
+import { FieldShell } from "@/components/shared/custom/field-shell";
+
 import { useDatePicker } from "./hooks";
 
 import type { FormFieldProps } from "../shared/common.types";
@@ -55,53 +50,29 @@ const DatePickerField: React.FC<FormFieldProps> = ({
   } = useDatePicker({ value, onChange });
 
   return (
-    <div className="grid gap-3 relative">
-      {errorName?.[0] ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Label
-                className={cn("h-4 truncate text-red-500")}
-                htmlFor={htmlfor}
-              >
-                {errorName[0]}
-              </Label>
-            </TooltipTrigger>
-            <TooltipContent
-              align="start"
-              className="max-w-[300px] p-2
-              whitespace-normal break-words"
-            >
-              {errorName[0]}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ) : (
-        <Label className="h-4 truncate" htmlFor={htmlfor}>
-          {label.includes("*") ? (
-            <>
-              {label.replace("*", "")}
-              <span className="text-red-500 ml-0.5">*</span>
-            </>
-          ) : (
-            label
-          )}
-        </Label>
-      )}
-
-      <input type="hidden" id={htmlfor} name={name} value={value || ""} />
+    <FieldShell label={label} htmlFor={htmlfor} error={errorName}>
+      {(control) => (
+    <>
+      {/*
+        No id on the hidden field any more. It carries the value to the form
+        and nothing else — a label pointing at it named something a keyboard
+        can never reach, while the button people actually operate had no
+        associated label at all.
+      */}
+      <input type="hidden" name={name} value={value || ""} />
 
       <Popover>
         <PopoverTrigger asChild>
           <Button
+            {...control}
             variant="outline"
             className={cn(
               "w-full justify-start text-left font-normal",
               !formatted && "text-muted-foreground",
               disabled && "opacity-50 cursor-not-allowed",
+              control["aria-invalid"] && "border-red-600 dark:border-red-500",
             )}
             disabled={disabled}
-            aria-label={label}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {formatted || "Selecione uma data"}
@@ -197,7 +168,9 @@ const DatePickerField: React.FC<FormFieldProps> = ({
           />
         </PopoverContent>
       </Popover>
-    </div>
+    </>
+      )}
+    </FieldShell>
   );
 };
 

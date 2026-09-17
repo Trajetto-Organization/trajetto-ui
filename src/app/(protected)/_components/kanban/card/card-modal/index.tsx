@@ -24,6 +24,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,12 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader, ShieldAlert, Trash2, CheckCircle2, Copy } from "lucide-react";
 import FormInput from "@/components/shared/custom/form-input";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { handleCreateKanbanCard } from "@/actions/kanban/create-kanban-card";
@@ -145,48 +140,31 @@ const CardModalForm = ({
         />
 
         {/* Description */}
-        <div className="space-y-2">
-          {errorState?.description ? (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label
-                    className={cn("h-4 truncate text-red-500")}
-                    htmlFor="description"
-                  >
-                    {errorState.description}
-                  </Label>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="max-w-[300px]
-                  whitespace-normal break-words p-2"
-                >
-                  {errorState.description}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <Label className="h-4 truncate" htmlFor="description">
-              Descrição
-              <span className="text-red-500 ml-0.5">*</span>
-            </Label>
+        <FieldShell
+          label="Descrição*"
+          htmlFor="description"
+          error={errorState?.description}
+        >
+          {(control) => (
+            <Textarea
+              {...control}
+              name="description"
+              value={description}
+              onChange={(e) =>
+                hasUserPermission
+                  ? handleDescriptionChange(e.target.value)
+                  : null
+              }
+              placeholder="Descreva em detalhes a tarefa..."
+              className={cn(
+                "resize-none min-h-[100px]",
+                control["aria-invalid"] &&
+                  "border-red-600 dark:border-red-500",
+              )}
+              disabled={pending}
+            />
           )}
-          <Textarea
-            id="description"
-            name="description"
-            value={description}
-            onChange={(e) =>
-              hasUserPermission ? handleDescriptionChange(e.target.value) : null
-            }
-            placeholder="Descreva em detalhes a tarefa..."
-            className={cn(
-              "resize-none min-h-[100px]",
-              errorState?.description && "border-red-500",
-            )}
-            disabled={pending}
-          />
-        </div>
+        </FieldShell>
 
         {/* Priority */}
         <SelectField

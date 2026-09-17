@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/popover";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useShipperInfiniteScroll } from "@/app/(protected)/_components/shared/searches/search-shipper/hooks/shipper-infinite-scroll";
@@ -86,29 +86,20 @@ const ShipperSelector = ({
   };
 
   return (
-    <div className="grid gap-3 relative">
-      {errorName ? (
-        <Label className="h-4 truncate text-red-500" htmlFor="shipper-selector">
-          {errorName[0]}
-        </Label>
-      ) : (
-        <Label className="h-4 truncate" htmlFor="shipper-selector">
-          Embarcador
-          <span className="text-red-500 ml-0.5">*</span>
-        </Label>
-      )}
-
+    <FieldShell label="Embarcador*" htmlFor="shipper-selector" error={errorName}>
+      {(control) => (
+    <>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            id="shipper-selector"
+            {...control}
             type="button"
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className={cn(
               "w-full justify-between font-normal",
-              errorName && "border-red-500",
+              control["aria-invalid"] && "border-red-600 dark:border-red-500",
               !selectedShipper && "text-muted-foreground",
             )}
             disabled={disabled || isLoading}
@@ -230,7 +221,9 @@ const ShipperSelector = ({
 
       {/* Keeps the value reachable by the form, like the kanban selector. */}
       <input type="hidden" name="shipperId" value={value} />
-    </div>
+    </>
+      )}
+    </FieldShell>
   );
 };
 

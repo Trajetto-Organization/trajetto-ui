@@ -4,10 +4,9 @@ import { useState } from "react";
 
 import {
   Ban,
+  Copy,
   Eye,
   ListOrdered,
-  Loader,
-  MoreHorizontal,
   PencilLine,
   Send,
   Undo2,
@@ -15,18 +14,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  RowActionItem,
+  RowActions,
+  RowActionSeparator,
+} from "@/components/shared/custom/row-actions";
 
 import { toast } from "sonner";
 
@@ -68,13 +59,13 @@ interface RouteRowActionsProps {
  * Every action the state machine forbids is rendered DISABLED with a tooltip
  * saying why, never hidden — hiding it leaves the user with no way to learn
  * what is missing, and "why can't I release this one?" is the most common
- * question this screen has to answer.
+ * question this screen has to answer. The shared primitive is what makes that
+ * rule the same rule in every module.
  */
 const RouteRowActions = ({ route }: RouteRowActionsProps): JSX.Element => {
   const businessId = useRoutesBusinessId();
 
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   const [isStopsOpen, setIsStopsOpen] = useState<boolean>(false);
   const [isCancelOpen, setIsCancelOpen] = useState<boolean>(false);
@@ -97,7 +88,6 @@ const RouteRowActions = ({ route }: RouteRowActionsProps): JSX.Element => {
   const canWrite = permissionsRequired.hasAllPermissions;
 
   const editable = isRouteEditable(route.status);
-  const canEdit = canWrite && editable;
 
   const unreleasable = canUnreleaseRoute(route.status);
 
@@ -147,7 +137,6 @@ const RouteRowActions = ({ route }: RouteRowActionsProps): JSX.Element => {
   const handleOpenEdit = async () => {
     if (!businessId) return;
 
-    setIsDropdownOpen(false);
     setIsLoadingEdit(true);
 
     try {
@@ -167,7 +156,6 @@ const RouteRowActions = ({ route }: RouteRowActionsProps): JSX.Element => {
   const handleRelease = async (released: boolean) => {
     if (!businessId) return;
 
-    setIsDropdownOpen(false);
     setIsReleasing(true);
 
     try {
@@ -200,158 +188,70 @@ const RouteRowActions = ({ route }: RouteRowActionsProps): JSX.Element => {
           <Eye className="h-4 w-4" />
         </Button>
 
-        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-            >
-              {isLoadingEdit || isReleasing ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-                <MoreHorizontal />
-              )}
-              <span className="sr-only">Abrir Menu</span>
-            </Button>
-          </DropdownMenuTrigger>
+        <RowActions
+          entity={`a rota ${route.code}`}
+          isBusy={isLoadingEdit || isReleasing}
+        >
+          <RowActionItem
+            label="Ver detalhes"
+            icon={<Eye />}
+            onSelect={() => setIsDetailOpen(true)}
+          />
 
-          <DropdownMenuContent align="end" className="w-[230px]">
-            <DropdownMenuItem
-              className="flex cursor-pointer justify-between truncate"
-              onClick={() => {
-                setIsDropdownOpen(false);
-                setIsDetailOpen(true);
-              }}
-            >
-              Ver Detalhes
-              <Eye className="h-4 w-4" />
-            </DropdownMenuItem>
+          <RowActionItem
+            label="Editar rota"
+            icon={<PencilLine />}
+            blockedReason={editBlocker}
+            onSelect={() => void handleOpenEdit()}
+          />
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem
-                      className="flex cursor-pointer justify-between truncate"
-                      disabled={editBlocker !== null}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        void handleOpenEdit();
-                      }}
-                    >
-                      Editar Rota
-                      <PencilLine className="h-4 w-4" />
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                {editBlocker && (
-                  <TooltipContent className="max-w-sm">
-                    <p>{editBlocker}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+          <RowActionItem
+            label="Paradas e ordem"
+            icon={<ListOrdered />}
+            blockedReason={stopsBlocker}
+            onSelect={() => setIsStopsOpen(true)}
+          />
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem
-                      className="flex cursor-pointer justify-between truncate"
-                      disabled={stopsBlocker !== null}
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setIsStopsOpen(true);
-                      }}
-                    >
-                      Paradas e ordem
-                      <ListOrdered className="h-4 w-4" />
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                {stopsBlocker && (
-                  <TooltipContent className="max-w-sm">
-                    <p>{stopsBlocker}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+          <RowActionSeparator />
 
-            <DropdownMenuSeparator />
+          {unreleasable ? (
+            <RowActionItem
+              label="Voltar ao planejamento"
+              icon={<Undo2 />}
+              blockedReason={
+                canWrite ? null : permissionsRequired.tooltipMessage
+              }
+              onSelect={() => void handleRelease(false)}
+            />
+          ) : (
+            <RowActionItem
+              label="Liberar para o motorista"
+              icon={<Send />}
+              blockedReason={releaseBlocker}
+              onSelect={() => void handleRelease(true)}
+            />
+          )}
 
-            {unreleasable ? (
-              <DropdownMenuItem
-                className="flex cursor-pointer justify-between truncate"
-                disabled={!canWrite}
-                onClick={() => void handleRelease(false)}
-              >
-                Voltar ao planejamento
-                <Undo2 className="h-4 w-4" />
-              </DropdownMenuItem>
-            ) : (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <DropdownMenuItem
-                        className="flex cursor-pointer justify-between truncate"
-                        disabled={releaseBlocker !== null}
-                        onClick={() => void handleRelease(true)}
-                      >
-                        Liberar para o motorista
-                        <Send className="h-4 w-4" />
-                      </DropdownMenuItem>
-                    </div>
-                  </TooltipTrigger>
-                  {releaseBlocker && (
-                    <TooltipContent className="max-w-sm">
-                      <p>{releaseBlocker}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            )}
+          <RowActionItem
+            label="Copiar ID"
+            icon={<Copy />}
+            onSelect={handleCopyID}
+          />
 
-            <DropdownMenuItem
-              className="cursor-pointer truncate block"
-              onClick={handleCopyID}
-            >
-              Copiar ID
-            </DropdownMenuItem>
+          <RowActionSeparator />
 
-            <DropdownMenuSeparator />
-
-            {/* No delete. A route that ran is the record of a driver's day,
-            and one that did not still reserved deliveries no other route could
-            take — cancelling is the ending it can have, and it releases what
-            the route was holding. */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem
-                      className="flex cursor-pointer items-center justify-between
-                      text-red-600 focus:text-red-600"
-                      disabled={cancelBlocker !== null}
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setIsCancelOpen(true);
-                      }}
-                    >
-                      Cancelar Rota
-                      <Ban className="h-4 w-4" />
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                {cancelBlocker && (
-                  <TooltipContent className="max-w-sm">
-                    <p>{cancelBlocker}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* No delete. A route that ran is the record of a driver's day, and
+          one that did not still reserved deliveries no other route could take
+          — cancelling is the ending it can have, and it releases what the
+          route was holding. */}
+          <RowActionItem
+            label="Cancelar rota"
+            icon={<Ban />}
+            destructive
+            blockedReason={cancelBlocker}
+            onSelect={() => setIsCancelOpen(true)}
+          />
+        </RowActions>
       </div>
 
       {isDetailOpen && businessId && (

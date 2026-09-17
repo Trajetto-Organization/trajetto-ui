@@ -105,6 +105,18 @@ const appRoutes: AppRoute[] = [
     title: "Rotas",
     requiredModule: "DELIVERIES",
   },
+  {
+    // The master surface of the same two screens that were missing from the
+    // dashboard side. A MASTER passes every check by role, so this is about
+    // the registry being complete rather than about gating them.
+    path: "/admin/control-tower",
+    title: "Torre de Controle",
+    requiredModule: "DELIVERIES",
+  },
+  {
+    path: "/admin/integrations",
+    title: "Integrações",
+  },
 
   // DASHBOARD Routes (to BUSINESS_ADMIN and BUSINESS_USER)
   { path: "/dashboard", title: "Dashboard", exact: true },
@@ -214,6 +226,37 @@ const appRoutes: AppRoute[] = [
     title: "Rotas",
     requiredPermission: "delivery_manage",
     requiredModule: "DELIVERIES",
+  },
+  {
+    /**
+     * Was missing from this registry entirely, and the sidebar linked to it
+     * anyway.
+     *
+     * `canAccessPath` answers "allow" for a path it does not know — which is
+     * right for the marketing pages and wrong here: the tower had no client
+     * gate at all. Anybody could type the URL, including a driver and a
+     * company without the deliveries module, and get the shell of a manager
+     * screen whose API calls then answered 403. A broken screen where every
+     * other page shows a boundary.
+     *
+     * The API's own rule is `delivery_manage:read` plus an explicit refusal
+     * of driver tokens, so that is what is mirrored here.
+     */
+    path: "/dashboard/control-tower",
+    title: "Torre de Controle",
+    requiredPermission: "delivery_manage",
+    requiredModule: "DELIVERIES",
+  },
+  {
+    /**
+     * Same gap, and a sharper one: an API key hands the whole operation of a
+     * company to whoever holds it, which is why the API keeps
+     * `integration_manage` separate from every other permission. No module
+     * gate — integrations are not part of a hired module.
+     */
+    path: "/dashboard/integrations",
+    title: "Integrações",
+    requiredPermission: "integration_manage",
   },
 
   // DRIVER routes — no permission gate (drivers have no profile access), but

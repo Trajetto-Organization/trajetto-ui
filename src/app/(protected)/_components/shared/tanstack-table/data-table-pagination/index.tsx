@@ -46,6 +46,20 @@ function DataTablePagination<TData>({
   // Gets the current pagination state
   const paginationState = table.getState().pagination;
 
+  /**
+   * Whether the user can select rows at all.
+   *
+   * Tables without a checkbox column were still announcing "0 de 1 linha(s)
+   * selecionadas." — a counter for a control that is not on screen, which
+   * reads like something is broken. Where there is nothing to select, the
+   * useful number is how many rows this page is showing.
+   */
+  const isSelectable = table
+    .getAllColumns()
+    .some((column) => column.id === "select");
+
+  const rowsOnPage = table.getFilteredRowModel().rows.length;
+
   // pageIndex is zero-indexed; for the URL we use page = pageIndex + 1
   const currentPage = paginationState.pageIndex + 1;
 
@@ -69,8 +83,9 @@ function DataTablePagination<TData>({
         className="text-sm text-muted-foreground min-w-0 
         w-full sm:w-auto text-center sm:text-left"
       >
-        {table.getFilteredSelectedRowModel().rows.length} de{" "}
-        {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
+        {isSelectable
+          ? `${table.getFilteredSelectedRowModel().rows.length} de ${rowsOnPage} linha(s) selecionadas.`
+          : `${rowsOnPage} linha(s) nesta página.`}
       </div>
 
       <div

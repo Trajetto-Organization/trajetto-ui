@@ -18,12 +18,33 @@ import { RouteRowActions } from "./row-actions";
  * Every filterable column returns the LABEL rather than the raw enum, so the
  * faceted filter chips read in Portuguese — the same reason the delivery table
  * does it.
+ *
+ * The shape follows every other table in the product: the identifier first,
+ * the audit dates last, the actions behind an `Ações` header. This one had
+ * been built without them, which is only visible when a support call starts
+ * with "me passa o ID dessa rota" and there is nothing on screen to read out.
  */
 const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
   {
+    accessorKey: "id",
+    meta: { title: "Identificador" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Identificador" />
+    ),
+    cell: ({ row }) => (
+      <p className="w-72 truncate font-medium">
+        {displayValue(row.getValue("id"))}
+      </p>
+    ),
+    enableSorting: false,
+    enableHiding: false,
+  },
+  {
     accessorKey: "code",
     meta: { title: "Rota" },
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Rota" />,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Rota" />
+    ),
     cell: ({ row }) => {
       const route = row.original;
 
@@ -111,9 +132,7 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
       const plate = row.original.vehicle?.license_plate;
 
       return (
-        <p
-          className={`w-32 truncate ${plate ? "" : "text-muted-foreground"}`}
-        >
+        <p className={`w-32 truncate ${plate ? "" : "text-muted-foreground"}`}>
           {/* A route without a vehicle cannot be released, so this is the
               column a dispatcher scans to find what is blocking the morning. */}
           {plate ?? "Sem veículo"}
@@ -151,8 +170,55 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
     ),
   },
   {
-    id: "actions",
+    accessorKey: "completed_at",
+    meta: { title: "Conclusão" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Conclusão" />
+    ),
+    cell: ({ row }) => (
+      <p className="w-36 truncate text-sm text-muted-foreground">
+        {/* Saída and Conclusão are the two ends of the driver's day, and the
+            difference between them is the question every audit asks first. */}
+        {displayValue(
+          formatNotificationDate(row.getValue("completed_at"), "pt-BR"),
+        )}
+      </p>
+    ),
+  },
+  {
+    accessorKey: "created_at",
+    meta: { title: "Criação" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Data de criação" />
+    ),
+    cell: ({ row }) => (
+      <p className="w-36 truncate font-medium">
+        {displayValue(
+          formatNotificationDate(row.getValue("created_at"), "pt-BR"),
+        )}
+      </p>
+    ),
+  },
+  {
+    accessorKey: "updated_at",
+    meta: { title: "Atualização" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Data de atualização" />
+    ),
+    cell: ({ row }) => (
+      <p className="w-36 truncate font-medium">
+        {displayValue(
+          formatNotificationDate(row.getValue("updated_at"), "pt-BR"),
+        )}
+      </p>
+    ),
+  },
+  {
+    id: "Ações",
     meta: { title: "Ações" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Ações" />
+    ),
     cell: ({ row }) => <RouteRowActions route={row.original} />,
     enableSorting: false,
     enableHiding: false,

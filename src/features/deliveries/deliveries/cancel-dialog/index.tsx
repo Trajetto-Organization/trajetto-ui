@@ -139,7 +139,7 @@ const CancelDeliveryDialog = ({
 
         <AlertDialogFooter className="gap-2 sm:gap-2">
           <AlertDialogCancel disabled={isPending} className="w-full sm:w-auto">
-            Voltar
+            Cancelar
           </AlertDialogCancel>
 
           <AlertDialogAction

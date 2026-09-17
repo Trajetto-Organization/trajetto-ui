@@ -141,7 +141,7 @@ const RouteFormDialogSubmit = ({
           onClick={onCancel}
           disabled={pending}
         >
-          Voltar
+          Cancelar
         </Button>
 
         <Button type="submit" disabled={pending || !driverId || !scheduledDate}>

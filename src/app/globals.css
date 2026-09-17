@@ -950,6 +950,27 @@ html {
 }
 
 /* Custom Leaflet Popup Styles */
+/*
+  O mapa guarda os próprios z-index dentro dele.
+
+  O Leaflet numera os painéis de 400 a 700 e os controles até 1000. Esses
+  números são globais enquanto o container não abrir um contexto de
+  empilhamento próprio — e ele não abria. Resultado: todo popover, menu e
+  tooltip deste produto sai em `z-50`, ou seja, ATRÁS do mapa. Na torre de
+  controle o menu de notificações aparecia cortado, com o mapa por cima da
+  metade de baixo.
+
+  A correção é uma regra, não uma corrida de z-index: `isolation: isolate`
+  cria o contexto, e o `z-index: 0` o ancora no rodapé da pilha. Tudo que o
+  Leaflet faz passa a ser relativo a isso, e nada dele alcança um overlay
+  que está fora.
+*/
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
 .custom-popup .leaflet-popup-content-wrapper {
   background-color: white;
   border-radius: 8px;

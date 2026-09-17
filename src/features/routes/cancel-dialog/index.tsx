@@ -139,7 +139,7 @@ const CancelRouteDialog = ({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Voltar
+            Cancelar
           </Button>
 
           <Button

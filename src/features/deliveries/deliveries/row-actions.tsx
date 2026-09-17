@@ -3,22 +3,14 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { Ban, Eye, Loader, MoreHorizontal, PencilLine } from "lucide-react";
+import { Ban, Copy, Eye, PencilLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  RowActionItem,
+  RowActions,
+  RowActionSeparator,
+} from "@/components/shared/custom/row-actions";
 
 import { toast } from "sonner";
 import {
@@ -49,7 +41,6 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
   const businessId = useDeliveriesBusinessId();
 
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   const [isCancelOpen, setIsCancelOpen] = useState<boolean>(false);
 
@@ -88,7 +79,6 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
   const handleOpenEdit = async () => {
     if (!businessId) return;
 
-    setIsDropdownOpen(false);
     setIsLoadingEdit(true);
 
     try {
@@ -105,12 +95,19 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
     }
   };
 
-  const editTooltip = !canWrite
-    ? permissionsRequired.tooltipMessage
-    : "Entregas concluídas ou canceladas não podem ser editadas.";
-
   const isFinalState = DELIVERY_TRANSITIONS[delivery.status].length === 0;
-  const canEdit = canWrite && !isFinalState;
+
+  const editBlocker = !canWrite
+    ? permissionsRequired.tooltipMessage
+    : isFinalState
+      ? "Entregas concluídas ou canceladas não podem ser editadas."
+      : null;
+
+  const cancelBlocker = !canWrite
+    ? permissionsRequired.tooltipMessage
+    : !canCancel
+      ? "Esta entrega já está em um estado final e não pode ser cancelada."
+      : null;
 
   return (
     <>
@@ -125,103 +122,41 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
           <Eye className="h-4 w-4" />
         </Button>
 
-        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-            >
-              {isLoadingEdit ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-                <MoreHorizontal />
-              )}
-              <span className="sr-only">Abrir Menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-[160px]">
-            <DropdownMenuItem
-              className="flex cursor-pointer justify-between truncate"
-              onClick={() => {
-                setIsDropdownOpen(false);
-                setIsDetailOpen(true);
-              }}
-            >
-              Ver Detalhes
-              <Eye className="h-4 w-4" />
-            </DropdownMenuItem>
+        <RowActions
+          entity={`a entrega para ${delivery.recipient_name}`}
+          isBusy={isLoadingEdit}
+        >
+          <RowActionItem
+            label="Ver detalhes"
+            icon={<Eye />}
+            onSelect={() => setIsDetailOpen(true)}
+          />
 
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem
-                      className="flex cursor-pointer justify-between
-                      truncate"
-                      disabled={!canEdit}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        void handleOpenEdit();
-                      }}
-                    >
-                      Editar Entrega
-                      <PencilLine className="h-4 w-4" />
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                {!canEdit && (
-                  <TooltipContent className="max-w-sm">
-                    <p>{editTooltip}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+          <RowActionItem
+            label="Editar entrega"
+            icon={<PencilLine />}
+            blockedReason={editBlocker}
+            onSelect={() => void handleOpenEdit()}
+          />
 
-            <DropdownMenuItem
-              className="cursor-pointer truncate block"
-              onClick={handleCopyID}
-            >
-              Copiar ID
-            </DropdownMenuItem>
+          <RowActionItem
+            label="Copiar ID"
+            icon={<Copy />}
+            onSelect={handleCopyID}
+          />
 
-            <DropdownMenuSeparator />
+          <RowActionSeparator />
 
-            {/* No delete: a delivery is a fiscal record. Cancelling is the
-            ending it can have, and it preserves the history. */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem
-                      className="flex cursor-pointer items-center
-                      justify-between"
-                      disabled={!canWrite || !canCancel}
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setIsCancelOpen(true);
-                      }}
-                    >
-                      Cancelar
-                      <Ban
-                        size={17}
-                        className="dark:text-red-500 text-red-600"
-                      />
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                {(!canWrite || !canCancel) && (
-                  <TooltipContent className="max-w-sm">
-                    <p>
-                      {!canWrite
-                        ? permissionsRequired.tooltipMessage
-                        : "Esta entrega já está em um estado final e não pode ser cancelada."}
-                    </p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* No delete: a delivery is a fiscal record. Cancelling is the
+          ending it can have, and it preserves the history. */}
+          <RowActionItem
+            label="Cancelar entrega"
+            icon={<Ban />}
+            destructive
+            blockedReason={cancelBlocker}
+            onSelect={() => setIsCancelOpen(true)}
+          />
+        </RowActions>
       </div>
 
       {isDetailOpen && businessId && (

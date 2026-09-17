@@ -193,7 +193,7 @@ const ReverseImportDialog = ({
                 disabled={isPending}
                 className="w-full sm:w-auto"
               >
-                Voltar
+                Cancelar
               </AlertDialogCancel>
 
               <AlertDialogAction

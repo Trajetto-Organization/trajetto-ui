@@ -31,6 +31,8 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
+
 import { WebhookFormDialog } from "./form-dialog";
 import { formatMoment } from "../lib/format";
 
@@ -53,6 +55,11 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  /** The endpoint the person is being asked about, or none. */
+  const [pendingDelete, setPendingDelete] = useState<WebhookEndpointRow | null>(
+    null,
+  );
+
   const permissionsRequired = useCheckMultiplePermissions([
     {
       key: permissions.INTEGRATION_MANAGE,
@@ -71,19 +78,13 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
 
   const endpoints = data?.data ?? [];
 
-  const handleDelete = async (endpoint: WebhookEndpointRow) => {
-    if (
-      !window.confirm(
-        `Remover "${endpoint.name}"? O histórico de envios dele vai junto.`,
-      )
-    ) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
 
-    setDeletingId(endpoint.id);
+    setDeletingId(pendingDelete.id);
 
     try {
-      const result = await deleteWebhookEndpoint(businessId, endpoint.id);
+      const result = await deleteWebhookEndpoint(businessId, pendingDelete.id);
 
       if (!result.success) {
         toast.error(result.message);
@@ -91,6 +92,11 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
       }
 
       toast.success(result.message);
+
+      // Closed only once the work is done, so the pending state stays on
+      // screen while the request is in flight.
+      setPendingDelete(null);
+
       await refetch();
     } finally {
       setDeletingId(null);
@@ -213,7 +219,7 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
                     size="icon"
                     aria-label="Remover o endpoint"
                     disabled={!canWrite || deletingId === endpoint.id}
-                    onClick={() => handleDelete(endpoint)}
+                    onClick={() => setPendingDelete(endpoint)}
                   >
                     {deletingId === endpoint.id ? (
                       <Loader className="h-4 w-4 animate-spin" />
@@ -267,6 +273,30 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
           onSaved={() => refetch()}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deletingId) setPendingDelete(null);
+        }}
+        title="Remover este destino?"
+        description={
+          <>
+            <p>
+              <strong>{pendingDelete?.name}</strong> deixa de receber eventos
+              imediatamente.
+            </p>
+            <p>
+              O histórico de envios dele vai junto — é por ali que se responde
+              &ldquo;mandamos ou não mandamos?&rdquo; depois.
+            </p>
+          </>
+        }
+        confirmLabel="Remover"
+        destructive
+        isPending={Boolean(deletingId)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 };

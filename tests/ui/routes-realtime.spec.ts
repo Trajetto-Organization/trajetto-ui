@@ -66,41 +66,55 @@ async function api(path: string, init?: RequestInit): Promise<Response> {
 }
 
 /**
- * PENDING deliveries the fixture has not routed, best candidates first.
+ * A delivery of this test's own, so nothing is consumed.
  *
- * A LIST rather than one, because "free" cannot be decided from the listing
- * alone. The payload carries `driver` and not the stops, and the two can
- * disagree: the load fixture seeds a couple of stops without writing the
- * mirror, so a delivery with no driver can still be on a route and
- * `create-route` answers 409 for it. Rather than pretend the listing knows,
- * the caller tries the next one.
+ * The first version picked a PENDING delivery from the fixture. It worked
+ * until it did not: every run put one on a route, and after a handful of runs
+ * the listing's first page was all routed and the test failed with
+ * DELIVERY_ALREADY_ON_ROUTE — a failure about the fixture, not about the
+ * product. A test that eats its own inputs has a countdown in it.
  */
-async function routableCandidates(): Promise<string[]> {
-  const response = await api(
-    `/delivery/list-delivery?page=1&pageSize=40&status=PENDING` +
-      `&businessId=${CONTEXT.businessId}`,
+async function ownDelivery(): Promise<string> {
+  const shippers = await api(
+    `/shipper/list-shipper?page=1&pageSize=1&businessId=${CONTEXT.businessId}`,
   );
 
-  expect(response.status).toBe(200);
+  expect(shippers.status).toBe(200);
 
-  const rows = (await response.text())
+  const shipperRows = (await shippers.text())
     .split(String.fromCharCode(10))
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => JSON.parse(line));
 
-  // The first line is the envelope (meta), the rest are deliveries.
-  const free = rows
-    .slice(1)
-    .filter((row) => !row.driver)
-    .map((row) => row.id as string);
+  const shipperId = shipperRows[1]?.id as string | undefined;
 
-  expect(
-    free.length,
-    "o fixture não tem entrega pendente livre para montar uma rota",
-  ).toBeGreaterThan(0);
+  expect(shipperId, "o fixture não tem embarcador").toBeTruthy();
 
-  return free;
+  const created = await api(
+    `/delivery/create-delivery/${CONTEXT.businessId}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        shipperId,
+        recipient_name: `Cliente tempo real ${Date.now()}`,
+
+        // Required on manual entry: the route is built from this address.
+        cep: "01001000",
+
+        city: "São Paulo",
+        uf: "SP",
+        street: "Rua do Tempo Real",
+        address_number: "1",
+      }),
+    },
+  );
+
+  const body = await created.text();
+
+  expect(created.status, `não foi possível criar a entrega: ${body}`).toBe(201);
+
+  return JSON.parse(body).data.id;
 }
 
 /** Any vehicle in operation. A route cannot be released without one. */
@@ -123,39 +137,31 @@ async function anyVehicle(): Promise<string> {
 }
 
 /** Builds a route out of the first candidate the API accepts. */
-async function createRouteFromAny(
-  candidates: string[],
+async function createRoute(
+  deliveryId: string,
   vehicleId: string,
   routeName: string,
 ): Promise<{ id: string; code: number; name: string }> {
-  let lastBody = "";
+  const created = await api(`/route/create-route/${CONTEXT.businessId}`, {
+    method: "POST",
+    body: JSON.stringify({
+      driverId: CONTEXT.driverIds[0],
 
-  for (const deliveryId of candidates.slice(0, 10)) {
-    const created = await api(`/route/create-route/${CONTEXT.businessId}`, {
-      method: "POST",
-      body: JSON.stringify({
-        driverId: CONTEXT.driverIds[0],
+      // Set at creation: releasing requires one, and the release is the event
+      // this whole test is about.
+      vehicleId,
 
-        // Set at creation: releasing requires one, and the release is the
-        // event this whole test is about.
-        vehicleId,
+      scheduled_date: new Date().toISOString(),
+      name: routeName,
+      deliveryIds: [deliveryId],
+    }),
+  });
 
-        scheduled_date: new Date().toISOString(),
-        name: routeName,
-        deliveryIds: [deliveryId],
-      }),
-    });
+  const body = await created.text();
 
-    if (created.status === 201) return (await created.json()).data;
+  expect(created.status, `não foi possível criar a rota: ${body}`).toBe(201);
 
-    lastBody = await created.text();
-
-    // 409 means somebody already routed this document. Any other refusal is
-    // a real failure and must not be retried into a loop.
-    if (created.status !== 409) break;
-  }
-
-  throw new Error(`não foi possível criar a rota: ${lastBody}`);
+  return JSON.parse(body).data;
 }
 
 test.describe("the Rotas board while a route is created elsewhere", () => {
@@ -178,8 +184,8 @@ test.describe("the Rotas board while a route is created elsewhere", () => {
      */
     const routeName = `Tempo real ${Date.now()}`;
 
-    const route = await createRouteFromAny(
-      await routableCandidates(),
+    const route = await createRoute(
+      await ownDelivery(),
       await anyVehicle(),
       routeName,
     );

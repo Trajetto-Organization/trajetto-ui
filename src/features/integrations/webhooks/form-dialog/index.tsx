@@ -7,6 +7,8 @@ import { toast } from "sonner";
 
 import { AlertTriangle, Check, Copy, Loader, Webhook } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
 import {
   Dialog,
   DialogDescription,
@@ -107,6 +109,41 @@ const WebhookFormDialog = ({
         : [...current, topic],
     );
   };
+
+  /**
+   * Turning a whole family on, and off again.
+   *
+   * The wildcard is a real subscription rather than a shortcut: the API
+   * matches `route.*` against every topic in the family, INCLUDING the ones
+   * that do not exist yet. Expanding it into the concrete names on screen
+   * would throw that away — an ERP would need to be edited again the day a
+   * status is added, which is the exact thing the wildcard exists to avoid.
+   *
+   * So turning it on drops the family's individual topics from the payload:
+   * `["route.*", "route.started"]` says nothing the first entry does not, and
+   * it reads as if the two were different subscriptions.
+   *
+   * The children stay on screen, checked and disabled, because "selected all
+   * of them" has to LOOK like what it is. Before this, clicking the wildcard
+   * changed one small chip at the top and left five unchecked boxes below it.
+   */
+  const toggleFamily = (family: string, entries: { topic: string }[]) => {
+    const wildcard = `${family}.*`;
+
+    setTopics((current) => {
+      if (current.includes(wildcard)) {
+        return current.filter((entry) => entry !== wildcard);
+      }
+
+      const names = new Set(entries.map((entry) => entry.topic));
+
+      return [...current.filter((entry) => !names.has(entry)), wildcard];
+    });
+  };
+
+  /** Whether a topic is already covered, by itself or by its family. */
+  const isCovered = (topic: string): boolean =>
+    topics.includes(topic) || topics.includes(`${topic.split(".")[0]}.*`);
 
   const handleSave = async () => {
     if (name.trim().length < 2) {
@@ -288,7 +325,7 @@ const WebhookFormDialog = ({
                 <div className="space-y-4">
                   {families.map(([family, entries]) => (
                     <div key={family} className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                           {FAMILY_LABELS[family] ?? family}
                         </p>
@@ -296,28 +333,49 @@ const WebhookFormDialog = ({
                         <button
                           type="button"
                           disabled={isSaving}
-                          onClick={() => toggleTopic(`${family}.*`)}
-                          className="rounded-md border px-2 py-1 font-mono
-                          text-[11px] hover:bg-muted disabled:opacity-50"
+                          aria-pressed={topics.includes(`${family}.*`)}
+                          onClick={() => toggleFamily(family, entries)}
+                          className={cn(
+                            `flex items-center gap-2 rounded-md border px-2 py-1
+                             text-[11px] hover:bg-muted disabled:opacity-50`,
+                            topics.includes(`${family}.*`) &&
+                              `border-primary bg-primary/10 text-primary
+                               hover:bg-primary/15`,
+                          )}
                         >
-                          {topics.includes(`${family}.*`) ? "✓ " : ""}
-                          {family}.*
+                          {topics.includes(`${family}.*`) && (
+                            <Check className="h-3 w-3" />
+                          )}
+
+                          <span>Todos os eventos</span>
+                          <span className="font-mono">{family}.*</span>
                         </button>
                       </div>
 
                       <div className="space-y-1.5">
-                        {entries.map((entry) => (
+                        {entries.map((entry) => {
+                          // Covered by the family toggle: shown as chosen,
+                          // because it IS, and locked, because unchecking one
+                          // of them cannot mean anything while the wildcard
+                          // subscribes to all of them.
+                          const byFamily = topics.includes(`${family}.*`);
+
+                          return (
                           <label
                             key={entry.topic}
-                            className="flex cursor-pointer items-start gap-3
-                            rounded-md border p-2.5 hover:bg-muted/50"
+                            className={cn(
+                              `flex items-start gap-3 rounded-md border p-2.5`,
+                              byFamily
+                                ? "cursor-default bg-muted/40"
+                                : "cursor-pointer hover:bg-muted/50",
+                            )}
                           >
                             <input
                               type="checkbox"
                               className="mt-1 h-4 w-4"
-                              checked={topics.includes(entry.topic)}
+                              checked={isCovered(entry.topic)}
                               onChange={() => toggleTopic(entry.topic)}
-                              disabled={isSaving}
+                              disabled={isSaving || byFamily}
                             />
 
                             <span className="space-y-0.5">
@@ -330,7 +388,8 @@ const WebhookFormDialog = ({
                               </span>
                             </span>
                           </label>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}

@@ -19,6 +19,8 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
+
 import { ApiKeyDialog } from "./create-dialog";
 import { formatMoment } from "../lib/format";
 
@@ -39,6 +41,12 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
+  /** The key the person is being asked about, or none. */
+  const [pendingRevoke, setPendingRevoke] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const permissionsRequired = useCheckMultiplePermissions([
     {
       key: permissions.INTEGRATION_MANAGE,
@@ -57,19 +65,13 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
 
   const keys = data?.data ?? [];
 
-  const handleRevoke = async (id: string, name: string) => {
-    if (
-      !window.confirm(
-        `Revogar a chave "${name}"? O sistema que a usa para de ser atendido imediatamente.`,
-      )
-    ) {
-      return;
-    }
+  const handleRevoke = async () => {
+    if (!pendingRevoke) return;
 
-    setRevokingId(id);
+    setRevokingId(pendingRevoke.id);
 
     try {
-      const result = await revokeApiKey(businessId, id);
+      const result = await revokeApiKey(businessId, pendingRevoke.id);
 
       if (!result.success) {
         toast.error(result.message);
@@ -77,6 +79,11 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
       }
 
       toast.success(result.message);
+
+      // Closed only once the work is done: closing on click would take the
+      // pending state off screen while the request was still in flight.
+      setPendingRevoke(null);
+
       await refetch();
     } finally {
       setRevokingId(null);
@@ -145,6 +152,7 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
             return (
               <div
                 key={key.id}
+                data-api-key={key.id}
                 className={`rounded-lg border p-4 ${
                   isRevoked ? "opacity-60" : ""
                 }`}
@@ -184,7 +192,9 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
                       size="sm"
                       className="gap-2"
                       disabled={!canWrite || revokingId === key.id}
-                      onClick={() => handleRevoke(key.id, key.name)}
+                      onClick={() =>
+                        setPendingRevoke({ id: key.id, name: key.name })
+                      }
                     >
                       {revokingId === key.id ? (
                         <Loader className="h-4 w-4 animate-spin" />
@@ -229,6 +239,31 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
           onCreated={() => refetch()}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingRevoke)}
+        onOpenChange={(open) => {
+          if (!open && !revokingId) setPendingRevoke(null);
+        }}
+        title="Revogar esta chave?"
+        description={
+          <>
+            <p>
+              A chave <strong>{pendingRevoke?.name}</strong> deixa de ser
+              atendida no mesmo instante. O sistema que a usa começa a receber
+              401 na próxima chamada.
+            </p>
+            <p>
+              Ela não é apagada: uma chave que fez chamadas é parte da resposta
+              sobre o que aconteceu, e apagá-la levaria a trilha junto.
+            </p>
+          </>
+        }
+        confirmLabel="Revogar"
+        destructive
+        isPending={Boolean(revokingId)}
+        onConfirm={handleRevoke}
+      />
     </div>
   );
 };

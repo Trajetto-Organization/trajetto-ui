@@ -273,7 +273,7 @@ const NotificationList = ({
                 type="button"
                 onClick={() => refetch()}
               >
-                Revalidar Notificações
+                Tentar novamente
               </Button>
             </div>
           )}
@@ -336,7 +336,7 @@ const NotificationList = ({
                 type="button"
                 onClick={() => refetch()}
               >
-                Revalidar Notificações
+                Tentar novamente
               </Button>
             </div>
           )}

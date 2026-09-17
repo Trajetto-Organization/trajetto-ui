@@ -92,12 +92,12 @@ const ErrorSurface = ({
 
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
           {/*
-            Tentar de novo primeiro: it is the action that costs nothing and
+            Tentar novamente primeiro: it is the action that costs nothing and
             works for the common case, a request that failed once.
           */}
           <Button type="button" onClick={reset} className="gap-2">
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
-            Tentar de novo
+            Tentar novamente
           </Button>
 
           {/*

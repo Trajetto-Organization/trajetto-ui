@@ -181,7 +181,7 @@ const ImageAlbumBubble = ({
                         font-medium text-destructive-foreground"
                       >
                         <RotateCcw className="h-4 w-4" />
-                        Tentar de novo
+                        Tentar novamente
                       </button>
                     )}
                   </div>

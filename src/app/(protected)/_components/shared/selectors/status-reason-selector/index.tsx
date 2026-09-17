@@ -84,7 +84,7 @@ const StatusReasonSelector = ({
         </span>
 
         <Button type="button" variant="outline" size="sm" onClick={refetch}>
-          Tentar de novo
+          Tentar novamente
         </Button>
       </div>
     );

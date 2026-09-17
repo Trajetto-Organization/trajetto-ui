@@ -94,7 +94,7 @@ test.describe("a screen that throws", () => {
     await expect(surface).toContainText(/não foram perdidos/i);
 
     await expect(
-      page.getByRole("button", { name: /tentar de novo/i }),
+      page.getByRole("button", { name: /tentar novamente/i }),
     ).toBeVisible();
 
     await expect(

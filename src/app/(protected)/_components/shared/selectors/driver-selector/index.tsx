@@ -216,7 +216,7 @@ const DriverSelector = ({
                       size="sm"
                       onClick={refetch}
                     >
-                      Tentar de novo
+                      Tentar novamente
                     </Button>
                   </div>
                 </div>

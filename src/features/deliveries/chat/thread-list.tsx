@@ -201,7 +201,7 @@ const ThreadList = ({
               {errorMessage}
             </p>
             <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-              Tentar de novo
+              Tentar novamente
             </Button>
           </div>
         ) : threads.length === 0 && messageHits.length === 0 ? (

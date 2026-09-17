@@ -345,7 +345,7 @@ const RouteStopsDialog = ({
                   onClick={() => void refetch()}
                 >
                   <RotateCcw className="mr-2 h-4 w-4" />
-                  <span>Tentar de novo</span>
+                  <span>Tentar novamente</span>
                 </Button>
               </div>
             ) : (
@@ -562,7 +562,7 @@ const RouteStopsDialog = ({
                         onClick={() => void refetchCandidates()}
                       >
                         <RotateCcw className="mr-2 h-4 w-4" />
-                        <span>Tentar de novo</span>
+                        <span>Tentar novamente</span>
                       </Button>
                     </div>
                   )}

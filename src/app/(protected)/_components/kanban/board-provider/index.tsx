@@ -270,7 +270,7 @@ const KanbanBoardProvider = ({
               cooldownTimeMs: 15000,
             }}
           />
-          <Button onClick={() => refetch()}>Tentar Novamente</Button>
+          <Button onClick={() => refetch()}>Tentar novamente</Button>
         </div>
       </div>
     );

@@ -5,10 +5,11 @@ import { useQuery } from "react-query";
 
 import dynamic from "next/dynamic";
 
-import { RefreshCw, Truck } from "lucide-react";
+import { Truck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { getSocket, initializeSocket } from "@/socket";
@@ -207,17 +208,11 @@ const ControlTowerPanel = ({
           )}
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
+        <RefreshButton
+          storageKey="control-tower-panel"
+          isRefreshing={isFetching}
+          onRefresh={() => void refetch()}
+        />
       </div>
 
       {isLoading ? (

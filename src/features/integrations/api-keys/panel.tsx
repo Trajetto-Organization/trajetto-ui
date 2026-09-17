@@ -5,7 +5,7 @@ import { useQuery } from "react-query";
 
 import { toast } from "sonner";
 
-import { KeyRound, Loader, Plus, RefreshCw, ShieldOff } from "lucide-react";
+import { KeyRound, Loader, Plus, ShieldOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
@@ -100,19 +101,11 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
         </p>
 
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-2"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
-            Atualizar
-          </Button>
+          <RefreshButton
+            storageKey="integrations-api-keys"
+            isRefreshing={isFetching}
+            onRefresh={() => void refetch()}
+          />
 
           <Button
             type="button"

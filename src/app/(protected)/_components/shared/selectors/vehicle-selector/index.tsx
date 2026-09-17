@@ -231,7 +231,7 @@ const VehicleSelector = ({
                       size="sm"
                       onClick={refetch}
                     >
-                      Tentar de novo
+                      Tentar novamente
                     </Button>
                   </div>
                 </div>

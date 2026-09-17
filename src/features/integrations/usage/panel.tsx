@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useQuery } from "react-query";
 
-import { ArrowDownUp, RefreshCw } from "lucide-react";
+import { ArrowDownUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { listApiUsage } from "@/actions/integration";
@@ -65,17 +66,11 @@ const UsagePanel = ({ businessId }: UsagePanelProps): JSX.Element => {
           onChange={(value) => setDays(Number(value))}
         />
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
+        <RefreshButton
+          storageKey="integrations-usage"
+          isRefreshing={isFetching}
+          onRefresh={() => void refetch()}
+        />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

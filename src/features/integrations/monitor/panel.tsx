@@ -10,7 +10,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader,
-  RefreshCw,
   Send,
 } from "lucide-react";
 
@@ -30,6 +29,7 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { formatDuration, formatMoment } from "../lib/format";
@@ -146,17 +146,11 @@ const MonitorPanel = ({ businessId }: MonitorPanelProps): JSX.Element => {
           onChange={changeStatus}
         />
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
+        <RefreshButton
+          storageKey="integrations-monitor"
+          isRefreshing={isFetching}
+          onRefresh={() => void refetch()}
+        />
       </div>
 
       {isLoading ? (

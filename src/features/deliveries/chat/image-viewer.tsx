@@ -475,7 +475,7 @@ const ChatImageViewer = ({
   };
 
   /**
-   * "Tentar de novo", which now really does try something new.
+   * "Tentar novamente", which now really does try something new.
    *
    * What expires is the signature, so re-downloading the same URL only fails
    * the same way. The renewal asks the API for a fresh link for this one
@@ -638,7 +638,7 @@ const ChatImageViewer = ({
 
                       <p className="text-xs text-white/70">
                         O link de acesso a uma foto expira depois de um tempo.
-                        Toque em &quot;Tentar de novo&quot; para gerar um link
+                        Toque em &quot;Tentar novamente&quot; para gerar um link
                         novo.
                       </p>
 
@@ -656,7 +656,7 @@ const ChatImageViewer = ({
                           focus-visible:ring-white/70"
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
-                          Tentar de novo
+                          Tentar novamente
                         </button>
                       )}
                     </div>

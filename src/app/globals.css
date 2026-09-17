@@ -18,7 +18,17 @@
     --muted-foreground: 220 30% 45%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    /*
+      Measured, not chosen by eye. The old value (0 84.2% 60.2%) gave 3.60:1
+      for white text on the destructive badge and 3.76:1 for `text-destructive`
+      on a white card — both under the 4.5:1 floor, on the two places the
+      product uses to say "this is dangerous". Axe fails the revoked-key badge
+      on it.
+
+      This one is 5.48:1 behind white text and 5.74:1 as text on white. Dark
+      mode was already at 9.58:1 and is left alone.
+    */
+    --destructive: 0 74% 45%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -47,7 +57,12 @@
   .dark {
     --background: 220 40% 10%;
     --foreground: 210 40% 98%;
-    --card: 0 0% 100%;
+    /*
+      A dark surface, slightly lifted off the page background — it was
+      `0 0% 100%`, pure white, under a near-white `--card-foreground`. White
+      text on a white card: 1.05:1, which is invisible.
+    */
+    --card: 220 36% 14%;
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
@@ -59,8 +74,16 @@
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /*
+      Light red with dark text, the inverse of the light theme — because this
+      token is used BOTH ways: as a surface (`bg-destructive` on a badge or a
+      button) and as text (`text-destructive` on an error line).
+      `0 62.8% 30.6%` is a deep maroon: fine behind white text, invisible as
+      text on a dark card (1.64:1). At 65% it reads as text (5.00:1 on a card)
+      and carries dark text on top of it (5.37:1).
+    */
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 0 60% 12%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;

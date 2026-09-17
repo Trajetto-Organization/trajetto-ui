@@ -2,18 +2,78 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Whether this box has more inside it than it can show.
+ *
+ * A table wider than its column of the page scrolls sideways, and a
+ * scrollable box that nothing can focus is unreachable by keyboard: the rows
+ * are on the page, the person cannot get to them, and no error is shown. Axe
+ * calls it `scrollable-region-focusable`, and the dashboard's activity table
+ * fails it on a phone.
+ *
+ * Measured rather than assumed, because the answer changes with the data and
+ * the viewport: a table that fits needs no tab stop, and adding one to every
+ * table in the product would put a stop with nothing in it in front of every
+ * keyboard user, on every screen.
+ */
+function useOverflows(ref: React.RefObject<HTMLElement>): boolean {
+  const [overflows, setOverflows] = React.useState(false);
+
+  React.useEffect(() => {
+    const node = ref.current;
+
+    if (!node) return;
+
+    const measure = () =>
+      setOverflows(node.scrollWidth - node.clientWidth > 2);
+
+    measure();
+
+    // Both matter: the window resizing, and the table itself changing — a
+    // filter that drops a column, a page of rows with longer names.
+    const observer = new ResizeObserver(measure);
+
+    observer.observe(node);
+
+    if (node.firstElementChild) observer.observe(node.firstElementChild);
+
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return overflows;
+}
+
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-));
+>(({ className, ...props }, ref) => {
+  const scroller = React.useRef<HTMLDivElement>(null);
+
+  const overflows = useOverflows(scroller);
+
+  return (
+    <div
+      ref={scroller}
+      className="relative w-full overflow-auto"
+      // Only when there is something to scroll to. `role` and the name come
+      // with it, so a screen reader announces what the tab stop is for
+      // instead of landing on an anonymous box.
+      {...(overflows
+        ? {
+            tabIndex: 0,
+            role: "region",
+            "aria-label": "Tabela com rolagem horizontal",
+          }
+        : {})}
+    >
+      <table
+        ref={ref}
+        className={cn("w-full caption-bottom text-sm", className)}
+        {...props}
+      />
+    </div>
+  );
+});
 Table.displayName = "Table";
 
 const TableHeader = React.forwardRef<

@@ -142,7 +142,24 @@ const RootLayout = ({
           inter.variable,
         )}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        {/*
+          `attribute="class"` is not decoration — without it the dark theme
+          does not exist.
+
+          next-themes defaults to `data-theme`, and Tailwind here is
+          configured with `darkMode: ["class"]`, which looks for the `.dark`
+          CLASS. The two never met: the provider wrote `data-theme="dark"` on
+          <html>, no `dark:` utility ever matched, and the ~700 dark variants
+          in this codebase had never rendered once.
+        */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

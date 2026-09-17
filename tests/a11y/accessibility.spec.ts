@@ -10,10 +10,12 @@ import { readFileSync } from "node:fs";
  * Every finding here is reproducible — "hard to use" is not a test result,
  * "this button is 18px on a phone" is.
  *
- * Only the light theme is exercised, because it is the only one that can be
- * reached: the provider sets `data-theme` while Tailwind is configured for
- * `darkMode: ["class"]`, so no `dark:` class in this codebase ever applies.
- * See docs/PENDENCIAS-DO-USUARIO.md.
+ * Both themes are exercised now. Until this week only light could be reached:
+ * the provider set `data-theme` while Tailwind is configured for
+ * `darkMode: ["class"]`, so no `dark:` class in this codebase ever applied and
+ * the dark theme was ~700 utilities that had never rendered. Turning it on
+ * without checking it would have shipped a theme nobody had ever seen — which
+ * is what the dark loop below is for.
  */
 const AXE = readFileSync("node_modules/axe-core/axe.min.js", "utf8");
 
@@ -49,8 +51,32 @@ async function signIn(page: Page): Promise<void> {
   ]);
 }
 
-async function open(page: Page, path: string, width: number): Promise<void> {
+/**
+ * Forces a theme before the first paint.
+ *
+ * next-themes reads `localStorage.theme` on mount, so writing it here is the
+ * same switch a person flips in the interface — and doing it in an init
+ * script means the page never renders in the other theme first.
+ */
+async function forceTheme(page: Page, theme: "light" | "dark"): Promise<void> {
+  await page.addInitScript((value) => {
+    try {
+      window.localStorage.setItem("theme", value);
+    } catch {
+      // Private mode, blocked storage: the default theme still renders.
+    }
+  }, theme);
+}
+
+async function open(
+  page: Page,
+  path: string,
+  width: number,
+  theme: "light" | "dark" = "light",
+): Promise<void> {
   await signIn(page);
+  await forceTheme(page, theme);
+
   await page.setViewportSize({ width, height: 900 });
 
   await page.goto(`${BASE}${path}`, {
@@ -65,11 +91,25 @@ async function open(page: Page, path: string, width: number): Promise<void> {
 
 test.describe.configure({ mode: "parallel" });
 
+const THEMES = ["light", "dark"] as const;
+
 test.describe("axe", () => {
   for (const target of PAGES) {
     for (const width of WIDTHS) {
-      test(`${target.name} @ ${width}px`, async ({ page }) => {
-        await open(page, target.path, width);
+      for (const theme of THEMES) {
+      test(`${target.name} @ ${width}px (${theme})`, async ({ page }) => {
+        await open(page, target.path, width, theme);
+
+        // The theme has to have actually taken, or the dark run is a second
+        // light run wearing a different name.
+        const applied = await page.evaluate(() =>
+          document.documentElement.classList.contains("dark"),
+        );
+
+        expect(applied, `o tema ${theme} não foi aplicado`).toBe(
+          theme === "dark",
+        );
+
         await page.addScriptTag({ content: AXE });
 
         const violations = await page.evaluate(async () => {
@@ -99,6 +139,7 @@ test.describe("axe", () => {
           ),
         ).toEqual([]);
       });
+      }
     }
   }
 });

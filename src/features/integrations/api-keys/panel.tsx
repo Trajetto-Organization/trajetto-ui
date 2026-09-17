@@ -153,8 +153,16 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
               <div
                 key={key.id}
                 data-api-key={key.id}
+                /*
+                  A revoked key is dimmed by its BACKGROUND, not by an opacity
+                  on the whole card. `opacity-60` faded the muted text under
+                  the contrast floor — axe flags the prefix, the labels and the
+                  badge — so the row people most need to read carefully, to be
+                  sure they are revoking the right thing, was the least legible
+                  one on the screen. The badge already says "Revogada".
+                */
                 className={`rounded-lg border p-4 ${
-                  isRevoked ? "opacity-60" : ""
+                  isRevoked ? "bg-muted/40" : ""
                 }`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">

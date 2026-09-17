@@ -13,6 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { getSocket, initializeSocket } from "@/socket";
 
+import { useOperationsSubscription } from "@/hooks/use-operations-subscription";
+
 import {
   getControlTower,
   getDriverTrail,
@@ -83,6 +85,12 @@ const ControlTowerPanel = ({
   businessId,
 }: ControlTowerPanelProps): JSX.Element => {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+
+  // Positions travel in a room with a permission check on it. A user who
+  // belongs to this company was put there at handshake time; a MASTER was
+  // not, because they belong to no company — and neither is anyone whose
+  // socket reconnected since, because a room dies with its connection.
+  useOperationsSubscription(businessId || undefined);
 
   /**
    * Dots that arrived over the socket since the last refetch.

@@ -221,6 +221,64 @@ describe("who can reach the route screens", () => {
     ).toBe(true);
   });
 
+  /**
+   * The path the registry has never heard of, and the two opposite answers
+   * the product needs for it.
+   *
+   * No test reached this branch at all, and both mutations of it survived the
+   * whole suite — which is the shape of a rule that exists only in a comment.
+   *
+   * The two callers want opposite things, and both are right:
+   *
+   * - the sidebar and the ⌘K hand over entries that are HAND-WRITTEN. One of
+   *   them outrunning the registry is ordinary, and hiding it would erase a
+   *   working link from the menu because somebody forgot a line in a file
+   *   nobody reads;
+   * - the dashboard's shortcut cards do the opposite, and that is what keeps
+   *   "Empresas" off a company's dashboard: there is no `/dashboard/business`
+   *   route, so an unknown path there is not a menu that outran anything — it
+   *   is a card pointing into the back office.
+   */
+  it("allows a path the registry does not know, by default", () => {
+    expect(
+      canAccessPath("/dashboard/uma-tela-que-ainda-nao-esta-no-registro", {
+        role: "BUSINESS_USER",
+        permissions: [],
+        enabledModules: ["DELIVERIES"],
+      }),
+    ).toBe(true);
+  });
+
+  it("and denies the same path when the caller asks it to", () => {
+    expect(
+      canAccessPath(
+        "/dashboard/business",
+        {
+          role: "BUSINESS_ADMIN",
+          permissions: ["delivery_manage"],
+          enabledModules: ["DELIVERIES"],
+        },
+        { unregistered: "deny" },
+      ),
+    ).toBe(false);
+  });
+
+  it("and the deny does not leak onto paths that ARE registered", () => {
+    // Otherwise the option would read as "deny everything", and the shortcut
+    // cards would empty themselves.
+    expect(
+      canAccessPath(
+        "/dashboard/routes",
+        {
+          role: "BUSINESS_ADMIN",
+          permissions: ["delivery_manage"],
+          enabledModules: ["DELIVERIES"],
+        },
+        { unregistered: "deny" },
+      ),
+    ).toBe(true);
+  });
+
   it("stays open while the modules are still unknown", () => {
     // `null` means "not confirmed yet". Hiding a menu on an unconfirmed value
     // is how the sidebar used to erase itself on a slow session load.

@@ -74,13 +74,35 @@ async function openAs(
   });
 }
 
-/** Everything the command palette is offering right now. */
+/**
+ * Everything the command palette is offering right now.
+ *
+ * The shortcut is pressed more than once on purpose. kbar binds its listener
+ * during hydration, and against a dev server under three parallel workers the
+ * page can be painted, answered and idle on the network while that listener is
+ * still not there — so a single press lands in the gap and the palette never
+ * opens. It failed about one run in six, which is the worst rate there is: too
+ * rare to chase, often enough to teach people to re-run the suite.
+ *
+ * Pressing again is also what a person does when a shortcut does nothing, and
+ * it cannot hide a real failure: the palette not opening after eight attempts
+ * across sixteen seconds is the palette not opening.
+ */
 async function paletteEntries(page: Page): Promise<string[]> {
-  await page.keyboard.press("Control+k");
-
   const palette = page.locator('[role="dialog"], [role="listbox"]').first();
 
-  await expect(palette, "o ⌘K não abriu").toBeVisible({ timeout: 15_000 });
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await page.keyboard.press("Control+k");
+
+    try {
+      await expect(palette).toBeVisible({ timeout: 2_000 });
+      break;
+    } catch {
+      // Still hydrating. Press again.
+    }
+  }
+
+  await expect(palette, "o ⌘K não abriu").toBeVisible({ timeout: 5_000 });
 
   // Whatever the palette renders as its options, by whatever role the library
   // gives them — read as text so this does not depend on kbar's internals.

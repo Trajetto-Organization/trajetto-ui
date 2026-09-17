@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+import FormInput from "@/components/shared/custom/form-input";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -70,6 +71,26 @@ const WebhookFormDialog = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
+  /**
+   * What is wrong, attached to the field it is wrong about.
+   *
+   * This dialog reported every refusal as a toast and nothing else. A toast is
+   * the wrong shape for a form: it is not connected to any field, so a screen
+   * reader reads the input as perfectly fine (`aria-invalid` never appeared);
+   * it disappears after a few seconds while the wrong value stays on screen;
+   * and with three things to fix the person sees one at a time, in whatever
+   * order the checks happen to run.
+   *
+   * `FormInput` is what the rest of the product uses — thirteen dialogs and
+   * counting — and it wires the label, the message and the two ARIA
+   * attributes together so that using it and forgetting them is impossible.
+   */
+  const [errors, setErrors] = useState<{
+    name?: string;
+    url?: string;
+    topics?: string;
+  }>({});
+
   /** Only ever set on a create, and only until this dialog closes. */
   const [secret, setSecret] = useState<string | null>(null);
 
@@ -100,9 +121,13 @@ const WebhookFormDialog = ({
 
     setSecret(null);
     setCopied(false);
+
+    setErrors({});
   }, [endpoint, isOpen]);
 
   const toggleTopic = (topic: string) => {
+    setErrors((current) => ({ ...current, topics: undefined }));
+
     setTopics((current) =>
       current.includes(topic)
         ? current.filter((entry) => entry !== topic)
@@ -128,6 +153,8 @@ const WebhookFormDialog = ({
    * changed one small chip at the top and left five unchecked boxes below it.
    */
   const toggleFamily = (family: string, entries: { topic: string }[]) => {
+    setErrors((current) => ({ ...current, topics: undefined }));
+
     const wildcard = `${family}.*`;
 
     setTopics((current) => {
@@ -145,14 +172,70 @@ const WebhookFormDialog = ({
   const isCovered = (topic: string): boolean =>
     topics.includes(topic) || topics.includes(`${topic.split(".")[0]}.*`);
 
-  const handleSave = async () => {
+  /**
+   * Everything that is wrong, at once, before anything leaves the browser.
+   *
+   * All of it, rather than the first failure: a form that answers one problem
+   * per attempt makes somebody press Salvar three times to learn three things.
+   *
+   * The https check is deliberately here as well as on the server. It is not a
+   * second copy of the rules — the server stays the authority and its refusals
+   * are still shown verbatim — it is the one rule this dialog already STATES,
+   * in the helper text under the field. Printing "Só https" and then making
+   * the person wait for a round trip to be told exactly that is worse than not
+   * printing it.
+   */
+  const problems = (): typeof errors => {
+    const found: typeof errors = {};
+
     if (name.trim().length < 2) {
-      toast.error("Dê um nome ao endpoint.");
-      return;
+      found.name = "Dê um nome ao endpoint, com pelo menos dois caracteres.";
+    }
+
+    const address = url.trim();
+
+    if (!address) {
+      found.url = "Informe o endereço que vai receber os eventos.";
+    } else {
+      let parsed: URL | null = null;
+
+      try {
+        parsed = new URL(address);
+      } catch {
+        parsed = null;
+      }
+
+      if (!parsed) {
+        found.url = "Isso não é um endereço. Exemplo: https://erp.exemplo.com.br/eventos";
+      } else if (parsed.protocol !== "https:") {
+        found.url = "Só https. Em http os eventos trafegam abertos no caminho.";
+      }
     }
 
     if (topics.length === 0) {
-      toast.error("Escolha ao menos um tópico.");
+      found.topics = "Escolha ao menos um evento para enviar.";
+    }
+
+    return found;
+  };
+
+  const handleSave = async () => {
+    const found = problems();
+
+    setErrors(found);
+
+    if (Object.keys(found).length > 0) {
+      /*
+        Nothing is sent. The fields carry the messages now, and the toast is
+        the summary for somebody whose attention is on the button they just
+        pressed rather than on the top of a scrolled dialog.
+      */
+      toast.error(
+        Object.keys(found).length === 1
+          ? Object.values(found)[0]
+          : "Confira os campos destacados.",
+      );
+
       return;
     }
 
@@ -286,27 +369,34 @@ const WebhookFormDialog = ({
           </div>
         ) : (
           <div className="space-y-4">
+            <FormInput
+              label="Nome *"
+              htmlfor="webhook-name"
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+
+                // Cleared as it is typed. Leaving the message under a field
+                // the person is already fixing reads as "still wrong".
+                setErrors((current) => ({ ...current, name: undefined }));
+              }}
+              maxLength={80}
+              placeholder="ERP do embarcador"
+              errorName={errors.name ? [errors.name] : undefined}
+              disabled={isSaving}
+            />
+
             <div className="grid gap-2">
-              <Label htmlFor="webhook-name">Nome</Label>
-
-              <Input
-                id="webhook-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                maxLength={80}
-                placeholder="ERP do embarcador"
-                disabled={isSaving}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="webhook-url">URL</Label>
-
-              <Input
-                id="webhook-url"
+              <FormInput
+                label="URL *"
+                htmlfor="webhook-url"
                 value={url}
-                onChange={(event) => setUrl(event.target.value)}
+                onChange={(event) => {
+                  setUrl(event.target.value);
+                  setErrors((current) => ({ ...current, url: undefined }));
+                }}
                 placeholder="https://erp.exemplo.com.br/trajetto/webhook"
+                errorName={errors.url ? [errors.url] : undefined}
                 disabled={isSaving}
               />
 
@@ -317,7 +407,7 @@ const WebhookFormDialog = ({
             </div>
 
             <div className="space-y-2">
-              <Label>Eventos</Label>
+              <Label htmlFor="webhook-topics">Eventos *</Label>
 
               {isLoadingCatalogue ? (
                 <div className="space-y-2">
@@ -325,7 +415,16 @@ const WebhookFormDialog = ({
                   <Skeleton className="h-20 w-full rounded-md" />
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div
+                  id="webhook-topics"
+                  className="space-y-4"
+                  {...(errors.topics
+                    ? {
+                        "aria-invalid": true,
+                        "aria-describedby": "webhook-topics-error",
+                      }
+                    : {})}
+                >
                   {families.map(([family, entries]) => (
                     <div key={family} className="space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -397,6 +496,24 @@ const WebhookFormDialog = ({
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/*
+                Same shape as `FieldShell` gives every other field in the
+                product: under the control, `role="alert"` so it is announced
+                when it appears, and rendered only when there is something to
+                say. The group cannot use FieldShell itself — it is a set of
+                checkboxes, not a control with an id — so what it borrows is
+                the semantics, not a second layout.
+              */}
+              {errors.topics && (
+                <p
+                  id="webhook-topics-error"
+                  role="alert"
+                  className="text-xs leading-4 text-red-600 dark:text-red-500 break-words"
+                >
+                  {errors.topics}
+                </p>
               )}
             </div>
 

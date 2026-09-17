@@ -38,9 +38,19 @@ interface AssignDeliveriesDialogProps {
 const SUMMARY_LIMIT = 3;
 
 /**
- * Batch assignment straight from the table selection. Assigning never
- * changes status: the deliveries become "Designada" (Pendente + motorista)
- * and only move to Em rota when the driver starts the route in the app.
+ * Batch assignment straight from the table selection — which is the shortcut
+ * for "create a route with these stops and release it".
+ *
+ * Assigning still never changes status: the deliveries become "Designada"
+ * (Pendente + motorista) and only move to Em rota when the driver starts the
+ * route in the app. What changed underneath is that a route now exists, which
+ * is what makes the day trackable at all: position recording refuses unless
+ * the driver has a route in progress, so an assignment without one used to
+ * produce no GPS trail whatsoever.
+ *
+ * The vehicle is required for the same reason the Rotas screen requires it to
+ * release: discovering at the truck that none was assigned costs a phone call
+ * and a morning.
  */
 const AssignDeliveriesDialog = ({
   businessId,
@@ -108,7 +118,7 @@ const AssignDeliveriesDialog = ({
   const remaining = count - summaryNames.length;
 
   const handleAssign = async () => {
-    if (!driverId) return;
+    if (!driverId || !vehicleId) return;
 
     setIsPending(true);
 
@@ -117,7 +127,7 @@ const AssignDeliveriesDialog = ({
         businessId,
         deliveries.map((delivery) => delivery.id),
         driverId,
-        vehicleId || undefined,
+        vehicleId,
       );
 
       if (!result.success) {
@@ -147,10 +157,11 @@ const AssignDeliveriesDialog = ({
             Atribuir Motorista e Veículo
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            As entregas selecionadas ficam designadas para o motorista, mas
-            continuam pendentes: elas só entram Em rota quando ele iniciar a
-            rota pelo aplicativo. Repetir a atribuição substitui o par
-            anterior.
+            Cria uma rota com as entregas selecionadas e já libera para o
+            motorista. Elas ficam designadas e continuam pendentes: só entram
+            Em rota quando ele iniciar a rota pelo aplicativo. Repetir a
+            atribuição move as entregas para uma rota nova — o que só é
+            possível enquanto a anterior não saiu.
           </DialogDescription>
         </DialogHeader>
 
@@ -187,6 +198,9 @@ const AssignDeliveriesDialog = ({
             onChange={setVehicleId}
             fallbackLabel={fallbackVehiclePlate}
             disabled={isPending}
+            // Required here and optional on the route form: this call
+            // releases the route, and a released route needs a plate.
+            label="Veículo*"
           />
         </div>
 
@@ -203,11 +217,11 @@ const AssignDeliveriesDialog = ({
           <Button
             type="button"
             onClick={handleAssign}
-            disabled={isPending || !driverId || !isDirty}
+            disabled={isPending || !driverId || !vehicleId || !isDirty}
             className="flex-1"
           >
             <span>
-              Atribuir {count} entrega{plural}
+              Criar rota com {count} entrega{plural}
             </span>
             {isPending && (
               <div className="ml-2 animate-spin">

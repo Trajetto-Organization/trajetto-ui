@@ -9,16 +9,20 @@ interface ActionResponse<T = undefined> {
 }
 
 /**
- * Batch assignment — all-or-nothing on the API side: any delivery outside
- * PENDING rejects the whole batch naming the offenders, so the caller can
- * surface the message as-is.
+ * Batch assignment, which creates and releases a route for the selection.
+ *
+ * All-or-nothing on the API side: any delivery outside PENDING rejects the
+ * whole batch naming the offenders, so the caller can surface the message
+ * as-is. The vehicle is required — a released route needs one.
  */
 const assignDeliveries = async (
   businessId: string,
   deliveryIds: string[],
   driverId: string,
-  vehicleId?: string,
-): Promise<ActionResponse<{ assigned: number }>> => {
+  vehicleId: string,
+): Promise<
+  ActionResponse<{ assigned: number; routeId: string; routeCode: number }>
+> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -38,11 +42,7 @@ const assignDeliveries = async (
           Authorization: `Bearer ${tokenAccess}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          deliveryIds,
-          driverId,
-          ...(vehicleId && { vehicleId }),
-        }),
+        body: JSON.stringify({ deliveryIds, driverId, vehicleId }),
       },
     );
 

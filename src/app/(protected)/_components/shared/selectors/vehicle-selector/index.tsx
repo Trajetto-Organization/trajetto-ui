@@ -34,6 +34,14 @@ interface VehicleSelectorProps {
   disabled?: boolean;
   /** Shown when value is set but not among the loaded pages yet. */
   fallbackLabel?: string;
+
+  /**
+   * Defaults to "(opcional)", which is what it is on the route form while a
+   * route is still PLANNED. The batch assignment releases the route in the
+   * same call, and a released route requires a vehicle — so it passes its own
+   * label rather than telling people something optional is being refused.
+   */
+  label?: string;
 }
 
 /**
@@ -49,6 +57,7 @@ const VehicleSelector = ({
   errorName,
   disabled,
   fallbackLabel,
+  label = "Veículo (opcional)",
 }: VehicleSelectorProps): JSX.Element => {
   const [open, setOpen] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState<string>("");
@@ -91,7 +100,7 @@ const VehicleSelector = ({
   };
 
   return (
-    <FieldShell label="Veículo (opcional)" htmlFor="vehicle-selector" error={errorName}>
+    <FieldShell label={label} htmlFor="vehicle-selector" error={errorName}>
       {(control) => (
 
       <Popover open={open} onOpenChange={setOpen}>

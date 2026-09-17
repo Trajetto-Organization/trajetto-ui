@@ -208,7 +208,10 @@ const WebhookFormDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogScrollContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogScrollContent
+        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Webhook className="h-5 w-5" />

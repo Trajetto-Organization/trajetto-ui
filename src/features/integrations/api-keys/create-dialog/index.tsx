@@ -149,7 +149,10 @@ const ApiKeyDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogScrollContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+      <DialogScrollContent
+        className="max-h-[90vh] max-w-lg overflow-y-auto"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5" />

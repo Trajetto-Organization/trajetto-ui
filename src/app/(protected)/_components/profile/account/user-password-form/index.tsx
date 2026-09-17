@@ -128,6 +128,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
             <DialogContent
               className="overflow-hidden p-0 bg-white 
             dark:bg-[#121214] max-w-md rounded-2xl md:border"
+              onInteractOutside={(event) => event.preventDefault()}
             >
               <div
                 className="flex flex-col items-center 

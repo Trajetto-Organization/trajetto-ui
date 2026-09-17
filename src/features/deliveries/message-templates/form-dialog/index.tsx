@@ -127,7 +127,10 @@ const MessageTemplateDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogScrollContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogScrollContent
+        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{slot.title}</DialogTitle>
           <DialogDescription>{slot.when}</DialogDescription>

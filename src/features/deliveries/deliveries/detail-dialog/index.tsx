@@ -218,7 +218,10 @@ const DeliveryDetailDialog = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogScrollContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogScrollContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Detalhes da Entrega

@@ -160,7 +160,10 @@ const BroadcastDialog = ({
       </TooltipProvider>
 
       <Dialog open={open} onOpenChange={(next) => !next && resetAndClose()}>
-        <DialogContent className="max-w-md">
+        <DialogContent
+          className="max-w-md"
+          onInteractOutside={(event) => event.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Megaphone className="h-4 w-4" />

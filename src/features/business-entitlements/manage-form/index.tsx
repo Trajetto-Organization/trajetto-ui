@@ -122,7 +122,10 @@ const ManageEntitlementsForm = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">Módulos Contratados</DialogTitle>
           <DialogDescription className="truncate text-sm text-muted-foreground">

@@ -194,7 +194,10 @@ const ImportSpreadsheetDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
-      <DialogScrollContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogScrollContent
+        className="max-h-[90vh] max-w-2xl overflow-y-auto"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 shrink-0" />

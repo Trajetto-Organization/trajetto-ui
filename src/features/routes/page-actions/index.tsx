@@ -51,22 +51,27 @@ const RoutesPageActions = (): JSX.Element => {
   return (
     <div
       /**
-       * `sm:flex-wrap` and `min-w-0`, because the bar does not fit on its own.
+       * One row on a phone, a wrapping bar from `sm` up — the same shape
+       * Entregas uses.
        *
-       * `nowrap` is already the flex default — the `sm:flex-nowrap` that used
-       * to be here added nothing and hid the problem: from `sm` up the
-       * buttons became a single row that neither wraps nor shrinks (each with
-       * a `whitespace-nowrap` label and `min-width: auto`), needing 505px
-       * where an iPad in portrait offers 400. Because the shell clips, the
-       * rightmost buttons sat off-screen with no scrollbar.
+       * It used to stack full width below `sm`: two buttons, about 90px of
+       * vertical space above the first card, for a refresh whose icon says
+       * what it is. Beside it, Entregas fitted four actions into one row on
+       * the same screen. Two pages of the same product, two answers.
+       *
+       * `sm:flex-wrap` is load-bearing from `sm` up: `nowrap` is the flex
+       * default, so the buttons became a single row that neither wraps nor
+       * shrinks, needing more than an iPad in portrait offers — and the shell
+       * clips, so the rightmost sat off-screen with no scrollbar.
        */
-      className="flex w-full min-w-0 flex-col items-stretch gap-3
-      sm:w-auto sm:flex-row sm:flex-wrap sm:items-center
-      sm:gap-2 sm:justify-end sm:ml-auto"
+      className="flex w-full min-w-0 items-center gap-2 sm:w-auto
+      sm:flex-wrap sm:justify-end sm:ml-auto"
     >
-      <div className="w-full sm:w-auto">
+      <div className="shrink-0 sm:w-auto">
         <DataTableRevalidate
           revalidateData="update-route"
+          hideLabelOnMobile
+          className="h-9 w-9 p-0 sm:h-8 sm:w-full sm:px-3"
           rateLimit={{
             storageKey: "routes-table",
             maxClicks: 3,
@@ -80,16 +85,16 @@ const RoutesPageActions = (): JSX.Element => {
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="w-full sm:w-auto">
+              <div className="min-w-0 flex-1 sm:w-auto sm:flex-initial">
                 <Button
                   size="sm"
-                  className="h-8 w-full"
+                  className="h-9 w-full sm:h-8"
                   disabled={!canWrite}
                   data-tutorial="create-button"
                   onClick={() => setIsCreateOpen(true)}
                 >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Nova Rota
+                  <Plus className="mr-1 h-4 w-4 shrink-0" />
+                  <span className="truncate">Nova Rota</span>
                 </Button>
               </div>
             </TooltipTrigger>

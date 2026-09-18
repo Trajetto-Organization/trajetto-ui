@@ -30,7 +30,6 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
-import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
@@ -52,7 +51,6 @@ interface WebhooksPanelProps {
  */
 const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
   const [editing, setEditing] = useState<WebhookEndpointRow | null>(null);
-  const [isCreating, setIsCreating] = useState<boolean>(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -71,7 +69,7 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
-  const { data, isLoading, isFetching, refetch } = useQuery(
+  const { data, isLoading, refetch } = useQuery(
     ["integration_webhook_endpoints", businessId],
     () => listWebhookEndpoints(businessId || undefined),
     { refetchOnWindowFocus: false },
@@ -106,31 +104,20 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Um POST assinado por evento. Reenviamos por até seis horas antes de
-          desistir de uma tentativa.
-        </p>
+      {/*
+        The sentence stays; the buttons moved.
 
-        <div className="flex items-center gap-2">
-          <RefreshButton
-            storageKey="integrations-webhooks"
-            isRefreshing={isFetching}
-            onRefresh={() => void refetch()}
-          />
-
-          <Button
-            type="button"
-            size="sm"
-            className="gap-2"
-            disabled={!canWrite || !businessId}
-            onClick={() => setIsCreating(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Novo endpoint
-          </Button>
-        </div>
-      </div>
+        "Atualizar" and "Novo endpoint" now live in the page's top band, beside the
+        company selector, where every other action in the product lives. What
+        belongs here is the one line explaining what this list IS — a person
+        meeting the screen for the first time reads it once and never again,
+        which is exactly what a caption is for and exactly what a button is
+        not.
+      */}
+      <p className="text-sm text-muted-foreground">
+        Um POST assinado por evento. Reenviamos por até seis horas antes de
+        desistir de uma tentativa.
+      </p>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -248,15 +235,19 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
         </div>
       )}
 
-      {(isCreating || editing) && businessId && (
+      {/*
+        Editing only. Creating an endpoint is the page band's job now, and it
+        renders its own copy of this dialog with `endpoint={null}` — the same
+        component, opened from the place the rest of the product opens a
+        create action from. What is left here is the one that can only be
+        opened from a row, because it needs the row.
+      */}
+      {editing && businessId && (
         <WebhookFormDialog
           businessId={businessId}
           endpoint={editing}
-          isOpen={isCreating || Boolean(editing)}
-          onClose={() => {
-            setIsCreating(false);
-            setEditing(null);
-          }}
+          isOpen={Boolean(editing)}
+          onClose={() => setEditing(null)}
           onSaved={() => refetch()}
         />
       )}

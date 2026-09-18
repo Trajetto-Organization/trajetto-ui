@@ -5,7 +5,7 @@ import { useQuery } from "react-query";
 
 import { toast } from "sonner";
 
-import { KeyRound, Loader, Plus, ShieldOff } from "lucide-react";
+import { KeyRound, Loader, ShieldOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,9 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
-import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
-import { ApiKeyDialog } from "./create-dialog";
 import { formatMoment } from "../lib/format";
 
 interface ApiKeysPanelProps {
@@ -40,7 +38,6 @@ interface ApiKeysPanelProps {
  * second question; a key nobody has used in months is a key nobody will miss.
  */
 const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
-  const [isCreating, setIsCreating] = useState<boolean>(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
 
   /** The key the person is being asked about, or none. */
@@ -59,7 +56,7 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
-  const { data, isLoading, isFetching, refetch } = useQuery(
+  const { data, isLoading, refetch } = useQuery(
     ["integration_api_keys", businessId],
     () => listApiKeys(businessId || undefined),
     { refetchOnWindowFocus: false },
@@ -94,31 +91,20 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Uma chave por sistema integrado. O segredo aparece uma única vez, na
-          emissão.
-        </p>
+      {/*
+        The sentence stays; the buttons moved.
 
-        <div className="flex items-center gap-2">
-          <RefreshButton
-            storageKey="integrations-api-keys"
-            isRefreshing={isFetching}
-            onRefresh={() => void refetch()}
-          />
-
-          <Button
-            type="button"
-            size="sm"
-            className="gap-2"
-            disabled={!canWrite || !businessId}
-            onClick={() => setIsCreating(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Nova chave
-          </Button>
-        </div>
-      </div>
+        "Atualizar" and "Nova chave" now live in the page's top band, beside the
+        company selector, where every other action in the product lives. What
+        belongs here is the one line explaining what this list IS — a person
+        meeting the screen for the first time reads it once and never again,
+        which is exactly what a caption is for and exactly what a button is
+        not.
+      */}
+      <p className="text-sm text-muted-foreground">
+        Uma chave por sistema integrado. O segredo aparece uma única vez, na
+        emissão.
+      </p>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -227,14 +213,6 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
         </div>
       )}
 
-      {isCreating && businessId && (
-        <ApiKeyDialog
-          businessId={businessId}
-          isOpen={isCreating}
-          onClose={() => setIsCreating(false)}
-          onCreated={() => refetch()}
-        />
-      )}
 
       <ConfirmDialog
         open={Boolean(pendingRevoke)}

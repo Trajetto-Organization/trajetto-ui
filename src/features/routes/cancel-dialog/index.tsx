@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogContent,
+  DialogScrollContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -89,8 +89,19 @@ const CancelRouteDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="max-w-lg"
+      {/*
+        `DialogScrollContent`, which is what ninety other dialogs in this
+        product use and this one did not.
+
+        `DialogContent` has no maximum height and no scroller: with a typed
+        reason and the "as N paradas voltam para a lista" paragraph — which
+        grows with the number of open stops — the dialog simply got taller than
+        the window, and "Cancelar rota" went off the bottom with no way to
+        reach it. The shell also brings the header and body padding, so none is
+        set here.
+      */}
+      <DialogScrollContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto"
         onInteractOutside={(event) => event.preventDefault()}
       >
         <DialogHeader>
@@ -177,7 +188,7 @@ const CancelRouteDialog = ({
             )}
           </Button>
         </DialogFooter>
-      </DialogContent>
+      </DialogScrollContent>
     </Dialog>
   );
 };

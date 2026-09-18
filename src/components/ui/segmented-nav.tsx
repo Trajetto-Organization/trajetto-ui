@@ -50,6 +50,23 @@ interface SegmentedNavProps {
   hrefFor: (value: string) => string;
   /** Accessible name for the <nav>, since a page may hold more than one. */
   label: string;
+
+  /**
+   * Whether the rail spans the page or hugs its sections.
+   *
+   * Ten sections and four sections are not the same control. Entregas fills
+   * the width because its sections nearly do anyway — left to hug, the rail
+   * stopped 120px short of a 1920px page with bare background beside it.
+   * Integrações has four, and filling stretched each one to 390px: a
+   * segmented control pulled until the labels float in the middle of nothing.
+   *
+   * So it is the caller's call, because only the caller knows how many
+   * sections it has. Filling is the default because that is what the screen
+   * with ten wanted; `false` keeps the rail at its content's width and lets
+   * it scroll under a narrow page exactly as before.
+   */
+  fill?: boolean;
+
   className?: string;
   dataTutorial?: string;
 }
@@ -123,6 +140,7 @@ const SegmentedNav = ({
   activeValue,
   hrefFor,
   label,
+  fill = true,
   className,
   dataTutorial,
 }: SegmentedNavProps): JSX.Element => {
@@ -254,16 +272,40 @@ const SegmentedNav = ({
          * width at every size now, and the items divide it.
          */
         className={cn(
-          "relative hidden w-full min-w-0 max-w-full md:block",
+          "relative hidden min-w-0 max-w-full md:block",
+
+          /*
+            `w-fit` and not `w-auto`: the nav is a block, and `width: auto` on
+            a block is 100% of its parent — it would report the full page width
+            while the rail inside it hugged, which is also how an earlier
+            version of this file survived a test that measured the wrong box.
+          */
+          fill ? "w-full" : "w-fit",
+
           className,
         )}
       >
         <ul
           ref={scroller}
           data-tutorial={dataTutorial}
-          className="scrollbar-none flex h-10 w-full max-w-full
-          items-center justify-start overflow-x-auto scroll-smooth rounded-md
-          bg-muted p-1 text-muted-foreground"
+          className={cn(
+            `scrollbar-none flex w-full max-w-full items-center justify-start
+            rounded-md bg-muted p-1 text-muted-foreground`,
+
+            /*
+              A rail that fills scrolls; a rail that hugs wraps.
+              
+              Ten sections cannot be shown at once below about 1500px by any
+              arrangement, so Entregas keeps one line and the product's own
+              scroll controls. Four can: at 768px with the sidebar open
+              Integrações has 400px for 540px of tabs, and scrolling four items
+              means hiding two of them behind an arrow when a second line would
+              show all four. The height grows instead of the content hiding.
+            */
+            fill
+              ? "h-10 overflow-x-auto scroll-smooth"
+              : "min-h-10 flex-wrap gap-y-1",
+          )}
         >
           {items.map((item) => {
             const isActive = item.value === activeValue;
@@ -293,7 +335,13 @@ const SegmentedNav = ({
                 what is left over reads as the rail continuing rather than as
                 a hole in the page.
               */
-              <li key={item.value} className="flex min-w-max max-w-64 flex-auto">
+              <li
+                key={item.value}
+                className={cn(
+                  "flex min-w-max",
+                  fill && "max-w-64 flex-auto",
+                )}
+              >
                 <Link
                   href={hrefFor(item.value)}
                   // The one the user is on, said out loud rather than only

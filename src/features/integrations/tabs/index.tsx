@@ -42,6 +42,13 @@ const IntegrationsTabs = ({ activeTab }: IntegrationsTabsProps): JSX.Element => 
       label="Seções de integrações"
       activeValue={activeTab}
       hrefFor={hrefFor}
+      /*
+        Four sections, so the rail keeps its own width instead of spanning the
+        page. Entregas has ten and fills; stretching these four to match put
+        390px under each label on a wide screen. Same control, different
+        number of things in it.
+      */
+      fill={false}
       items={INTEGRATION_TABS.map((tab) => ({
         value: tab.value,
         label: tab.label,

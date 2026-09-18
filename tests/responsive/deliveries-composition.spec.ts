@@ -193,115 +193,106 @@ test.describe("a composição da página de Entregas", () => {
   });
 
   /**
-   * Both strips, and both widths, because neither pair alone is a test.
+   * Two rails, two rules, and the rule is the number of sections.
    *
-   * Entregas has ten sections wanting 1431px: at 1440 the page has 1070 to
-   * give, so the rail is full width whether it was told to be or not, and the
-   * defect only appears at 1920. Integrações has four wanting 540, so it is
-   * short of the page at every desk width. The rule is the same for both and
-   * only the two together can catch it being broken.
+   * Entregas has ten, which between them want more width than a 1440px page
+   * has — so the rail is the page's width and the sections divide it. Left to
+   * hug, it stopped 120px short of a 1920px screen with bare background beside
+   * it, which is where this whole round started.
+   *
+   * Integrações has four, wanting about 526px. Filling stretched each one to
+   * 390px: a segmented control pulled until the labels float in the middle of
+   * nothing. So it keeps its own width, and below the width where four fit it
+   * wraps rather than hiding two behind a scroll arrow.
+   *
+   * One component, one `fill` prop, and this is the test that keeps the two
+   * behaviours from collapsing into one.
    */
-  for (const surface of [
-    {
-      name: "Entregas",
-      path: "/dashboard/deliveries",
-      label: "Seções de entregas",
-    },
-    {
-      name: "Integrações",
-      path: "/dashboard/integrations",
-      label: "Seções de integrações",
-    },
-  ]) {
+  test("a faixa de Entregas ocupa a largura do conteúdo", async ({ page }) => {
     for (const width of [1440, 1920]) {
-      test(`a faixa de ${surface.name} ocupa a largura do conteúdo a ${width}px`, async ({
-        page,
-      }) => {
-        await openAsManager(page, surface.path, width);
+      await openAsManager(page, "/dashboard/deliveries", width);
 
-        const strip = `nav[aria-label="${surface.label}"]:has(ul)`;
+      const rail = await boxOf(page, RAIL);
+      const ruler = await boxOf(page, "main h2");
 
-        const rail = await boxOf(page, `${strip} > ul`);
+      expect(rail, `@${width}: a faixa não está na página`).not.toBeNull();
 
-        /*
-          The heading, as the ruler. It is the one element on every one of
-          these pages that is plainly the full content width — the cards are
-          not on the sections without cards, and the table is wider than the
-          page on purpose.
-        */
-        const ruler = await boxOf(page, "main h2");
-
-        expect(rail, "a faixa de seções não está na página").not.toBeNull();
-        expect(ruler, "o título da página não está na tela").not.toBeNull();
-
-        expect(
-          Math.abs(rail!.width - ruler!.width),
-          `a faixa (${rail!.width}px) não acompanha a largura do conteúdo (${ruler!.width}px)`,
-        ).toBeLessThanOrEqual(2);
-      });
+      expect(
+        Math.abs(rail!.width - ruler!.width),
+        `@${width}: a faixa (${rail!.width}px) não acompanha o conteúdo (${ruler!.width}px)`,
+      ).toBeLessThanOrEqual(2);
     }
-  }
+  });
 
-  /**
-   * Growing is half the rule; the other half is knowing when to stop.
-   *
-   * Asked of INTEGRAÇÕES as well, and that is the half that matters: Entregas
-   * has ten sections that between them almost fill a 1920px rail, so removing
-   * the ceiling changes each of them by a dozen pixels and no assertion on
-   * this page would notice. Integrações has four. Uncapped they came out
-   * 390px each — a segmented control stretched until the labels float in the
-   * middle of nothing — and only a test that opens that page can say so.
-   */
-  for (const surface of [
-    {
-      name: "Entregas",
-      path: "/dashboard/deliveries",
-      label: "Seções de entregas",
-      atLeast: 6,
-    },
-    {
-      name: "Integrações",
-      path: "/dashboard/integrations",
-      label: "Seções de integrações",
-      atLeast: 3,
-    },
-  ]) {
-    test(`as seções de ${surface.name} crescem, mas nenhuma vira banner`, async ({
+  test("e a de Integrações mantém a própria, sem esticar nem rolar", async ({
+    page,
+  }) => {
+    const STRIP_I = 'nav[aria-label="Seções de integrações"]:has(ul)';
+
+    for (const width of [1440, 1920]) {
+      await openAsManager(page, "/dashboard/integrations", width);
+
+      const rail = await boxOf(page, `${STRIP_I} > ul`);
+      const ruler = await boxOf(page, "main h2");
+
+      expect(rail, `@${width}: a faixa não está na página`).not.toBeNull();
+
+      /*
+        Comfortably narrower than the page, and the same width at both — a
+        rail that grew with the window is one that went back to filling.
+      */
+      expect(
+        rail!.width,
+        `@${width}: a faixa de Integrações voltou a esticar até a página`,
+      ).toBeLessThan(ruler!.width - 100);
+    }
+  });
+
+  for (const width of [768, 1024]) {
+    test(`e a de Integrações mostra as quatro seções a ${width}px`, async ({
       page,
     }) => {
-      await openAsManager(page, surface.path, 1920);
+      /**
+       * At 768 the sidebar leaves the page 400px and the four sections want
+       * 526, so something has to give. It is the height: the rail wraps and
+       * all four stay on screen, instead of two hiding behind a scroll arrow
+       * that a person has to discover.
+       */
+      await openAsManager(page, "/dashboard/integrations", width);
 
-      const items = await page.evaluate((css) => {
-        const nav = document.querySelector(css);
+      const verdict = await page.evaluate(() => {
+        const nav = document.querySelector(
+          'nav[aria-label="Seções de integrações"]:has(ul)',
+        );
 
         if (!nav) return null;
 
-        return [...nav.querySelectorAll("li")].map((item) => ({
-          label: (item.textContent ?? "").trim(),
-          width: Math.round(item.getBoundingClientRect().width),
+        const list = nav.querySelector("ul") as HTMLElement;
 
-          // What the label alone needs: an item narrower than this is cutting
-          // its own text.
-          natural: Math.round(
-            (item.firstElementChild as HTMLElement).scrollWidth,
-          ),
-        }));
-      }, `nav[aria-label="${surface.label}"]:has(ul)`);
+        return {
+          scrolls: list.scrollWidth > list.clientWidth + 1,
+          hidden: [...list.querySelectorAll("li")].filter((item) => {
+            const box = item.getBoundingClientRect();
+            const rail = list.getBoundingClientRect();
 
-      expect(items, "a faixa não tem itens").not.toBeNull();
-      expect(items!.length).toBeGreaterThanOrEqual(surface.atLeast);
+            return box.right > rail.right + 1 || box.left < rail.left - 1;
+          }).length,
+          items: list.querySelectorAll("li").length,
+        };
+      });
 
-      for (const item of items!) {
-        expect(
-          item.width,
-          `"${item.label}" ficou com ${item.width}px — largura de banner, não de aba`,
-        ).toBeLessThanOrEqual(258);
+      expect(verdict, "a faixa não está na página").not.toBeNull();
+      expect(verdict!.items).toBe(4);
 
-        expect(
-          item.width + 1,
-          `"${item.label}" ficou mais estreita do que o próprio rótulo`,
-        ).toBeGreaterThanOrEqual(item.natural);
-      }
+      expect(
+        verdict!.scrolls,
+        `@${width}: a faixa de Integrações voltou a rolar em vez de quebrar linha`,
+      ).toBe(false);
+
+      expect(
+        verdict!.hidden,
+        `@${width}: ${verdict!.hidden} seções ficaram fora da faixa`,
+      ).toBe(0);
     });
   }
 

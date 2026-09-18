@@ -2,6 +2,7 @@ import { PackageX, Route as RouteIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
+import { ProtectedPageToolbar } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import { EmptyState } from "@/components/shared/custom/empty-state";
@@ -34,14 +35,26 @@ const RoutesContent = async ({
   const search = searchParams.search || "";
   const businessId = searchParams.businessId;
 
+  /**
+   * The same band Entregas uses: company on the left, actions on the right,
+   * one line while there is room for one.
+   *
+   * What was here rendered the actions inside a `flex` row of their own UNDER
+   * the selector — and rendered that row even when `withActions` was false, so
+   * the states that have no actions still paid for a 16px gap under an empty
+   * element. On the screen where a master has not chosen a company yet, that
+   * put more air between the selector and the empty state than Torre de
+   * Controle puts there, on two pages that ask the same question.
+   */
   const renderHeader = (withActions: boolean) => (
-    <div className="space-y-4">
-      {mode === "admin" && <BusinessSelector currentBusinessId={businessId} />}
-
-      <div className="flex flex-wrap items-center gap-3">
-        {withActions && <RoutesPageActions />}
-      </div>
-    </div>
+    <ProtectedPageToolbar
+      context={
+        mode === "admin" ? (
+          <BusinessSelector currentBusinessId={businessId} />
+        ) : undefined
+      }
+      actions={withActions ? <RoutesPageActions /> : undefined}
+    />
   );
 
   const renderModuleDisabled = () => (
@@ -150,7 +163,7 @@ const RoutesContent = async ({
   }
 
   return (
-    <div className="space-y-4 my-6" data-tutorial="welcome">
+    <div className="space-y-6 my-6" data-tutorial="welcome">
       {/*
         Renders nothing; it makes the board follow the operation. The API has
         emitted `routeEvent` since routes existed and nothing listened, so a

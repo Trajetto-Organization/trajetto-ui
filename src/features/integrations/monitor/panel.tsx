@@ -29,9 +29,9 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
-import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
+import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { formatDuration, formatMoment } from "../lib/format";
 import {
   STATUS_FILTERS,
@@ -138,19 +138,34 @@ const MonitorPanel = ({ businessId }: MonitorPanelProps): JSX.Element => {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/*
+        The refresh stays here, with the numbers it changes.
+
+        Chaves de API and Webhooks moved theirs up to the page's band, beside
+        the company — they have something to create, and a create button
+        belongs with the page. This tab's only action is the refresh, and what
+        it refreshes is the four cards directly above this line. Up in the band
+        it would sit three elements away from them, which is the case Entregas
+        already refused on Auditoria de Comprovantes.
+      */}
+      <div className="flex flex-wrap items-center gap-3">
         <FilterChips
           label="Situação dos envios"
           value={status}
           options={STATUS_FILTERS}
           onChange={changeStatus}
+          className="min-w-0 flex-1 sm:flex-initial"
         />
 
-        <RefreshButton
-          storageKey="integrations-monitor"
-          isRefreshing={isFetching}
-          onRefresh={() => void refetch()}
-        />
+        <div className="shrink-0 sm:ml-auto">
+          <RefreshButton
+            storageKey="integrations-monitor"
+            isRefreshing={isFetching}
+            hideLabelOnMobile
+            className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3"
+            onRefresh={() => void refetch()}
+          />
+        </div>
       </div>
 
       {isLoading ? (

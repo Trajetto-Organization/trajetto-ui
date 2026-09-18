@@ -6,6 +6,7 @@ import { Building2 } from "lucide-react";
 
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
+import { ProtectedPageToolbar } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { useAuthStore } from "@/store/auth-store";
 
 import { ControlTowerPanel } from "../panel";
@@ -34,10 +35,21 @@ const ControlTowerContent = ({
   const businessId = params.get("businessId") || storeBusinessId || undefined;
 
   return (
-    <div className="space-y-4 my-6">
-      {mode === "admin" && (
-        <BusinessSelector currentBusinessId={searchParams.businessId} />
-      )}
+    <div className="my-6 space-y-6">
+      {/*
+        The same band Rotas and Entregas use, and for the same reason: three
+        pages that all begin by asking "whose operation?" should not each
+        answer with their own margins. The toolbar carries no actions here —
+        the tower's controls live on the map — so it renders the selector and
+        nothing else.
+      */}
+      <ProtectedPageToolbar
+        context={
+          mode === "admin" ? (
+            <BusinessSelector currentBusinessId={searchParams.businessId} />
+          ) : undefined
+        }
+      />
 
       {businessId ? (
         <ControlTowerPanel businessId={businessId} />

@@ -26,7 +26,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -47,6 +46,7 @@ import { listRoutableDeliveries } from "@/actions/delivery/list-routable-deliver
 import { revalidateTagName } from "@/actions/revalidate";
 
 import { formatNotificationDate } from "@/lib/format-values";
+import { cn } from "@/lib/utils";
 
 import {
   ROUTE_STATUS_META,
@@ -289,7 +289,13 @@ const RouteStopsDialog = ({
         }}
       >
         <DialogContent
-          className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-5xl
+          /*
+            `max-w-2xl`, down from `max-w-5xl`. Five extra-larges was the width
+            two columns needed; one column of addresses reads worse the wider
+            it gets — a recipient name and a street set across 1024px is a line
+            the eye has to travel back along.
+          */
+          className="flex max-h-[90dvh] w-[calc(100vw-2rem)] max-w-2xl
           flex-col gap-0 p-0 sm:w-full"
           onInteractOutside={(event) => event.preventDefault()}
         >
@@ -349,7 +355,25 @@ const RouteStopsDialog = ({
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-6 lg:grid-cols-2">
+              /*
+                One column, at every width.
+
+                It was `grid lg:grid-cols-2`: "Na rota" on the left, "Entregas
+                pendentes" on the right. Two things that are one task — you
+                look at what is on the route, then you pick what to add — drawn
+                as two panels side by side, each with its own scrollbar, each
+                with its own empty state. On a route with one stop the left
+                column was a card and four hundred pixels of nothing while the
+                right one scrolled.
+
+                Read top to bottom it is a sequence, so it is laid out as one:
+                what is on the route, then what can be added, then the action.
+                The body scrolls ONCE — the inner `max-h` boxes that used to
+                make each column scroll independently are gone, because a list
+                that scrolls inside a dialog that scrolls is a trap on a
+                trackpad and impossible on a phone.
+              */
+              <div className="flex flex-col gap-8">
                 <section className="flex min-w-0 flex-col gap-3">
                   <header className="flex items-baseline gap-2">
                     <h3 className="text-sm font-semibold">Na rota</h3>
@@ -379,19 +403,32 @@ const RouteStopsDialog = ({
                       <p className="text-sm font-medium">
                         Esta rota ainda não tem paradas
                       </p>
+                      {/* "ao lado" described the two-column layout this
+                          dialog no longer has. A sentence that points at
+                          where something is has to be re-read every time the
+                          layout changes; this one points DOWN, which is where
+                          it now is. */}
                       <p className="text-sm text-muted-foreground">
-                        Escolha entregas pendentes ao lado e adicione-as à rota.
+                        Escolha uma entrega pendente abaixo para adicioná-la
+                        à rota.
                       </p>
                     </div>
                   )}
 
                   {orderedStops.length > 0 && (
-                    <ol className="max-h-[46vh] space-y-2 overflow-y-auto pr-1">
+                    <ol className="space-y-2">
                       {orderedStops.map((stop, index) => (
                         <li
                           key={stop.id}
-                          className="flex items-start gap-3 rounded-lg border
-                          bg-card p-3"
+                          /*
+                            Wraps on a phone. The three controls plus their
+                            gaps need about 110px, which out of a 280px row
+                            left the recipient's name and street sharing 108px
+                            — both truncated to nothing useful. Given their own
+                            line they cost height instead of the address.
+                          */
+                          className="flex flex-wrap items-start gap-3
+                          rounded-lg border bg-card p-3 sm:flex-nowrap"
                         >
                           <span
                             className="mt-0.5 flex h-6 w-6 flex-shrink-0
@@ -432,11 +469,25 @@ const RouteStopsDialog = ({
                             </Badge>
                           </div>
 
-                          <div className="flex flex-shrink-0 items-center gap-0.5">
+                          {/*
+                            `ml-auto` and a full-width basis below `sm`: the
+                            controls sit at the end of their own line rather
+                            than under the index badge.
+
+                            The gap before the remove button is not decoration.
+                            "Mover para baixo" is pressed repeatedly and
+                            "Remover da rota" is irreversible, and at 36px with
+                            2px between them a slipped thumb took a stop off a
+                            released route.
+                          */}
+                          <div
+                            className="ml-auto flex w-full flex-shrink-0
+                            items-center justify-end gap-0.5 sm:w-auto"
+                          >
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-9 w-9 sm:h-8 sm:w-8"
                               aria-label={`Mover ${stop.delivery.recipient_name} para cima`}
                               disabled={index === 0 || isPending}
                               onClick={() => move(index, -1)}
@@ -447,7 +498,7 @@ const RouteStopsDialog = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-9 w-9 sm:h-8 sm:w-8"
                               aria-label={`Mover ${stop.delivery.recipient_name} para baixo`}
                               disabled={
                                 index === orderedStops.length - 1 || isPending
@@ -460,8 +511,9 @@ const RouteStopsDialog = ({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-red-600
-                              hover:text-red-600 dark:text-red-500"
+                              className="ml-2 h-9 w-9 text-red-600
+                              hover:text-red-600 dark:text-red-500 sm:h-8
+                              sm:w-8"
                               aria-label={`Remover ${stop.delivery.recipient_name} da rota`}
                               disabled={isPending}
                               onClick={() => void handleRemove(stop.id)}
@@ -590,16 +642,35 @@ const RouteStopsDialog = ({
                     )}
 
                   {!isSearching && candidates.length > 0 && (
-                    <ul className="max-h-[38vh] space-y-2 overflow-y-auto pr-1">
+                    <ul className="space-y-2">
                       {candidates.map((delivery) => (
                         <li key={delivery.id}>
+                          {/*
+                            Selected state from React, not from `has-[:checked]`.
+
+                            Those two classes were dead: Radix renders the
+                            checkbox as `<button role="checkbox">` and only
+                            emits a hidden `<input>` when it is inside a form,
+                            which this list is not — so `:checked` matched
+                            nothing and a ticked row was pixel-identical to an
+                            unticked one. Measured, not assumed: with the
+                            pointer moved away, background and border came back
+                            byte-for-byte the same before and after clicking.
+
+                            The checkbox's own tick was the only feedback that
+                            a row had been chosen, and a stacked list makes
+                            that worse — the chosen rows are now spread down
+                            the page instead of gathered in one column.
+                          */}
                           <label
                             htmlFor={`pick-${delivery.id}`}
-                            className="flex cursor-pointer items-start gap-3
-                            rounded-lg border bg-card p-3
-                            hover:border-primary/40 hover:bg-accent/40
-                            has-[:checked]:border-primary
-                            has-[:checked]:bg-accent/60"
+                            className={cn(
+                              `flex cursor-pointer items-start gap-3 rounded-lg
+                              border bg-card p-3 transition-colors
+                              hover:border-primary/40 hover:bg-accent/40`,
+                              selected.includes(delivery.id) &&
+                                "border-primary bg-accent/60",
+                            )}
                           >
                             <Checkbox
                               id={`pick-${delivery.id}`}
@@ -648,8 +719,31 @@ const RouteStopsDialog = ({
                   */}
                   {selected.length > 0 && (
                     <div
-                      className="flex items-center justify-between gap-3
-                      rounded-lg border bg-muted/40 p-3"
+                      /*
+                        Pinned to the bottom of the scroller, because the list
+                        above it is as long as the operation is busy.
+
+                        The candidate list used to be capped at `38vh` with its
+                        own scrollbar, which kept this bar on screen by making
+                        the list short. The cap is gone — a list that scrolls
+                        inside a dialog that scrolls is a trap on a trackpad
+                        and unusable on a phone — so with forty-nine pending
+                        deliveries the bar ended up four thousand pixels below
+                        the two rows somebody had just ticked.
+
+                        `-mx-6` so it spans the body's padding and reads as a
+                        bar rather than as another card. The surface is `muted`
+                        rather than the page's own: this bar and the dialog
+                        footer below it each end in a primary button, and two
+                        primaries eight pixels apart on the same material read
+                        as one confused row. On different materials they read
+                        as what they are — what to do with the selection, and
+                        what to do with the dialog. Opaque either way, or the
+                        rows scroll through it.
+                      */
+                      className="sticky bottom-0 -mx-6 flex flex-wrap
+                      items-center justify-between gap-3 border-t bg-muted
+                      px-6 py-3"
                     >
                       <p className="text-sm font-medium">
                         {selected.length === 1
@@ -687,9 +781,19 @@ const RouteStopsDialog = ({
             )}
           </div>
 
-          <DialogFooter
-            className="items-center gap-3 border-t px-6 py-4
-            sm:justify-between"
+          {/*
+            A plain div, not `DialogFooter`.
+
+            `DialogFooter` is `flex-col-reverse sm:flex-row`, which exists so
+            that two BUTTONS put the primary one on top on a phone. The first
+            child here is not a button — it is the sentence that says whether
+            the order has been saved — and the reverse dropped it below the
+            buttons it explains. Read in order on a 320px screen that was:
+            Fechar, Salvar ordem, and then, underneath, what they do.
+          */}
+          <div
+            className="flex flex-col gap-3 border-t px-6 py-4 sm:flex-row
+            sm:items-center sm:justify-between"
           >
             <p
               className={`text-sm ${
@@ -703,9 +807,10 @@ const RouteStopsDialog = ({
                 : "As alterações de paradas são salvas assim que você as faz."}
             </p>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 sm:shrink-0">
               <Button
                 variant="outline"
+                className="flex-1 sm:flex-initial"
                 disabled={isPending}
                 onClick={requestClose}
               >
@@ -714,6 +819,7 @@ const RouteStopsDialog = ({
               </Button>
 
               <Button
+                className="flex-1 sm:flex-initial"
                 disabled={!isDirty || isPending}
                 onClick={() => void handleSaveOrder()}
               >
@@ -722,7 +828,7 @@ const RouteStopsDialog = ({
                 {isPending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
               </Button>
             </div>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

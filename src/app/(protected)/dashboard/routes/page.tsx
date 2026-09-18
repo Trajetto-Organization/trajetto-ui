@@ -6,10 +6,10 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
 import { RoutesContent } from "@/features/routes/content";
+import { RoutesSkeleton } from "@/features/routes/skeleton";
 
 interface RoutesQueryParamsProps {
   searchParams: {
@@ -44,7 +44,7 @@ const DashboardRoutes = async ({
       {/* Two levels of fallback: loading.tsx covers the whole segment while
       Next navigates, and this one covers only the async content, so the
       heading paints immediately and the table streams in under it. */}
-      <Suspense fallback={<ProtectedTableContentLoading />}>
+      <Suspense fallback={<RoutesSkeleton mode="dashboard" />}>
         <RoutesContent
           mode="dashboard"
           searchParams={searchParams}

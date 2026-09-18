@@ -8,9 +8,9 @@ import { ArrowDownUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
+import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { listApiUsage } from "@/actions/integration";
 
 interface UsagePanelProps {
@@ -58,19 +58,26 @@ const UsagePanel = ({ businessId }: UsagePanelProps): JSX.Element => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* Same as the monitor: the only action here refreshes the three cards
+          below, so it stays beside the period that scopes them. */}
+      <div className="flex flex-wrap items-center gap-3">
         <FilterChips
           label="Período"
           value={String(days)}
           options={WINDOWS}
           onChange={(value) => setDays(Number(value))}
+          className="min-w-0 flex-1 sm:flex-initial"
         />
 
-        <RefreshButton
-          storageKey="integrations-usage"
-          isRefreshing={isFetching}
-          onRefresh={() => void refetch()}
-        />
+        <div className="shrink-0 sm:ml-auto">
+          <RefreshButton
+            storageKey="integrations-usage"
+            isRefreshing={isFetching}
+            hideLabelOnMobile
+            className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3"
+            onRefresh={() => void refetch()}
+          />
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">

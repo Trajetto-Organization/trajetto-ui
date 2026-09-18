@@ -2,7 +2,7 @@
 
 import { useQuery } from "react-query";
 
-import { Loader, MapPin, Truck, UserRound } from "lucide-react";
+import { MapPin, TriangleAlert, Truck, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -88,7 +88,10 @@ const RouteDetailDialog = ({
             className="flex h-40 flex-col items-center justify-center
             rounded-lg border-2 border-dashed"
           >
-            <Loader className="mb-3 h-8 w-8 text-muted-foreground/40" />
+            {/* Not `Loader`: a stopped spinner over the words "não foi
+                possível carregar" says the screen is still trying. The stops
+                dialog uses TriangleAlert for the same failure. */}
+            <TriangleAlert className="mb-3 h-6 w-6 text-muted-foreground" />
             <p className="max-w-md text-center text-sm text-muted-foreground">
               {response?.message ?? "Não foi possível carregar a rota."}
             </p>
@@ -160,12 +163,19 @@ const RouteDetailDialog = ({
               </div>
             </div>
 
+            {/* The dark half was missing: `bg-red-50` with `text-red-800`
+                and no `dark:` pair renders a pale pink block of dark red text
+                on a dark background. Every other red panel in the product
+                carries both. */}
             {route.cancellation_reason && (
-              <div className="rounded-md border border-red-200 bg-red-50 p-3">
-                <p className="text-xs font-medium text-red-800">
+              <div
+                className="rounded-md border border-red-200 bg-red-50/50 p-3
+                dark:border-red-900/50 dark:bg-red-950/20"
+              >
+                <p className="text-xs font-medium text-red-800 dark:text-red-200">
                   Motivo do cancelamento
                 </p>
-                <p className="text-sm text-red-700">
+                <p className="text-sm text-red-700 dark:text-red-300">
                   {route.cancellation_reason}
                 </p>
               </div>

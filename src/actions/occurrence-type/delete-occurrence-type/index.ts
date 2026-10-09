@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteOccurrenceTypeProps {
   businessId: string;
@@ -27,7 +30,7 @@ const handleDeleteOccurrenceType = async ({
   const deleteOccurrenceType = `${process.env.HTTP_REQUEST}/occurrence-type/delete-occurrence-type/${occurrenceTypeId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteOccurrenceType, {
+    const response = await apiFetch(deleteOccurrenceType, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -38,12 +41,15 @@ const handleDeleteOccurrenceType = async ({
     const { message } =
       (await response.json()) as DeleteOccurrenceTypeResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteOccurrenceTypeError: message };
+    if (!response.ok) {
+      return {
+        deleteOccurrenceTypeError: message || refusalMessage(response.status),
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("occurrence-type/delete-occurrence-type", error);
     return {
       deleteOccurrenceTypeError:
         "Ocorreu um erro inesperado ao tentar deletar o tipo de ocorrência.",

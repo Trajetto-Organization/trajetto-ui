@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { fixtureBusinessId, openAsMaster } from "./support/operation";
+import { waitForHydration } from "./support/ui";
 
 /**
  * The back office, opened by a browser for the first time.
@@ -114,8 +115,8 @@ async function chooseCompany(page: Page): Promise<void> {
   });
 }
 
-test.describe("o painel administrativo abre", () => {
-  test("e a aba Limites de Uso sobrevive a escolher uma empresa", async ({
+test.describe("the admin panel opens", () => {
+  test("and the Limites de Uso tab survives picking a company", async ({
     page,
   }) => {
     /**
@@ -135,6 +136,11 @@ test.describe("o painel administrativo abre", () => {
     const limitsTab = page.getByRole("tab", { name: /Limites de Uso/i });
 
     await expect(limitsTab).toBeVisible({ timeout: 30_000 });
+
+    // As the first spec of a run, /admin hydrates while the other workers keep
+    // next dev compiling; six clicks a second apart ran out before React
+    // attached the tab's handlers. Wait for hydration itself, not a guess.
+    await waitForHydration(limitsTab);
 
     /*
       Pressed until it takes.
@@ -183,7 +189,7 @@ test.describe("o painel administrativo abre", () => {
     ).toHaveCount(0);
   });
 
-  test("e o esqueleto da própria rota renderiza no servidor", async ({
+  test("and the route's own skeleton renders on the server", async ({
     page,
   }) => {
     /**
@@ -215,7 +221,7 @@ for (const surface of [
   { path: "/admin/routes", title: /Rotas/i },
 ]) {
   test.describe(`${surface.path}`, () => {
-    test("abre pedindo uma empresa, sem quebrar na fronteira", async ({
+    test("opens asking for a company, without breaking at the boundary", async ({
       page,
     }) => {
       /**
@@ -244,7 +250,7 @@ for (const surface of [
       ).toBeVisible();
     });
 
-    test("e mostra os dados da empresa escolhida", async ({ page }) => {
+    test("and shows the data of the picked company", async ({ page }) => {
       const boundaryErrors = watchForBoundaryErrors(page);
 
       await openAsMaster(
@@ -274,7 +280,7 @@ for (const surface of [
       await expect(content).toBeVisible({ timeout: 30_000 });
     });
 
-    test("e as abas trocam sem cair", async ({ page }) => {
+    test("and the tabs switch without crashing", async ({ page }) => {
       const boundaryErrors = watchForBoundaryErrors(page);
 
       await openAsMaster(
@@ -311,7 +317,7 @@ for (const surface of [
   });
 }
 
-test.describe("e o resto do escritório continua de pé", () => {
+test.describe("and the rest of the back office stays up", () => {
   /**
    * The screens that were never opened by a test, opened by one.
    *
@@ -334,7 +340,7 @@ test.describe("e o resto do escritório continua de pé", () => {
   ];
 
   for (const path of SURFACES) {
-    test(`${path} abre`, async ({ page }) => {
+    test(`${path} opens`, async ({ page }) => {
       const boundaryErrors = watchForBoundaryErrors(page);
 
       await openAsMaster(page, path);

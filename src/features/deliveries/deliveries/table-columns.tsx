@@ -5,7 +5,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
-import { formatNotificationDate, displayValue } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDateOnly,
+  formatNotificationDate,
+} from "@/lib/format-values";
 
 import type { DeliveryListItem } from "@/actions/delivery/get-delivery";
 import { DELIVERY_STATUS_META } from "../lib/status";
@@ -33,7 +37,7 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Selecionar todas"
         className="translate-y-[2px]"
       />
     ),
@@ -43,7 +47,7 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
         name={`select-delivery-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Selecionar linha"
         className="translate-y-[2px]"
       />
     ),
@@ -188,11 +192,13 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Data prevista" />
     ),
+    // A day, not an instant (decisions 1.3 and 1.5): no "às 00:00", and read
+    // as the day stored, never shifted by the browser zone.
     cell: ({ row }) => (
       <p className="truncate font-medium w-32">
-        {row.original.scheduled_date
-          ? formatNotificationDate(row.original.scheduled_date, "pt-BR")
-          : displayValue(null)}
+        {formatDateOnly(row.original.scheduled_date, {
+          fallback: displayValue(null) ?? undefined,
+        })}
       </p>
     ),
   },
@@ -247,11 +253,7 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Ações" />
     ),
-    cell: ({ row }) => (
-      <DeliveryRowActions
-        row={row}
-      />
-    ),
+    cell: ({ row }) => <DeliveryRowActions row={row} />,
   },
 ];
 

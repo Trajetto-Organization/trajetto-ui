@@ -104,6 +104,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
     },
   });
 
+  const message = error || validationError;
+  const errorId = `photo-${fieldName}-error`;
+
   const removeFile = (index: number) => {
     const newFiles = files.filter((_, i) => i !== index);
     onFilesChange(newFiles);
@@ -121,10 +124,12 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
               <TooltipTrigger asChild>
                 <div
                   className="block text-sm font-medium
-                  text-red-500 mb-2 h-5 truncate"
+                  text-destructive mb-2 h-5 truncate"
                 >
                   📷 {label}
-                  {isRequired && <span className="text-red-500"> *</span>}
+                  {isRequired && (
+                    <span className="text-red-600 dark:text-red-400"> *</span>
+                  )}
                 </div>
               </TooltipTrigger>
               <TooltipContent
@@ -141,10 +146,14 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
             text-gray-700 dark:text-gray-300"
           >
             📷 {label}
-            {isRequired && <span className="text-red-500"> *</span>}
+            {isRequired && (
+              <span className="text-red-600 dark:text-red-400"> *</span>
+            )}
           </div>
         )}
-        {reason && <span className="text-xs text-gray-500">{reason}</span>}
+        {reason && (
+          <span className="text-xs text-muted-foreground">{reason}</span>
+        )}
       </div>
 
       {/* Files Display */}
@@ -190,15 +199,25 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
         </div>
       )}
 
-      {/* Upload Area */}
+      {/* Upload Area: neutral until it is actually invalid (reward early,
+          punish late); the label's asterisk is what says "required". */}
+      {/* A named, focusable drop area that says when it is in error: the
+          form's submit focuses the first invalid control, a missing photo
+          included (decision 16.700). */}
       <div
-        {...getRootProps()}
+        {...getRootProps({
+          role: "button",
+          "aria-label": `${label}: adicionar foto`,
+          "aria-invalid": message ? true : undefined,
+          "aria-describedby": message ? errorId : undefined,
+        })}
+        data-live-field={`photo:${fieldName}`}
         className={`border-2 border-dashed rounded-lg p-3 
         text-center cursor-pointer transition-colors ${
           isDragActive
             ? "border-blue-400 bg-blue-50 dark:bg-blue-950/20"
-            : isRequired
-              ? "border-red-300 bg-red-50 dark:bg-red-950/20"
+            : message
+              ? "border-red-400 bg-red-50 dark:border-red-500/70 dark:bg-red-950/20"
               : "border-gray-300 dark:border-gray-600 hover:border-gray-400"
         } ${pending ? "opacity-50 cursor-not-allowed" : ""}`}
       >
@@ -208,14 +227,14 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
             className={`h-6 w-6 ${
               isDragActive
                 ? "text-blue-500"
-                : isRequired
-                  ? "text-red-500"
-                  : "text-gray-400"
+                : message
+                  ? "text-destructive"
+                  : "text-muted-foreground"
             }`}
           />
           <div
             className={`text-sm ${
-              isRequired ? "text-red-600" : "text-gray-600 dark:text-gray-400"
+              message ? "text-destructive" : "text-gray-600 dark:text-gray-400"
             }`}
           >
             {isDragActive ? (
@@ -225,20 +244,18 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
                 <p>
                   {files.length > 0 ? "Adicionar mais fotos" : "Adicionar foto"}
                 </p>
-                {isRequired && (
-                  <p className="text-xs text-red-500 mt-1">Obrigatório</p>
-                )}
               </>
             )}
           </div>
         </div>
       </div>
-      {(error || validationError) && (
+      {message && (
         <p
-          className="text-sm
-        text-red-500 mt-1"
+          id={errorId}
+          role="alert"
+          className="mt-1.5 text-xs leading-4 text-destructive"
         >
-          {error || validationError}
+          {message}
         </p>
       )}
     </div>

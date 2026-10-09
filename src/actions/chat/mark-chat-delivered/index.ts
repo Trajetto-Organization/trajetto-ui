@@ -1,8 +1,10 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type { ActionResponse, ChatReceiptSide } from "../chat.types";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface MarkChatDeliveredProps {
   businessId?: string;
@@ -51,7 +53,7 @@ const markChatDelivered = async ({
       };
     }
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/chat/mark-delivered`,
       {
         credentials: "include",
@@ -84,6 +86,7 @@ const markChatDelivered = async ({
       data: result.data as MarkChatDeliveredData,
     };
   } catch (error) {
+    logActionError("chat/mark-chat-delivered", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao confirmar o recebimento.",

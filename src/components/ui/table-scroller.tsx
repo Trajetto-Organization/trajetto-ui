@@ -46,8 +46,7 @@ function useOverflows(ref: React.RefObject<HTMLElement>): boolean {
 
     if (!node) return;
 
-    const measure = () =>
-      setOverflows(node.scrollWidth - node.clientWidth > 2);
+    const measure = () => setOverflows(node.scrollWidth - node.clientWidth > 2);
 
     measure();
 

@@ -1,16 +1,12 @@
 "use client";
 
 import {
-  AlertTriangle,
   ArrowRight,
   Camera,
-  CheckCircle2,
   Cpu,
   MapPin,
-  MessageSquare,
   Plug,
   Smartphone,
-  StickyNote,
   UserRound,
 } from "lucide-react";
 
@@ -18,15 +14,53 @@ import { Badge } from "@/components/ui/badge";
 import { DELIVERY_STATUS_META } from "../../lib/status";
 
 import type {
+  AuthorizationTone,
+  OccurrenceLineDetail,
+} from "./occurrence-details";
+
+import { KIND_META, timelineKindMeta } from "./kind-meta";
+
+import type {
   TimelineActor,
   TimelineEntry,
-  TimelineKind,
 } from "@/actions/delivery/get-delivery";
 
 interface DeliveryTimelineProps {
   entries: TimelineEntry[];
   onPreviewImage?: (url: string, title: string) => void;
+  /**
+   * Per occurrence id: the form's answers and the tower's say (decisions
+   * 6.2 and 6.3), shown under that occurrence's line.
+   */
+  occurrenceDetails?: Record<string, OccurrenceLineDetail>;
 }
+
+const AUTHORIZATION_TONE_CLASS: Record<AuthorizationTone, string> = {
+  pending:
+    "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
+  approved:
+    "border-green-300 bg-green-50 text-green-900 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
+  denied:
+    "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
+  superseded: "border-muted bg-muted text-muted-foreground",
+};
+
+const ACTOR_META: Record<
+  TimelineActor,
+  { icon: typeof UserRound; label: string }
+> = {
+  USER: { icon: UserRound, label: "painel" },
+  DRIVER_APP: { icon: Smartphone, label: "app do motorista" },
+  INTEGRATION: { icon: Plug, label: "integração" },
+  SYSTEM: { icon: Cpu, label: "sistema" },
+};
+
+/** "16/09/2026 14:32" — the format the person reading it writes dates in. */
+const formatMoment = (value: string): string =>
+  new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 
 /**
  * Everything that ever happened to one delivery, in the order it happened.
@@ -41,60 +75,10 @@ interface DeliveryTimelineProps {
  * described a photo without showing it would send somebody to another tab to
  * answer the question they are being asked right now.
  */
-const KIND_META: Record<
-  TimelineKind,
-  { icon: typeof MapPin; tone: string; label: string }
-> = {
-  ARRIVAL: {
-    icon: MapPin,
-    tone: "text-sky-600 dark:text-sky-400",
-    label: "Chegada",
-  },
-  PROOF: {
-    icon: CheckCircle2,
-    tone: "text-emerald-600 dark:text-emerald-400",
-    label: "Comprovação",
-  },
-  STATUS_CHANGE: {
-    icon: ArrowRight,
-    tone: "text-amber-600 dark:text-amber-400",
-    label: "Status",
-  },
-  NOTE: {
-    icon: StickyNote,
-    tone: "text-muted-foreground",
-    label: "Anotação",
-  },
-  OCCURRENCE: {
-    icon: AlertTriangle,
-    tone: "text-red-600 dark:text-red-500",
-    label: "Ocorrência",
-  },
-  MESSAGE: {
-    icon: MessageSquare,
-    tone: "text-violet-600 dark:text-violet-400",
-    label: "Mensagem",
-  },
-};
-
-const ACTOR_META: Record<TimelineActor, { icon: typeof UserRound; label: string }> =
-  {
-    USER: { icon: UserRound, label: "painel" },
-    DRIVER_APP: { icon: Smartphone, label: "app do motorista" },
-    INTEGRATION: { icon: Plug, label: "integração" },
-    SYSTEM: { icon: Cpu, label: "sistema" },
-  };
-
-/** "16/09/2026 14:32" — the format the person reading it writes dates in. */
-const formatMoment = (value: string): string =>
-  new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
-
 const DeliveryTimeline = ({
   entries,
   onPreviewImage,
+  occurrenceDetails = {},
 }: DeliveryTimelineProps): JSX.Element => {
   if (entries.length === 0) {
     return (
@@ -105,7 +89,10 @@ const DeliveryTimeline = ({
   }
 
   return (
-    <ol className="relative space-y-4 pl-6">
+    // min-w-0 plus overflow-wrap on every text line (DLV-OT-3): a long word
+    // — an unbroken description, a URL, a note typed without spaces — wraps
+    // inside the dialog instead of widening it into a sideways scroll.
+    <ol className="relative min-w-0 space-y-4 pl-6">
       {/* The rail. Decorative, so it is hidden from assistive technology —
           the ordered list already carries the sequence. */}
       <span
@@ -114,7 +101,8 @@ const DeliveryTimeline = ({
       />
 
       {entries.map((entry) => {
-        const meta = KIND_META[entry.kind];
+        // A kind newer than this screen gets a neutral line, never a crash.
+        const meta = timelineKindMeta(entry.kind);
         const Icon = meta.icon;
 
         const actor = ACTOR_META[entry.author.kind];
@@ -128,7 +116,7 @@ const DeliveryTimeline = ({
           : null;
 
         return (
-          <li key={entry.id} className="relative">
+          <li key={entry.id} className="relative min-w-0">
             <span
               className="absolute -left-6 top-1 flex h-[19px] w-[19px]
               items-center justify-center rounded-full border bg-background"
@@ -136,9 +124,11 @@ const DeliveryTimeline = ({
               <Icon className={`h-3 w-3 ${meta.tone}`} aria-hidden="true" />
             </span>
 
-            <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-sm font-medium">{entry.title}</span>
+            <div className="min-w-0 space-y-1.5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="min-w-0 break-words text-sm font-medium [overflow-wrap:anywhere]">
+                  {entry.title}
+                </span>
 
                 {entry.blocking && (
                   <Badge variant="destructive" className="h-5 text-[11px]">
@@ -156,9 +146,13 @@ const DeliveryTimeline = ({
               )}
 
               {entry.detail && (
-                <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                <p className="min-w-0 whitespace-pre-wrap break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                   {entry.detail}
                 </p>
+              )}
+
+              {entry.kind === "OCCURRENCE" && occurrenceDetails[entry.id] && (
+                <OccurrenceLineExtras detail={occurrenceDetails[entry.id]} />
               )}
 
               {entry.photos.length > 0 && (
@@ -194,8 +188,8 @@ const DeliveryTimeline = ({
               )}
 
               <p
-                className="flex flex-wrap items-center gap-x-2 gap-y-0.5
-                text-xs text-muted-foreground"
+                className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5
+                text-xs text-muted-foreground [overflow-wrap:anywhere]"
               >
                 <time dateTime={entry.at}>{formatMoment(entry.at)}</time>
 
@@ -236,5 +230,36 @@ const DeliveryTimeline = ({
     </ol>
   );
 };
+
+/** The answers and the tower's say under an occurrence line. */
+const OccurrenceLineExtras = ({
+  detail,
+}: {
+  detail: OccurrenceLineDetail;
+}): JSX.Element => (
+  <div className="min-w-0 space-y-1.5">
+    {detail.answers.length > 0 && (
+      <dl className="grid min-w-0 grid-cols-1 gap-x-3 gap-y-0.5 rounded-md border p-2 text-xs sm:grid-cols-[auto_minmax(0,1fr)]">
+        {detail.answers.map((answer) => (
+          <div key={answer.key} className="contents">
+            <dt className="text-muted-foreground">{answer.label}</dt>
+            <dd className="min-w-0 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {answer.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    )}
+
+    {detail.authorization && (
+      <p
+        className={`min-w-0 break-words rounded-md border px-2 py-1 text-xs [overflow-wrap:anywhere] ${AUTHORIZATION_TONE_CLASS[detail.authorization.tone]}`}
+      >
+        {detail.authorization.label}
+        {detail.authorization.note ? `: ${detail.authorization.note}` : ""}
+      </p>
+    )}
+  </div>
+);
 
 export { DeliveryTimeline, KIND_META };

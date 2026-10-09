@@ -11,10 +11,21 @@ import { DELIVERY_STATUS_META } from "../lib/status";
 
 import type { OccurrenceRow } from "../lib/panels";
 import { OccurrencePhotosCell } from "./photos-cell";
+import { delayedOccurredAt } from "./received-at";
 
 import { OccurrenceRowActions } from "./row-actions";
+import { CATEGORY_LABELS, occurrenceCategory } from "./server-table";
+import { authorizationBadge } from "../occurrence-authorizations/rules";
 
-/** The manager's cross-delivery occurrence feed, newest first. */
+/**
+ * The manager's cross-delivery occurrence feed, newest first.
+ *
+ * The ids of the sortable and filterable columns are the API's sort keys
+ * (OCCURRENCE_TABLE in ./server-table): on the server-side table only those
+ * sort, and the filters travel as URL params. The `filterFn`s only serve the
+ * legacy client-side table the deliveries page falls back to when the API
+ * sends no searchMeta.
+ */
 const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
   {
     accessorKey: "id",
@@ -50,23 +61,89 @@ const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
   },
   {
+    // Decision 14.3: a proof recorded as a DELIVERED occurrence is a
+    // delivery, not a problem; the reader tells them apart here.
+    id: "category",
+    accessorFn: (row) => CATEGORY_LABELS[occurrenceCategory(row)],
+    meta: { title: "Categoria" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Categoria" />
+    ),
+    cell: ({ row }) =>
+      occurrenceCategory(row.original) === "DELIVERED" ? (
+        <Badge
+          variant="outline"
+          className="bg-green-100 text-green-800 border-green-200"
+        >
+          {CATEGORY_LABELS.DELIVERED}
+        </Badge>
+      ) : (
+        <Badge
+          variant="outline"
+          className="bg-amber-100 text-amber-900 border-amber-200"
+        >
+          {CATEGORY_LABELS.NOT_DELIVERED}
+        </Badge>
+      ),
+    enableSorting: false,
+    filterFn: (row, id, value) => value.includes(row.getValue(id)),
+  },
+  {
     id: "blocking",
     accessorFn: (row) =>
-      row.occurrenceType.blocks_delivery ? "Impeditiva" : "Informativa",
-    meta: { title: "Impeditiva" },
+      occurrenceCategory(row) === "DELIVERED"
+        ? "—"
+        : row.occurrenceType.blocks_delivery
+          ? "Impeditiva"
+          : "Informativa",
+    meta: { title: "Gravidade" },
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Gravidade" />
     ),
-    cell: ({ row }) =>
-      row.original.occurrenceType.blocks_delivery ? (
-        <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-          Impeditiva
-        </Badge>
-      ) : (
-        <Badge variant="outline" className="bg-slate-100 text-slate-800 border-slate-200">
-          Informativa
-        </Badge>
-      ),
+    cell: ({ row }) => {
+      // Decision 6.3: a report waiting for (or denied by) the tower applied
+      // nothing, whatever its severity says.
+      const authorization = authorizationBadge(
+        row.original.authorization_status,
+      );
+
+      return (
+        <div className="flex w-40 flex-col items-start gap-1">
+          {occurrenceCategory(row.original) === "DELIVERED" ? (
+            // A delivery has no severity: "Informativa" would file it as a problem.
+            <span
+              className="text-sm text-muted-foreground"
+              aria-label="Sem gravidade: entrega"
+            >
+              —
+            </span>
+          ) : row.original.occurrenceType.blocks_delivery ? (
+            <Badge
+              variant="outline"
+              className="bg-red-100 text-red-800 border-red-200"
+            >
+              Impeditiva
+            </Badge>
+          ) : (
+            <Badge
+              variant="outline"
+              className="bg-slate-100 text-slate-800 border-slate-200"
+            >
+              Informativa
+            </Badge>
+          )}
+          {authorization && (
+            <Badge
+              variant="outline"
+              className={authorization.className}
+              title={row.original.authorization_note ?? undefined}
+            >
+              {authorization.label}
+            </Badge>
+          )}
+        </div>
+      );
+    },
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
   },
   {
@@ -114,7 +191,10 @@ const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
       <DataTableColumnHeader column={column} title="Relato" />
     ),
     cell: ({ row }) => (
-      <p className="w-52 truncate text-sm" title={row.original.description ?? ""}>
+      <p
+        className="w-52 truncate text-sm"
+        title={row.original.description ?? ""}
+      >
         {displayValue(row.original.description)}
       </p>
     ),
@@ -129,6 +209,9 @@ const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
     cell: ({ row }) => (
       <OccurrencePhotosCell
         photos={row.original.photos}
+        receiptPhoto={row.original.receipt_photo}
+        signature={row.original.signature}
+        receivedBy={row.original.received_by}
         occurrenceTypeName={row.original.occurrenceType.name}
       />
     ),
@@ -171,16 +254,36 @@ const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
     enableSorting: false,
   },
   {
+    // Sorted by created_at on the server, so the column shows created_at: a
+    // sortable column must render the value it is ordered by. A report that
+    // waited on the phone (no signal) can be dated up to 7 days before it
+    // arrived; showing that date here put rows out of order after
+    // "Crescente"/"Decrescente". It stays as a second line, only when the
+    // wait was material (see received-at).
     accessorKey: "created_at",
-    meta: { title: "Data" },
+    meta: { title: "Recebida em" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Data" />
+      <DataTableColumnHeader column={column} title="Recebida em" />
     ),
-    cell: ({ row }) => (
-      <p className="w-36 truncate font-medium">
-        {formatNotificationDate(row.original.created_at, "pt-BR")}
-      </p>
-    ),
+    cell: ({ row }) => {
+      const delayed = delayedOccurredAt(row.original);
+
+      return (
+        <div className="w-44" data-testid="occurrence-received-at">
+          <p className="truncate font-medium">
+            {formatNotificationDate(row.original.created_at, "pt-BR")}
+          </p>
+          {delayed && (
+            <p
+              className="truncate text-xs text-muted-foreground"
+              title="Hora registrada no aparelho; a ocorrência chegou depois."
+            >
+              Ocorreu em {formatNotificationDate(delayed, "pt-BR")}
+            </p>
+          )}
+        </div>
+      );
+    },
   },
   {
     id: "Ações",

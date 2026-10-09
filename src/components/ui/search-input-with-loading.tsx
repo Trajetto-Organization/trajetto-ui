@@ -56,7 +56,10 @@ const SearchInputWithLoading = React.forwardRef<
   };
 
   return (
-    <div className={cn("relative", wrapperClassName)}>
+    <div
+      className={cn("relative", wrapperClassName)}
+      data-tutorial="table-search"
+    >
       <Input
         ref={inputRef}
         className={cn(

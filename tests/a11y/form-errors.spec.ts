@@ -189,7 +189,7 @@ test.describe.configure({ mode: "parallel" });
  */
 const FORMS = [
   {
-    name: "nova entrega",
+    name: "new delivery",
     path: "/dashboard/deliveries",
     openLabel: /nova entrega/i,
     submitLabel: /^criar entrega$/i,
@@ -204,8 +204,10 @@ for (const form of FORMS) {
 
     const trigger = page.getByRole("button", { name: form.openLabel }).first();
 
-    await expect(trigger, "o botão que abre o formulário não foi encontrado")
-      .toBeVisible({ timeout: 30_000 });
+    await expect(
+      trigger,
+      "o botão que abre o formulário não foi encontrado",
+    ).toBeVisible({ timeout: 30_000 });
 
     await trigger.click();
 

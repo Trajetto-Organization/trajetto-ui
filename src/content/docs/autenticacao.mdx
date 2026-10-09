@@ -1,0 +1,59 @@
+---
+title: Autenticação e escopos
+description: Como enviar a chave de API, o que cada escopo permite, como trocar uma chave sem parar a integração e o que cada recusa significa.
+slug: autenticacao
+updatedAt: 2026-09-29
+---
+
+Toda rota da API, exceto o catálogo, exige uma chave. A chave identifica a empresa e o sistema que está chamando: nenhuma rota recebe o id da empresa, e uma chave só enxerga os dados da empresa dela.
+
+## Enviando a chave
+
+Envie a chave inteira, como o painel mostrou, no cabeçalho `Authorization`, com o esquema `Bearer`:
+
+```http
+GET /integration/v1/deliveries HTTP/1.1
+Authorization: Bearer tjk_live_<prefixo>.<segredo>
+```
+
+A chave tem duas partes separadas por um ponto. O prefixo aparece no painel e no monitor de uso, para você saber qual chave fez cada chamada; o segredo só existe no momento da criação. Guarde a chave num cofre de segredos ou numa variável de ambiente do servidor, nunca no código-fonte nem num aplicativo instalado no aparelho de alguém.
+
+<Callout type="atencao" title="Só no servidor">
+  Uma chave dá acesso à operação inteira da empresa no escopo dela. Nunca a use
+  num navegador ou num aplicativo móvel: qualquer pessoa com acesso ao aparelho
+  conseguiria extraí-la.
+</Callout>
+
+## Escopos
+
+Cada chave carrega uma lista de escopos. Leitura e escrita são separadas e uma não implica a outra: `deliveries:write` cria entregas e não lê nenhuma. Dê a cada sistema só o que ele usa.
+
+<ScopeTable />
+
+Um escopo reservado ainda não é exigido por nenhum endpoint da v1 e não pode ser concedido a uma chave: assim, uma chave criada hoje não ganha acesso novo em silêncio no dia em que uma rota passar a exigi-lo. Cada endpoint da [referência](/docs/referencia) mostra o escopo que exige.
+
+## Quantas chaves
+
+Uma empresa pode ter até <MaxKeys /> ao mesmo tempo. O uso previsto é uma chave por sistema integrado: revogar a chave de um sistema não afeta os outros, e o limite por minuto de uma chave não consome o de outra.
+
+## Trocando uma chave
+
+A chave não expira. Para trocá-la sem parar a integração:
+
+1. Crie uma chave nova, com os mesmos escopos, em **Integrações → Chaves de API**.
+2. Publique a chave nova no seu sistema e confirme, no monitor de uso, que as chamadas passaram a sair com o prefixo novo.
+3. Revogue a chave antiga. A partir da revogação, ela recebe 401 na chamada seguinte.
+
+Revogue também qualquer chave que possa ter vazado, mesmo sem ter certeza: criar outra custa um minuto.
+
+## Recusas
+
+| Resposta                 | Quando                                                                                                                 | O que fazer                                                           |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 401 `INVALID_API_KEY`    | A chave está ausente, malformada, é desconhecida ou foi revogada. A resposta é a mesma nos quatro casos, de propósito. | Confira se enviou a chave inteira. Repetir a mesma chamada não ajuda. |
+| 403 `MISSING_API_SCOPE`  | A chave é válida, mas não tem o escopo da rota.                                                                        | Crie uma chave com o escopo necessário.                               |
+| 403 `MODULE_NOT_ENABLED` | A empresa da chave não tem o módulo Entregas.                                                                          | O módulo é contratado com a Trajetto.                                 |
+| 403 `TENANT_INACTIVE`    | A empresa da chave está desativada.                                                                                    | Fale com o administrador da conta.                                    |
+| 429 `RATE_LIMITED`       | Um mesmo endereço apresentou chaves inválidas demais num minuto, ou a chave passou do limite.                          | Espere o tempo de `retry-after`. Veja os [limites](/docs/limites).    |
+
+O corpo de toda recusa segue o formato descrito em [erros](/docs/erros).

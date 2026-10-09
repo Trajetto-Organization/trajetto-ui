@@ -5,13 +5,14 @@ import { useQuery } from "react-query";
 
 import { toast } from "sonner";
 
-import { KeyRound, Loader, ShieldOff } from "lucide-react";
+import { AlertCircle, KeyRound, Loader, ShieldOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { listApiKeys, revokeApiKey } from "@/actions/integration";
+import { revokeApiKey } from "@/actions/integration";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -23,6 +24,7 @@ import { EmptyState } from "@/components/shared/custom/empty-state";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
 import { formatMoment } from "../lib/format";
+import { apiKeysQueryKey, fetchApiKeys } from "../lib/queries";
 
 interface ApiKeysPanelProps {
   businessId: string;
@@ -57,8 +59,8 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
   const canWrite = permissionsRequired.hasAllPermissions;
 
   const { data, isLoading, refetch } = useQuery(
-    ["integration_api_keys", businessId],
-    () => listApiKeys(businessId || undefined),
+    apiKeysQueryKey(businessId),
+    () => fetchApiKeys(businessId),
     { refetchOnWindowFocus: false },
   );
 
@@ -71,6 +73,8 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
 
     try {
       const result = await revokeApiKey(businessId, pendingRevoke.id);
+
+      if (isStaleActionResult(result)) return;
 
       if (!result.success) {
         toast.error(result.message);
@@ -90,7 +94,7 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tutorial="integrations-api-keys">
       {/*
         The sentence stays; the buttons moved.
 
@@ -106,12 +110,25 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
         emissão.
       </p>
 
+      {/*
+        Marked as loading: this is the same request that gates the band's
+        buttons (Atualizar, Documentação, Nova chave), so until it answers the
+        tour waits for them (6 s, not 1.5 s) and a screen reader hears "busy".
+        Unmarked, a slow answer left the tour's "Atualizar" step pointing at
+        nothing.
+      */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-3" data-tutorial="loading" aria-busy="true">
           {[0, 1, 2].map((slot) => (
             <Skeleton key={slot} className="h-24 w-full rounded-lg" />
           ))}
         </div>
+      ) : data && !data.success ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="Não foi possível carregar as chaves"
+          description={data.message}
+        />
       ) : keys.length === 0 ? (
         <EmptyState
           icon={KeyRound}
@@ -174,6 +191,11 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
                       size="sm"
                       className="gap-2"
                       disabled={!canWrite || revokingId === key.id}
+                      title={
+                        !canWrite
+                          ? permissionsRequired.tooltipMessage
+                          : undefined
+                      }
                       onClick={() =>
                         setPendingRevoke({ id: key.id, name: key.name })
                       }
@@ -212,7 +234,6 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
           })}
         </div>
       )}
-
 
       <ConfirmDialog
         open={Boolean(pendingRevoke)}

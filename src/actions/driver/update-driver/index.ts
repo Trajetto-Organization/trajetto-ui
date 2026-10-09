@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateDriverSchema } from "@/schemas/create-update-driver-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DriverProps {
   message: string;
@@ -44,7 +47,7 @@ const handleUpdateDriver = async (state: any, updateDriverValues: FormData) => {
   const driverData = updateDriverValidation.data;
 
   try {
-    const response = await fetch(updateDriver, {
+    const response = await apiFetch(updateDriver, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -56,14 +59,17 @@ const handleUpdateDriver = async (state: any, updateDriverValues: FormData) => {
 
     const { message } = (await response.json()) as DriverProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateDriverError: { updateDriverErrorMessage: message },
+        updateDriverError: {
+          updateDriverErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("driver/update-driver", error);
     return {
       updateDriverError: {
         updateDriverErrorMessage:

@@ -24,8 +24,13 @@ const RECORD_ORIGIN_META: Record<string, RecordOriginMeta> = {
 };
 
 /** Legacy rows without the field count as Web — that is where they were made. */
-function getRecordOriginMeta(origin: string | null | undefined): RecordOriginMeta {
-  return RECORD_ORIGIN_META[origin ?? "WEB_DASHBOARD"] ?? RECORD_ORIGIN_META.WEB_DASHBOARD;
+function getRecordOriginMeta(
+  origin: string | null | undefined,
+): RecordOriginMeta {
+  return (
+    RECORD_ORIGIN_META[origin ?? "WEB_DASHBOARD"] ??
+    RECORD_ORIGIN_META.WEB_DASHBOARD
+  );
 }
 
 /** Short pt-BR phrase for activity/descriptions. */

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { getCookies } from "@/actions/cookies";
+import { relayUrl } from "@/lib/api-relay-paths";
 import { revalidateTagName } from "@/actions/revalidate";
 
 import type { BulkConfigurePermissionsFormState } from "../bulk-configure-permissions-dialog.types";
@@ -54,23 +54,23 @@ function useBulkConfigurePermissionsDialog(
     setIsLoadingPermissions(true);
 
     try {
-      const token = await getCookies("tkey");
-
-      if (!token) {
-        toast.error("Sessão expirada. Por favor, faça login novamente.");
-        return;
-      }
-
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/permission/list-by-profile/${profileAccessId}?businessId=${businessId}`,
+        relayUrl(
+          `/permission/list-by-profile/${encodeURIComponent(profileAccessId)}`,
+          new URLSearchParams({ businessId }),
+        ),
         {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
         },
       );
+
+      if (response.status === 401) {
+        toast.error("Sessão expirada. Por favor, faça login novamente.");
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Falha ao buscar permissões do perfil.");

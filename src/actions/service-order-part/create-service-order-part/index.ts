@@ -1,10 +1,30 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateServiceOrderPartSchema } from "@/schemas/create-update-service-order-part-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateServiceOrderPartProps {
   message: string;
+  /** The order's typed total and its parts' sum after this change (FLEET-SO-2). */
+  totals?: { totalAmount: number; partsTotal: number };
+  partsExceedTotal?: boolean;
+}
+
+const brl = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+/** A warning, never a refusal: the order's total is typed and stays so. */
+function partsWarningOf(
+  answer: CreateServiceOrderPartProps,
+): string | undefined {
+  if (!answer.partsExceedTotal || !answer.totals) return undefined;
+
+  return `As peças desta ordem somam ${brl.format(answer.totals.partsTotal)}, mais que o valor total dela (${brl.format(answer.totals.totalAmount)}). Revise o valor total da ordem de serviço.`;
 }
 
 const handleCreateServiceOrderPart = async (
@@ -47,7 +67,7 @@ const handleCreateServiceOrderPart = async (
   const serviceOrderPartData = createServiceOrderPartValidation.data;
 
   try {
-    const response = await fetch(createServiceOrderPart, {
+    const response = await apiFetch(createServiceOrderPart, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -57,18 +77,21 @@ const handleCreateServiceOrderPart = async (
       body: JSON.stringify(serviceOrderPartData),
     });
 
-    const { message } = (await response.json()) as CreateServiceOrderPartProps;
+    const answer = (await response.json()) as CreateServiceOrderPartProps;
+    const { message } = answer;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         createServiceOrderPartError: {
-          createServiceOrderPartErrorMessage: message,
+          createServiceOrderPartErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
-    return { successMessage: message };
+    return { successMessage: message, warningMessage: partsWarningOf(answer) };
   } catch (error) {
+    logActionError("service-order-part/create-service-order-part", error);
     return {
       createServiceOrderPartError: {
         createServiceOrderPartErrorMessage:

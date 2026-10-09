@@ -1,8 +1,10 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type { ActionResponse } from "../chat.types";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface GetChatAttachmentUrlProps {
   /** Only the MASTER passes it; it rides into every chat action. */
@@ -55,7 +57,7 @@ const getChatAttachmentUrl = async ({
       };
     }
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/chat/attachment-url?${query.toString()}`,
       {
         credentials: "include",
@@ -83,6 +85,7 @@ const getChatAttachmentUrl = async ({
       data: result as GetChatAttachmentUrlData,
     };
   } catch (error) {
+    logActionError("chat/get-chat-attachment-url", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao renovar o link da foto.",

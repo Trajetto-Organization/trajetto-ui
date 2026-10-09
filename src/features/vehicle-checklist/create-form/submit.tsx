@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
 import { useFormStatus } from "react-dom";
@@ -5,22 +6,38 @@ import { Loader } from "lucide-react";
 
 import FormInput from "@/components/shared/custom/form-input";
 import { Button } from "@/components/ui/button";
+import { DialogFormFooter } from "@/components/ui/dialog";
 
 import { formatMileage } from "@/lib/format-values";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
+import { createUpdateVehicleChecklistSchema } from "@/schemas/create-update-vehicle-checklist-schema";
 
 import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+import { OVERALL_CONDITION_OPTIONS } from "../lib/condition-options";
 
 import type { CreateVehicleChecklistFormSubmitProps } from "./types";
 import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
-import { PhotoUpload } from "./photo-upload";
 import { UploadProgress } from "@/components/shared/upload-progress";
 
+import { getPhotoRequirements } from "../photo-requirements";
+import { checklistMileageIssue } from "../lib/mileage-rule";
 import {
-  getPhotoRequirements,
-  validateChecklistForm,
-} from "../photo-requirements";
+  CHECKLIST_FORM_FIELDS,
+  checklistPhotoIssues,
+  photoFieldKey,
+} from "../lib/live-rules";
+import { PhotoFieldLoading } from "@/components/shared/custom/photo-field-loading";
+
+// Its own chunk (react-dropzone): loaded with this dialog, not with the page.
+const PhotoUpload = dynamic(
+  () => import("./photo-upload").then((module) => module.PhotoUpload),
+  { ssr: false, loading: PhotoFieldLoading },
+);
 
 // Reusable select options
 const CONDITION_OPTIONS = [
@@ -32,12 +49,6 @@ const CONDITION_OPTIONS = [
 const YES_NO_OPTIONS = [
   { value: "true", label: "Sim" },
   { value: "false", label: "Não" },
-];
-
-const OVERALL_CONDITION_OPTIONS = [
-  { value: "approved", label: "Aprovado" },
-  { value: "approved_with_restrictions", label: "Aprovado com restrições" },
-  { value: "rejected", label: "Reprovado" },
 ];
 
 const CreateVehicleChecklistFormSubmit = ({
@@ -56,15 +67,37 @@ const CreateVehicleChecklistFormSubmit = ({
   uploadError,
 }: CreateVehicleChecklistFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+  // The moment the form opened: while the date still holds it, the reading
+  // is the vehicle's newest (lib/mileage-rule).
+  const [defaultDate] = useState<string | null>(() =>
+    Object.keys(initialFormValues).length > 0 ? null : new Date().toISOString(),
+  );
   const [formValues, setFormValues] = useState<Record<string, any>>(() =>
-    Object.keys(initialFormValues).length > 0
-      ? initialFormValues
-      : { checklist_date: new Date().toISOString() },
+    defaultDate === null ? initialFormValues : { checklist_date: defaultDate },
   );
 
   const { data, isLoading: isLoadingVehicle } = useFetchVehicleData({
     vehicleId: commandVehicleInputValue.vehicleId,
     businessId: businessId,
+  });
+
+  // Live validation (decision 16.700): the action's schema per field, the
+  // vehicle's mileage from the data above (no request per keystroke) and
+  // the photos each answer requires.
+  const live = useLiveValidation({
+    schema: createUpdateVehicleChecklistSchema,
+    values: formValues,
+    fields: CHECKLIST_FORM_FIELDS,
+    rules: (values) => ({
+      current_mileage: checklistMileageIssue({
+        mileage: values.current_mileage,
+        checklistDate: values.checklist_date,
+        defaultDate,
+        vehicleMileage: data?.current_mileage,
+      }),
+      ...checklistPhotoIssues(values, checklistFiles),
+    }),
+    serverErrors: state.createVehicleChecklistError,
   });
 
   // Function to handle changes in custom fields (datepicker)
@@ -77,7 +110,7 @@ const CreateVehicleChecklistFormSubmit = ({
     setFormValues((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  // Handler para campos booleanos (converte string "true"/"false" para boolean)
+  // Radio values arrive as "true"/"false" strings.
   const handleBooleanFieldChange = (fieldName: string) => (value: string) => {
     handleFieldChange(fieldName, value === "true");
   };
@@ -103,7 +136,11 @@ const CreateVehicleChecklistFormSubmit = ({
     const formatted = formatMileage(numbersOnly);
 
     setDisplayMileage(formatted);
-    handleFieldChange("current_mileage", parseInt(numbersOnly) || 0);
+    // Empty is "missing" (the schema's required message), not zero.
+    handleFieldChange(
+      "current_mileage",
+      numbersOnly ? parseInt(numbersOnly, 10) : undefined,
+    );
   };
 
   const handleFilesChange = (fieldName: string) => (files: File[]) => {
@@ -119,6 +156,9 @@ const CreateVehicleChecklistFormSubmit = ({
         [fieldName]: null,
       }));
     }
+
+    // A drop or a removal is a finished answer: no blur to wait for.
+    live.touch(photoFieldKey(fieldName));
   };
 
   // Get photo requirements based on current form values
@@ -141,6 +181,7 @@ const CreateVehicleChecklistFormSubmit = ({
         onFilesChange={handleFilesChange(fieldName)}
         error={
           fileErrors[fieldName] ||
+          live.messageOf(photoFieldKey(fieldName)) ||
           state.createVehicleChecklistError?.[
             fieldName as keyof typeof state.createVehicleChecklistError
           ]?.[0]
@@ -151,14 +192,8 @@ const CreateVehicleChecklistFormSubmit = ({
     );
   };
 
-  // Check if form is valid for submission using helper function
-  const { isValid: isFormValid } = validateChecklistForm(
-    formValues,
-    checklistFiles,
-  );
-
   return (
-    <>
+    <div ref={live.ref}>
       <div className="space-y-4 mt-5">
         {/* Selected Items Summary */}
         <div
@@ -166,7 +201,7 @@ const CreateVehicleChecklistFormSubmit = ({
           border-gray-200 dark:bg-gray-800 dark:border-gray-700"
         >
           <h3
-            className="font-bold text-gray-900
+            className="font-bold text-foreground
             dark:text-gray-100 mb-3"
           >
             📋 Resumo da Seleção
@@ -174,13 +209,13 @@ const CreateVehicleChecklistFormSubmit = ({
           <div className="space-y-3">
             <div className="flex">
               <span
-                className="text-sm text-gray-600
+                className="text-sm text-muted-foreground
                 dark:text-gray-400"
               >
                 Filial:
               </span>
               <span
-                className="text-sm text-gray-900
+                className="text-sm text-foreground
                 dark:text-gray-100 flex-1 font-medium ml-2"
               >
                 {commandBranchInputValue?.searchBranchInputValue || "N/A"}
@@ -188,18 +223,18 @@ const CreateVehicleChecklistFormSubmit = ({
             </div>
             <div className="flex">
               <span
-                className="text-sm text-gray-600
+                className="text-sm text-muted-foreground
                 dark:text-gray-400"
               >
                 Veículo:
               </span>
               <span
-                className="text-sm text-gray-900
+                className="text-sm text-foreground
                 dark:text-gray-100 flex-1 font-medium ml-2"
               >
                 {commandVehicleInputValue?.searchVehicleInputValue || "N/A"}
                 {commandVehicleInputValue?.vehicleLicensePlate && (
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-muted-foreground ml-2">
                     (Placa: {commandVehicleInputValue.vehicleLicensePlate})
                   </span>
                 )}
@@ -273,7 +308,7 @@ const CreateVehicleChecklistFormSubmit = ({
                 dark:text-green-200"
               >
                 Quilometragem atual:{" "}
-                {data.current_mileage?.toLocaleString() || "N/A"} km
+                {data.current_mileage?.toLocaleString("pt-BR") || "N/A"} km
               </p>
               <p className="text-sm text-green-800 dark:text-green-200">
                 Placa: {data.license_plate || "N/A"}
@@ -292,7 +327,7 @@ const CreateVehicleChecklistFormSubmit = ({
             p-4 mb-6 border border-gray-200 dark:border-gray-700"
           >
             <p
-              className="text-sm text-gray-600
+              className="text-sm text-muted-foreground
               dark:text-gray-400 text-center"
             >
               Carregando dados do veículo...
@@ -309,7 +344,7 @@ const CreateVehicleChecklistFormSubmit = ({
             name="checklist_date"
             value={formValues.checklist_date || ""}
             onChange={handleCustomFieldChange("checklist_date")}
-            errorName={state.createVehicleChecklistError?.checklist_date}
+            errorName={live.errorOf("checklist_date")}
             disabled={pending}
           />
 
@@ -320,7 +355,7 @@ const CreateVehicleChecklistFormSubmit = ({
             name="current_mileage"
             type="text"
             placeholder="Ex: 50.000"
-            errorName={state.createVehicleChecklistError?.current_mileage}
+            errorName={live.errorOf("current_mileage")}
             disabled={pending}
             value={displayMileage}
             onChange={handleMileageChange}
@@ -338,7 +373,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("tires_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={state.createVehicleChecklistError?.tires_condition}
+            errorName={live.errorOf("tires_condition")}
             disabled={pending}
           />
 
@@ -354,7 +389,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("fuel_level_adequate")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.fuel_level_adequate}
+            errorName={live.errorOf("fuel_level_adequate")}
             disabled={pending}
           />
 
@@ -373,7 +408,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("headlights_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.headlights_working}
+            errorName={live.errorOf("headlights_working")}
             disabled={pending}
           />
 
@@ -389,7 +424,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("taillights_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.taillights_working}
+            errorName={live.errorOf("taillights_working")}
             disabled={pending}
           />
 
@@ -408,7 +443,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("turn_signals_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.turn_signals_working}
+            errorName={live.errorOf("turn_signals_working")}
             disabled={pending}
           />
 
@@ -424,7 +459,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("bumpers_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={state.createVehicleChecklistError?.bumpers_condition}
+            errorName={live.errorOf("bumpers_condition")}
             disabled={pending}
           />
           {renderPhotoSection("bumpers_condition", "Foto dos Para-choques")}
@@ -438,7 +473,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("windshield_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={state.createVehicleChecklistError?.windshield_condition}
+            errorName={live.errorOf("windshield_condition")}
             disabled={pending}
           />
           {renderPhotoSection("windshield_condition", "Foto do Para-brisa")}
@@ -452,7 +487,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("mirrors_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={state.createVehicleChecklistError?.mirrors_condition}
+            errorName={live.errorOf("mirrors_condition")}
             disabled={pending}
           />
           {renderPhotoSection("mirrors_condition", "Foto dos Retrovisores")}
@@ -466,7 +501,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("seatbelts_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.seatbelts_working}
+            errorName={live.errorOf("seatbelts_working")}
             disabled={pending}
           />
           {renderPhotoSection(
@@ -483,7 +518,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("dashboard_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.dashboard_working}
+            errorName={live.errorOf("dashboard_working")}
             disabled={pending}
           />
           {renderPhotoSection("dashboard_working", "Foto do Painel")}
@@ -497,7 +532,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("brakes_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.brakes_working}
+            errorName={live.errorOf("brakes_working")}
             disabled={pending}
           />
           {renderPhotoSection("brakes_working", "Foto dos Freios")}
@@ -511,7 +546,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("clutch_working")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.clutch_working}
+            errorName={live.errorOf("clutch_working")}
             disabled={pending}
           />
           {renderPhotoSection("clutch_working", "Foto da Embreagem")}
@@ -525,7 +560,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("oil_level_adequate")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.oil_level_adequate}
+            errorName={live.errorOf("oil_level_adequate")}
             disabled={pending}
           />
           {renderPhotoSection("oil_level_adequate", "Foto do Nível de Óleo")}
@@ -539,9 +574,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("radiator_water_adequate")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={
-              state.createVehicleChecklistError?.radiator_water_adequate
-            }
+            errorName={live.errorOf("radiator_water_adequate")}
             disabled={pending}
           />
           {renderPhotoSection(
@@ -558,7 +591,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("brake_fluid_adequate")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.brake_fluid_adequate}
+            errorName={live.errorOf("brake_fluid_adequate")}
             disabled={pending}
           />
           {renderPhotoSection(
@@ -575,9 +608,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("steering_wheel_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={
-              state.createVehicleChecklistError?.steering_wheel_condition
-            }
+            errorName={live.errorOf("steering_wheel_condition")}
             disabled={pending}
           />
           {renderPhotoSection("steering_wheel_condition", "Foto do Volante")}
@@ -591,7 +622,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("battery_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={state.createVehicleChecklistError?.battery_condition}
+            errorName={live.errorOf("battery_condition")}
             disabled={pending}
           />
           {renderPhotoSection("battery_condition", "Foto da Bateria")}
@@ -605,7 +636,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("driver_license_valid")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.driver_license_valid}
+            errorName={live.errorOf("driver_license_valid")}
             disabled={pending}
           />
 
@@ -618,9 +649,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("vehicle_documents_valid")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={
-              state.createVehicleChecklistError?.vehicle_documents_valid
-            }
+            errorName={live.errorOf("vehicle_documents_valid")}
             disabled={pending}
           />
 
@@ -633,7 +662,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("insurance_valid")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.insurance_valid}
+            errorName={live.errorOf("insurance_valid")}
             disabled={pending}
           />
 
@@ -646,9 +675,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("fire_extinguisher_valid")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={
-              state.createVehicleChecklistError?.fire_extinguisher_valid
-            }
+            errorName={live.errorOf("fire_extinguisher_valid")}
             disabled={pending}
           />
 
@@ -661,9 +688,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("warning_triangle_present")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={
-              state.createVehicleChecklistError?.warning_triangle_present
-            }
+            errorName={live.errorOf("warning_triangle_present")}
             disabled={pending}
           />
 
@@ -676,7 +701,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleBooleanFieldChange("jack_present")}
             options={YES_NO_OPTIONS}
             placeholder="Selecione"
-            errorName={state.createVehicleChecklistError?.jack_present}
+            errorName={live.errorOf("jack_present")}
             disabled={pending}
           />
 
@@ -689,7 +714,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("spare_tire_condition")}
             options={CONDITION_OPTIONS}
             placeholder="Selecione a condição"
-            errorName={state.createVehicleChecklistError?.spare_tire_condition}
+            errorName={live.errorOf("spare_tire_condition")}
             disabled={pending}
           />
           {renderPhotoSection("spare_tire_condition", "Foto do Estepe")}
@@ -703,7 +728,7 @@ const CreateVehicleChecklistFormSubmit = ({
             onChange={handleCustomFieldChange("overall_condition")}
             options={OVERALL_CONDITION_OPTIONS}
             placeholder="Selecione a condição geral"
-            errorName={state.createVehicleChecklistError?.overall_condition}
+            errorName={live.errorOf("overall_condition")}
             disabled={pending}
           />
 
@@ -713,7 +738,7 @@ const CreateVehicleChecklistFormSubmit = ({
             htmlfor="notes"
             name="notes"
             type="text"
-            errorName={state.createVehicleChecklistError?.notes}
+            errorName={live.errorOf("notes")}
             placeholder="Digite observações sobre o checklist..."
             disabled={pending}
             maxLength={500}
@@ -727,28 +752,25 @@ const CreateVehicleChecklistFormSubmit = ({
         <UploadProgress progress={uploadProgress} error={uploadError} />
       </div>
 
-      <div className="flex justify-end mt-4 gap-2">
+      {/* The dialog's width picks the layout (decision 3.2). */}
+      <DialogFormFooter className="mt-4">
         <Button
           type="button"
           variant="outline"
           onClick={handleBack}
           disabled={pending || isLoadingVehicle}
+          {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
         >
           Voltar
         </Button>
-        <Button
-          type="submit"
-          disabled={pending || isLoadingVehicle || !isFormValid}
-        >
-          <span>Criar Checklist</span>
-          {pending && (
-            <div className="ml-2 animate-spin">
-              <Loader />
-            </div>
-          )}
+        {/* Enabled while the form is incomplete (decision 16.701): pressing
+            it shows every missing answer and focuses the first. */}
+        <Button type="submit" disabled={pending || isLoadingVehicle}>
+          <span>Criar checklist</span>
+          {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
-      </div>
-    </>
+      </DialogFormFooter>
+    </div>
   );
 };
 

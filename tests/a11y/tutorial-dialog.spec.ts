@@ -13,10 +13,7 @@ import { readFileSync } from "node:fs";
  * These are the four promises it now makes.
  */
 const CONTEXT = JSON.parse(
-  readFileSync(
-    "../trajetto-api/tests/load/fixtures/load-context.json",
-    "utf8",
-  ),
+  readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
 );
 
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
@@ -100,10 +97,9 @@ test("Tab never leaves the card", async ({ page }) => {
     if (outside) escaped.push(outside);
   }
 
-  expect(
-    Array.from(new Set(escaped)),
-    "focus left the modal tutorial",
-  ).toEqual([]);
+  expect(Array.from(new Set(escaped)), "focus left the modal tutorial").toEqual(
+    [],
+  );
 });
 
 test("closing gives focus back to the page", async ({ page }) => {

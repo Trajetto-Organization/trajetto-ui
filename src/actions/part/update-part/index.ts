@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePartSchema } from "@/schemas/create-update-part-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface PartProps {
   message: string;
@@ -42,7 +45,7 @@ const handleUpdatePart = async (state: any, updatePartValues: FormData) => {
   const partData = updatePartValidation.data;
 
   try {
-    const response = await fetch(updatePart, {
+    const response = await apiFetch(updatePart, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -54,14 +57,17 @@ const handleUpdatePart = async (state: any, updatePartValues: FormData) => {
 
     const { message } = (await response.json()) as PartProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updatePartError: { updatePartErrorMessage: message },
+        updatePartError: {
+          updatePartErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("part/update-part", error);
     return {
       updatePartError: {
         updatePartErrorMessage:

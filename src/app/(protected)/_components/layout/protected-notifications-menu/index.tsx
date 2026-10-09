@@ -17,13 +17,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { safeNotificationHref } from "@/lib/safe-href";
+import { isStaleActionResult } from "@/lib/action-result";
+import {
+  readablePermissionKeys,
+  type RouteAccessContext,
+} from "@/lib/route-access";
+import { useAuthStore } from "@/store/auth-store";
+
+import { canOpenNotificationLink } from "./link-access";
 
 import {
   getNotificationVisual,
@@ -47,6 +50,13 @@ import {
 
 const PREVIEW_LIMIT = 6;
 
+/** The bell's accessible name, with the unread count in correct Portuguese. */
+function bellLabel(unreadCount: number): string {
+  if (!unreadCount) return "Notificações";
+
+  return `Notificações: ${unreadCount} não ${unreadCount === 1 ? "lida" : "lidas"}`;
+}
+
 function relativeDate(value: Notification["created_at"]): string {
   const timestamp = new Date(value).getTime();
   if (!Number.isFinite(timestamp)) return "";
@@ -67,7 +77,14 @@ function relativeDate(value: Notification["created_at"]): string {
   });
 }
 
-const NotificationPreview = ({ item }: { item: Notification }) => {
+const NotificationPreview = ({
+  item,
+  access,
+}: {
+  item: Notification;
+  /** The reader's access now; `null` while the session is not known. */
+  access: RouteAccessContext | null;
+}) => {
   const { markNotificationAsRead } = useNotificationsContext();
   const [isMarking, setIsMarking] = useState(false);
 
@@ -82,6 +99,7 @@ const NotificationPreview = ({ item }: { item: Notification }) => {
 
     try {
       const result = await handleMarkNotificationAsRead(item.id);
+      if (isStaleActionResult(result)) return;
       if (result.successMessage) markNotificationAsRead(item.id);
     } finally {
       setIsMarking(false);
@@ -133,11 +151,20 @@ const NotificationPreview = ({ item }: { item: Notification }) => {
     </>
   );
 
+  // The API's string is not rendered as-is: a `javascript:` link would run on
+  // click. A link that fails the check leaves the item as a plain button.
+  const safeHref = safeNotificationHref(item.link);
+
+  // And a page the reader can no longer open (profile or plan changed since
+  // it was sent, NOTIF-ROLE-1) is not offered either: the item stays, inert.
+  const href =
+    safeHref && canOpenNotificationLink(safeHref, access) ? safeHref : null;
+
   return (
     <DropdownMenuItem asChild className="p-0 focus:bg-accent">
-      {item.link ? (
+      {href ? (
         <a
-          href={item.link}
+          href={href}
           className="flex w-full cursor-pointer items-start gap-3 px-3 py-3"
           onClick={() => void markRead()}
         >
@@ -148,6 +175,9 @@ const NotificationPreview = ({ item }: { item: Notification }) => {
           type="button"
           className="flex w-full cursor-pointer items-start gap-3
           px-3 py-3 text-left"
+          title={
+            safeHref ? "Seu acesso não inclui mais esta página." : undefined
+          }
           onClick={() => void markRead()}
         >
           {content}
@@ -157,13 +187,32 @@ const NotificationPreview = ({ item }: { item: Notification }) => {
   );
 };
 
-const ProtectedNotificationsMenu = (): JSX.Element => {
+interface ProtectedNotificationsMenuProps {
+  /** The driver's layout: a driver's surface is judged as a driver's. */
+  isDriver?: boolean;
+}
+
+const ProtectedNotificationsMenu = ({
+  isDriver = false,
+}: ProtectedNotificationsMenuProps): JSX.Element => {
+  const { notifications, unreadCount, connected, markAllNotificationsAsRead } =
+    useNotificationsContext();
+
+  // The same access the sidebar reads, kept fresh by the security check.
   const {
-    notifications,
-    unreadCount,
-    connected,
-    markAllNotificationsAsRead,
-  } = useNotificationsContext();
+    role,
+    permissions: storePermissions,
+    enabledModules,
+  } = useAuthStore();
+
+  const access: RouteAccessContext | null = role
+    ? {
+        role,
+        permissions: readablePermissionKeys(storePermissions),
+        enabledModules: enabledModules ?? null,
+        isDriver,
+      }
+    : null;
 
   const [isMarkingAll, setIsMarkingAll] = useState(false);
 
@@ -173,6 +222,7 @@ const ProtectedNotificationsMenu = (): JSX.Element => {
 
     try {
       const result = await handleMarkAllNotificationsAsRead();
+      if (isStaleActionResult(result)) return;
       if (result.successMessage) markAllNotificationsAsRead();
     } finally {
       setIsMarkingAll(false);
@@ -188,47 +238,35 @@ const ProtectedNotificationsMenu = (): JSX.Element => {
 
   return (
     <DropdownMenu>
-      <TooltipProvider delayDuration={300}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="relative size-9 shrink-0 rounded-lg shadow-none"
-                aria-label={
-                  unreadCount
-                    ? `Notificações: ${unreadCount} não lidas`
-                    : "Notificações"
-                }
-              >
-                <Bell className="size-4" aria-hidden="true" />
-                {unreadCount > 0 && (
-                  <span
-                    className={cn(
-                      `absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center
-                      justify-center rounded-full px-1 text-[10px] font-bold
-                      text-white ring-2 ring-background`,
-                      ACCENT_CLASS,
-                    )}
-                    aria-hidden="true"
-                  >
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>
-              {unreadCount
-                ? `Abrir notificações (${unreadCount} não ${unreadCount === 1 ? "lida" : "lidas"})`
-                : "Abrir notificações"}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      {/*
+        No tooltip (decision 3.8): the user asked for the bell without the
+        "Abrir notificações" bubble on hover. The button's accessible name
+        still carries the unread count for a screen reader.
+      */}
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="relative size-9 shrink-0 rounded-lg shadow-none"
+          aria-label={bellLabel(unreadCount)}
+        >
+          <Bell className="size-4" aria-hidden="true" />
+          {unreadCount > 0 && (
+            <span
+              className={cn(
+                `absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center
+                justify-center rounded-full px-1 text-[10px] font-bold
+                text-white ring-2 ring-background`,
+                ACCENT_CLASS,
+              )}
+              aria-hidden="true"
+            >
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
 
       <DropdownMenuContent
         align="end"
@@ -254,7 +292,9 @@ const ProtectedNotificationsMenu = (): JSX.Element => {
           <span
             className={cn(
               "inline-flex items-center gap-1 text-[10px] font-normal",
-              connected ? "text-emerald-600" : "text-muted-foreground",
+              connected
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-muted-foreground",
             )}
           >
             <span
@@ -277,7 +317,11 @@ const ProtectedNotificationsMenu = (): JSX.Element => {
           >
             <div className="py-1">
               {preview.map((item) => (
-                <NotificationPreview key={item.id} item={item} />
+                <NotificationPreview
+                  key={item.id}
+                  item={item}
+                  access={access}
+                />
               ))}
             </div>
           </ScrollArea>

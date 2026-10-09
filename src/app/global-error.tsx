@@ -2,7 +2,6 @@
 
 import { ErrorSurface } from "@/components/shared/error-surface";
 
-import { sfPro, inter } from "./fonts";
 import "./globals.css";
 
 /**
@@ -26,7 +25,7 @@ const GlobalError = ({
 }): JSX.Element => {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${sfPro.variable} ${inter.variable} antialiased`}>
+      <body className="antialiased">
         <ErrorSurface error={error} reset={reset} standalone />
       </body>
     </html>

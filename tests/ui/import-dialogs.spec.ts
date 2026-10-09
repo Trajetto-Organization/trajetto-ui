@@ -58,7 +58,8 @@ async function shapeOf(page: Page): Promise<ZoneShape> {
       const style = getComputedStyle(element);
 
       return (
-        style.borderTopStyle === "dashed" && element.querySelector("svg") !== null
+        style.borderTopStyle === "dashed" &&
+        element.querySelector("svg") !== null
       );
     }) as HTMLElement;
 
@@ -93,11 +94,9 @@ async function shapeOf(page: Page): Promise<ZoneShape> {
 const zoneOf = (page: Page) =>
   page.locator('[role="dialog"] [role="button"][aria-label^="Arraste"]');
 
-test.describe("as duas importações de Entregas", () => {
+test.describe("the two Entregas imports", () => {
   for (const which of ["Planilha", "XML"] as const) {
-    test(`${which}: a área de arrastar é um controle de verdade`, async ({
-      page,
-    }) => {
+    test(`${which}: the drop area is a real control`, async ({ page }) => {
       await openImport(page, which);
 
       const zone = zoneOf(page);
@@ -137,12 +136,16 @@ test.describe("as duas importações de Entregas", () => {
       await expect(page.getByText(/^Solte/)).toHaveCount(0);
     });
 
-    test(`${which}: o rodapé segue o padrão do produto`, async ({ page }) => {
+    test(`${which}: the footer follows the product pattern`, async ({
+      page,
+    }) => {
       await openImport(page, which);
 
       const dialog = page.getByRole("dialog");
 
-      await expect(dialog.getByRole("button", { name: "Cancelar" })).toBeVisible();
+      await expect(
+        dialog.getByRole("button", { name: "Cancelar" }),
+      ).toBeVisible();
 
       await expect(
         dialog.getByRole("button", { name: /^Importar/ }),
@@ -156,7 +159,7 @@ test.describe("as duas importações de Entregas", () => {
     });
   }
 
-  test("e são o MESMO controle nas duas", async ({ page }) => {
+  test("and they are the SAME control in both", async ({ page }) => {
     /**
      * The assertion neither dialog can make about itself.
      *

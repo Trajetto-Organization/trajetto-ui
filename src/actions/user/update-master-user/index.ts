@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { updateMasterUserSchema } from "@/schemas/update-master-user-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateMasterUserProps {
   message: string;
@@ -43,7 +46,7 @@ const handleUpdateMasterUser = async (
   const masterUserData = updateMasterUserValidation.data;
 
   try {
-    const response = await fetch(updateMasterUser, {
+    const response = await apiFetch(updateMasterUser, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -55,14 +58,18 @@ const handleUpdateMasterUser = async (
 
     const { message } = (await response.json()) as UpdateMasterUserProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateMasterUserError: { updateMasterUserErrorMessage: message },
+        updateMasterUserError: {
+          updateMasterUserErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/update-master-user", error);
     return {
       updateMasterUserError: {
         updateMasterUserErrorMessage:

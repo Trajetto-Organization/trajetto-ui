@@ -1,19 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { parseJwt } from "../lib/decode-jwt";
-import { getCookies } from "@/actions/cookies";
+import { readSessionClaims } from "@/actions/session";
 
 import type {
   PermissionKey,
   UserRole,
 } from "@/app/(protected)/_components/shared/common.types";
-
-interface PermissionData {
-  permissionKey: PermissionKey;
-  canRead: boolean;
-  canWrite: boolean;
-}
 
 interface PermissionData {
   permissionKey: PermissionKey;
@@ -55,19 +48,29 @@ const useAuthStore = create<AuthState>()(
       isLoaded: false,
       loadAuth: async () => {
         if (get().isLoaded && get().role !== null) return;
-        const token = await getCookies("tkey");
+        // The claims, decoded on the server: the token itself never reaches
+        // the page (actions/session).
+        let claims: Awaited<ReturnType<typeof readSessionClaims>> = null;
 
-        if (token) {
-          try {
-            const decoded = parseJwt(token as string);
-            set({
-              id: decoded.sub,
-              role: decoded.role,
-              isLoaded: true,
-            });
-          } catch (error) {
-            set({ isLoaded: true });
-          }
+        try {
+          claims = await readSessionClaims();
+        } catch {
+          claims = null;
+        }
+
+        if (claims) {
+          set({
+            id: claims.userId,
+            role: claims.role as UserRole | null,
+            // The token carries the company too. Without it the store said
+            // "loaded" with a role and no company, and a company screen
+            // read that as "no company": under load, when this finished
+            // before the layout's setAuth, Integrações showed "Selecione
+            // uma empresa" to a BUSINESS_ADMIN. A company setAuth already
+            // wrote is kept.
+            businessId: get().businessId || claims.businessId || null,
+            isLoaded: true,
+          });
         } else {
           set({ isLoaded: true });
         }

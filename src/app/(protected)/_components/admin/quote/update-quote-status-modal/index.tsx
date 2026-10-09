@@ -5,7 +5,7 @@ import {
   Dialog,
   DialogScrollContent,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,9 +19,8 @@ import {
 } from "@/components/ui/select";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-
-import { Textarea } from "@/components/ui/textarea";
+import { FieldShell } from "@/components/shared/custom/field-shell";
+import { TextareaField } from "@/components/shared/custom/textarea-field";
 import { handleUpdateQuoteStatus } from "@/actions/quote/update-quote-status";
 
 import type { QuoteProps, QuoteStatus } from "../quote.types";
@@ -34,6 +33,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import { appendDataToForm } from "@/lib/append-data-form";
 
 import { useQuoteFormStatus } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
 
 interface UpdateQuoteStatusModalProps {
   quote: QuoteProps;
@@ -78,62 +78,58 @@ const UpdateQuoteStatusModalFormSubmit = ({
   return (
     <>
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label
-            htmlFor="status"
-            className={state.updateQuoteError?.status ? "text-red-500" : ""}
-          >
-            {state.updateQuoteError?.status
-              ? state.updateQuoteError.status
-              : "Novo Status"}
-          </Label>
-          <Select
-            name="status"
-            value={status}
-            onValueChange={(value) => handleUpdateStatus(value as QuoteStatus)}
-            disabled={pending}
-          >
-            <SelectTrigger id="status">
-              <SelectValue placeholder="Selecione um status" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableOptions.length === 0 ? (
-                <SelectItem value="none" disabled>
-                  Nenhuma opção disponível
-                </SelectItem>
-              ) : (
-                availableOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+        {/* The shared field shell (decisions 3.3 and 3.4): the label keeps
+            its marker and the error goes under the control instead of
+            replacing the label. */}
+        <FieldShell
+          label="Novo status *"
+          htmlFor="status"
+          error={state.updateQuoteError?.status}
+        >
+          {(control) => (
+            <Select
+              name="status"
+              value={status}
+              onValueChange={(value) =>
+                handleUpdateStatus(value as QuoteStatus)
+              }
+              disabled={pending}
+            >
+              <SelectTrigger {...control}>
+                <SelectValue placeholder="Selecione um status" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableOptions.length === 0 ? (
+                  <SelectItem value="none" disabled>
+                    Nenhuma opção disponível
                   </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+                ) : (
+                  availableOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          )}
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label
-            htmlFor="notes"
-            className={state.updateQuoteError?.notes ? "text-red-500" : ""}
-          >
-            {state.updateQuoteError?.notes
-              ? state.updateQuoteError.notes
-              : "Notas Internas (opcional)"}
-          </Label>
-          <Textarea
-            id="notes"
-            name="notes"
-            value={(notes as string) || ""}
-            onChange={(e) => handleUpdateNotes(e.target.value)}
-            placeholder="Adicione notas sobre a negociação..."
-            className="min-h-[120px] resize-none"
-            disabled={pending}
-          />
-        </div>
+        <TextareaField
+          label="Notas internas (opcional)"
+          htmlfor="notes"
+          name="notes"
+          value={(notes as string) || ""}
+          onChange={(e) => handleUpdateNotes(e.target.value)}
+          placeholder="Adicione notas sobre a negociação..."
+          className="min-h-[120px] resize-none"
+          disabled={pending}
+          errorName={state.updateQuoteError?.notes}
+        />
       </div>
 
-      <DialogFooter className="mt-3">
+      {/* A small modal: Cancelar and the action side by side (decision 3.2). */}
+      <DialogFormFooter className="mt-3">
         <Button
           type="button"
           variant="outline"
@@ -146,7 +142,7 @@ const UpdateQuoteStatusModalFormSubmit = ({
           Atualizar Status
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
-      </DialogFooter>
+      </DialogFormFooter>
     </>
   );
 };
@@ -158,7 +154,7 @@ const UpdateQuoteStatusModal = ({
 }: UpdateQuoteStatusModalProps): JSX.Element => {
   const defaultState: UpdateQuoteFormState = {};
   const [state, dispatch] = useFormState<UpdateQuoteFormState, FormData>(
-    handleUpdateQuoteStatus,
+    guardFormAction(handleUpdateQuoteStatus),
     defaultState,
   );
 
@@ -197,10 +193,7 @@ const UpdateQuoteStatusModal = ({
         }
       }}
     >
-      <DialogScrollContent
-        className="max-w-md overflow-y-auto"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogScrollContent className="max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Status do Orçamento</DialogTitle>
           <DialogDescription>

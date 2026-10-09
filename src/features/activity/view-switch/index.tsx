@@ -36,9 +36,16 @@ const ActivityViewSwitch = ({
       onValueChange={handleChangeView}
       className="w-full sm:w-auto"
     >
-      <TabsList className="w-full sm:w-auto">
+      <TabsList
+        className="w-full sm:w-auto"
+        data-tutorial="activity-view-switch"
+      >
+        {/* The panel is the server-rendered page below, not a TabsContent:
+            without this Radix points aria-controls at an id that does not
+            exist (axe aria-valid-attr-value). */}
         <TabsTrigger
           value="timeline"
+          aria-controls={undefined}
           className="flex flex-1 items-center space-x-1 px-3 sm:flex-initial"
         >
           <LayoutList className="h-4 w-4" />
@@ -46,6 +53,7 @@ const ActivityViewSwitch = ({
         </TabsTrigger>
         <TabsTrigger
           value="table"
+          aria-controls={undefined}
           className="flex flex-1 items-center space-x-1 px-3 sm:flex-initial"
         >
           <Table2 className="h-4 w-4" />

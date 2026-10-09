@@ -17,6 +17,11 @@ import {
   updateNotificationPreferences,
   type NotificationPreferenceRow,
 } from "@/actions/notifications";
+import { isStaleActionResult } from "@/lib/action-result";
+import { OpsAlertSoundSetting } from "@/features/deliveries/ops-alert/ops-alert-sound-setting";
+import { useAuthStore } from "@/store/auth-store";
+
+import { rowsInPlan } from "./module-rules";
 
 /**
  * The single screen the plan promised: what each category may do on each
@@ -75,6 +80,11 @@ const NotificationPreferences = ({
   const [isSaving, setIsSaving] = useState(false);
   const isDirty = channelsSnapshot(rows) !== savedSnapshot;
 
+  // Only the categories the company's plan can produce (fines, service
+  // orders and payables are Gestão de Frotas). Hidden rows are never sent.
+  const enabledModules = useAuthStore((state) => state.enabledModules);
+  const visibleRows = rowsInPlan(rows, enabledModules);
+
   if (!initialPreferences) {
     return (
       <div className="text-center text-muted-foreground">
@@ -101,13 +111,15 @@ const NotificationPreferences = ({
 
     try {
       const result = await updateNotificationPreferences(
-        rows.map(({ category, inApp, email, whatsapp }) => ({
+        visibleRows.map(({ category, inApp, email, whatsapp }) => ({
           category,
           inApp,
           email,
           whatsapp,
         })),
       );
+
+      if (isStaleActionResult(result)) return;
 
       if (result.successMessage) {
         toast.success(result.successMessage);
@@ -127,9 +139,7 @@ const NotificationPreferences = ({
       <div className="flex items-center gap-3">
         <BellRing className="h-7 w-7 text-primary" />
         <div>
-          <h3 className="text-lg font-semibold">
-            Preferências de notificação
-          </h3>
+          <h3 className="text-lg font-semibold">Preferências de notificação</h3>
           <p className="text-sm text-muted-foreground">
             Escolha o que chega, e por onde, em cada categoria
           </p>
@@ -150,7 +160,7 @@ const NotificationPreferences = ({
       </div>
 
       <div className="space-y-4">
-        {rows.map((row) => {
+        {visibleRows.map((row) => {
           const copy = CATEGORY_COPY[row.category];
 
           return (
@@ -208,6 +218,9 @@ const NotificationPreferences = ({
           );
         })}
       </div>
+
+      {/* Decision 14.6: the operations alert sound, per person. */}
+      <OpsAlertSoundSetting />
 
       <Alert>
         <Info className="h-4 w-4" />

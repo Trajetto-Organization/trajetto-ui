@@ -6,25 +6,25 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { DriverContent } from "./driver-content";
+import { DriverContent } from "@/features/driver/content";
+import { DriverSkeleton } from "@/features/driver/skeleton";
 
 interface DriverQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+  // Every param the URL carries: page, search, sort, order and the filters.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Motoristas",
-    description: `
-      Gerencie facilmente seus motoristas cadastrados. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    description:
+      "Consulte, cadastre, edite e exporte os motoristas de qualquer empresa da plataforma.",
   };
 }
 
-const Driver = async ({
+const AdminDriver = async ({
   searchParams,
 }: DriverQueryParamsProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
@@ -37,14 +37,18 @@ const Driver = async ({
     <PageContainer>
       <ProtectedHeading
         title={"Motoristas"}
-        description="Gerencie os motoristas cadastrados, delete, edite e mantenha os dados sempre atualizados."
+        description="Selecione uma empresa para gerenciar os motoristas dela: dados pessoais, CNH, filial e situação."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <DriverContent searchParams={searchParams} token={tokenAccess} />
+      <Suspense fallback={<DriverSkeleton mode="admin" />}>
+        <DriverContent
+          mode="admin"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default Driver;
+export default AdminDriver;

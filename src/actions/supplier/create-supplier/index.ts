@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateSupplierSchema } from "@/schemas/create-update-supplier-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateSupplierProps {
   message: string;
@@ -29,8 +32,10 @@ const handleCreateSupplier = async (
   const businessId = createSupplierValues.get("businessId");
   if (!businessId) {
     return {
-      createBranchError: {
-        businessId: ["Selecione uma empresa para continuar"],
+      // Under the key the form reads: it used to answer as a branch error,
+      // which no supplier form displays.
+      createSupplierError: {
+        createSupplierErrorMessage: "Selecione uma empresa para continuar.",
       },
     };
   }
@@ -51,7 +56,7 @@ const handleCreateSupplier = async (
   const supplierData = createSupplierValidation.data;
 
   try {
-    const response = await fetch(createSupplier, {
+    const response = await apiFetch(createSupplier, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -63,14 +68,18 @@ const handleCreateSupplier = async (
 
     const { message } = (await response.json()) as CreateSupplierProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createSupplierError: { createSupplierErrorMessage: message },
+        createSupplierError: {
+          createSupplierErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("supplier/create-supplier", error);
     return {
       createSupplierError: {
         createSupplierErrorMessage:

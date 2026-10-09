@@ -5,57 +5,70 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useMemo,
   useRef,
+  useState,
 } from "react";
 
-import { usePathname } from "next/navigation";
-import { tutorialConfigs, TutorialStep, canViewAdvancedFeatures } from "./data";
+import { usePathname, useSearchParams } from "next/navigation";
+
+import {
+  canAccessPath,
+  readablePermissionKeys,
+  type RouteAccessContext,
+} from "@/lib/route-access";
+import { accessibleDeliveryTabs } from "@/features/deliveries/lib/tabs";
+import { useAuthStore } from "@/store/auth-store";
+
+import { resolveTutorialKey } from "../engine/tutorial-key";
+import { hasSeenTour, markTourSeen } from "../engine/seen-storage";
+import {
+  isMobileViewport,
+  isPageLoading,
+  selectTourSteps,
+  shouldAutoStart,
+} from "../engine/policy";
 
 import type {
+  TutorialConfig,
   TutorialContextType,
   TutorialProviderProps,
-  UserPermissions,
+  TutorialStep,
 } from "./tutorial-provider.types";
 
-const TutorialContext = createContext<TutorialContextType>(
-  {} as TutorialContextType,
-);
+const TutorialContext = createContext<TutorialContextType | null>(null);
 
-// LocalStorage utilities
-const hasSeenTutorial = (pageKey: string): boolean => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem(pageKey) === "true";
-  }
+/** Time for the page to paint before the first measurement. */
+const AUTO_START_DELAY_MS = 600;
 
-  return false;
+/**
+ * After that delay the auto-start also waits for the loading skeletons to go
+ * away (streamed server data), polling at this pace and giving up at the
+ * cap — the walk still decides optional steps lazily if it opens early.
+ */
+const SETTLE_POLL_MS = 100;
+const SETTLE_MAX_MS = 6000;
+
+/** Longest the tours' copy waits for an idle main thread before loading. */
+const IDLE_LOAD_TIMEOUT_MS = 2000;
+
+let tourCopyRequest: Promise<TutorialConfig> | null = null;
+
+/** The tours' copy, one request per page load (a failure is asked again). */
+const loadTourCopy = (): Promise<TutorialConfig> => {
+  tourCopyRequest ??= import("./data")
+    .then((module) => module.tutorialConfigs)
+    .catch((error: unknown) => {
+      tourCopyRequest = null;
+      throw error;
+    });
+
+  return tourCopyRequest;
 };
 
-const markAsSeen = (pageKey: string): void => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(pageKey, "true");
-  }
-};
-
-const resetTutorialForPage = (pageKey: string): void => {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem(pageKey);
-  }
-};
-
-// Helper function to check if screen is mobile
-const isMobileScreen = (): boolean => {
-  if (typeof window !== "undefined") {
-    return window.innerWidth < 768;
-  }
-
-  return false;
-};
-
-// First step of EVERY tour: how to navigate it. Centralized so every page's
-// tutorial teaches the same controls without repeating it in each config.
+// First step of every tour: how to drive it. Centralized so each page's
+// tour teaches the same controls without repeating them in its config.
 const KEYBOARD_INTRO_STEP: TutorialStep = {
-  target: "body",
   placement: "center",
   title: "Como navegar no tutorial",
   content:
@@ -63,427 +76,405 @@ const KEYBOARD_INTRO_STEP: TutorialStep = {
     "• Use as setas ← e → do teclado para avançar e voltar.\n" +
     "• Pressione ESC para sair a qualquer momento.\n" +
     "• Você também pode usar os botões Anterior e Próximo abaixo.\n" +
-    "DICA: Reabra este tutorial quando quiser pressionando ? ou pelo botão de ajuda na barra lateral.",
+    "DICA: Reabra este tutorial quando quiser pressionando ? ou pelo botão Ver Tutorial na barra lateral.",
+};
+
+const TOUCH_INTRO_STEP: TutorialStep = {
+  placement: "center",
+  title: "Como navegar no tutorial",
+  content:
+    "Este tutorial guiado destaca os elementos da tela passo a passo.\n" +
+    "• Toque em Próximo e Anterior para avançar e voltar.\n" +
+    "• Toque no X ou arraste o painel para baixo para sair.\n" +
+    "DICA: Reabra este tutorial quando quiser pelo botão Ver Tutorial no menu lateral.",
 };
 
 /** Global shortcuts must not fire while the user is typing in a field. */
-const isEditableTarget = (el: Element | null): boolean => {
-  if (!el) return false;
+const isEditableTarget = (element: Element | null): boolean => {
+  if (!element) return false;
 
-  const tag = el.tagName;
+  const tag = element.tagName;
+
   return (
     tag === "INPUT" ||
     tag === "TEXTAREA" ||
     tag === "SELECT" ||
-    (el as HTMLElement).isContentEditable
+    (element as HTMLElement).isContentEditable
   );
 };
 
-// Helper function to detect active tab
-const getActiveTab = (): string => {
-  if (typeof window !== "undefined") {
-    // Deliveries keeps three different tables behind one path, so the tab
-    // decides which tour applies — the same split the dashboard already does
-    // for Análise Gráfica and Limites de Uso.
-    const activeDeliveryTab = document.querySelector(
-      '[role="tab"][data-state="active"][data-tutorial^="deliveries-tab-"]',
-    );
+interface ActiveTour {
+  key: string;
+  steps: TutorialStep[];
+}
 
-    if (activeDeliveryTab) {
-      const attribute = activeDeliveryTab.getAttribute("data-tutorial") ?? "";
-      return attribute.replace("deliveries-tab-", "deliveries:");
-    }
-
-    // Search for active tabs in the DOM
-    const activeTab = document.querySelector(
-      '[role="tab"][data-state="active"]',
-    );
-    if (activeTab) {
-      const value = activeTab.getAttribute("data-value");
-      if (value) return value;
-    }
-
-    // Fallback: Search for active TabsTrigger
-    const activeTabsTrigger = document.querySelector(
-      '[data-state="active"][data-tutorial*="tab"]',
-    );
-
-    if (activeTabsTrigger) {
-      const tutorialAttr = activeTabsTrigger.getAttribute("data-tutorial");
-
-      if (tutorialAttr?.includes("overview")) return "overview";
-      if (tutorialAttr?.includes("charts")) return "charts";
-
-      if (tutorialAttr?.includes("limits")) return "limits";
-    }
-  }
-  return "overview"; // Default
-};
-
-// Function to filter tutorial steps based on user permissions
-const filterTutorialSteps = (
-  steps: TutorialStep[],
-  userPermissions?: UserPermissions,
-  currentTab?: string,
-): TutorialStep[] => {
-  return steps.filter((step) => {
-    // Check if step has a condition function
-    if (step.condition) {
-      return step.condition(userPermissions, currentTab);
-    }
-
-    return true;
-  });
-};
-
-// Function to get available tabs based on role (simplificado)
-const getAvailableTabs = (userPermissions?: UserPermissions): string[] => {
-  const tabs = ["overview"];
-
-  // Only MASTER and BUSINESS_ADMIN can see advanced features
-  if (canViewAdvancedFeatures(userPermissions)) {
-    tabs.push("charts");
-    tabs.push("limits");
-  }
-
-  return tabs;
-};
-
-// Function to update dynamic step content based on available tabs
-const updateStepContent = (
-  step: TutorialStep,
-  userPermissions?: UserPermissions,
-): TutorialStep => {
-  // Update the dashboard tabs explanation step
-  if (step.target === "[data-tutorial='dashboard-tabs']") {
-    const availableTabs = getAvailableTabs(userPermissions);
-
-    let content = "O dashboard está organizado em abas principais:\n";
-    content +=
-      "• Overview: Visão geral com cartões, atividades recentes e atalhos rápidos.";
-
-    if (availableTabs.includes("charts")) {
-      content +=
-        "\n• Análise Gráfica: Gráficos detalhados de tendências e custos.";
-    }
-
-    if (availableTabs.includes("limits")) {
-      content +=
-        "\n• Limites de Uso: Monitoramento do consumo de serviços com IA.";
-    }
-
-    return {
-      ...step,
-      content,
-    };
-  }
-
-  return step;
-};
-
-const TutorialProvider: React.FC<TutorialProviderProps> = ({
+const TutorialProvider = ({
   children,
-  userPermissions,
-}): JSX.Element => {
-  const pathname = usePathname();
+  user,
+}: TutorialProviderProps): JSX.Element => {
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
+  const urlTab = searchParams?.get("tab") ?? null;
 
-  const [isActive, setIsActive] = useState<boolean>(false);
+  const [tour, setTour] = useState<ActiveTour | null>(null);
+
+  // The tours' copy (~100 KB of text) is its own chunk, fetched once the page
+  // is up instead of shipping with every protected page. A failed load is
+  // retried on the next screen; meanwhile no tour opens.
+  const [tutorialConfigs, setTutorialConfigs] = useState<TutorialConfig | null>(
+    null,
+  );
+  const toursReady = tutorialConfigs !== null;
   const [currentStep, setCurrentStep] = useState<number>(0);
-
-  const [steps, setSteps] = useState<TutorialStep[]>([]);
   const [currentTab, setCurrentTab] = useState<string>("overview");
 
-  const shouldShowTutorial = useRef<boolean>(false);
+  // The dashboard's tab is per visit: another page starts on "overview".
+  useEffect(() => {
+    setCurrentTab("overview");
+  }, [pathname]);
 
-  // Function to get the correct tutorial config based on page and tab
-  const getTutorialKey = useCallback((path: string, tab: string) => {
-    if (path === "/dashboard" && tab === "charts") {
-      return "/dashboard/charts";
-    }
+  // The live session first (the socket refreshes the store when a profile or
+  // a module changes), the server snapshot only until the store is filled —
+  // the same precedence as the sidebar and the dashboard cards.
+  const storePermissions = useAuthStore((state) => state.permissions);
+  const storeModules = useAuthStore((state) => state.enabledModules);
+  const storeUserId = useAuthStore((state) => state.id);
 
-    if (path === "/dashboard" && tab === "limits") {
-      return "/dashboard/limits";
-    }
+  const role = user?.role;
+  const isDriver = user?.isDriver;
+  const permissionRows =
+    storePermissions.length > 0 ? storePermissions : user?.permissions;
+  const enabledModules = storeModules ?? user?.enabledModules ?? null;
 
-    // Each deliveries tab has its own tour, and its own "already seen" flag —
-    // landing on Embarcadores for the first time should teach Embarcadores.
-    if (path === "/dashboard/deliveries" && tab.startsWith("deliveries:")) {
-      const deliveryTab = tab.slice("deliveries:".length);
+  // Keyed by value, not by identity: the layout rebuilds `user` on every
+  // render, and a new context each time would restart the auto-start timer.
+  const permissionsSignature = readablePermissionKeys(permissionRows).join(",");
+  const modulesSignature =
+    enabledModules === null ? "?" : enabledModules.join(",");
 
-      return deliveryTab === "deliveries"
-        ? "/dashboard/deliveries"
-        : `/dashboard/deliveries/${deliveryTab}`;
-    }
+  const accessContext = useMemo<RouteAccessContext | null>(() => {
+    if (!role) return null;
 
-    return path;
-  }, []);
+    return {
+      role,
+      permissions: permissionsSignature
+        ? (permissionsSignature.split(",") as RouteAccessContext["permissions"])
+        : [],
+      enabledModules:
+        modulesSignature === "?"
+          ? null
+          : modulesSignature
+            ? modulesSignature.split(",")
+            : [],
+      isDriver,
+    };
+  }, [role, isDriver, permissionsSignature, modulesSignature]);
 
-  // Function to process tutorial steps with permissions (simplificado)
-  const processTutorialSteps = useCallback(
-    (tutorialKey: string, tab: string) => {
-      const rawSteps = tutorialConfigs[tutorialKey];
-      if (!rawSteps) return [];
-
-      // Filter steps based on role
-      const filteredSteps = filterTutorialSteps(rawSteps, userPermissions, tab);
-
-      // Update step content dynamically
-      const updatedSteps = filteredSteps.map((step) =>
-        updateStepContent(step, userPermissions),
-      );
-
-      if (updatedSteps.length === 0) return updatedSteps;
-
-      // Every tour opens teaching how to drive it — prepended here, in one
-      // place, instead of copy-pasted into every page's config.
-      return [KEYBOARD_INTRO_STEP, ...updatedSteps];
-    },
-    [userPermissions],
+  const canOpen = useCallback(
+    (path: string): boolean =>
+      accessContext ? canAccessPath(path, accessContext) : true,
+    [accessContext],
   );
 
-  // Check if user has seen tutorial for current page/tab
+  const tourKey = useMemo(
+    () =>
+      resolveTutorialKey({
+        pathname,
+        urlTab,
+        dashboardTab: currentTab,
+        allowedDeliveryTabs: accessContext
+          ? accessibleDeliveryTabs(accessContext)
+          : undefined,
+      }),
+    [pathname, urlTab, currentTab, accessContext],
+  );
+
   useEffect(() => {
-    const detectedTab = getActiveTab();
-    setCurrentTab(detectedTab);
+    if (toursReady) return;
 
-    const tutorialKey = getTutorialKey(pathname, detectedTab);
-    const pageKey = `tutorial_${tutorialKey}`;
+    let active = true;
 
-    const hasSeen = hasSeenTutorial(pageKey);
-    const isMobile = isMobileScreen();
-
-    const processedSteps = processTutorialSteps(tutorialKey, detectedTab);
-
-    shouldShowTutorial.current =
-      !hasSeen && !isMobile && processedSteps.length > 0;
-
-    if (shouldShowTutorial.current) {
-      setTimeout(() => {
-        setSteps(processedSteps);
-        setIsActive(true);
-
-        setCurrentStep(0);
-      }, 200);
-    } else {
-      setIsActive(false);
-    }
-  }, [pathname, getTutorialKey, processTutorialSteps]);
-
-  // Watch for tab changes
-  useEffect(() => {
-    const handleTabChange = () => {
-      const detectedTab = getActiveTab();
-      if (detectedTab !== currentTab) {
-        setCurrentTab(detectedTab);
-
-        // If tutorial is not active, check if we should show it for the new tab
-        if (!isActive) {
-          const tutorialKey = getTutorialKey(pathname, detectedTab);
-          const pageKey = `tutorial_${tutorialKey}`;
-
-          const hasSeen = hasSeenTutorial(pageKey);
-          const isMobile = isMobileScreen();
-
-          const processedSteps = processTutorialSteps(tutorialKey, detectedTab);
-
-          if (!hasSeen && !isMobile && processedSteps.length > 0) {
-            setTimeout(() => {
-              setSteps(processedSteps);
-              setIsActive(true);
-
-              setCurrentStep(0);
-            }, 300);
-          }
-        }
-      }
+    // After hydration and the page's own work, when the main thread is idle.
+    const load = () => {
+      loadTourCopy()
+        .then((configs) => {
+          if (active) setTutorialConfigs(configs);
+        })
+        .catch(() => undefined);
     };
 
-    // Listen for tab changes
-    const observer = new MutationObserver(handleTabChange);
-    if (typeof window !== "undefined") {
-      observer.observe(document.body, {
-        attributes: true,
-        subtree: true,
-        attributeFilter: ["data-state"],
-      });
-    }
-
-    return () => observer.disconnect();
-  }, [pathname, currentTab, isActive, getTutorialKey, processTutorialSteps]);
-
-  // Add resize listener
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = isMobileScreen();
-      const tutorialKey = getTutorialKey(pathname, currentTab);
-
-      const pageKey = `tutorial_${tutorialKey}`;
-      const hasSeen = hasSeenTutorial(pageKey);
-
-      const processedSteps = processTutorialSteps(tutorialKey, currentTab);
-
-      if (!isMobile && !hasSeen && processedSteps.length > 0 && !isActive) {
-        setSteps(processedSteps);
-        setIsActive(true);
-
-        setCurrentStep(0);
-      }
-
-      if (isMobile && isActive) {
-        setIsActive(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [pathname, currentTab, isActive, getTutorialKey, processTutorialSteps]);
-
-  const startTutorial = useCallback(() => {
-    if (isMobileScreen()) return;
-
-    const tutorialKey = getTutorialKey(pathname, currentTab);
-    const processedSteps = processTutorialSteps(tutorialKey, currentTab);
-
-    if (processedSteps.length > 0) {
-      setSteps(processedSteps);
-
-      setIsActive(true);
-      setCurrentStep(0);
-    }
-  }, [pathname, currentTab, getTutorialKey, processTutorialSteps]);
-
-  const nextStep = useCallback(() => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1);
-    } else {
-      if (!isMobileScreen()) {
-        const tutorialKey = getTutorialKey(pathname, currentTab);
-        const pageKey = `tutorial_${tutorialKey}`;
-
-        markAsSeen(pageKey);
-      }
-
-      setIsActive(false);
-      setCurrentStep(0);
-    }
-  }, [currentStep, steps.length, pathname, currentTab, getTutorialKey]);
-
-  const prevStep = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  }, [currentStep]);
-
-  const skipTutorial = useCallback(() => {
-    if (!isMobileScreen()) {
-      const tutorialKey = getTutorialKey(pathname, currentTab);
-      const pageKey = `tutorial_${tutorialKey}`;
-
-      markAsSeen(pageKey);
-    }
-
-    setIsActive(false);
-    setCurrentStep(0);
-  }, [pathname, currentTab, getTutorialKey]);
-
-  const completeTutorial = useCallback(() => {
-    if (!isMobileScreen()) {
-      const tutorialKey = getTutorialKey(pathname, currentTab);
-      const pageKey = `tutorial_${tutorialKey}`;
-
-      markAsSeen(pageKey);
-    }
-
-    setIsActive(false);
-    setCurrentStep(0);
-  }, [pathname, currentTab, getTutorialKey]);
-
-  const resetTutorial = useCallback(() => {
-    if (isMobileScreen()) return;
-
-    const tutorialKey = getTutorialKey(pathname, currentTab);
-    const pageKey = `tutorial_${tutorialKey}`;
-
-    resetTutorialForPage(pageKey);
-    startTutorial();
-  }, [pathname, currentTab, startTutorial, getTutorialKey]);
-
-  // Handle ESC key to close tutorial
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isActive) {
-        skipTutorial();
-      }
-    };
-
-    if (isActive) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
+    const idle = typeof window.requestIdleCallback === "function";
+    const handle = idle
+      ? window.requestIdleCallback(load, { timeout: IDLE_LOAD_TIMEOUT_MS })
+      : window.setTimeout(load, 0);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isActive, skipTutorial]);
+      active = false;
 
-  // Global "?" shortcut (help/tutorial convention): reopens the tour of the
-  // current page. Deliberately inert on pages without a tutorial — a shortcut
-  // that opens nothing (or the wrong page's tour) reads as broken; the
-  // sidebar item already explains "página direta, sem tutorial".
+      if (idle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
+  }, [toursReady, pathname]);
+
+  const hasTour = Boolean(tutorialConfigs?.[tourKey]) && canOpen(pathname);
+
+  // A tour asked for ("?" or Ver Tutorial) before the copy arrived: fetch it
+  // now and open the tour as soon as it lands, instead of ignoring the ask.
+  const requestedRef = useRef(false);
+
+  const requestBeforeReady = useCallback(() => {
+    requestedRef.current = true;
+
+    loadTourCopy()
+      .then(setTutorialConfigs)
+      .catch(() => {
+        requestedRef.current = false;
+      });
+  }, []);
+
+  const userId = user?.id ?? storeUserId ?? null;
+
+  // Which way the walk last moved, so a dropped step is skipped in that direction.
+  const directionRef = useRef<1 | -1>(1);
+
+  const buildSteps = useCallback(
+    (key: string): TutorialStep[] => {
+      const raw = tutorialConfigs?.[key];
+
+      if (!raw) return [];
+
+      const selected = selectTourSteps(raw, {
+        canOpen,
+        isMobile: isMobileViewport(),
+        deferOptional: isPageLoading(),
+      });
+
+      if (selected.length === 0) return [];
+
+      return [
+        isMobileViewport() ? TOUCH_INTRO_STEP : KEYBOARD_INTRO_STEP,
+        ...selected,
+      ];
+    },
+    [canOpen, tutorialConfigs],
+  );
+
+  const open = useCallback(
+    (key: string) => {
+      const steps = buildSteps(key);
+
+      if (steps.length === 0) return;
+
+      directionRef.current = 1;
+      setTour({ key, steps });
+      setCurrentStep(0);
+    },
+    [buildSteps],
+  );
+
+  // A tour that belongs to another screen closes when the screen changes.
+  const activeKey = tour?.key;
+
   useEffect(() => {
-    const handleShortcut = (e: KeyboardEvent) => {
-      if (e.key !== "?" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (activeKey && activeKey !== tourKey) setTour(null);
+  }, [activeKey, tourKey]);
 
-      if (isActive) return;
-      if (isEditableTarget(document.activeElement)) return;
-      if (isMobileScreen()) return;
+  // First visit of a screen (per user, v2): open its tour once, unless the
+  // policy keeps it on demand. The timer is cleared when the screen changes
+  // before it fires, so a tour never opens over the next page.
+  const isActive = tour !== null;
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
 
-      const tutorialKey = getTutorialKey(pathname, currentTab);
-      if (processTutorialSteps(tutorialKey, currentTab).length === 0) return;
+  useEffect(() => {
+    if (!hasTour) return;
+    if (!shouldAutoStart(tourKey, isMobileViewport())) return;
+    if (hasSeenTour(userId, tourKey)) return;
 
-      e.preventDefault();
-      resetTutorial();
+    let timer = 0;
+    const deadline = Date.now() + AUTO_START_DELAY_MS + SETTLE_MAX_MS;
+
+    const attempt = () => {
+      if (isActiveRef.current) return;
+
+      // Opening over a skeleton would judge the page by its placeholder.
+      if (isPageLoading() && Date.now() < deadline) {
+        timer = window.setTimeout(attempt, SETTLE_POLL_MS);
+        return;
+      }
+
+      open(tourKey);
     };
 
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, [
-    isActive,
-    pathname,
-    currentTab,
-    getTutorialKey,
-    processTutorialSteps,
-    resetTutorial,
-  ]);
+    timer = window.setTimeout(attempt, AUTO_START_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [hasTour, tourKey, userId, open]);
+
+  const close = useCallback(() => {
+    if (tour) markTourSeen(userId, tour.key);
+
+    setTour(null);
+    setCurrentStep(0);
+  }, [tour, userId]);
+
+  const startTutorial = useCallback(() => {
+    if (!toursReady) {
+      requestBeforeReady();
+      return;
+    }
+
+    if (!hasTour) return;
+
+    open(tourKey);
+  }, [toursReady, requestBeforeReady, hasTour, open, tourKey]);
+
+  useEffect(() => {
+    if (!toursReady || !requestedRef.current) return;
+
+    requestedRef.current = false;
+
+    if (hasTour && !isActiveRef.current) open(tourKey);
+  }, [toursReady, hasTour, open, tourKey]);
+
+  const stepCount = tour?.steps.length ?? 0;
+
+  const nextStep = useCallback(() => {
+    directionRef.current = 1;
+
+    if (currentStep < stepCount - 1) {
+      setCurrentStep((step) => step + 1);
+      return;
+    }
+
+    close();
+  }, [close, currentStep, stepCount]);
+
+  const prevStep = useCallback(() => {
+    directionRef.current = -1;
+    setCurrentStep((step) => (step > 0 ? step - 1 : step));
+  }, []);
+
+  /**
+   * An optional step whose anchor never rendered leaves the tour when the
+   * walk reaches it; the counter shrinks and the walk carries on in the
+   * direction it was going. Dropping the last step going forward ends it.
+   */
+  const dropStep = useCallback(
+    (index: number) => {
+      if (!tour || index < 0 || index >= tour.steps.length) return;
+
+      const steps = tour.steps.filter((_, position) => position !== index);
+      const backwards = directionRef.current === -1;
+
+      if (!backwards && index >= steps.length) {
+        close();
+        return;
+      }
+
+      setTour({ key: tour.key, steps });
+      setCurrentStep(backwards ? Math.max(0, index - 1) : index);
+    },
+    [tour, close],
+  );
+
+  // ESC closes the tour (the card's footer promises it).
+  useEffect(() => {
+    if (!isActive) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isActive, close]);
+
+  // Global "?" (help convention): reopens the tour of the current screen.
+  // Inert where there is none — a shortcut that opens the wrong tour reads
+  // as broken.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "?" || event.ctrlKey || event.metaKey || event.altKey)
+        return;
+      if (isActiveRef.current) return;
+      if (isEditableTarget(document.activeElement)) return;
+
+      if (!toursReady) {
+        event.preventDefault();
+        requestBeforeReady();
+        return;
+      }
+
+      if (!hasTour) return;
+
+      event.preventDefault();
+      open(tourKey);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [toursReady, requestBeforeReady, hasTour, open, tourKey]);
+
+  const value = useMemo<TutorialContextType>(
+    () => ({
+      isActive,
+      currentStep,
+      steps: tour?.steps ?? [],
+      tourKey,
+      hasTour,
+      toursReady,
+      startTutorial,
+      nextStep,
+      prevStep,
+      dropStep,
+      skipTutorial: close,
+      setCurrentTab,
+      currentTab,
+    }),
+    [
+      isActive,
+      currentStep,
+      tour,
+      tourKey,
+      hasTour,
+      toursReady,
+      startTutorial,
+      nextStep,
+      prevStep,
+      dropStep,
+      close,
+      currentTab,
+    ],
+  );
 
   return (
-    <TutorialContext.Provider
-      value={{
-        isActive,
-        currentStep,
-        steps,
-        startTutorial,
-        nextStep,
-        prevStep,
-        skipTutorial,
-        completeTutorial,
-        resetTutorial,
-        setCurrentTab,
-        currentTab,
-      }}
-    >
+    <TutorialContext.Provider value={value}>
       {children}
     </TutorialContext.Provider>
   );
 };
 
-const useTutorial = () => {
-  const context = useContext(TutorialContext);
-
-  if (!context) {
-    throw new Error("useTutorial must be used within a TutorialProvider");
-  }
-
-  return context;
+/** Outside a provider (the public site, a test) there is simply no tour. */
+const INERT_CONTEXT: TutorialContextType = {
+  isActive: false,
+  currentStep: 0,
+  steps: [],
+  tourKey: "",
+  hasTour: false,
+  toursReady: true,
+  startTutorial: () => undefined,
+  nextStep: () => undefined,
+  prevStep: () => undefined,
+  dropStep: () => undefined,
+  skipTutorial: () => undefined,
+  setCurrentTab: () => undefined,
+  currentTab: "overview",
 };
+
+const useTutorial = (): TutorialContextType =>
+  useContext(TutorialContext) ?? INERT_CONTEXT;
 
 export { TutorialProvider, useTutorial };

@@ -22,9 +22,17 @@ const SelectField: React.FC<SelectFieldProps> = ({
   disabled,
   placeholder,
   options,
+  hint,
+  required,
 }): JSX.Element => {
   return (
-    <FieldShell label={label} htmlFor={htmlfor} error={errorName}>
+    <FieldShell
+      label={label}
+      htmlFor={htmlfor}
+      error={errorName}
+      hint={hint}
+      required={required}
+    >
       {(control) => (
         <Select
           name={name}

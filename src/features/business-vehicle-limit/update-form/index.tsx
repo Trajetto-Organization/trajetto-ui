@@ -23,6 +23,13 @@ import {
   getBusinessEntitlements,
   type BusinessEntitlementsData,
 } from "@/actions/business/entitlements";
+import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
+import { updateVehicleLimitSchema } from "@/schemas/update-vehicle-limit-schema";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  canSubmitForm,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 import {
   useUpdateVehicleLimitForm,
@@ -49,14 +56,35 @@ const UpdateVehicleLimitFormSubmit = ({
 }) => {
   const { pending } = useFormStatus();
 
-  const initialValue = entitlements?.vehicle_limit ?? 0;
-  const [currentValue, setCurrentValue] = useState<number>(initialValue);
+  const initialValue = String(entitlements?.vehicle_limit ?? 0);
+  // Controlled, as live validation reads it: the text typed, not a number.
+  const [limit, setLimit] = useState<string>(initialValue);
 
-  const isDirty = currentValue !== initialValue;
+  const isDirty = limit !== initialValue;
 
+  // Keyed on the stored limit, not the response object: a repeated fetch
+  // with the same answer must not wipe what is being typed.
+  const storedLimit = entitlements?.vehicle_limit ?? 0;
   useEffect(() => {
-    setCurrentValue(entitlements?.vehicle_limit ?? 0);
-  }, [entitlements]);
+    setLimit(String(storedLimit));
+  }, [storedLimit]);
+
+  // Live validation (decision 16.700) with the action's schema. An empty
+  // field would be coerced to 0 ("não configurado") and silently lift the
+  // company's cap, so it is asked for instead (same as the AI limit, 16.737).
+  const live = useLiveValidation({
+    schema: updateVehicleLimitSchema,
+    values: { vehicle_limit: limit },
+    rules: (values) => ({
+      vehicle_limit:
+        values.vehicle_limit.trim() === ""
+          ? "Informe o limite de veículos (0 = sem limite)."
+          : null,
+    }),
+    serverErrors: state.updateVehicleLimitError,
+  });
+
+  const currentValue = limit.trim() === "" ? -1 : Number(limit);
 
   const vehicleCount = entitlements?.vehicle_count ?? 0;
   const inactiveCount = entitlements?.vehicle_inactive_count ?? 0;
@@ -108,10 +136,10 @@ const UpdateVehicleLimitFormSubmit = ({
                 variant="outline"
                 className={
                   usagePercentage >= 100
-                    ? "bg-red-100 text-red-800 border-red-200"
+                    ? "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900"
                     : usagePercentage >= 80
-                      ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                      : "bg-green-100 text-green-800 border-green-200"
+                      ? "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900"
+                      : "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-900"
                 }
               >
                 {usagePercentage >= 100
@@ -121,7 +149,8 @@ const UpdateVehicleLimitFormSubmit = ({
             ) : (
               <Badge
                 variant="outline"
-                className="bg-slate-100 text-slate-800 border-slate-200"
+                className="bg-slate-100 text-slate-800 border-slate-200
+                dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700"
               >
                 Sem limite configurado
               </Badge>
@@ -136,22 +165,19 @@ const UpdateVehicleLimitFormSubmit = ({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div ref={live.ref} className="space-y-4">
         <FormInput
-          label="Veículos contratados"
+          label="Veículos contratados *"
           htmlfor="vehicle_limit"
           name="vehicle_limit"
           type="number"
           min={0}
           max={100000}
-          defaultValue={entitlements?.vehicle_limit || 0}
+          value={limit}
           placeholder="Ex: 45"
-          errorName={state.updateVehicleLimitError?.vehicle_limit}
+          errorName={live.errorOf("vehicle_limit")}
           disabled={pending}
-          onChange={(e) => {
-            const val = e.target.value;
-            setCurrentValue(val === "" ? -1 : Number(val));
-          }}
+          onChange={(e) => setLimit(e.target.value)}
           onKeyDown={(e) => {
             if (["+", "-", "e", "E", ".", ","].includes(e.key)) {
               e.preventDefault();
@@ -167,7 +193,8 @@ const UpdateVehicleLimitFormSubmit = ({
         {isBelowActiveFleet && (
           <div
             className="rounded-md border border-yellow-200 bg-yellow-50
-            p-3 text-xs text-yellow-800"
+            p-3 text-xs text-yellow-800 dark:border-yellow-900
+            dark:bg-yellow-950/30 dark:text-yellow-200"
           >
             A frota ativa ({vehicleCount}) ficará acima do novo limite (
             {currentValue}). Nenhum veículo será excluído ou bloqueado — mas
@@ -177,10 +204,18 @@ const UpdateVehicleLimitFormSubmit = ({
         )}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={handleClose}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
+          >
             Cancelar
           </Button>
-          <Button type="submit" disabled={pending || !isDirty}>
+          <Button
+            type="submit"
+            disabled={pending || !canSubmitForm({ isEdit: true, isDirty })}
+          >
             <span>Salvar Limite</span>
             {pending && (
               <div className="ml-2 animate-spin">
@@ -202,7 +237,7 @@ const UpdateVehicleLimitForm = ({
 }: UpdateVehicleLimitFormProps) => {
   const defaultState: UpdateVehicleLimitFormState = {};
   const [state, dispatch] = useFormState<UpdateVehicleLimitFormState, FormData>(
-    handleUpdateVehicleLimit,
+    guardFormAction(handleUpdateVehicleLimit),
     defaultState,
   );
 
@@ -220,6 +255,8 @@ const UpdateVehicleLimitForm = ({
       setIsLoadingUsage(true);
       getBusinessEntitlements(businessId)
         .then((response) => {
+          if (isStaleActionResult(response, { background: true })) return;
+
           setEntitlements(response.success ? (response.data ?? null) : null);
         })
         .finally(() => setIsLoadingUsage(false));
@@ -251,13 +288,13 @@ const UpdateVehicleLimitForm = ({
             <Truck className="h-5 w-5" />
             Configurar Limite de Veículos
           </DialogTitle>
-          <DialogDescription className="truncate">
+          <DialogDescription className="break-words">
             Defina os veículos contratados para{" "}
             <strong title={businessName}>{businessName}</strong>
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} action={handleSubmitVehicleLimit}>
+        <form ref={formRef} action={handleSubmitVehicleLimit} noValidate>
           <UpdateVehicleLimitFormSubmit
             state={state}
             entitlements={entitlements}

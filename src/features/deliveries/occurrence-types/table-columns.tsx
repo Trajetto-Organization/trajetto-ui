@@ -9,6 +9,12 @@ import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 import type { OccurrenceTypeData } from "@/actions/occurrence-type/list-occurrence-type";
 import { OccurrenceTypeRowActions } from "./row-actions";
+import { readFormFields } from "./form-builder/rules";
+import { categoryBadgeOf, requirementsOf } from "./category-display";
+
+/** Questions in a stored form; a form that no longer parses counts as none. */
+const formQuestionCount = (stored: unknown): number =>
+  readFormFields(stored)?.length ?? 0;
 
 const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
   {
@@ -25,7 +31,7 @@ const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Selecionar todas"
         className="translate-y-[2px]"
       />
     ),
@@ -35,7 +41,7 @@ const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
         name={`select-occurrence-type-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Selecionar linha"
         className="translate-y-[2px]"
       />
     ),
@@ -65,10 +71,57 @@ const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
       <DataTableColumnHeader column={column} title="Nome" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-56">
-        {displayValue(row.getValue("name"))}
-      </p>
+      <div className="flex w-56 items-center gap-2">
+        <p className="truncate font-medium">
+          {displayValue(row.getValue("name"))}
+        </p>
+        {/* Decision 14.3: the platform's defaults are editable, never deleted. */}
+        {row.original.is_default && (
+          <Badge variant="outline" className="shrink-0">
+            Padrão
+          </Badge>
+        )}
+      </div>
     ),
+  },
+  {
+    // Decision 14.3: Entrega / Não entrega / Pausa (server facet `category`).
+    id: "category",
+    accessorFn: (row) => row.category ?? "NOT_DELIVERED",
+    meta: { title: "Categoria" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Categoria" />
+    ),
+    cell: ({ row }) => {
+      const badge = categoryBadgeOf(row.original.category);
+
+      return (
+        <Badge variant="outline" className={badge.className}>
+          {badge.label}
+        </Badge>
+      );
+    },
+    filterFn: (row, id, value) => value.includes(row.getValue(id)),
+    enableSorting: false,
+  },
+  {
+    // What the driver must send, or the legal nature of a pause.
+    id: "requirements",
+    accessorFn: (row) => requirementsOf(row).join(", "),
+    meta: { title: "Exigências" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Exigências" />
+    ),
+    cell: ({ row }) => {
+      const items = requirementsOf(row.original);
+
+      return (
+        <p className="w-56 truncate font-medium" title={items.join(", ")}>
+          {items.length === 0 ? "Nenhuma" : items.join(", ")}
+        </p>
+      );
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "description",
@@ -116,6 +169,48 @@ const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
       </p>
     ),
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
+    enableSorting: false,
+  },
+  {
+    // Decision 6.3: the driver's report waits for the tower.
+    id: "requires_authorization",
+    accessorFn: (row) => (row.requires_authorization ? "Torre" : "Não"),
+    meta: { title: "Autorização" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Autorização" />
+    ),
+    cell: ({ row }) =>
+      row.original.requires_authorization ? (
+        <Badge
+          variant="outline"
+          className="bg-amber-100 text-amber-900 border-amber-200"
+        >
+          Exige torre
+        </Badge>
+      ) : (
+        <Badge variant="outline">Não</Badge>
+      ),
+    enableSorting: false,
+  },
+  {
+    // Decision 6.2: how many questions the driver answers.
+    id: "form_fields",
+    accessorFn: (row) => formQuestionCount(row.form_fields),
+    meta: { title: "Formulário" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Formulário" />
+    ),
+    cell: ({ row }) => {
+      const count = formQuestionCount(row.original.form_fields);
+
+      return (
+        <p className="truncate font-medium w-32">
+          {count === 0
+            ? "Sem formulário"
+            : `${count} ${count === 1 ? "pergunta" : "perguntas"}`}
+        </p>
+      );
+    },
     enableSorting: false,
   },
   {
@@ -176,9 +271,7 @@ const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Ações" />
     ),
-    cell: ({ row }) => (
-      <OccurrenceTypeRowActions row={row} />
-    ),
+    cell: ({ row }) => <OccurrenceTypeRowActions row={row} />,
   },
 ];
 

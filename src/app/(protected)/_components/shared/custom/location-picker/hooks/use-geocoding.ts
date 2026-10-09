@@ -1,89 +1,73 @@
+import { useEffect, useState } from "react";
 import { useQuery } from "react-query";
+
+import {
+  SEARCH_DEBOUNCE_MS,
+  isSearchableQuery,
+  normalizeSearchQuery,
+  reverseGeocode,
+  searchAddresses,
+} from "../geocoding";
 import type {
   NominatimSearchResult,
   ReverseGeocodingResult,
 } from "../location-picker.types";
 
-// 🔍 Forward Geocoding: Address → Coordinates
-const fetchAddressSearch = async (
-  query: string,
-): Promise<NominatimSearchResult[]> => {
-  if (!query || query.trim().length < 3) {
-    return [];
-  }
+/** The value once it stopped changing for `delay` ms. */
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
 
-  // Best query format for exact addresses
-  // Ex: "Estrada união indústria 5678 Petrópolis RJ" → more accurate search
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/search?` +
-      `format=json&` +
-      `q=${encodeURIComponent(query)}&` +
-      `addressdetails=1&` +
-      `dedupe=0&` + // It does not deduplicate results (shows all variations).
-      `accept-language=pt-BR`,
-    {
-      headers: {
-        "Accept-Language": "pt-BR,pt;q=0.9",
-        "User-Agent": "TrajettosFleetManager/1.0", // Application identification
-      },
-    },
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
 
-  if (!response.ok) {
-    throw new Error("Falha ao buscar endereços");
-  }
+    return () => clearTimeout(timer);
+  }, [value, delay]);
 
-  return response.json();
-};
+  return debounced;
+}
 
-// 🗺️ Reverse Geocoding: Coordinates → Address
-const fetchReverseGeocoding = async (
-  lat: number,
-  lng: number,
-): Promise<ReverseGeocodingResult> => {
-  const response = await fetch(
-    `https://nominatim.openstreetmap.org/reverse?` +
-      `format=json&` +
-      `lat=${lat}&` +
-      `lon=${lng}&` +
-      `zoom=18&` +
-      `addressdetails=1&` +
-      `accept-language=pt-BR`,
-    {
-      headers: {
-        "Accept-Language": "pt-BR,pt;q=0.9",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error("Falha ao buscar endereço");
-  }
-
-  return response.json();
-};
-
-// Hook for Address Search (Forward Geocoding)
+/**
+ * Forward geocoding of what the user typed. `isPending` covers the debounce
+ * window too: without it the list said "Nenhum endereço encontrado" for
+ * the half second before the search even started.
+ */
 const useAddressSearch = (query: string) => {
-  return useQuery<NominatimSearchResult[], Error>(
-    ["address-search", query],
-    () => fetchAddressSearch(query),
+  const normalized = normalizeSearchQuery(query);
+  const debounced = useDebouncedValue(normalized, SEARCH_DEBOUNCE_MS);
+  const enabled = isSearchableQuery(debounced);
+
+  const result = useQuery<NominatimSearchResult[], Error>(
+    ["address-search", debounced],
+    // A newer query cancels the request of the one it replaced.
+    ({ signal }) => searchAddresses(debounced, { signal }),
     {
-      enabled: query.trim().length >= 3,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      enabled,
+      staleTime: 30 * 60 * 1000,
+      cacheTime: 60 * 60 * 1000,
       refetchOnWindowFocus: false,
       refetchOnMount: false,
-      retry: 1,
+      // One retry at most: a failing public server is not hammered.
+      retry: (failures, error) =>
+        failures < 1 && (error as { status?: number }).status !== 429,
     },
   );
+
+  const isDebouncing =
+    normalized !== debounced && isSearchableQuery(normalized);
+
+  return {
+    results: enabled ? (result.data ?? []) : [],
+    isPending: isDebouncing || (enabled && result.isLoading),
+    error: enabled && !isDebouncing ? result.error : null,
+    retry: () => void result.refetch(),
+  };
 };
 
 // Hook for Reverse Geocoding
 const useReverseGeocoding = (lat: number | null, lng: number | null) => {
   return useQuery<ReverseGeocodingResult, Error>(
     ["reverse-geocoding", lat, lng],
-    () => fetchReverseGeocoding(lat!, lng!),
+    ({ signal }) => reverseGeocode(lat!, lng!, { signal }),
     {
       // Only fetch if coordinates are valid (not null and not 0)
       enabled: lat !== null && lng !== null && lat !== 0 && lng !== 0,
@@ -97,4 +81,4 @@ const useReverseGeocoding = (lat: number | null, lng: number | null) => {
 };
 
 export type { NominatimSearchResult, ReverseGeocodingResult };
-export { useAddressSearch, useReverseGeocoding };
+export { useAddressSearch, useDebouncedValue, useReverseGeocoding };

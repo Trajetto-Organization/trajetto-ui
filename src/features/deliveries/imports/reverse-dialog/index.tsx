@@ -17,10 +17,14 @@ import {
 import { toast } from "sonner";
 import { useQueryClient } from "react-query";
 
-import { reverseImport, type ReversalResult } from "@/actions/import/reverse-import";
+import {
+  reverseImport,
+  type ReversalResult,
+} from "@/actions/import/reverse-import";
 import { revalidateTags } from "@/actions/revalidate";
 
 import { revalidateDataToQueryKeyMap } from "@/lib/query-keys-mapping";
+import { isStaleActionResult } from "@/lib/action-result";
 
 interface ReverseImportDialogProps {
   businessId: string;
@@ -61,6 +65,8 @@ const ReverseImportDialog = ({
 
     try {
       const response = await reverseImport(businessId, importId);
+
+      if (isStaleActionResult(response)) return;
 
       if (!response.success || !response.data) {
         toast.error(response.message);
@@ -125,7 +131,10 @@ const ReverseImportDialog = ({
                   ))}
 
                   {result.keptRoutes.map((route) => (
-                    <li key={route.id} className="rounded-md border p-2 text-sm">
+                    <li
+                      key={route.id}
+                      className="rounded-md border p-2 text-sm"
+                    >
                       <p className="truncate font-medium">Rota #{route.code}</p>
                       <p className="text-xs text-muted-foreground">
                         {route.reason}
@@ -156,8 +165,8 @@ const ReverseImportDialog = ({
 
               <AlertDialogDescription className="pt-1 text-sm">
                 Desfaz o que a importação{" "}
-                <strong title={filename}>{filename}</strong> criou —{" "}
-                {imported} entrega(s) — e nada além disso.
+                <strong title={filename}>{filename}</strong> criou — {imported}{" "}
+                entrega(s) — e nada além disso.
               </AlertDialogDescription>
             </AlertDialogHeader>
 

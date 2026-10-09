@@ -1,19 +1,27 @@
 "use client";
 
 import { Table } from "@tanstack/react-table";
-import { CircleDot, Truck, UserRound, X } from "lucide-react";
+import { CircleDot, Truck, UserRound } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
-import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
+import { DataTableServerFilters } from "@/app/(protected)/_components/shared/tanstack-table/data-table-server-filters";
 import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
+import { facetOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table/server-table";
 
 import { useSearch } from "@/lib/search-params";
 
 import type { RouteListItem } from "@/actions/route/get-route";
 
+import {
+  ROUTE_STATUS_FILTER_LABELS,
+  type RouteListSearchMeta,
+} from "../server-table";
+
 interface RoutesTableToolbarProps {
+  /** The API's option lists and counts (`searchMeta.facets`). */
+  facets?: RouteListSearchMeta["facets"];
+
   /**
    * Injected by DataTable via cloneElement — never passed by the caller.
    */
@@ -24,26 +32,19 @@ interface RoutesTableToolbarProps {
 }
 
 /**
- * Two filtering systems side by side, as everywhere else in this app: the
- * search box writes `?search=` and the SERVER answers it, while the faceted
- * chips filter the page already on screen. Mixing them up is the usual way a
- * filter starts lying — the chips can only narrow what was fetched.
+ * Search and filters of the routes board. Every filter is answered by the
+ * server over the whole company (decision 8.8): the options and their counts
+ * come from the API, never from the rows on screen. The chips used to filter
+ * only the page already loaded while the pager counted the whole company.
  */
-const FILTERS = [
-  { key: "status", title: "Status", dynamicOptionIcon: CircleDot },
-  { key: "driverName", title: "Motorista", dynamicOptionIcon: UserRound },
-  { key: "vehiclePlate", title: "Veículo", dynamicOptionIcon: Truck },
-];
-
 const RoutesTableToolbar = ({
+  facets,
   table,
   error,
   isLoading,
   setIsLoading,
 }: RoutesTableToolbarProps): JSX.Element => {
   const { handleSearch, searchParams, isPending } = useSearch();
-
-  const isFiltered = (table?.getState().columnFilters.length ?? 0) > 0;
 
   const handleSearchWithLoading = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -56,7 +57,8 @@ const RoutesTableToolbar = ({
     <div className="flex flex-wrap items-center gap-2 w-full">
       <SearchInputWithLoading
         data-tutorial="routes-search"
-        placeholder="Nome da rota, motorista ou número..."
+        placeholder="Nome, destino, motorista ou número..."
+        aria-label="Buscar rotas por nome, destino, motorista ou número"
         defaultValue={searchParams.get("search") || ""}
         onChange={handleSearchWithLoading}
         disabled={error}
@@ -64,33 +66,30 @@ const RoutesTableToolbar = ({
         wrapperClassName="w-full sm:w-auto sm:min-w-[270px] sm:max-w-[270px]"
       />
 
-      <div className="flex flex-wrap items-center gap-2" data-tutorial="routes-filters">
-        {FILTERS.map(({ key, title, dynamicOptionIcon }) => {
-          const column = table?.getColumn(key);
-
-          if (!column) return null;
-
-          return (
-            <DataTableFacetedFilter
-              key={key}
-              column={column}
-              title={title}
-              dynamicOptionIcon={dynamicOptionIcon}
-            />
-          );
-        })}
-      </div>
-
-      {isFiltered && (
-        <Button
-          variant="ghost"
-          onClick={() => table?.resetColumnFilters()}
-          className="h-8 px-2 lg:px-3 flex items-center gap-1"
-        >
-          Resetar
-          <X className="h-4 w-4" />
-        </Button>
-      )}
+      <DataTableServerFilters
+        table={table}
+        dataTutorial="routes-filters"
+        filters={[
+          {
+            columnId: "status",
+            title: "Status",
+            icon: CircleDot,
+            options: facetOptions(facets?.status, ROUTE_STATUS_FILTER_LABELS),
+          },
+          {
+            columnId: "driverName",
+            title: "Motorista",
+            icon: UserRound,
+            options: facetOptions(facets?.driverId),
+          },
+          {
+            columnId: "vehiclePlate",
+            title: "Veículo",
+            icon: Truck,
+            options: facetOptions(facets?.vehicleId),
+          },
+        ]}
+      />
 
       {!error && table && (
         <div className="w-full sm:w-auto sm:ml-auto">

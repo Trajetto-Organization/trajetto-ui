@@ -14,21 +14,25 @@ import {
 
 const ProtectedDashboardContentLoading = (): JSX.Element => {
   return (
-    <div className="space-y-6 my-9">
+    <div data-tutorial="loading" className="space-y-6 my-9">
       {/* Alert skeleton */}
       <Skeleton className="h-16 w-full rounded-md" />
 
-      {/* Tabs skeleton */}
-      <div className="flex items-center justify-between mb-4">
-        <Tabs>
-          <TabsList className="w-auto">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
+      {/* Tabs skeleton — tabs and refresh stacked full width below `lg`,
+      one row from there, like the strip it stands in for. */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+        <Tabs className="w-full lg:w-auto">
+          <TabsList className="w-full justify-start lg:w-auto">
+            <TabsTrigger
+              value="overview"
+              className="flex flex-1 items-center gap-2 lg:flex-initial"
+            >
               <Skeleton className="h-4 w-4 rounded-full" />
               <Skeleton className="h-4 w-20" />
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <Skeleton className="h-9 w-28" />
+        <Skeleton className="h-9 w-full lg:ml-auto lg:w-36" />
       </div>
 
       {/* Stat cards skeleton */}

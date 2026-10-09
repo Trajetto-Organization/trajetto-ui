@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { open } from "./support/operation";
+import { waitForHydration } from "./support/ui";
 
 /**
  * The fifteen-second cooldown, pressed for real.
@@ -86,7 +87,10 @@ function mostWithinWindow(times: number[]): number {
 }
 
 /** The action id behind the refresh button, learnt from one press. */
-async function actionBehind(page: Page, press: () => Promise<void>): Promise<string> {
+async function actionBehind(
+  page: Page,
+  press: () => Promise<void>,
+): Promise<string> {
   const request = page.waitForRequest(
     (candidate) =>
       candidate.method() === "POST" &&
@@ -115,8 +119,12 @@ const refreshOn = (page: Page) =>
  * `isLoading` is true, which is exactly while that first fetch is in flight.
  */
 async function panelSettled(page: Page): Promise<void> {
+  // A press before hydration is a dead click, and pressUntilLocked would
+  // count it as one of its attempts.
+  await waitForHydration(refreshOn(page));
+
   await expect(page.locator("main .animate-pulse")).toHaveCount(0, {
-    timeout: 30_000,
+    timeout: 60_000,
   });
 }
 
@@ -133,7 +141,9 @@ async function pressUntilLocked(page: Page, attempts = 12): Promise<void> {
   const button = refreshOn(page);
 
   for (let press = 0; press < attempts; press += 1) {
-    await expect(button).toBeEnabled({ timeout: 15_000 });
+    // Disabled while its refetch is in flight; on the dev server under three
+    // workers that flight took longer than the 15 s this used to allow.
+    await expect(button).toBeEnabled({ timeout: 60_000 });
 
     await button.click();
 
@@ -146,8 +156,8 @@ async function pressUntilLocked(page: Page, attempts = 12): Promise<void> {
   );
 }
 
-test.describe("o botão Atualizar de um painel", () => {
-  test("trava depois de três toques e SEGURA a rede", async ({ page }) => {
+test.describe("a panel's Atualizar button", () => {
+  test("locks after three taps and HOLDS the network", async ({ page }) => {
     await open(page, PANEL);
 
     const button = refreshOn(page);
@@ -223,7 +233,7 @@ test.describe("o botão Atualizar de um painel", () => {
     expect(mostWithinWindow(traffic.times())).toBe(3);
   });
 
-  test("e o cooldown não vaza para outro painel", async ({ page }) => {
+  test("and the cooldown does not leak to another panel", async ({ page }) => {
     /**
      * The cooldown lives in `localStorage` under a key per control. Two
      * screens sharing one means pressing Atualizar on Webhooks locks the
@@ -255,7 +265,7 @@ test.describe("o botão Atualizar de um painel", () => {
     ).toBeEnabled();
   });
 
-  test("e sobrevive a um recarregamento da página", async ({ page }) => {
+  test("and survives a page reload", async ({ page }) => {
     /**
      * Otherwise the limit is a suggestion: F5 and press again. It is kept in
      * `localStorage` precisely so a reload does not reset it.
@@ -286,7 +296,7 @@ test.describe("o botão Atualizar de um painel", () => {
     await expect(afterReload).toContainText(/\d+s/);
   });
 
-  test("e solta sozinho quando o tempo passa", async ({ page }) => {
+  test("and releases on its own when the time passes", async ({ page }) => {
     // The other half. A limit that never releases is not a limit, it is a
     // broken button — and the countdown would have been lying.
     await open(page, PANEL);

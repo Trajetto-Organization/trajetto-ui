@@ -1,16 +1,16 @@
 import type { CommandBusinessInputValue } from "../../common.types";
 
 interface SearchBusinessProps {
+  /**
+   * The field's label, with its marker (decision 3.3): "Nome *" required,
+   * "Nome (opcional)" optional. Defaults to "Selecione a empresa *".
+   */
+  label?: string;
   errorBusinessId?: string[];
   searchBusinessInputValue: string;
   handleUpdateSearchBussinessInputValue: (
     searchBusinessData: CommandBusinessInputValue,
   ) => void;
-}
-
-interface FetchBusinessProps {
-  cursor?: string;
-  signal?: AbortSignal;
 }
 
 interface FetchBusinessResult {
@@ -19,4 +19,4 @@ interface FetchBusinessResult {
   hasMore: boolean;
 }
 
-export type { SearchBusinessProps, FetchBusinessProps, FetchBusinessResult };
+export type { SearchBusinessProps, FetchBusinessResult };

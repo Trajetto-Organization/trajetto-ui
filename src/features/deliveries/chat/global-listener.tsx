@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
 
-import { getSocket, initializeSocket } from "@/socket";
+import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 import { useAuthStore } from "@/store/auth-store";
 
 import type { SentChatMessage } from "@/actions/chat/chat.types";
@@ -59,6 +59,10 @@ const ChatGlobalListener = (): null => {
     refreshTimerRef.current = setTimeout(() => {
       refreshTimerRef.current = null;
       queryClient.invalidateQueries(["chat-threads"]);
+
+      // Decision 14.5: the tickets' list and summary derive from the same
+      // messages and cursors.
+      queryClient.invalidateQueries(["chat-tickets"]);
     }, THREADS_REFRESH_COALESCE_MS);
   }, [queryClient]);
 
@@ -117,16 +121,27 @@ const ChatGlobalListener = (): null => {
 
         socket.on("chatMessage", handleChatMessage);
         socket.on("chatRead", handleChatRead);
+        // A ticket opened, taken, closed: counts are asked again, not summed.
+        socket.on("supportTicket", handleChatRead);
       })
       .catch(() => {
         // Without realtime the counter still refreshes on mount and focus.
       });
 
+    // A message sent while the socket was down is never re-emitted, and a
+    // dispatcher who did not change windows would not see the badge move
+    // until the next message. The count is the server's, so it is asked
+    // again, through the same coalescing as a burst of events.
+    const stopResync = onRealtimeResync(scheduleThreadsRefresh);
+
     return () => {
       disposed = true;
 
+      stopResync();
+
       boundSocket?.off("chatMessage", handleChatMessage);
       boundSocket?.off("chatRead", handleChatRead);
+      boundSocket?.off("supportTicket", handleChatRead);
     };
   }, [canUseChat, myUserId, reportDelivered, scheduleThreadsRefresh]);
 

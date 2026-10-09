@@ -1,7 +1,10 @@
 "use server";
 
-import { createUpdateFuelSchema } from "@/schemas/create-update-fuel-schema";
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { updateFuelFormSchema } from "@/schemas/create-update-fuel-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateFuelProps {
   message: string;
@@ -42,7 +45,7 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
     }
   }
 
-  const updateFuelValidation = createUpdateFuelSchema.safeParse(formValues);
+  const updateFuelValidation = updateFuelFormSchema.safeParse(formValues);
 
   if (updateFuelValidation.error) {
     const formatError = updateFuelValidation.error.flatten();
@@ -56,8 +59,10 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
     const body: Record<string, unknown> = {};
 
     // Add all form fields
+    // What the form sent: the typed values always, a link or the location
+    // only when changed (the edit dialog decides; absent keys stay as they
+    // are on the server).
     Object.entries(updateFuelValidation.data).forEach(([key, value]) => {
-      // For update, we need to send all fields including empty ones to clear values
       if (value !== undefined) {
         // Convert null to empty string for optional fields like notes
         body[key] = value === null ? "" : value;
@@ -69,7 +74,7 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
       body.photo = { key: photoKey };
     }
 
-    const response = await fetch(updateFuel, {
+    const response = await apiFetch(updateFuel, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -81,14 +86,17 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
 
     const { message } = (await response.json()) as UpdateFuelProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateFuelError: { updateFuelErrorMessage: message },
+        updateFuelError: {
+          updateFuelErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("fuel/update-fuel", error);
     return {
       updateFuelError: {
         updateFuelErrorMessage:

@@ -14,6 +14,7 @@ interface UpdateBusinessValidationError {
   responsible_name?: string[];
   telephone?: string[];
   email?: string[];
+  timezone?: string[];
   updateBusinessErrorMessage?: string;
 }
 

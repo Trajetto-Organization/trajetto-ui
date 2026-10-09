@@ -1,5 +1,6 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "@/actions/cookies";
 import { revalidateTagName } from "@/actions/revalidate";
 
@@ -9,6 +10,7 @@ import type {
   WhatsAppSettings,
 } from "@/app/(protected)/_components/profile/notifications/whatsapp/shared/common.types";
 import { updateWhatsAppSettingsSchema } from "@/schemas/phone-validation-schema";
+import { apiFetch } from "@/lib/api-fetch";
 
 /**
  * 🔧 Get current WhatsApp settings
@@ -26,7 +28,7 @@ async function getWhatsAppSettings(): Promise<
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/whatsapp/settings`,
       {
         method: "GET",
@@ -54,6 +56,7 @@ async function getWhatsAppSettings(): Promise<
       data: result.data,
     };
   } catch (error) {
+    logActionError("whatsapp/getWhatsAppSettings", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao tentar obter as configurações.",
@@ -87,7 +90,7 @@ async function updateWhatsAppSettings(
       };
     }
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/whatsapp/settings`,
       {
         method: "PATCH",
@@ -117,6 +120,7 @@ async function updateWhatsAppSettings(
       data: result.data,
     };
   } catch (error) {
+    logActionError("whatsapp/updateWhatsAppSettings", error);
     return {
       success: false,
       message:

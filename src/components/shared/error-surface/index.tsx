@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AlertTriangle, Home, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { isDeploymentSkewError, reloadOnce } from "@/lib/deployment-skew";
 
 /**
  * What a screen says when its render threw.
@@ -77,6 +78,25 @@ const ErrorSurface = ({
     */
     // eslint-disable-next-line no-console
     console.error("[Trajetto] erro não tratado na renderização:", error);
+
+    /*
+      A chunk this page cannot load, or a Server Action the server no longer
+      knows, means the tab is from an older build — "Tentar novamente" would
+      ask the same stale page for the same missing file. A full load fetches
+      the current build; once per build, so a chunk that is really gone
+      cannot loop.
+    */
+    if (isDeploymentSkewError(error)) {
+      try {
+        reloadOnce(
+          window.sessionStorage,
+          process.env.NEXT_PUBLIC_BUILD_SHA || "unknown",
+          () => window.location.reload(),
+        );
+      } catch {
+        // No session storage: the buttons below are the way out.
+      }
+    }
   }, [error]);
 
   return (
@@ -137,11 +157,7 @@ const ErrorSurface = ({
             during the server render, and the two boundaries that have a
             router pass something that can.
           */}
-          <Button
-            type="button"
-            onClick={onRetry ?? reset}
-            className="gap-2"
-          >
+          <Button type="button" onClick={onRetry ?? reset} className="gap-2">
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             Tentar novamente
           </Button>
@@ -166,8 +182,7 @@ const ErrorSurface = ({
 
         {error.digest && (
           <p className="text-xs text-muted-foreground">
-            Código do erro:{" "}
-            <code className="font-mono">{error.digest}</code>
+            Código do erro: <code className="font-mono">{error.digest}</code>
           </p>
         )}
       </div>

@@ -21,7 +21,8 @@ interface ProtectedCommandBarProps extends HTMLAttributes<HTMLElement> {
 interface UseCommandBarActions {
   user: {
     role: UserRole;
-    permissions?: { permissionKey: PermissionKey }[];
+    /** Only the rows with canRead count; see `readablePermissionKeys`. */
+    permissions?: { permissionKey: PermissionKey; canRead?: boolean }[];
     driverId?: string | null;
     profileAccess?: {
       permissions?: { permissionKey: PermissionKey }[];

@@ -6,17 +6,16 @@ import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shar
 import type { RouteStatus } from "./status";
 
 /**
- * The numbers come from the API's status tally over the FILTERED set, never
- * from the page on screen — a card that counts the current page reports ten
- * rows as if they were the whole operation, and changes every time the user
- * pages.
+ * The numbers come from the API's status tally, never from the page on
+ * screen — a card that counts the current page reports ten rows as if they
+ * were the whole operation, and changes every time the user pages.
  */
 const routeStats: StatConfig[] = [
   {
     key: "total-routes",
     title: "Total de Rotas",
     valueKey: "totalRoutes",
-    description: "No filtro atual",
+    description: "Todos os status, na busca e nos filtros",
     icon: Route,
     variant: "primary",
   },
@@ -57,25 +56,34 @@ const routeStats: StatConfig[] = [
 /**
  * `searchMeta.statusCounts` is where the tally lands: sendAsNDJSON nests
  * whatever the use case returned in `meta` under that key, so it is NOT at the
- * top level of the envelope.
+ * top level of the envelope. The API counts it with the search and every
+ * filter except the status one (decision 8.8), so picking a status narrows
+ * the table without zeroing the other cards.
+ *
+ * The total is the sum of that same tally, never the pager's `meta.total`:
+ * the pager counts WITH the status filter, and mixing the two sets made
+ * "Concluídas" read "3 (150%)" once a status was picked.
  *
  * "Liberada" is folded into "Aguardando liberação" deliberately — a released
  * route has not left either, and four cards is what fits. The status filter is
  * where the two are told apart.
  */
 function buildStatsData(
-  total: number,
-  searchMeta: Record<string, unknown> | undefined,
+  searchMeta:
+    { statusCounts?: Partial<Record<RouteStatus, number>> } | undefined,
 ): Record<string, number> {
-  const counts = (searchMeta?.statusCounts ?? {}) as Partial<
-    Record<RouteStatus, number>
-  >;
+  const counts = searchMeta?.statusCounts ?? {};
+
+  const count = (status: RouteStatus): number => Number(counts[status] ?? 0);
 
   return {
-    totalRoutes: Number(total ?? 0),
-    planned: Number(counts.PLANNED ?? 0) + Number(counts.RELEASED ?? 0),
-    inProgress: Number(counts.IN_PROGRESS ?? 0),
-    completed: Number(counts.COMPLETED ?? 0),
+    totalRoutes: Object.values(counts).reduce(
+      (sum, value) => sum + Number(value ?? 0),
+      0,
+    ),
+    planned: count("PLANNED") + count("RELEASED"),
+    inProgress: count("IN_PROGRESS"),
+    completed: count("COMPLETED"),
   };
 }
 

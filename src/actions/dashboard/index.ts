@@ -1,15 +1,17 @@
-"use server";
+// Not "use server": only Server Components call this, and each exported
+// function of a "use server" module is an endpoint any browser can call with
+// any arguments (here, any token), proxied through this server.
+// server-only: a client import would fail the build instead of shipping it.
+import "server-only";
 
-// Calculate percentage change
-const calculateChange = (current: number, previous: number): number => {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return Math.round(((current - previous) / previous) * 100);
-};
+import { logActionError } from "@/lib/log-action-error";
+import { apiFetch } from "@/lib/api-fetch";
+import { countCard } from "@/lib/dashboard-counts";
 
 // Main function to get all dashboard data - Simplified version with single request
 const getDashboardData = async (token: string) => {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/dashboard/overview`,
       {
         method: "GET",
@@ -48,14 +50,8 @@ const getDashboardData = async (token: string) => {
 
     const data = await response.json();
 
-    // Calculate the change percentage for each entity count
-    const calculateCountsWithChange = (counts: {
-      currentMonth: number;
-      lastMonth: number;
-    }) => ({
-      value: counts.currentMonth,
-      change: calculateChange(counts.currentMonth, counts.lastMonth),
-    });
+    // What each card shows and its comparison (lib/dashboard-counts).
+    const calculateCountsWithChange = countCard;
 
     // Transform the data to match the expected format
     return {
@@ -142,6 +138,7 @@ const getDashboardData = async (token: string) => {
       maintenanceCosts: data.maintenanceCosts,
     };
   } catch (error) {
+    logActionError("dashboard", error);
     // Return empty data structure on error
     return {
       counts: {

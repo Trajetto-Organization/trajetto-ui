@@ -214,4 +214,15 @@ const createUpdateVehicleChecklistSchema = z.object({
   branchId: z.string().uuid("O ID da filial deve ser um UUID válido."),
 });
 
-export { createUpdateVehicleChecklistSchema };
+/**
+ * The edit sends only the links the person changed (FLEET-FUEL-1): an
+ * untouched branch, vehicle or driver stays out of the request.
+ */
+const updateVehicleChecklistFormSchema =
+  createUpdateVehicleChecklistSchema.partial({
+    vehicleId: true,
+    driverId: true,
+    branchId: true,
+  });
+
+export { createUpdateVehicleChecklistSchema, updateVehicleChecklistFormSchema };

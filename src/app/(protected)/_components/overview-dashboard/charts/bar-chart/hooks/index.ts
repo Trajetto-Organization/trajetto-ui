@@ -63,11 +63,11 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
 
   // Calculate totals for footer based on filtered data
   const totalInternal = displayCosts.reduce(
-    (sum, item) => sum + item.preventive,
+    (sum, item) => sum + item.internal,
     0,
   );
   const totalExternal = displayCosts.reduce(
-    (sum, item) => sum + item.corrective,
+    (sum, item) => sum + item.external,
     0,
   );
 
@@ -78,8 +78,8 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
     const currentPeriod = displayCosts[displayCosts.length - 1];
     const previousPeriod = displayCosts[displayCosts.length - 2];
 
-    const currentTotal = currentPeriod.preventive + currentPeriod.corrective;
-    const previousTotal = previousPeriod.preventive + previousPeriod.corrective;
+    const currentTotal = currentPeriod.internal + currentPeriod.external;
+    const previousTotal = previousPeriod.internal + previousPeriod.external;
 
     if (previousTotal === 0) return 0;
 
@@ -90,9 +90,9 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
   const chartData = useMemo(() => {
     return displayCosts.map((item) => ({
       month: item.month || item.date,
-      total: item.preventive + item.corrective,
-      preventive: item.preventive,
-      corrective: item.corrective,
+      total: item.internal + item.external,
+      internal: item.internal,
+      external: item.external,
     }));
   }, [displayCosts]);
 

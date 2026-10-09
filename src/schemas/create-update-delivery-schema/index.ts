@@ -1,20 +1,32 @@
 import { z } from "zod";
 import {
+  optionalDateOnly,
+  optionalMultilineText,
+} from "@/features/deliveries/lib/text-rules";
+import {
   hasConsecutiveSpaces,
   hasSpaceAtEdges,
   isEmptyOrWhitespace,
 } from "@/lib/format-values";
 
-const requiredTextField = (label: string, min: number, max: number) =>
+// `required` is the whole sentence: the label's gender decides "obrigatório"
+// or "obrigatória", and empty or blank means missing, not short (16.702).
+const requiredTextField = (
+  label: string,
+  min: number,
+  max: number,
+  required: string,
+) =>
   z
     .string()
+    .regex(/\S/, required)
     .min(min, `${label} deve ter no mínimo ${min} caracteres.`)
     .max(max, `${label} deve ter no máximo ${max} caracteres.`)
     .superRefine((value, ctx) => {
       if (isEmptyOrWhitespace(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `${label} não pode ser vazio ou conter apenas espaços.`,
+          message: required,
         });
 
         return;
@@ -65,20 +77,22 @@ const optionalTextField = (label: string, max: number) =>
   );
 
 const optionalDigits = (pattern: RegExp, message: string) =>
-  z.preprocess(
-    (val) => {
-      if (typeof val === "string") {
-        const digits = val.replace(/\D/g, "");
-        return digits === "" ? null : digits;
-      }
+  z.preprocess((val) => {
+    if (typeof val === "string") {
+      const digits = val.replace(/\D/g, "");
+      return digits === "" ? null : digits;
+    }
 
-      return val;
-    },
-    z.string().regex(pattern, message).nullable().optional(),
-  );
+    return val;
+  }, z.string().regex(pattern, message).nullable().optional());
 
 /** Numbers arrive as typed text ("45,237"), so the comma is the decimal. */
-const decimalField = (label: string, max: number, allowZero: boolean) =>
+const decimalField = (
+  label: string,
+  max: number,
+  allowZero: boolean,
+  required: string,
+) =>
   z.preprocess(
     (val) => {
       if (typeof val === "string") {
@@ -90,6 +104,9 @@ const decimalField = (label: string, max: number, allowZero: boolean) =>
     },
     z
       .number({
+        // An empty cell becomes undefined above; without this zod answers
+        // in English ("Required").
+        required_error: required,
         invalid_type_error: `${label} deve ser um número válido.`,
       })
       .max(max, `${label} excede o limite permitido.`)
@@ -105,10 +122,25 @@ const decimalField = (label: string, max: number, allowZero: boolean) =>
  * refused in the browser with the same message the server would give.
  */
 const deliveryItemSchema = z.object({
-  description: requiredTextField("A descrição do item", 2, 200),
-  quantity: decimalField("A quantidade", 999999, false),
+  description: requiredTextField(
+    "A descrição do item",
+    2,
+    200,
+    "A descrição do item é obrigatória.",
+  ),
+  quantity: decimalField(
+    "A quantidade",
+    999999,
+    false,
+    "A quantidade é obrigatória.",
+  ),
   unit: optionalTextField("A unidade", 20),
-  unit_value: decimalField("O valor unitário", 99999999, true).optional(),
+  unit_value: decimalField(
+    "O valor unitário",
+    99999999,
+    true,
+    "O valor unitário é obrigatório.",
+  ).optional(),
 });
 
 const deliveryItemsSchema = z
@@ -135,7 +167,12 @@ const createUpdateDeliverySchema = z.object({
       .nullable()
       .optional(),
   ),
-  recipient_name: requiredTextField("O nome do destinatário", 2, 150),
+  recipient_name: requiredTextField(
+    "O nome do destinatário",
+    2,
+    150,
+    "O nome do destinatário é obrigatório.",
+  ),
   recipient_document: optionalDigits(
     /^(\d{11}|\d{14})$/,
     "O documento deve ser um CPF (11 dígitos) ou CNPJ (14 dígitos).",
@@ -161,28 +198,25 @@ const createUpdateDeliverySchema = z.object({
     (val) => (typeof val === "string" ? val.replace(/\D/g, "") : val),
     z
       .string()
+      .min(1, "O CEP é obrigatório.")
       .length(8, "O CEP deve ter exatamente 8 dígitos.")
       .regex(/^\d{8}$/, "O CEP deve conter apenas números."),
   ),
-  city: requiredTextField("A cidade", 2, 100),
+  city: requiredTextField("A cidade", 2, 100, "A cidade é obrigatória."),
   uf: z
     .string()
-    .length(2, "UF deve ter exatamente 2 caracteres.")
+    .regex(/\S/, "A UF é obrigatória.")
+    .length(2, "A UF deve ter exatamente 2 letras.")
     .toUpperCase()
-    .regex(/^[A-Z]{2}$/, "UF deve conter apenas letras."),
-  street: requiredTextField("A rua", 2, 150),
+    .regex(/^[A-Z]{2}$/, "A UF deve conter apenas letras."),
+  street: requiredTextField("A rua", 2, 150, "A rua é obrigatória."),
   address_number: optionalTextField("O número do endereço", 10),
   complement: optionalTextField("O complemento", 50),
   neighborhood: optionalTextField("O bairro", 100),
-  scheduled_date: z.preprocess(
-    (val) => (val === "" ? null : val),
-    z.string().nullable().optional(),
-  ),
-  notes: optionalTextField("As observações", 500),
+  // A day (decision 1.3): "YYYY-MM-DD", as the date-only picker emits it.
+  scheduled_date: optionalDateOnly("A data prevista"),
+  // Multiline (decision 5.5): paragraphs allowed, doubled spaces not.
+  notes: optionalMultilineText("A observação", 500),
 });
 
-export {
-  createUpdateDeliverySchema,
-  deliveryItemSchema,
-  deliveryItemsSchema,
-};
+export { createUpdateDeliverySchema, deliveryItemSchema, deliveryItemsSchema };

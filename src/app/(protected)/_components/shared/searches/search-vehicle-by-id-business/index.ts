@@ -1,5 +1,5 @@
 import { useQuery } from "react-query";
-import { getCookies } from "@/actions/cookies";
+import { relayUrl } from "@/lib/api-relay-paths";
 
 import type {
   FetchVehicleDataProps,
@@ -15,15 +15,14 @@ const fetchVehicleData = async ({
     return null;
   }
 
-  const tokenAccess = await getCookies("tkey");
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/vehicle/get-vehicle/${vehicleId}/business/${businessId}`,
+    relayUrl(
+      `/vehicle/get-vehicle/${encodeURIComponent(vehicleId)}/business/${encodeURIComponent(businessId)}`,
+    ),
     {
-      credentials: "include",
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenAccess}`,
       },
     },
   );
@@ -54,10 +53,16 @@ function useFetchVehicleData({
     queryKey: ["vehicleData", vehicleId, businessId],
     queryFn: () => fetchVehicleData({ vehicleId, businessId }),
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+
+    // Current mileage and maintenance interval feed the form's validation,
+    // and another session's refueling or service order moves them.
+    staleTime: 0,
     retry: 2,
     enabled: !!vehicleId && !!businessId,
-    keepPreviousData: true,
+
+    // Keyed by vehicle: keeping the previous answer would validate the new
+    // vehicle against the old one's mileage until the request lands.
+    keepPreviousData: false,
   });
 }
 

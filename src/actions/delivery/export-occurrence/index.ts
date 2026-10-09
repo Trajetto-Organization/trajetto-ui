@@ -1,8 +1,17 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type { ExportFormat, ExportResponse } from "../export-delivery";
+
+import {
+  OCCURRENCE_EXPORT_FILTERS,
+  buildExportParams,
+  exportErrorMessage,
+  type ExportFilters,
+} from "@/features/deliveries/lib/export-query";
+import { apiFetch } from "@/lib/api-fetch";
 
 /**
  * The report a carrier sends the shipper who asks why the cargo did not go in.
@@ -13,6 +22,7 @@ import type { ExportFormat, ExportResponse } from "../export-delivery";
 const handleExportOccurrence = async (
   search?: string,
   format: ExportFormat = "csv",
+  filters: ExportFilters = {},
 ): Promise<ExportResponse> => {
   const tokenAccess = await getCookies("tkey");
 
@@ -24,12 +34,15 @@ const handleExportOccurrence = async (
   }
 
   try {
-    const params = new URLSearchParams();
+    // The feed's facets and, for the MASTER, the company (DLV-EXP-1).
+    const params = buildExportParams(
+      search,
+      format,
+      filters,
+      OCCURRENCE_EXPORT_FILTERS,
+    );
 
-    if (search) params.append("search", search);
-    if (format) params.append("format", format);
-
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/export-occurrence?${params.toString()}`,
       {
         credentials: "include",
@@ -39,21 +52,20 @@ const handleExportOccurrence = async (
     );
 
     if (!response.ok) {
-      const errorData = await response.text();
-
       return {
         success: false,
-        message: `Erro ao gerar relatório: ${response.status} - ${errorData}`,
+        message: exportErrorMessage(response.status, await response.text()),
       };
     }
 
     const contentDisposition = response.headers.get("content-disposition");
 
+    // The API names the file with the company's day (decision 1.2); the
+    // fallback carries no date rather than the server's UTC one, which is
+    // tomorrow after 21:00 in São Paulo.
     const filename =
       contentDisposition?.split("filename=")[1]?.replace(/"/g, "") ??
-      `ocorrencias-${new Date().toISOString().split("T")[0]}.${
-        format === "csv" ? "csv" : "xlsx"
-      }`;
+      `ocorrencias.${format === "csv" ? "csv" : "xlsx"}`;
 
     const arrayBuffer = await response.arrayBuffer();
 
@@ -64,6 +76,7 @@ const handleExportOccurrence = async (
       mimeType: response.headers.get("content-type") || "",
     };
   } catch (error) {
+    logActionError("delivery/export-occurrence", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao exportar as ocorrências.",

@@ -7,12 +7,11 @@ import {
   Building2,
   Camera,
   CircleDot,
+  Layers,
   FileSpreadsheet,
-  MapPin,
+  Route as RouteIcon,
   ShieldAlert,
-  TriangleAlert,
   Truck,
-  UserPlus,
   X,
 } from "lucide-react";
 
@@ -37,15 +36,41 @@ import {
 import type { DeliveryListItem } from "@/actions/delivery/get-delivery";
 
 import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
-import { AssignDeliveriesDialog } from "../deliveries/assign-dialog";
+import { AddToRouteDialog } from "@/features/routes/add-to-route-dialog";
+import { addToRouteBlocker } from "@/features/routes/lib/add-to-route";
 
 import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
 import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
+import { DataTableServerFilters } from "@/app/(protected)/_components/shared/tanstack-table/data-table-server-filters";
+import { facetOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table/server-table";
 
 import type { DeliveryTab } from "../lib/tabs";
+import {
+  DELIVERY_STATUS_FILTER_LABELS,
+  type DeliveryListSearchMeta,
+} from "../deliveries/server-table";
+import {
+  ACTIVE_LABELS,
+  IMPORT_STATUS_LABELS,
+  YES_NO_LABELS,
+  type CatalogSearchMeta,
+} from "../lib/catalog-tables";
+import { CATEGORY_FILTER_LABELS } from "../occurrence-types/category-display";
+import { IMPORT_SOURCE_LABEL } from "../imports/lib/status";
 
 interface DeliveriesTableToolbarProps<TData> {
   activeTab: DeliveryTab;
+  /**
+   * The deliveries listing answered on the server (decision 8.8): its
+   * filters' options and counts, from the API's `searchMeta.facets`. Absent,
+   * the tab falls back to filtering the loaded page.
+   */
+  serverFacets?: DeliveryListSearchMeta["facets"];
+  /**
+   * A catalog tab answered on the server (decision 8.8): its filters' counts,
+   * from `searchMeta.facets`. Absent, the tab filters the loaded page.
+   */
+  catalogFacets?: CatalogSearchMeta["facets"];
   /** Injected by DataTable via cloneElement — never passed by the caller. */
   table?: Table<TData>;
   error?: boolean;
@@ -65,26 +90,18 @@ interface FilterDescriptor {
  * whether the entry is still in use.
  */
 const FILTERS_BY_TAB: Record<DeliveryTab, FilterDescriptor[]> = {
-  deliveries: [
-    { key: "status", title: "Status", dynamicOptionIcon: CircleDot },
-    { key: "shipperName", title: "Embarcador", dynamicOptionIcon: Building2 },
-    { key: "destination", title: "Destino", dynamicOptionIcon: MapPin },
-    { key: "driverName", title: "Motorista", dynamicOptionIcon: Truck },
-  ],
-  occurrences: [
-    { key: "blocking", title: "Gravidade", dynamicOptionIcon: ShieldAlert },
-    { key: "typeName", title: "Tipo", dynamicOptionIcon: TriangleAlert },
-    {
-      key: "deliveryStatus",
-      title: "Status da entrega",
-      dynamicOptionIcon: CircleDot,
-    },
-  ],
+  // Answered on the server (DataTableServerFilters below, decision 8.8).
+  deliveries: [],
+  // The occurrences tab has its own toolbar (occurrences/toolbar.tsx).
+  occurrences: [],
   monitoring: [],
   // The chat panel carries its own search — it never mounts this toolbar.
   chat: [],
-  shippers: [{ key: "is_active", title: "Status", dynamicOptionIcon: CircleDot }],
+  shippers: [
+    { key: "is_active", title: "Status", dynamicOptionIcon: CircleDot },
+  ],
   "occurrence-types": [
+    { key: "category", title: "Categoria", dynamicOptionIcon: Layers },
     { key: "is_active", title: "Status", dynamicOptionIcon: CircleDot },
     {
       key: "blocks_delivery",
@@ -105,8 +122,8 @@ const FILTERS_BY_TAB: Record<DeliveryTab, FilterDescriptor[]> = {
 };
 
 const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
-  deliveries: "Destinatário, pedido, NF-e, cidade, motorista ou CNH...",
-  occurrences: "Destinatário ou tipo de ocorrência...",
+  deliveries: "ID, destinatário, pedido, NF-e, cidade, motorista ou CNH...",
+  occurrences: "",
   monitoring: "",
   chat: "",
   shippers: "Nome, CNPJ ou e-mail...",
@@ -120,8 +137,71 @@ const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
   "proof-audits": "",
 };
 
+/** The server filters of each catalog tab, from its facet counts. */
+function catalogFilters(
+  activeTab: DeliveryTab,
+  facets: NonNullable<CatalogSearchMeta["facets"]>,
+) {
+  const status = {
+    columnId: "is_active",
+    title: "Status",
+    icon: CircleDot,
+    options: facetOptions(facets.status, ACTIVE_LABELS),
+  };
+
+  if (activeTab === "shippers" || activeTab === "status-change-reasons") {
+    return [status];
+  }
+
+  if (activeTab === "occurrence-types") {
+    return [
+      {
+        // Decision 14.3: Entrega / Não entrega / Pausa.
+        columnId: "category",
+        title: "Categoria",
+        icon: Layers,
+        options: facetOptions(facets.category, CATEGORY_FILTER_LABELS),
+      },
+      status,
+      {
+        columnId: "blocks_delivery",
+        title: "Impeditiva",
+        icon: ShieldAlert,
+        options: facetOptions(facets.blocking, YES_NO_LABELS),
+      },
+      {
+        columnId: "requires_photo",
+        title: "Foto",
+        icon: Camera,
+        options: facetOptions(facets.photo, YES_NO_LABELS),
+      },
+    ];
+  }
+
+  if (activeTab === "imports") {
+    return [
+      {
+        columnId: "status",
+        title: "Status",
+        icon: CircleDot,
+        options: facetOptions(facets.status, IMPORT_STATUS_LABELS),
+      },
+      {
+        columnId: "source",
+        title: "Origem",
+        icon: FileSpreadsheet,
+        options: facetOptions(facets.source, IMPORT_SOURCE_LABEL),
+      },
+    ];
+  }
+
+  return [];
+}
+
 export function DeliveriesTableToolbar<TData>({
   activeTab,
+  serverFacets,
+  catalogFacets,
   table,
   error,
   isLoading,
@@ -142,7 +222,7 @@ export function DeliveriesTableToolbar<TData>({
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
-  // Batch assignment reads the checked rows straight from the table
+  // "Adicionar à rota" reads the checked rows straight from the table
   // instance the DataTable injects; only the deliveries tab has the
   // selection column.
   const selectedDeliveries =
@@ -158,10 +238,17 @@ export function DeliveriesTableToolbar<TData>({
 
   // The API would refuse a mixed batch anyway; the button explains before
   // the request instead of after it.
-  const hasBlockedSelection =
-    selectedDeliveries.length > pendingSelection.length;
+  const selectionBlocker = addToRouteBlocker(selectedDeliveries);
 
-  const isFiltered = (table?.getState().columnFilters.length ?? 0) > 0;
+  // On the server the filters bring their own "Resetar" (and live in the URL).
+  const catalogServerFiltered = catalogFacets !== undefined;
+
+  const serverFiltered =
+    (activeTab === "deliveries" && serverFacets !== undefined) ||
+    catalogServerFiltered;
+
+  const isFiltered =
+    !serverFiltered && (table?.getState().columnFilters.length ?? 0) > 0;
 
   const handleSearchWithLoading = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -189,19 +276,57 @@ export function DeliveriesTableToolbar<TData>({
         className="flex flex-wrap items-center gap-2"
         data-tutorial="deliveries-filters"
       >
-        {FILTERS_BY_TAB[activeTab].map(({ key, title, dynamicOptionIcon }) => {
-          const column = table?.getColumn(key);
-          if (!column) return null;
+        {catalogServerFiltered && (
+          <DataTableServerFilters
+            table={table}
+            filters={catalogFilters(activeTab, catalogFacets ?? {})}
+          />
+        )}
 
-          return (
-            <DataTableFacetedFilter
-              key={key}
-              column={column}
-              title={title}
-              dynamicOptionIcon={dynamicOptionIcon}
-            />
-          );
-        })}
+        {serverFiltered && !catalogServerFiltered && (
+          <DataTableServerFilters
+            table={table}
+            filters={[
+              {
+                columnId: "status",
+                title: "Status",
+                icon: CircleDot,
+                options: facetOptions(
+                  serverFacets?.status,
+                  DELIVERY_STATUS_FILTER_LABELS,
+                ),
+              },
+              {
+                columnId: "shipperName",
+                title: "Embarcador",
+                icon: Building2,
+                // Names come from the server, scoped to the company.
+                options: facetOptions(serverFacets?.shipperId),
+              },
+              {
+                columnId: "driverName",
+                title: "Motorista",
+                icon: Truck,
+                options: facetOptions(serverFacets?.driverId),
+              },
+            ]}
+          />
+        )}
+
+        {!serverFiltered &&
+          FILTERS_BY_TAB[activeTab].map(({ key, title, dynamicOptionIcon }) => {
+            const column = table?.getColumn(key);
+            if (!column) return null;
+
+            return (
+              <DataTableFacetedFilter
+                key={key}
+                column={column}
+                title={title}
+                dynamicOptionIcon={dynamicOptionIcon}
+              />
+            );
+          })}
       </div>
 
       {isFiltered && (
@@ -243,21 +368,20 @@ export function DeliveriesTableToolbar<TData>({
                   <Button
                     size="sm"
                     className="h-8 flex items-center gap-1"
-                    disabled={!canWrite || hasBlockedSelection}
+                    disabled={!canWrite || selectionBlocker !== null}
                     onClick={() => setIsAssignOpen(true)}
                   >
-                    <UserPlus className="h-4 w-4" />
-                    Atribuir motorista
+                    <RouteIcon className="h-4 w-4" />
+                    Adicionar à rota
                   </Button>
                 </span>
               </TooltipTrigger>
-              {(!canWrite || hasBlockedSelection) && (
+              {(!canWrite || selectionBlocker) && (
                 <TooltipContent className="max-w-xs">
                   <p>
                     {!canWrite
                       ? permissionsRequired.tooltipMessage
-                      : "Só entregas pendentes podem ser atribuídas. " +
-                        "Desmarque as que já saíram de Pendente."}
+                      : selectionBlocker}
                   </p>
                 </TooltipContent>
               )}
@@ -277,13 +401,15 @@ export function DeliveriesTableToolbar<TData>({
         </div>
       )}
 
-      {businessId && (
-        <AssignDeliveriesDialog
+      {/* The route is the unit of assignment (decision 14.7): the
+      selection joins a route, never a driver directly. */}
+      {businessId && isAssignOpen && (
+        <AddToRouteDialog
           businessId={businessId}
           deliveries={pendingSelection}
           isOpen={isAssignOpen}
           onClose={() => setIsAssignOpen(false)}
-          onAssigned={() => table?.resetRowSelection()}
+          onAdded={() => table?.resetRowSelection()}
         />
       )}
     </div>

@@ -17,19 +17,21 @@ const createUpdateBranchSchema = z.object({
     },
     z
       .string()
+      // Empty is a missing value, not a short one (decision 16.702).
+      .min(1, "O CEP é obrigatório.")
       .length(8, "O CEP deve ter exatamente 8 dígitos.")
       .regex(/^\d{8}$/, "O CEP deve conter apenas números."),
   ),
   city: z
     .string()
+    .regex(/\S/, "A cidade é obrigatória.")
     .min(2, "A cidade deve ter no mínimo 2 caracteres.")
     .max(100, "A cidade deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
       if (isEmptyOrWhitespace(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            "O nome da cidade não pode ser vazio ou conter apenas espaços.",
+          message: "A cidade é obrigatória.",
         });
 
         return;
@@ -64,7 +66,8 @@ const createUpdateBranchSchema = z.object({
     }),
   uf: z
     .string()
-    .length(2, "UF deve ter exatamente 2 caracteres.")
+    .regex(/\S/, "A UF é obrigatória.")
+    .length(2, "A UF deve ter exatamente 2 caracteres.")
     .toUpperCase()
     .superRefine((value, ctx) => {
       if (hasConsecutiveSpaces(value)) {
@@ -97,13 +100,14 @@ const createUpdateBranchSchema = z.object({
     }),
   street: z
     .string()
+    .regex(/\S/, "A rua é obrigatória.")
     .min(3, "O nome da rua deve ter no mínimo 3 caracteres.")
     .max(100, "O nome da rua deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
       if (isEmptyOrWhitespace(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "O nome da rua não pode ser vazio ou conter apenas espaços.",
+          message: "A rua é obrigatória.",
         });
 
         return;
@@ -138,7 +142,7 @@ const createUpdateBranchSchema = z.object({
     }),
   address_number: z
     .string()
-    .min(1, "O número do endereço é obrigatório.")
+    .regex(/\S/, "O número do endereço é obrigatório.")
     .max(10, "O número do endereço deve ter no máximo 10 caracteres.")
     .regex(
       /^\d+[A-Za-z]?$/,
@@ -148,8 +152,7 @@ const createUpdateBranchSchema = z.object({
       if (isEmptyOrWhitespace(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            "O número do endereço não pode ser vazio ou conter apenas espaços.",
+          message: "O número do endereço é obrigatório.",
         });
 
         return;
@@ -174,6 +177,7 @@ const createUpdateBranchSchema = z.object({
     },
     z
       .string()
+      .min(1, "O CNPJ é obrigatório.")
       .length(14, "O CNPJ deve ter exatamente 14 dígitos.")
       .regex(/^\d{14}$/, "O CNPJ deve conter apenas números."),
   ),
@@ -216,18 +220,18 @@ const createUpdateBranchSchema = z.object({
     }),
   cnae: z
     .string()
+    .regex(/\S/, "O CNAE é obrigatório.")
     .length(7, "O CNAE deve ter exatamente 7 dígitos numéricos.")
     .regex(/^\d{7}$/, "O CNAE deve conter apenas números."),
   corporate_reason: z
     .string()
-    .min(1, "A razão social é obrigatória.")
+    .regex(/\S/, "A razão social é obrigatória.")
     .max(150, "A razão social deve ter no máximo 150 caracteres.")
     .superRefine((value, ctx) => {
       if (isEmptyOrWhitespace(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            "O nome da razão social não pode ser vazio ou conter apenas espaços.",
+          message: "A razão social é obrigatória.",
         });
         return;
       }
@@ -256,61 +260,64 @@ const createUpdateBranchSchema = z.object({
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            "O razão social deve conter apenas letras (inclusive acentos), números, espaços e traços, sem outros caracteres.",
+            "A razão social deve conter apenas letras (inclusive acentos), números, espaços e traços, sem outros caracteres.",
         });
       }
     }),
   email: z
     .string()
-    .min(1, "O e-mail é obrigatório.")
+    .regex(/\S/, "O e-mail é obrigatório.")
     .email("O e-mail informado não é válido.")
     .max(100, "O e-mail deve ter no máximo 100 caracteres."),
-  responsible_name: z.string().superRefine((value, ctx) => {
-    if (value.length > 100) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "O nome não deve exceder 100 caracteres.",
-      });
+  responsible_name: z
+    .string()
+    .regex(/\S/, "O nome do responsável é obrigatório.")
+    .superRefine((value, ctx) => {
+      if (value.length > 100) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome não deve exceder 100 caracteres.",
+        });
 
-      return;
-    }
+        return;
+      }
 
-    if (hasConsecutiveSpaces(value)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "O nome não deve conter espaços consecutivos.",
-      });
+      if (hasConsecutiveSpaces(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome não deve conter espaços consecutivos.",
+        });
 
-      return;
-    }
+        return;
+      }
 
-    if (hasSpaceAtEdges(value)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "O nome não pode começar ou terminar com espaço em branco.",
-      });
+      if (hasSpaceAtEdges(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome não pode começar ou terminar com espaço em branco.",
+        });
 
-      return;
-    }
+        return;
+      }
 
-    if (!/^\S+ \S+(?: \S+)*$/.test(value)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Por favor, insira o nome completo.",
-      });
+      if (!/^\S+ \S+(?: \S+)*$/.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Por favor, insira o nome completo.",
+        });
 
-      return;
-    }
+        return;
+      }
 
-    const regex = /^(?=[\p{L}\p{N}])[ \p{L}\p{N}\p{P}]*(?<=[\p{L}\p{N}])$/u;
-    if (!regex.test(value)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          "O nome deve começar e terminar com letra ou número; símbolos (ex.: @, _, -, .) só são permitidos no meio.",
-      });
-    }
-  }),
+      const regex = /^(?=[\p{L}\p{N}])[ \p{L}\p{N}\p{P}]*(?<=[\p{L}\p{N}])$/u;
+      if (!regex.test(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "O nome deve começar e terminar com letra ou número; símbolos (ex.: @, _, -, .) só são permitidos no meio.",
+        });
+      }
+    }),
   telephone: z.preprocess(
     (val) => {
       if (typeof val === "string") {
@@ -321,6 +328,7 @@ const createUpdateBranchSchema = z.object({
     },
     z
       .string()
+      .min(1, "O telefone é obrigatório.")
       .regex(
         /^\d{10,11}$/,
         "O telefone deve conter 10 ou 11 dígitos numéricos incluindo o DDD.",

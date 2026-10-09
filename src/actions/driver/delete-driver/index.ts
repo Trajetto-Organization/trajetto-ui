@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteDriverProps {
   businessId: string;
@@ -27,7 +30,7 @@ const handleDeleteDriver = async ({
   const deleteDriver = `${process.env.HTTP_REQUEST}/driver/delete-driver/${driverId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteDriver, {
+    const response = await apiFetch(deleteDriver, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -37,12 +40,13 @@ const handleDeleteDriver = async ({
 
     const { message } = (await response.json()) as DeleteDriverResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteDriverError: message };
+    if (!response.ok) {
+      return { deleteDriverError: message || refusalMessage(response.status) };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("driver/delete-driver", error);
     return {
       deleteDriverError:
         "Ocorreu um erro inesperado ao tentar deletar o motorista.",

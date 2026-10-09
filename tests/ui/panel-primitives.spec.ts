@@ -81,9 +81,9 @@ async function chipShape(page: Page, group: string) {
   });
 }
 
-test.describe("os filtros dos painéis", () => {
+test.describe("the panel filters", () => {
   for (const panel of PANELS) {
-    test(`${panel.name}: é um grupo de alternância, não uma fileira de botões primários`, async ({
+    test(`${panel.name}: is a toggle group, not a row of primary buttons`, async ({
       page,
     }) => {
       await open(page, panel.path);
@@ -131,12 +131,15 @@ test.describe("os filtros dos painéis", () => {
     });
   }
 
-  test("e são o MESMO grupo nos três painéis", async ({ page }) => {
+  test("and they are the SAME group in the three panels", async ({ page }) => {
     const shapes = [];
 
     for (const panel of PANELS) {
       await open(page, panel.path);
-      shapes.push({ name: panel.name, ...(await chipShape(page, panel.group)) });
+      shapes.push({
+        name: panel.name,
+        ...(await chipShape(page, panel.group)),
+      });
     }
 
     const [first, ...rest] = shapes;
@@ -155,8 +158,10 @@ test.describe("os filtros dos painéis", () => {
   });
 });
 
-test.describe("os estados vazios", () => {
-  test("dizem o que não está lá E o que traria algo", async ({ page }) => {
+test.describe("the empty states", () => {
+  test("say what is not there AND what would bring something", async ({
+    page,
+  }) => {
     /**
      * The queue is empty in the fixture, which is exactly the state worth
      * checking: it is the first thing a new customer sees on this screen.
@@ -174,7 +179,7 @@ test.describe("os estados vazios", () => {
     ).toBeVisible();
   });
 
-  test("e têm a mesma caixa em painéis diferentes", async ({ page }) => {
+  test("and have the same box in different panels", async ({ page }) => {
     /**
      * Found by the handle the primitive carries, not by their words.
      *

@@ -38,5 +38,48 @@ const DELIVERY_TRANSITIONS: Record<DeliveryStatus, DeliveryStatus[]> = {
   CANCELLED: [],
 };
 
-export { DELIVERY_STATUS_META, DELIVERY_TRANSITIONS };
+/**
+ * Whether the panel may edit the delivery's data. Mirror of the API's
+ * isDeliveryEditable: only while the cargo is not moving and the outcome is
+ * not proven — pending, or failed and awaiting a redelivery decision.
+ */
+function isDeliveryEditable(status: DeliveryStatus): boolean {
+  return status === "PENDING" || status === "FAILED";
+}
+
+/** The API's DeliveryNotEditableError sentence, for the disabled menu item. */
+const NOT_EDITABLE_REASON =
+  "Esta entrega não pode ser editada no status atual. " +
+  "Apenas entregas pendentes ou com insucesso podem ser alteradas.";
+
+/**
+ * Why the panel may not move this delivery to IN_TRANSIT, or null (decision
+ * 5.4, mirror of the API): "Em rota" is a driver carrying the load on a route
+ * that left.
+ */
+function inTransitBlocker(delivery: {
+  driverId?: string | null;
+  openRouteStatus?: string | null;
+}): string | null {
+  if (!delivery.driverId) {
+    return "Atribua um motorista antes de colocar a entrega em rota.";
+  }
+
+  if (
+    delivery.openRouteStatus === "PLANNED" ||
+    delivery.openRouteStatus === "RELEASED"
+  ) {
+    return "Esta entrega está numa rota que ainda não saiu. Inicie a rota para colocá-la em rota.";
+  }
+
+  return null;
+}
+
+export {
+  DELIVERY_STATUS_META,
+  DELIVERY_TRANSITIONS,
+  NOT_EDITABLE_REASON,
+  inTransitBlocker,
+  isDeliveryEditable,
+};
 export type { DeliveryStatusMeta };

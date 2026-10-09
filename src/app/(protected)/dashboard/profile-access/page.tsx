@@ -6,27 +6,27 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { ProfileAccessContent } from "./profile-access-content";
+import { ProfileAccessContent } from "@/features/profile-access/content";
+import { CatalogListSkeleton } from "@/components/shared/custom/catalog-list-skeleton";
 
-interface ProfileAccessQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface ProfileAccessPageProps {
+  // Every param the URL carries: page, search, sort, order.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Perfil de Acesso",
-    description: `
-    Página para gerenciamento dos perfis de acesso: visualize, edite e
-    crie funções para usuários, garantindo segurança e eficiência.`,
+    description:
+      "Gerencie os perfis de acesso: crie, renomeie, configure as permissões e veja quantas pessoas usam cada perfil.",
   };
 }
 
-const ProfileAccess = async ({
+const DashboardProfileAccess = async ({
   searchParams,
-}: ProfileAccessQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: ProfileAccessPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -36,16 +36,21 @@ const ProfileAccess = async ({
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Perfil de acesso"}
-        description="Gerencie os perfis de acesso do sistema,
-        definindo funções e permissões de forma prática e segura."
+        title="Perfil de acesso"
+        description="Gerencie os perfis de acesso da sua empresa: quem usa cada perfil e quais permissões ele concede."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
-        <ProfileAccessContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. */}
+      <Suspense fallback={<CatalogListSkeleton mode="dashboard" columns={7} />}>
+        <ProfileAccessContent
+          scope="dashboard"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default ProfileAccess;
+export default DashboardProfileAccess;

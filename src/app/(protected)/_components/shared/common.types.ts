@@ -215,10 +215,6 @@ interface FieldProps {
   value?: string;
 }
 
-interface RevalidateDataState {
-  revalidateDataError?: string;
-}
-
 interface RateLimitConfig {
   maxClicks?: number; // Maximum number of clicks allowed
   timeWindowMs?: number; // Time window in ms to count clicks
@@ -248,7 +244,6 @@ export type {
   BusinessProps,
   UseCepValidationProps,
   FieldProps,
-  RevalidateDataState,
   RateLimitConfig,
 };
 

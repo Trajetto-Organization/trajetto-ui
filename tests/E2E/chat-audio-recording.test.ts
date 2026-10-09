@@ -147,9 +147,7 @@ test.describe("recorder format negotiation", () => {
   });
 
   test("falls back to the plain mp4 request", () => {
-    const format = pickRecorderFormat(
-      (mimeType) => mimeType === "audio/mp4",
-    );
+    const format = pickRecorderFormat((mimeType) => mimeType === "audio/mp4");
 
     expect(format?.recorderMimeType).toBe("audio/mp4");
     expect(format?.uploadContentType).toBe("audio/mp4");
@@ -184,8 +182,9 @@ test.describe("recorder format negotiation", () => {
      * no iPhone in the fleet can play back. Exactly the outcome the whole
      * negotiation exists to prevent.
      */
-    expect(uploadContentTypeForRecording("audio/webm;codecs=opus", "audio/mp4"))
-      .toBeNull();
+    expect(
+      uploadContentTypeForRecording("audio/webm;codecs=opus", "audio/mp4"),
+    ).toBeNull();
 
     expect(uploadContentTypeForRecording("audio/ogg", "audio/mp4")).toBeNull();
   });

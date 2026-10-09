@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { getSocket, initializeSocket } from "@/socket";
-import { revalidateTags } from "@/actions/revalidate";
+import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
+import { queryClientProps } from "@/lib/query-client-props";
 
 import { useOperationsSubscription } from "./use-operations-subscription";
 
@@ -49,6 +49,19 @@ const SETTLE_MS = 1_200;
 const RETRY_MS = 2_000;
 
 /**
+ * What a route event makes stale besides the server-rendered board: the
+ * route and delivery detail dialogs, the proof queue (a stop settles with a
+ * receipt) and the list of deliveries a route can still take. Invalidated,
+ * not refetched blindly: only what is on screen asks the API again.
+ */
+const ROUTE_EVENT_QUERY_ROOTS = [
+  "route-detail",
+  "delivery-detail",
+  "proof_audit",
+  "unrouted-deliveries",
+] as const;
+
+/**
  * Whether anything is open over the page right now.
  *
  * `router.refresh()` re-runs the server component, and every listing in this
@@ -82,14 +95,13 @@ function isCoveredByDialog(): boolean {
   return [...panels].some((panel) => panel.getClientRects().length > 0);
 }
 
-function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
+/**
+ * @param _tags Not read any more. The board used to revalidate its cache tag
+ *   here too, which under the protected tree's `only-no-store` only produced
+ *   a second full render next to `router.refresh()`.
+ */
+function useRouteEvents(businessId?: string, _tags?: string[]): void {
   const router = useRouter();
-
-  // The tags are usually a literal array at the call site, so a new one
-  // arrives on every render; keeping them in a ref is what stops the effect
-  // from tearing down and resubscribing forever.
-  const tagsRef = useRef(tags);
-  tagsRef.current = tags;
 
   /*
     Only a MASTER needs to ask: everybody with a company of their own is put
@@ -109,17 +121,11 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
     let disposed = false;
 
     /**
-     * Both halves are needed, and only one of them is visible in development.
-     *
-     * `router.refresh()` re-runs the server component. On its own that is
-     * enough in `next dev`, which does not keep the Data Cache — which is
-     * exactly why a mutation that deletes `revalidateTags` SURVIVES the
-     * end-to-end test and is recorded here instead of pretended away.
-     *
-     * In production the listing is a `fetch` tagged `update-route`, its
-     * result is cached, and a refresh with no invalidation re-renders the
-     * page around the same stale rows. The tag is what makes the refetch
-     * real; the refresh is what puts it on screen.
+     * `router.refresh()` alone re-runs the server component with fresh data:
+     * the protected tree fetches with `fetchCache = "only-no-store"`, so
+     * there is no cached listing for a tag to clear. (This used to call
+     * `revalidateTags` as well, which re-rendered the page a second time.)
+     * The dialogs' react-query caches are the other half.
      */
     const refresh = () => {
       if (disposed) return;
@@ -136,8 +142,16 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
         held = null;
       }
 
-      void revalidateTags(tagsRef.current).then(() => {
-        if (!disposed) router.refresh();
+      router.refresh();
+
+      void queryClientProps.invalidateQueries({
+        predicate: (query) => {
+          const [root] = Array.isArray(query.queryKey)
+            ? query.queryKey
+            : [query.queryKey];
+
+          return (ROUTE_EVENT_QUERY_ROOTS as readonly unknown[]).includes(root);
+        },
       });
     };
 
@@ -164,12 +178,22 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
         socket.on("routeEvent", handle);
       })
       .catch(() => {
-        // No realtime at all: the screen still refetches on its timer and on
-        // the Atualizar button.
+        // No realtime at all: the screen still refetches on the Atualizar
+        // button. There is no timer behind it.
       });
+
+    /*
+      What the rejoin above does NOT bring back is what happened while the
+      socket was down: the API has no replay, and a route released during a
+      deploy never arrives. So a reconnection is treated as one more event —
+      same settle window, same hold behind an open dialog.
+    */
+    const stopResync = onRealtimeResync(handle);
 
     return () => {
       disposed = true;
+
+      stopResync();
 
       if (timer) clearTimeout(timer);
       if (held) clearInterval(held);
@@ -179,4 +203,4 @@ function useRouteEvents(businessId?: string, tags = ["update-route"]): void {
   }, [businessId, router]);
 }
 
-export { useRouteEvents, SETTLE_MS, RETRY_MS };
+export { useRouteEvents, SETTLE_MS, RETRY_MS, ROUTE_EVENT_QUERY_ROOTS };

@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteFuelTypeProps {
   businessId: string;
@@ -27,7 +30,7 @@ const handleDeleteFuelType = async ({
   const deleteFuelType = `${process.env.HTTP_REQUEST}/fuel-type/delete-fuel-type/${fuelTypeId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteFuelType, {
+    const response = await apiFetch(deleteFuelType, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -37,12 +40,15 @@ const handleDeleteFuelType = async ({
 
     const { message } = (await response.json()) as DeleteFuelTypeResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteFuelTypeError: message };
+    if (!response.ok) {
+      return {
+        deleteFuelTypeError: message || refusalMessage(response.status),
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("fuel-type/delete-fuel-type", error);
     return {
       deleteFuelTypeError:
         "Ocorreu um erro inesperado ao tentar deletar o tipo do combustível.",

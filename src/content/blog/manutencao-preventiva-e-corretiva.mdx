@@ -1,0 +1,210 @@
+---
+title: "Manutenção preventiva e corretiva: ordens de serviço, custos e indicadores"
+description: "A diferença prática entre manutenção preventiva e corretiva, o que uma ordem de serviço precisa registrar e os indicadores que mostram se a frota está sob controle."
+slug: "manutencao-preventiva-e-corretiva"
+date: "2026-09-28"
+category: "frotas"
+tags: ["manutenção", "ordem de serviço", "custos", "indicadores", "oficina"]
+author: "Equipe Trajetto"
+seo:
+  title: "Manutenção preventiva e corretiva da frota"
+  description: "Preventiva ou corretiva: o que a ordem de serviço deve registrar, quanto custa cada uma e quais indicadores acompanhar na manutenção da frota."
+  keywords:
+    [
+      "manutenção preventiva",
+      "manutenção corretiva",
+      "ordem de serviço",
+      "custo de manutenção",
+      "MTBF",
+      "MTTR",
+      "gestão de frotas",
+    ]
+---
+
+Toda frota faz manutenção. A diferença entre uma frota controlada e uma que vive
+apagando incêndios está em quando essa manutenção acontece: na data planejada, com o
+veículo no pátio, ou no acostamento, com a carga esperando.
+
+Este artigo explica a diferença prática entre manutenção preventiva e corretiva, por
+que a ordem de serviço é o documento que sustenta a gestão, como calcular o custo real
+de cada tipo e quais indicadores mostram se a frota está sob controle.
+
+## Preventiva, preditiva e corretiva
+
+**Manutenção preventiva** é a que acontece por calendário: troca de óleo e filtros,
+revisão de freios, correias, fluidos e suspensão, em intervalos definidos pelo
+fabricante e ajustados à operação. Ela é feita com o veículo em bom funcionamento,
+justamente para que ele continue assim.
+
+**Manutenção preditiva**, ou por condição, é a que acontece porque um sinal indicou
+que algo vai falhar: desgaste irregular de pneus visto no checklist, ruído no freio
+relatado pelo motorista, consumo de combustível subindo sem explicação. Ela não segue
+o calendário, mas também não espera a quebra.
+
+**Manutenção corretiva** é o conserto depois do defeito. Ela tem duas formas bem
+diferentes:
+
+- **corretiva planejada**, quando o defeito é encontrado antes de parar o veículo (no
+  checklist, por exemplo) e o conserto é agendado;
+- **corretiva emergencial**, quando o veículo quebra em operação.
+
+A meta de uma boa gestão não é eliminar a corretiva, o que é impossível, mas fazer com
+que a maior parte dela seja planejada e com que a emergencial seja rara.
+
+## O gatilho duplo: quilometragem e tempo
+
+Planos de manutenção preventiva quase sempre combinam dois limites: uma quilometragem
+e um prazo, o que vencer primeiro. O prazo existe porque o veículo envelhece mesmo
+parado. O óleo se degrada, o fluido de freio absorve umidade, borrachas e mangueiras
+ressecam.
+
+Veja dois veículos com o mesmo plano, a cada 20.000 km ou 6 meses (valores apenas
+ilustrativos):
+
+| Veículo | Rodagem mensal | Vence primeiro por             | Revisões por ano |
+| ------- | -------------- | ------------------------------ | ---------------- |
+| A       | 5.000 km       | Quilometragem (a cada 4 meses) | 3                |
+| B       | 1.500 km       | Tempo (a cada 6 meses)         | 2                |
+
+Controlar só a quilometragem deixaria o veículo B até 13 meses sem revisão. Controlar
+só o tempo faria o veículo A rodar 30.000 km entre revisões. Os dois limites precisam
+estar no cadastro de cada veículo e ser conferidos juntos.
+
+### Como definir os intervalos
+
+O ponto de partida é o manual do fabricante. A maioria dos manuais traz dois planos:
+um para uso normal e outro para **uso severo**, com intervalos menores. Muitas
+operações de frota se encaixam no severo sem perceber:
+
+- trechos curtos com muitas partidas e paradas, típicos da entrega urbana;
+- tráfego lento e muito tempo com o motor em marcha lenta;
+- estradas de terra ou com muita poeira;
+- operação frequente com carga máxima ou em serra.
+
+Depois de alguns ciclos, o histórico da própria frota passa a orientar o ajuste. Se
+um item falha sempre antes da revisão, o intervalo dele está longo demais. Se as
+peças trocadas na preventiva saem sistematicamente em bom estado, talvez haja espaço
+para alongar, sempre dentro do que o fabricante admite e sem mexer em itens de
+segurança, como freios e direção.
+
+## A ordem de serviço como fonte da verdade
+
+A ordem de serviço (OS) é o registro de cada intervenção no veículo. Sem ela, o
+histórico de manutenção vira uma pilha de notas fiscais que ninguém consegue ligar a
+um veículo, a uma quilometragem ou a um defeito. Uma OS útil registra:
+
+- **o veículo** e a **filial** responsável;
+- **a data de abertura** e **a data de conclusão**;
+- **a quilometragem** na entrada e na saída;
+- **onde foi feita:** oficina própria (interna) ou fornecedor (externa), e qual
+  fornecedor;
+- **o que foi feito**, em texto claro;
+- **as peças**, com quantidade, preço unitário e desconto;
+- **o valor total**, incluindo a mão de obra;
+- **quem é o responsável** pela OS;
+- **a conta a pagar** gerada por ela, quando houver.
+
+A data de conclusão e a quilometragem de saída são o que encerra o ciclo: a partir
+delas o veículo começa a contar a próxima revisão preventiva. Uma OS que fica aberta
+para sempre, ou é fechada sem quilometragem, quebra o calendário de todo o veículo.
+
+<Callout type="dica" title="Registre a natureza do serviço">
+  Deixe claro na descrição da OS se o serviço foi preventivo, preditivo ou
+  corretivo, e, se corretivo, se foi planejado ou emergencial. Essa
+  classificação é a base dos indicadores mais importantes da manutenção.
+</Callout>
+
+## Quanto custa cada tipo de manutenção
+
+O custo direto de uma manutenção é o que aparece na nota: peças e mão de obra. A
+corretiva emergencial, porém, carrega custos que não aparecem na nota da oficina:
+
+- **guincho ou socorro** até a oficina;
+- **veículo parado**, com seguro, depreciação e motorista custando sem produzir;
+- **carga atrasada ou transferida** para outro veículo, com risco de multa contratual;
+- **horas extras** para recuperar o atraso;
+- **dano em cadeia:** uma correia que rompe pode levar outras peças junto.
+
+Um exemplo ilustrativo ajuda a enxergar a diferença. Suponha as pastilhas de freio de
+um caminhão: trocadas na revisão, custam só as pastilhas e a mão de obra; deixadas
+até o fim, desgastam os discos e podem deixar o veículo parado na estrada.
+
+| Item                                     | Preventiva         | Corretiva emergencial         |
+| ---------------------------------------- | ------------------ | ----------------------------- |
+| Peças e mão de obra                      | R$ 900 (pastilhas) | R$ 2.600 (pastilhas e discos) |
+| Guincho                                  | —                  | R$ 900                        |
+| Dias parado                              | 0,5                | 3                             |
+| Custo do veículo parado (R$ 600 por dia) | R$ 300             | R$ 1.800                      |
+| **Total**                                | **R$ 1.200**       | **R$ 5.300**                  |
+
+Os valores são hipotéticos e variam muito entre operações, mas o padrão é comum: o
+conserto emergencial custa mais na peça e muito mais em tudo o que está em volta
+dela. O custo diário do veículo parado sai do cálculo de custo fixo da frota,
+explicado no artigo sobre [custo total da frota](/blog/custo-total-da-frota-tco).
+
+## Indicadores de manutenção
+
+| Indicador                       | Como calcular                                                                         | O que mostra                              |
+| ------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------- |
+| Custo de manutenção por km      | Gasto em manutenção no período dividido pelos km rodados                              | Eficiência de cada veículo e de cada tipo |
+| Participação da preventiva      | Gasto em preventiva dividido pelo gasto total em manutenção                           | Se a frota planeja ou reage               |
+| Cumprimento do plano            | Revisões feitas no prazo divididas pelas revisões que venceram                        | Disciplina do calendário                  |
+| MTBF (tempo médio entre falhas) | Km ou dias de operação divididos pelo número de falhas                                | Intervalo médio entre quebras             |
+| MTTR (tempo médio de reparo)    | Soma do tempo entre abertura e conclusão das OS corretivas dividida pelo número delas | Velocidade da manutenção                  |
+| Disponibilidade                 | Dias em que o veículo estava apto divididos pelos dias do período                     | Quanto da frota pode trabalhar            |
+| Reincidência                    | Falhas repetidas no mesmo item e veículo em até 90 dias                               | Qualidade do conserto                     |
+| OS abertas                      | Quantidade e idade das OS não concluídas                                              | Fila da oficina                           |
+
+Não é preciso acompanhar tudo desde o primeiro mês. Comece por custo por km,
+cumprimento do plano e disponibilidade. Os outros ganham sentido quando as ordens de
+serviço estiverem sendo registradas com disciplina.
+
+## Uma rotina mensal de manutenção
+
+1. **Liste os veículos com revisão vencida** por data ou por quilometragem, e os que
+   vencem nos próximos 30 dias. Agende os dois grupos.
+2. **Revise as OS abertas há mais de uma semana.** Descubra o que está travando: peça,
+   orçamento ou aprovação.
+3. **Leia os checklists reprovados e com restrições** do mês e confira se cada defeito
+   virou uma OS.
+4. **Compare o custo por km** de cada veículo com o dos veículos do mesmo tipo.
+   Veículos muito acima da média são candidatos a diagnóstico ou a renovação.
+5. **Olhe a reincidência.** O mesmo defeito voltando no mesmo veículo aponta
+   diagnóstico errado, peça de baixa qualidade ou fornecedor a rever.
+6. **Confira as contas a pagar** das OS do mês, para que nenhuma nota fique sem
+   ordem de serviço e nenhuma OS fique sem o custo registrado.
+
+## Como o Trajetto ajuda
+
+- **Plano por veículo.** Cada veículo tem o intervalo de revisão em quilômetros e em
+  meses, a data e a quilometragem da última manutenção.
+- **Tudo lado a lado na listagem.** A listagem de veículos mostra a quilometragem
+  atual ao lado da data e da quilometragem da última revisão e dos dois intervalos,
+  e a exportação em CSV ou Excel traz a quilometragem atual, os intervalos e a data
+  da última manutenção. O formulário de abastecimento também mostra o intervalo e a
+  quilometragem da última manutenção do veículo escolhido.
+- **Painel de manutenção.** O painel, na aba Análise Gráfica, mostra quantos
+  veículos estão com manutenção atrasada, por data ou por quilometragem, quantos
+  estão pendentes (vencendo nos próximos 30 dias ou ainda sem manutenção
+  registrada) e quantos estão em dia. São contagens, sem aviso de vencimento:
+  saber quais veículos são continua sendo a conferência da rotina mensal acima,
+  com os dados lado a lado na listagem.
+- **Ordens de serviço completas.** A OS registra se o serviço foi interno ou
+  externo, o fornecedor, a descrição, as peças do cadastro com quantidade, preço e
+  desconto, o valor total, o responsável e a filial. O preço de cada peça fica
+  gravado na OS, então uma mudança de preço no cadastro não altera ordens antigas.
+- **Fechamento que reinicia o calendário.** Ao finalizar a OS, informa-se a
+  quilometragem de saída, e o veículo passa a contar a próxima revisão a partir da
+  data e da quilometragem da conclusão.
+- **Do checklist à oficina.** Defeitos apontados no
+  [checklist veicular diário](/blog/checklist-veicular-diario) ficam registrados com
+  fotos, para a gestão agir antes de virar quebra. O veículo pode ser marcado como
+  "Bloqueado", e, no módulo de Entregas, um veículo bloqueado não consegue iniciar
+  rota.
+- **Custos ligados à origem.** A conta a pagar pode ser vinculada à OS que a gerou,
+  o painel mostra os gastos com manutenção por período e a listagem de ordens de
+  serviço exporta em CSV ou Excel.
+
+A manutenção é uma parte do custo da frota que responde bem à gestão: a preventiva
+feita no momento certo costuma evitar um gasto maior e, principalmente, um veículo
+parado quando ele mais faz falta.

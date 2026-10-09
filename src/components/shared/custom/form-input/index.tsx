@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { Input, InputProps } from "@/components/ui/input";
 
 import InputMask from "react-input-mask";
@@ -13,6 +15,9 @@ interface FormInputProps extends Omit<InputProps, "mask"> {
   mask?: string;
   beforeMaskedValueChange?: any;
   maskChar?: any;
+
+  /** Help text under the field, included in its `aria-describedby`. */
+  hint?: ReactNode;
 }
 
 const FormInput = ({
@@ -24,17 +29,26 @@ const FormInput = ({
   className,
   beforeMaskedValueChange,
   maskChar,
+  hint,
   ...props
 }: FormInputProps): JSX.Element => {
+  // No `focus-visible:border-none`: it removed the red error border exactly
+  // while the person was focused on fixing the field.
   const inputClassName = cn(
-    "h-10 focus-visible:border-none",
+    "h-10",
     icon && "pl-10",
     props.disabled && "opacity-50 cursor-not-allowed",
     className,
   );
 
   return (
-    <FieldShell label={label} htmlFor={htmlfor} error={errorName}>
+    <FieldShell
+      label={label}
+      htmlFor={htmlfor}
+      error={errorName}
+      hint={hint}
+      required={props.required}
+    >
       {(control) => (
         <div className="relative">
           {icon && (

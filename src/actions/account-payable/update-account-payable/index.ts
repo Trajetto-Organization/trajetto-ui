@@ -1,10 +1,15 @@
 "use server";
 
-import { createUpdateAccountPayableSchema } from "@/schemas/create-update-account-payable-schema";
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { updateAccountPayableSchema } from "@/schemas/create-update-account-payable-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateAccountPayableProps {
   message: string;
+  /** Said without refusing, e.g. bills above their service order. */
+  warnings?: string[];
 }
 
 const handleUpdateAccountPayable = async (
@@ -35,8 +40,14 @@ const handleUpdateAccountPayable = async (
     updateAccountPayableValues.entries(),
   );
 
+  // The form says whether the bill already names a payee: only then is one
+  // required (a legacy bill is edited without inventing it). Not sent on:
+  // the schema drops keys it does not declare, and the API decides again.
+  const requirePayee =
+    updateAccountPayableValues.get("payee_required") === "true";
+
   const updateAccountPayableValidation =
-    createUpdateAccountPayableSchema.safeParse(accountPayableValues);
+    updateAccountPayableSchema(requirePayee).safeParse(accountPayableValues);
 
   if (updateAccountPayableValidation.error) {
     const formatError = updateAccountPayableValidation.error.flatten();
@@ -49,7 +60,7 @@ const handleUpdateAccountPayable = async (
   const accountPayableData = updateAccountPayableValidation.data;
 
   try {
-    const response = await fetch(updateAccountPayable, {
+    const response = await apiFetch(updateAccountPayable, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -59,18 +70,21 @@ const handleUpdateAccountPayable = async (
       body: JSON.stringify(accountPayableData),
     });
 
-    const { message } = (await response.json()) as UpdateAccountPayableProps;
+    const { message, warnings } =
+      (await response.json()) as UpdateAccountPayableProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         updateAccountPayableError: {
-          updateAccountPayableErrorMessage: message,
+          updateAccountPayableErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
-    return { successMessage: message };
+    return { successMessage: message, warnings: warnings ?? [] };
   } catch (error) {
+    logActionError("account-payable/update-account-payable", error);
     return {
       updateAccountPayableError: {
         updateAccountPayableErrorMessage:

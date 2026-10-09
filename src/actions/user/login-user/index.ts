@@ -1,5 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { headers } from "next/headers";
+
+import { apiForwardingHeaders } from "@/lib/api-forwarding";
 import { redirect } from "next/navigation";
 import { validateLoginUserFormSchema } from "@/schemas/login-schema";
 
@@ -10,12 +15,15 @@ import { parseJwt } from "@/lib/decode-jwt";
 import { getCookies } from "../../cookies";
 
 import { validateTurnstile } from "../../validate-turnstile";
+import { rememberTwoFactorChallenge } from "@/lib/two-factor-challenge";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface LogInUserProps {
   message?: string;
   token?: string;
   refresh_token?: string;
   twoFactorVerification?: boolean;
+  twoFactorChallenge?: string;
   emailVerification?: boolean;
   role?: string;
 }
@@ -58,11 +66,13 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
   let userLoggedRole = "user" as UserRole;
 
   try {
-    const response = await fetch(userSession, {
+    const response = await apiFetch(userSession, {
       credentials: "include",
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Anonymous route limited per address: say which browser this is for.
+        ...apiForwardingHeaders(headers()),
       },
       body: JSON.stringify(authenticateUser),
     });
@@ -72,13 +82,16 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
       token,
       refresh_token,
       twoFactorVerification,
+      twoFactorChallenge,
       role,
       emailVerification,
     } = (await response.json()) as LogInUserProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        loginError: { loginErrorMessage: message },
+        loginError: {
+          loginErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
@@ -87,6 +100,10 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
     }
 
     if (twoFactorVerification && message) {
+      // Proof of the password for the code step, kept server-side in an
+      // HttpOnly cookie: the browser never gets the value.
+      rememberTwoFactorChallenge(twoFactorChallenge);
+
       return { twoFactor: true, twoFactorEmail: email };
     }
 
@@ -102,6 +119,7 @@ const handleLoginUser = async (state: any, loginValues: FormData) => {
       return;
     }
   } catch (error) {
+    logActionError("user/login-user", error);
     return {
       loginError: {
         loginErrorMessage: "Ocorreu um erro inesperado ao tentar fazer login.",

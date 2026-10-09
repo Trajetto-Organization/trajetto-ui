@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateOccurrenceTypeSchema } from "@/schemas/create-update-occurrence-type-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateOccurrenceTypeProps {
   message: string;
@@ -49,7 +52,7 @@ const handleCreateOccurrenceType = async (
     createOccurrenceTypeValidation.data;
 
   try {
-    const response = await fetch(createOccurrenceType, {
+    const response = await apiFetch(createOccurrenceType, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -60,21 +63,29 @@ const handleCreateOccurrenceType = async (
         ...occurrenceTypeData,
         requires_photo: occurrenceTypeData.requires_photo ?? false,
         blocks_delivery: occurrenceTypeData.blocks_delivery ?? false,
+        requires_authorization:
+          occurrenceTypeData.requires_authorization ?? false,
+        requires_receipt_photo:
+          occurrenceTypeData.requires_receipt_photo ?? false,
+        requires_signature: occurrenceTypeData.requires_signature ?? false,
+        form_fields: occurrenceTypeData.form_fields ?? null,
       }),
     });
 
     const { message } = (await response.json()) as CreateOccurrenceTypeProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         createOccurrenceTypeError: {
-          createOccurrenceTypeErrorMessage: message,
+          createOccurrenceTypeErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("occurrence-type/create-occurrence-type", error);
     return {
       createOccurrenceTypeError: {
         createOccurrenceTypeErrorMessage:

@@ -1,3 +1,6 @@
+/**
+ * The names a page gives its data (the server cache tags of its listing).
+ */
 type RevalidateDataProps =
   | "update-user-registration"
   | "update-master-user"
@@ -29,66 +32,22 @@ type RevalidateDataProps =
   | "toggle-business-active"
   | "toggle-branch-active";
 
-const revalidateDataToQueryKeyMap: Record<RevalidateDataProps, string[]> = {
-  "update-user-registration": ["user"],
-  "update-master-user": ["master_user"],
-  "update-branch": ["branch"],
-  "update-business": ["business"],
-  "update-part": ["part"],
-  "update-permission": ["permission"],
-  "update-profile-access": ["profile"],
-  "update-supplier": ["supplier"],
-  "update-vehicle-type": ["vehicle_type"],
-  "update-fuel-type": ["fuel_type"],
-  "update-driver": ["driver"],
-  "update-vehicle": ["vehicle"],
-  "update-service-order": ["service_order"],
-  "update-fine": ["update_fine"],
-  "update-fuel": ["update_fuel"],
-  "update-vehicle-checklist": ["vehicle_checklist"],
-  "update-activity": ["activity"],
-  "update-delivery": ["delivery"],
-
-  /**
-   * The route table is server-rendered, so the tag is what refreshes it. The
-   * key covers the detail dialog, which keeps its own react-query cache and
-   * would otherwise still show the stops as they were before the change.
-   */
-  "update-route": ["route-detail"],
-
-  /**
-   * The chat has no server cache to revalidate: it is a live client surface
-   * fed by react-query and a socket, so its whole refresh IS this list of
-   * keys. `chat-threads` covers the conversations and — its badge riding the
-   * same prefix — the unread counter; `chat-conversation` is what the open
-   * pane listens on to reload the messages it is showing.
-   *
-   * It used to point at `update-delivery`, a Next cache tag the chat never
-   * reads, which made the button on that tab decoration.
-   */
-  "update-chat": ["chat-threads", "chat-search", "chat-conversation"],
-
-  "update-shipper": ["shipper"],
-  "update-occurrence-type": ["occurrence_type"],
-
-  /**
-   * The catalogue feeds a picker that is open somewhere else on the screen —
-   * a reason created from the settings tab has to appear in the status dialog
-   * without a reload, or the operator creates it twice.
-   */
-  "update-status-change-reason": ["status_change_reason"],
-
-  /**
-   * An upload creates deliveries and routes, so its own list is not the only
-   * thing that went stale.
-   */
-  "update-import": ["import", "delivery", "route-detail"],
-  "toggle-business-active": ["business"],
-  "toggle-branch-active": ["branch"],
-  "update-service-order-part": [],
-  "update-account-payable": [],
-  "update-quote-status": [],
-};
+/**
+ * Roots of the react-query keys a write leaves stale in the tab that made it,
+ * for a mutation that refreshes them right away.
+ *
+ * Only what is read is kept. It used to scope "Atualizar" per page and
+ * was wrong twice over — the Entregas tab pointed at `["delivery"]`, a key no
+ * query has, and 9 of 29 entries named keys that did not exist. Atualizar now
+ * refreshes the whole tab (useRevalidateScreen) and the catalogues follow
+ * `catalogChanged` (catalog-sync), so the only reader left is the import
+ * reversal. `tests/unitaires/query-key-maps.test.ts` fails when a root here
+ * has no `useQuery`/`useInfiniteQuery` behind it.
+ */
+const revalidateDataToQueryKeyMap = {
+  // An import (and its reversal) creates or removes deliveries and routes.
+  "update-import": ["delivery-detail", "route-detail", "unrouted-deliveries"],
+} as const satisfies Partial<Record<RevalidateDataProps, readonly string[]>>;
 
 export type { RevalidateDataProps };
 export { revalidateDataToQueryKeyMap };

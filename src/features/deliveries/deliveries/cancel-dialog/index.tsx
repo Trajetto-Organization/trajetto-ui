@@ -18,8 +18,13 @@ import { toast } from "sonner";
 
 import { updateDeliveryStatus } from "@/actions/delivery/update-delivery-status";
 import { revalidateTagName } from "@/actions/revalidate";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { StatusReasonSelector } from "@/app/(protected)/_components/shared/selectors/status-reason-selector";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 interface CancelDeliveryDialogProps {
   businessId: string;
@@ -56,8 +61,19 @@ const CancelDeliveryDialog = ({
   const [reasonId, setReasonId] = useState<string>("");
   const [note, setNote] = useState<string>("");
 
+  // Live validation (decision 16.700): "Cancelar Entrega" is enabled and,
+  // without a reason, says so under the select and focuses it (16.701).
+  const live = useLiveValidation({
+    values: { reasonId },
+    rules: () => ({
+      reasonId: reasonId ? null : "Escolha o motivo do cancelamento.",
+    }),
+    resetKey: isOpen,
+    validateOnSubmit: false,
+  });
+
   const handleCancel = async () => {
-    if (!reasonId) return;
+    if (!live.validate() || !reasonId) return;
 
     setIsPending(true);
 
@@ -68,6 +84,8 @@ const CancelDeliveryDialog = ({
         "CANCELLED",
         { reasonId, note: note || undefined },
       );
+
+      if (isStaleActionResult(result)) return;
 
       if (!result.success) {
         toast.error(result.message);
@@ -87,10 +105,7 @@ const CancelDeliveryDialog = ({
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent className="max-w-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle
-            className="flex items-center gap-2 text-xl
-            text-red-600 dark:text-red-500"
-          >
+          <AlertDialogTitle className="flex items-center gap-2 text-xl text-destructive">
             <Ban className="h-5 w-5 shrink-0" />
             Cancelar Entrega
           </AlertDialogTitle>
@@ -119,14 +134,22 @@ const CancelDeliveryDialog = ({
           </p>
         </div>
 
-        <StatusReasonSelector
-          businessId={businessId}
-          reasonId={reasonId}
-          onReasonChange={setReasonId}
-          note={note}
-          onNoteChange={setNote}
-          disabled={isPending}
-        />
+        {/* The select's id is generated: the wrapper names the field. The
+            note comes after it, so leaving the note has passed the reason. */}
+        <div ref={live.ref} data-live-field="reasonId">
+          <StatusReasonSelector
+            businessId={businessId}
+            reasonId={reasonId}
+            onReasonChange={(next) => {
+              setReasonId(next);
+              live.touch("reasonId");
+            }}
+            note={note}
+            onNoteChange={setNote}
+            disabled={isPending}
+            error={live.messageOf("reasonId") ?? undefined}
+          />
+        </div>
 
         <ul className="space-y-1.5 text-sm text-muted-foreground">
           <li>• Cancelada é um estado final: não há como voltar atrás.</li>
@@ -138,12 +161,16 @@ const CancelDeliveryDialog = ({
         </ul>
 
         <AlertDialogFooter className="gap-2 sm:gap-2">
-          <AlertDialogCancel disabled={isPending} className="w-full sm:w-auto">
+          <AlertDialogCancel
+            disabled={isPending}
+            className="w-full sm:w-auto"
+            {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
+          >
             Cancelar
           </AlertDialogCancel>
 
           <AlertDialogAction
-            disabled={isPending || !reasonId}
+            disabled={isPending}
             onClick={(event) => {
               // Kept open until the request settles, so a failure is visible
               // instead of closing over a delivery that did not change.

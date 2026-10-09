@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   Command,
   CommandEmpty,
@@ -7,14 +7,36 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Check, Loader } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 import { useDriverInfiniteScroll } from "./hooks/driver-infinite-scroll";
 import { Button } from "@/components/ui/button";
 
 import type { SearchDriverProps } from "./search-driver.types";
+
+/** The last four digits of the CNH, which tell two namesakes apart. */
+const cnhTail = (cnh: string | undefined): string => (cnh ?? "").slice(-4);
+
+/**
+ * Whether a loaded driver matches what is typed, for the moment between a
+ * keystroke and the server's answer. The server searches name and CNH.
+ */
+function matchesTyped(
+  driver: { name: string; cnh?: string },
+  typed: string,
+): boolean {
+  const term = typed.trim().toLowerCase();
+
+  if (!term) return true;
+
+  return [driver.name, driver.cnh ?? ""].some((value) =>
+    value.toLowerCase().includes(term),
+  );
+}
 
 const SearchDriver = ({
   errorDriverId,
@@ -23,7 +45,12 @@ const SearchDriver = ({
   handleUpdateSearchDriverInputValue,
   isOptional,
 }: SearchDriverProps): JSX.Element => {
+  const fieldId = useId();
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
+
+  // The typed term goes to the server (FLEET-SEARCH-1): with only the loaded
+  // pages filtered here, a driver past the first ten could not be found.
+  const [search, setSearch] = useState<string>("");
 
   const {
     drivers,
@@ -33,7 +60,18 @@ const SearchDriver = ({
     refetch: refetchDrivers,
     hasError,
     errorMessage,
-  } = useDriverInfiniteScroll(businessId);
+    isSearchSettled,
+  } = useDriverInfiniteScroll(businessId, search);
+
+  // While the answer for the new term is on its way, the previous rows are
+  // narrowed locally; once it lands, the server's answer is shown as it is.
+  const visibleDrivers = useMemo(
+    () =>
+      isSearchSettled
+        ? (drivers ?? [])
+        : (drivers ?? []).filter((driver) => matchesTyped(driver, search)),
+    [drivers, isSearchSettled, search],
+  );
 
   useEffect(() => {
     if (hasError) {
@@ -49,95 +87,123 @@ const SearchDriver = ({
   }, [isLoadingDrivers, isFetchingDrivers, hasError]);
 
   return (
-    <div className="space-y-2">
-      <div
-        className={`text-sm font-medium ${errorDriverId ? "text-red-500" : ""}`}
-      >
-        {errorDriverId ? errorDriverId[0] : "Selecione o motorista"}{" "}
-        {isOptional && "(opcional)"}
-      </div>
-
-      <Command className="h-[320px] relative border rounded-md">
-        <CommandInput
-          placeholder="Buscar motorista..."
-          className="h-9"
-          aria-label="Buscar motorista"
-        />
-
-        {!isLoadingDrivers && !hasError && (
-          <CommandEmpty>
-            <div className="py-6 text-center">Nenhum motorista disponível</div>
-          </CommandEmpty>
-        )}
-
-        <CommandList
-          className="max-h-[280px] [&::-webkit-scrollbar]:w-2 
-          [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent 
-          [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm 
-          [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground [&]:scrollbar-thin 
-          [&]:scrollbar-track-transparent [&]:scrollbar-thumb-border"
+    /*
+      The shared field shell (decisions 3.3 and 3.4): the label stays and
+      carries the required/optional marker, the error goes under the list,
+      and the search input is marked invalid/required for a screen reader.
+    */
+    <FieldShell
+      label={`Selecione o motorista ${isOptional ? "(opcional)" : "*"}`}
+      htmlFor={fieldId}
+      // cmdk owns the input id; the visible label is text, cmdk names the input.
+      labelTargetsControl={false}
+      error={errorDriverId}
+    >
+      {(control) => (
+        <Command
+          // cmdk owns the input's id and labels it with this text.
+          label="Selecione o motorista"
+          // The server answers the search; cmdk must not filter it again.
+          shouldFilter={false}
+          className={cn(
+            "h-[320px] relative border rounded-md",
+            control["aria-invalid"] && "border-red-600 dark:border-red-500",
+          )}
         >
-          <CommandGroup>
-            {hasError && (
-              <div
-                className="absolute inset-0 flex flex-col
-                px-6 items-center justify-center text-center"
-              >
-                {errorMessage || "Erro ao carregar os motoristas"}
-                <Button
-                  className="h-8 mt-2"
-                  variant={"outline"}
-                  type="button"
-                  onClick={() => refetchDrivers()}
-                >
-                  Revalidar Motoristas
-                </Button>
-              </div>
+          <CommandInput
+            {...control}
+            value={search}
+            onValueChange={setSearch}
+            placeholder="Buscar motorista por nome ou CNH..."
+            className="h-9"
+            aria-label="Buscar motorista"
+          />
+
+          {!isLoadingDrivers &&
+            !hasError &&
+            isSearchSettled &&
+            visibleDrivers.length === 0 && (
+              <CommandEmpty>
+                <div className="py-6 text-center">
+                  {search.trim()
+                    ? "Nenhum motorista encontrado."
+                    : "Nenhum motorista disponível"}
+                </div>
+              </CommandEmpty>
             )}
 
-            {drivers?.map((driver) => (
-              <CommandItem
-                key={driver.id}
-                ref={lastDriverRef}
-                onSelect={() => {
-                  handleUpdateSearchDriverInputValue({
-                    driverId: driver.id,
-                    searchDriverInputValue: driver.name,
-                    driverCnh: driver.cnh.slice(-4), // Passing the last 4 digits of the driver's license
-                  });
-                }}
-                className="cursor-pointer"
-              >
-                {driver.name}{" "}
-                <span className="text-xs text-muted-foreground ml-2">
-                  (CNH: {driver.cnh.slice(-4)})
-                </span>
-                {selectedDriverId === driver.id && (
-                  <Check className="ml-auto h-4 w-4" />
-                )}
-              </CommandItem>
-            ))}
+          <CommandList
+            className="max-h-[280px] [&::-webkit-scrollbar]:w-2
+          [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent
+          [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm
+          [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground [&]:scrollbar-thin
+          [&]:scrollbar-track-transparent [&]:scrollbar-thumb-border"
+          >
+            <CommandGroup>
+              {hasError && (
+                <div
+                  className="absolute inset-0 flex flex-col
+                px-6 items-center justify-center text-center"
+                >
+                  {errorMessage || "Erro ao carregar os motoristas"}
+                  <Button
+                    className="h-8 mt-2"
+                    variant={"outline"}
+                    type="button"
+                    onClick={() => refetchDrivers()}
+                  >
+                    Revalidar Motoristas
+                  </Button>
+                </div>
+              )}
 
-            {isFetchingDrivers &&
-              drivers &&
-              drivers.length > 0 &&
-              !hasError && <Skeleton className="w-full h-7" />}
-          </CommandGroup>
+              {visibleDrivers.map((driver) => (
+                <CommandItem
+                  key={driver.id}
+                  value={driver.id}
+                  ref={lastDriverRef}
+                  onSelect={() => {
+                    handleUpdateSearchDriverInputValue({
+                      driverId: driver.id,
+                      searchDriverInputValue: driver.name,
+                      driverCnh: cnhTail(driver.cnh),
+                    });
+                  }}
+                  className="cursor-pointer"
+                >
+                  <span className="min-w-0 truncate">{driver.name}</span>
+                  {driver.cnh && (
+                    <span className="ml-2 shrink-0 text-xs text-muted-foreground">
+                      (CNH: {cnhTail(driver.cnh)})
+                    </span>
+                  )}
+                  {selectedDriverId === driver.id && (
+                    <Check className="ml-auto h-4 w-4 shrink-0" />
+                  )}
+                </CommandItem>
+              ))}
 
-          {showSpinner && !drivers?.length && (
-            <div className="flex items-center justify-center py-8">
-              <div className="flex flex-col items-center gap-3">
-                <Loader className="animate-spin h-6 w-6 text-primary" />
-                <span className="text-sm text-muted-foreground">
-                  Carregando motoristas...
-                </span>
+              {isFetchingDrivers &&
+                drivers &&
+                drivers.length > 0 &&
+                !hasError && <Skeleton className="w-full h-7" />}
+            </CommandGroup>
+
+            {showSpinner && !visibleDrivers.length && (
+              <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader className="animate-spin h-6 w-6 text-primary" />
+                  <span className="text-sm text-muted-foreground">
+                    Carregando motoristas...
+                  </span>
+                </div>
               </div>
-            </div>
-          )}
-        </CommandList>
-      </Command>
-    </div>
+            )}
+          </CommandList>
+        </Command>
+      )}
+    </FieldShell>
   );
 };
 
-export { SearchDriver };
+export { SearchDriver, matchesTyped };

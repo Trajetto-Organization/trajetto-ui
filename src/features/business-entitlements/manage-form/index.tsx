@@ -20,6 +20,7 @@ import {
   getBusinessEntitlements,
   updateBusinessEntitlement,
 } from "@/actions/business/entitlements";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 import { DisableModuleDialog } from "../disable-dialog";
 
@@ -61,8 +62,9 @@ interface ManageEntitlementsFormProps {
 
 /**
  * MASTER dialog: which modules this company hired. Toggles apply
- * immediately (optimistic, with rollback on failure) — a plan change is a
- * single deliberate action, not a form to fill.
+ * immediately — a plan change is a single deliberate action, not a form to
+ * fill. The switch moves when the API confirms; a refusal leaves it as it
+ * was, and the refetch afterwards reconciles either way.
  */
 const ManageEntitlementsForm = ({
   businessId,
@@ -81,7 +83,19 @@ const ManageEntitlementsForm = ({
 
   const { data: response, isLoading } = useQuery(
     ["business-entitlements", businessId],
-    () => getBusinessEntitlements(businessId),
+    async () => {
+      const entitlements = await getBusinessEntitlements(businessId);
+
+      // Thrown, so a refetch (the one after each toggle) keeps the modules
+      // it last read; an `undefined` answer would replace them and read as
+      // "every module off". A first open has nothing to keep and still shows
+      // them off, under the deploy notice.
+      if (isStaleActionResult(entitlements, { background: true })) {
+        throw new Error(STALE_ACTION_MESSAGE);
+      }
+
+      return entitlements;
+    },
     { enabled: isOpen, refetchOnWindowFocus: false },
   );
 
@@ -99,7 +113,34 @@ const ManageEntitlementsForm = ({
         enabled,
       );
 
+      if (isStaleActionResult(result)) return;
+
       if (result.success) {
+        // The switch shows the answer now, not when the refetch lands: that
+        // refetch is a Server Action, queued behind whatever the router is
+        // doing (the plan change also refreshes the MASTER's screens), and a
+        // toast saying "atualizado" beside a switch still off read as a
+        // failure for as long as it took — 30 s on a busy server.
+        queryClient.setQueryData<typeof response>(
+          ["business-entitlements", businessId],
+          (current) =>
+            current?.data
+              ? {
+                  ...current,
+                  data: {
+                    ...current.data,
+                    modules: current.data.modules.some(
+                      (row) => row.module === module,
+                    )
+                      ? current.data.modules.map((row) =>
+                          row.module === module ? { ...row, enabled } : row,
+                        )
+                      : [...current.data.modules, { module, enabled }],
+                  },
+                }
+              : current,
+        );
+
         toast.success(result.message);
         setModuleToDisable(null);
       } else {
@@ -128,7 +169,7 @@ const ManageEntitlementsForm = ({
       >
         <DialogHeader>
           <DialogTitle className="text-xl">Módulos Contratados</DialogTitle>
-          <DialogDescription className="truncate text-sm text-muted-foreground">
+          <DialogDescription className="break-words text-sm text-muted-foreground">
             Habilite ou desabilite os módulos de{" "}
             <strong title={businessName}>{businessName}</strong>
           </DialogDescription>
@@ -165,9 +206,7 @@ const ManageEntitlementsForm = ({
                   <Switch
                     checked={enabled}
                     disabled={pendingModule !== null}
-                    onCheckedChange={(value) =>
-                      handleToggle(descriptor, value)
-                    }
+                    onCheckedChange={(value) => handleToggle(descriptor, value)}
                     aria-label={`Alternar módulo ${descriptor.label}`}
                   />
                 </div>

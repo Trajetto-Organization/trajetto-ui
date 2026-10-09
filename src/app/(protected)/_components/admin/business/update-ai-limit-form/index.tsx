@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogScrollContent,
   DialogDescription,
+  DialogFormFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -19,8 +20,18 @@ import FormInput from "@/components/shared/custom/form-input";
 import { handleUpdateAILimit } from "@/actions/business/update-ai-limit";
 import { getAIUsage, type AIUsageData } from "@/actions/business/get-ai-usage";
 
-import { useAIVerificationStore } from "@/store/ai-verification-store";
-import { formatNotificationDate } from "@/lib/format-values";
+import {
+  freshestUsage,
+  useAIVerificationStore,
+} from "@/store/ai-verification-store";
+import { periodStartSentence } from "@/app/(protected)/_components/shared/limits/limits-content/lib/ai-usage-copy";
+import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
+import { updateAILimitSchema } from "@/schemas/update-ai-limit-schema";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  canSubmitForm,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 import { useUpdateAILimitForm, type UpdateAILimitFormState } from "./hooks";
 
@@ -44,17 +55,36 @@ const UpdateAILimitFormSubmit = ({
 }) => {
   const { pending } = useFormStatus();
 
-  const initialValue = aiUsage?.ai_analysis_limit ?? 0;
-  const [currentValue, setCurrentValue] = useState<number>(initialValue);
+  const initialValue = String(aiUsage?.ai_analysis_limit ?? 0);
+  // Controlled, as live validation reads it: the text typed, not a number.
+  const [limit, setLimit] = useState<string>(initialValue);
 
-  const isDirty = currentValue !== initialValue;
+  const isDirty = limit !== initialValue;
 
+  // Keyed on the stored limit, not the usage object: every socket update
+  // of the usage is a new object and would wipe what is being typed.
+  const storedLimit = aiUsage?.ai_analysis_limit ?? 0;
   useEffect(() => {
-    setCurrentValue(aiUsage?.ai_analysis_limit ?? 0);
-  }, [aiUsage]);
+    setLimit(String(storedLimit));
+  }, [storedLimit]);
+
+  // Live validation (decision 16.700) with the action's schema. An empty
+  // field would be coerced to 0 (analysis off) without a word, so it is
+  // asked for instead.
+  const live = useLiveValidation({
+    schema: updateAILimitSchema,
+    values: { ai_analysis_limit: limit },
+    rules: (values) => ({
+      ai_analysis_limit:
+        values.ai_analysis_limit.trim() === ""
+          ? "Informe o limite mensal (0 desabilita a análise)."
+          : null,
+    }),
+    serverErrors: state.updateAILimitError,
+  });
 
   // Running analyses count toward the bar (their quota is committed) but are
-  // labeled separately — they are not completed verifications.
+  // labeled separately — they are not photos analysed yet.
   const aiInProgress = aiUsage?.ai_analysis_in_progress ?? 0;
 
   const usagePercentage =
@@ -84,7 +114,7 @@ const UpdateAILimitFormSubmit = ({
             <span className="font-medium">
               {aiUsage.ai_analysis_used} / {aiUsage.ai_analysis_limit}
               {aiInProgress > 0 && (
-                <span className="ml-2 text-xs font-normal text-blue-600">
+                <span className="ml-2 text-xs font-normal text-blue-600 dark:text-blue-400">
                   +{aiInProgress} em análise
                 </span>
               )}
@@ -102,10 +132,10 @@ const UpdateAILimitFormSubmit = ({
               variant="outline"
               className={
                 usagePercentage >= 90
-                  ? "bg-red-100 text-red-800 border-red-200"
+                  ? "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900"
                   : usagePercentage >= 70
-                    ? "bg-yellow-100 text-yellow-800 border-yellow-200"
-                    : "bg-green-100 text-green-800 border-green-200"
+                    ? "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900"
+                    : "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-900"
               }
             >
               {usagePercentage >= 100
@@ -113,13 +143,16 @@ const UpdateAILimitFormSubmit = ({
                 : `${Math.round(usagePercentage)}% utilizado`}
             </Badge>
 
-            {aiUsage.ai_analysis_reset_at && (
+            {/* The company's month (AI-15): the instant it began there. */}
+            {periodStartSentence(
+              aiUsage.ai_analysis_reset_at,
+              aiUsage.ai_analysis_timezone,
+            ) && (
               <div className="flex flex-col items-end gap-0.5">
                 <span className="text-xs text-muted-foreground">
-                  Último reset:{" "}
-                  {formatNotificationDate(
+                  {periodStartSentence(
                     aiUsage.ai_analysis_reset_at,
-                    "pt-BR",
+                    aiUsage.ai_analysis_timezone,
                   )}
                 </span>
               </div>
@@ -128,22 +161,19 @@ const UpdateAILimitFormSubmit = ({
         </div>
       )}
 
-      <div className="space-y-4">
+      <div ref={live.ref} className="space-y-4">
         <FormInput
-          label="Limite mensal de verificações"
+          label="Limite mensal de fotos analisadas *"
           htmlfor="ai_analysis_limit"
           name="ai_analysis_limit"
           type="number"
           min={0}
           max={10000}
-          defaultValue={aiUsage?.ai_analysis_limit || 0}
+          value={limit}
           placeholder="Ex: 100"
-          errorName={state.updateAILimitError?.ai_analysis_limit}
+          errorName={live.errorOf("ai_analysis_limit")}
           disabled={pending}
-          onChange={(e) => {
-            const val = e.target.value;
-            setCurrentValue(val === "" ? -1 : Number(val));
-          }}
+          onChange={(e) => setLimit(e.target.value)}
           onKeyDown={(e) => {
             if (["+", "-", "e", "E", ".", ","].includes(e.key)) {
               e.preventDefault();
@@ -152,22 +182,28 @@ const UpdateAILimitFormSubmit = ({
         />
 
         <p className="text-xs text-muted-foreground -mt-2">
-          0 = desabilitado (sem verificação IA). Máximo: 10.000
+          Cada foto conta uma vez: odômetro, item de checklist ou canhoto. 0 =
+          desabilitado. Máximo: 10.000.
         </p>
 
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={handleCloseAILimit}>
+        {/* A small modal: Cancelar and Salvar side by side (decision 3.2). */}
+        <DialogFormFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCloseAILimit}
+            {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
+          >
             Cancelar
           </Button>
-          <Button type="submit" disabled={pending || !isDirty}>
+          <Button
+            type="submit"
+            disabled={pending || !canSubmitForm({ isEdit: true, isDirty })}
+          >
             <span>Salvar Limite</span>
-            {pending && (
-              <div className="ml-2 animate-spin">
-                <Loader className="h-4 w-4" />
-              </div>
-            )}
+            {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
           </Button>
-        </div>
+        </DialogFormFooter>
       </div>
     </div>
   );
@@ -181,7 +217,7 @@ const UpdateAILimitForm = ({
 }: UpdateAILimitFormProps) => {
   const defaultState: UpdateAILimitFormState = {};
   const [state, dispatch] = useFormState<UpdateAILimitFormState, FormData>(
-    handleUpdateAILimit,
+    guardFormAction(handleUpdateAILimit),
     defaultState,
   );
 
@@ -190,7 +226,12 @@ const UpdateAILimitForm = ({
     handleCloseAILimit,
   });
 
-  const [serverUsage, setServerUsage] = useState<AIUsageData | null>(null);
+  // The server answer and WHEN it was asked for: a socket event older than
+  // the question must not overwrite the fresher answer (DLVP-ADM-2).
+  const [server, setServer] = useState<{
+    usage: AIUsageData;
+    askedAt: number;
+  } | null>(null);
   const [isLoadingUsage, setIsLoadingUsage] = useState<boolean>(false);
 
   // Real-time usage from WebSocket events (reactive selector)
@@ -198,24 +239,25 @@ const UpdateAILimitForm = ({
     s.businessUsage.get(businessId),
   );
 
-  // Merge: real-time takes priority over server data
-  const aiUsage: AIUsageData | null = realtimeUsage
-    ? {
-        ai_analysis_used: realtimeUsage.used,
-        ai_analysis_in_progress: realtimeUsage.inProgress ?? 0,
-        ai_analysis_limit: realtimeUsage.limit,
-        ai_analysis_reset_at:
-          realtimeUsage.resetAt || serverUsage?.ai_analysis_reset_at || null,
-      }
-    : serverUsage;
+  // The newer of the two wins, as on the Limites de uso screen: "real-time
+  // always wins" showed a stale socket event over a fresh server answer.
+  const aiUsage = freshestUsage(
+    server?.usage ?? null,
+    server?.askedAt ?? 0,
+    realtimeUsage,
+  ) as AIUsageData | null;
 
   useEffect(() => {
     if (isAILimitOpen) {
       setIsLoadingUsage(true);
+      const askedAt = Date.now();
+
       getAIUsage(businessId)
         .then((response) => {
+          if (isStaleActionResult(response, { background: true })) return;
+
           if (response.success && response.data) {
-            setServerUsage(response.data);
+            setServer({ usage: response.data, askedAt });
           }
         })
         .finally(() => setIsLoadingUsage(false));
@@ -238,22 +280,19 @@ const UpdateAILimitForm = ({
       }}
       open={isAILimitOpen}
     >
-      <DialogScrollContent
-        className="max-w-md"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogScrollContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BrainCircuit className="h-5 w-5" />
             Configurar Limite IA
           </DialogTitle>
           <DialogDescription>
-            Defina o limite mensal de verificações IA para{" "}
+            Defina quantas fotos a IA pode analisar por mês para{" "}
             <strong>{businessName}</strong>
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} action={handleSubmitAILimit}>
+        <form ref={formRef} action={handleSubmitAILimit} noValidate>
           <UpdateAILimitFormSubmit
             state={state}
             aiUsage={aiUsage}

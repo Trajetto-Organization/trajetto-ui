@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { updateAILimitSchema } from "@/schemas/update-ai-limit-schema";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateAILimitResponse {
   message: string;
@@ -38,7 +41,7 @@ const handleUpdateAILimit = async (state: any, formData: FormData) => {
   const { ai_analysis_limit } = validation.data;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/business/update-ai-limit/${businessId}`,
       {
         credentials: "include",
@@ -53,14 +56,17 @@ const handleUpdateAILimit = async (state: any, formData: FormData) => {
 
     const { message } = (await response.json()) as UpdateAILimitResponse;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateAILimitError: { updateAILimitErrorMessage: message },
+        updateAILimitError: {
+          updateAILimitErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("business/update-ai-limit", error);
     return {
       updateAILimitError: {
         updateAILimitErrorMessage:

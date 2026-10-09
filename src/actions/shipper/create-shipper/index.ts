@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateShipperSchema } from "@/schemas/create-update-shipper-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateShipperProps {
   message: string;
@@ -45,7 +48,7 @@ const handleCreateShipper = async (
   const { is_active: _isActive, ...shipperData } = createShipperValidation.data;
 
   try {
-    const response = await fetch(createShipper, {
+    const response = await apiFetch(createShipper, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -57,14 +60,17 @@ const handleCreateShipper = async (
 
     const { message } = (await response.json()) as CreateShipperProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createShipperError: { createShipperErrorMessage: message },
+        createShipperError: {
+          createShipperErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("shipper/create-shipper", error);
     return {
       createShipperError: {
         createShipperErrorMessage:

@@ -23,7 +23,9 @@ const validateResetUserPasswordFormSchema = z
         return;
       }
     }),
-    confirm_password: z.string(),
+    // Empty is its own message: two empty fields "matched", and a filled
+    // password with an empty confirmation read as a mismatch.
+    confirm_password: z.string().min(1, "Confirme a nova senha."),
   })
   .refine((data) => data.password === data.confirm_password, {
     message: "As senhas não coincidem",

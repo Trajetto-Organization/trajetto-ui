@@ -33,7 +33,7 @@ const ActivityPeriodSwitch = ({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" data-tutorial="activity-period">
       <CalendarRange className="h-4 w-4 text-muted-foreground" />
 
       <div className="flex items-center gap-1">
@@ -43,10 +43,7 @@ const ActivityPeriodSwitch = ({
             type="button"
             size="sm"
             variant={period === option.value ? "secondary" : "ghost"}
-            className={cn(
-              "h-8",
-              period === option.value && "font-medium",
-            )}
+            className={cn("h-8", period === option.value && "font-medium")}
             onClick={() => handleChangePeriod(option.value)}
           >
             {option.label}

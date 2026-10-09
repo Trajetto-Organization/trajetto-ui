@@ -16,10 +16,10 @@ import {
 } from "@/lib/format-values";
 
 const statusColors = {
-  PENDING: "bg-yellow-500/10 text-yellow-600",
-  CONTACTED: "bg-blue-500/10 text-blue-600",
-  CLOSED: "bg-gray-500/10 text-gray-600",
-  CONVERTED: "bg-green-500/10 text-green-600",
+  PENDING: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+  CONTACTED: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  CLOSED: "bg-gray-500/10 text-gray-600 dark:text-gray-300",
+  CONVERTED: "bg-green-500/10 text-green-600 dark:text-green-400",
 };
 
 const statusLabels = {
@@ -44,7 +44,7 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Selecionar todas"
         className="translate-y-[2px]"
       />
     ),
@@ -54,7 +54,7 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
         name={`select-quote-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Selecionar linha"
         className="translate-y-[2px]"
       />
     ),
@@ -104,9 +104,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
         {displayValue(row.getValue("company"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "email",
@@ -160,9 +157,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
         </p>
       );
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "contacted_at",
@@ -197,9 +191,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
           {statusLabels[status]}
         </Badge>
       );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
     },
   },
   {

@@ -1,0 +1,145 @@
+---
+title: "Importar NF-e (XML) e planilha para montar a operação do dia"
+description: "Como transformar XML de NF-e e planilhas em entregas sem redigitar nada: a chave de acesso como identidade, os erros mais comuns, as colunas da planilha e como desfazer uma importação errada."
+slug: "importar-nf-e-xml-e-planilha"
+date: "2026-09-28"
+category: "entregas"
+tags: ["NF-e", "importação", "planilha", "rotas"]
+author: "Equipe Trajetto"
+seo:
+  title: "Importar NF-e XML e planilha de entregas"
+  description: "Chave de acesso, deduplicação, colunas da planilha, relatório por linha e estorno: como montar a operação do dia a partir de XML e planilha."
+  keywords:
+    [
+      "importar XML NF-e",
+      "chave de acesso NF-e",
+      "importação de entregas",
+      "planilha de entregas",
+      "DANFE",
+      "montar rota de entrega",
+    ]
+---
+
+O pior lugar para nascer um erro de endereço é o teclado de quem digita a entrega às seis da manhã. Um número trocado vira uma viagem perdida, um CEP errado vira um insucesso e uma nota digitada duas vezes vira duas entregas no mesmo endereço. Quase toda transportadora já tem as informações de que precisa em formato digital: o XML da nota fiscal ou a planilha que o embarcador manda. O trabalho é fazer esses arquivos virarem entregas sem passar pela redigitação.
+
+Este artigo explica como a importação funciona no Trajetto, o que cada formato traz, os erros mais comuns e como corrigir uma importação feita com o arquivo errado.
+
+## Três portas de entrada
+
+| Porta                     | Quando usar                                               | O que exige                                 |
+| ------------------------- | --------------------------------------------------------- | ------------------------------------------- |
+| Cadastro manual no painel | Entregas avulsas, pedidos que chegaram por telefone       | Digitação completa, uma a uma               |
+| XML da NF-e               | Sempre que houver nota fiscal eletrônica da carga         | Os arquivos XML das notas                   |
+| Planilha (.xlsx ou .csv)  | Quando não há XML, ou quando o embarcador manda uma lista | Preencher o modelo, uma linha por documento |
+
+Sempre que houver XML, prefira o XML. Ele sai do sistema fiscal de quem emitiu a nota e traz destinatário, endereço e itens exatamente como constam no documento fiscal. Não há o que redigitar e, portanto, não há o que digitar errado.
+
+## XML da NF-e: o que o arquivo já traz
+
+Cada arquivo XML de NF-e se torna uma entrega. Do arquivo, o Trajetto lê:
+
+- a **chave de acesso**, com 44 dígitos, e o número da nota;
+- o **emitente**, que é o dono da carga e, para a transportadora, o embarcador;
+- o **destinatário**: nome, CPF ou CNPJ e, quando a nota traz, e-mail e telefone;
+- o **endereço do destinatário**: logradouro, número, complemento, bairro, cidade, UF e CEP;
+- os **itens**: descrição, quantidade, unidade e valor unitário.
+
+O arquivo pode ser o XML completo, com o protocolo de autorização, ou o XML da nota sem o protocolo, que alguns sistemas entregam. Cada envio aceita até 25 arquivos de até 512 KB, e a data prevista escolhida no envio vale para todas as entregas do lote.
+
+### A chave de acesso é a identidade da entrega
+
+A chave de acesso identifica uma NF-e de forma única. Por isso ela é a âncora contra duplicidade: dentro de uma empresa, não existem duas entregas com a mesma chave. Se o mesmo arquivo for importado de novo, porque alguém não tinha certeza de que o primeiro envio tinha funcionado, ele aparece como **duplicado** no resultado e nenhuma entrega nova é criada. Importar duas vezes é seguro, e essa é uma propriedade que vale cultivar em qualquer processo que alguém pode repetir por engano.
+
+A mesma regra vale entre as portas de entrada. Uma entrega cadastrada à mão ou pela planilha com a chave preenchida impede que o XML da mesma nota crie uma segunda entrega depois.
+
+### O emitente vira o embarcador
+
+Pela definição fiscal, quem emite a nota é o dono da mercadoria. Por padrão, o Trajetto procura o embarcador pelo CNPJ do emitente e, se não achar, pelo nome, desde que o embarcador encontrado não tenha outro CNPJ. Quando não encontra nenhum, cria um novo. O resultado da importação lista os embarcadores criados, para que nada apareça sem ninguém saber. Vale revisar esses cadastros novos: o nome que vem da nota é a razão social, que nem sempre é o nome pelo qual a operação conhece aquele cliente.
+
+Quando a nota não identifica o emitente, ou quando a carga deve entrar em outro embarcador, escolha o embarcador no envio: ele vale para todas as notas daquele lote. Um embarcador inativo não recebe entregas novas. Se ele for o escolhido no envio, o envio inteiro é recusado antes de qualquer entrega ser criada; se for o emitente de uma nota, só aquele arquivo aparece como inválido.
+
+Mantenha o CNPJ dos embarcadores preenchido: é ele que torna a associação exata. Quando matriz e filial emitem notas com a mesma razão social e CNPJs diferentes, a nota da que ainda não tem cadastro volta como inválida, com o aviso de que já existe um embarcador com esse nome e outro CNPJ. Nesse caso, envie essas notas escolhendo o embarcador.
+
+### Erros mais comuns com XML
+
+Cada arquivo é processado sozinho. Um arquivo com problema não derruba o lote: ele aparece como **inválido**, com o motivo, e os outros seguem. Os motivos mais frequentes são:
+
+| Mensagem                                     | O que costuma ser                                                                       |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| O XML não parece ser uma NF-e                | Foi enviado o XML de um evento, como carta de correção ou cancelamento, e não o da nota |
+| Não foi possível localizar a chave de acesso | Arquivo cortado ou gerado fora do padrão nacional                                       |
+| A nota não possui destinatário               | Nota sem destinatário identificado, que não descreve uma entrega                        |
+| O endereço do destinatário está incompleto   | Falta rua, cidade ou UF no cadastro do destinatário na nota                             |
+| O conteúdo não é um XML válido               | Arquivo corrompido ou um PDF renomeado                                                  |
+
+<Callout
+  type="atencao"
+  title="Local de entrega diferente do endereço do destinatário"
+>
+  O Trajetto usa o endereço do destinatário informado na nota. Quando a
+  mercadoria vai para outro local, como uma obra, uma filial ou um centro de
+  distribuição, confira e ajuste o endereço da entrega antes de colocá-la numa
+  rota. Enquanto a entrega está pendente, o endereço pode ser editado no painel.
+</Callout>
+
+## Planilha: quando não há XML
+
+Nem toda carga tem uma NF-e em mãos na hora de planejar. Pedido lançado antes do faturamento, cliente que manda uma lista por e-mail, entregas de documentos: para esses casos existe a importação por planilha. O Trajetto oferece um modelo para download, em .xlsx, com os cabeçalhos, uma linha de exemplo e notas explicativas nas colunas que pedem cuidado. O arquivo preenchido pode ser enviado em .xlsx ou .csv.
+
+A regra de ouro é uma linha por documento. As colunas obrigatórias estão marcadas no modelo:
+
+| Coluna                                                 | Obrigatória | Observação                                                  |
+| ------------------------------------------------------ | ----------- | ----------------------------------------------------------- |
+| Destinatário                                           | Sim         | Nome de quem recebe                                         |
+| CEP, Cidade, UF, Logradouro                            | Sim         | O endereço mínimo para chegar lá                            |
+| Número, Complemento, Bairro                            | Não         | Quanto mais completo, menos insucesso                       |
+| Documento, Telefone, E-mail                            | Não         | Telefone e e-mail permitem avisar o destinatário            |
+| Tipo                                                   | Não         | Em branco é entrega; "coleta" para buscar carga no endereço |
+| Chave da NF-e, Número da NF, Pedido                    | Não         | Chave ou pedido evitam duplicidade (veja abaixo)            |
+| Data prevista                                          | Não         | Aceita 16/09/2026 ou 2026-09-16                             |
+| Item, Quantidade, Unidade, Valor unitário              | Não         | Um item por linha; vírgula como separador decimal           |
+| Rota, Data da rota, CNH do motorista, Placa do veículo | Não         | Criam a rota junto com a importação                         |
+
+Algumas regras que evitam retrabalho:
+
+- **Os cabeçalhos são tolerantes.** "Destinatário", "destinatario" e "DESTINATARIO" são a mesma coluna. Acentos, maiúsculas, espaços extras e o asterisco do modelo são ignorados na comparação.
+- **Um envio é de um embarcador.** A planilha não tem emitente fiscal de onde ler o dono da carga, então o embarcador é escolhido no envio. Um arquivo com cargas de dois embarcadores vira dois envios.
+- **A duplicidade é evitada pela chave ou pelo pedido.** Com a chave da NF-e preenchida, é ela que impede importar o mesmo documento duas vezes. Sem a chave, o número do pedido, junto com o embarcador, faz esse papel. Linha sem chave e sem pedido não tem como ser reconhecida numa segunda importação.
+- **Cargas com muitos itens entram melhor pelo XML.** A planilha comporta um item por linha, o que resolve a maior parte dos casos simples.
+- **Arquivos grandes devem ser divididos.** Cada envio aceita até 20.000 linhas.
+
+### Rota direto da planilha
+
+Quando as colunas de rota estão preenchidas, a importação cria a rota e coloca as entregas nela, **na ordem das linhas da planilha**. O motorista é identificado pela CNH e o veículo, pela placa, sem que a planilha precise conhecer códigos internos. Para quem já monta a sequência de paradas na própria planilha, isso elimina um passo inteiro.
+
+## Uma linha ruim não derruba o lote
+
+Na importação por planilha, cada linha é decidida sozinha: importada, duplicada ou recusada, com o motivo e a linha correspondente. Um CEP inválido na linha 137 não impede as outras 199 de entrarem.
+
+O relatório não fica só na tela de envio. Cada envio, de planilha ou de XML, é guardado na aba **Importações** com o resultado de cada linha ou arquivo, porque a pergunta "quais linhas falharam?" costuma ser feita horas depois, por alguém que não fez o upload. Corrija as linhas recusadas no arquivo e envie de novo: as que já entraram vão aparecer como duplicadas, desde que tenham chave ou pedido, e só as corrigidas serão criadas. Com XML vale o mesmo: reenviar o lote inteiro é seguro, porque a chave de acesso barra as notas que já entraram.
+
+## Desfazer uma importação errada
+
+Todo despachante vai, um dia, importar o arquivo errado: a planilha de ontem, a da outra filial, uma coluna deslocada. Apagar duzentas entregas à mão não é uma opção realista. Alguma vai escapar e sair num caminhão.
+
+Por isso uma importação, de planilha ou de XML, pode ser **estornada** pela aba Importações. O estorno é parcial de propósito: ele remove o que ainda não foi trabalhado e mantém, com o motivo, o que já andou. Uma entrega fica quando já saiu do status pendente, quando já tem registros do motorista ou quando já tem ocorrência. Uma rota criada pela planilha fica quando já foi liberada ou já saiu, ou quando tem paradas de entregas que precisaram ser mantidas. Um estorno feito dez minutos depois do envio desfaz tudo. Um estorno feito ao meio-dia desfaz o que ainda dá para desfazer e diz exatamente o que ficou.
+
+## Depois da importação: montando o dia
+
+Importar é o começo. Com as entregas criadas, o despachante:
+
+1. **Confere a data prevista.** Ela é um dia, não um horário, e define em que dia a entrega entra na operação.
+2. **Agrupa as entregas em rotas**, atribuindo motorista e veículo.
+3. **Define a ordem das paradas.** No Trajetto, a ordem é a que o despachante monta, e ela pode ser ajustada enquanto a rota está em planejamento. O sistema não calcula a sequência automaticamente: quem conhece a região e as restrições dos clientes decide.
+4. **Libera a rota.** A partir daí, o motorista a vê no app e a operação passa a ser acompanhada na [torre de controle](/blog/torre-de-controle-na-pratica).
+
+## Checklist da manhã
+
+- XML sempre que houver nota; planilha para o restante.
+- Resultado da importação conferido: inválidos corrigidos e embarcadores criados revisados.
+- Endereços com local de entrega diferente ajustados antes de roteirizar.
+- Na planilha, chave da NF-e ou número do pedido preenchido em todas as linhas.
+- Linhas recusadas corrigidas e reenviadas, sem medo de duplicar.
+- Importação errada estornada, e não apagada à mão.
+
+Quando o volume cresce a ponto de o upload manual virar rotina, o passo seguinte é integrar os sistemas. O artigo sobre [integração com ERP e TMS por API e webhooks](/blog/integracao-erp-tms-api-webhooks) trata dos cuidados de idempotência e assinatura que essa conversa exige.

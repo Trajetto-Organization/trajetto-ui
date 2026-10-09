@@ -14,11 +14,12 @@ import { AlertCircle, CalendarIcon, CheckCircle2, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+// 700 on 100: the 600 shades read 4.23:1 (blue) or less at 12px, under AA.
 const priorityColors = {
-  low: "bg-blue-100 text-blue-600",
-  medium: "bg-amber-100 text-amber-600",
-  high: "bg-red-100 text-red-600",
-  urgent: "bg-purple-100 text-purple-600",
+  low: "bg-blue-100 text-blue-700",
+  medium: "bg-amber-100 text-amber-700",
+  high: "bg-red-100 text-red-700",
+  urgent: "bg-purple-100 text-purple-700",
 };
 
 const priorityLabels = {

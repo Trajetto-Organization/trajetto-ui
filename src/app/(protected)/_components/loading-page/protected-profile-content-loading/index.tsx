@@ -2,7 +2,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const ProtectedProfileContentLoading = (): JSX.Element => {
   return (
-    <div className="divide-y divide-muted mt-6 space-y-4">
+    <div
+      data-tutorial="loading"
+      className="divide-y divide-muted mt-6 space-y-4"
+    >
       <div className="grid grid-cols-1 gap-x-10 gap-y-4 py-6 md:grid-cols-10">
         <div className="col-span-4 space-y-1.5">
           <h2 className="text-lg font-semibold leading-none">
@@ -43,6 +46,17 @@ const ProtectedProfileContentLoading = (): JSX.Element => {
           </div>
         </div>
       ))}
+
+      {/* "Aparência": one row with the theme control. */}
+      <div className="grid grid-cols-1 gap-x-10 gap-y-4 py-6 md:grid-cols-10">
+        <div className="col-span-4 space-y-1.5">
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-4 w-64 max-w-full" />
+        </div>
+        <div className="col-span-6">
+          <Skeleton className="h-[78px] w-full rounded-xl" />
+        </div>
+      </div>
     </div>
   );
 };

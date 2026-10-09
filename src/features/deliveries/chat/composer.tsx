@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 
 import {
@@ -42,6 +42,8 @@ import {
 } from "./lib/audio-recording";
 
 import { useVoiceRecorder } from "./lib/use-voice-recorder";
+import { truncateText } from "@/lib/truncate-text";
+import { CHAT_MESSAGE_MAX, composerLengthNotice } from "./lib/composer-length";
 
 /**
  * The ceiling the API signs into a voice note's upload.
@@ -53,7 +55,7 @@ import { useVoiceRecorder } from "./lib/use-voice-recorder";
  */
 const MAX_VOICE_NOTE_BYTES = 2 * 1024 * 1024;
 
-const MAX_MESSAGE_LENGTH = 2000;
+const MAX_MESSAGE_LENGTH = CHAT_MESSAGE_MAX;
 
 /**
  * Why a recording stopped when the conversation was left in a narrow
@@ -123,6 +125,11 @@ const ChatComposer = ({
   onClearDeliveryChip,
 }: ChatComposerProps): JSX.Element => {
   const [text, setText] = useState<string>("");
+
+  // The count as the limit nears; the field cuts at it (composer-length).
+  const lengthNotice = composerLengthNotice(text.length);
+  // Per instance: two composers on one screen must not share the id.
+  const lengthId = `${useId()}-length`;
 
   const [images, setImages] = useState<PickedImage[]>([]);
   const [pickErrors, setPickErrors] = useState<string[]>([]);
@@ -680,7 +687,7 @@ const ChatComposer = ({
         <Textarea
           value={text}
           onChange={(event) => {
-            setText(event.target.value.slice(0, MAX_MESSAGE_LENGTH));
+            setText(truncateText(event.target.value, MAX_MESSAGE_LENGTH));
             onTyping();
           }}
           onKeyDown={handleKeyDown}
@@ -695,6 +702,7 @@ const ChatComposer = ({
           rows={1}
           className="max-h-28 min-h-[40px] w-full min-w-0 flex-1 resize-none"
           aria-label="Mensagem"
+          aria-describedby={lengthNotice ? lengthId : undefined}
         />
 
         <Button
@@ -708,6 +716,26 @@ const ChatComposer = ({
           <SendHorizontal className="h-5 w-5" />
         </Button>
       </div>
+
+      {lengthNotice && (
+        <p
+          id={lengthId}
+          className={cn(
+            "mt-1 text-right text-xs tabular-nums",
+            lengthNotice.limitMessage
+              ? "text-red-600 dark:text-red-500"
+              : "text-muted-foreground",
+          )}
+        >
+          {/* Only the limit sentence is announced: a live count would be
+              read out on every keystroke from 90% on. The region exists
+              before the sentence arrives, so the arrival is announced. */}
+          <span aria-live="polite">
+            {lengthNotice.limitMessage ? `${lengthNotice.limitMessage} ` : ""}
+          </span>
+          {lengthNotice.count}
+        </p>
+      )}
     </div>
   );
 };

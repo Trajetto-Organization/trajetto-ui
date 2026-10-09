@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 interface FormFieldProps {
   label: string;
   htmlfor: string;
@@ -7,6 +9,18 @@ interface FormFieldProps {
   onChange?: (value: string) => void;
   disabled?: boolean;
   allowFutureDates?: boolean;
+
+  /** Help text under the field, read out with it. */
+  hint?: ReactNode;
+
+  /** Required without a `*` in the label. */
+  required?: boolean;
+
+  /**
+   * DatePickerField only: the value is a civil day sent as `YYYY-MM-DD` and
+   * read in UTC (decision 1.3), not an instant.
+   */
+  dateOnly?: boolean;
 }
 
 interface SelectOption {

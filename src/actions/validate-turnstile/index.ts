@@ -1,5 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
+import { apiFetch } from "@/lib/api-fetch";
+
 async function validateTurnstile(token: string | null) {
   if (!token) return false;
 
@@ -11,7 +14,7 @@ async function validateTurnstile(token: string | null) {
       return false;
     }
 
-    const result = await fetch(
+    const result = await apiFetch(
       "https://challenges.cloudflare.com/turnstile/v0/siteverify",
       {
         method: "POST",
@@ -31,7 +34,7 @@ async function validateTurnstile(token: string | null) {
 
     return data.success === true;
   } catch (error) {
-    console.error("[Turnstile] Error:", error);
+    logActionError("validate-turnstile", error);
     return false;
   }
 }

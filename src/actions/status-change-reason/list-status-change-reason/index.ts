@@ -1,7 +1,9 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface StatusChangeReasonData {
   id: string;
@@ -65,7 +67,7 @@ const listStatusChangeReasons = async (
       ...(search && { search }),
     });
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/status-change-reason/list-status-change-reason?${params}`,
       {
         credentials: "include",
@@ -103,6 +105,7 @@ const listStatusChangeReasons = async (
       } as StatusChangeReasonListData,
     };
   } catch (error) {
+    logActionError("status-change-reason/list-status-change-reason", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao listar os motivos.",

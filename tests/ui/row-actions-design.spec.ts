@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import { managerForThisSpec } from "./support/operation";
+import { managerForThisSpec, ownBranch } from "./support/operation";
 
 import { readFileSync } from "node:fs";
 
@@ -17,6 +17,12 @@ import { readFileSync } from "node:fs";
  * is a fact that rots the moment somebody renames the header; "Rotas and
  * Entregas open the same control" stays true as the product moves, and it is
  * the property that was actually broken.
+ *
+ * The control they must match is the legacy one the user approved (decision
+ * 3.5): 160px, text only, a long label truncated with its full text in
+ * `title`, the destructive act in red. An earlier version of this spec
+ * required the opposite — a content-sized 160–280px menu with an icon on
+ * every item — and was rewritten when the user rejected that design.
  */
 const CONTEXT = JSON.parse(
   readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
@@ -65,10 +71,10 @@ interface MenuShape {
   itemPaddingX: number;
   fontSize: number;
   labels: string[];
-  /** Labels whose text does not fit the box drawn for it. */
-  clipped: string[];
-  /** Enabled items rendering no icon. */
-  iconless: string[];
+  /** Labels cut by the 160px box with no `title` to read them in full. */
+  clippedWithoutTitle: string[];
+  /** Items drawing an icon — the standard is text only. */
+  withIcon: string[];
   /** Computed colour of the first item and of the destructive one. */
   neutralColor: string;
   destructiveColor: string | null;
@@ -76,7 +82,8 @@ interface MenuShape {
 
 async function openRowMenu(page: Page): Promise<MenuShape> {
   const trigger = page
-    .getByRole("button", { name: /^Abrir menu de ações de / })
+    // The new menus name what they act on; the legacy ones say "Abrir Menu".
+    .getByRole("button", { name: /^Abrir menu/i })
     .first();
 
   await expect(
@@ -84,84 +91,108 @@ async function openRowMenu(page: Page): Promise<MenuShape> {
     "nenhuma linha com menu de ações nesta tela",
   ).toBeVisible({ timeout: 30_000 });
 
-  await trigger.click();
-
   const menu = page.getByRole("menu").first();
-  await expect(menu).toBeVisible({ timeout: 10_000 });
+
+  /*
+    Opened until it stays open. Under three workers on a dev server the table
+    is painted seconds before React hydrates it: a click in that gap opens
+    nothing, and a menu opened just before a late re-render can close again
+    before it is measured. Neither is the menu's shape, which is the question:
+    once the page is live the same menu opens and stays open.
+  */
+  await expect(async () => {
+    if ((await page.getByRole("menu").count()) === 0) await trigger.click();
+
+    await expect(menu).toBeVisible({ timeout: 2_000 });
+
+    // The menu opens with a zoom-in-95 animation: measured mid-flight the
+    // 160px box reads 155 (scaled), and the test failed or passed depending
+    // on how fast the machine was. Measure the menu at rest.
+    await menu.evaluate(
+      (element) =>
+        Promise.all(
+          element
+            .getAnimations({ subtree: true })
+            .map((animation) => animation.finished),
+        ),
+      undefined,
+      { timeout: 2_000 },
+    );
+
+    await expect(menu).toBeVisible({ timeout: 500 });
+  }).toPass({ timeout: 30_000 });
 
   const shape = await page.evaluate(() => {
-      const panel = document.querySelector('[role="menu"]') as HTMLElement;
-      const box = panel.getBoundingClientRect();
+    const panel = document.querySelector('[role="menu"]') as HTMLElement;
+    const box = panel.getBoundingClientRect();
 
-      /**
-       * Read AFTER the menu opens, and that is not a detail.
-       *
-       * The table lives in a horizontally scrolling region, so clicking the
-       * last column scrolls it into view: a box measured before the click
-       * describes a button that has since moved a thousand pixels, and the
-       * alignment check was comparing two different moments.
-       */
-      const trigger = document.querySelector(
-        '[aria-haspopup="menu"][data-state="open"]',
-      ) as HTMLElement;
+    /**
+     * Read AFTER the menu opens, and that is not a detail.
+     *
+     * The table lives in a horizontally scrolling region, so clicking the
+     * last column scrolls it into view: a box measured before the click
+     * describes a button that has since moved a thousand pixels, and the
+     * alignment check was comparing two different moments.
+     */
+    const trigger = document.querySelector(
+      '[aria-haspopup="menu"][data-state="open"]',
+    ) as HTMLElement;
 
-      const triggerBox = trigger.getBoundingClientRect();
+    const triggerBox = trigger.getBoundingClientRect();
 
-      const items = [
-        ...panel.querySelectorAll('[role="menuitem"]'),
-      ] as HTMLElement[];
+    const items = [
+      ...panel.querySelectorAll('[role="menuitem"]'),
+    ] as HTMLElement[];
 
-      const first = items[0];
-      const firstStyle = getComputedStyle(first);
+    const first = items[0];
+    const firstStyle = getComputedStyle(first);
 
-      const labels: string[] = [];
-      const clipped: string[] = [];
-      const iconless: string[] = [];
+    const labels: string[] = [];
+    const clippedWithoutTitle: string[] = [];
+    const withIcon: string[] = [];
 
-      let destructiveColor: string | null = null;
+    let destructiveColor: string | null = null;
 
-      for (const item of items) {
-        const text = (item.textContent ?? "").trim();
-        labels.push(text);
+    for (const item of items) {
+      const text = (item.textContent ?? "").trim();
+      labels.push(text);
 
-        // The label lives in its own span so it can be measured; a fixed-width
-        // menu shows up here as an ellipsis, which is how "Liberar para o
-        // motorista" used to read as "Liberar para o motori…".
-        const span = item.querySelector("span");
+      // A fixed 160px menu truncates a long label — "Liberar para o
+      // motori…" — and that is the approved trade, as long as the whole
+      // label is one hover away.
+      const clipped = item.scrollWidth > item.clientWidth + 1;
 
-        if (span && span.scrollWidth > span.clientWidth + 1) clipped.push(text);
-
-        const disabled = item.getAttribute("data-disabled") !== null;
-
-        if (!disabled && item.querySelector("svg") === null) {
-          iconless.push(text);
-        }
-
-        // Cancelling is the one destructive act these menus offer, and it is
-        // supposed to look different from reading a detail.
-        if (text.startsWith("Cancelar")) {
-          destructiveColor = getComputedStyle(item).color;
-        }
+      if (clipped && item.getAttribute("title") !== text) {
+        clippedWithoutTitle.push(text);
       }
 
-      return {
-        width: Math.round(box.width),
-        rightOffset: Math.round(Math.abs(box.right - triggerBox.right)),
-        triggerWidth: Math.round(triggerBox.width),
-        triggerHeight: Math.round(triggerBox.height),
+      if (item.querySelector("svg") !== null) withIcon.push(text);
 
-        // `offsetHeight` rather than the measured rectangle: the rectangle
-        // carries the menu's own fractional position, and two identical items
-        // read 31 and 32 depending on where their menu happened to land.
-        itemHeight: first.offsetHeight,
-        itemPaddingX: Math.round(parseFloat(firstStyle.paddingLeft)),
-        fontSize: Math.round(parseFloat(firstStyle.fontSize)),
-        labels,
-        clipped,
-        iconless,
-        neutralColor: getComputedStyle(first).color,
-        destructiveColor,
-      };
+      // Cancelling is the one destructive act these menus offer, and it is
+      // supposed to look different from reading a detail.
+      if (text.startsWith("Cancelar")) {
+        destructiveColor = getComputedStyle(item).color;
+      }
+    }
+
+    return {
+      width: Math.round(box.width),
+      rightOffset: Math.round(Math.abs(box.right - triggerBox.right)),
+      triggerWidth: Math.round(triggerBox.width),
+      triggerHeight: Math.round(triggerBox.height),
+
+      // `offsetHeight` rather than the measured rectangle: the rectangle
+      // carries the menu's own fractional position, and two identical items
+      // read 31 and 32 depending on where their menu happened to land.
+      itemHeight: first.offsetHeight,
+      itemPaddingX: Math.round(parseFloat(firstStyle.paddingLeft)),
+      fontSize: Math.round(parseFloat(firstStyle.fontSize)),
+      labels,
+      clippedWithoutTitle,
+      withIcon,
+      neutralColor: getComputedStyle(first).color,
+      destructiveColor,
+    };
   });
 
   // The icon button of the design system: 32 by 32, everywhere.
@@ -176,35 +207,32 @@ const SCREENS = [
   { path: "/dashboard/deliveries", name: "Entregas" },
 ];
 
+/** A legacy screen whose menu the user holds up as the standard. */
+const LEGACY = { path: "/dashboard/branch", name: "Filiais" };
+
 test.describe("the row actions menu", () => {
   for (const screen of SCREENS) {
-    test(`em ${screen.name} respeita o padrão do produto`, async ({ page }) => {
+    test(`on ${screen.name} follows the product pattern`, async ({ page }) => {
       await open(page, screen.path);
 
       const shape = await openRowMenu(page);
 
-      expect(
-        shape.labels.length,
-        "o menu abriu vazio",
-      ).toBeGreaterThanOrEqual(3);
+      expect(shape.labels.length, "o menu abriu vazio").toBeGreaterThanOrEqual(
+        3,
+      );
 
-      /**
-       * The floor is the product's; the ceiling is what keeps a menu from
-       * becoming a paragraph. Rotas sat at 230 with the same items every
-       * other module renders at 160, and the gap between a short label and
-       * its icon was the tell.
-       */
-      expect(shape.width).toBeGreaterThanOrEqual(160);
-      expect(shape.width).toBeLessThanOrEqual(280);
+      // The legacy width, exactly: Rotas sat at 230 with the same items
+      // every other module renders at 160.
+      expect(shape.width, "o menu não tem os 160px do padrão").toBe(160);
 
       expect(
-        shape.clipped,
-        `rótulos cortados no menu: ${shape.clipped.join(", ")}`,
+        shape.clippedWithoutTitle,
+        `rótulos cortados sem o texto inteiro no title: ${shape.clippedWithoutTitle.join(", ")}`,
       ).toEqual([]);
 
       expect(
-        shape.iconless,
-        `itens habilitados sem ícone: ${shape.iconless.join(", ")}`,
+        shape.withIcon,
+        `itens com ícone (o padrão é só texto): ${shape.withIcon.join(", ")}`,
       ).toEqual([]);
 
       // Anchored to the trigger's right edge: the menu is the last column and
@@ -223,7 +251,7 @@ test.describe("the row actions menu", () => {
     });
   }
 
-  test("é o MESMO controle nas duas telas", async ({ page }) => {
+  test("is the SAME control on both screens", async ({ page }) => {
     /**
      * The assertion the module-by-module ones cannot make.
      *
@@ -252,10 +280,44 @@ test.describe("the row actions menu", () => {
     expect(routes.labels).toContain("Copiar ID");
     expect(deliveries.labels).toContain("Copiar ID");
   });
+
+  test("is the same control as the older screens", async ({ page }) => {
+    // The comparison that matters to the user: the new modules against the
+    // legacy menu they approved, not only against each other.
+    await ownBranch(`Filial E2E ${Date.now()}`);
+    await open(page, LEGACY.path);
+    const legacy = await openRowMenu(page);
+
+    for (const screen of SCREENS) {
+      await open(page, screen.path);
+      const shape = await openRowMenu(page);
+
+      expect(shape.width, `${screen.name} × ${LEGACY.name}`).toBe(legacy.width);
+      expect(shape.itemHeight).toBe(legacy.itemHeight);
+      expect(shape.fontSize).toBe(legacy.fontSize);
+    }
+  });
+
+  test("has no eye button next to the menu", async ({ page }) => {
+    // "Ver detalhes" is an item of the menu; a second button beside the three
+    // dots made Entregas and Rotas the only tables with two row controls.
+    for (const screen of SCREENS) {
+      await open(page, screen.path);
+
+      const firstRow = page.locator("table tbody tr").first();
+
+      await expect(firstRow).toBeVisible({ timeout: 30_000 });
+
+      await expect(
+        firstRow.getByRole("button", { name: /^Ver detalhes/ }),
+        `${screen.name} ainda tem o botão de olho na linha`,
+      ).toHaveCount(0);
+    }
+  });
 });
 
 test.describe("the Rotas table", () => {
-  test("mostra identificador, datas de auditoria e o cabeçalho Ações", async ({
+  test("shows the identifier, the audit dates and the Ações header", async ({
     page,
   }) => {
     await open(page, "/dashboard/routes");
@@ -281,7 +343,7 @@ test.describe("the Rotas table", () => {
     }
   });
 
-  test("e o identificador da primeira linha é legível de verdade", async ({
+  test("and the identifier of the first row is really readable", async ({
     page,
   }) => {
     /**
@@ -291,7 +353,11 @@ test.describe("the Rotas table", () => {
      */
     await open(page, "/dashboard/routes");
 
-    const firstCell = page.locator("table tbody tr").first().locator("td").first();
+    const firstCell = page
+      .locator("table tbody tr")
+      .first()
+      .locator("td")
+      .first();
 
     await expect(firstCell).toBeVisible({ timeout: 30_000 });
 
@@ -318,7 +384,7 @@ test.describe("the Rotas table", () => {
 });
 
 test.describe("the pagination footer", () => {
-  test("não anuncia seleção numa tabela que não seleciona nada", async ({
+  test("does not announce selection on a table that selects nothing", async ({
     page,
   }) => {
     /**
@@ -329,7 +395,9 @@ test.describe("the pagination footer", () => {
     await open(page, "/dashboard/routes");
 
     const hasCheckbox = await page
-      .locator('table thead input[type="checkbox"], table thead [role="checkbox"]')
+      .locator(
+        'table thead input[type="checkbox"], table thead [role="checkbox"]',
+      )
       .count();
 
     expect(
@@ -341,7 +409,7 @@ test.describe("the pagination footer", () => {
     await expect(page.getByText(/linha\(s\) nesta página/)).toBeVisible();
   });
 
-  test("e continua anunciando seleção onde ela existe", async ({ page }) => {
+  test("and keeps announcing selection where it exists", async ({ page }) => {
     // The other direction: Entregas does select rows, and the counter is what
     // tells the user how many will be assigned.
     await open(page, "/dashboard/deliveries");

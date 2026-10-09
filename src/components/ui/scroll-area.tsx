@@ -5,16 +5,37 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 
 import { cn } from "@/lib/utils";
 
+interface ScrollAreaProps extends React.ComponentPropsWithoutRef<
+  typeof ScrollAreaPrimitive.Root
+> {
+  /**
+   * Names the scrolling region and lets the keyboard reach it. Needed when
+   * nothing inside can take focus (a showcase, a read-only list): otherwise
+   * a keyboard user cannot scroll it at all (WCAG 2.1.1; axe
+   * scrollable-region-focusable on the public pages).
+   */
+  viewportLabel?: string;
+}
+
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
->(({ className, children, ...props }, ref) => (
+  ScrollAreaProps
+>(({ className, children, viewportLabel, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
     {...props}
   >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+    <ScrollAreaPrimitive.Viewport
+      className={cn(
+        "h-full w-full rounded-[inherit]",
+        viewportLabel &&
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+      {...(viewportLabel
+        ? { tabIndex: 0, role: "region", "aria-label": viewportLabel }
+        : {})}
+    >
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />

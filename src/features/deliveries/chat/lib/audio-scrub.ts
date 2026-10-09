@@ -64,11 +64,8 @@ const secondsFromRatio = (ratio: number, duration: number): number =>
  * Half a bar of offset so the bar *under* the finger is the one that flips,
  * instead of the one after it.
  */
-const isBarPlayed = (
-  index: number,
-  barCount: number,
-  ratio: number,
-): boolean => barCount > 0 && (index + 0.5) / barCount <= ratio;
+const isBarPlayed = (index: number, barCount: number, ratio: number): boolean =>
+  barCount > 0 && (index + 0.5) / barCount <= ratio;
 
 /**
  * A seek that was asked for and is still being waited on: where the audio

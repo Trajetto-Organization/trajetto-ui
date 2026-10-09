@@ -16,10 +16,7 @@ import { readFileSync } from "node:fs";
  * developer's own environment.
  */
 const CONTEXT = JSON.parse(
-  readFileSync(
-    "../trajetto-api/tests/load/fixtures/load-context.json",
-    "utf8",
-  ),
+  readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
 );
 
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
@@ -194,15 +191,26 @@ for (const target of PAGES) {
         // A page that scrolls horizontally on a phone is the most common and
         // most visible failure: the user drags and the content slides under
         // the header.
-        expect(
-          await horizontalOverflow(page),
-          `${target.name} @ ${width}px scrolls sideways`,
-        ).toBeLessThanOrEqual(2);
+        //
+        // Polled, not read once: "networkidle" is not hydration. Before React
+        // owns the table, Radix's ScrollArea viewport is still server HTML
+        // with `overflow-x: hidden` (its horizontal bar registers on the
+        // client), so a busy dev server showed a 2266px table "cut" at 654px
+        // that the hydrated page scrolls. A clip that is still there after
+        // 20 s is a real one, and fails with its measurements.
+        await expect
+          .poll(() => horizontalOverflow(page), {
+            timeout: 20_000,
+            message: `${target.name} @ ${width}px scrolls sideways`,
+          })
+          .toBeLessThanOrEqual(2);
 
-        expect(
-          await clippedContent(page),
-          `${target.name} @ ${width}px cuts off content nobody can reach`,
-        ).toEqual([]);
+        await expect
+          .poll(() => clippedContent(page), {
+            timeout: 20_000,
+            message: `${target.name} @ ${width}px cuts off content nobody can reach`,
+          })
+          .toEqual([]);
       });
     }
   });

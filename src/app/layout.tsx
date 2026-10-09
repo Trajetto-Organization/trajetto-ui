@@ -1,58 +1,81 @@
 import type { Metadata } from "next";
+import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 
 import { ThemeProvider } from "@/providers/theme-provider";
-import { cn } from "@/lib/utils";
-
-import { sfPro, inter } from "./fonts";
+import { DeploymentSkewGuard } from "@/components/shared/deployment-skew-guard";
+import { StrictCspGuard } from "@/components/shared/strict-csp-guard";
+import { PublicConfigScript } from "@/env/public-config-script";
+import { THEME_INIT_SCRIPT } from "@/lib/theme-init-script";
+import { TITLE_SUFFIX, siteConfig, siteUrl } from "@/lib/site";
 
 import "./globals.css";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = process.env.METADATA_BASE as string;
+/*
+ * Self-hosted by next/font: the files are served from this origin, so the
+ * CSP's font-src 'self' covers them and no request goes to Google. Inter
+ * Tight stands in for the design's SF Pro Display, whose license does not
+ * allow embedding it on a website. Exposed as CSS variables: Inter is the
+ * whole product's text face (Tailwind's `font-sans`, so the app and the auth
+ * pages too, decision 16.122), and the public site adds Inter Tight for display
+ * headings and JetBrains Mono through the font-site-* utilities. 700 is for
+ * the app's `font-bold` (47 uses), which would otherwise be a faux bold.
+ */
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  display: "swap",
+  variable: "--font-inter-tight",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500"],
+  display: "swap",
+  variable: "--font-jetbrains-mono",
+});
+
+/**
+ * Site-wide defaults. No canonical here on purpose: every page that forgot
+ * its own inherited this one and told Google it was the home page. Pages set
+ * theirs through `buildPageMetadata`.
+ */
+export async function generateMetadata(): Promise<Metadata> {
   return {
-    metadataBase: new URL(baseUrl),
+    metadataBase: new URL(siteUrl()),
     title: {
-      default: "Trajetto - Sistema Avançado de Gestão de Frotas",
-      template: `%s | Trajetto - Gestão de Frotas`,
+      default: `${siteConfig.name} | ${siteConfig.tagline}`,
+      template: `%s${TITLE_SUFFIX}`,
     },
-    description: `
-      O Trajetto é a plataforma definitiva para otimização e planejamento de frotas, ideal para empresas e profissionais 
-      que buscam eficiência e precisão no transporte. Com nossa tecnologia avançada, você pode traçar, monitorar, ajustar e acompanhar suas frotas em tempo real, 
-      economizando tempo e custos operacionais. Descubra o poder de um gerenciador inteligente e simplifique sua logística com o Trajetto.
-    `.trim(),
+    description: siteConfig.description,
     keywords: [
       "gestão de frotas",
-      "otimização de transporte",
-      "monitoramento de veículos",
-      "logística empresarial",
-      "controle de frota",
-      "eficiência em transporte",
-      "planejamento logístico",
-      "gerenciamento de motoristas",
-      "manutenção de veículos",
-      "rastreamento veicular",
-      "sistema de frotas",
+      "gestão de entregas",
+      "comprovante de entrega digital",
+      "torre de controle",
+      "app do motorista",
+      "controle de abastecimento",
+      "checklist veicular",
+      "manutenção de frota",
+      "rastreamento de entregas",
+      "importação de NF-e",
       "Trajetto",
-      "gestão logística",
-      "frotas empresariais",
-      "controle de combustível",
-      "relatórios de frota",
-      "dashboard de frotas",
-      "automação logística",
-      "GPS para frotas",
-      "telemetria veicular",
     ],
-    authors: [{ name: "Trajetto", url: baseUrl }],
-    creator: "Equipe Trajetto",
-    publisher: "Trajetto Sistemas Ltda",
-    applicationName: "Trajetto",
-    category: "Gestão de Frotas e Logística",
+    authors: [{ name: siteConfig.name }],
+    creator: siteConfig.blogAuthor,
+    publisher: siteConfig.legalName,
+    applicationName: siteConfig.name,
+    category: "Gestão de frotas e de entregas",
 
-    // ADVANCED SEO OPTIMIZATIONS
-    classification: "Business Software",
-
-    // Optimized robot settings
+    // Not tied to APP_ENV: prerendered pages keep what the build saw, and
+    // the image is promoted from staging to production. Staging is kept out
+    // of search at run time instead (robots.txt reads APP_ENV per request).
     robots: {
       index: true,
       follow: true,
@@ -65,64 +88,45 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
 
-    // Alternative and Canonical URLs
-    alternates: {
-      canonical: baseUrl,
-      languages: {
-        "pt-BR": baseUrl,
-      },
-    },
-
-    // Optimized Open Graph
+    // No `url`, for the same reason as no canonical: share cards read og:url
+    // as the canonical. Pages set theirs through `buildPageMetadata`.
     openGraph: {
-      title: "Trajetto - Sistema Avançado de Gestão de Frotas",
-      description: `
-        Plataforma completa para gestão inteligente de frotas. Monitore veículos, otimize rotas, 
-        controle custos e aumente a eficiência da sua operação logística com o Trajetto.
-      `.trim(),
-      url: baseUrl,
-      siteName: "Trajetto",
+      title: `${siteConfig.name} | ${siteConfig.tagline}`,
+      description: siteConfig.description,
+      siteName: siteConfig.name,
       images: [
         {
-          url: `${baseUrl}/og-default.jpg`,
+          url: "/og-default.jpg",
           width: 1200,
           height: 630,
-          alt: "Trajetto - Sistema de Gestão de Frotas",
+          alt: `${siteConfig.name}: ${siteConfig.tagline.toLowerCase()}`,
           type: "image/jpeg",
         },
       ],
-      locale: "pt-BR",
+      locale: siteConfig.ogLocale,
       type: "website",
     },
 
-    // Optimized Twitter Card
     twitter: {
       card: "summary_large_image",
-      title: "Trajetto - Sistema Avançado de Gestão de Frotas",
-      description: `
-        Transforme a gestão da sua frota com nossa plataforma inteligente. 
-        Monitore, otimize e controle toda sua operação logística em tempo real.
-      `.trim(),
-      images: [`${baseUrl}/og-default.jpg`],
-      site: "@trajetto",
-      creator: "@trajetto",
+      title: `${siteConfig.name} | ${siteConfig.tagline}`,
+      description: siteConfig.description,
+      images: ["/og-default.jpg"],
     },
 
     icons: {
       icon: [{ url: "/favicon.ico" }],
-      apple: [{ url: "/apple-touch-icon" }],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
     },
 
-    // Additional metadata for SEO
     other: {
-      "theme-color": "#7c3aed", // Purple primary color
+      "theme-color": siteConfig.themeColor,
       "color-scheme": "light dark",
       "format-detection": "telephone=no",
       "mobile-web-app-capable": "yes",
       "apple-mobile-web-app-capable": "yes",
       "apple-mobile-web-app-status-bar-style": "black-translucent",
-      "msapplication-TileColor": "#7c3aed",
-      "msapplication-config": "/browserconfig.xml",
+      "msapplication-TileColor": siteConfig.themeColor,
     },
   };
 }
@@ -133,15 +137,24 @@ const RootLayout = ({
   children: React.ReactNode;
 }>) => {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
-      <body
-        className={cn(
-          `flex min-h-screen flex-col bg-background 
-          text-foreground antialiased`,
-          sfPro.variable,
-          inter.variable,
-        )}
-      >
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${inter.variable} ${interTight.variable} ${jetBrainsMono.variable}`}
+    >
+      <body className="flex min-h-screen flex-col bg-background text-foreground antialiased">
+        {/*
+          The saved theme on <html> before the first paint. A constant text,
+          allowed by its hash in the enforced CSP (src/lib/theme-init-script.ts);
+          next-themes' own copy is switched off in the ThemeProvider.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/*
+          The public configuration (API URL, captcha key, map tiles) read
+          from this server's environment, not from the build (decision 12.2).
+          First in <body>, so it is in the document before any script runs.
+        */}
+        <PublicConfigScript />
         {/*
           `attribute="class"` is not decoration — without it the dark theme
           does not exist.
@@ -151,13 +164,19 @@ const RootLayout = ({
           CLASS. The two never met: the provider wrote `data-theme="dark"` on
           <html>, no `dark:` utility ever matched, and the ~700 dark variants
           in this codebase had never rendered once.
+
+          No `disableTransitionOnChange`: it froze every transition during
+          the switch (the auth page's sliding cards jumped). The theme
+          controls switch through a view transition instead, one
+          cross-fade of the whole page (switchTheme in
+          src/components/shared/theme-toggle). The first paint never
+          animates: the init script sets the class before any style.
         */}
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {/* Offers a reload when a deploy leaves this tab on the old build. */}
+          <DeploymentSkewGuard />
+          {/* Reloads a per-request page soft-navigated into from a prerendered one. */}
+          <StrictCspGuard />
           {children}
         </ThemeProvider>
       </body>

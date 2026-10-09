@@ -1,10 +1,14 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { idempotencyHeaderOf } from "@/lib/idempotency-key";
 import {
   createUpdateDeliverySchema,
   deliveryItemsSchema,
 } from "@/schemas/create-update-delivery-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateDeliveryProps {
   message: string;
@@ -51,6 +55,7 @@ const handleCreateDelivery = async (
     try {
       parsedItems = JSON.parse(rawItems);
     } catch (error) {
+      logActionError("delivery/create-delivery (items)", error);
       return {
         createDeliveryError: {
           items: ["Não foi possível ler os itens da carga."],
@@ -99,12 +104,14 @@ const handleCreateDelivery = async (
   }
 
   try {
-    const response = await fetch(createDelivery, {
+    const response = await apiFetch(createDelivery, {
       credentials: "include",
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
+        // The same form saved twice is one delivery (IDEMP-14).
+        ...idempotencyHeaderOf(createDeliveryValues.get("idempotency_key")),
       },
       body: JSON.stringify({
         ...createDeliveryValidation.data,
@@ -114,14 +121,18 @@ const handleCreateDelivery = async (
 
     const { message } = (await response.json()) as CreateDeliveryProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createDeliveryError: { createDeliveryErrorMessage: message },
+        createDeliveryError: {
+          createDeliveryErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("delivery/create-delivery", error);
     return {
       createDeliveryError: {
         createDeliveryErrorMessage:

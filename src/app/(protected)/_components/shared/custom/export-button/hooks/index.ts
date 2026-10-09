@@ -3,6 +3,10 @@ import { useSearchParams } from "next/navigation";
 
 import type { ExportButtonProps, ExportFormat } from "../export-button.types";
 import { toast } from "sonner";
+import { isStaleActionResult } from "@/lib/action-result";
+import { localDateKey } from "@/lib/format-values";
+
+import { EXPORT_NEEDS_WRITE } from "../export-rules";
 
 function formatBytes(bytes?: number) {
   if (!bytes || bytes === 0) return "";
@@ -14,16 +18,30 @@ function formatBytes(bytes?: number) {
   return `${value.toFixed(2)} ${sizes[i]}`;
 }
 
-function useExportButton({ exportAction, entityName }: ExportButtonProps) {
+function useExportButton({
+  exportAction,
+  entityName,
+  writePermission,
+}: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const searchParams = useSearchParams();
 
   async function handleExport(format: ExportFormat) {
+    // Exporting is a write (decision 4.2). The button is already disabled;
+    // this holds when a menu opened before the permission changed.
+    if (writePermission === false) {
+      toast.error(EXPORT_NEEDS_WRITE);
+
+      return;
+    }
+
     setIsExporting(true);
 
     try {
       const search = searchParams.get("search") || "";
       const result = await exportAction(search, format);
+
+      if (isStaleActionResult(result)) return;
 
       if (!result.success || !result.base64Data) {
         toast.error(
@@ -56,10 +74,12 @@ function useExportButton({ exportAction, entityName }: ExportButtonProps) {
       a.style.display = "none";
       a.href = url;
 
-      // use filename returned by server or fallback
+      // The server's name (the API dates it with the company's day), or a
+      // fallback dated by the viewer's calendar: the UTC day read tomorrow
+      // after 21:00 in São Paulo.
       a.download =
         result.filename ||
-        `${entityName}-${new Date().toISOString().split("T")[0]}`;
+        `${entityName}-${localDateKey()}.${format === "csv" ? "csv" : "xlsx"}`;
 
       document.body.appendChild(a);
       a.click();

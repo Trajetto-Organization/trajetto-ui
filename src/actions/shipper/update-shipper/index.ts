@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateShipperSchema } from "@/schemas/create-update-shipper-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateShipperProps {
   message: string;
@@ -44,7 +47,7 @@ const handleUpdateShipper = async (
   }
 
   try {
-    const response = await fetch(updateShipper, {
+    const response = await apiFetch(updateShipper, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -56,14 +59,17 @@ const handleUpdateShipper = async (
 
     const { message } = (await response.json()) as UpdateShipperProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateShipperError: { updateShipperErrorMessage: message },
+        updateShipperError: {
+          updateShipperErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("shipper/update-shipper", error);
     return {
       updateShipperError: {
         updateShipperErrorMessage:

@@ -1,26 +1,27 @@
-import { PackageX, Route as RouteIcon } from "lucide-react";
+import { Route as RouteIcon } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
 import { ProtectedPageToolbar } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { parseNDJSON } from "@/lib/parse-nd-json";
+import { readBusinessIdParam } from "@/lib/business-id-param";
+import { readAccessError, type AccessError } from "@/lib/access-error";
 
-import { EmptyState } from "@/components/shared/custom/empty-state";
+import { AccessErrorState } from "@/components/shared/custom/access-error-state";
+import { ManageModulesButton } from "@/components/shared/custom/access-error-state/manage-modules-button";
+import { SelectBusinessEmptyState } from "@/components/shared/custom/select-business-empty-state";
 
 import { RoutesPageActions } from "../page-actions";
 import { RoutesRealtime } from "../realtime";
 import { RoutesStats } from "../stats";
 import { RoutesTable } from "../table";
+import { routesListQuery, type RouteListSearchMeta } from "../server-table";
 
 interface RoutesContentProps {
   /** "admin" lets the master pick a company; "dashboard" uses the session's. */
   mode: "admin" | "dashboard";
-  searchParams: {
-    page?: string;
-    pageSize?: string;
-    search?: string;
-    businessId?: string;
-  };
+  /** Every param of the URL: the table's sort and facets travel here too. */
+  searchParams: Record<string, string | string[] | undefined>;
   token: string;
 }
 
@@ -29,11 +30,19 @@ const RoutesContent = async ({
   searchParams,
   token,
 }: RoutesContentProps): Promise<JSX.Element> => {
-  const page = Number(searchParams.page) || 1;
-  const pageSize = Number(searchParams.pageSize) || 10;
+  const param = (name: string): string | undefined => {
+    const value = searchParams[name];
 
-  const search = searchParams.search || "";
-  const businessId = searchParams.businessId;
+    return Array.isArray(value) ? value[0] : value;
+  };
+
+  const page = Number(param("page")) || 1;
+  const pageSize = Number(param("pageSize")) || 10;
+
+  const search = param("search") || "";
+  // Only a company id from the URL: it becomes a segment of API paths
+  // requested with the viewer's token.
+  const businessId = readBusinessIdParam(param("businessId"));
 
   /**
    * The same band Entregas uses: company on the left, actions on the right,
@@ -57,18 +66,28 @@ const RoutesContent = async ({
     />
   );
 
-  const renderModuleDisabled = () => (
+  /**
+   * A refusal, said as what it is (decision 4.1): only MODULE_NOT_ENABLED is
+   * the module state. A profile without `delivery_manage` used to read
+   * "Módulo Entregas não contratado" for a company that had hired it. The
+   * MASTER gets the way to enable the module for the selected company
+   * (decision 4.3).
+   */
+  const renderAccessError = (error: AccessError) => (
     <div className="space-y-6 my-6">
       {renderHeader(false)}
 
-      <EmptyState
-        icon={PackageX}
-        title="Módulo Entregas não contratado"
-        description={
-          <>
-            O módulo <strong>Entregas</strong> não está habilitado para esta
-            empresa. Fale com o suporte para contratar.
-          </>
+      <AccessErrorState
+        kind={error.kind}
+        moduleLabel="Entregas"
+        audience={mode === "admin" ? "master" : "company"}
+        message={error.message}
+        action={
+          error.kind === "module-not-enabled" &&
+          mode === "admin" &&
+          businessId ? (
+            <ManageModulesButton businessId={businessId} />
+          ) : undefined
         }
       />
     </div>
@@ -82,9 +101,8 @@ const RoutesContent = async ({
       <div className="space-y-6 my-6">
         {renderHeader(false)}
 
-        <EmptyState
+        <SelectBusinessEmptyState
           icon={RouteIcon}
-          title="Selecione uma empresa"
           description="Não existe um quadro de rotas de todas as empresas: escolha a operação acima."
         />
       </div>
@@ -96,9 +114,9 @@ const RoutesContent = async ({
   let rows: unknown[] = [];
   let meta = { total: 0, page, pageSize };
 
-  let searchMeta: Record<string, unknown> | undefined;
+  let searchMeta: RouteListSearchMeta | undefined;
 
-  let isModuleDisabled = false;
+  let accessError: AccessError | null = null;
   let response: Response | undefined;
 
   const query = new URLSearchParams({
@@ -106,6 +124,9 @@ const RoutesContent = async ({
     pageSize: String(pageSize),
     search,
     ...(businessId && { businessId }),
+    // Sort and facets the table declared (decision 8.8): the API answers
+    // them for the whole company, never the loaded page.
+    ...routesListQuery(searchParams),
   });
 
   try {
@@ -135,10 +156,13 @@ const RoutesContent = async ({
         redirect("/login");
       }
 
-      // The module gate lives in the API — a 403 here is the honest answer to
-      // "does this company have Entregas?", with no extra round-trip.
+      // A 403 names its reason in `code` (decision 4.1): module, permission
+      // or inactive company — never guessed from the status alone.
       if (response.status === 403) {
-        isModuleDisabled = true;
+        accessError = (await readAccessError(response)) ?? {
+          kind: "permission-denied",
+          message: null,
+        };
       } else {
         responseError = {
           error: true,
@@ -158,12 +182,18 @@ const RoutesContent = async ({
     }
   }
 
-  if (isModuleDisabled) {
-    return renderModuleDisabled();
+  if (accessError) {
+    return renderAccessError(accessError);
   }
 
   return (
-    <div className="space-y-6 my-6" data-tutorial="welcome">
+    // Keyed by the company (decision 2.6): switching it on /admin remounts
+    // the board, so no dialog, filter or row state of A survives under B.
+    <div
+      key={businessId ?? "session"}
+      className="space-y-6 my-6"
+      data-tutorial="welcome"
+    >
       {/*
         Renders nothing; it makes the board follow the operation. The API has
         emitted `routeEvent` since routes existed and nothing listened, so a
@@ -173,9 +203,15 @@ const RoutesContent = async ({
 
       {renderHeader(true)}
 
-      <RoutesStats total={meta.total} searchMeta={searchMeta} />
+      {/* The cards read the disjunctive tally only; meta.total is the pager's. */}
+      <RoutesStats searchMeta={searchMeta} />
 
-      <RoutesTable data={rows} meta={meta} responseError={responseError} />
+      <RoutesTable
+        data={rows}
+        meta={meta}
+        responseError={responseError}
+        searchMeta={searchMeta}
+      />
     </div>
   );
 };

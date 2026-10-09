@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { PageToolbarProvider } from "./page-toolbar-context";
+
 /**
  * The band between a page's title and its content: context, actions, sections.
  *
@@ -79,9 +81,31 @@ const ProtectedPageToolbar = ({
           {actions && (
             <div
               data-toolbar-actions
-              className="w-full min-w-0 sm:ml-auto sm:w-auto"
+              className={cn(
+                "w-full min-w-0 sm:ml-auto sm:w-auto",
+
+                /*
+                  Every button of the row is `h-9` (decision 16.61, which
+                  reverses 3.6's `h-10` beside the selector), enforced by
+                  the row rather than asked of each button: a row where one
+                  button had adopted `usePageActionClassName` and its
+                  neighbours still said `sm:h-8` showed two heights side by
+                  side. The descendant selector outranks a button's own
+                  `h-*`/`sm:h-*` class.
+
+                  Switches and checkboxes are buttons too and keep their own
+                  size. The rule sets the height only: an icon-only `h-8 w-8`
+                  button becomes 32x36. Decision 3.6 removes those variants
+                  (full width with a label on phones); it does not square them.
+                */
+                "[&_button:not([role=switch]):not([role=checkbox])]:h-9",
+              )}
             >
-              {actions}
+              {/* Tells each button it sits in the page's action row, which
+                  gives it the row's height (decision 16.61). */}
+              <PageToolbarProvider hasContext={Boolean(context)}>
+                {actions}
+              </PageToolbarProvider>
             </div>
           )}
         </div>
@@ -92,4 +116,35 @@ const ProtectedPageToolbar = ({
   );
 };
 
-export { ProtectedPageToolbar };
+/**
+ * The layout of a page's action buttons, the one the legacy screens use and
+ * the user asked for everywhere (decision 3.6): on a phone every button
+ * stacks at full width WITH its label — Atualizar included, not an icon
+ * squeezed beside the others — and from `sm` they share one right-aligned
+ * row that wraps when it stops fitting.
+ *
+ * Children are the buttons or their wrappers (a Tooltip's `div`); each one
+ * takes the full width below `sm`. Buttons inside should use
+ * `usePageActionClassName()` for their height.
+ */
+const PageActions = ({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}): JSX.Element => (
+  <div
+    data-page-actions
+    className={cn(
+      `flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto
+      sm:flex-row sm:flex-wrap sm:items-center sm:justify-end
+      [&>*]:w-full sm:[&>*]:w-auto`,
+      className,
+    )}
+  >
+    {children}
+  </div>
+);
+
+export { ProtectedPageToolbar, PageActions };

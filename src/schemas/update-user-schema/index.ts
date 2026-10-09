@@ -3,18 +3,39 @@ import { z } from "zod";
 import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
 import { UserBusinessRole } from "@/app/(protected)/_components/shared/common.types";
 
+// Nothing chosen yet is a question still open, not an invalid value: the
+// live validation shows this under an untouched select (decision 16.702).
 const roleEnum = z.nativeEnum(UserBusinessRole, {
-  errorMap: () => ({ message: "Nível de acesso do usuário inválido." }),
+  errorMap: (_issue, ctx) => ({
+    message:
+      ctx.data === undefined || ctx.data === null || ctx.data === ""
+        ? "Selecione o nível de acesso."
+        : "Nível de acesso do usuário inválido.",
+  }),
 });
 
 const updateUserSchema = z
   .object({
+    // Trimmed before checking, client and action alike: a phone keyboard's
+    // trailing space after an autocompleted address is not a typo to refuse.
     email: z
       .string()
+      .trim()
       .min(1, "O e-mail é obrigatório.")
       .email("O e-mail informado não é válido.")
       .max(100, "O e-mail deve ter no máximo 100 caracteres."),
     name: z.string().superRefine((value, ctx) => {
+      // Empty or only spaces is a missing name, not a spacing mistake: it
+      // used to read "não deve conter espaços consecutivos" (decision 16.702).
+      if (value.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome é obrigatório.",
+        });
+
+        return;
+      }
+
       if (value.length > 100) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -61,16 +82,16 @@ const updateUserSchema = z
         });
       }
     }),
-    password: z
-      .string()
-      .min(7, "A senha deve ter pelo menos 7 caracteres.")
-      .max(100, "A senha deve ter no máximo 100 caracteres.")
-      .refine((value) => !/\s/.test(value), {
-        message: "A senha não deve conter espaços.",
-      })
-      .optional()
-      .or(z.literal("")),
+    // Decision 4.9: nobody types another person's password. The MASTER asks
+    // for a single-use link instead (a checkbox: "on" when ticked).
+    sendPasswordSetupLink: z.preprocess(
+      (value) => value === "on" || value === "true" || value === true,
+      z.boolean(),
+    ),
     role: roleEnum,
+    // The API compares every value with the stored row, so sending the
+    // unchanged company (and e-mail) back is no longer a "security change"
+    // that logs the person out (USR-EDIT-1).
     businessId: z.string().min(1, "A empresa é obrigatória!"),
     profileAccessId: z.string().optional(),
     driverId: z.string().optional(),
@@ -102,13 +123,13 @@ const updateUserSchema = z
         if (data.userType === "driver") {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Selecione um motorista!",
+            message: "Selecione um motorista.",
             path: ["driverId"],
           });
         } else {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "Selecione um perfil de acesso!",
+            message: "Selecione um perfil de acesso.",
             path: ["profileAccessId"],
           });
         }

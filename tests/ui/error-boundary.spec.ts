@@ -17,9 +17,11 @@ import { readFileSync } from "node:fs";
  * `(protected)` rather than at the root: the navigation has to survive,
  * because the navigation IS the way out.
  *
- * The page that throws is `dashboard/boundary-probe`, which answers 404 in a
- * production build. Without something that fails on demand, a test of an
- * error boundary can only check that a file exists.
+ * The page that throws is `dashboard/boundary-probe`. A production server
+ * answers 404 for it unless it was started with E2E_PROBES=1, which the
+ * browser-suites job sets (it runs the production build); `next dev` always
+ * serves it. Without something that fails on demand, a test of an error
+ * boundary can only check that a file exists.
  */
 const CONTEXT = JSON.parse(
   readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
@@ -130,10 +132,10 @@ test.describe("a screen that throws", () => {
     */
     const surface = page.locator("[data-error-surface]");
 
-    await expect(
-      surface,
-      "o limite de erro não pegou a exceção",
-    ).toContainText(/quebrou nesta tela/i, { timeout: 30_000 });
+    await expect(surface, "o limite de erro não pegou a exceção").toContainText(
+      /quebrou nesta tela/i,
+      { timeout: 30_000 },
+    );
 
     // Not blame, and not a stack trace: the two things a person needs are a
     // retry and an exit.
@@ -189,7 +191,7 @@ test.describe("a screen that throws", () => {
     ).toHaveCount(0, { timeout: 30_000 });
   });
 
-  test("e Tentar novamente busca de novo no servidor, não repete o payload", async ({
+  test("and Tentar novamente fetches again from the server, it does not replay the payload", async ({
     page,
   }) => {
     /**
@@ -246,7 +248,7 @@ test.describe("a screen that throws", () => {
     });
   });
 
-  test("e uma tela boa continua boa depois de uma que quebrou", async ({
+  test("and a good screen stays good after one that broke", async ({
     page,
   }) => {
     /**

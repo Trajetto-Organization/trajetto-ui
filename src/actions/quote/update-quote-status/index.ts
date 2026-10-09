@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { updateQuoteStatusSchema } from "@/schemas/update-quote-status-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateQuoteStatusResponse {
   message: string;
@@ -43,7 +46,7 @@ const handleUpdateQuoteStatus = async (
   const quoteData = updateQuoteValidation.data;
 
   try {
-    const response = await fetch(updateQuoteStatus, {
+    const response = await apiFetch(updateQuoteStatus, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -55,12 +58,17 @@ const handleUpdateQuoteStatus = async (
 
     const { message } = (await response.json()) as UpdateQuoteStatusResponse;
 
-    if (!response.ok && message) {
-      return { updateQuoteError: { updateQuoteErrorMessage: message } };
+    if (!response.ok) {
+      return {
+        updateQuoteError: {
+          updateQuoteErrorMessage: message || refusalMessage(response.status),
+        },
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("quote/update-quote-status", error);
     return {
       updateQuoteError: {
         updateQuoteErrorMessage:

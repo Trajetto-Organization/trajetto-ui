@@ -6,10 +6,10 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
 import { IntegrationsContent } from "@/features/integrations/content";
+import { IntegrationsSkeleton } from "@/features/integrations/skeleton";
 
 interface IntegrationsQueryParamsProps {
   searchParams: {
@@ -43,7 +43,7 @@ const AdminIntegrations = async ({
         description="Selecione a empresa para emitir chaves, apontar webhooks e acompanhar o que foi entregue aos sistemas dela."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
+      <Suspense fallback={<IntegrationsSkeleton mode="admin" />}>
         <IntegrationsContent mode="admin" searchParams={searchParams} />
       </Suspense>
     </PageContainer>

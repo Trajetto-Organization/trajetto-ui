@@ -88,9 +88,16 @@ function DataTablePagination<TData>({
           : `${rowsOnPage} linha(s) nesta página.`}
       </div>
 
+      {/*
+        Wraps from `sm` up too. "Página 12 de 50" is one unbreakable line, so
+        the size picker plus the buttons need ~540px; at 768px with the
+        sidebar open <main> offers 512 and clips, and the last-page button was
+        cut off. Wrapping puts the buttons under the size picker instead.
+      */}
       <div
         className="flex flex-col w-full min-w-0 items-center 
-        gap-4 sm:w-auto sm:flex-row sm:gap-6 lg:gap-8"
+        gap-4 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center
+        sm:gap-x-6 sm:gap-y-3 lg:gap-x-8"
       >
         <div
           className="flex items-center w-full 
@@ -113,7 +120,12 @@ function DataTablePagination<TData>({
               aria-label="Paginação"
               className="h-8 w-full sm:w-[80px] text-sm"
             >
-              <SelectValue placeholder={`${paginationState.pageSize}`} />
+              {/* Children, not only the placeholder: Radix fills the value
+                  from the item text after mount, so the server HTML showed an
+                  empty select until hydration. */}
+              <SelectValue placeholder={`${paginationState.pageSize}`}>
+                {paginationState.pageSize}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent side="top">
               {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -162,7 +174,8 @@ function DataTablePagination<TData>({
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="hidden text-sm font-medium sm:block">
+          {/* One line: at 768px with the sidebar open it broke into "Página 1" / "de 1". */}
+          <div className="hidden whitespace-nowrap text-sm font-medium sm:block">
             Página {currentPage} de {table.getPageCount()}
           </div>
 

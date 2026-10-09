@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import {
   CircleAlert,
   CircleCheck,
   CircleSlash,
+  Loader2,
   Route as RouteIcon,
   TriangleAlert,
 } from "lucide-react";
@@ -20,7 +23,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import type { ImportData } from "@/actions/import/list-imports";
-import type { ImportRowResult } from "@/actions/import/import-spreadsheet";
+import type {
+  ImportReport,
+  ImportRowResult,
+} from "@/actions/import/import-spreadsheet";
+
+import { getImport } from "@/actions/import/get-import";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 interface ImportReportDialogProps {
   record: ImportData;
@@ -40,9 +49,13 @@ const OUTCOME_META: Record<
   duplicated: {
     label: "Já existia",
     icon: CircleSlash,
-    className: "text-yellow-600",
+    className: "text-yellow-700 dark:text-yellow-500",
   },
-  invalid: { label: "Erro", icon: CircleAlert, className: "text-red-600" },
+  invalid: {
+    label: "Erro",
+    icon: CircleAlert,
+    className: "text-red-600 dark:text-red-400",
+  },
 };
 
 /**
@@ -58,7 +71,53 @@ const ImportReportDialog = ({
   isOpen,
   onClose,
 }: ImportReportDialogProps): JSX.Element => {
-  const rows = [...(record.report?.rows ?? [])].sort((left, right) => {
+  /**
+   * The report is read when the dialog opens, not carried by the listing: it
+   * is one entry per spreadsheet line. An API from before that change still
+   * puts it on the row, and then there is nothing to fetch.
+   */
+  const [fetched, setFetched] = useState<ImportReport | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen || record.report) return;
+
+    let cancelled = false;
+
+    setFailure(null);
+
+    getImport(record.id, record.businessId)
+      .then((result) => {
+        if (cancelled) return;
+
+        if (isStaleActionResult(result, { background: true })) {
+          setFailure(STALE_ACTION_MESSAGE);
+        } else if (result.success && result.data) {
+          setFetched(result.data.report);
+        } else {
+          setFailure(result.message);
+        }
+      })
+      .catch(() => {
+        // The action answers its own failures; this is the call to it not
+        // reaching the server at all.
+        if (!cancelled) {
+          setFailure("Não foi possível carregar o relatório desta importação.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, record.id, record.businessId, record.report]);
+
+  const report = record.report ?? fetched;
+
+  // Nothing to show yet and nothing went wrong: the read is on its way. Kept
+  // apart from "no rows", which is a real answer about an upload.
+  const loading = !report && !failure;
+
+  const rows = [...(report?.rows ?? [])].sort((left, right) => {
     const weight = { invalid: 0, duplicated: 1, imported: 2 } as const;
 
     return (
@@ -90,7 +149,10 @@ const ImportReportDialog = ({
               const Icon = meta.icon;
 
               return (
-                <div key={outcome} className="rounded-lg border p-3 text-center">
+                <div
+                  key={outcome}
+                  className="rounded-lg border p-3 text-center"
+                >
                   <Icon className={cn("mx-auto h-5 w-5", meta.className)} />
                   <p className="mt-1 text-2xl font-semibold">{count}</p>
                   <p className="text-xs text-muted-foreground">{meta.label}</p>
@@ -99,26 +161,26 @@ const ImportReportDialog = ({
             })}
           </div>
 
-          {(record.report?.routes ?? []).length > 0 && (
+          {report && report.routes.length > 0 && (
             <div className="rounded-lg border p-3">
               <p className="mb-2 flex items-center gap-2 text-sm font-medium">
                 <RouteIcon className="h-4 w-4 shrink-0" />
-                Rotas criadas ({record.report.routes.length})
+                Rotas criadas ({report.routes.length})
               </p>
 
               <ul className="space-y-1 text-sm text-muted-foreground">
-                {record.report.routes.map((route) => (
+                {report.routes.map((route) => (
                   <li key={route.id}>
                     #{route.code}
-                    {route.name ? ` — ${route.name}` : ""} ({route.stops}{" "}
-                    parada{route.stops === 1 ? "" : "s"})
+                    {route.name ? ` — ${route.name}` : ""} ({route.stops} parada
+                    {route.stops === 1 ? "" : "s"})
                   </li>
                 ))}
               </ul>
             </div>
           )}
 
-          {(record.report?.unknownHeaders ?? []).length > 0 && (
+          {report && report.unknownHeaders.length > 0 && (
             <div
               className="rounded-lg border border-amber-200 bg-amber-50 p-3
               dark:border-amber-900 dark:bg-amber-950/30"
@@ -130,13 +192,25 @@ const ImportReportDialog = ({
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   <strong>Colunas não reconhecidas:</strong>{" "}
-                  {record.report.unknownHeaders.join(", ")}.
+                  {report.unknownHeaders.join(", ")}.
                 </span>
               </p>
             </div>
           )}
 
-          {rows.length === 0 ? (
+          {loading ? (
+            <p
+              className="flex items-center justify-center gap-2 py-6 text-sm
+              text-muted-foreground"
+            >
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando o relatório…
+            </p>
+          ) : failure && !report ? (
+            <p className="py-6 text-center text-sm text-destructive">
+              {failure}
+            </p>
+          ) : rows.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">
               Esta importação não registrou linhas.
             </p>

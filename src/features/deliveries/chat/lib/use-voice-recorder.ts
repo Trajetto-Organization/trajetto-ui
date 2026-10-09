@@ -118,8 +118,7 @@ const NO_RECORDER_REASON =
   "Este navegador não permite gravar áudio. Use o Chrome, o Edge ou o " +
   "Safari atualizados.";
 
-const INSECURE_REASON =
-  "A gravação de áudio exige uma conexão segura (https).";
+const INSECURE_REASON = "A gravação de áudio exige uma conexão segura (https).";
 
 const DENIED_REASON =
   "Permissão de microfone negada. Libere o microfone para este site nas " +
@@ -145,20 +144,15 @@ const MIC_LOST_EMPTY_REASON =
   "dispositivo e a permissão do site, e grave de novo.";
 
 /**
- * Recording a voice note in the browser, with the ceiling the whole product
- * agreed on.
+ * Recording a voice note in the browser, with the same ceiling as the app.
  *
- * Two things make this different from the app's recorder. It can pause and
- * carry on, because at a desk a recording gets interrupted by a phone call
- * rather than abandoned; and it has to negotiate a format before it can even
- * offer the button — see `audio-recording`. The ceiling behaves exactly as it
- * does on the road: it STOPS the recording rather than refusing it, so
- * whatever was already said is captured and waiting on the send button.
+ * Unlike the app, it has to negotiate a format before it can offer the
+ * button (see `audio-recording`). The ceiling STOPS the recording rather than
+ * refusing it, so what was already said waits on the send button.
  *
- * Everything that can end a recording ends it the same way — the ceiling,
- * the send button, the pane going off screen, the microphone being taken
- * away — through `stopRecorder`, which is the only place the hardware is
- * released and the only place a file is built.
+ * Every way a recording ends (ceiling, send, pane off screen, microphone
+ * taken away) goes through `stopRecorder`, the only place the hardware is
+ * released and a file is built.
  */
 function useVoiceRecorder(): VoiceRecorder {
   // Closed until the probe below says otherwise: the answer needs a browser
@@ -315,11 +309,9 @@ function useVoiceRecorder(): VoiceRecorder {
    * Turns the chunks collected so far into a file the fleet can play back,
    * or `null` with the reason already written for the user.
    *
-   * The gate this ends on is the last one before anything is uploaded, and
-   * it is now reachable: it used to sit behind a fallback that relabelled
-   * whatever the browser produced with the content type that had been ASKED
-   * for, so a WebM blob went up signed as `audio/mp4` — accepted by the API,
-   * which compares the string, and unplayable on every iPhone in the fleet.
+   * The content type comes from what the browser actually produced (the one
+   * asked for only when it reports none): the API only compares the string,
+   * so a WebM blob labelled `audio/mp4` would pass and not play on iPhones.
    */
   const buildRecording = useCallback(
     (
@@ -403,7 +395,10 @@ function useVoiceRecorder(): VoiceRecorder {
           () => {
             releaseStream();
 
-            const finished = buildRecording(recorder.mimeType || "", durationMs);
+            const finished = buildRecording(
+              recorder.mimeType || "",
+              durationMs,
+            );
 
             chunksRef.current = [];
             recorderRef.current = null;
@@ -470,13 +465,9 @@ function useVoiceRecorder(): VoiceRecorder {
   );
 
   /**
-   * The recording ended and nobody asked it to.
-   *
-   * Bound from the moment the recorder exists, which is the whole point: the
-   * only `stop` listener there used to be was registered inside the stop we
-   * asked for, so a microphone revoked mid-sentence left the bar counting
-   * "Gravando... 00:52" over a recorder that had already gone `inactive`,
-   * and the send that followed produced nothing and said nothing.
+   * The recording ended and nobody asked it to (permission revoked, headset
+   * unplugged). Bound from the moment the recorder exists, so the bar never
+   * keeps counting over a recorder that already went `inactive`.
    */
   const harvestUnsolicitedStop = useCallback(() => {
     if (disposedRef.current) return;
@@ -590,14 +581,9 @@ function useVoiceRecorder(): VoiceRecorder {
       if (!recordingReachedLimit(elapsed)) return;
 
       /**
-       * The ceiling stops the recording; it never discards it. Whatever was
-       * already said is parked on the send button — a limit that throws away
-       * two minutes of speech to teach someone about a limit is not a limit,
-       * it is a punishment.
-       *
-       * And the overshoot forgiven is the one THIS beat caused: at the
-       * previous beat the limit had not been reached, so everything past it
-       * happened inside a beat the browser chose the length of.
+       * The ceiling stops the recording and parks it on the send button; it
+       * never discards it. The overshoot forgiven is the one THIS beat caused:
+       * the limit was not reached at the previous beat.
        */
       void stopRecorder(tickToleranceMs(RECORDING_TICK_MS, beatMs)).then(
         (finished) => {
@@ -623,14 +609,10 @@ function useVoiceRecorder(): VoiceRecorder {
     if (!support.canRecord || !format) return false;
 
     /**
-     * One microphone at a time, and the lock is a ref because two clicks
-     * inside one tick both read state that has not committed.
-     *
-     * The very first use is exactly where this bites: Chrome's permission
-     * bubble does not block the page, so the button stays live through the
-     * whole prompt, a second click opens a second `getUserMedia`, and the
-     * first `MediaStream` is orphaned — never stopped, its microphone light
-     * on until the tab is closed.
+     * One microphone at a time. A ref, because two clicks inside one tick
+     * both read uncommitted state; Chrome's permission bubble does not block
+     * the page, and a second `getUserMedia` would orphan the first stream
+     * (microphone light on until the tab closes).
      */
     if (startingRef.current) return false;
 
@@ -818,10 +800,7 @@ function useVoiceRecorder(): VoiceRecorder {
 
   const interrupt = useCallback(
     (reason: string) => {
-      if (
-        statusRef.current !== "recording" &&
-        statusRef.current !== "paused"
-      ) {
+      if (statusRef.current !== "recording" && statusRef.current !== "paused") {
         return;
       }
 
@@ -907,9 +886,4 @@ function useVoiceRecorder(): VoiceRecorder {
 }
 
 export { useVoiceRecorder, RECORDING_TICK_MS };
-export type {
-  VoiceRecorder,
-  CapturedRecording,
-  CaptureReason,
-  RecorderStatus,
-};
+export type { VoiceRecorder, CapturedRecording, CaptureReason, RecorderStatus };

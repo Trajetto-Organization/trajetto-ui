@@ -8,9 +8,20 @@ import {
 const createUpdatePartSchema = z.object({
   description: z
     .string()
+    // Empty or blank is a missing description, not a short one (16.702).
+    .min(1, "A descrição é obrigatória.")
     .min(3, "A descrição deve ter no mínimo 3 caracteres.")
     .max(100, "A descrição deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
+      if (value.length > 0 && value.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A descrição é obrigatória.",
+        });
+
+        return;
+      }
+
       if (value.length > 100) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -55,7 +66,7 @@ const createUpdatePartSchema = z.object({
         invalid_type_error:
           "O preço unitário deve ser um valor numérico válido.",
       })
-      .positive("O preço unitário deve ser um valor positivo.")
+      .positive("O preço unitário deve ser maior que zero.")
       .max(999999.99, "O preço unitário não pode exceder 999.999,99."),
   ),
   supplierId: z.preprocess(

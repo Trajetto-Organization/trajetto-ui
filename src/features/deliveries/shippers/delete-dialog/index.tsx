@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { handleDeleteShipper } from "@/actions/shipper/delete-shipper";
 
 import { useDeleteShipperForm } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
 
 interface DeleteShipperDialogProps {
   businessId: string;
@@ -76,13 +77,7 @@ const DeleteShipperFormSubmit = ({
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
-        <Button
-          type="submit"
-          disabled={pending}
-          variant={"secondary"}
-          className="bg-red-600/10 dark:bg-red-500/10
-          dark:text-red-500 text-red-600"
-        >
+        <Button type="submit" disabled={pending} variant="destructive">
           <ShieldAlert className="mr-1 size-5" />
           <span>Deletar Embarcador</span>
 
@@ -105,7 +100,7 @@ const DeleteShipperDialog = ({
   onClose,
 }: DeleteShipperDialogProps): JSX.Element => {
   const [state, dispatch] = useFormState(
-    () => handleDeleteShipper({ businessId, shipperId }),
+    guardFormAction(() => handleDeleteShipper({ businessId, shipperId })),
     null,
   );
 
@@ -113,7 +108,7 @@ const DeleteShipperDialog = ({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="bg-white dark:bg-[#121214]">
+      <AlertDialogContent className="bg-background">
         <form action={dispatch}>
           <DeleteShipperFormSubmit shipperName={shipperName} />
         </form>

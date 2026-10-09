@@ -1,13 +1,11 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 type DeliveryStatus =
-  | "PENDING"
-  | "IN_TRANSIT"
-  | "DELIVERED"
-  | "FAILED"
-  | "CANCELLED";
+  "PENDING" | "IN_TRANSIT" | "DELIVERED" | "FAILED" | "CANCELLED";
 
 interface DeliveryListItem {
   id: string;
@@ -27,6 +25,9 @@ interface DeliveryListItem {
   updated_at: string;
 }
 
+type OccurrenceAuthorizationStatus =
+  "NOT_REQUIRED" | "PENDING" | "APPROVED" | "DENIED" | "SUPERSEDED";
+
 interface DeliveryOccurrenceDetail {
   id: string;
   description: string | null;
@@ -34,8 +35,26 @@ interface DeliveryOccurrenceDetail {
   longitude: number | null;
   photos: string[];
   created_at: string;
-  occurrenceType: { id: string; name: string; blocks_delivery: boolean };
+  occurrenceType: {
+    id: string;
+    name: string;
+    blocks_delivery: boolean;
+    /** Decisions 6.2/6.3; absent on an API older than the phase. */
+    requires_authorization?: boolean;
+    /** The type's CURRENT form: labels the answers. */
+    form_fields?: unknown;
+    form_version?: number;
+  };
   reportedBy: { id: string; name: string };
+  /** The answers to the type's form, by field key (decision 6.2). */
+  form_answers?: Record<string, string | number | boolean | null> | null;
+  form_version?: number | null;
+  /** The tower's say (decision 6.3). */
+  authorization_status?: OccurrenceAuthorizationStatus;
+  authorizedBy?: { id: string; name: string } | null;
+  authorized_at?: string | null;
+  authorization_note?: string | null;
+  escalated_at?: string | null;
 }
 
 /**
@@ -44,7 +63,19 @@ interface DeliveryOccurrenceDetail {
  */
 interface DeliveryEventDetail {
   id: string;
-  type: "ARRIVAL" | "PROOF";
+  // Every DeliveryEventType the API sends (it filters none).
+  type:
+    | "ARRIVAL"
+    | "PROOF"
+    | "STATUS_CHANGE"
+    | "NOTE"
+    | "ON_THE_WAY"
+    | "OCCURRENCE"
+    // Decision 14.7: the delivery was added to or taken off a route.
+    | "ROUTE_ADDED"
+    | "ROUTE_REMOVED";
+  /** The occurrence the event records, when there is one. */
+  occurrenceId?: string | null;
   latitude: number | null;
   longitude: number | null;
   photo: string | null;
@@ -65,6 +96,11 @@ interface DeliveryDetail extends DeliveryListItem {
   neighborhood: string | null;
   received_by: string | null;
   notes: string | null;
+  /**
+   * The upload that created it. Items of an NF-e XML delivery are what the
+   * note declared and are not editable (decision 5.2); a typed one's are.
+   */
+  import?: { source: "SPREADSHEET" | "NFE_XML" } | null;
   items: Array<{
     id: string;
     description: string;
@@ -93,8 +129,11 @@ type TimelineKind =
   | "PROOF"
   | "STATUS_CHANGE"
   | "NOTE"
+  | "ON_THE_WAY"
   | "OCCURRENCE"
-  | "MESSAGE";
+  | "MESSAGE"
+  | "ROUTE_ADDED"
+  | "ROUTE_REMOVED";
 
 type TimelineActor = "USER" | "DRIVER_APP" | "INTEGRATION" | "SYSTEM";
 
@@ -149,7 +188,7 @@ const getDelivery = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/get-delivery/${deliveryId}/business/${businessId}`,
       {
         credentials: "include",
@@ -177,6 +216,7 @@ const getDelivery = async (
       data: result.data as DeliveryDetail,
     };
   } catch (error) {
+    logActionError("delivery/get-delivery", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar a entrega.",
@@ -193,4 +233,5 @@ export type {
   DeliveryListItem,
   DeliveryDetail,
   DeliveryOccurrenceDetail,
+  OccurrenceAuthorizationStatus,
 };

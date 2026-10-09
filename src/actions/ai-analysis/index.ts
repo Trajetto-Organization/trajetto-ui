@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 type AIRecordType = "fuel" | "checklist";
 
@@ -23,7 +25,27 @@ interface AIAnalysisProgress {
   unitsCompleted: number;
   attempts: number;
   availableAt: string | null;
+
+  /** Why it waits or how it ended (the API's stable code). */
+  lastErrorCode?:
+    | "AI_PROVIDER_PAUSED"
+    | "AI_INPUT_SUPERSEDED"
+    | "AI_QUOTA_EXCEEDED"
+    | "AI_INVALID_RESPONSE"
+    | "AI_ANALYSIS_ERROR"
+    | null;
+
+  /** The API's own pt-BR sentence for lastErrorCode, never the provider's. */
   lastError: string | null;
+
+  /** Waiting on the provider (spend or usage limit), not on the queue. */
+  paused?: boolean;
+
+  /** The record's company has AI readings on. */
+  aiEnabled?: boolean;
+
+  /** This user may ask for a reading (write permission, not a driver). */
+  canRequest?: boolean;
 }
 
 interface AIAnalysisProgressResponse {
@@ -47,7 +69,7 @@ const requestAIVerification = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/ai-analysis/request/${recordType}/${recordId}`,
       {
         credentials: "include",
@@ -74,6 +96,7 @@ const requestAIVerification = async (
       outcome: result.outcome,
     };
   } catch (error) {
+    logActionError("ai-analysis/requestAIVerification", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao solicitar a verificação IA.",
@@ -99,7 +122,7 @@ const getAIVerificationProgress = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/ai-analysis/progress/${recordType}/${recordId}`,
       {
         credentials: "include",
@@ -127,6 +150,7 @@ const getAIVerificationProgress = async (
       data: result.data as AIAnalysisProgress,
     };
   } catch (error) {
+    logActionError("ai-analysis/getAIVerificationProgress", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao consultar o progresso da IA.",

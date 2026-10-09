@@ -1,33 +1,42 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
+import { logActionError } from "@/lib/log-action-error";
+import { revalidateTag } from "next/cache";
 
-const revalidatePathName = async (page: string) => {
-  try {
-    revalidatePath(page);
-  } catch (error) {
-    return {
-      message: `
-        Houve um erro ao revalidar a página! Por favor, atualize
-        a página para ver as novas alterações.`,
-    };
-  }
+import { toAllowedTags } from "@/lib/revalidation-tags";
+
+// No `revalidatePath` action: it had no caller, and an exported server action
+// is an endpoint whether anyone in the app uses it or not.
+
+const REFUSED = {
+  message: "Não foi possível revalidar estes dados.",
 };
 
 const revalidateTagName = async (tag: string) => {
+  // Validated here and not only in `revalidateTags`: each exported function
+  // of a "use server" file is its own endpoint.
+  const tags = toAllowedTags(tag);
+
+  if (!tags) return REFUSED;
+
   try {
-    revalidateTag(tag);
+    revalidateTag(tags[0]);
   } catch (error) {
+    logActionError("revalidate", error);
     return {
       message: `
-        Houve um erro ao revalidar os dados! Por favor, clique 
+        Houve um erro ao revalidar os dados! Por favor, clique
         em revalidar dados para ver as novas alterações.`,
     };
   }
 };
 
 const revalidateTags = async (tags: string[]) => {
-  return Promise.all(tags.map((tag) => revalidateTagName(tag)));
+  const allowed = toAllowedTags(tags);
+
+  if (!allowed) return [REFUSED];
+
+  return Promise.all(allowed.map((tag) => revalidateTagName(tag)));
 };
 
-export { revalidatePathName, revalidateTagName, revalidateTags };
+export { revalidateTagName, revalidateTags };

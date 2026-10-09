@@ -30,7 +30,6 @@ import {
 
 import { NOTIFICATION_ACCENT_CLASS } from "../../shared/notification-visuals";
 
-import type { PermissionKey, UserRole } from "../../shared/common.types";
 import type { ProtectedNavItem } from "../shared/common.types";
 
 import type {
@@ -39,66 +38,50 @@ import type {
   User,
 } from "./protected-sidebar-menu.types";
 import {
+  navigationSurface,
   protectedNavIcons,
-  protectedNavItemsByRole,
+  sidebarItems,
 } from "../protected-navbar-items";
 
 /**
- * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
+ * A driver is a BUSINESS_USER linked to a driver record. Same rule as the
+ * layout that picks the driver shell and as the API's permission gate: the
+ * driver link decides, whatever profile rows the account may still carry.
  */
-function isDriver(user: User): boolean {
-  if (user.role !== "BUSINESS_USER") return false;
-
-  const hasDriverId = !!user.driverId;
-  const hasProfileAccess =
-    user.profileAccess &&
-    user.profileAccess.permissions &&
-    user.profileAccess.permissions.length > 0;
-
-  return hasDriverId && !hasProfileAccess;
-}
-
-interface NavFilterContext {
-  role: UserRole;
-  permissions: PermissionKey[];
-  enabledModules: string[] | null;
-  isDriver: boolean;
+function isDriver(user: Pick<User, "role" | "driverId">): boolean {
+  return user.role === "BUSINESS_USER" && Boolean(user.driverId);
 }
 
 /**
- * Drops what this session may not reach. The verdict comes from the route
- * registry (app-routes) rather than from tags on each entry — a menu that
- * declared its own rules is what let the command bar drift out of sync with
- * the sidebar for the whole FLEET module.
- *
- * A group ("#") has no page of its own, so it survives only while at least
- * one child does.
+ * What this session's sidebar shows. The entries come from the one
+ * navigation list the command palette also reads, and the verdict from the
+ * route registry (app-routes) — two hand-written lists is how the palette
+ * offered an employee Torre de Controle and Integrações that the sidebar did
+ * not (NAV-DRIFT-1).
  */
-const filterNavItems = (
-  items: ProtectedNavItem[],
-  context: NavFilterContext,
-): ProtectedNavItem[] => {
-  return items.reduce<ProtectedNavItem[]>((acc, item) => {
-    const isGroup = !item.url || item.url === "#";
+function visibleSidebarItems(
+  user: User,
+  enabledModules: string[] | null,
+): ProtectedNavItem[] {
+  const driver = isDriver(user);
 
-    if (!isGroup && !canAccessPath(item.url, context)) {
-      return acc;
-    }
+  // An employee without a profile has nothing to open; the session check
+  // signs them out.
+  if (user.role === "BUSINESS_USER" && !driver && !user.permissions) {
+    return [];
+  }
 
-    const newItem = { ...item };
+  const context = {
+    role: user.role,
+    permissions: user.permissions ?? [],
+    enabledModules,
+    isDriver: driver,
+  };
 
-    if (newItem.items?.length) {
-      newItem.items = filterNavItems(newItem.items, context);
-    }
-
-    if (isGroup && (!newItem.items || newItem.items.length === 0)) {
-      return acc;
-    }
-
-    acc.push(newItem);
-    return acc;
-  }, []);
-};
+  return sidebarItems(navigationSurface(user.role, driver), (path) =>
+    canAccessPath(path, context),
+  );
+}
 
 const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
   const pathname = usePathname();
@@ -212,28 +195,9 @@ const ProtectedSidebarMenuItems = ({
   const storeModules = useAuthStore((state) => state.enabledModules);
   const enabledModules = storeModules ?? user.enabledModules ?? null;
 
-  const items =
-    protectedNavItemsByRole[user.role] ||
-    protectedNavItemsByRole["BUSINESS_USER"];
-
-  // If you are a driver, it does not display any sidebar items (you will only have access via direct routes)
-  if (isDriver(user)) {
-    return <ProtectedNavItems items={[]} />;
-  }
-
-  // If you are an employee but do not have permissions, it also returns empty.
-  if (user.role === "BUSINESS_USER" && !user.permissions) {
-    return <ProtectedNavItems items={[]} />;
-  }
-
-  const filteredItems = filterNavItems(items, {
-    role: user.role,
-    permissions: user.permissions || [],
-    enabledModules,
-    isDriver: false,
-  });
-
-  return <ProtectedNavItems items={filteredItems} />;
+  return (
+    <ProtectedNavItems items={visibleSidebarItems(user, enabledModules)} />
+  );
 };
 
-export { ProtectedSidebarMenuItems };
+export { ProtectedSidebarMenuItems, visibleSidebarItems };

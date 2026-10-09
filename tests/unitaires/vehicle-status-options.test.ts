@@ -63,13 +63,28 @@ describe("the status dropdown of a truck that is out", () => {
     expect(inRoute?.label).toContain("definido pela rota");
   });
 
-  it("still lets a person block a truck that is out", () => {
-    // Blocking a vehicle after a crash is exactly when somebody needs to, and
-    // the truck being on a route is exactly when it happens.
+  it("offers only BLOCKED as a change while the truck is out (FLEET-ASSIGN-5)", () => {
+    // Blocking a vehicle after a crash is exactly when somebody needs to; and
+    // with the route running the API refuses ACTIVE and INACTIVE
+    // (VEHICLE_IN_ACTIVE_ROUTE), so offering them only built a failing save.
     const choosable = vehicleStatusOptions("IN_ROUTE")
       .filter((option) => !option.disabled)
       .map((option) => option.value);
 
-    expect(choosable).toEqual(CHOOSABLE_VEHICLE_STATUSES);
+    expect(choosable).toEqual(["BLOCKED"]);
+  });
+
+  it("is derived from the persisted status, so an edit cannot hide “Em rota” (FLEET-VEH-4)", () => {
+    // The form used to pass its own value: choosing "Ativo" on a truck that
+    // was out removed the "Em rota" option and the way back with it. The
+    // options depend only on what the vehicle HAS, whatever is being typed.
+    const persisted = "IN_ROUTE";
+    const beforeEdit = vehicleStatusOptions(persisted);
+    const afterPickingBlocked = vehicleStatusOptions(persisted);
+
+    expect(afterPickingBlocked).toEqual(beforeEdit);
+    expect(afterPickingBlocked.map((option) => option.value)).toContain(
+      "IN_ROUTE",
+    );
   });
 });

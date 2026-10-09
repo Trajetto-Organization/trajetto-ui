@@ -21,6 +21,7 @@ import {
   getModuleImpact,
   type ModuleImpactData,
 } from "@/actions/business/entitlements";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 interface DisableModuleDialogProps {
   businessId: string;
@@ -71,7 +72,9 @@ const DisableModuleDialog = ({
 
       if (!active) return;
 
-      if (response.success && response.data) {
+      if (isStaleActionResult(response, { background: true })) {
+        setErrorMessage(STALE_ACTION_MESSAGE);
+      } else if (response.success && response.data) {
         setImpact(response.data);
         setErrorMessage(null);
       } else {

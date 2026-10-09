@@ -1,7 +1,7 @@
-import ProtectedTablePageLoading from "@/app/(protected)/_components/loading-page/protected-table-page-loading";
+import { ControlTowerPageSkeleton } from "@/features/control-tower/skeleton";
 
 const Loading = (): JSX.Element => {
-  return <ProtectedTablePageLoading />;
+  return <ControlTowerPageSkeleton withSelector={true} />;
 };
 
 export default Loading;

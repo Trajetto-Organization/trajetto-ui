@@ -24,7 +24,7 @@ const buildStatusChangeReasonColumns =
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
+          aria-label="Selecionar todas"
           className="translate-y-[2px]"
         />
       ),
@@ -34,7 +34,7 @@ const buildStatusChangeReasonColumns =
           name={`select-status-change-reason-${row.id}`}
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
+          aria-label="Selecionar linha"
           className="translate-y-[2px]"
         />
       ),

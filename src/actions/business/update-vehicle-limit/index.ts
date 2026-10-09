@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { updateVehicleLimitSchema } from "@/schemas/update-vehicle-limit-schema";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateVehicleLimitResponse {
   message: string;
@@ -38,7 +41,7 @@ const handleUpdateVehicleLimit = async (state: any, formData: FormData) => {
   const { vehicle_limit } = validation.data;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/business/update-vehicle-limit/${businessId}`,
       {
         credentials: "include",
@@ -53,14 +56,18 @@ const handleUpdateVehicleLimit = async (state: any, formData: FormData) => {
 
     const { message } = (await response.json()) as UpdateVehicleLimitResponse;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateVehicleLimitError: { updateVehicleLimitErrorMessage: message },
+        updateVehicleLimitError: {
+          updateVehicleLimitErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("business/update-vehicle-limit", error);
     return {
       updateVehicleLimitError: {
         updateVehicleLimitErrorMessage:

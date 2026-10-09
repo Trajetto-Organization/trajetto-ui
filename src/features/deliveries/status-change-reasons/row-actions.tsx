@@ -3,23 +3,13 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { MoreHorizontal, Trash } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  RowActionItem,
+  RowActions,
+  RowActionSeparator,
+} from "@/components/shared/custom/row-actions";
 
 import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
 
@@ -44,7 +34,6 @@ const StatusChangeReasonRowActions = ({
   const businessId = useDeliveriesBusinessId();
   const reason = row.original;
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const [isEditOpen, setIsEditOpen] = useState<boolean>(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
@@ -67,93 +56,34 @@ const StatusChangeReasonRowActions = ({
       .catch((error) => toast.error("Erro ao copiar o ID: " + error));
   };
 
-  const menuActions = [
-    {
-      label: "Editar Motivo",
-      onClick: () => {
-        setIsDropdownOpen(false);
-        setIsEditOpen(true);
-      },
-      disabled: !permissionsRequired.hasAllPermissions,
-      tooltip: permissionsRequired.tooltipMessage,
-    },
-    {
-      label: "Copiar ID",
-      onClick: handleCopyID,
-      disabled: false,
-      tooltip: "",
-    },
-  ];
+  // A permission revoked over the socket disables both at once; the reason
+  // stays readable on hover (decision 3.5).
+  const writeBlocker = permissionsRequired.hasAllPermissions
+    ? null
+    : permissionsRequired.tooltipMessage;
 
   return (
     <>
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-          >
-            <MoreHorizontal />
-            <span className="sr-only">Abrir Menu</span>
-          </Button>
-        </DropdownMenuTrigger>
+      {/* The standard row menu (decision 3.5): 160px, text only, the delete
+          in red and a blocked action disabled with its reason. */}
+      <RowActions entity={`o motivo ${reason.name}`}>
+        <RowActionItem
+          label="Editar Motivo"
+          blockedReason={writeBlocker}
+          onSelect={() => setIsEditOpen(true)}
+        />
 
-        <DropdownMenuContent align="end" className="w-[160px]">
-          {menuActions.map((action) => (
-            <TooltipProvider key={action.label}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem
-                      className="cursor-pointer truncate block"
-                      onClick={action.onClick}
-                      disabled={action.disabled}
-                    >
-                      {action.label}
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                {action.disabled && action.tooltip && (
-                  <TooltipContent className="max-w-sm">
-                    <p>{action.tooltip}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          ))}
+        <RowActionItem label="Copiar ID" onSelect={handleCopyID} />
 
-          <DropdownMenuSeparator />
+        <RowActionSeparator />
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <DropdownMenuItem
-                    className="flex cursor-pointer items-center
-                    justify-between"
-                    disabled={!permissionsRequired.hasAllPermissions}
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsDeleteOpen(true);
-                    }}
-                  >
-                    Deletar
-                    <Trash
-                      size={17}
-                      className="dark:text-red-500 text-red-600"
-                    />
-                  </DropdownMenuItem>
-                </div>
-              </TooltipTrigger>
-              {!permissionsRequired.hasAllPermissions && (
-                <TooltipContent className="max-w-sm">
-                  <p>{permissionsRequired.tooltipMessage}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <RowActionItem
+          label="Deletar"
+          destructive
+          blockedReason={writeBlocker}
+          onSelect={() => setIsDeleteOpen(true)}
+        />
+      </RowActions>
 
       {isEditOpen && businessId && (
         <StatusChangeReasonFormDialog

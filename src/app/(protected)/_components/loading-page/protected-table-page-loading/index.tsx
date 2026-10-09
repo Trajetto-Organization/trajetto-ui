@@ -4,7 +4,7 @@ import PageContainer from "../../layout/protected-page-container";
 const ProtectedTablePageLoading = (): JSX.Element => {
   return (
     <PageContainer>
-      <div className="mb-8">
+      <div data-tutorial="loading" className="mb-8">
         <Skeleton className="h-8 w-52 mb-2" />
         <Skeleton className="h-4 w-56" />
       </div>

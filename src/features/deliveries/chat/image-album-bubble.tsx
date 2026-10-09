@@ -6,10 +6,12 @@ import { Check, CheckCheck, Clock, Package, RotateCcw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import { MessageContextTags } from "./message-context-tags";
+
 import { resolveCheckState } from "./lib/check-state";
 import { formatClock } from "./lib/format";
 import { MEDIA_BUBBLE_WIDTH_CLASS } from "./lib/media-bubble";
-import type { ClientChatMessage } from "./lib/types";
+import type { ChatHistoryFilter, ClientChatMessage } from "./lib/types";
 
 /** Past this the grid stops growing and the last cell counts the rest. */
 const VISIBLE_CELLS = 4;
@@ -35,6 +37,9 @@ interface ImageAlbumBubbleProps {
   onOpenImage: (message: ClientChatMessage) => void;
 
   onRetry: (message: ClientChatMessage) => void;
+
+  /** Narrows the conversation to the album's route or delivery. */
+  onFilter?: (filter: ChatHistoryFilter) => void;
 }
 
 /**
@@ -54,6 +59,7 @@ const ImageAlbumBubble = ({
   onOpenDelivery,
   onOpenImage,
   onRetry,
+  onFilter,
 }: ImageAlbumBubbleProps): JSX.Element => {
   const last = messages[messages.length - 1];
 
@@ -84,10 +90,7 @@ const ImageAlbumBubble = ({
 
     if (checkState === "delivered") {
       return (
-        <CheckCheck
-          className="h-3.5 w-3.5 opacity-70"
-          aria-label="Entregues"
-        />
+        <CheckCheck className="h-3.5 w-3.5 opacity-70" aria-label="Entregues" />
       );
     }
 
@@ -207,6 +210,12 @@ const ImageAlbumBubble = ({
                 </span>
               </button>
             )}
+
+            <MessageContextTags
+              message={last}
+              isOwnSide={isOwnSide}
+              onFilter={onFilter}
+            />
 
             {last.body && (
               <p

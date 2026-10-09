@@ -25,7 +25,10 @@ const CSS = readFileSync(
 );
 
 /** `--name: H S% L%;` inside `:root` (light) or `.dark`. */
-function token(name: string, theme: "light" | "dark"): [number, number, number] {
+function token(
+  name: string,
+  theme: "light" | "dark",
+): [number, number, number] {
   const blockStart =
     theme === "light" ? CSS.indexOf(":root") : CSS.indexOf(".dark");
 
@@ -124,7 +127,9 @@ describe("text on a coloured surface", () => {
    * the controls a person is supposed to read carefully before clicking.
    */
   it.each([
-    ["destructive-foreground", "destructive"],
+    // Behind white text the surface token is the one painted (bg-destructive
+    // reads --destructive-surface, tailwind.config.ts).
+    ["destructive-foreground", "destructive-surface"],
     ["primary-foreground", "primary"],
     ["secondary-foreground", "secondary"],
     ["muted-foreground", "muted"],
@@ -136,7 +141,7 @@ describe("text on a coloured surface", () => {
     for (const theme of ["light", "dark"] as const) {
       expect(
         ratioOf(foreground, background, theme),
-        `${foreground} sobre ${background} no tema ${theme}`,
+        `${foreground} on ${background} in the ${theme} theme`,
       ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
     }
   });

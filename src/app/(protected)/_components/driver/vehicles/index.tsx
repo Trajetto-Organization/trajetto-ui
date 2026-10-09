@@ -9,6 +9,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { commandKeywordFilter } from "@/lib/command-keyword-filter";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,12 +19,31 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { Loader } from "lucide-react";
 import { VehicleActionModal } from "./vehicle-action-modal";
+import { driverVehicleOptions } from "./vehicle-action-modal/options";
 
 import { displayValue } from "@/lib/format-values";
+import { useAuthStore } from "@/store/auth-store";
 import { useDriverVehicles } from "./hooks";
+import { showsMaintenanceFields } from "@/features/vehicle/lib/form-values";
 
 const DriverVehiclesList = (): JSX.Element => {
   const router = useRouter();
+
+  // Kept fresh by the security check: a module switched off while the page
+  // is open takes its options away without a reload.
+  const role = useAuthStore((state) => state.role);
+  const enabledModules = useAuthStore((state) => state.enabledModules);
+  // Revision data belongs to Gestão de Frotas; without it the interval is a
+  // stored default, not information.
+  const withMaintenance = showsMaintenanceFields({ role, enabledModules });
+
+  const options = driverVehicleOptions({
+    role: role ?? "BUSINESS_USER",
+    enabledModules,
+  });
+
+  // Nothing to offer (no FLEET): the card is information only.
+  const hasOptions = options.length > 0;
   const {
     errorMessage,
     isModalOpen,
@@ -91,7 +111,11 @@ const DriverVehiclesList = (): JSX.Element => {
   return (
     <div className="space-y-6 mt-7">
       {/* Command Search */}
-      <Command className="border rounded-md">
+      <Command
+        filter={commandKeywordFilter}
+        className="border rounded-md"
+        data-tutorial="driver-vehicles"
+      >
         <CommandInput placeholder="Buscar veículo por placa, descrição, marca ou modelo..." />
 
         {isLoaded && !isLoading && !hasError && (
@@ -117,7 +141,7 @@ const DriverVehiclesList = (): JSX.Element => {
             {!hasError && vehicles && vehicles.length > 0 && (
               <div
                 className="grid grid-cols-1
-                md:grid-cols-2 lg:grid-cols-3 gap-4"
+                lg:grid-cols-2 xl:grid-cols-3 gap-4"
               >
                 {vehicles.map((vehicle, index) => {
                   const isLastElement = index === vehicles.length - 1;
@@ -125,24 +149,40 @@ const DriverVehiclesList = (): JSX.Element => {
                     vehicle.status === "INACTIVE" ||
                     vehicle.status === "BLOCKED";
 
+                  const isActionable =
+                    hasOptions &&
+                    !isDisabled &&
+                    (vehicle.status === "ACTIVE" ||
+                      vehicle.status === "IN_ROUTE");
+
                   return (
                     <CommandItem
                       key={vehicle.id}
+                      // The id, never the text: cmdk merges items with equal
+                      // values. The keywords keep the search box matching
+                      // what the card shows.
+                      value={vehicle.id}
+                      keywords={[
+                        vehicle.license_plate,
+                        vehicle.description,
+                        vehicle.brand,
+                        vehicle.model,
+                      ]
+                        .filter(Boolean)
+                        .map(String)}
                       ref={isLastElement ? lastElementRef : null}
                       className="p-0 aria-selected:bg-transparent"
                     >
                       <Card
                         className={`w-full p-4 transition-all ${
                           isDisabled
-                            ? "border-gray-300 opacity-60 cursor-not-allowed"
-                            : "border-gray-200 cursor-pointer hover:shadow-lg hover:border-primary/50"
+                            ? "border-border opacity-60 cursor-not-allowed"
+                            : isActionable
+                              ? "border-border cursor-pointer hover:shadow-lg hover:border-primary/50"
+                              : "border-border"
                         }`}
                         onClick={() => {
-                          if (
-                            !isDisabled &&
-                            (vehicle.status === "ACTIVE" ||
-                              vehicle.status === "IN_ROUTE")
-                          ) {
+                          if (isActionable) {
                             setSelectedVehicle({
                               id: vehicle.id,
                               brand: vehicle.brand,
@@ -156,11 +196,11 @@ const DriverVehiclesList = (): JSX.Element => {
                         {/* Header: Brand/Model and Status */}
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-gray-900 truncate">
+                            <h3 className="text-lg font-bold text-foreground truncate">
                               {displayValue(vehicle.brand)} |{" "}
                               {displayValue(vehicle.model)}
                             </h3>
-                            <p className="text-sm text-gray-600 truncate">
+                            <p className="text-sm text-muted-foreground truncate">
                               {getYearFromDate(vehicle.model_year)} •{" "}
                               {displayValue(vehicle.description)}
                             </p>
@@ -179,12 +219,12 @@ const DriverVehiclesList = (): JSX.Element => {
                         {/* License Plate */}
                         <div className="mb-3">
                           <p
-                            className="text-xs text-gray-500
+                            className="text-xs text-muted-foreground
                             uppercase tracking-wide mb-1"
                           >
                             Placa
                           </p>
-                          <p className="text-base font-semibold text-gray-900">
+                          <p className="text-base font-semibold text-foreground">
                             {displayValue(vehicle.license_plate)}
                           </p>
                         </div>
@@ -193,64 +233,66 @@ const DriverVehiclesList = (): JSX.Element => {
                         <div className="flex justify-between items-end">
                           <div>
                             <p
-                              className="text-xs text-gray-500
+                              className="text-xs text-muted-foreground
                               uppercase tracking-wide mb-1"
                             >
                               Quilometragem Atual
                             </p>
-                            <p className="text-base font-semibold text-gray-900">
+                            <p className="text-base font-semibold text-foreground">
                               {formatMileage(vehicle.current_mileage)}
                             </p>
                           </div>
 
                           <div className="text-right">
                             <p
-                              className="text-xs text-gray-500
+                              className="text-xs text-muted-foreground
                               uppercase tracking-wide mb-1"
                             >
                               Combustível
                             </p>
-                            <p className="text-sm font-medium text-gray-700">
+                            <p className="text-sm font-medium text-foreground">
                               {displayValue(vehicle.fuelType?.description)}
                             </p>
                           </div>
                         </div>
 
-                        {/* Maintenance Info (if available) */}
-
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <div className="flex justify-between">
-                            <div>
-                              <p
-                                className="text-xs text-gray-500
-                                uppercase tracking-wide mb-1"
-                              >
-                                Última Manutenção
-                              </p>
-                              <p className="text-sm text-gray-700">
-                                {formatMileage(
-                                  vehicle.last_maintenance_mileage,
-                                )}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p
-                                className="text-xs text-gray-500
-                                uppercase tracking-wide mb-1"
-                              >
-                                Intervalo
-                              </p>
-                              <p className="text-sm text-gray-700">
-                                {formatMileage(vehicle.maintenance_interval_km)}
-                              </p>
+                        {/* Maintenance info: Gestão de Frotas only. */}
+                        {withMaintenance && (
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <div className="flex justify-between">
+                              <div>
+                                <p
+                                  className="text-xs text-muted-foreground
+                                  uppercase tracking-wide mb-1"
+                                >
+                                  Última Manutenção
+                                </p>
+                                <p className="text-sm text-foreground">
+                                  {formatMileage(
+                                    vehicle.last_maintenance_mileage,
+                                  )}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p
+                                  className="text-xs text-muted-foreground
+                                  uppercase tracking-wide mb-1"
+                                >
+                                  Intervalo
+                                </p>
+                                <p className="text-sm text-foreground">
+                                  {formatMileage(
+                                    vehicle.maintenance_interval_km,
+                                  )}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Action Hint */}
-                        {vehicle.status === "ACTIVE" ||
-                        vehicle.status === "IN_ROUTE" ? (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
+                        {isActionable ? (
+                          <div className="mt-3 pt-3 border-t border-border">
                             <p className="text-center text-primary text-sm font-medium">
                               Toque para ver as opções ⚡
                             </p>
@@ -259,8 +301,8 @@ const DriverVehiclesList = (): JSX.Element => {
 
                         {/* Disabled State Message */}
                         {isDisabled ? (
-                          <div className="mt-3 pt-3 border-t border-gray-100">
-                            <p className="text-center text-gray-400 text-sm font-medium">
+                          <div className="mt-3 pt-3 border-t border-border">
+                            <p className="text-center text-muted-foreground text-sm font-medium">
                               {vehicle.status === "BLOCKED"
                                 ? "🚫 Veículo bloqueado"
                                 : "⏸️ Veículo inativo"}
@@ -278,7 +320,7 @@ const DriverVehiclesList = (): JSX.Element => {
             {isFetching && vehicles && vehicles.length > 0 && !hasError && (
               <div
                 className="grid grid-cols-1
-                md:grid-cols-2 lg:grid-cols-3
+                lg:grid-cols-2 xl:grid-cols-3
                 gap-4 mt-4"
               >
                 {[1, 2, 3].map((i) => (
@@ -316,12 +358,8 @@ const DriverVehiclesList = (): JSX.Element => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         vehicle={selectedVehicle}
-        onViewFuels={(vehicleId) => {
-          router.push(`/driver/vehicles/${vehicleId}/fuels`);
-        }}
-        onViewServiceOrders={(vehicleId) => {
-          router.push(`/driver/vehicles/${vehicleId}/service-orders`);
-        }}
+        options={options}
+        onSelect={(href) => router.push(href)}
       />
     </div>
   );

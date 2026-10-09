@@ -46,9 +46,27 @@ interface ChatFocusRequest {
   token: number;
 }
 
+/**
+ * The conversation narrowed to one delivery's or one route's messages
+ * (decision 6.7). The thread stays one per driver; this only changes which
+ * of its messages the pane asks for.
+ */
+interface ChatHistoryFilter {
+  /**
+   * "ticket" (decision 14.5): the conversation of one support ticket — the
+   * composer then writes INTO that ticket.
+   */
+  kind: "delivery" | "route" | "ticket";
+  id: string;
+
+  /** What the banner says: the recipient, "Rota 12" or "#128". */
+  label: string;
+}
+
 export type {
   ClientChatMessage,
   ChatTarget,
   ChatDeliveryChip,
   ChatFocusRequest,
+  ChatHistoryFilter,
 };

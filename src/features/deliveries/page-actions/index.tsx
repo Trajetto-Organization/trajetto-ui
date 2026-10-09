@@ -1,14 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Download,
-  FileSpreadsheet,
-  FileText,
-  FileUp,
-  MoreHorizontal,
-  Plus,
-} from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { FileSpreadsheet, FileText, FileUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +19,10 @@ import {
 } from "@/components/ui/tooltip";
 
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
+import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
+import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
 
 import { permissions } from "@/lib/permissions";
-import type { RevalidateDataProps } from "@/lib/query-keys-mapping";
 import type { PermissionKey } from "@/app/(protected)/_components/shared/common.types";
 
 import {
@@ -39,14 +34,9 @@ import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
 import type { DeliveryTab } from "../lib/tabs";
 
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
-import { useExportButton } from "@/app/(protected)/_components/shared/custom/export-button/hooks";
-import type {
-  ExportActionResponse,
-  ExportFormat,
-} from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
+import type { ExportFormat } from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
 
-import { handleExportDelivery } from "@/actions/delivery/export-delivery";
-import { handleExportOccurrence } from "@/actions/delivery/export-occurrence";
+import { exportActionFor } from "../lib/export-action";
 
 import { DeliveryFormDialog } from "../deliveries/form-dialog";
 import { ImportXmlDialog } from "../deliveries/import-xml-dialog";
@@ -56,6 +46,7 @@ import { StatusChangeReasonFormDialog } from "../status-change-reasons/form-dial
 
 import { ShipperFormDialog } from "../shippers/form-dialog";
 import { OccurrenceTypeFormDialog } from "../occurrence-types/form-dialog";
+import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 
 interface DeliveriesPageActionsProps {
   activeTab: DeliveryTab;
@@ -69,31 +60,6 @@ interface DeliveriesPageActionsProps {
    */
   hasData?: boolean;
 }
-
-/**
- * Revalidation tag per tab — each table has its own server cache.
- *
- * The chat is the exception and has its own: nothing about it is fetched on
- * the server, so what it needs revalidated are the react-query keys the
- * panel lives on. `query-keys-mapping` is where that list is kept, and the
- * refresh button already invalidates whatever a tag maps to.
- */
-const REVALIDATE_TAG: Record<DeliveryTab, RevalidateDataProps> = {
-  deliveries: "update-delivery",
-  occurrences: "update-delivery",
-  monitoring: "update-delivery",
-  chat: "update-chat",
-  shippers: "update-shipper",
-  "occurrence-types": "update-occurrence-type",
-  "status-change-reasons": "update-status-change-reason",
-  imports: "update-import",
-
-  // The panel keeps its own react-query cache and refetches itself
-  // after a save; the tag exists so the shared refresh button has
-  // something to name.
-  "message-templates": "update-delivery",
-  "proof-audits": "update-delivery",
-};
 
 const RATE_LIMIT_KEY: Record<DeliveryTab, string> = {
   deliveries: "deliveries-table",
@@ -160,21 +126,14 @@ const CREATE_LABEL: Record<DeliveryTab, string> = {
 };
 
 /**
- * Which tabs can leave as a file, and through which action.
- *
- * Only the two that are lists of operational records. A catalogue of six
- * reasons is not a report, and an export button over it would be a button
- * nobody presses twice.
+ * Which tabs can leave as a file. Only the two that are lists of operational
+ * records: a catalogue of six reasons is not a report, and an export button
+ * over it would be a button nobody presses twice.
  */
-const EXPORT_ACTION: Partial<
-  Record<
-    DeliveryTab,
-    (search?: string, format?: ExportFormat) => Promise<ExportActionResponse>
-  >
-> = {
-  deliveries: handleExportDelivery,
-  occurrences: handleExportOccurrence,
-};
+const EXPORTABLE_TABS: ReadonlySet<DeliveryTab> = new Set([
+  "deliveries",
+  "occurrences",
+]);
 
 const DeliveriesPageActions = ({
   activeTab,
@@ -204,58 +163,35 @@ const DeliveriesPageActions = ({
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
-  const exportAction = EXPORT_ACTION[activeTab];
-  const entityName = activeTab === "occurrences" ? "ocorrencias" : "entregas";
+  const searchParams = useSearchParams();
+  const actionClassName = usePageActionClassName();
 
-  /**
-   * The export handler, reached directly so the phone's overflow menu can
-   * offer the same two formats the desk button does.
-   *
-   * A hook cannot be conditional, so a tab with nothing to export gets a stub
-   * — and the menu never offers it, because `exportAction` is what decides
-   * whether those items are rendered at all.
-   */
-  const { handleExport, isExporting } = useExportButton({
-    exportAction: exportAction ?? (async () => ({ success: false })),
-    entityName,
-    writePermission: canWrite,
-  });
+  // The file follows the table on screen (decision 5.8): its search, its
+  // facets and, on /admin, the company picked above — without which the API
+  // cannot tell which company a MASTER means (DLV-EXP-1).
+  const exportAction = EXPORTABLE_TABS.has(activeTab)
+    ? (search?: string, format?: ExportFormat) =>
+        exportActionFor(activeTab, { businessId, searchParams })(search, format)
+    : null;
+
+  const entityName = activeTab === "occurrences" ? "ocorrências" : "entregas";
 
   const canImport =
     (activeTab === "deliveries" || activeTab === "imports") &&
     Boolean(businessId);
 
   return (
-    <div
-      /**
-       * One row on a phone, a wrapping bar from `sm` up.
-       *
-       * It used to stack every action full-width below `sm`: four buttons,
-       * about 160px of vertical space, and the table began below the fold on
-       * a 360px screen before a single delivery was visible. Exportar and
-       * Importar are desk work — nobody maps a spreadsheet at a bus stop — so
-       * on a phone they move into an overflow menu and the row carries what
-       * is actually used there: refresh, and the one thing being created.
-       *
-       * From `sm` up, `flex-wrap` and `min-w-0` are load-bearing. `nowrap` is
-       * the flex default, and the `sm:flex-nowrap` that used to be here hid
-       * the problem: the buttons became a single row that neither wraps nor
-       * shrinks, needing 505px where an iPad in portrait offers 400. Because
-       * the shell clips, the rightmost buttons sat off-screen with no
-       * scrollbar.
-       */
-      className="flex w-full min-w-0 items-center gap-2 sm:w-auto
-      sm:flex-wrap sm:justify-end sm:ml-auto"
-    >
+    // The page toolbar's row (decision 3.6): the page actions' height (h-9, decision 16.61) beside it
+    // on /admin, and on a phone every action stacked full width with its
+    // label — Atualizar included. No overflow menu.
+    <PageActions>
       {exportAction && (
-        <div className="hidden sm:block">
-          <ExportButton
-            exportAction={exportAction}
-            entityName={entityName}
-            hasData={hasData}
-            writePermission={canWrite}
-          />
-        </div>
+        <ExportButton
+          exportAction={exportAction}
+          entityName={entityName}
+          hasData={hasData}
+          writePermission={canWrite}
+        />
       )}
 
       {/* One menu instead of two buttons. The XML and the spreadsheet are two
@@ -265,17 +201,17 @@ const DeliveriesPageActions = ({
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="hidden sm:block">
+              <div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 w-full"
+                      className={actionClassName}
                       disabled={!canWrite}
                       data-tutorial="import-xml-button"
                     >
-                      <FileUp className="mr-1 h-4 w-4" />
+                      <FileUp aria-hidden="true" className="h-4 w-4 shrink-0" />
                       Importar
                     </Button>
                   </DropdownMenuTrigger>
@@ -309,97 +245,34 @@ const DeliveriesPageActions = ({
         </TooltipProvider>
       )}
 
-      <div className="shrink-0 sm:w-auto">
-        <DataTableRevalidate
-          revalidateData={REVALIDATE_TAG[activeTab]}
-          hideLabelOnMobile
-          className="h-9 w-9 p-0 sm:h-8 sm:w-full sm:px-3"
-          rateLimit={{
-            storageKey: RATE_LIMIT_KEY[activeTab],
-            maxClicks: 3,
-            timeWindowMs: 30000,
-            cooldownTimeMs: 15000,
-          }}
-        />
-      </div>
-
-      {/*
-        The phone's overflow. Flat rather than nested: a submenu is a bad
-        target on touch, and four items is not a list worth folding.
-      */}
-      {(exportAction || canImport) && (
-        <div className="shrink-0 sm:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-9 w-9 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Mais ações desta seção</span>
-              </Button>
-            </DropdownMenuTrigger>
-
-            <DropdownMenuContent align="end" className="min-w-[200px]">
-              {exportAction && (
-                <>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    disabled={!hasData || isExporting}
-                    onSelect={() => void handleExport("csv")}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Exportar CSV
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    disabled={!hasData || isExporting}
-                    onSelect={() => void handleExport("excel")}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Exportar Excel
-                  </DropdownMenuItem>
-                </>
-              )}
-
-              {canImport && (
-                <>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    disabled={!canWrite}
-                    onSelect={() => setIsImportSpreadsheetOpen(true)}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Importar planilha
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    disabled={!canWrite}
-                    onSelect={() => setIsImportOpen(true)}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Importar XML da NF-e
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+      {/* Atualizar refreshes the whole tab (useRevalidateScreen, decision
+          2.1); its default class is the toolbar's height at full width. */}
+      <DataTableRevalidate
+        rateLimit={{
+          storageKey: RATE_LIMIT_KEY[activeTab],
+          maxClicks: 3,
+          timeWindowMs: 30000,
+          cooldownTimeMs: 15000,
+        }}
+      />
 
       {businessId && CREATE_LABEL[activeTab] !== "" && (
         <TooltipProvider delayDuration={100}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="min-w-0 flex-1 sm:w-auto sm:flex-initial">
+              {/* The wrapper is load-bearing: a disabled button fires no
+                  pointer events, so the tooltip anchors to the div. */}
+              <div>
                 <Button
                   size="sm"
-                  className="h-9 w-full sm:h-8"
+                  className={actionClassName}
                   disabled={!canWrite}
                   data-tutorial="create-button"
                   onClick={() => setIsCreateOpen(true)}
                 >
-                  <Plus className="mr-1 h-4 w-4 shrink-0" />
-                  <span className="truncate">{CREATE_LABEL[activeTab]}</span>
+                  <CreateButtonLabel>
+                    {CREATE_LABEL[activeTab]}
+                  </CreateButtonLabel>
                 </Button>
               </div>
             </TooltipTrigger>
@@ -462,7 +335,7 @@ const DeliveriesPageActions = ({
           onClose={() => setIsImportSpreadsheetOpen(false)}
         />
       )}
-    </div>
+    </PageActions>
   );
 };
 

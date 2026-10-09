@@ -5,6 +5,7 @@ import {
   managerToken,
   openAsMaster,
 } from "../ui/support/operation";
+import { waitForHydration } from "../ui/support/ui";
 
 /**
  * The shape of the Entregas page, checked as geometry rather than as markup.
@@ -62,9 +63,11 @@ async function openAsManager(
   path: string,
   width: number,
 ): Promise<void> {
-  await page.context().addCookies([
-    { name: "tkey", value: managerToken(), domain: "localhost", path: "/" },
-  ]);
+  await page
+    .context()
+    .addCookies([
+      { name: "tkey", value: managerToken(), domain: "localhost", path: "/" },
+    ]);
 
   await page.addInitScript(() => {
     const real = Storage.prototype.getItem;
@@ -113,8 +116,10 @@ const STATS = '[data-tutorial="data-page-stats"]';
 
 test.describe.configure({ mode: "parallel" });
 
-test.describe("a composição da página de Entregas", () => {
-  test("põe as ações ACIMA das seções, não embaixo delas", async ({ page }) => {
+test.describe("the composition of the Entregas page", () => {
+  test("puts the actions ABOVE the sections, not below them", async ({
+    page,
+  }) => {
     /**
      * The one that was actually wrong, and the reason the whole band was
      * rebuilt.
@@ -139,7 +144,7 @@ test.describe("a composição da página de Entregas", () => {
     ).toBeLessThanOrEqual(strip!.top);
   });
 
-  test("e no /admin divide a linha de cima com o seletor de empresa", async ({
+  test("and on /admin shares the top row with the company selector", async ({
     page,
   }) => {
     await openAsMaster(
@@ -154,12 +159,55 @@ test.describe("a composição da página de Entregas", () => {
     expect(context, "o seletor de empresa sumiu do /admin").not.toBeNull();
     expect(actions, "a barra de ações sumiu do /admin").not.toBeNull();
 
-    // The same line: their vertical centres agree, though the controls are
-    // deliberately different heights.
+    // The same line: their vertical centres agree.
     expect(
       Math.abs(centreOf(context!) - centreOf(actions!)),
       "o seletor e as ações deixaram de dividir a linha em 1440px",
     ).toBeLessThanOrEqual(6);
+
+    // And one height (decision 16.61, which revises 3.6): every action
+    // button on the selector's line is 36px (h-9), not the selector's 40px.
+    // ProtectedPageToolbar enforces it on the row, so a button still written
+    // `sm:h-8` cannot bring back two heights side by side. Switches and
+    // checkboxes keep their own size.
+    const heights = await page.evaluate(() => {
+      const selector = document.querySelector<HTMLElement>(
+        '[data-toolbar-context] [role="combobox"]',
+      );
+
+      const buttons = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          "[data-toolbar-actions] button:not([role=switch]):not([role=checkbox])",
+        ),
+      ).filter((button) => button.getClientRects().length > 0);
+
+      return {
+        selector: selector
+          ? Math.round(selector.getBoundingClientRect().height)
+          : null,
+        buttons: buttons.map((button) => ({
+          label: (
+            button.getAttribute("aria-label") ??
+            button.textContent ??
+            ""
+          ).trim(),
+          height: Math.round(button.getBoundingClientRect().height),
+        })),
+      };
+    });
+
+    expect(heights.selector, "o gatilho do seletor não tem 40px").toBe(40);
+    expect(
+      heights.buttons.length,
+      "a linha do seletor ficou sem botões",
+    ).toBeGreaterThan(0);
+
+    for (const button of heights.buttons) {
+      expect(
+        button.height,
+        `"${button.label}" is not the standard 36px (h-9)`,
+      ).toBe(36);
+    }
 
     // Company on the left, actions on the right — subject, then verbs.
     expect(context!.left).toBeLessThan(actions!.left);
@@ -170,7 +218,7 @@ test.describe("a composição da página de Entregas", () => {
     ).toBeLessThanOrEqual(strip!.top);
   });
 
-  test("e no /dashboard, sem seletor, as ações continuam no alto", async ({
+  test("and on /dashboard, without a selector, the actions stay at the top", async ({
     page,
   }) => {
     await openAsManager(page, "/dashboard/deliveries", 1440);
@@ -202,13 +250,17 @@ test.describe("a composição da página de Entregas", () => {
    *
    * Integrações has four, wanting about 526px. Filling stretched each one to
    * 390px: a segmented control pulled until the labels float in the middle of
-   * nothing. So it keeps its own width, and below the width where four fit it
-   * wraps rather than hiding two behind a scroll arrow.
+   * nothing. So it keeps its own width.
    *
-   * One component, one `fill` prop, and this is the test that keeps the two
-   * behaviours from collapsing into one.
+   * What the two share is how they overflow (decision 3.1): below the width
+   * where the sections fit, both stay on ONE 40px line and scroll behind
+   * faded edges with arrows. Integrações used to wrap onto a second line
+   * instead, and the user asked for exactly the opposite.
+   *
+   * One component, one `fill` prop, and these are the tests that keep the
+   * width rule apart and the overflow rule together.
    */
-  test("a faixa de Entregas ocupa a largura do conteúdo", async ({ page }) => {
+  test("the Entregas strip takes the content width", async ({ page }) => {
     for (const width of [1440, 1920]) {
       await openAsManager(page, "/dashboard/deliveries", width);
 
@@ -224,7 +276,7 @@ test.describe("a composição da página de Entregas", () => {
     }
   });
 
-  test("e a de Integrações mantém a própria, sem esticar nem rolar", async ({
+  test("and the Integrações one keeps its own, without stretching", async ({
     page,
   }) => {
     const STRIP_I = 'nav[aria-label="Seções de integrações"]:has(ul)';
@@ -249,54 +301,154 @@ test.describe("a composição da página de Entregas", () => {
   });
 
   for (const width of [768, 1024]) {
-    test(`e a de Integrações mostra as quatro seções a ${width}px`, async ({
+    test(`and the Integrações one stays on one line and reaches the four sections at ${width}px`, async ({
       page,
     }) => {
       /**
        * At 768 the sidebar leaves the page 400px and the four sections want
-       * 526, so something has to give. It is the height: the rail wraps and
-       * all four stay on screen, instead of two hiding behind a scroll arrow
-       * that a person has to discover.
+       * 526, so something has to give. It is NOT the height (decision 3.1):
+       * the rail stays one 40px line without the operating system's
+       * scrollbar, shows an arrow on the side that hides something, and every
+       * section can still be scrolled into view.
        */
       await openAsManager(page, "/dashboard/integrations", width);
 
-      const verdict = await page.evaluate(() => {
-        const nav = document.querySelector(
-          'nav[aria-label="Seções de integrações"]:has(ul)',
-        );
+      const STRIP_I = 'nav[aria-label="Seções de integrações"]:has(ul)';
+
+      /*
+        The arrows are client state: the server renders the rail without
+        them (it cannot measure), and they appear once the HYDRATED rail has
+        measured itself. The page is opened at "domcontentloaded", so what is
+        read first is the server's HTML; with another spec file making the
+        dev server compile other routes, hydration took longer than the 15 s
+        this used to wait — and the timeout was swallowed, so a rail that was
+        simply not hydrated yet was reported as one with no arrows. Wait for
+        React to own the list first; from there the arrows must follow, and
+        if they never do the poll fails saying so.
+      */
+      await waitForHydration(page.locator(`${STRIP_I} ul`));
+
+      await expect
+        .poll(
+          () =>
+            page.evaluate((css) => {
+              const nav = document.querySelector(css);
+              const list = nav?.querySelector("ul");
+
+              if (!nav || !list) return "sem faixa";
+
+              const overflows = list.scrollWidth > list.clientWidth + 1;
+              const arrows = nav.querySelectorAll("[data-scroll-edge]").length;
+
+              return !overflows || arrows > 0
+                ? "ok"
+                : `transborda (${list.scrollWidth} > ${list.clientWidth}) sem seta`;
+            }, STRIP_I),
+          {
+            timeout: 15_000,
+            message: `@${width}: a faixa hidratada transborda e não mostrou seta`,
+          },
+        )
+        .toBe("ok");
+
+      const verdict = await page.evaluate((css) => {
+        const nav = document.querySelector(css);
 
         if (!nav) return null;
 
         const list = nav.querySelector("ul") as HTMLElement;
+        const style = getComputedStyle(list);
+        const items = [...list.querySelectorAll("li")];
+
+        const overflows = list.scrollWidth > list.clientWidth + 1;
+        const arrows = nav.querySelectorAll("[data-scroll-edge]").length;
+
+        // The rail scrolls smoothly; a measurement needs the jump.
+        const jumpTo = (left: number): void =>
+          list.scrollTo({ left, behavior: "instant" as ScrollBehavior });
+
+        // Bring each section into the rail the way the rail itself does
+        // (scrollLeft, not scrollIntoView, which would move the page too).
+        const unreachable = items.filter((item) => {
+          const rail = list.getBoundingClientRect();
+          const before = item.getBoundingClientRect();
+
+          jumpTo(
+            list.scrollLeft +
+              before.left -
+              rail.left -
+              (rail.width - before.width) / 2,
+          );
+
+          const box = item.getBoundingClientRect();
+
+          return box.left < rail.left - 1 || box.right > rail.right + 1;
+        }).length;
+
+        jumpTo(0);
 
         return {
-          scrolls: list.scrollWidth > list.clientWidth + 1,
-          hidden: [...list.querySelectorAll("li")].filter((item) => {
-            const box = item.getBoundingClientRect();
-            const rail = list.getBoundingClientRect();
-
-            return box.right > rail.right + 1 || box.left < rail.left - 1;
-          }).length,
-          items: list.querySelectorAll("li").length,
+          items: items.length,
+          height: list.offsetHeight,
+          wraps: style.flexWrap,
+          scrollbarWidth: style.scrollbarWidth,
+          overflowY: style.overflowY,
+          overflows,
+          arrows,
+          unreachable,
         };
-      });
+      }, STRIP_I);
 
       expect(verdict, "a faixa não está na página").not.toBeNull();
       expect(verdict!.items).toBe(4);
 
       expect(
-        verdict!.scrolls,
-        `@${width}: a faixa de Integrações voltou a rolar em vez de quebrar linha`,
-      ).toBe(false);
+        verdict!.wraps,
+        `@${width}: a faixa de Integrações voltou a quebrar linha`,
+      ).not.toBe("wrap");
+      expect(
+        verdict!.height,
+        `@${width}: a faixa de Integrações passou de uma linha de 40px`,
+      ).toBeLessThanOrEqual(40);
+
+      // No native bar in either direction, the defect decision 3.1 removed.
+      expect(verdict!.scrollbarWidth).toBe("none");
+      expect(verdict!.overflowY).toBe("hidden");
+
+      if (verdict!.overflows) {
+        expect(
+          verdict!.arrows,
+          `@${width}: as seções não cabem e não há seta para alcançar as escondidas`,
+        ).toBeGreaterThan(0);
+
+        // The arrow moves the rail: what it promises is really there.
+        const before = await page.evaluate(
+          (css) => document.querySelector(`${css} ul`)!.scrollLeft,
+          STRIP_I,
+        );
+
+        await page
+          .locator(`${STRIP_I} [data-scroll-edge="right"] button`)
+          .click();
+
+        await expect
+          .poll(() =>
+            page.evaluate(
+              (css) => document.querySelector(`${css} ul`)!.scrollLeft,
+              STRIP_I,
+            ),
+          )
+          .toBeGreaterThan(before);
+      }
 
       expect(
-        verdict!.hidden,
-        `@${width}: ${verdict!.hidden} seções ficaram fora da faixa`,
+        verdict!.unreachable,
+        `@${width}: ${verdict!.unreachable} seções não chegam à área visível da faixa`,
       ).toBe(0);
     });
   }
 
-  test("a Auditoria mantém Revalidar junto dos próprios contadores", async ({
+  test("Auditoria keeps Atualizar next to its own counters", async ({
     page,
   }) => {
     /**
@@ -313,19 +465,19 @@ test.describe("a composição da página de Entregas", () => {
 
     expect(
       await boxOf(page, "[data-toolbar-actions]"),
-      "a Auditoria voltou a pôr Revalidar lá em cima, junto com as outras abas",
+      "a Auditoria voltou a pôr Atualizar lá em cima, junto com as outras abas",
     ).toBeNull();
 
     const chips = await boxOf(page, '[role="group"]');
 
     const refresh = await page
       .locator("form")
-      .filter({ hasText: "Revalidar" })
+      .filter({ hasText: "Atualizar" })
       .first()
       .boundingBox();
 
     expect(chips, "os contadores da fila não estão na página").not.toBeNull();
-    expect(refresh, "o botão Revalidar não está na página").not.toBeNull();
+    expect(refresh, "o botão Atualizar não está na página").not.toBeNull();
 
     const refreshBox: Box = {
       top: Math.round(refresh!.y),
@@ -337,22 +489,22 @@ test.describe("a composição da página de Entregas", () => {
 
     expect(
       refreshBox.top,
-      "Revalidar ficou acima da faixa de seções",
+      "Atualizar ficou acima da faixa de seções",
     ).toBeGreaterThan(strip!.bottom);
 
     expect(
       Math.abs(centreOf(chips!) - centreOf(refreshBox)),
-      "Revalidar desgrudou da linha dos contadores",
+      "Atualizar desgrudou da linha dos contadores",
     ).toBeLessThanOrEqual(8);
 
     expect(
       refreshBox.left,
-      "Revalidar deixou de ficar à direita dos contadores",
+      "Atualizar deixou de ficar à direita dos contadores",
     ).toBeGreaterThan(chips!.right);
   });
 });
 
-test.describe("os cards de Entregas", () => {
+test.describe("the Entregas cards", () => {
   /**
    * 768 is the width that decides this, and it is not the one the defect was
    * reported at.
@@ -365,7 +517,7 @@ test.describe("os cards de Entregas", () => {
    * second line the clamp promises.
    */
   for (const width of [768, 1024]) {
-    test(`não cortam o próprio texto a ${width}px`, async ({ page }) => {
+    test(`do not clip their own text at ${width}px`, async ({ page }) => {
       /**
        * `truncate` and `line-clamp-2` on the same element, and `truncate`
        * wins — it sets `white-space: nowrap`, so the two lines the clamp
@@ -400,7 +552,9 @@ test.describe("os cards de Entregas", () => {
     });
   }
 
-  test("e não deixam uma coluna vazia quando são três", async ({ page }) => {
+  test("and do not leave an empty column when there are three", async ({
+    page,
+  }) => {
     /**
      * Every tab asked for four columns whatever it had. Ocorrências and
      * Motivos have three cards, so a wide screen drew three and an empty
@@ -437,7 +591,7 @@ test.describe("os cards de Entregas", () => {
     ).toBeLessThanOrEqual(2);
   });
 
-  test("e não ocupam espaço nenhum nas abas que não têm cards", async ({
+  test("and take no space at all on the tabs that have no cards", async ({
     page,
   }) => {
     /**

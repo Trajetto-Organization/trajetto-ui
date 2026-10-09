@@ -13,6 +13,16 @@ const createKanbanCardSchema = z.object({
     .min(1, "O título do card é obrigatório.")
     .max(100, "O título deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
+      // Only spaces is a missing title, not a spacing mistake (16.702).
+      if (value.length > 0 && value.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O título do card é obrigatório.",
+        });
+
+        return;
+      }
+
       if (hasConsecutiveSpaces(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -37,6 +47,15 @@ const createKanbanCardSchema = z.object({
     .min(1, "A descrição é obrigatória.")
     .max(500, "A descrição deve ter no máximo 500 caracteres.")
     .superRefine((value, ctx) => {
+      if (value.length > 0 && value.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "A descrição é obrigatória.",
+        });
+
+        return;
+      }
+
       if (/ {2,}/.test(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -63,7 +82,7 @@ const createKanbanCardSchema = z.object({
   }),
   dueDate: z
     .string()
-    .min(1, "A data de vencimento é obrigatória")
+    .min(1, "A data de vencimento é obrigatória.")
     .superRefine((val, ctx) => {
       if (!isValidDateString(val)) {
         ctx.addIssue({

@@ -28,9 +28,7 @@ interface ChatMessageGroup {
  *
  * Pure: no React, no clock of its own, no side effects.
  */
-function groupChatMessages(
-  messages: ClientChatMessage[],
-): ChatMessageGroup[] {
+function groupChatMessages(messages: ClientChatMessage[]): ChatMessageGroup[] {
   const groups: ChatMessageGroup[] = [];
 
   // A group stops accepting members once a captioned photo lands in it.

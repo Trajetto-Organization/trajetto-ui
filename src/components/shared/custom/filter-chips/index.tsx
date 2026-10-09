@@ -1,5 +1,7 @@
 "use client";
 
+import { ScrollableTabs } from "@/components/ui/scrollable-tabs";
+
 import { cn } from "@/lib/utils";
 
 /**
@@ -45,24 +47,22 @@ const FilterChips = <T extends string>({
   className,
   onChange,
 }: FilterChipsProps<T>): JSX.Element => (
-  <div
+  <ScrollableTabs
     role="group"
     aria-label={label}
+    tone="muted"
+    wrapperClassName={className}
     /*
-      Wraps rather than scrolls.
+      One line that scrolls with the product's own faded edges and arrows —
+      the tab standard (decision 3.1), not a second line.
 
-      `overflow-x-auto` is what used to be here, and on a 320px phone the
-      three counters — Na fila, Aprovados, Rejeitados — needed about 276px of
-      the 240 left beside the refresh button. So the group scrolled, with the
-      operating system's own bar drawn inside a 40px rail: the same defect the
-      section strip was rebuilt to get rid of, in a smaller control. There are
-      never more than four of these and they are short; a second line costs
-      28px and hides nothing.
+      It wrapped for a while, to dodge the operating system's scrollbar drawn
+      inside a 40px rail; the user asked for the chips of Monitor de envios,
+      Uso da API and Auditoria de comprovantes to behave exactly like the
+      section tabs instead. The rail hides the native bar, so neither defect
+      comes back.
     */
-    className={cn(
-      "inline-flex max-w-full flex-wrap items-center gap-1 rounded-md bg-muted p-1",
-      className,
-    )}
+    className="h-10 items-center gap-1 rounded-md bg-muted p-1"
   >
     {options.map((option) => {
       const isActive = option.value === value;
@@ -78,10 +78,9 @@ const FilterChips = <T extends string>({
           onClick={() => onChange(option.value)}
           className={cn(
             /*
-              `px-2` on a phone, `px-3` from `sm`. Eight pixels a chip is what
-              decided whether "Na fila" and "Aprovados" share a line at 320px
-              or each take one of their own: three counters stacked vertically
-              beside a refresh button is a column pretending to be a row.
+              `px-2` on a phone, `px-3` from `sm`: eight pixels a chip is what
+              lets "Na fila" and "Aprovados" both show at 320px before the
+              rail has to scroll to the third.
             */
             `inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap
             rounded-sm px-2 py-1.5 text-sm font-medium text-muted-foreground
@@ -109,7 +108,7 @@ const FilterChips = <T extends string>({
         </button>
       );
     })}
-  </div>
+  </ScrollableTabs>
 );
 
 export { FilterChips };

@@ -89,6 +89,7 @@ export function DataTableBusinessRowActions<TData>({
           <Button
             variant="ghost"
             className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            data-tutorial="row-actions"
           >
             <MoreHorizontal />
             <span className="sr-only">Abrir Menu</span>

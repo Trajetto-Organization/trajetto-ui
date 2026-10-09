@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useFormStatus } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 
-import { Clock, Loader, RefreshCw } from "lucide-react";
+import { Clock, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * The one face of every refresh in the logged-in app (decision 16.450,
+ * 08/10/2026): "Atualizar" with the arrows, which spin while the refresh
+ * runs. The tables used to say "Revalidar Dados" with no icon and a separate
+ * spinner, the Kanban and the overviews "Atualizar" with spinning arrows —
+ * two looks for the same gesture.
+ */
 interface RevalidateButtonUIProps {
   isLoading: boolean;
   isRateLimited: boolean;
@@ -16,18 +22,12 @@ interface RevalidateButtonUIProps {
   label?: string;
   className?: string;
   /**
-   * true  → RefreshCw icon always visible, spins when loading (default)
-   * false → no icon in normal state, Loader spinner only when loading
-   */
-  alwaysShowIcon?: boolean;
-  /**
    * Below `sm`, the button keeps the icon and drops the words.
    *
    * On a phone an actions bar of four full-width buttons pushes the content
-   * off the first screen — "Revalidar Dados" is fourteen characters of a
-   * control the user already recognises by its arrows. The accessible name
-   * stays, so nothing is lost to a screen reader, and the cooldown still
-   * shows its seconds, because that number IS the feedback.
+   * off the first screen. The accessible name stays, so nothing is lost to a
+   * screen reader, and the cooldown still shows its seconds, because that
+   * number IS the feedback.
    */
   hideLabelOnMobile?: boolean;
   type?: "button" | "submit";
@@ -41,7 +41,6 @@ const RevalidateButtonUI = ({
   cooldownRemaining,
   label = "Atualizar",
   className,
-  alwaysShowIcon = true,
   hideLabelOnMobile = false,
   type = "button",
   size = "sm",
@@ -53,13 +52,12 @@ const RevalidateButtonUI = ({
     setIsMounted(true);
   }, []);
 
+  // The cooldown lives in localStorage, so it is only known after mount;
+  // before that the idle face is drawn, icon included, so nothing shifts.
+  const showCooldown = isMounted && isRateLimited;
   const isDisabled = isLoading || isRateLimited;
   const displayCooldown =
     isRateLimited && cooldownRemaining <= 0 ? 1 : cooldownRemaining;
-
-  // Hiding the words only works if the icon takes their place; otherwise the
-  // phone gets an empty box.
-  const showIcon = alwaysShowIcon || hideLabelOnMobile;
 
   const wordsClass = hideLabelOnMobile ? "hidden sm:inline" : undefined;
 
@@ -69,52 +67,33 @@ const RevalidateButtonUI = ({
       variant="outline"
       size={size}
       disabled={isDisabled}
+      aria-busy={isLoading}
       className={className}
-      // The name survives the label being hidden.
+      // The name survives the words being hidden.
       aria-label={hideLabelOnMobile ? label : undefined}
       onClick={onClick}
       data-revalidate
+      data-tutorial="revalidate"
     >
-      {!isMounted ? (
-        <span className={wordsClass}>{label}</span>
-      ) : isRateLimited ? (
+      {showCooldown ? (
         <>
           <span className={wordsClass}>Aguarde </span>
           {displayCooldown}s
-          <Clock className="ml-2 h-4 w-4" />
-        </>
-      ) : showIcon ? (
-        <>
-          <RefreshCw
-            className={cn(
-              "h-4 w-4 flex-shrink-0",
-              hideLabelOnMobile ? "sm:mr-2" : "mr-2",
-              isLoading && "animate-spin",
-            )}
-          />
-          <span className={wordsClass}>{label}</span>
+          <Clock aria-hidden="true" className="h-4 w-4" />
         </>
       ) : (
         <>
-          {label}
-          {isLoading && <Loader className="ml-2 h-4 w-4 animate-spin" />}
+          <RefreshCw
+            aria-hidden="true"
+            data-revalidate-icon
+            className={cn("h-4 w-4 flex-shrink-0", isLoading && "animate-spin")}
+          />
+          <span className={wordsClass}>{label}</span>
         </>
       )}
     </Button>
   );
 };
 
-/**
- * Thin wrapper that reads `pending` from useFormStatus().
- * Must be rendered as a direct child of a <form> element.
- */
-const RevalidateButtonFormInner = (
-  props: Omit<RevalidateButtonUIProps, "isLoading" | "type">,
-) => {
-  const { pending } = useFormStatus();
-
-  return <RevalidateButtonUI {...props} isLoading={pending} type="submit" />;
-};
-
-export { RevalidateButtonUI, RevalidateButtonFormInner };
+export { RevalidateButtonUI };
 export type { RevalidateButtonUIProps };

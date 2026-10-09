@@ -34,16 +34,11 @@ function useDeleteShipperForm(
           await revalidateTagName("update-shipper");
 
           // The selector inside the delivery form runs its own react-query
-          // cache, so revalidating the server tag alone never reaches it.
-          // Invalidating is not enough either: like every search selector in
-          // the app it sets refetchOnMount:false, and react-query only honours
-          // that while the query still HOLDS data — shouldLoadOnMount fetches
-          // whenever dataUpdatedAt is 0. So drop the data instead of marking
-          // it stale: the next time the delivery form opens, the selector has
-          // to fetch. Refetching here in the background would not work at all,
-          // because an inactive refetch reuses the queryFn closure of the last
-          // observer that fetched, and that closure rejects once unmounted.
-          await queryClient.resetQueries(["shipper"]);
+          // cache, so revalidating the server tag alone never reaches it. The
+          // pickers read with refetchOnMount and a short staleTime
+          // (useCursorSearch), so marking the key stale is enough; other
+          // sessions follow the API's catalogChanged(shipper).
+          await queryClient.invalidateQueries(["shipper"]);
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {
             console.error("Erro na revalidação:", error);

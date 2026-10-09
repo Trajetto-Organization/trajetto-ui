@@ -33,7 +33,7 @@ interface ViewQuoteModalProps {
 }
 
 const statusColors = {
-  PENDING: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
+  PENDING: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
   CONTACTED: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   CLOSED: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
   CONVERTED: "bg-green-500/10 text-green-600 dark:text-green-400",
@@ -101,7 +101,7 @@ export function ViewQuoteModal({
 
                 <Link
                   href={`mailto:${quote.email}`}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   {quote.email}
                 </Link>
@@ -112,7 +112,7 @@ export function ViewQuoteModal({
 
                 <Link
                   href={`tel:${quote.telephone}`}
-                  className="text-sm text-blue-600 hover:underline"
+                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   {quote.telephone}
                 </Link>

@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { reorderKanbanColumnsSchema } from "@/schemas/reorder-kanban-columns-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ReorderKanbanColumnsProps {
   message: string;
@@ -34,7 +37,7 @@ const handleReorderKanbanColumns = async (reorderData: {
   }
 
   try {
-    const response = await fetch(reorderColumns, {
+    const response = await apiFetch(reorderColumns, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -46,14 +49,18 @@ const handleReorderKanbanColumns = async (reorderData: {
 
     const { message } = (await response.json()) as ReorderKanbanColumnsProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        reorderColumnsError: { reorderColumnsErrorMessage: message },
+        reorderColumnsError: {
+          reorderColumnsErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/reorder-kanban-columns", error);
     return {
       reorderColumnsError: {
         reorderColumnsErrorMessage:

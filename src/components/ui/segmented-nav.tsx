@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -11,6 +11,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  SCROLL_RAIL_CLASS,
+  ScrollEdgeControls,
+  useScrollRail,
+} from "@/components/ui/scrollable-tabs";
 
 import { cn } from "@/lib/utils";
 
@@ -62,8 +67,9 @@ interface SegmentedNavProps {
    *
    * So it is the caller's call, because only the caller knows how many
    * sections it has. Filling is the default because that is what the screen
-   * with ten wanted; `false` keeps the rail at its content's width and lets
-   * it scroll under a narrow page exactly as before.
+   * with ten wanted; `false` keeps the rail at its content's width. Either way
+   * it scrolls on one line with the faded edges and arrows when the page is
+   * narrower than the sections — never a second line (decision 3.1).
    */
   fill?: boolean;
 
@@ -71,69 +77,18 @@ interface SegmentedNavProps {
   dataTutorial?: string;
 }
 
-/** How much of the strip is off-screen, on each side. */
-interface ScrollEdges {
-  left: boolean;
-  right: boolean;
-}
-
-function useScrollEdges(): [
-  React.RefObject<HTMLUListElement>,
-  ScrollEdges,
-  (direction: -1 | 1) => void,
-] {
-  const ref = useRef<HTMLUListElement>(null);
-
-  const [edges, setEdges] = useState<ScrollEdges>({
-    left: false,
-    right: false,
-  });
-
-  const measure = useCallback(() => {
-    const element = ref.current;
-
-    if (!element) return;
-
-    // One pixel of slack: fractional widths make `scrollLeft` land at
-    // 0.5 from either end and the arrows flicker forever.
-    setEdges({
-      left: element.scrollLeft > 1,
-      right:
-        element.scrollLeft + element.clientWidth < element.scrollWidth - 1,
-    });
-  }, []);
-
-  useEffect(() => {
-    const element = ref.current;
-
-    if (!element) return;
-
-    measure();
-
-    element.addEventListener("scroll", measure, { passive: true });
-
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-
-    return () => {
-      element.removeEventListener("scroll", measure);
-      observer.disconnect();
-    };
-  }, [measure]);
-
-  const nudge = useCallback((direction: -1 | 1) => {
-    const element = ref.current;
-
-    if (!element) return;
-
-    element.scrollBy({
-      left: direction * Math.max(160, element.clientWidth * 0.6),
-      behavior: "smooth",
-    });
-  }, []);
-
-  return [ref, edges, nudge];
-}
+/**
+ * The tutorial anchor of the PHONE variant of an anchor.
+ *
+ * Both variants are always in the DOM and one is `display: none`: the phone
+ * menu below `md`, the desk strip from `md` up. Sharing one name made a tour
+ * looking up "deliveries-tabs" find the hidden one first (a 0x0 box) and aim
+ * its spotlight at the corner. So the desk strip and its links keep
+ * `<anchor>`, the phone trigger and its menu items carry `<anchor>-mobile`,
+ * and a tour resolves a step by taking whichever of the two is visible.
+ */
+const mobileTutorialAnchor = (anchor?: string): string | undefined =>
+  anchor ? `${anchor}-mobile` : undefined;
 
 const SegmentedNav = ({
   items,
@@ -144,32 +99,10 @@ const SegmentedNav = ({
   className,
   dataTutorial,
 }: SegmentedNavProps): JSX.Element => {
-  const [scroller, edges, nudge] = useScrollEdges();
+  // Keeps the section you are on in view, and measures the faded edges.
+  const { ref: scroller, edges, nudge } = useScrollRail<HTMLUListElement>();
 
   const active = items.find((item) => item.value === activeValue) ?? items[0];
-
-  /**
-   * The section you are on, brought into view.
-   *
-   * Opening Importações from a link used to land on a strip scrolled to the
-   * start, with the active tab somewhere off to the right — the one thing the
-   * strip exists to show. Moved by `scrollLeft` rather than `scrollIntoView`,
-   * which would also scroll the page to reach it.
-   */
-  useEffect(() => {
-    const element = scroller.current;
-
-    if (!element) return;
-
-    const current = element.querySelector<HTMLElement>('[aria-current="page"]');
-
-    if (!current) return;
-
-    const target =
-      current.offsetLeft - (element.clientWidth - current.offsetWidth) / 2;
-
-    element.scrollLeft = Math.max(0, target);
-  }, [activeValue, scroller]);
 
   const ActiveIcon = active?.icon;
 
@@ -196,10 +129,15 @@ const SegmentedNav = ({
               Built out of the desk strip's own parts instead — the muted
               track, the chosen section lifted out of it — so the phone shows
               a smaller version of the same thing rather than a different one.
+
+              Its own tutorial anchor (`-mobile`), never the desk strip's: this
+              button comes FIRST in the DOM and is `display: none` from `md`
+              up, so sharing the name made a tour looking up "deliveries-tabs"
+              find a 0x0 box and point its spotlight at the corner.
             */}
             <button
               type="button"
-              data-tutorial={dataTutorial}
+              data-tutorial={mobileTutorialAnchor(dataTutorial)}
               className="flex h-10 w-full items-center gap-2 rounded-md
               bg-muted p-1 text-sm font-medium ring-offset-background
               focus-visible:outline-none focus-visible:ring-2
@@ -238,6 +176,7 @@ const SegmentedNav = ({
                   <Link
                     href={hrefFor(item.value)}
                     aria-current={isActive ? "page" : undefined}
+                    data-tutorial={mobileTutorialAnchor(item.dataTutorial)}
                     className="flex cursor-pointer items-center gap-2"
                   >
                     {Icon ? (
@@ -289,22 +228,16 @@ const SegmentedNav = ({
           ref={scroller}
           data-tutorial={dataTutorial}
           className={cn(
-            `scrollbar-none flex w-full max-w-full items-center justify-start
+            `flex h-10 w-full max-w-full items-center justify-start
             rounded-md bg-muted p-1 text-muted-foreground`,
 
             /*
-              A rail that fills scrolls; a rail that hugs wraps.
-              
-              Ten sections cannot be shown at once below about 1500px by any
-              arrangement, so Entregas keeps one line and the product's own
-              scroll controls. Four can: at 768px with the sidebar open
-              Integrações has 400px for 540px of tabs, and scrolling four items
-              means hiding two of them behind an arrow when a second line would
-              show all four. The height grows instead of the content hiding.
+              One line, always. A hugging rail used to wrap onto a second line
+              instead (Integrações at 768px with the sidebar open), and the
+              user asked for exactly the opposite: the same faded edge and
+              arrows Entregas has. The rail stays 40px tall and scrolls.
             */
-            fill
-              ? "h-10 overflow-x-auto scroll-smooth"
-              : "min-h-10 flex-wrap gap-y-1",
+            SCROLL_RAIL_CLASS,
           )}
         >
           {items.map((item) => {
@@ -337,10 +270,7 @@ const SegmentedNav = ({
               */
               <li
                 key={item.value}
-                className={cn(
-                  "flex min-w-max",
-                  fill && "max-w-64 flex-auto",
-                )}
+                className={cn("flex min-w-max", fill && "max-w-64 flex-auto")}
               >
                 <Link
                   href={hrefFor(item.value)}
@@ -358,7 +288,9 @@ const SegmentedNav = ({
                     isActive && "bg-background text-foreground shadow-sm",
                   )}
                 >
-                  {Icon ? <Icon className="h-4 w-4" aria-hidden="true" /> : null}
+                  {Icon ? (
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                  ) : null}
                   <span>{item.label}</span>
                   {item.badge}
                 </Link>
@@ -367,56 +299,11 @@ const SegmentedNav = ({
           })}
         </ul>
 
-        {/*
-          The scroll controls, shown only where there is something to reach.
-          `aria-hidden` because every item is already in the tab order inside
-          the list — these move the viewport, they are not a second way to
-          navigate, and announcing them would just add two stops to the
-          keyboard path.
-        */}
-        {edges.left && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-1 left-1 flex
-            items-center bg-gradient-to-r from-muted via-muted to-transparent
-            pr-10"
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              className="pointer-events-auto flex h-7 w-7 items-center
-              justify-center rounded-sm text-muted-foreground
-              hover:bg-background hover:text-foreground"
-              onClick={() => nudge(-1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
-        {edges.right && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-1 right-1 flex
-            items-center bg-gradient-to-l from-muted via-muted to-transparent
-            pl-10"
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              className="pointer-events-auto flex h-7 w-7 items-center
-              justify-center rounded-sm text-muted-foreground
-              hover:bg-background hover:text-foreground"
-              onClick={() => nudge(1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+        <ScrollEdgeControls edges={edges} onNudge={nudge} tone="muted" />
       </nav>
     </>
   );
 };
 
-export { SegmentedNav };
+export { SegmentedNav, mobileTutorialAnchor };
 export type { SegmentedNavItem };

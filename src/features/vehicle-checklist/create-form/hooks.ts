@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   CommandBranchInputValue,
-  CommandBusinessInputValue,
   CommandDriverInputValue,
   CommandVehicleInputValue,
 } from "@/app/(protected)/_components/shared/common.types";
@@ -25,12 +24,6 @@ function useCreateVehicleChecklistForm(
   const [currentStep, setCurrentStep] = useState<
     "select-business-branch" | "select-vehicle-driver" | "create-checklist"
   >("select-business-branch");
-
-  const [commandBusinessInputValue, setCommandBusinessInputValue] =
-    useState<CommandBusinessInputValue>({
-      businessId: "",
-      searchBusinessInputValue: "",
-    });
 
   const [commandBranchInputValue, setCommandBranchInputValue] =
     useState<CommandBranchInputValue>({
@@ -71,11 +64,6 @@ function useCreateVehicleChecklistForm(
     if (isCreateVehicleChecklistForm) {
       formRef.current?.reset();
 
-      setCommandBusinessInputValue({
-        businessId: "",
-        searchBusinessInputValue: "",
-      });
-
       setCommandBranchInputValue({
         branchId: "",
         searchBranchInputValue: "",
@@ -97,38 +85,6 @@ function useCreateVehicleChecklistForm(
     }
 
     setIsCreateVehicleChecklistForm(!isCreateVehicleChecklistForm);
-  };
-
-  const handleUpdateSearchBusinessInputValue = (
-    data: CommandBusinessInputValue,
-  ) => {
-    const updateBusinessData =
-      data.businessId === commandBusinessInputValue.businessId
-        ? { businessId: "", searchBusinessInputValue: "" }
-        : data;
-
-    if (
-      updateBusinessData.businessId !== commandBusinessInputValue.businessId
-    ) {
-      setCommandBranchInputValue({
-        branchId: "",
-        searchBranchInputValue: "",
-      });
-
-      setCommandVehicleInputValue({
-        vehicleId: "",
-        searchVehicleInputValue: "",
-        vehicleLicensePlate: "",
-      });
-
-      setCommandDriverInputValue({
-        driverId: "",
-        searchDriverInputValue: "",
-        driverCnh: "",
-      });
-    }
-
-    setCommandBusinessInputValue(updateBusinessData);
   };
 
   const handleUpdateSearchBranchInputValue = (
@@ -193,11 +149,6 @@ function useCreateVehicleChecklistForm(
     setCurrentStep("select-business-branch");
 
     // Reset all form values
-    setCommandBusinessInputValue({
-      businessId: "",
-      searchBusinessInputValue: "",
-    });
-
     setCommandBranchInputValue({
       branchId: "",
       searchBranchInputValue: "",
@@ -283,7 +234,6 @@ function useCreateVehicleChecklistForm(
 
   return {
     isCreateVehicleChecklistForm,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
@@ -293,7 +243,6 @@ function useCreateVehicleChecklistForm(
     handleBackToVehicleDriverStep,
     handleCloseDialog,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,

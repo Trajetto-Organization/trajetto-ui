@@ -1,133 +1,88 @@
 "use client";
 
-import { CheckCircle2, IdCard, Truck, UserRound } from "lucide-react";
+import { useState } from "react";
 
-import { EmptyState } from "@/components/shared/custom/empty-state";
+import { usePathname, useSearchParams } from "next/navigation";
 
-import type { OperationSummaryData } from "../lib/panels";
+import { ScrollableTabsList, Tabs, TabsTrigger } from "@/components/ui/tabs";
 
-interface MonitoringPanelProps {
-  summary: OperationSummaryData;
-}
+import { readBusinessIdParam } from "@/lib/business-id-param";
+
+import { DriverBoard } from "./driver-board";
+import { RouteBoard } from "./route-board";
+
+type MonitoringView = "routes" | "drivers";
 
 /**
- * The per-driver board under the day's totals: who is on the street and
- * what their route produced so far. Busiest first — the API already sorts.
- * Live position belongs to the control tower slice; this board answers the
- * dispatcher's question with numbers, refreshed by the standard button.
+ * The monitoring board, by route or by driver.
+ *
+ * By route is the partner's view (decision 6.6): each route of the day with
+ * its completion and one dot per delivery, live. By driver is the day's load
+ * of each driver, on the same definition as the tower's funnel, with the
+ * progress counting insucessos as resolved.
  */
-const MonitoringPanel = ({ summary }: MonitoringPanelProps): JSX.Element => {
-  const { drivers } = summary;
+const MonitoringPanel = (): JSX.Element => {
+  const params = useSearchParams();
+  const pathname = usePathname();
+
+  const [view, setView] = useState<MonitoringView>(
+    params?.get("view") === "drivers" ? "drivers" : "routes",
+  );
+
+  /**
+   * The choice lives in the address too: a route event re-renders the tab
+   * from the server, and the company selector keeps `view` on a switch.
+   * replaceState and not the router: nothing on the server depends on it.
+   */
+  const choose = (next: MonitoringView) => {
+    setView(next);
+
+    try {
+      const url = new URL(window.location.href);
+
+      url.searchParams.set("view", next);
+      window.history.replaceState(window.history.state, "", url.toString());
+    } catch {
+      // The local state already switched; the address is a convenience.
+    }
+  };
+
+  const mode = pathname?.startsWith("/admin") ? "admin" : "dashboard";
+
+  // Only /admin picks the company. On /dashboard it is always the session's:
+  // a stale or foreign id left in the address would otherwise ask for
+  // another company and draw a refusal under the company's own numbers.
+  const businessId =
+    mode === "admin"
+      ? readBusinessIdParam(params?.get("businessId"))
+      : undefined;
 
   return (
     <div className="space-y-3" data-tutorial="monitoring-board">
-      <p className="text-sm font-medium">
-        Quadro por motorista ({drivers.length})
-      </p>
+      <Tabs
+        value={view}
+        onValueChange={(next) => choose(next as MonitoringView)}
+      >
+        {/* The one tab strip of the product (decision 3.1). */}
+        <ScrollableTabsList aria-label="Visão do monitoramento">
+          <TabsTrigger value="routes">Por rota</TabsTrigger>
+          <TabsTrigger value="drivers">Por motorista</TabsTrigger>
+        </ScrollableTabsList>
+      </Tabs>
 
-      {drivers.length === 0 ? (
-        <EmptyState
-          icon={Truck}
-          size="inline"
-          title="Nenhum motorista com carga hoje"
-          description="Atribua entregas na aba Entregas e o quadro ganha vida."
+      {/* Keyed by company (decision 2.6): a switch starts from scratch. */}
+      {view === "routes" ? (
+        <RouteBoard
+          key={businessId ?? "session"}
+          businessId={businessId}
+          mode={mode}
         />
       ) : (
-        <ul className="space-y-2">
-          {drivers.map((driver) => {
-            const routeSize =
-              driver.designated + driver.inRoute + driver.deliveredToday;
-
-            const progress =
-              routeSize > 0
-                ? Math.round((driver.deliveredToday / routeSize) * 100)
-                : 0;
-
-            return (
-              <li
-                key={driver.driverId}
-                className="rounded-lg border p-4"
-              >
-                <div
-                  className="flex flex-wrap items-center justify-between
-                  gap-2"
-                >
-                  <div className="flex min-w-0 items-center gap-2">
-                    <UserRound className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <p className="truncate text-sm font-medium">
-                      {driver.driverName || "Motorista"}
-                    </p>
-                    {driver.cnh && (
-                      <span
-                        className="flex items-center gap-1 text-xs
-                        text-muted-foreground"
-                      >
-                        <IdCard className="h-3.5 w-3.5" />
-                        CNH: {driver.cnh}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {driver.designated > 0 && (
-                      <span
-                        className="rounded-full bg-violet-100 px-2.5 py-0.5
-                        text-xs font-medium text-violet-800"
-                      >
-                        {driver.designated} designada
-                        {driver.designated > 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {driver.inRoute > 0 && (
-                      <span
-                        className="rounded-full bg-blue-100 px-2.5 py-0.5
-                        text-xs font-medium text-blue-800"
-                      >
-                        {driver.inRoute} em rota
-                      </span>
-                    )}
-                    {driver.deliveredToday > 0 && (
-                      <span
-                        className="rounded-full bg-green-100 px-2.5 py-0.5
-                        text-xs font-medium text-green-800"
-                      >
-                        {driver.deliveredToday} entregue
-                        {driver.deliveredToday > 1 ? "s" : ""} hoje
-                      </span>
-                    )}
-                    {driver.failedToday > 0 && (
-                      <span
-                        className="rounded-full bg-red-100 px-2.5 py-0.5
-                        text-xs font-medium text-red-800"
-                      >
-                        {driver.failedToday} insucesso
-                        {driver.failedToday > 1 ? "s" : ""} hoje
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Route progress: proven drops over the day's load. */}
-                <div className="mt-3 flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-green-500
-                      transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span
-                    className="flex items-center gap-1 text-xs
-                    text-muted-foreground"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    {progress}%
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <DriverBoard
+          key={businessId ?? "session"}
+          businessId={businessId}
+          mode={mode}
+        />
       )}
     </div>
   );

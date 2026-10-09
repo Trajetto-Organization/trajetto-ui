@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ProofDocumentData {
   /** Short-lived link to the PDF. Expires — ask again rather than storing it. */
@@ -21,6 +23,35 @@ interface ProofDocumentData {
 
   generated_at: string;
   size_bytes: number;
+
+  /**
+   * Decision 14.8. 1 = the layout from before the validated model; 2 = the
+   * model. Optional: an API older than the field omits all three below.
+   */
+  layout_version?: number;
+
+  /** What the stored file carries; never claims more than the API recorded. */
+  signature?: ProofDocumentSignature;
+
+  /** Whether the server would sign a document generated NOW. */
+  signing_available?: boolean;
+}
+
+type ProofUnsignedReason =
+  | "LEGACY"
+  | "NO_CERTIFICATE"
+  | "CERTIFICATE_EXPIRED"
+  | "CERTIFICATE_INVALID"
+  | "SIGNING_DISABLED";
+
+interface ProofDocumentSignature {
+  status: "SIGNED" | "UNSIGNED";
+  profile: "PADES_AD_RB" | "CMS_DETACHED" | null;
+  signer_name: string | null;
+  signer_cnpj: string | null;
+  cert_not_after: string | null;
+  signed_at: string | null;
+  unsigned_reason: ProofUnsignedReason | null;
 }
 
 interface ActionResponse<T = undefined> {
@@ -57,7 +88,7 @@ const getProofDocument = async (
   try {
     const params = regenerate ? "?regenerate=true" : "";
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/proof-document/${deliveryId}/business/${businessId}${params}`,
       {
         credentials: "include",
@@ -81,6 +112,7 @@ const getProofDocument = async (
 
     return { success: true, message: result.message, data: result.data };
   } catch (error) {
+    logActionError("delivery/get-proof-document", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao gerar o comprovante.",
@@ -89,4 +121,4 @@ const getProofDocument = async (
 };
 
 export { getProofDocument };
-export type { ProofDocumentData };
+export type { ProofDocumentData, ProofDocumentSignature, ProofUnsignedReason };

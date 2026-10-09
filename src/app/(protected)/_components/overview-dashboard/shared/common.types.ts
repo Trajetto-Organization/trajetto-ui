@@ -1,14 +1,3 @@
-type StatusBadgeProps =
-  | "Completo"
-  | "Criado"
-  | "Ativo"
-  | "Atualizado"
-  | "Deletado"
-  | "Bloqueado"
-  | "Pendente"
-  | "Em Rota"
-  | "Inativo";
-
 interface DashboardData {
   counts: {
     vehicles: { value: number; change: number };
@@ -54,17 +43,24 @@ interface DashboardData {
     value: number;
     color: string;
   }[];
+  /**
+   * One point per month of the company's calendar. A series is absent when
+   * the viewer may not see it or the company did not hire its module; the
+   * chart draws no line for it.
+   */
   activityTrends: {
     month: string;
-    vehicles: number;
-    drivers: number;
-    businesses: number;
-    branches: number;
-    parts: number;
-    suppliers: number;
-    serviceOrders: number;
-    users: number;
-    fines: number;
+    vehicles?: number;
+    drivers?: number;
+    businesses?: number;
+    branches?: number;
+    parts?: number;
+    suppliers?: number;
+    serviceOrders?: number;
+    users?: number;
+    fines?: number;
+    deliveries?: number;
+    routes?: number;
   }[];
   recentActivity: {
     id: string;
@@ -72,7 +68,8 @@ interface DashboardData {
     action: string;
     entityId: string;
     description: string;
-    status: StatusBadgeProps;
+    /** Any status the trail records; the activity catalog reads it. */
+    status: string;
     performedBy: string;
     businessId: string | null;
     user?: {
@@ -94,8 +91,8 @@ interface DashboardData {
   }[];
   maintenanceCosts: {
     month: string;
-    preventive: number;
-    corrective: number;
+    internal: number;
+    external: number;
   }[];
 }
 
@@ -129,11 +126,9 @@ interface OverviewDashboardProps {
 interface ChartsProps {
   dashboardData: DashboardData;
   userRole?: string;
+
+  /** Maintenance charts; false for a company that did not hire Frotas. */
+  showFleetCharts?: boolean;
 }
 
-export type {
-  DashboardData,
-  StatusBadgeProps,
-  OverviewDashboardProps,
-  ChartsProps,
-};
+export type { DashboardData, OverviewDashboardProps, ChartsProps };

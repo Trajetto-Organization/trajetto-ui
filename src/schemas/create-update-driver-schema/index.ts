@@ -4,33 +4,54 @@ import {
   hasConsecutiveSpaces,
   hasSpaceAtEdges,
   isEmptyOrWhitespace,
-  isValidDateString,
 } from "@/lib/format-values";
 
-const isAdult = (date: Date) => {
-  const today = new Date();
-  const birthDate = new Date(date);
+import {
+  birthDateIssue,
+  CNH_CATEGORIES,
+  CNH_CATEGORY_NONE,
+  cnhExpiryIssue,
+} from "@/features/driver/lib/driver-rules";
 
-  const age = today.getFullYear() - birthDate.getFullYear();
-  const monthDifference = today.getMonth() - birthDate.getMonth();
+/**
+ * Today on the São Paulo calendar. The company's zone is not known here;
+ * zones in Brazil differ by at most two hours, which neither the ten-year
+ * bound nor an 18th birthday checked again by the API cares about.
+ */
+const todayKey = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(
+    new Date(),
+  );
 
-  // If you haven't had a birthday this year, deduct 1 from your age.
-  if (
-    monthDifference < 0 ||
-    (monthDifference === 0 && today.getDate() < birthDate.getDate())
-  ) {
-    return age - 1 >= 18;
-  }
+/** "", undefined and the form's "Não informada" all mean no value (null for the API). */
+const blankToNull = (value: unknown) =>
+  value === undefined ||
+  value === CNH_CATEGORY_NONE ||
+  (typeof value === "string" && value.trim() === "")
+    ? null
+    : value;
 
-  return age >= 18;
-};
+/** A select still on its placeholder: a question open, not a wrong answer. */
+const isUnset = (value: unknown) =>
+  value === undefined || value === null || value === "";
 
 const createUpdateDriverSchema = z.object({
   name: z
     .string()
+    // Empty or blank is a missing name, not a short one (decision 16.702).
+    .min(1, "O nome é obrigatório.")
     .min(3, "O nome deve ter no mínimo 3 caracteres.")
     .max(100, "O nome deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
+      if (value.length > 0 && isEmptyOrWhitespace(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome é obrigatório.",
+        });
+
+        return;
+      }
+
       if (value.length > 100) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -76,27 +97,15 @@ const createUpdateDriverSchema = z.object({
         });
       }
     }),
+  // A civil day, sent as "YYYY-MM-DD" (decision 1.3); the age is counted on
+  // civil days, as the API does (birthDateIssue mirrors it).
   birth_date: z
     .string()
     .min(1, "A data de nascimento é obrigatória.")
-    .superRefine((val, ctx) => {
-      if (!isValidDateString(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Data de nascimento inválida.",
-        });
+    .superRefine((value, ctx) => {
+      const issue = birthDateIssue(value, todayKey());
 
-        return;
-      }
-
-      const date = new Date(val);
-
-      if (!isAdult(date)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "O motorista deve ter pelo menos 18 anos.",
-        });
-      }
+      if (issue) ctx.addIssue({ code: z.ZodIssueCode.custom, message: issue });
     }),
   cnh: z.preprocess(
     (val) => {
@@ -107,8 +116,33 @@ const createUpdateDriverSchema = z.object({
     },
     z
       .string()
-      .length(11, "O CNH deve ter exatamente 11 dígitos.")
-      .regex(/^\d{11}$/, "O CNH deve conter apenas números."),
+      .min(1, "O número da CNH é obrigatório.")
+      .regex(/^\d{11}$/, "A CNH deve ter exatamente 11 dígitos."),
+  ),
+  // Optional: legacy drivers predate both (decision 8.5). Mirrors the API's
+  // driver-cnh-fields, messages included.
+  cnh_category: z.preprocess(
+    blankToNull,
+    z
+      .enum(CNH_CATEGORIES, {
+        errorMap: () => ({
+          message: `A categoria da CNH deve ser uma destas: ${CNH_CATEGORIES.join(", ")}.`,
+        }),
+      })
+      .nullable(),
+  ),
+  // A civil day, sent as "YYYY-MM-DD" (decision 1.3).
+  cnh_expires_at: z.preprocess(
+    blankToNull,
+    z
+      .string()
+      .superRefine((value, ctx) => {
+        const issue = cnhExpiryIssue(value, todayKey());
+
+        if (issue)
+          ctx.addIssue({ code: z.ZodIssueCode.custom, message: issue });
+      })
+      .nullable(),
   ),
   cpf: z.preprocess(
     (val) => {
@@ -119,6 +153,7 @@ const createUpdateDriverSchema = z.object({
     },
     z
       .string()
+      .min(1, "O CPF é obrigatório.")
       .length(11, "O CPF deve ter exatamente 11 dígitos.")
       .regex(/^\d{11}$/, "O CPF deve conter apenas números."),
   ),
@@ -131,6 +166,7 @@ const createUpdateDriverSchema = z.object({
     },
     z
       .string()
+      .min(1, "O RG é obrigatório.")
       .length(9, "O RG deve ter exatamente 9 dígitos.")
       .regex(/^\d{9}$/, "O RG deve conter apenas números."),
   ),
@@ -144,11 +180,13 @@ const createUpdateDriverSchema = z.object({
     },
     z
       .string()
+      .min(1, "O CEP é obrigatório.")
       .length(8, "O CEP deve ter exatamente 8 dígitos.")
       .regex(/^\d{8}$/, "O CEP deve conter apenas números."),
   ),
   city: z
     .string()
+    .min(1, "A cidade é obrigatória.")
     .min(2, "A cidade deve ter no mínimo 2 caracteres.")
     .max(100, "A cidade deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
@@ -191,6 +229,7 @@ const createUpdateDriverSchema = z.object({
     }),
   uf: z
     .string()
+    .min(1, "A UF é obrigatória.")
     .length(2, "UF deve ter exatamente 2 caracteres.")
     .toUpperCase()
     .superRefine((value, ctx) => {
@@ -223,6 +262,7 @@ const createUpdateDriverSchema = z.object({
     }),
   street: z
     .string()
+    .min(1, "A rua é obrigatória.")
     .min(3, "O nome da rua deve ter no mínimo 3 caracteres.")
     .max(100, "O nome da rua deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
@@ -306,13 +346,17 @@ const createUpdateDriverSchema = z.object({
       }
     }),
   status: z.enum(["ACTIVE", "INACTIVE"], {
-    errorMap: () => ({
-      message: "O status deve ser 'Ativo' ou 'Inativo'",
+    errorMap: (_issue, ctx) => ({
+      message: isUnset(ctx.data)
+        ? "Selecione o status do motorista."
+        : "O status deve ser 'Ativo' ou 'Inativo'",
     }),
   }),
   contract_type: z.enum(["OWNED", "THIRD_PARTY"], {
-    errorMap: () => ({
-      message: "O tipo de contrato deve ser 'Próprio' ou 'Terceirizado'",
+    errorMap: (_issue, ctx) => ({
+      message: isUnset(ctx.data)
+        ? "Selecione o tipo de contrato."
+        : "O tipo de contrato deve ser 'Próprio' ou 'Terceirizado'",
     }),
   }),
   branchId: z.preprocess(

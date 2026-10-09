@@ -1,28 +1,29 @@
 import { redirect } from "next/navigation";
 
 import type { ValidateUserAccessParams } from "./protected-provider.types";
-import { accessDeniedRedirect, canAccessPath } from "@/lib/route-access";
+import {
+  accessDeniedRedirect,
+  canAccessPath,
+  readablePermissionKeys,
+} from "@/lib/route-access";
 
+import { sessionRefusalReason } from "../shared/session-refusal";
+
+/**
+ * Turns the API's refusal of `/user/me` into a logout, by the error `code`.
+ *
+ * Matching on the message let every session-level 403 other than "revoked"
+ * and "driver inactive" fall through to the connection screen — a deactivated
+ * company or a removed profile looked like a lost connection that refreshed
+ * forever. Returning now only means the API did not judge the session (5xx,
+ * 429): the caller shows the connection screen.
+ */
 async function handleUserResponseError(response: Response) {
-  if (response.status === 401) {
-    redirect("/login?error=session_expired&force_logout=true");
-  }
+  const body: unknown = await response.json().catch(() => null);
+  const reason = sessionRefusalReason(response.status, body);
 
-  if (response.status === 403) {
-    const errorData = await response.json();
-    const errorMessage = errorData.message || "";
-
-    if (errorMessage.includes("acesso foi revogado")) {
-      redirect("/login?error=user_revoked&force_logout=true");
-    }
-
-    if (errorMessage.includes("motorista está inativo")) {
-      redirect("/login?error=driver_inactive&force_logout=true");
-    }
-  }
-
-  if (response.status === 404) {
-    redirect("/login?error=access_denied&force_logout=true");
+  if (reason) {
+    redirect(`/login?error=${reason}&force_logout=true`);
   }
 }
 
@@ -66,9 +67,7 @@ function validateUserAccess({
 
   const allowed = canAccessPath(pathname, {
     role: user.role,
-    permissions: user.profileAccess?.permissions?.map(
-      (permission) => permission.permissionKey,
-    ),
+    permissions: readablePermissionKeys(user.profileAccess?.permissions),
     enabledModules,
     isDriver,
   });

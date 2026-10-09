@@ -32,6 +32,7 @@ import { handleRequestBusinessDeletion } from "@/actions/business/request-busine
 
 import { useDeleteBusinessForm } from "./hooks";
 import { toast } from "sonner";
+import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
 
 interface DeleteBusinessProps {
   bussinessId: string;
@@ -92,7 +93,7 @@ const ConfirmNameStep = ({
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle className="text-red-600 dark:text-red-500">
+        <AlertDialogTitle className="text-destructive">
           Deletar Empresa
         </AlertDialogTitle>
         <AlertDialogDescription asChild>
@@ -152,11 +153,8 @@ const ConfirmNameStep = ({
           type="button"
           onClick={onContinue}
           disabled={isRequesting || !isConfirmed}
-          variant={"secondary"}
-          className="bg-red-600 hover:bg-red-700 text-white
-          dark:bg-red-600 dark:hover:bg-red-700 dark:text-white
-          disabled:opacity-40 disabled:cursor-not-allowed
-          transition-all duration-200 w-full"
+          variant="destructive"
+          className="w-full disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ShieldAlert className="mr-1 size-5" />
           <span>Continuar</span>
@@ -194,7 +192,7 @@ const EnterCodeStep = ({
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle className="text-red-600 dark:text-red-500 flex items-center gap-2">
+        <AlertDialogTitle className="text-destructive flex items-center gap-2">
           <MailCheck className="size-5" />
           Digite o código de confirmação
         </AlertDialogTitle>
@@ -268,11 +266,8 @@ const EnterCodeStep = ({
         <Button
           type="submit"
           disabled={pending || !isOtpComplete}
-          variant={"secondary"}
-          className="bg-red-600 hover:bg-red-700 text-white
-          dark:bg-red-600 dark:hover:bg-red-700 dark:text-white
-          disabled:opacity-40 disabled:cursor-not-allowed
-          transition-all duration-200 w-full"
+          variant="destructive"
+          className="w-full disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ShieldAlert className="mr-1 size-5" />
           <span>Deletar permanentemente</span>
@@ -295,13 +290,13 @@ const DeleteBusinessForm = ({
   const [isRequesting, startRequestTransition] = useTransition();
 
   const [state, dispatch] = useFormState(
-    async (_prevState: any, formData: FormData) => {
+    guardFormAction(async (_prevState: any, formData: FormData) => {
       const code = (formData.get("code") as string) ?? "";
       return handleDeleteBusiness({
         businessId: bussinessId,
         code,
       });
-    },
+    }),
     null,
   );
 
@@ -327,6 +322,8 @@ const DeleteBusinessForm = ({
   const requestDeletion = (showSuccessToast: boolean) => {
     startRequestTransition(async () => {
       const result = await handleRequestBusinessDeletion(bussinessId);
+
+      if (isStaleActionResult(result)) return;
 
       if (result.requestBusinessDeletionError) {
         toast.error(result.requestBusinessDeletionError);
@@ -372,7 +369,7 @@ const DeleteBusinessForm = ({
           <Trash size={17} className="dark:text-red-500 text-red-600" />
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent className="bg-white dark:bg-[#121214] ">
+      <AlertDialogContent className="bg-background">
         {step === "confirm-name" ? (
           <ConfirmNameStep
             businessName={businessName}

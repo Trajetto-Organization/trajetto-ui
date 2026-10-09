@@ -5,6 +5,8 @@ import { useQuery } from "react-query";
 
 import { listStatusChangeReasons } from "@/actions/status-change-reason/list-status-change-reason";
 import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { CATALOG_STALE_TIME_MS } from "@/lib/query-client-props";
 
 /**
  * The company's vocabulary for overriding a status.
@@ -37,6 +39,10 @@ const useStatusReasons = (
     async () => {
       const result = await listStatusChangeReasons(businessId, 1, PAGE_SIZE);
 
+      if (isStaleActionResult(result, { background: true })) {
+        throw new Error(STALE_ACTION_MESSAGE);
+      }
+
       if (!result.success || !result.data) {
         throw new Error(result.message);
       }
@@ -46,9 +52,10 @@ const useStatusReasons = (
     {
       enabled: enabled && Boolean(businessId),
 
-      // The catalogue changes when somebody edits it, not on its own. Five
-      // minutes keeps the dialog instant without serving yesterday's words.
-      staleTime: 5 * 60 * 1000,
+      // Short, like every picker: a reason created in /admin has to show in
+      // the /dashboard dialog opened next, and five minutes did not (Entregas
+      // 4). The cached list still renders at once while it refetches.
+      staleTime: CATALOG_STALE_TIME_MS,
       retry: 1,
     },
   );

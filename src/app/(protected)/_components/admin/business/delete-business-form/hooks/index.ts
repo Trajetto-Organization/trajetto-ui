@@ -5,6 +5,7 @@ import type {
 } from "../delete-business-form.types";
 
 import { revalidateTagName } from "@/actions/revalidate";
+import { resendCooldownAfterRefusal } from "@/lib/api-error";
 import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ function useDeleteBusinessForm(state: DeleteBusinessFormState | null) {
     if (state?.deleteBusinessError) {
       toast.error(state.deleteBusinessError);
       setOtpCode("");
+      setResendTimer((current) => resendCooldownAfterRefusal(state, current));
       return;
     }
 

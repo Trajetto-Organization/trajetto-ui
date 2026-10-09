@@ -10,11 +10,13 @@ interface OccurrenceTypeFormState {
     createOccurrenceTypeErrorMessage?: string;
     name?: string[];
     description?: string[];
+    form_fields?: string[];
   };
   updateOccurrenceTypeError?: {
     updateOccurrenceTypeErrorMessage?: string;
     name?: string[];
     description?: string[];
+    form_fields?: string[];
   };
 }
 
@@ -23,10 +25,7 @@ interface UseOccurrenceTypeFormProps {
   onClose: () => void;
 }
 
-function useOccurrenceTypeForm({
-  state,
-  onClose,
-}: UseOccurrenceTypeFormProps) {
+function useOccurrenceTypeForm({ state, onClose }: UseOccurrenceTypeFormProps) {
   const queryClient = useQueryClient();
 
   const formRef = useRef<HTMLFormElement>(null);

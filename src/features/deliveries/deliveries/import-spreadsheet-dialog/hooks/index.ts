@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 
 /**
  * Mirrors the API cap so the operator hears "no" before spending two minutes
@@ -52,6 +51,10 @@ function useImportSpreadsheet() {
   const [file, setFile] = useState<PickedSpreadsheet | null>(null);
   const [isReading, setIsReading] = useState<boolean>(false);
 
+  // Why the last pick was refused, said under the drop zone (decision
+  // 16.700) rather than in a toast that is gone before it is read.
+  const [rejection, setRejection] = useState<string | null>(null);
+
   const pickFile = useCallback(async (fileList: FileList | File[] | null) => {
     if (!fileList) return;
 
@@ -59,20 +62,10 @@ function useImportSpreadsheet() {
 
     if (!picked) return;
 
-    if (!isSpreadsheet(picked)) {
-      toast.error(`"${picked.name}" não é uma planilha .xlsx ou .csv.`);
-      return;
-    }
+    const refused = spreadsheetRejection(picked);
+    setRejection(refused);
 
-    if (picked.size > MAX_FILE_SIZE) {
-      toast.error(
-        `"${picked.name}" é grande demais (limite de ${Math.round(
-          MAX_FILE_SIZE / (1024 * 1024),
-        )} MB).`,
-      );
-
-      return;
-    }
+    if (refused) return;
 
     setIsReading(true);
 
@@ -83,7 +76,7 @@ function useImportSpreadsheet() {
         size: picked.size,
       });
     } catch (error) {
-      toast.error("Não foi possível ler o arquivo. Tente novamente.");
+      setRejection("Não foi possível ler o arquivo. Tente novamente.");
     } finally {
       setIsReading(false);
     }
@@ -91,12 +84,29 @@ function useImportSpreadsheet() {
 
   const clearFile = useCallback(() => {
     setFile(null);
+    setRejection(null);
   }, []);
 
   // The drag state and its enter/leave counter live in `FileDropzone` now:
   // this hook reads and validates the file, the zone decides when it has one.
-  return { file, isReading, pickFile, clearFile };
+  return { file, isReading, rejection, pickFile, clearFile };
 }
 
-export { useImportSpreadsheet, MAX_FILE_SIZE };
+/** Why a picked file cannot be imported, or null. */
+function spreadsheetRejection(
+  file: Pick<File, "name" | "size">,
+): string | null {
+  if (!isSpreadsheet(file as File))
+    return `"${file.name}" não é uma planilha .xlsx ou .csv.`;
+
+  if (file.size > MAX_FILE_SIZE) {
+    return `"${file.name}" é grande demais (limite de ${Math.round(
+      MAX_FILE_SIZE / (1024 * 1024),
+    )} MB).`;
+  }
+
+  return null;
+}
+
+export { useImportSpreadsheet, spreadsheetRejection, MAX_FILE_SIZE };
 export type { PickedSpreadsheet };

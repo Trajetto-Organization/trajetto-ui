@@ -3,6 +3,11 @@ import { useAIVerificationStore } from "@/store/ai-verification-store";
 
 import { Badge } from "@/components/ui/badge";
 import { formatNotificationDate } from "@/lib/format-values";
+import {
+  confidencePercent,
+  fraudUnassessed,
+  odometerDetails,
+} from "@/lib/ai-confidence";
 
 import {
   AIAnalysisProgressFallback,
@@ -10,7 +15,7 @@ import {
 } from "@/app/(protected)/_components/shared/ai-verification";
 
 import type { FuelDetailsDialogProps } from "../shared/common.types";
-import { aiStatusConfig } from "../data";
+import { KM_MATCHES_NOTE, aiStatusConfig, fuelDisplayStatus } from "../data";
 
 /** Server statuses where offering a (re-)verification makes sense. */
 const REQUESTABLE_STATUSES = ["pending", "skipped", "error"];
@@ -42,11 +47,23 @@ const AIVerificationSection = ({
   // the durable-progress fallback polls the analysis request instead.
   const isAnalyzingWithoutRealtime = !realtimeEvent && aiStatus === "analyzing";
 
-  const effectiveStatus = realtimeEvent
+  const serverStatus = realtimeEvent
     ? isRealtimeCompleted
       ? realtimeEvent.overallStatus || aiStatus
       : "analyzing"
     : aiStatus;
+
+  // ADR 0010 §5: a reading that did not judge fraud (the OCR reader) only
+  // says the km agrees. The live result when it just finished, else stored.
+  const fraudNotAssessed =
+    isRealtimeCompleted && realtimeEvent.currentResult
+      ? realtimeEvent.currentResult.fraudAssessed === false
+      : fraudUnassessed(aiDetails);
+
+  // "km_matches" behaves as "verified" everywhere below, only its words differ.
+  const displayStatus = fuelDisplayStatus(serverStatus, fraudNotAssessed);
+  const effectiveStatus =
+    displayStatus === "km_matches" ? "verified" : displayStatus;
 
   // Use real-time data when available, fallback to server data
   const aiReading = isRealtimeCompleted
@@ -57,34 +74,25 @@ const AIVerificationSection = ({
     ? realtimeEvent.timestamp || serverAnalyzedAt
     : serverAnalyzedAt;
 
-  const config = effectiveStatus
-    ? aiStatusConfig[effectiveStatus] || aiStatusConfig.pending
+  const config = displayStatus
+    ? aiStatusConfig[displayStatus] || aiStatusConfig.pending
     : null;
 
-  // Parse details if string
-  const parsedDetails =
-    typeof aiDetails === "string"
-      ? (() => {
-          try {
-            return JSON.parse(aiDetails);
-          } catch {
-            return null;
-          }
-        })()
-      : aiDetails;
+  // The stored result: `confidence` 0–1 now, `confianca` 0–100 on
+  // records from before (AI-3) — one reader for both.
+  const stored = odometerDetails(aiDetails);
 
   // Use real-time result data when available
   const confidence = isRealtimeCompleted
-    ? (realtimeEvent.currentResult?.confidence ?? parsedDetails?.confidence)
-    : parsedDetails?.confidence;
+    ? (confidencePercent(realtimeEvent.currentResult?.confidence) ??
+      stored.confidence)
+    : stored.confidence;
 
-  const observation = isRealtimeCompleted
-    ? realtimeEvent.currentResult?.details ||
-      parsedDetails?.observacao ||
-      parsedDetails?.observation
-    : parsedDetails?.observacao ||
-      parsedDetails?.observation ||
-      parsedDetails?.details;
+  const observation =
+    (isRealtimeCompleted
+      ? realtimeEvent.currentResult?.details || stored.observation
+      : stored.observation) ||
+    (displayStatus === "km_matches" ? KM_MATCHES_NOTE : null);
 
   return (
     <div>
@@ -167,7 +175,6 @@ const AIVerificationSection = ({
               <RequestAIVerificationButton
                 recordType="fuel"
                 recordId={fuelData.id}
-                businessId={fuelData.businessId}
                 isRetry={effectiveStatus !== "pending"}
               />
             )}
@@ -183,21 +190,21 @@ const AIVerificationSection = ({
                       Valor informado:
                     </span>
                     <p className="font-semibold">
-                      {fuelData.current_mileage.toLocaleString()} km
+                      {fuelData.current_mileage.toLocaleString("pt-BR")} km
                     </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Leitura IA:</span>
                     <p className="font-semibold">
-                      {aiReading.toLocaleString()} km
+                      {aiReading.toLocaleString("pt-BR")} km
                     </p>
                   </div>
                 </div>
-                {confidence !== undefined && (
+                {confidence !== null && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">Confiança:</span>
                     <Badge variant="outline" className="text-xs">
-                      {Math.round(confidence * 100)}%
+                      {confidence}%
                     </Badge>
                   </div>
                 )}

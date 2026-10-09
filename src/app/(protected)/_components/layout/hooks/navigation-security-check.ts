@@ -1,72 +1,92 @@
 import { useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
-import { getCookies } from "@/actions/cookies";
+import { readSessionClaims } from "@/actions/session";
+import { relayUrl } from "@/lib/api-relay-paths";
 
 import { forceLogout } from "@/lib/force-logout";
+import { isSessionExiting } from "@/lib/clear-session-state";
 import { useConnectionStore } from "@/lib/connection-status";
 
-import { parseJwt } from "@/lib/decode-jwt";
-
 import { useAuthStore } from "@/store/auth-store";
-import { accessDeniedRedirect, canAccessPath } from "@/lib/route-access";
+import {
+  accessDeniedRedirect,
+  canAccessPath,
+  readablePermissionKeys,
+} from "@/lib/route-access";
 
 import type { Permission } from "../../shared/common.types";
+
+import { sessionRefusalReason } from "../shared/session-refusal";
+import { accessSnapshotChanged } from "./access-snapshot";
+
+/** A burst of socket events (one per replica, a reconnect) refreshes once. */
+const SERVER_REFRESH_DEBOUNCE_MS = 300;
 
 function useNavigationSecurityCheck() {
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
+
+  const router = useRouter();
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { setAuth } = useAuthStore();
   const setUnreachable = useConnectionStore((state) => state.setUnreachable);
 
   pathnameRef.current = pathname;
 
-  const checkUserAccess = useCallback(async () => {
-    try {
-      const token = await getCookies("tkey");
+  /**
+   * SSR-STALE-1. The store redraws the sidebar, ⌘K and buttons, but what the
+   * SERVER rendered — the tabs Entregas shows, a "sem permissão" or "módulo
+   * não contratado" state — stayed as it was until the next navigation. When
+   * the access itself changed, the page is rendered again.
+   */
+  const scheduleServerRefresh = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current);
 
-      if (!token) {
+    refreshTimer.current = setTimeout(() => {
+      refreshTimer.current = null;
+      router.refresh();
+    }, SERVER_REFRESH_DEBOUNCE_MS);
+  }, [router]);
+
+  useEffect(
+    () => () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    },
+    [],
+  );
+
+  const checkUserAccess = useCallback(async () => {
+    // This tab is logging out: there is no session left to re-check, and a
+    // check now only races the logout's own navigation (clear-session-state).
+    if (isSessionExiting()) return;
+
+    try {
+      // The session's claims (decoded on the server), then /user/me through
+      // the same-origin relay: the page never holds the token itself.
+      const claims = await readSessionClaims();
+
+      if (isSessionExiting()) return;
+
+      if (!claims) {
         window.location.href = "/login";
         return;
       }
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/user/me`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      const response = await fetch(relayUrl("/user/me"), {
+        headers: { "Content-Type": "application/json" },
+      });
 
       if (!response.ok) {
-        if (response.status === 403) {
-          const data = await response.json().catch(() => ({}));
-          const message = data.message || "";
+        // Same reading as the server gate (security-checks.ts): by the error
+        // code, not the message, which sent a deactivated company or a
+        // removed profile to the generic "access_denied".
+        const body: unknown = await response.json().catch(() => null);
+        const reason = sessionRefusalReason(response.status, body);
 
-          if (message.includes("acesso foi revogado")) {
-            forceLogout("user_revoked");
-            return;
-          }
-
-          if (message.includes("motorista está inativo")) {
-            forceLogout("driver_inactive");
-            return;
-          }
-
-          forceLogout("access_denied");
-          return;
-        }
-
-        if (response.status === 401) {
-          forceLogout("session_expired");
-          return;
-        }
-
-        if (response.status === 404) {
-          forceLogout("access_denied");
+        if (reason) {
+          forceLogout(reason);
           return;
         }
 
@@ -89,13 +109,11 @@ function useNavigationSecurityCheck() {
       const user = data?.user;
 
       if (!user) return;
-      const decodedJwt = parseJwt(token);
-
       // Role changed or driver status changed
-      const roleChanged = decodedJwt?.role !== user.role;
+      const roleChanged = claims.role !== user.role;
       const driverStatusChanged =
-        (decodedJwt?.driverId === null && user.driverId !== null) ||
-        (decodedJwt?.driverId !== null && user.driverId === null);
+        (claims.driverId === null && user.driverId !== null) ||
+        (claims.driverId !== null && user.driverId === null);
 
       if (roleChanged || driverStatusChanged) {
         forceLogout("permissions_changed");
@@ -125,9 +143,7 @@ function useNavigationSecurityCheck() {
       if (currentPathname) {
         const allowed = canAccessPath(currentPathname, {
           role: user.role,
-          permissions: user.profileAccess?.permissions?.map(
-            (perm: Permission) => perm.permissionKey,
-          ),
+          permissions: readablePermissionKeys(user.profileAccess?.permissions),
           enabledModules,
           isDriver,
         });
@@ -138,6 +154,15 @@ function useNavigationSecurityCheck() {
         }
       }
 
+      const permissions =
+        user.profileAccess?.permissions?.map((perm: Permission) => ({
+          permissionKey: perm.permissionKey,
+          canRead: perm.canRead,
+          canWrite: perm.canWrite,
+        })) || [];
+
+      const previous = useAuthStore.getState();
+
       // All checks passed — sync fresh permissions and modules to the auth
       // store, which is what redraws the sidebar, the command bar and the
       // dashboard shortcuts without a reload.
@@ -145,20 +170,28 @@ function useNavigationSecurityCheck() {
         id: user.id,
         businessId: user.businessId,
         role: user.role,
-        permissions:
-          user.profileAccess?.permissions?.map((perm: Permission) => ({
-            permissionKey: perm.permissionKey,
-            canRead: perm.canRead,
-            canWrite: perm.canWrite,
-          })) || [],
+        permissions,
         enabledModules,
       });
+
+      if (
+        accessSnapshotChanged(
+          {
+            role: previous.role,
+            permissions: previous.permissions,
+            enabledModules: previous.enabledModules,
+          },
+          { role: user.role, permissions, enabledModules },
+        )
+      ) {
+        scheduleServerRefresh();
+      }
     } catch {
       // Could not reach the API at all — container down, DNS, offline. Same
       // reasoning as the 5xx above: no answer is not a negative answer.
       setUnreachable(true);
     }
-  }, [setAuth, setUnreachable]);
+  }, [setAuth, setUnreachable, scheduleServerRefresh]);
 
   // Listen for security events dispatched by NotificationsProvider
   // (Socket.IO securityAction events + reconnect)

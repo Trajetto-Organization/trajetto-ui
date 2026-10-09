@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { Loader } from "lucide-react";
@@ -31,6 +31,13 @@ import {
   useStatusChangeReasonForm,
   type StatusChangeReasonFormState,
 } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
+import { createUpdateStatusChangeReasonSchema } from "@/schemas/create-update-status-change-reason-schema";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  canSubmitForm,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 interface StatusChangeReasonFormDialogProps {
   businessId: string;
@@ -68,34 +75,52 @@ const StatusChangeReasonFormDialogSubmit = ({
 
   const isDirty = useFormDirty({ formRef, initialValues, isOpen });
 
-  const fieldErrors = (isEditing
-    ? (state.updateStatusChangeReasonError ?? {})
-    : (state.createStatusChangeReasonError ?? {})) as Record<string, string[]>;
+  const fieldErrors = (
+    isEditing
+      ? (state.updateStatusChangeReasonError ?? {})
+      : (state.createStatusChangeReasonError ?? {})
+  ) as Record<string, string[]>;
+
+  // Controlled, so live validation reads them.
+  const [name, setName] = useState<string>(reason?.name ?? "");
+  const [description, setDescription] = useState<string>(
+    reason?.description ?? "",
+  );
+
+  // Live validation (decision 16.700) with the action's own schema.
+  const live = useLiveValidation({
+    schema: createUpdateStatusChangeReasonSchema,
+    values: { name, description },
+    fields: ["name", "description"],
+    serverErrors: fieldErrors,
+  });
 
   return (
     <>
-      <div className="space-y-4 mt-5">
+      <div ref={live.ref} className="space-y-4 mt-5">
         <FormInput
           label="Nome do motivo *"
           htmlfor="name"
           name="name"
           type="text"
-          defaultValue={reason?.name ?? ""}
+          value={name}
+          onChange={(event) => setName(event.currentTarget.value)}
           placeholder="Ex: Cliente cancelou por telefone"
-          errorName={fieldErrors.name}
+          errorName={live.errorOf("name")}
           disabled={pending}
         />
 
         <FieldShell
           label="Descrição (opcional)"
           htmlFor="description"
-          error={fieldErrors.description}
+          error={live.errorOf("description")}
         >
           {(control) => (
             <Textarea
               {...control}
               name="description"
-            defaultValue={reason?.description ?? ""}
+              value={description}
+              onChange={(event) => setDescription(event.currentTarget.value)}
               placeholder="Quando usar este motivo — aparece como ajuda no seletor"
               maxLength={255}
               disabled={pending}
@@ -133,6 +158,7 @@ const StatusChangeReasonFormDialogSubmit = ({
           variant="outline"
           onClick={onClose}
           className="flex-1"
+          {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
         >
           Cancelar
         </Button>
@@ -141,7 +167,7 @@ const StatusChangeReasonFormDialogSubmit = ({
         once something actually changed. */}
         <Button
           type="submit"
-          disabled={pending || (isEditing && !isDirty)}
+          disabled={pending || !canSubmitForm({ isEdit: isEditing, isDirty })}
           className="flex-1"
         >
           <span>{isEditing ? "Salvar Motivo" : "Criar Motivo"}</span>
@@ -166,9 +192,11 @@ const StatusChangeReasonFormDialog = ({
   const defaultState: StatusChangeReasonFormState = {};
 
   const [state, dispatch] = useFormState<StatusChangeReasonFormState, FormData>(
-    isEditing
-      ? handleUpdateStatusChangeReason
-      : handleCreateStatusChangeReason,
+    guardFormAction(
+      isEditing
+        ? handleUpdateStatusChangeReason
+        : handleCreateStatusChangeReason,
+    ),
     defaultState,
   );
 
@@ -201,12 +229,17 @@ const StatusChangeReasonFormDialog = ({
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             É o vocabulário da empresa para explicar por que uma entrega mudou
-            de status pelo painel. Curto de propósito: ele aparece num seletor
-            e numa linha do histórico, e é por ele que se agrupa e se conta.
+            de status pelo painel. Curto de propósito: ele aparece num seletor e
+            numa linha do histórico, e é por ele que se agrupa e se conta.
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} action={submitReasonForm}>
+        <form
+          ref={formRef}
+          action={submitReasonForm}
+          noValidate
+          data-status-reason-form
+        >
           <StatusChangeReasonFormDialogSubmit
             state={state}
             reason={reason}

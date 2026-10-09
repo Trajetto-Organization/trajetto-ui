@@ -1,27 +1,24 @@
 "use client";
 
+import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 
-const QuoteActions = (): JSX.Element => {
-  return (
-    <div
-      className="flex flex-col sm:flex-row sm:flex-wrap
-      items-stretch sm:items-center gap-3
-      sm:gap-2 justify-end mt-6 mb-6"
-    >
-      <div className="w-full sm:w-auto">
-        <DataTableRevalidate
-          revalidateData="update-quote-status"
-          rateLimit={{
-            storageKey: "quote",
-            maxClicks: 3,
-            timeWindowMs: 30000,
-            cooldownTimeMs: 15000,
-          }}
-        />
-      </div>
-    </div>
-  );
-};
+/**
+ * Atualizar on the page's action line (decision 3.6): full width with the
+ * label on a phone, and it refreshes the whole tab (decision 2.1). Quotes
+ * arrive from the public site; there is nothing to create here.
+ */
+const QuoteActions = (): JSX.Element => (
+  <PageActions>
+    <DataTableRevalidate
+      rateLimit={{
+        storageKey: "quote",
+        maxClicks: 3,
+        timeWindowMs: 30000,
+        cooldownTimeMs: 15000,
+      }}
+    />
+  </PageActions>
+);
 
 export { QuoteActions };

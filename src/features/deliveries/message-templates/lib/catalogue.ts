@@ -4,12 +4,12 @@ import type {
 } from "@/actions/delivery/message-templates";
 
 /**
- * The six messages a company can write, and what each one is for.
+ * The eight messages a company can write, and what each one is for.
  *
- * Fixed rather than free-form: these are the three moments the customer can
- * act on — it is coming, it arrived, it did not arrive — and a company that
- * could invent a fourth would be inventing a message its customers did not
- * agree to receive.
+ * Fixed rather than free-form: these are the four moments the customer can
+ * act on — it left, the driver is heading to you now (decision 6.4), it
+ * arrived, it did not arrive — and a company that could invent a fifth would
+ * be inventing a message its customers did not agree to receive.
  */
 interface MessageSlot {
   topic: MessageTopic;
@@ -46,13 +46,36 @@ const MESSAGE_SLOTS: MessageSlot[] = [
       "Acompanhe em {{link}}",
   },
   {
+    topic: "ON_THE_WAY",
+    channel: "WHATSAPP",
+    title: "A caminho",
+    when: "Quando o motorista avisa no aplicativo que está indo para este endereço (uma vez por entrega).",
+    suggestion:
+      "Olá {{destinatario}}! O motorista da {{transportadora}} está a caminho do seu endereço. " +
+      "Acompanhe: {{link}}\n\n" +
+      OPT_OUT_LINE,
+  },
+  {
+    topic: "ON_THE_WAY",
+    channel: "EMAIL",
+    title: "A caminho (e-mail)",
+    when: "Quando o motorista avisa no aplicativo que está indo para este endereço (uma vez por entrega).",
+    suggestion:
+      "Olá {{destinatario}}, o motorista da {{transportadora}} está a caminho do seu endereço.\n" +
+      "Nota fiscal: {{nota}} · Destino: {{cidade}}/{{uf}}\n\n" +
+      "Acompanhe em {{link}}",
+  },
+  {
     topic: "DELIVERED",
     channel: "WHATSAPP",
     title: "Entregue",
     when: "Assim que a entrega é comprovada.",
+    // No {{recebido_por}} in the suggestions (DLV-MSG-4): the app's proof may
+    // carry a photo and a signature without a name, and the sentence then
+    // read "recebida por ." — the variable stays available to who wants it.
     suggestion:
-      "{{destinatario}}, sua entrega foi concluída em {{data_entrega}}" +
-      " e recebida por {{recebido_por}}. Comprovante: {{link}}\n\n" +
+      "{{destinatario}}, sua entrega foi concluída em {{data_entrega}}." +
+      " Comprovante: {{link}}\n\n" +
       OPT_OUT_LINE,
   },
   {
@@ -61,8 +84,7 @@ const MESSAGE_SLOTS: MessageSlot[] = [
     title: "Entregue (e-mail)",
     when: "Assim que a entrega é comprovada.",
     suggestion:
-      "Olá {{destinatario}}, sua entrega foi concluída em {{data_entrega}}.\n" +
-      "Recebida por: {{recebido_por}}\n\n" +
+      "Olá {{destinatario}}, sua entrega foi concluída em {{data_entrega}}.\n\n" +
       "O comprovante está disponível em {{link}}",
   },
   {

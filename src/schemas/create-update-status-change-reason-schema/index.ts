@@ -15,13 +15,15 @@ import {
 const createUpdateStatusChangeReasonSchema = z.object({
   name: z
     .string()
+    // Empty or blank is a missing name, not a short one (decision 16.702).
+    .regex(/\S/, "O nome do motivo é obrigatório.")
     .min(2, "O nome do motivo deve ter no mínimo 2 caracteres.")
     .max(80, "O nome do motivo deve ter no máximo 80 caracteres.")
     .superRefine((value, ctx) => {
       if (isEmptyOrWhitespace(value)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "O nome do motivo não pode conter apenas espaços.",
+          message: "O nome do motivo é obrigatório.",
         });
 
         return;

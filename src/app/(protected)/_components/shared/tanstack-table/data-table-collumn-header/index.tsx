@@ -12,6 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const COLUMN_MENU_LABELS = {
+  asc: "Crescente",
+  desc: "Decrescente",
+  hide: "Ocultar coluna",
+} as const;
+
 interface DataTableColumnHeaderProps<
   TData,
   TValue,
@@ -48,19 +54,21 @@ function DataTableColumnHeader<TData, TValue>({
             )}
           </Button>
         </DropdownMenuTrigger>
+        {/* In Portuguese like the rest of the product: the menu said
+            "Asc" and "Desc". */}
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
             <ArrowUp className="h-3.5 w-3.5 text-muted-foreground/70" />
-            Asc
+            {COLUMN_MENU_LABELS.asc}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
             <ArrowDown className="h-3.5 w-3.5 text-muted-foreground/70" />
-            Desc
+            {COLUMN_MENU_LABELS.desc}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
             <EyeOff className="h-3.5 w-3.5 text-muted-foreground/70" />
-            Esconder
+            {COLUMN_MENU_LABELS.hide}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

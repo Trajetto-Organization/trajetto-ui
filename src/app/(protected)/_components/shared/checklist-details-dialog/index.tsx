@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 
 import { ChecklistAIVerificationSection } from "./checklist-ai-verification-section";
-import { formatDate, formatNotificationDate } from "@/lib/format-values";
+import { formatNotificationDate } from "@/lib/format-values";
+import { formatPickedDay } from "@/features/vehicle/lib/picked-day";
 
 import type { ChecklistDetailsDialogProps } from "./shared/common.types";
 import type { InfoItem } from "./checklist-details-dialog.types";
@@ -52,8 +53,11 @@ const ChecklistDetailsDialog = ({
       icon: Calendar,
       label: "Data",
       content: (
+        // The day the checklist means, as the table and the row label read
+        // it: a date-only 00:00 UTC value is its UTC day, not the day
+        // before in the browser's zone.
         <Badge variant="outline">
-          {formatDate(checklistData.checklist_date, "pt-BR") || "N/A"}
+          {formatPickedDay(checklistData.checklist_date)}
         </Badge>
       ),
     },
@@ -62,7 +66,7 @@ const ChecklistDetailsDialog = ({
       label: "Quilometragem",
       content: (
         <Badge variant="outline">
-          {checklistData.current_mileage.toLocaleString()} km
+          {checklistData.current_mileage.toLocaleString("pt-BR")} km
         </Badge>
       ),
     },

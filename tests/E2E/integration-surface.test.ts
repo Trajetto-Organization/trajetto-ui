@@ -74,7 +74,8 @@ test.describe("the status of an envio", () => {
   });
 
   test("paints only a real failure as a failure", () => {
-    // PENDING and PROCESSING are the queue working — we retry for six hours.
+    // PENDING and PROCESSING are the queue working — we retry for about
+    // seven hours.
     // Red on those produces somebody resending an event that was about to go
     // out anyway, which is how a duplicate reaches an ERP.
     expect(STATUS_TONES.FAILED).toContain("destructive");
@@ -91,11 +92,20 @@ test.describe("the status of an envio", () => {
   });
 
   test("offers no filter for a status the API cannot answer with", () => {
+    // QUEUED is the API's name for the whole queue (PENDING and PROCESSING).
     for (const filter of STATUS_FILTERS) {
       if (filter.value === "ALL") continue;
 
-      expect(ALL_STATUSES, filter.value).toContain(filter.value);
+      expect([...ALL_STATUSES, "QUEUED"], filter.value).toContain(filter.value);
     }
+  });
+
+  test("lists under Na fila the whole queue its card counts", () => {
+    // It asked for PENDING alone, so a send in flight — or one whose attempt
+    // died — was counted on the card and never listed (DLVB-28).
+    expect(
+      STATUS_FILTERS.find((filter) => filter.label === "Na fila")?.value,
+    ).toBe("QUEUED");
   });
 });
 

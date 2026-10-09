@@ -133,7 +133,7 @@ const FileUpload = ({
                         w-full items-center gap-4"
                       >
                         <p
-                          className="animate-fade-in text-base text-neutral-700 
+                          className="animate-fade-in text-base text-foreground 
                           dark:text-neutral-300 truncate max-w-xs"
                         >
                           {file.name}
@@ -161,7 +161,9 @@ const FileUpload = ({
 
                         <p className="animate-fade-in">
                           modified{" "}
-                          {new Date(file.lastModified).toLocaleDateString()}
+                          {new Date(file.lastModified).toLocaleDateString(
+                            "pt-BR",
+                          )}
                         </p>
                       </div>
                     </FileCard>
@@ -182,18 +184,18 @@ const FileUpload = ({
                   >
                     {isDragActive ? (
                       <p
-                        className="animate-fade-in text-neutral-600 flex 
+                        className="animate-fade-in text-muted-foreground flex 
                         flex-col items-center"
                       >
                         Soltar
                         <Upload
-                          className="h-4 w-4 text-neutral-600 
+                          className="h-4 w-4 text-muted-foreground 
                           dark:text-neutral-400"
                         />
                       </p>
                     ) : (
                       <Upload
-                        className="h-4 w-4 text-neutral-600
+                        className="h-4 w-4 text-muted-foreground
                         dark:text-neutral-300"
                       />
                     )}
@@ -267,7 +269,7 @@ const FileUpload = ({
             >
               <div className="flex justify-between w-full items-center gap-4">
                 <p
-                  className="animate-fade-in text-base text-neutral-700 
+                  className="animate-fade-in text-base text-foreground 
                   dark:text-neutral-300 truncate max-w-xs"
                 >
                   {files[0].name}
@@ -295,7 +297,7 @@ const FileUpload = ({
 
                 <p className="animate-fade-in">
                   modified{" "}
-                  {new Date(files[0].lastModified).toLocaleDateString()}
+                  {new Date(files[0].lastModified).toLocaleDateString("pt-BR")}
                 </p>
               </div>
             </div>

@@ -22,15 +22,18 @@ interface RoutesSkeletonProps {
 
 const RoutesSkeleton = ({ mode }: RoutesSkeletonProps): JSX.Element => {
   return (
-    <div className="my-6 space-y-6">
+    <div data-tutorial="loading" className="my-6 space-y-6">
       {/* The band: context and actions on one line. Rotas has no sections, so
           unlike Entregas there is no rail under them. */}
       <div className="flex w-full flex-wrap items-center gap-3">
         {mode === "admin" && <Skeleton className="h-10 w-full sm:w-[300px]" />}
 
-        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-          <Skeleton className="h-9 w-9 shrink-0 sm:h-8 sm:w-[160px]" />
-          <Skeleton className="h-9 min-w-0 flex-1 sm:h-8 sm:w-[120px] sm:flex-initial" />
+        {/* PageActions: stacked at full width with their labels on a phone,
+            one row from `sm`; the page actions' height (h-9, decision 16.61) on its line (decision
+            3.6). */}
+        <div className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row">
+          <Skeleton className="h-9 w-full sm:w-[160px]" />
+          <Skeleton className="h-9 w-full sm:w-[120px]" />
         </div>
       </div>
 

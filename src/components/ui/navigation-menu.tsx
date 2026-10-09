@@ -11,6 +11,8 @@ const NavigationMenu = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <NavigationMenuPrimitive.Root
     ref={ref}
+    // Radix names the <nav> landmark "Main" unless told otherwise.
+    aria-label="Principal"
     className={cn(
       "relative z-10 flex max-w-max flex-1 items-center justify-center",
       className,

@@ -1,14 +1,45 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
+import type {
+  DeviceAgreement,
+  DevicePrecheck,
+} from "@/features/deliveries/proof-audits/lib/device-precheck";
+import { apiFetch } from "@/lib/api-fetch";
 
 type ProofAuditStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-type CriterionVerdict = "yes" | "no" | "unknown";
+/** "not_applicable": a delivery with no invoice number to compare. */
+type CriterionVerdict = "yes" | "no" | "unknown" | "not_applicable";
+
+/** What the model transcribed off the receipt (decision 6.9). */
+interface ProofExtractedValues {
+  documentNumber: string | null;
+  receiptDateText: string | null;
+  receiptDate: string | null;
+  recipientName: string | null;
+  signatureOnPaper: CriterionVerdict;
+  digitalSignature: boolean;
+  /**
+   * False when the reader cannot see signatures (the local OCR, ADR 0010):
+   * the signature is for a person to check. Absent = assessed.
+   */
+  signatureAssessed?: boolean;
+}
+
+/** What the delivery expected when it was proven. */
+interface ProofExpectedValues {
+  documentNumber: string | null;
+  provenOn: string;
+  recipientName: string | null;
+}
 
 interface ProofAuditSuggestion {
   reading: {
+    /** Absent on readings stored before decision 6.9 asked it. */
+    isReceipt?: CriterionVerdict;
     legible: CriterionVerdict;
     hasSignature: CriterionVerdict;
     dateVisible: CriterionVerdict;
@@ -18,6 +49,9 @@ interface ProofAuditSuggestion {
     confidence: number;
 
     observation: string;
+
+    extracted?: ProofExtractedValues;
+    expected?: ProofExpectedValues;
   };
 
   assessment: {
@@ -62,6 +96,17 @@ interface ProofAuditCard {
   /** Signed and short-lived. */
   photoUrl: string | null;
   signatureUrl: string | null;
+
+  /** Why there is no reading, when there is none (DLVP-PROOF-4). */
+  aiState?: string;
+
+  /**
+   * Decision 14.2: the driver's phone pre-check of the receipt, as the
+   * device declared it (booleans only), and how it compares with the
+   * server's reading. Absent on an API older than this screen.
+   */
+  device_precheck?: DevicePrecheck | null;
+  deviceAgreement?: DeviceAgreement | null;
 }
 
 interface ProofAuditMeta {
@@ -115,7 +160,7 @@ const listProofAudits = async (
       pageSize: String(pageSize),
     });
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/proof-audits?${params}`,
       {
         credentials: "include",
@@ -152,6 +197,7 @@ const listProofAudits = async (
       } as ProofAuditListData,
     };
   } catch (error) {
+    logActionError("delivery/proof-audits/listProofAudits", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar a fila.",
@@ -182,7 +228,7 @@ const reviewProofAudit = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/proof-audit/${auditId}/business/${businessId}`,
       {
         credentials: "include",
@@ -209,6 +255,7 @@ const reviewProofAudit = async (
 
     return { success: true, message: result.message };
   } catch (error) {
+    logActionError("delivery/proof-audits/reviewProofAudit", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao revisar o comprovante.",
@@ -224,4 +271,6 @@ export type {
   ProofAuditMeta,
   ProofAuditStatus,
   ProofAuditSuggestion,
+  ProofExpectedValues,
+  ProofExtractedValues,
 };

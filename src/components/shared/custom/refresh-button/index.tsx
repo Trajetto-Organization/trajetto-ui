@@ -1,7 +1,8 @@
 "use client";
 
+import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
 import { RevalidateButtonUI } from "@/app/(protected)/_components/shared/revalidate-button-ui";
-import { useDataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate/hooks";
+import { useRefreshRateLimit } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate/hooks";
 
 /**
  * "Atualizar", for a panel that fetches on the client.
@@ -34,6 +35,11 @@ interface RefreshButtonProps {
 
   label?: string;
   hideLabelOnMobile?: boolean;
+
+  /**
+   * Defaults to the page-action size (decision 16.61): h-9 on /admin and
+   * /dashboard alike, full width so a phone stacks it.
+   */
   className?: string;
 
   onRefresh: () => void | Promise<void>;
@@ -50,11 +56,13 @@ const RefreshButton = ({
   isRefreshing = false,
   label = "Atualizar",
   hideLabelOnMobile = false,
-  className = "h-8",
+  className,
   onRefresh,
 }: RefreshButtonProps): JSX.Element => {
+  const pageActionClassName = usePageActionClassName();
+
   const { isRateLimited, cooldownRemaining, registerClick } =
-    useDataTableRevalidate(null, { ...RATE_LIMIT, storageKey });
+    useRefreshRateLimit({ ...RATE_LIMIT, storageKey });
 
   return (
     <RevalidateButtonUI
@@ -63,7 +71,7 @@ const RefreshButton = ({
       cooldownRemaining={cooldownRemaining}
       label={label}
       hideLabelOnMobile={hideLabelOnMobile}
-      className={className}
+      className={className ?? pageActionClassName}
       onClick={() => {
         // The click is registered first and its verdict is obeyed: a refused
         // click must not reach the network, or the limit is decoration.

@@ -1,0 +1,79 @@
+---
+title: Idempotência
+description: Como repetir uma chamada depois de um timeout ou de uma falha sem criar a mesma entrega duas vezes, e como deduplicar o que você recebe.
+slug: idempotencia
+updatedAt: 2026-09-29
+---
+
+Na integração entre dois sistemas, a pergunta difícil não é "deu certo?", e sim "deu certo e eu não fiquei sabendo?". Uma resposta perdida no caminho deixa você sem saber se a entrega foi criada. Idempotência é o que torna seguro repetir.
+
+## Leituras
+
+As chamadas `GET` não mudam nada: repita quantas vezes precisar. O único cuidado é com os [limites de uso](/docs/limites).
+
+## Escritas: o cabeçalho Idempotency-Key
+
+Toda chamada que cria algo exige o cabeçalho `Idempotency-Key`: um valor que identifica **aquele envio**. Gere um valor por documento (um UUID, ou um valor derivado do identificador do documento no seu sistema) e repita exatamente o mesmo valor em toda nova tentativa do mesmo envio.
+
+- **Mesma chave, mesmo corpo:** a resposta devolve o que o primeiro envio criou (200 em vez de 201), sem criar de novo nem disparar o webhook outra vez.
+- **Mesma chave, corpo diferente:** a chamada é recusada com 409. Uma chave identifica um envio; um documento novo precisa de uma chave nova.
+- **Sem a chave:** a chamada é recusada com 400, antes de qualquer gravação.
+
+Os endpoints que recebem o cabeçalho, com as regras que a referência publica para cada um:
+
+<IdempotentOperations />
+
+## Quando repetir
+
+Repita com a **mesma** `Idempotency-Key` quando a chamada não teve resposta (timeout, conexão caída) ou respondeu 429, 500 ou 503. Um 503 não garante que nada foi gravado: é justamente a chave que impede a duplicata. Espere entre as tentativas, como descrito em [erros](/docs/erros).
+
+Não repita um 400, 401, 403, 404 ou 409 sem mudar algo: a resposta será a mesma.
+
+```js
+// Uma chave por DOCUMENTO, nunca uma para o processo todo: derivada do
+// identificador do documento no seu ERP, ela se repete em toda tentativa
+// daquele documento e muda no documento seguinte. (Um UUID também serve,
+// desde que gerado uma vez e guardado junto do documento.) O valor aceita
+// letras, números e . _ : -, de 8 a 128 caracteres.
+function idempotencyKeyFor(erpDocumentId) {
+  return `pedido-${erpDocumentId}`;
+}
+
+async function createDelivery(body, idempotencyKey) {
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    let response;
+
+    try {
+      response = await fetch(
+        `${process.env.TRAJETTO_API_URL}/integration/v1/deliveries`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.TRAJETTO_API_KEY}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          body: JSON.stringify(body),
+        },
+      );
+    } catch {
+      response = null; // sem resposta: pode ter sido gravado, repita com a mesma chave
+    }
+
+    if (response && ![429, 500, 503].includes(response.status)) return response;
+
+    const retryAfter =
+      Number(response?.headers.get("retry-after")) || 2 ** attempt;
+    await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+  }
+
+  throw new Error("A API não respondeu depois de 5 tentativas.");
+}
+
+// Para cada pedido do ERP, a chave daquele pedido:
+// await createDelivery(corpoDoPedido, idempotencyKeyFor(pedido.id));
+```
+
+## O que você recebe
+
+A idempotência vale nos dois sentidos. Os webhooks são entregues **pelo menos uma vez**: o mesmo evento pode chegar de novo, numa retentativa ou num reenvio pelo painel. Deduplique pelo `id` do evento (igual ao cabeçalho `X-Trajetto-Event-Id`) antes de gravar. O mesmo vale para `GET /integration/v1/events`: cada evento tem um `id` estável. Os detalhes estão em [webhooks](/docs/webhooks).

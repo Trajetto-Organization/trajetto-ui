@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../cookies";
 import { revalidateTagName } from "../revalidate";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface NotificationsProps {
   message: string;
@@ -20,7 +23,7 @@ const handleMarkNotificationAsRead = async (notificationId: string) => {
   const updateMarkNotificationAsRead = `${process.env.HTTP_REQUEST}/notification/${notificationId}/read`;
 
   try {
-    const response = await fetch(updateMarkNotificationAsRead, {
+    const response = await apiFetch(updateMarkNotificationAsRead, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -30,12 +33,13 @@ const handleMarkNotificationAsRead = async (notificationId: string) => {
 
     const { message } = (await response.json()) as NotificationsProps;
 
-    if (!response.ok && message) {
-      return { markAsReadError: message };
+    if (!response.ok) {
+      return { markAsReadError: message || refusalMessage(response.status) };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("notifications/handleMarkNotificationAsRead", error);
     return {
       markAsReadError:
         "Ocorreu um erro inesperado ao tentar marcar a notificação como lida.",
@@ -57,7 +61,7 @@ const handleDeleteNotification = async (notificationId: string) => {
   const deleteNotification = `${process.env.HTTP_REQUEST}/notification/${notificationId}`;
 
   try {
-    const response = await fetch(deleteNotification, {
+    const response = await apiFetch(deleteNotification, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -67,8 +71,10 @@ const handleDeleteNotification = async (notificationId: string) => {
 
     const { message } = (await response.json()) as NotificationsProps;
 
-    if (!response.ok && message) {
-      return { deleteNotificationError: message };
+    if (!response.ok) {
+      return {
+        deleteNotificationError: message || refusalMessage(response.status),
+      };
     }
 
     return {
@@ -76,6 +82,7 @@ const handleDeleteNotification = async (notificationId: string) => {
       deletedNotificationId: notificationId,
     };
   } catch (error) {
+    logActionError("notifications/handleDeleteNotification", error);
     return {
       deleteNotificationError:
         "Ocorreu um erro inesperado ao tentar excluir a notificação.",
@@ -94,7 +101,7 @@ const handleMarkAllNotificationsAsRead = async () => {
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/notification/read-all`,
       {
         credentials: "include",
@@ -107,12 +114,13 @@ const handleMarkAllNotificationsAsRead = async () => {
 
     const { message } = (await response.json()) as NotificationsProps;
 
-    if (!response.ok && message) {
-      return { markAllError: message };
+    if (!response.ok) {
+      return { markAllError: message || refusalMessage(response.status) };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("notifications/handleMarkAllNotificationsAsRead", error);
     return {
       markAllError:
         "Ocorreu um erro inesperado ao tentar marcar as notificações como lidas.",
@@ -142,7 +150,7 @@ const getNotificationPreferences = async (): Promise<{
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/notification/preferences`,
       {
         credentials: "include",
@@ -161,6 +169,7 @@ const getNotificationPreferences = async (): Promise<{
 
     return { preferences: result.preferences };
   } catch (error) {
+    logActionError("notifications/getNotificationPreferences", error);
     return {
       preferencesError:
         "Ocorreu um erro inesperado ao tentar carregar as preferências.",
@@ -181,7 +190,7 @@ const updateNotificationPreferences = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/notification/preferences`,
       {
         credentials: "include",
@@ -196,14 +205,15 @@ const updateNotificationPreferences = async (
 
     const { message } = (await response.json()) as NotificationsProps;
 
-    if (!response.ok && message) {
-      return { updateError: message };
+    if (!response.ok) {
+      return { updateError: message || refusalMessage(response.status) };
     }
 
     await revalidateTagName("notification-preferences");
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("notifications/updateNotificationPreferences", error);
     return {
       updateError:
         "Ocorreu um erro inesperado ao tentar salvar as preferências.",

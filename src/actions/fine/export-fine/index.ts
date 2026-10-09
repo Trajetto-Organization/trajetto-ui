@@ -1,6 +1,9 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ExportFineResponse {
   success?: boolean;
@@ -13,10 +16,24 @@ interface ExportFineResponse {
 
 type ExportFormat = "csv" | "excel";
 
-const handleExportFine = async (
-  search?: string,
-  format: ExportFormat = "csv",
-): Promise<ExportFineResponse> => {
+interface ExportFineRequest {
+  search?: string;
+  format?: ExportFormat;
+  /** The company on screen: required for the MASTER (decision 5.8). */
+  businessId?: string;
+  /** The list's filter params, so the file holds what the screen shows. */
+  filters?: Record<string, string>;
+}
+
+/** Only the list's own filter params travel; anything else is dropped. */
+const FILTER_PARAMS = ["status", "branchId", "trafficViolationCodeId"];
+
+const handleExportFine = async ({
+  search,
+  format = "csv",
+  businessId,
+  filters = {},
+}: ExportFineRequest): Promise<ExportFineResponse> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -27,13 +44,19 @@ const handleExportFine = async (
   }
 
   try {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ format });
 
-    if (search) params.append("search", search);
-    if (format) params.append("format", format);
+    if (search) params.set("search", search);
+
+    const company = readBusinessIdParam(businessId);
+    if (company) params.set("businessId", company);
+
+    for (const name of FILTER_PARAMS) {
+      if (filters[name]) params.set(name, filters[name]);
+    }
 
     const exportUrl = `${process.env.HTTP_REQUEST}/fines/export-fine?${params.toString()}`;
-    const response = await fetch(exportUrl, {
+    const response = await apiFetch(exportUrl, {
       credentials: "include",
       method: "GET",
       headers: {
@@ -42,10 +65,15 @@ const handleExportFine = async (
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
+      // The API's own sentence, never the raw body: the toast used to read
+      // `Erro ao gerar relatório: 400 - {"message":…}`.
+      const body = await response.json().catch(() => null);
+
       return {
         success: false,
-        message: `Erro ao gerar relatório: ${response.status} - ${errorData}`,
+        message:
+          (body && typeof body.message === "string" && body.message) ||
+          "Não foi possível gerar o relatório de multas.",
       };
     }
 
@@ -55,9 +83,7 @@ const handleExportFine = async (
     const totalRecords = response.headers.get("X-Total-Records");
     const filename = contentDisposition
       ? contentDisposition.split("filename=")[1]?.replace(/"/g, "")
-      : `relatorio-${new Date().toISOString().split("T")[0]}.${
-          format === "csv" ? "csv" : "xlsx"
-        }`;
+      : `relatorio-multas.${format === "csv" ? "csv" : "xlsx"}`;
 
     const arrayBuffer = await response.arrayBuffer();
     const base64Data = Buffer.from(arrayBuffer).toString("base64");
@@ -68,12 +94,13 @@ const handleExportFine = async (
       filename,
       totalRecords: totalRecords ? parseInt(totalRecords) : 0,
       mimeType,
-      message: `Relatório gerado com sucesso!`,
+      message: "Relatório gerado com sucesso!",
     };
   } catch (error) {
+    logActionError("fine/export-fine", error);
     return {
       success: false,
-      message: `Ocorreu um erro inesperado: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
+      message: "Ocorreu um erro inesperado ao gerar o relatório de multas.",
     };
   }
 };

@@ -17,15 +17,17 @@ import type { StatConfig } from "@/app/(protected)/_components/shared/stats/shar
 import type { DeliveryTab } from "./tabs";
 
 /**
- * The numbers come from the API aggregate (whole company), never from the
- * page on screen — a card that only counts the current page misleads.
+ * The numbers come from the API aggregate over the typed search and the other
+ * filters (never from the page on screen), each total without its own facet.
+ * The copy says so: "Cadastrados no sistema" read as company-wide while it
+ * showed 2 with a search typed.
  */
 const deliveryStats: StatConfig[] = [
   {
     key: "total-deliveries",
     title: "Total de Entregas",
     valueKey: "totalDeliveries",
-    description: "Cadastradas no sistema",
+    description: "Todos os status, na busca e filtros atuais",
     icon: Package,
     variant: "primary",
   },
@@ -84,7 +86,7 @@ const shipperStats: StatConfig[] = [
     key: "total-shippers",
     title: "Total de Embarcadores",
     valueKey: "totalShippers",
-    description: "Cadastrados no sistema",
+    description: "Todos os status, na busca atual",
     icon: Building2,
     variant: "primary",
   },
@@ -143,7 +145,7 @@ const occurrenceTypeStats: StatConfig[] = [
     key: "total-types",
     title: "Total de Tipos",
     valueKey: "totalTypes",
-    description: "No catálogo da empresa",
+    description: "Todos os status, na busca e filtros atuais",
     icon: TriangleAlert,
     variant: "primary",
   },
@@ -169,14 +171,8 @@ const occurrenceTypeStats: StatConfig[] = [
     valueKey: "blockingTypes",
     icon: ShieldAlert,
     variant: "danger",
-    calculateValue: (data) => {
-      const total = data.totalTypes || 0;
-      const blocking = data.blockingTypes || 0;
-
-      return total > 0
-        ? `${blocking} (${Math.round((blocking / total) * 100)}%)`
-        : "0";
-    },
+    // A plain count: it is taken without the Impeditiva filter (the
+    // disjunctive rule), so a share of "Total" could pass 100% once filtered.
     description: "Marcam a entrega como insucesso",
   },
   {
@@ -185,14 +181,7 @@ const occurrenceTypeStats: StatConfig[] = [
     valueKey: "photoTypes",
     icon: Camera,
     variant: "warning",
-    calculateValue: (data) => {
-      const total = data.totalTypes || 0;
-      const photo = data.photoTypes || 0;
-
-      return total > 0
-        ? `${photo} (${Math.round((photo / total) * 100)}%)`
-        : "0";
-    },
+    // A plain count, for the same reason as Impeditivos.
     description: "Comprovação obrigatória",
   },
 ];
@@ -202,7 +191,7 @@ const occurrenceFeedStats: StatConfig[] = [
     key: "total-occurrences",
     title: "Total de Ocorrências",
     valueKey: "totalOccurrences",
-    description: "Registradas na operação",
+    description: "Todas as gravidades, na busca e filtros atuais",
     icon: TriangleAlert,
     variant: "primary",
   },
@@ -232,6 +221,11 @@ const occurrenceFeedStats: StatConfig[] = [
   },
 ];
 
+/**
+ * Each card says which window it counts: the "today" ones are the company's
+ * business day (decision 1.1), "Sem Motorista" spans every date, and
+ * "Designadas" is the tower's day (decision 7.1).
+ */
 const monitoringStats: StatConfig[] = [
   {
     key: "unassigned",
@@ -239,7 +233,7 @@ const monitoringStats: StatConfig[] = [
     valueKey: "unassigned",
     icon: ShieldAlert,
     variant: "danger",
-    description: "Pendentes aguardando rota",
+    description: "Pendentes sem motorista, de qualquer data",
   },
   {
     key: "designated",
@@ -247,7 +241,9 @@ const monitoringStats: StatConfig[] = [
     valueKey: "designated",
     icon: IdCard,
     variant: "primary",
-    description: "Aguardando iniciar a rota",
+    // The tower's day (decision 7.1): pending on today's routes or on one
+    // still running; another day's route or no route is not today's load.
+    description: "Nas rotas de hoje, ainda não saíram",
   },
   {
     key: "in-route",
@@ -263,7 +259,7 @@ const monitoringStats: StatConfig[] = [
     valueKey: "deliveredToday",
     icon: CheckCircle2,
     variant: "success",
-    description: "Comprovadas no dia",
+    description: "Comprovadas hoje, no fuso da empresa",
   },
   {
     key: "failed-today",
@@ -271,7 +267,7 @@ const monitoringStats: StatConfig[] = [
     valueKey: "failedToday",
     icon: TriangleAlert,
     variant: "danger",
-    description: "Precisam de decisão",
+    description: "Insucessos do dia, no fuso da empresa",
   },
   {
     key: "occurrences-today",
@@ -279,7 +275,7 @@ const monitoringStats: StatConfig[] = [
     valueKey: "occurrencesToday",
     icon: Camera,
     variant: "primary",
-    description: "Registradas em campo",
+    description: "Relatadas pelo motorista hoje (fuso da empresa)",
   },
 ];
 
@@ -295,7 +291,7 @@ const statusChangeReasonStats: StatConfig[] = [
     key: "total-reasons",
     title: "Total de Motivos",
     valueKey: "totalReasons",
-    description: "No catálogo da empresa",
+    description: "Todos os status, na busca atual",
     icon: MessageSquareWarning,
     variant: "primary",
   },

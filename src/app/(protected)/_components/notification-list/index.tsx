@@ -13,6 +13,7 @@ import { Bell, CheckCheck, Loader } from "lucide-react";
 
 import { toast } from "sonner";
 import { handleMarkAllNotificationsAsRead } from "@/actions/notifications";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -32,7 +33,7 @@ import { NotificationCard } from "./notification-card";
 
 import type { NotificationListProps } from "./notification-list.types";
 
-import { useDataButtonRevalidation } from "../hooks/revalidation-button";
+import { useButtonRefreshRateLimit } from "../hooks/revalidation-button";
 import { useNotifications } from "./hooks";
 
 // ============================================================================
@@ -71,7 +72,7 @@ const NotificationList = ({
 
   // Rate limiter for refresh button
   const { isRateLimited, cooldownRemaining, registerClick } =
-    useDataButtonRevalidation(null, {
+    useButtonRefreshRateLimit({
       maxClicks: 3,
       timeWindowMs: 30000,
       cooldownTimeMs: 15000,
@@ -166,6 +167,7 @@ const NotificationList = ({
                     variant="ghost"
                     size="sm"
                     onClick={toggleNotifications}
+                    data-tutorial="notifications-realtime"
                     className="ml-2 h-7 px-2 whitespace-nowrap rounded-full bg-gradient-to-r
                     from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100
                     transition-all duration-300 border border-purple-200"
@@ -186,8 +188,8 @@ const NotificationList = ({
                       </>
                     ) : (
                       <>
-                        <div className="mr-1.5 h-2 w-2 rounded-full bg-gray-300" />
-                        <span className="text-xs font-medium text-gray-500">
+                        <div className="mr-1.5 h-2 w-2 rounded-full bg-muted-foreground" />
+                        <span className="text-xs font-medium text-muted-foreground">
                           Tempo real
                         </span>
                       </>
@@ -207,9 +209,13 @@ const NotificationList = ({
           className="flex flex-col sm:flex-row items-stretch
           sm:items-center gap-2 w-full sm:w-auto"
         >
+          {/* The page-action size (h-9, decision 16.61), like Atualizar beside it. */}
           <Button
             variant="outline"
+            size="sm"
             type="button"
+            className="w-full sm:w-auto"
+            data-tutorial="notifications-mark-all"
             disabled={unreadCount === 0 || isMarkingAll}
             onClick={async () => {
               if (isMarkingAll) return;
@@ -217,6 +223,8 @@ const NotificationList = ({
 
               try {
                 const result = await handleMarkAllNotificationsAsRead();
+
+                if (isStaleActionResult(result)) return;
 
                 if (result.successMessage) {
                   // Both sources of truth: the realtime context and the
@@ -233,7 +241,7 @@ const NotificationList = ({
               }
             }}
           >
-            <CheckCheck className="mr-1.5 h-4 w-4" />
+            <CheckCheck aria-hidden="true" className="h-4 w-4" />
             {isMarkingAll ? "Marcando..." : "Marcar todas como lidas"}
           </Button>
 
@@ -248,7 +256,10 @@ const NotificationList = ({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full sm:w-auto">
+        <TabsList
+          className="w-full sm:w-auto"
+          data-tutorial="notifications-tabs"
+        >
           <TabsTrigger value="all" className="flex-1 sm:flex-auto">
             Todas
           </TabsTrigger>

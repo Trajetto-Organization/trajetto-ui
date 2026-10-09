@@ -1,11 +1,5 @@
 import type { CommandFuelTypeInputValue } from "../../common.types";
 
-interface FetchFuelTypeProps {
-  cursor?: string;
-  businessId?: string;
-  signal?: AbortSignal;
-}
-
 interface FetchFuelTypeResult {
   data: any[];
   nextCursor: string | null;
@@ -22,4 +16,4 @@ interface SearchFuelTypeProps {
   isOptional?: boolean;
 }
 
-export type { FetchFuelTypeProps, FetchFuelTypeResult, SearchFuelTypeProps };
+export type { FetchFuelTypeResult, SearchFuelTypeProps };

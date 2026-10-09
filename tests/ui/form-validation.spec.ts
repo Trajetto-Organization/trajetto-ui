@@ -59,15 +59,17 @@ async function openForm(page: Page): Promise<void> {
 
   // The catalogue arrives on its own; the events cannot be ticked before it.
   await expect(
-    page.locator('[role="dialog"] input[type="checkbox"]').first(),
+    page.locator('[role="dialog"] [role="checkbox"]:not([disabled])').first(),
   ).toBeVisible({ timeout: 20_000 });
 }
 
 const save = (page: Page) =>
-  page.locator('[role="dialog"]').getByRole("button", { name: /^Salvar|Criar/ });
+  page
+    .locator('[role="dialog"]')
+    .getByRole("button", { name: /^Salvar|Criar/ });
 
-test.describe("o formulário de webhook diante de dados inválidos", () => {
-  test("mostra o que está errado em cada campo, e não chama o servidor", async ({
+test.describe("the webhook form facing invalid data", () => {
+  test("shows what is wrong in each field, and does not call the server", async ({
     page,
   }) => {
     await openForm(page);
@@ -80,10 +82,11 @@ test.describe("o formulário de webhook diante de dados inválidos", () => {
     const name = page.locator("#webhook-name");
     const url = page.locator("#webhook-url");
 
-    await expect(
-      name,
-      "o campo Nome não se declarou inválido",
-    ).toHaveAttribute("aria-invalid", "true", { timeout: 10_000 });
+    await expect(name, "o campo Nome não se declarou inválido").toHaveAttribute(
+      "aria-invalid",
+      "true",
+      { timeout: 10_000 },
+    );
 
     await expect(url).toHaveAttribute("aria-invalid", "true");
 
@@ -103,7 +106,10 @@ test.describe("o formulário de webhook diante de dados inválidos", () => {
       "webhook-name-error",
     );
 
-    expect(await url.getAttribute("aria-describedby")).toBe("webhook-url-error");
+    // The URL field also points at its hint ("Só https…").
+    expect(await url.getAttribute("aria-describedby")).toContain(
+      "webhook-url-error",
+    );
 
     // Announced on insertion, which is what makes it reach a screen reader at
     // the moment it matters.
@@ -120,7 +126,7 @@ test.describe("o formulário de webhook diante de dados inválidos", () => {
     ).toBe(0);
   });
 
-  test("recusa http antes de perguntar, porque ele mesmo escreveu 'só https'", async ({
+  test("refuses http before asking, because it wrote 'só https' itself", async ({
     page,
   }) => {
     /**
@@ -135,9 +141,14 @@ test.describe("o formulário de webhook diante de dados inválidos", () => {
     const traffic = countActions(page);
 
     await page.locator("#webhook-name").fill("ERP do embarcador");
-    await page.locator("#webhook-url").fill("http://erp.exemplo.com.br/eventos");
+    await page
+      .locator("#webhook-url")
+      .fill("http://erp.exemplo.com.br/eventos");
 
-    await page.locator('[role="dialog"] input[type="checkbox"]').first().check();
+    await page
+      .locator('[role="dialog"] [role="checkbox"]:not([disabled])')
+      .first()
+      .check();
 
     await save(page).click();
 
@@ -150,7 +161,7 @@ test.describe("o formulário de webhook diante de dados inválidos", () => {
     expect(traffic(), "o http foi enviado ao servidor mesmo assim").toBe(0);
   });
 
-  test("e some da tela conforme a pessoa conserta", async ({ page }) => {
+  test("and leaves the screen as the person fixes it", async ({ page }) => {
     /**
      * A message that stays under a field somebody is already fixing reads as
      * "still wrong", and the person deletes what they just typed to find out.
@@ -175,9 +186,7 @@ test.describe("o formulário de webhook diante de dados inválidos", () => {
     await expect(page.locator("#webhook-topics-error")).toBeVisible();
   });
 
-  test("e o diálogo continua aberto, com o que foi digitado", async ({
-    page,
-  }) => {
+  test("and the dialog stays open, with what was typed", async ({ page }) => {
     // Closing on a refusal, or clearing the fields, would throw away the work
     // and leave nothing to correct.
     await openForm(page);

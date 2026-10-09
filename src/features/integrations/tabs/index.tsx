@@ -23,7 +23,9 @@ interface IntegrationsTabsProps {
  * somebody pastes into a support thread has to reopen what they were looking
  * at, and "the webhook monitor" is exactly the thing people paste.
  */
-const IntegrationsTabs = ({ activeTab }: IntegrationsTabsProps): JSX.Element => {
+const IntegrationsTabs = ({
+  activeTab,
+}: IntegrationsTabsProps): JSX.Element => {
   const searchParams = useSearchParams();
 
   const hrefFor = (value: string): string => {
@@ -49,6 +51,7 @@ const IntegrationsTabs = ({ activeTab }: IntegrationsTabsProps): JSX.Element => 
         number of things in it.
       */
       fill={false}
+      dataTutorial="integrations-tabs"
       items={INTEGRATION_TABS.map((tab) => ({
         value: tab.value,
         label: tab.label,

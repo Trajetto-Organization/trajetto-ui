@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
@@ -67,9 +68,7 @@ const ConfirmDialog = ({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle
-            className={cn(destructive && "text-red-600 dark:text-red-500")}
-          >
+          <AlertDialogTitle className={cn(destructive && "text-destructive")}>
             {title}
           </AlertDialogTitle>
 
@@ -103,8 +102,7 @@ const ConfirmDialog = ({
             }}
             disabled={isPending}
             className={cn(
-              destructive &&
-                "bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700",
+              destructive && buttonVariants({ variant: "destructive" }),
             )}
           >
             <span>{confirmLabel}</span>

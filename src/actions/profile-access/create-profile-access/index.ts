@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateProfileAccessSchema } from "@/schemas/create-update-profile-access-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateProfileAccessProps {
   message: string;
@@ -46,7 +49,7 @@ const handleCreateProfileAccess = async (
   const profileAccessData = createProfileAccessValidation.data;
 
   try {
-    const response = await fetch(createProfileAccess, {
+    const response = await apiFetch(createProfileAccess, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -58,14 +61,18 @@ const handleCreateProfileAccess = async (
 
     const { message } = (await response.json()) as CreateProfileAccessProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createProfileAccessError: { createProfileAccessErrorMessage: message },
+        createProfileAccessError: {
+          createProfileAccessErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("profile-access/create-profile-access", error);
     return {
       createProfileAccessError: {
         createProfileAccessErrorMessage:

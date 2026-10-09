@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateOccurrenceTypeSchema } from "@/schemas/create-update-occurrence-type-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateOccurrenceTypeProps {
   message: string;
@@ -47,7 +50,7 @@ const handleUpdateOccurrenceType = async (
   }
 
   try {
-    const response = await fetch(updateOccurrenceType, {
+    const response = await apiFetch(updateOccurrenceType, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -59,16 +62,18 @@ const handleUpdateOccurrenceType = async (
 
     const { message } = (await response.json()) as UpdateOccurrenceTypeProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         updateOccurrenceTypeError: {
-          updateOccurrenceTypeErrorMessage: message,
+          updateOccurrenceTypeErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("occurrence-type/update-occurrence-type", error);
     return {
       updateOccurrenceTypeError: {
         updateOccurrenceTypeErrorMessage:

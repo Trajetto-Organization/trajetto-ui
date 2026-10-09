@@ -1,144 +1,90 @@
-import { useFormState, useFormStatus } from "react-dom";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+"use client";
 
-import { Button } from "@/components/ui/button";
-import { Loader, ShieldAlert, Trash } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
-import { useDeleteVehicleChecklistForm } from "./hooks";
+import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
+
 import { handleDeleteVehicleChecklist } from "@/actions/vehicle-checklist/delete-vehicle-checklist";
+import { isStaleActionResult } from "@/lib/action-result";
+import { useRevalidateScreen } from "@/hooks/use-revalidate-screen";
 
-interface DeleteVehicleChecklistProps {
+interface DeleteVehicleChecklistDialogProps {
   businessId: string;
   checklistId: string;
-
-  /** Business users are gated by granular permissions; a MASTER never is. */
-  disabled?: boolean;
-
-  /**
-   * Extra caution line for the cross-tenant (MASTER) view, where deleting on
-   * behalf of the wrong company is an actual possibility.
-   */
-  warnBusinessOwnership?: boolean;
+  /** How the row names it: plate and date. */
+  label: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const DeleteVehicleChecklistFormSubmit = ({
-  warnBusinessOwnership,
-}: {
-  warnBusinessOwnership?: boolean;
-}): JSX.Element => {
-  const { pending } = useFormStatus();
-
-  const deleteVehicleChecklistList = [
-    ...(warnBusinessOwnership
-      ? [
-          {
-            data: "Verifique se o checklist pertence à empresa antes de deletar",
-          },
-        ]
-      : []),
-    {
-      data: "Todos os dados do checklist (condições, inspeções, fotos) serão excluídos permanentemente",
-    },
-    {
-      data: "O histórico de inspeções do veículo será impactado",
-    },
-    {
-      data: "Esta ação será registrada nos logs de atividade do sistema",
-    },
-    {
-      data: "Esta ação não pode ser desfeita",
-    },
-  ];
-
-  return (
-    <>
-      <AlertDialogHeader>
-        <AlertDialogTitle>Deletar Checklist Veicular</AlertDialogTitle>
-        <AlertDialogDescription asChild>
-          <div>
-            A exclusão deste checklist veicular removerá permanentemente todos
-            os seus dados e informações associadas.
-            <span className="block mt-4 font-medium text-foreground">
-              Consequências imediatas:
-            </span>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
-              {deleteVehicleChecklistList.map(({ data }, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
-              ))}
-            </ul>
-          </div>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter className="mt-6">
-        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-        <Button
-          type="submit"
-          disabled={pending}
-          variant={"secondary"}
-          className="bg-red-600/10 dark:bg-red-500/10
-          dark:text-red-500 text-red-600"
-        >
-          <ShieldAlert className="mr-1 size-5" />
-          <span>Deletar Checklist</span>
-
-          {pending && (
-            <div className="animate-spin">
-              <Loader />
-            </div>
-          )}
-        </Button>
-      </AlertDialogFooter>
-    </>
-  );
-};
-
-const DeleteVehicleChecklistForm = ({
+/**
+ * Deleting an inspection, opened from the row menu (decision 3.5: the menu
+ * item opens the dialog; the dialog is not a button inside the menu).
+ */
+const DeleteVehicleChecklistDialog = ({
   businessId,
   checklistId,
-  disabled,
-  warnBusinessOwnership,
-}: DeleteVehicleChecklistProps): JSX.Element => {
-  const [state, dispatch] = useFormState(
-    () => handleDeleteVehicleChecklist({ businessId, checklistId }),
-    null,
-  );
+  label,
+  open,
+  onOpenChange,
+}: DeleteVehicleChecklistDialogProps): JSX.Element => {
+  const [isPending, setIsPending] = useState<boolean>(false);
+  const { revalidate } = useRevalidateScreen();
 
-  const { handleDeleteVehicleChecklistForm, isOpenDeleteVehicleChecklistForm } =
-    useDeleteVehicleChecklistForm(state);
+  const confirm = async () => {
+    setIsPending(true);
+
+    try {
+      const result = await handleDeleteVehicleChecklist({
+        businessId,
+        checklistId,
+      });
+
+      if (isStaleActionResult(result)) return;
+
+      if (result.deleteVehicleChecklistError) {
+        toast.error(result.deleteVehicleChecklistError);
+        return;
+      }
+
+      toast.success(result.successMessage ?? "Checklist excluído.");
+      void revalidate();
+      onOpenChange(false);
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
-    <AlertDialog
-      open={isOpenDeleteVehicleChecklistForm}
-      onOpenChange={handleDeleteVehicleChecklistForm}
-    >
-      <AlertDialogTrigger asChild disabled={disabled}>
-        <Button
-          className="w-full text-sm rounded-sm px-2
-          h-8 font-normal flex justify-between"
-          variant={"ghost"}
-        >
-          Deletar
-          <Trash size={17} className="dark:text-red-500 text-red-600" />
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent className="bg-white dark:bg-[#121214]">
-        <form action={dispatch}>
-          <DeleteVehicleChecklistFormSubmit
-            warnBusinessOwnership={warnBusinessOwnership}
-          />
-        </form>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Excluir checklist veicular"
+      destructive
+      confirmLabel="Excluir checklist"
+      isPending={isPending}
+      onConfirm={confirm}
+      description={
+        <>
+          <p>
+            O checklist <strong>{label}</strong> será excluído permanentemente.
+          </p>
+          <p className="font-medium text-foreground">
+            Validações e consequências:
+          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>As condições, os itens verificados e as fotos saem junto.</li>
+            <li>O histórico de inspeções do veículo perde este registro.</li>
+            <li>Motoristas não excluem checklists; só a gestão.</li>
+            <li>
+              A ação fica registrada nas atividades e não pode ser desfeita.
+            </li>
+          </ul>
+        </>
+      }
+    />
   );
 };
 
-export { DeleteVehicleChecklistForm };
+export { DeleteVehicleChecklistDialog };

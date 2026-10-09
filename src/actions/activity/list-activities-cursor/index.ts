@@ -1,9 +1,11 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import type { ActivityRow } from "@/features/activity/lib/grouping";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ListActivitiesCursorParams {
   period: "7d" | "30d";
@@ -58,7 +60,7 @@ const listActivitiesCursor = async ({
       ...(businessId && { businessId }),
     });
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/activity/list-cursor?${params}`,
       {
         credentials: "include",
@@ -68,7 +70,7 @@ const listActivitiesCursor = async ({
           "Accept-Encoding": "gzip",
           Authorization: `Bearer ${tokenAccess}`,
         },
-        next: { tags: ["create-activity"] },
+        next: { tags: ["update-activity"] },
       },
     );
 
@@ -90,6 +92,7 @@ const listActivitiesCursor = async ({
       hasMore: Boolean(cursorMeta.hasMore),
     };
   } catch (error) {
+    logActionError("activity/list-activities-cursor", error);
     return emptyResult(
       "Ocorreu um erro inesperado ao tentar recuperar as atividades.",
     );

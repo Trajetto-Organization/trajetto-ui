@@ -3,9 +3,10 @@ Dockerfile
 node_modules
 npm-debug.log
 README.md
+# All of it: the builder compiles its own. Re-including a local
+# .next/static and .next/standalone only shipped ~42 MB of a laptop's last
+# build into every local build context.
 .next
-!.next/static
-!.next/standalone
 .git
 .gitignore
 .github

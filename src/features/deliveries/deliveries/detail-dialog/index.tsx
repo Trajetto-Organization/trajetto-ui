@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useQuery, useQueryClient } from "react-query";
+import { useQueryClient } from "react-query";
 
 import { toast } from "sonner";
 import { Loader, MessageCircle, TriangleAlert } from "lucide-react";
@@ -23,6 +22,7 @@ import { Button } from "@/components/ui/button";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { getDelivery, type DeliveryStatus } from "@/actions/delivery/get-delivery";
+import type { DeliveryStatus } from "@/actions/delivery/get-delivery";
 
 import { updateDeliveryStatus } from "@/actions/delivery/update-delivery-status";
 
@@ -45,9 +45,19 @@ import { DeliveryTimeline } from "../timeline";
 import { ProofDocumentSection } from "../proof-document";
 import { reportDeliveryOccurrence } from "@/actions/delivery/report-delivery-occurrence";
 
-import { listOccurrenceTypes } from "@/actions/occurrence-type/list-occurrence-type";
 import { revalidateTagName } from "@/actions/revalidate";
-import { formatNotificationDate, displayValue } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDateOnly,
+  formatNotificationDate,
+} from "@/lib/format-values";
+import { newIdempotencyKey } from "@/lib/idempotency-key";
+import {
+  panelReportAuthorizationNotice,
+  panelReportForm,
+  queriesStaleAfterReport,
+} from "./occurrence-report-rules";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import {
   Tooltip,
@@ -62,8 +72,32 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
-import { DELIVERY_STATUS_META, DELIVERY_TRANSITIONS } from "../../lib/status";
+import {
+  DELIVERY_STATUS_META,
+  DELIVERY_TRANSITIONS,
+  inTransitBlocker,
+} from "../../lib/status";
+import { receivedByError } from "../../lib/received-by";
 import { OccurrenceTypeSelector } from "../occurrence-type-selector";
+import { useDeliveryDetail } from "@/hooks/use-delivery-detail";
+import { useAuthStore } from "@/store/auth-store";
+
+import {
+  buildChatSearchParams,
+  buildTicketSearchParams,
+} from "../../chat/lib/chat-link";
+import { ChatLinkedMessages } from "../../chat/linked-messages";
+import { LinkedTickets } from "../../chat/tickets/linked-tickets";
+import { ImageInspector } from "../../proof-audits/image-inspector";
+import { useOccurrenceTypes } from "@/hooks/use-occurrence-types";
+
+import { OccurrenceAnswerFields } from "../../occurrence-types/form-builder/answer-fields";
+import { answersFromInputs } from "../../occurrence-types/form-builder/builder-rules";
+import {
+  readFormFields,
+  validateOccurrenceAnswers,
+} from "../../occurrence-types/form-builder/rules";
+import { occurrenceLineDetails } from "../timeline/occurrence-details";
 
 interface DeliveryDetailDialogProps {
   businessId: string;
@@ -81,6 +115,11 @@ const DeliveryDetailDialog = ({
   const router = useRouter();
   const pathname = usePathname();
   const routeSearchParams = useSearchParams();
+
+  // Only the MASTER names the company to the chat actions (the one picked on
+  // /admin); everyone else is answered from the session.
+  const role = useAuthStore((state) => state.role);
+  const chatBusinessId = role === "MASTER" ? businessId : undefined;
 
   // Both write affordances stay on screen and explain themselves on hover,
   // the way every other module does it. Read from the session here so a
@@ -107,6 +146,9 @@ const DeliveryDetailDialog = ({
   const [nextStatus, setNextStatus] = useState<DeliveryStatus | "">("");
   const [receivedBy, setReceivedBy] = useState<string>("");
 
+  // Shown under the field once the operator tried to apply (decision 3.4).
+  const [receivedByTouched, setReceivedByTouched] = useState<boolean>(false);
+
   // Moving a status by hand carries no evidence of its own, so the reason is
   // it. Required by the API and required here, rather than letting the request
   // go and showing the refusal as a toast.
@@ -125,24 +167,47 @@ const DeliveryDetailDialog = ({
   const [occurrenceDescription, setOccurrenceDescription] =
     useState<string>("");
 
+  // The type's form, answered from the panel (decision 6.2): strings per
+  // field key, typed and checked with the API's own rules on "Registrar".
+  const [answerInputs, setAnswerInputs] = useState<Record<string, string>>({});
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
+
+  // A new type is a new form: nothing typed for the previous one carries over.
+  useEffect(() => {
+    setAnswerInputs({});
+    setAnswerErrors({});
+  }, [occurrenceTypeId]);
+
+  // One submission id per occurrence as written (IDEMP-14), the key the
+  // driver's app already sends: "Registrar" again after a lost answer is the
+  // same occurrence, not a second one with a second alert. A new type,
+  // description or answer is a new occurrence.
+  const [occurrenceKey, setOccurrenceKey] = useState<string>(() =>
+    newIdempotencyKey(),
+  );
+
+  const answersSignature = JSON.stringify(answerInputs);
+
+  useEffect(() => {
+    setOccurrenceKey(newIdempotencyKey());
+  }, [occurrenceTypeId, occurrenceDescription, answersSignature]);
+
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  const { data: response, isLoading } = useQuery(
-    ["delivery-detail", deliveryId],
-    () => getDelivery(businessId, deliveryId),
-    { refetchOnWindowFocus: false },
+  const { data: response, isLoading } = useDeliveryDetail(
+    businessId,
+    deliveryId,
   );
 
-  const { data: typesResponse, isLoading: isLoadingTypes } = useQuery(
-    ["occurrence-types-select", businessId],
-    () => listOccurrenceTypes(businessId, 1, 100),
-    { refetchOnWindowFocus: false },
-  );
+  const { occurrenceTypes, isLoading: isLoadingTypes } =
+    useOccurrenceTypes(businessId);
 
   const delivery = response?.data;
-  const occurrenceTypes = (typesResponse?.data?.data ?? []).filter(
-    (type) => type.is_active,
+
+  const selectedType = occurrenceTypes.find(
+    (type) => type.id === occurrenceTypeId,
   );
+  const selectedFields = readFormFields(selectedType?.form_fields ?? null);
 
   const allowedTransitions = delivery
     ? DELIVERY_TRANSITIONS[delivery.status]
@@ -156,8 +221,20 @@ const DeliveryDetailDialog = ({
     await revalidateTagName("update-delivery");
   };
 
+  // Decision 5.3: marking as delivered from the panel has no photo or
+  // signature behind it, so who received it is required — with the API's
+  // text rules and messages, checked before the request.
+  const receivedByIssue =
+    nextStatus === "DELIVERED" ? receivedByError(receivedBy) : null;
+
   const handleStatusChange = async () => {
     if (!delivery || !nextStatus || !reasonId) return;
+
+    if (receivedByIssue) {
+      setReceivedByTouched(true);
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -168,16 +245,18 @@ const DeliveryDetailDialog = ({
         {
           reasonId,
           note: statusNote || undefined,
-          receivedBy:
-            nextStatus === "DELIVERED" ? receivedBy || undefined : undefined,
+          receivedBy: nextStatus === "DELIVERED" ? receivedBy : undefined,
         },
       );
+
+      if (isStaleActionResult(result)) return;
 
       if (result.success) {
         toast.success(result.message);
 
         setNextStatus("");
         setReceivedBy("");
+        setReceivedByTouched(false);
 
         setReasonId("");
         setStatusNote("");
@@ -193,20 +272,51 @@ const DeliveryDetailDialog = ({
 
   const handleReportOccurrence = async () => {
     if (!delivery || !occurrenceTypeId) return;
+
+    // The same check the API makes, before the request: the field says what
+    // is missing instead of a toast after the round trip.
+    const answers = answersFromInputs(selectedFields, answerInputs);
+    const verdict = validateOccurrenceAnswers(selectedFields, answers);
+
+    if (Object.keys(verdict.errors).length > 0) {
+      setAnswerErrors(verdict.errors);
+      return;
+    }
+
+    setAnswerErrors({});
     setIsSaving(true);
 
     try {
       const result = await reportDeliveryOccurrence(businessId, delivery.id, {
         occurrenceTypeId,
         description: occurrenceDescription || undefined,
+        client_submission_id: occurrenceKey,
+        ...panelReportForm({
+          formVersion: selectedType?.form_version,
+          fields: selectedFields,
+          answers: verdict.answers,
+        }),
       });
+
+      if (isStaleActionResult(result)) return;
 
       if (result.success) {
         toast.success(result.message);
         setOccurrenceTypeId("");
         setOccurrenceDescription("");
+        setAnswerInputs({});
         await refreshDetail();
       } else {
+        if (result.fieldErrors) setAnswerErrors(result.fieldErrors);
+
+        // A form edited since the selector loaded: read the types again, so
+        // the fields on screen become the ones the API checks.
+        await Promise.all(
+          queriesStaleAfterReport(result.code, businessId).map((key) =>
+            queryClient.invalidateQueries(key),
+          ),
+        );
+
         toast.error(result.message);
       }
     } finally {
@@ -218,10 +328,7 @@ const DeliveryDetailDialog = ({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogScrollContent
-        className="max-w-2xl max-h-[90vh] overflow-y-auto"
-        onInteractOutside={(event) => event.preventDefault()}
-      >
+      <DialogScrollContent className="max-w-2xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Detalhes da Entrega
@@ -231,7 +338,9 @@ const DeliveryDetailDialog = ({
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription className="truncate">
+          {/* Wraps instead of truncating: a nowrap line was the widest thing
+              in the dialog and pushed it into a sideways scroll (DLV-OT-3). */}
+          <DialogDescription className="break-words [overflow-wrap:anywhere]">
             {delivery ? (
               <>
                 Para <strong>{delivery.recipient_name}</strong> —{" "}
@@ -272,18 +381,21 @@ const DeliveryDetailDialog = ({
                 <span className="text-muted-foreground">Endereço: </span>
                 {delivery.street}
                 {delivery.address_number ? `, ${delivery.address_number}` : ""}
-                {delivery.neighborhood ? ` — ${delivery.neighborhood}` : ""} —{" "}
-                {delivery.city}/{delivery.uf}
+                {delivery.neighborhood
+                  ? ` — ${delivery.neighborhood}`
+                  : ""} — {delivery.city}/{delivery.uf}
               </p>
-              <p className="sm:col-span-2 truncate">
+              <p className="sm:col-span-2 break-all">
                 <span className="text-muted-foreground">Chave NF-e: </span>
                 {displayValue(delivery.invoice_key)}
               </p>
               <p>
                 <span className="text-muted-foreground">Prevista: </span>
-                {delivery.scheduled_date
-                  ? formatNotificationDate(delivery.scheduled_date, "pt-BR")
-                  : displayValue(null)}
+                {/* A day, not an instant (decision 1.3): no time, never the
+                    day before in the browser's zone. */}
+                {formatDateOnly(delivery.scheduled_date, {
+                  fallback: displayValue(null) ?? undefined,
+                })}
               </p>
               {delivery.driver && (
                 <div className="flex items-center gap-2 sm:col-span-2">
@@ -301,18 +413,21 @@ const DeliveryDetailDialog = ({
                       size="sm"
                       className="h-7 shrink-0 text-xs"
                       onClick={() => {
-                        const params = new URLSearchParams(
-                          routeSearchParams.toString(),
+                        // One builder for every way into the chat: it also
+                        // drops a previous link's route or filter params.
+                        const params = buildChatSearchParams(
+                          routeSearchParams,
+                          {
+                            driver: {
+                              id: delivery.driver!.id,
+                              name: delivery.driver!.name,
+                            },
+                            delivery: {
+                              id: delivery.id,
+                              recipient_name: delivery.recipient_name,
+                            },
+                          },
                         );
-
-                        params.set("tab", "chat");
-                        params.delete("page");
-                        params.delete("search");
-
-                        params.set("chatDriver", delivery.driver!.id);
-                        params.set("chatDriverName", delivery.driver!.name);
-                        params.set("chatDelivery", delivery.id);
-                        params.set("chatRecipient", delivery.recipient_name);
 
                         router.push(`${pathname}?${params.toString()}`);
                         onClose();
@@ -334,7 +449,7 @@ const DeliveryDetailDialog = ({
                 </p>
               )}
               {delivery.notes && (
-                <p className="sm:col-span-2">
+                <p className="sm:col-span-2 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                   <span className="text-muted-foreground">Observações: </span>
                   {delivery.notes}
                 </p>
@@ -377,23 +492,30 @@ const DeliveryDetailDialog = ({
                         <SelectValue placeholder="Novo status" />
                       </SelectTrigger>
                       <SelectContent>
-                        {allowedTransitions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {DELIVERY_STATUS_META[status].label}
-                          </SelectItem>
-                        ))}
+                        {allowedTransitions.map((status) => {
+                          // Decision 5.4, mirrored: "Em rota" is a driver
+                          // carrying the load; the API also refuses a route
+                          // that did not leave.
+                          const blocker =
+                            status === "IN_TRANSIT"
+                              ? inTransitBlocker({
+                                  driverId: delivery.driver?.id ?? null,
+                                })
+                              : null;
+
+                          return (
+                            <SelectItem
+                              key={status}
+                              value={status}
+                              disabled={blocker !== null}
+                              title={blocker ?? undefined}
+                            >
+                              {DELIVERY_STATUS_META[status].label}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
-
-                    {nextStatus === "DELIVERED" && (
-                      <Input
-                        value={receivedBy}
-                        onChange={(e) => setReceivedBy(e.target.value)}
-                        placeholder="Quem recebeu (opcional)"
-                        className="w-full sm:flex-1"
-                        disabled={!canWriteDelivery}
-                      />
-                    )}
 
                     <TooltipProvider delayDuration={100}>
                       <Tooltip>
@@ -429,6 +551,39 @@ const DeliveryDetailDialog = ({
                     </TooltipProvider>
                   </div>
 
+                  {allowedTransitions.includes("IN_TRANSIT") &&
+                    inTransitBlocker({
+                      driverId: delivery.driver?.id ?? null,
+                    }) && (
+                      <p className="text-xs text-muted-foreground">
+                        Em rota indisponível:{" "}
+                        {inTransitBlocker({
+                          driverId: delivery.driver?.id ?? null,
+                        })}
+                      </p>
+                    )}
+
+                  {nextStatus === "DELIVERED" && (
+                    <FieldShell
+                      label="Quem recebeu *"
+                      htmlFor="received_by"
+                      error={receivedByTouched ? receivedByIssue : null}
+                      hint="Sem foto nem assinatura, o nome de quem recebeu é o que sustenta a baixa pelo painel."
+                    >
+                      {(control) => (
+                        <Input
+                          {...control}
+                          value={receivedBy}
+                          maxLength={150}
+                          onChange={(e) => setReceivedBy(e.target.value)}
+                          onBlur={() => setReceivedByTouched(true)}
+                          placeholder="Nome de quem recebeu"
+                          disabled={!canWriteDelivery || isSaving}
+                        />
+                      )}
+                    </FieldShell>
+                  )}
+
                   {/* Only once a status is picked: asking why before asking
                       what would be asking a question with no subject. */}
                   {nextStatus !== "" && (
@@ -447,12 +602,71 @@ const DeliveryDetailDialog = ({
               </>
             )}
 
+            {/* The messages about THIS delivery, from the driver's one
+                thread (decision 6.7). Writing stays in the chat. */}
+            {delivery.driver && (
+              <>
+                <Separator />
+
+                {/* Decision 14.5: the delivery's tickets, each one leading to
+                    its conversation (design §6.4). */}
+                <LinkedTickets
+                  actionBusinessId={chatBusinessId}
+                  driver={{
+                    id: delivery.driver.id,
+                    name: delivery.driver.name,
+                  }}
+                  context={{ kind: "delivery", id: delivery.id }}
+                  onOpenTicket={(ticketId) => {
+                    const params = buildTicketSearchParams(
+                      routeSearchParams,
+                      ticketId,
+                    );
+
+                    router.push(`${pathname}?${params.toString()}`);
+                    onClose();
+                  }}
+                />
+
+                <ChatLinkedMessages
+                  actionBusinessId={chatBusinessId}
+                  driver={{
+                    id: delivery.driver.id,
+                    name: delivery.driver.name,
+                  }}
+                  filter={{
+                    kind: "delivery",
+                    id: delivery.id,
+                    label: delivery.recipient_name,
+                  }}
+                  onOpenChat={() => {
+                    const params = buildChatSearchParams(routeSearchParams, {
+                      driver: {
+                        id: delivery.driver!.id,
+                        name: delivery.driver!.name,
+                      },
+                      delivery: {
+                        id: delivery.id,
+                        recipient_name: delivery.recipient_name,
+                      },
+                      filter: "delivery",
+                    });
+
+                    router.push(`${pathname}?${params.toString()}`);
+                    onClose();
+                  }}
+                />
+              </>
+            )}
+
             <Separator />
 
             <ProofDocumentSection
               businessId={businessId}
               deliveryId={delivery.id}
               status={delivery.status}
+              canRegenerate={canWriteDelivery}
+              regenerateBlockedReason={deliveryPermission.tooltipMessage}
             />
 
             <Separator />
@@ -474,6 +688,7 @@ const DeliveryDetailDialog = ({
               <DeliveryTimeline
                 entries={delivery.timeline ?? []}
                 onPreviewImage={(url, label) => setPreviewImage({ url, label })}
+                occurrenceDetails={occurrenceLineDetails(delivery.occurrences)}
               />
             </div>
 
@@ -490,13 +705,47 @@ const DeliveryDetailDialog = ({
                     isLoading={isLoadingTypes}
                     disabled={!canWriteOccurrence}
                   />
-                  <Textarea
-                    value={occurrenceDescription}
-                    onChange={(e) => setOccurrenceDescription(e.target.value)}
-                    placeholder="Descrição (opcional)"
-                    maxLength={500}
-                    disabled={!canWriteOccurrence}
-                  />
+
+                  {/* Decision 6.3: the author is the authority only when the
+                      queue would let them decide (delivery_manage write). */}
+                  {selectedType?.requires_authorization && (
+                    <p className="text-xs text-muted-foreground">
+                      {panelReportAuthorizationNotice(canWriteDelivery)}
+                    </p>
+                  )}
+
+                  {selectedFields && (
+                    <OccurrenceAnswerFields
+                      fields={selectedFields}
+                      values={answerInputs}
+                      onChange={(key, value) =>
+                        setAnswerInputs((current) => ({
+                          ...current,
+                          [key]: value,
+                        }))
+                      }
+                      errors={answerErrors}
+                      disabled={!canWriteOccurrence || isSaving}
+                    />
+                  )}
+
+                  <FieldShell
+                    label="Descrição (opcional)"
+                    htmlFor="occurrence_description"
+                  >
+                    {(control) => (
+                      <Textarea
+                        {...control}
+                        value={occurrenceDescription}
+                        onChange={(e) =>
+                          setOccurrenceDescription(e.target.value)
+                        }
+                        placeholder="O que aconteceu, com detalhes"
+                        maxLength={500}
+                        disabled={!canWriteOccurrence}
+                      />
+                    )}
+                  </FieldShell>
 
                   <TooltipProvider delayDuration={100}>
                     <Tooltip>
@@ -528,7 +777,6 @@ const DeliveryDetailDialog = ({
                 </div>
               )}
             </div>
-
           </div>
         )}
         {previewImage && (
@@ -543,18 +791,14 @@ const DeliveryDetailDialog = ({
                   Registrado pelo motorista no aplicativo.
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex justify-center">
-                <Image
-                  src={previewImage.url}
-                  alt={previewImage.label}
-                  width={800}
-                  height={600}
-                  className="max-w-full max-h-96 object-contain rounded-lg"
-                  // Always without Next's optimizer — the signed URL does
-                  // not pass remotePatterns, same rule as the fuel photos.
-                  unoptimized
-                />
-              </div>
+              {/* Zoom, rotation and the lens, as in the proof audit: a
+                  receipt photo has to be read, not glanced at. Keyed per
+                  photo so a new one starts a new inspection. */}
+              <ImageInspector
+                key={previewImage.url}
+                url={previewImage.url}
+                alt={previewImage.label}
+              />
             </DialogContent>
           </Dialog>
         )}

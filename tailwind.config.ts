@@ -18,6 +18,14 @@ export default {
       },
     },
     extend: {
+      // `bg-destructive` paints the surface red (white text on it), while
+      // `text-`/`border-`/`ring-destructive` keep the readable red: the two
+      // differ in the dark theme (globals.css, `--destructive-surface`).
+      backgroundColor: {
+        destructive: {
+          DEFAULT: "hsl(var(--destructive-surface))",
+        },
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -62,6 +70,80 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Public site palette (globals.css, "Public site design tokens").
+        // Solid colors take an opacity modifier: `bg-site-ink/10`.
+        site: {
+          bg: "rgb(var(--site-bg) / <alpha-value>)",
+          surface: "rgb(var(--site-surface) / <alpha-value>)",
+          soft: "rgb(var(--site-soft) / <alpha-value>)",
+          soft2: "rgb(var(--site-soft2) / <alpha-value>)",
+          ink: "rgb(var(--site-ink) / <alpha-value>)",
+          muted: "rgb(var(--site-muted) / <alpha-value>)",
+          pink: "rgb(var(--site-pink) / <alpha-value>)",
+          violet: "rgb(var(--site-violet) / <alpha-value>)",
+          line: "var(--site-line)",
+          line2: "var(--site-line2)",
+          "pink-soft": "var(--site-pink-soft)",
+          "violet-soft": "var(--site-violet-soft)",
+          glass: "var(--site-glass)",
+          glass2: "var(--site-glass2)",
+          block: "var(--site-block)",
+          street: "var(--site-street)",
+          park: "var(--site-park)",
+          water: "var(--site-water)",
+          "glow-a": "var(--site-glow-a)",
+          "glow-b": "var(--site-glow-b)",
+          "cat-entregas": "rgb(var(--site-cat-entregas) / <alpha-value>)",
+          "cat-frotas": "rgb(var(--site-cat-frotas) / <alpha-value>)",
+          "cat-operacao": "rgb(var(--site-cat-operacao) / <alpha-value>)",
+          "cat-integracoes": "rgb(var(--site-cat-integracoes) / <alpha-value>)",
+          "cat-conformidade":
+            "rgb(var(--site-cat-conformidade) / <alpha-value>)",
+        },
+      },
+      // next/font variables set on <html> by the root layout.
+      fontFamily: {
+        // The app and the auth pages read in Inter, like the public site
+        // (decision 16.122): "Acessar plataforma" must not land in another
+        // product's type. Preflight puts `sans` on <html>, and inputs,
+        // buttons, tables and chart labels inherit it.
+        sans: [
+          "var(--font-inter)",
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+          "Apple Color Emoji",
+          "Segoe UI Emoji",
+        ],
+        site: ["var(--font-inter)", "system-ui", "sans-serif"],
+        "site-display": [
+          "var(--font-inter-tight)",
+          "var(--font-inter)",
+          "system-ui",
+          "sans-serif",
+        ],
+        "site-mono": [
+          "var(--font-jetbrains-mono)",
+          "ui-monospace",
+          "monospace",
+        ],
+      },
+      boxShadow: {
+        "site-pop": "var(--site-shadow-pop)",
+        "site-bar": "var(--site-shadow-bar)",
+        "site-cta": "0 10px 24px -12px rgba(14,14,30,.5)",
+        "site-cta-hover": "0 18px 30px -14px rgba(14,14,30,.55)",
+        "site-panel":
+          "0 1px 0 rgba(255,255,255,.6) inset, 0 30px 80px -30px rgba(14,14,30,.28), 0 12px 24px -16px rgba(14,14,30,.18)",
+      },
+      transitionTimingFunction: {
+        // The design's ease-out (cubic-bezier(.22,1,.36,1)) everywhere.
+        site: "cubic-bezier(.22,1,.36,1)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -243,6 +325,22 @@ export default {
         "typing-dot": "typing-dot 1.4s ease-in-out infinite",
         "recording-wave": "recording-wave 1s ease-in-out infinite",
         wiggle: "wiggle 5s ease-in-out infinite alternate",
+
+        // Public site (keyframes tp* in globals.css). Entrances keep `both`
+        // so a delayed element stays hidden until its turn. Delays go in
+        // `[animation-delay:120ms]`.
+        "tp-up": "tpUp .9s cubic-bezier(.22,1,.36,1) both",
+        "tp-fade": "tpFade .9s cubic-bezier(.22,1,.36,1) both",
+        "tp-in": "tpIn .6s cubic-bezier(.22,1,.36,1) both",
+        "tp-nav-in": "tpNavIn .28s cubic-bezier(.22,1,.36,1) both",
+        "tp-live": "tpLive 1.8s ease-out infinite",
+        "tp-float": "tpFloat 2s ease-in-out infinite",
+        "tp-pulse": "tpPulse 2s ease-in-out infinite",
+        "tp-grad": "tpGrad 3s linear infinite",
+        "tp-spin": "tpSpin .8s linear infinite",
+        "tp-shake": "tpShake .45s ease both",
+        "tp-pop": "tpPop .5s cubic-bezier(.34,1.56,.64,1) both",
+        "tp-shimmer": "tpShimmer 1.4s linear infinite",
       },
     },
   },

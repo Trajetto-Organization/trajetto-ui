@@ -58,13 +58,48 @@ async function open(page: Page, path: string): Promise<void> {
   expect(page.url(), `fell through to login: ${path}`).not.toContain("/login");
 }
 
+/**
+ * Takes the endpoint the test created back out.
+ *
+ * A company holds at most ten endpoints (DLVB-24): a nightly suite that left
+ * one behind per run would hit the ceiling within two weeks and fail for a
+ * reason that has nothing to do with the code it tests.
+ */
+async function removeCreated(page: Page, name: string): Promise<void> {
+  const dialog = page.getByRole("dialog").first();
+
+  await dialog
+    .getByRole("button", { name: "Já guardei" })
+    .click({ timeout: 20_000 });
+
+  const row = page
+    .locator("div.rounded-lg.border")
+    .filter({ hasText: name })
+    .first();
+
+  await row
+    .getByRole("button", { name: "Remover o endpoint" })
+    .click({ timeout: 20_000 });
+
+  await page
+    .locator('[role="alertdialog"], [role="dialog"]')
+    .last()
+    .getByRole("button", { name: /^Remover/ })
+    .click();
+
+  await expect(page.getByText(name, { exact: true })).toHaveCount(0, {
+    timeout: 20_000,
+  });
+}
+
 test.describe("subscribing to a whole family of events", () => {
   test("shows the children as chosen and sends only the wildcard", async ({
     page,
   }) => {
     await open(page, "/dashboard/integrations?tab=webhooks");
 
-    await page.getByRole("button", { name: /novo endpoint|novo destino/i })
+    await page
+      .getByRole("button", { name: /novo endpoint|novo destino/i })
       .first()
       .click();
 
@@ -79,7 +114,7 @@ test.describe("subscribing to a whole family of events", () => {
     await expect(familyToggle).toBeVisible({ timeout: 20_000 });
 
     const routeBoxes = dialog.locator(
-      'label:has(span:text-matches("^route\\\\.")) input[type="checkbox"]',
+      'label:has(span:text-matches("^route\\\\.")) [role="checkbox"]',
     );
 
     const total = await routeBoxes.count();
@@ -119,7 +154,9 @@ test.describe("subscribing to a whole family of events", () => {
       ).toBeChecked();
     }
 
-    await dialog.getByLabel(/nome/i).fill("Destino de teste");
+    const name = `Destino de rotas ${Date.now()}`;
+
+    await dialog.getByLabel(/nome/i).fill(name);
     await dialog
       .getByLabel(/url/i)
       .fill(`https://exemplo.invalid/hook-${Date.now()}`);
@@ -139,7 +176,10 @@ test.describe("subscribing to a whole family of events", () => {
           (candidate.postData() ?? "").includes("route."),
         { timeout: 20_000 },
       ),
-      dialog.getByRole("button", { name: /salvar|criar/i }).first().click(),
+      dialog
+        .getByRole("button", { name: /salvar|criar/i })
+        .first()
+        .click(),
     ]);
 
     const body = request.postData() ?? "";
@@ -157,5 +197,73 @@ test.describe("subscribing to a whole family of events", () => {
       concrete,
       "os tópicos concretos foram enviados junto do curinga, o que congela a assinatura",
     ).toEqual([]);
+
+    await removeCreated(page, name);
+  });
+  /**
+   * Documentos is three prefixes, not one: "Todos os eventos" saved
+   * `document.*`, which matches no topic — the endpoint received nothing and
+   * the boxes stayed unchecked and dimmed (DLVB-22, decision 5.9).
+   */
+  test("subscribes Documentos to delivery.*, occurrence.* and proof.*", async ({
+    page,
+  }) => {
+    await open(page, "/dashboard/integrations?tab=webhooks");
+
+    await page
+      .getByRole("button", { name: /novo endpoint|novo destino/i })
+      .first()
+      .click();
+
+    const dialog = page.getByRole("dialog").first();
+
+    const familyToggle = dialog
+      .getByRole("button", { name: /todos os eventos.*delivery/i })
+      .first();
+
+    await expect(familyToggle).toBeVisible({ timeout: 20_000 });
+
+    await familyToggle.click();
+
+    const documentBoxes = dialog.locator(
+      'label:has(span:text-matches("^(delivery|occurrence|proof)\\\\.")) [role="checkbox"]',
+    );
+
+    const total = await documentBoxes.count();
+
+    expect(total).toBeGreaterThan(3);
+
+    for (let index = 0; index < total; index += 1) {
+      await expect(documentBoxes.nth(index)).toBeChecked();
+    }
+
+    const name = `Destino de documentos ${Date.now()}`;
+
+    await dialog.getByLabel(/nome/i).fill(name);
+    await dialog
+      .getByLabel(/url/i)
+      .fill(`https://exemplo.invalid/hook-${Date.now()}`);
+
+    const [request] = await Promise.all([
+      page.waitForRequest(
+        (candidate) =>
+          candidate.method() === "POST" &&
+          (candidate.postData() ?? "").includes("delivery."),
+        { timeout: 20_000 },
+      ),
+      dialog
+        .getByRole("button", { name: /salvar|criar/i })
+        .first()
+        .click(),
+    ]);
+
+    const body = request.postData() ?? "";
+
+    expect(body).toContain("delivery.*");
+    expect(body).toContain("occurrence.*");
+    expect(body).toContain("proof.*");
+    expect(body).not.toContain("document.*");
+
+    await removeCreated(page, name);
   });
 });

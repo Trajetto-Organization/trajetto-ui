@@ -6,20 +6,21 @@ import { permissionKeys } from "@/lib/permissions";
 // Validates against the canonical key list, so a permission added there is
 // immediately accepted here — no second list to remember.
 const permissionKeyEnum = z.enum(permissionKeys, {
-  errorMap: () => ({ message: "A permissão é obrigatória." }),
+  errorMap: () => ({ message: "Selecione a permissão." }),
 });
 
 const createUpdatePermissionSchema = z
   .object({
     action: z
       .string()
+      // Empty or blank is a missing name, not a short one (decision 16.702).
+      .regex(/\S/, "O nome da permissão é obrigatório.")
       .min(3, "O nome da permissão deve ter no mínimo 3 caracteres.")
       .superRefine((value, ctx) => {
         if (value.trim().length === 0) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message:
-              "O nome da permissão não pode ser vazio ou conter apenas espaços.",
+            message: "O nome da permissão é obrigatório.",
           });
 
           return;
@@ -68,8 +69,8 @@ const createUpdatePermissionSchema = z
       (val) => (val === "on" ? true : false),
       z.boolean().default(false),
     ),
-    businessId: z.string().min(1, "A empresa é obrigatória!"),
-    profileAccessId: z.string().min(1, "O Perfil de acesso é obrigatório!"),
+    businessId: z.string().min(1, "Selecione a empresa."),
+    profileAccessId: z.string().min(1, "Selecione o perfil de acesso."),
     permissionKey: permissionKeyEnum,
   })
   .refine((data) => data.canRead, {

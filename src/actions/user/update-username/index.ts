@@ -1,9 +1,12 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { validateUserNameFormSchema } from "@/schemas/update-username-schema";
 
 import { getCookies } from "../../cookies";
 import { revalidateTagName } from "../../revalidate";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateUserNameProps {
   message: string;
@@ -33,7 +36,7 @@ const handleUpdateUserName = async (state: any, userNameValues: FormData) => {
   const { userName } = userNameValidation.data;
 
   try {
-    const response = await fetch(updateUserName, {
+    const response = await apiFetch(updateUserName, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -45,13 +48,14 @@ const handleUpdateUserName = async (state: any, userNameValues: FormData) => {
 
     const { message } = (await response.json()) as UpdateUserNameProps;
 
-    if (!response.ok && message) {
-      return { userNameError: message };
+    if (!response.ok) {
+      return { userNameError: message || refusalMessage(response.status) };
     }
 
     await revalidateTagName("update-username");
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/update-username", error);
     return {
       userNameError:
         "Ocorreu um erro inesperado ao tentar atualizar seu nome de usuário! Por favor, tente novamente.",

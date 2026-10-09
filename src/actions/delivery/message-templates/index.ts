@@ -1,8 +1,11 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
-type MessageTopic = "DISPATCHED" | "DELIVERED" | "FAILED";
+// ON_THE_WAY: the driver is heading to the address now (decision 6.4).
+type MessageTopic = "DISPATCHED" | "ON_THE_WAY" | "DELIVERED" | "FAILED";
 type MessageChannel = "EMAIL" | "WHATSAPP";
 
 interface MessageTemplate {
@@ -37,7 +40,7 @@ const listMessageTemplates = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/message-templates?businessId=${businessId}`,
       {
         credentials: "include",
@@ -61,6 +64,7 @@ const listMessageTemplates = async (
 
     return { success: true, message: result.message, data: result.data };
   } catch (error) {
+    logActionError("delivery/message-templates/listMessageTemplates", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar as mensagens.",
@@ -100,7 +104,7 @@ const saveMessageTemplate = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/message-template/${businessId}`,
       {
         credentials: "include",
@@ -116,14 +120,24 @@ const saveMessageTemplate = async (
     const result = await response.json();
 
     if (!response.ok) {
+      // A schema refusal arrives as "Validation Error" with the sentences in
+      // `issues` (an unknown {{variável}}, a body of spaces): the first one
+      // is what the person has to fix.
+      const issue =
+        Array.isArray(result.issues) && typeof result.issues[0] === "string"
+          ? (result.issues[0] as string)
+          : null;
+
       return {
         success: false,
-        message: result.message || "Houve um erro ao salvar a mensagem.",
+        message:
+          issue ?? (result.message || "Houve um erro ao salvar a mensagem."),
       };
     }
 
     return { success: true, message: result.message };
   } catch (error) {
+    logActionError("delivery/message-templates/saveMessageTemplate", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao salvar a mensagem.",

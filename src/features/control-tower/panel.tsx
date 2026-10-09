@@ -1,33 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "react-query";
 
 import dynamic from "next/dynamic";
 
-import { Truck } from "lucide-react";
+import {
+  AlertTriangle,
+  Info,
+  Radio,
+  RefreshCw,
+  Truck,
+  WifiOff,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { AccessErrorState } from "@/components/shared/custom/access-error-state";
+import { ManageModulesButton } from "@/components/shared/custom/access-error-state/manage-modules-button";
 
-import { getSocket, initializeSocket } from "@/socket";
+import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 
 import { useOperationsSubscription } from "@/hooks/use-operations-subscription";
 
-import {
-  getControlTower,
-  getDriverTrail,
-  type TowerPosition,
-} from "@/actions/control-tower";
+import { getControlTower, getDriverTrail } from "@/actions/control-tower";
+import type { TowerPosition } from "@/actions/control-tower/types";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 import {
+  ActiveRoutesWidget,
   EventsWidget,
   FunnelWidget,
   ProgressWidget,
   PunctualityWidget,
 } from "./widgets";
+
+import {
+  applyLivePosition,
+  hasUnknownDriver,
+  mergeLivePosition,
+  type LiveUpdate,
+} from "./lib/live-positions";
+import type { MapTiles } from "./lib/map-tiles";
+import { useRefetchScheduler } from "./lib/refetch-scheduler";
+import { companyZoneNote, formatEventMoment } from "./lib/tower-format";
+import { FOREGROUND_ONLY_NOTICE } from "./lib/tracking-notice";
+import { OccurrenceAuthorizationQueue } from "@/features/deliveries/occurrence-authorizations/queue";
+import {
+  TowerRequestError,
+  accessErrorOf,
+  describeFailure,
+  retryTransient,
+  unwrapAnswer,
+} from "./lib/tower-request";
 
 /**
  * Leaflet touches `window` at import time, so the map can never be part of the
@@ -39,34 +66,51 @@ const TowerMap = dynamic(
   () => import("./map").then((module) => module.TowerMap),
   {
     ssr: false,
-    loading: () => <Skeleton className="h-[480px] w-full rounded-lg" />,
+    loading: () => (
+      <Skeleton
+        data-tutorial="loading"
+        className="h-[60vh] min-h-[320px] w-full rounded-lg md:h-[480px]"
+      />
+    ),
   },
 );
 
 interface ControlTowerPanelProps {
   businessId: string;
+
+  /** Where the event links open: the master's surface or the company's. */
+  mode?: "admin" | "dashboard";
+
+  /** The base map, read on the server per request (decision 7.4). */
+  tiles?: MapTiles | null;
+
+  /**
+   * Whether the app reports from the background (decision 7.3). Off until
+   * the Play Console declaration; while off, the panel says the tower sees
+   * a driver only with the app open.
+   */
+  backgroundTracking?: boolean;
 }
 
 /**
  * How often the numbers are refetched.
  *
  * Thirty seconds. The dots move over the socket the instant a phone reports,
- * so this is only for the counters — and a dispatcher who leaves this open all
- * day would otherwise make 2.880 requests a shift for a funnel that changes a
- * few times an hour.
+ * and route events refetch at once; this is the floor for everything else —
+ * and a dispatcher who leaves this open all day would otherwise make 2.880
+ * requests a shift for a funnel that changes a few times an hour.
  */
 const REFRESH_MS = 30_000;
 
-const POSITION_EVENT = "driverPosition";
+/** How often the dots age (fresh → sem reportar) between two reads. */
+const CLOCK_TICK_MS = 30_000;
 
-interface PositionEvent {
+const POSITION_EVENT = "driverPosition";
+const ROUTE_EVENT = "routeEvent";
+
+interface PositionEvent extends LiveUpdate {
   driverId: string;
   routeId: string;
-  latitude: number;
-  longitude: number;
-  speed: number | null;
-  heading: number | null;
-  recordedAt: string;
 }
 
 function isPositionEvent(value: unknown): value is PositionEvent {
@@ -82,8 +126,16 @@ function isPositionEvent(value: unknown): value is PositionEvent {
   );
 }
 
+/**
+ * The tower. Keyed by company in the content (decision 2.6): a master who
+ * switches company gets a fresh panel — framing, selection and live dots of
+ * the previous one included (UI-TWR-8).
+ */
 const ControlTowerPanel = ({
   businessId,
+  mode = "dashboard",
+  tiles = null,
+  backgroundTracking = false,
 }: ControlTowerPanelProps): JSX.Element => {
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
 
@@ -103,84 +155,149 @@ const ControlTowerPanel = ({
    */
   const [live, setLive] = useState<Record<string, PositionEvent>>({});
 
-  const { data, isLoading, isFetching, refetch } = useQuery(
-    ["control_tower", businessId],
-    () => getControlTower(businessId || undefined),
-    { refetchOnWindowFocus: false, refetchInterval: REFRESH_MS },
-  );
+  const [connected, setConnected] = useState<boolean>(false);
 
-  const tower = data?.data;
-
-  const { data: trailResponse } = useQuery(
-    ["driver_trail", businessId, selectedDriverId],
-    () =>
-      getDriverTrail(selectedDriverId as string, {
-        businessId: businessId || undefined,
-      }),
-    { enabled: Boolean(selectedDriverId), refetchOnWindowFocus: false },
-  );
-
-  const socketBound = useRef<boolean>(false);
+  const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    if (!businessId || socketBound.current) return;
+    const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const towerQuery = useQuery(
+    ["control_tower", businessId],
+    async () => {
+      const answer = await getControlTower(businessId || undefined);
+
+      if (isStaleActionResult(answer, { background: true })) {
+        throw new TowerRequestError(STALE_ACTION_MESSAGE);
+      }
+
+      // Thrown on a refusal or a failure: react-query keeps the last tower
+      // on screen and exposes the error beside it (UI-TWR-1).
+      return unwrapAnswer(answer);
+    },
+    {
+      refetchOnWindowFocus: false,
+      refetchInterval: REFRESH_MS,
+      keepPreviousData: true,
+      retry: retryTransient,
+    },
+  );
+
+  const tower = towerQuery.data;
+  const refetchTower = towerQuery.refetch;
+
+  const trailQuery = useQuery(
+    ["driver_trail", businessId, selectedDriverId],
+    async () => {
+      const answer = await getDriverTrail(selectedDriverId as string, {
+        businessId: businessId || undefined,
+      });
+
+      if (isStaleActionResult(answer, { background: true })) {
+        throw new TowerRequestError(STALE_ACTION_MESSAGE);
+      }
+
+      return unwrapAnswer(answer);
+    },
+    {
+      enabled: Boolean(selectedDriverId),
+      refetchOnWindowFocus: false,
+      retry: retryTransient,
+    },
+  );
+
+  const trail = trailQuery.data;
+  const refetchTrail = trailQuery.refetch;
+
+  /**
+   * One refetch for a burst of reasons: a route event, a reconnection, a
+   * driver the last read did not know — and never two within ten seconds
+   * (lib/refetch-scheduler). The open trail comes along, so the line keeps
+   * up with the dot.
+   */
+  const scheduleRefetch = useRefetchScheduler(() => {
+    void refetchTower();
+
+    if (selectedDriverId) void refetchTrail();
+  });
+
+  useEffect(() => {
+    if (!businessId) return;
 
     let disposed = false;
+    let bound: ReturnType<typeof getSocket> = null;
 
-    const handle = (incoming: unknown) => {
+    const handlePosition = (incoming: unknown) => {
       if (disposed || !isPositionEvent(incoming)) return;
 
-      setLive((current) => ({ ...current, [incoming.driverId]: incoming }));
+      // Out-of-order events are dropped: an older point never replaces a
+      // newer one (see lib/live-positions).
+      setLive((current) => mergeLivePosition(current, incoming));
     };
+
+    const handleConnect = () => setConnected(true);
+    const handleDisconnect = () => setConnected(false);
 
     const bind = async () => {
       const socket = getSocket() ?? (await initializeSocket());
 
       if (disposed) return;
 
-      socket.on(POSITION_EVENT, handle);
-      socketBound.current = true;
+      bound = socket;
+
+      socket.on(POSITION_EVENT, handlePosition);
+
+      // A route started, a stop settled, a status moved by hand: the
+      // counters and the feed changed, not only the dots.
+      socket.on(ROUTE_EVENT, scheduleRefetch);
+
+      socket.on("connect", handleConnect);
+      socket.on("disconnect", handleDisconnect);
+
+      setConnected(socket.connected);
     };
 
-    void bind();
+    void bind().catch(() => setConnected(false));
+
+    // What a reconnection missed has no replay: read it again.
+    const stopResync = onRealtimeResync(scheduleRefetch);
 
     return () => {
       disposed = true;
 
-      getSocket()?.off(POSITION_EVENT, handle);
-      socketBound.current = false;
-    };
-  }, [businessId]);
+      stopResync();
 
-  // A refetch is the authority: it carries names, plates and freshness. The
-  // socket's dots are only newer until the next one lands.
+      bound?.off(POSITION_EVENT, handlePosition);
+      bound?.off(ROUTE_EVENT, scheduleRefetch);
+      bound?.off("connect", handleConnect);
+      bound?.off("disconnect", handleDisconnect);
+    };
+  }, [businessId, scheduleRefetch]);
+
+  // A refetch is the authority: it carries names, plates and route states.
+  // The socket's dots are only newer until the next one lands.
   useEffect(() => {
     if (!tower) return;
 
     setLive({});
   }, [tower]);
 
-  const positions = useMemo<TowerPosition[]>(() => {
-    const fetched = tower?.positions ?? [];
+  // Somebody started a route since the last read: their dot has no name,
+  // plate or route until one, so ask for it now rather than in 30 s.
+  useEffect(() => {
+    if (tower && hasUnknownDriver(live, tower.positions)) scheduleRefetch();
+  }, [live, tower, scheduleRefetch]);
 
-    return fetched.map((position) => {
-      const update = live[position.driverId];
-
-      if (!update) return position;
-
-      return {
-        ...position,
-        latitude: update.latitude,
-        longitude: update.longitude,
-        speed: update.speed,
-        heading: update.heading,
-        recordedAt: update.recordedAt,
-
-        // It arrived a moment ago, by definition.
-        fresh: true,
-      };
-    });
-  }, [tower, live]);
+  const positions = useMemo<TowerPosition[]>(
+    () =>
+      (tower?.positions ?? []).map((position) =>
+        applyLivePosition(position, live[position.driverId], now),
+      ),
+    [tower, live, now],
+  );
 
   const selected = positions.find(
     (position) => position.driverId === selectedDriverId,
@@ -190,40 +307,173 @@ const ControlTowerPanel = ({
     setSelectedDriverId(driverId);
   }, []);
 
+  const onStreet = positions.filter((position) => position.state !== "ended");
+  const silent = positions.filter((position) => position.state === "silent");
+  const ended = positions.filter((position) => position.state === "ended");
+
+  const zoneNote = companyZoneNote(tower?.timeZone);
+
+  const onMap = useMemo(
+    () => new Set(positions.map((position) => position.driverId)),
+    [positions],
+  );
+
+  if (!tower && towerQuery.isError) {
+    const refusal = accessErrorOf(towerQuery.error);
+
+    // A refusal says which one, like every other screen (decision 4.1): the
+    // MASTER on a company without Entregas gets the way to enable it.
+    if (refusal) {
+      return (
+        <AccessErrorState
+          kind={refusal.kind}
+          moduleLabel="Entregas"
+          audience={mode === "admin" ? "master" : "company"}
+          message={refusal.message}
+          action={
+            refusal.kind === "module-not-enabled" &&
+            mode === "admin" &&
+            businessId ? (
+              <ManageModulesButton businessId={businessId} />
+            ) : undefined
+          }
+        />
+      );
+    }
+
+    const copy = describeFailure(towerQuery.error);
+
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title={copy.title}
+        description={copy.description}
+        action={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void refetchTower()}
+            disabled={towerQuery.isFetching}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Tentar novamente
+          </Button>
+        }
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <Truck className="h-3 w-3" />
-            {positions.length}{" "}
-            {positions.length === 1 ? "veículo" : "veículos"}
-          </Badge>
+      {towerQuery.isError && tower && (
+        <div
+          role="alert"
+          className="flex flex-col gap-2 rounded-lg border border-amber-300
+          bg-amber-50 p-3 text-sm text-amber-900 sm:flex-row sm:items-center
+          sm:justify-between dark:border-amber-800 dark:bg-amber-950
+          dark:text-amber-200"
+        >
+          <span>
+            {describeFailure(towerQuery.error).title}. Mostrando os dados das{" "}
+            {formatEventMoment(
+              new Date(towerQuery.dataUpdatedAt).toISOString(),
+              tower.day,
+              tower.timeZone,
+            )}
+            .
+          </span>
 
-          {positions.some((position) => !position.fresh) && (
-            <Badge variant="secondary">
-              {positions.filter((position) => !position.fresh).length} sem
-              reportar há mais de 10 min
-            </Badge>
-          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => void refetchTower()}
+            disabled={towerQuery.isFetching}
+          >
+            Tentar novamente
+          </Button>
         </div>
+      )}
 
-        <RefreshButton
-          storageKey="control-tower-panel"
-          isRefreshing={isFetching}
-          onRefresh={() => void refetch()}
-        />
+      <div
+        className="flex flex-wrap items-center gap-2"
+        data-tutorial="control-tower-status"
+      >
+        <Badge variant="outline" className="gap-1">
+          <Truck className="h-3 w-3" />
+          {onStreet.length} {onStreet.length === 1 ? "veículo" : "veículos"} em
+          rota
+        </Badge>
+
+        {silent.length > 0 && (
+          <Badge variant="secondary">
+            {silent.length} sem reportar há mais de 10 min
+          </Badge>
+        )}
+
+        {ended.length > 0 && (
+          <Badge
+            variant="outline"
+            className="border-green-600 text-green-800 dark:text-green-300"
+          >
+            {ended.length}{" "}
+            {ended.length === 1 ? "rota concluída" : "rotas concluídas"} nas
+            últimas 2 h
+          </Badge>
+        )}
+
+        <Badge
+          variant="outline"
+          className={`gap-1 ${connected ? "text-green-800 dark:text-green-300" : "text-muted-foreground"}`}
+          title={
+            connected
+              ? "As posições chegam no instante em que o telefone envia."
+              : "Sem conexão em tempo real: a torre se atualiza a cada 30 segundos."
+          }
+        >
+          {connected ? (
+            <Radio className="h-3 w-3" />
+          ) : (
+            <WifiOff className="h-3 w-3" />
+          )}
+          {connected ? "Ao vivo" : "Sem tempo real"}
+        </Badge>
+
+        {zoneNote && (
+          <span className="text-xs text-muted-foreground">{zoneNote}</span>
+        )}
       </div>
 
-      {isLoading ? (
-        <Skeleton className="h-[480px] w-full rounded-lg" />
+      {/* Decision 6.3: drivers waiting for the tower's answer, on top. */}
+      <OccurrenceAuthorizationQueue businessId={businessId} />
+
+      {/* On every read, not in a tooltip: a quiet dot otherwise reads as a
+      stopped truck (decision 7.3). */}
+      {!backgroundTracking && (
+        <p
+          role="note"
+          className="flex items-start gap-2 text-xs text-muted-foreground"
+          data-tutorial="control-tower-foreground-note"
+        >
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>{FOREGROUND_ONLY_NOTICE}</span>
+        </p>
+      )}
+
+      {towerQuery.isLoading ? (
+        <Skeleton
+          data-tutorial="loading"
+          className="h-[60vh] min-h-[320px] w-full rounded-lg md:h-[480px]"
+        />
       ) : (
         <>
           <TowerMap
             positions={positions}
-            trail={selectedDriverId ? (trailResponse?.data?.points ?? null) : null}
+            trail={selectedDriverId ? (trail?.points ?? null) : null}
             selectedDriverId={selectedDriverId}
             onSelectDriver={handleSelect}
+            tiles={tiles}
           />
 
           {selected && (
@@ -239,19 +489,26 @@ const ControlTowerPanel = ({
               {selected.routeCode !== null && (
                 <span className="text-xs text-muted-foreground">
                   Rota {selected.routeCode}
+                  {selected.state === "ended" && selected.endedAt
+                    ? ` · concluída às ${formatEventMoment(selected.endedAt, tower?.day, tower?.timeZone)}`
+                    : ""}
                 </span>
               )}
 
-              {trailResponse?.data && (
+              {trail && (
                 <span className="text-xs text-muted-foreground">
                   {/* The real count next to what was drawn: somebody seeing
                   only the drawn points would conclude the phone stopped
                   reporting. */}
-                  {trailResponse.data.recorded.toLocaleString("pt-BR")} pontos
-                  hoje
-                  {trailResponse.data.recorded >
-                    trailResponse.data.points.length &&
-                    ` (${trailResponse.data.points.length} desenhados)`}
+                  {trail.recorded.toLocaleString("pt-BR")} pontos hoje
+                  {trail.recorded > trail.points.length &&
+                    ` (${trail.points.length} desenhados)`}
+                </span>
+              )}
+
+              {trailQuery.isError && (
+                <span className="text-xs text-destructive">
+                  Não foi possível carregar o trajeto.
                 </span>
               )}
 
@@ -268,10 +525,25 @@ const ControlTowerPanel = ({
         </>
       )}
 
+      {towerQuery.isLoading || !tower ? (
+        <Skeleton data-tutorial="loading" className="h-24 w-full rounded-lg" />
+      ) : (
+        <ActiveRoutesWidget
+          routes={tower.activeRoutes ?? []}
+          onMap={onMap}
+          now={now}
+          day={tower.day}
+          timeZone={tower.timeZone}
+        />
+      )}
+
       <div className="grid gap-3 lg:grid-cols-3">
-        {isLoading || !tower ? (
+        {towerQuery.isLoading || !tower ? (
           <>
-            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton
+              data-tutorial="loading"
+              className="h-40 w-full rounded-lg"
+            />
             <Skeleton className="h-40 w-full rounded-lg" />
             <Skeleton className="h-40 w-full rounded-lg" />
           </>
@@ -284,7 +556,13 @@ const ControlTowerPanel = ({
               <PunctualityWidget punctuality={tower.punctuality} />
             </div>
 
-            <EventsWidget events={tower.events} />
+            <EventsWidget
+              events={tower.events}
+              day={tower.day}
+              timeZone={tower.timeZone}
+              mode={mode}
+              businessId={businessId}
+            />
           </>
         )}
       </div>

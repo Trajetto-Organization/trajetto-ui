@@ -3,23 +3,13 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { MoreHorizontal, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  RowActionItem,
+  RowActions,
+  RowActionSeparator,
+} from "@/components/shared/custom/row-actions";
 
 import type { ImportData } from "@/actions/import/list-imports";
 
@@ -43,8 +33,6 @@ interface ImportRowActionsProps {
 const ImportRowActions = ({ row }: ImportRowActionsProps): JSX.Element => {
   const businessId = useDeliveriesBusinessId();
   const record = row.original;
-
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
   const [isReverseOpen, setIsReverseOpen] = useState<boolean>(false);
@@ -76,75 +64,31 @@ const ImportRowActions = ({ row }: ImportRowActionsProps): JSX.Element => {
       ? "Esta importação já foi estornada."
       : record.status === "IN_PROGRESS"
         ? "A importação ainda está em andamento. Aguarde o fim para estorná-la."
-        : "";
+        : !canReverse(record)
+          ? "Esta importação não pode ser estornada."
+          : null;
 
   return (
     <>
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-          >
-            <MoreHorizontal />
-            <span className="sr-only">Abrir Menu</span>
-          </Button>
-        </DropdownMenuTrigger>
+      {/* The standard menu (decision 3.5): 160px, text items, the undo in
+          red and disabled with its reason. */}
+      <RowActions entity={`a importação ${record.filename}`}>
+        <RowActionItem
+          label="Ver relatório"
+          onSelect={() => setIsReportOpen(true)}
+        />
 
-        <DropdownMenuContent align="end" className="w-[180px]">
-          <DropdownMenuItem
-            className="cursor-pointer truncate block"
-            onClick={() => {
-              setIsDropdownOpen(false);
-              setIsReportOpen(true);
-            }}
-          >
-            Ver relatório
-          </DropdownMenuItem>
+        <RowActionItem label="Copiar ID" onSelect={handleCopyID} />
 
-          <DropdownMenuItem
-            className="cursor-pointer truncate block"
-            onClick={handleCopyID}
-          >
-            Copiar ID
-          </DropdownMenuItem>
+        <RowActionSeparator />
 
-          <DropdownMenuSeparator />
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <DropdownMenuItem
-                    className="flex cursor-pointer items-center
-                    justify-between"
-                    disabled={
-                      !canReverse(record) ||
-                      !permissionsRequired.hasAllPermissions
-                    }
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsReverseOpen(true);
-                    }}
-                  >
-                    Estornar
-                    <Undo2
-                      size={17}
-                      className="dark:text-red-500 text-red-600"
-                    />
-                  </DropdownMenuItem>
-                </div>
-              </TooltipTrigger>
-
-              {reverseBlockedReason && (
-                <TooltipContent className="max-w-sm">
-                  <p>{reverseBlockedReason}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <RowActionItem
+          label="Estornar"
+          destructive
+          blockedReason={reverseBlockedReason}
+          onSelect={() => setIsReverseOpen(true)}
+        />
+      </RowActions>
 
       {isReportOpen && (
         <ImportReportDialog

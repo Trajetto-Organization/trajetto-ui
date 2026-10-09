@@ -6,10 +6,16 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
+import { appEnv } from "@/lib/site";
 
 import { ControlTowerContent } from "@/features/control-tower/content";
+import {
+  readMapTileSettings,
+  resolveMapTiles,
+} from "@/features/control-tower/lib/map-tiles";
+import { readBackgroundTracking } from "@/features/control-tower/lib/tracking-notice";
+import { ControlTowerContentSkeleton } from "@/features/control-tower/skeleton";
 
 interface ControlTowerQueryParamsProps {
   searchParams: { businessId?: string };
@@ -33,6 +39,14 @@ const AdminControlTower = async ({
     redirect("/login");
   }
 
+  // Per request, on the server: the image is promoted from staging, so the
+  // map provider cannot be a value inlined at build time (decision 7.4).
+  const tiles = resolveMapTiles({ ...readMapTileSettings(), appEnv: appEnv() });
+
+  // Same reason, same place: turning the app's background tracking on must
+  // not need a new web image (decision 7.3).
+  const backgroundTracking = readBackgroundTracking();
+
   return (
     <PageContainer>
       <ProtectedHeading
@@ -40,8 +54,20 @@ const AdminControlTower = async ({
         description="Selecione a empresa para ver onde os veículos dela estão agora."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
-        <ControlTowerContent mode="admin" searchParams={searchParams} />
+      <Suspense
+        fallback={
+          <ControlTowerContentSkeleton
+            withSelector={true}
+            withTrackingNote={!backgroundTracking}
+          />
+        }
+      >
+        <ControlTowerContent
+          mode="admin"
+          searchParams={searchParams}
+          tiles={tiles}
+          backgroundTracking={backgroundTracking}
+        />
       </Suspense>
     </PageContainer>
   );

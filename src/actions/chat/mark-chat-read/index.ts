@@ -1,8 +1,10 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type { ActionResponse } from "../chat.types";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface MarkChatReadProps {
   businessId?: string;
@@ -45,20 +47,23 @@ const markChatRead = async ({
       };
     }
 
-    const response = await fetch(`${process.env.HTTP_REQUEST}/chat/mark-read`, {
-      credentials: "include",
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${tokenAccess}`,
-        "Content-Type": "application/json",
+    const response = await apiFetch(
+      `${process.env.HTTP_REQUEST}/chat/mark-read`,
+      {
+        credentials: "include",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenAccess}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          threadId,
+          ...(readAt && { readAt }),
+          ...(businessId && { businessId }),
+        }),
+        cache: "no-store",
       },
-      body: JSON.stringify({
-        threadId,
-        ...(readAt && { readAt }),
-        ...(businessId && { businessId }),
-      }),
-      cache: "no-store",
-    });
+    );
 
     const result = await response.json();
 
@@ -71,6 +76,7 @@ const markChatRead = async ({
 
     return { success: true, message: "Conversa marcada como lida." };
   } catch (error) {
+    logActionError("chat/mark-chat-read", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao marcar a conversa como lida.",

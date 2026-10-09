@@ -8,6 +8,7 @@ import {
 
 import type { FuelInfoAlertProps } from "./fuel-info-alert.types";
 import { formatToBrazilianCurrency } from "@/lib/format-values";
+import { formatPricePerLiter } from "@/features/fuel/lib/price";
 
 const FuelInfoAlert = ({
   liters,
@@ -90,8 +91,9 @@ const FuelInfoAlert = ({
           {/* Calculated values */}
           {liters && <span>• Litros: {formatLiters(liters)} L</span>}
 
+          {/* The pump price has three decimals: as money, 5.899 read "R$ 5,90". */}
           {pricePerLiter && (
-            <span>• Preço/L: {formatToBrazilianCurrency(pricePerLiter)}</span>
+            <span>• Preço: {formatPricePerLiter(pricePerLiter)}/L</span>
           )}
 
           {totalAmount && (

@@ -6,45 +6,50 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { FuelContent } from "./fuel-content";
+import { FuelContent } from "@/features/fuel/content";
+import { FuelSkeleton } from "@/features/fuel/skeleton";
 
-interface FuelQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface FuelPageProps {
+  // Every param the URL carries: page, search, sort, order, the facets and,
+  // on /admin, the company picked at the top.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Abastecimento",
-    description: `
-      Gerencie facilmente os abastecimentos cadastrados. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    description:
+      "Gerencie os abastecimentos da frota: consulte, filtre, edite e acompanhe litros e gastos.",
   };
 }
 
-const Fuel = async ({
+const DashboardFuel = async ({
   searchParams,
-}: FuelQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: FuelPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Abastecimento"}
-        description="Gerencie os abastecimentos cadastrados, delete, edite e mantenha os dados sempre atualizados."
+        title="Abastecimento"
+        description="Registre, filtre e corrija os abastecimentos da frota e acompanhe litros e gasto."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <FuelContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. */}
+      <Suspense fallback={<FuelSkeleton mode="dashboard" />}>
+        <FuelContent
+          mode="dashboard"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default Fuel;
+export default DashboardFuel;

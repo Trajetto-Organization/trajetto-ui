@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteStatusChangeReasonProps {
   businessId: string;
@@ -34,7 +37,7 @@ const handleDeleteStatusChangeReason = async ({
   const deleteStatusChangeReason = `${process.env.HTTP_REQUEST}/status-change-reason/delete-status-change-reason/${reasonId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteStatusChangeReason, {
+    const response = await apiFetch(deleteStatusChangeReason, {
       credentials: "include",
       method: "DELETE",
       headers: { Authorization: `Bearer ${tokenAccess}` },
@@ -43,12 +46,16 @@ const handleDeleteStatusChangeReason = async ({
     const { message } =
       (await response.json()) as DeleteStatusChangeReasonResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteStatusChangeReasonError: message };
+    if (!response.ok) {
+      return {
+        deleteStatusChangeReasonError:
+          message || refusalMessage(response.status),
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("status-change-reason/delete-status-change-reason", error);
     return {
       deleteStatusChangeReasonError:
         "Ocorreu um erro inesperado ao tentar deletar o motivo.",

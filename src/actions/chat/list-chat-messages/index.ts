@@ -1,5 +1,6 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type {
@@ -7,6 +8,7 @@ import type {
   ChatDriverUser,
   ChatMessage,
 } from "../chat.types";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ListChatMessagesProps {
   businessId?: string;
@@ -34,12 +36,23 @@ interface ListChatMessagesProps {
    * Takes precedence over both cursors, and the server is the one that
    * resolves it: only it knows the message's position, and only it can check
    * the message really belongs to this conversation before centring on it. A
-   * message from another conversation answers 400.
+   * message from another conversation, or outside the route/delivery filter,
+   * answers 404 CHAT_MESSAGE_NOT_FOUND.
    */
   around?: string;
 
   limit?: number;
   search?: string;
+
+  /**
+   * Narrows the conversation to one delivery's or one route's messages
+   * (decision 6.7). Every cursor then walks the filtered history.
+   */
+  deliveryId?: string;
+  routeId?: string;
+
+  /** Only one support ticket's messages (decision 14.5). */
+  ticketId?: string;
 }
 
 interface ListChatMessagesData {
@@ -81,6 +94,9 @@ const listChatMessages = async ({
   around,
   limit = 40,
   search,
+  deliveryId,
+  routeId,
+  ticketId,
 }: ListChatMessagesProps): Promise<ActionResponse<ListChatMessagesData>> => {
   /**
    * Everything, `getCookies` included, inside the try.
@@ -121,10 +137,13 @@ const listChatMessages = async ({
       ...(after && { afterAt: after.created_at, afterId: after.id }),
       ...(around && { aroundMessageId: around }),
       ...(search && { search }),
+      ...(deliveryId && { deliveryId }),
+      ...(routeId && { routeId }),
+      ...(ticketId && { ticketId }),
       ...(businessId && { businessId }),
     });
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/chat/list-messages?${query.toString()}`,
       {
         credentials: "include",
@@ -161,6 +180,7 @@ const listChatMessages = async ({
       },
     };
   } catch (error) {
+    logActionError("chat/list-chat-messages", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar a conversa.",

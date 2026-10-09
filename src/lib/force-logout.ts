@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { disconnectSocket } from "@/socket";
+import { leaveSession } from "@/lib/clear-session-state";
 
 /**
  * Every way a session can end against the user's will.
@@ -13,9 +14,12 @@ import { disconnectSocket } from "@/socket";
 type ForceLogoutReason =
   | "session_expired"
   | "user_revoked"
+  | "business_inactive"
+  | "branch_inactive"
   | "driver_inactive"
   | "access_denied"
   | "permissions_changed"
+  | "role_changed"
   | "no_user_permission"
   | "service_unavailable";
 
@@ -41,6 +45,20 @@ const REASON_TO_COPY: Record<ForceLogoutReason, ForceLogoutCopy> = {
     title: "Seu acesso foi revogado",
     description: "Um administrador bloqueou seu acesso. Redirecionando…",
   },
+  // The company was switched off (decision 4.1): nothing about this person's
+  // own access changed, so it does not read as "acesso revogado".
+  business_inactive: {
+    title: "Empresa desativada",
+    description:
+      "A empresa em que você trabalha foi desativada. Redirecionando…",
+  },
+  // A driver whose branch was switched off (AUTH_BRANCH_INACTIVE): the
+  // account itself is fine, so "conta excluída" would be wrong.
+  branch_inactive: {
+    title: "Filial desativada",
+    description:
+      "A filial do seu cadastro de motorista foi desativada. Redirecionando…",
+  },
   driver_inactive: {
     title: "Seu cadastro foi inativado",
     description: "Seu cadastro como motorista está inativo. Redirecionando…",
@@ -52,6 +70,14 @@ const REASON_TO_COPY: Record<ForceLogoutReason, ForceLogoutCopy> = {
   permissions_changed: {
     title: "Suas permissões mudaram",
     description: "Você precisa entrar novamente. Redirecionando…",
+  },
+  // Role, company or linked driver changed (decision 4.6): the API already
+  // ended the session on purpose, so it is neither "expirou" nor a simple
+  // permission reload.
+  role_changed: {
+    title: "Seu acesso foi alterado",
+    description:
+      "Seu nível de acesso, empresa ou motorista vinculado mudou. Redirecionando…",
   },
   no_user_permission: {
     title: "Perfil de acesso não configurado",
@@ -109,7 +135,13 @@ function forceLogout(reason: ForceLogoutReason): void {
   disconnectSocket();
 
   setTimeout(() => {
-    window.location.href = `/login?error=${reason}&force_logout=true`;
+    // The same way out as "Sair" (see leaveSession): the hard navigation
+    // drops the cache and stores with the document. Emptying them here, under
+    // the screen still mounted behind the overlay, made it rebuild its
+    // queries and ask the API again with a dead session. Only the role and
+    // permissions persisted in localStorage are cleared by hand; the socket
+    // is already closed, so leaveSession's own disconnect is a no-op.
+    leaveSession(`/login?error=${reason}&force_logout=true`);
   }, REDIRECT_DELAY_MS);
 }
 

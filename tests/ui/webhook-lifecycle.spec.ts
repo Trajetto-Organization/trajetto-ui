@@ -55,7 +55,7 @@ async function fillEndpoint(
   const dialog = dialogOf(page);
 
   await expect(
-    dialog.locator('input[type="checkbox"]').first(),
+    dialog.locator('[role="checkbox"]:not([disabled])').first(),
   ).toBeVisible({ timeout: 20_000 });
 
   await page.locator("#webhook-name").fill(values.name);
@@ -77,7 +77,9 @@ const rowOf = (page: Page, name: string) =>
  * fails for a reason that has nothing to do with the code it is testing.
  */
 async function removeEndpoint(page: Page, name: string): Promise<void> {
-  await rowOf(page, name).getByRole("button", { name: "Remover o endpoint" }).click();
+  await rowOf(page, name)
+    .getByRole("button", { name: "Remover o endpoint" })
+    .click();
 
   await page
     .locator('[role="alertdialog"], [role="dialog"]')
@@ -90,8 +92,8 @@ async function removeEndpoint(page: Page, name: string): Promise<void> {
   });
 }
 
-test.describe("um destino de webhook, do começo ao fim", () => {
-  test("criar mostra o segredo UMA vez e não fecha o diálogo", async ({
+test.describe("a webhook destination, from start to finish", () => {
+  test("creating shows the secret ONCE and does not close the dialog", async ({
     page,
   }) => {
     const name = `Destino ${stamp()}`;
@@ -105,7 +107,10 @@ test.describe("um destino de webhook, do começo ao fim", () => {
       url: `https://exemplo.invalid/hook-${stamp()}`,
     });
 
-    await dialogOf(page).locator('input[type="checkbox"]').first().check();
+    await dialogOf(page)
+      .locator('[role="checkbox"]:not([disabled])')
+      .first()
+      .check();
 
     await saveButton(page).click();
 
@@ -148,7 +153,7 @@ test.describe("um destino de webhook, do começo ao fim", () => {
     await removeEndpoint(page, name);
   });
 
-  test("editar abre com o que está salvo, fecha ao salvar, e a lista muda", async ({
+  test("editing opens with what is saved, closes on save, and the list changes", async ({
     page,
   }) => {
     const name = `Destino ${stamp()}`;
@@ -158,7 +163,10 @@ test.describe("um destino de webhook, do começo ao fim", () => {
 
     await page.getByRole("button", { name: "Novo endpoint" }).click();
     await fillEndpoint(page, { name, url });
-    await dialogOf(page).locator('input[type="checkbox"]').first().check();
+    await dialogOf(page)
+      .locator('[role="checkbox"]:not([disabled])')
+      .first()
+      .check();
     await saveButton(page).click();
 
     await expect(
@@ -211,7 +219,9 @@ test.describe("um destino de webhook, do começo ao fim", () => {
     await removeEndpoint(page, renamed);
   });
 
-  test("remover pergunta antes, e a linha some da tela", async ({ page }) => {
+  test("removing asks first, and the row leaves the screen", async ({
+    page,
+  }) => {
     const name = `Destino ${stamp()}`;
 
     await openPanel(page);
@@ -223,7 +233,10 @@ test.describe("um destino de webhook, do começo ao fim", () => {
       url: `https://exemplo.invalid/hook-${stamp()}`,
     });
 
-    await dialogOf(page).locator('input[type="checkbox"]').first().check();
+    await dialogOf(page)
+      .locator('[role="checkbox"]:not([disabled])')
+      .first()
+      .check();
     await saveButton(page).click();
 
     await expect(
@@ -240,7 +253,9 @@ test.describe("um destino de webhook, do começo ao fim", () => {
 
     // Asked, and by name: "remover este destino?" with nothing identifying it
     // is how somebody removes the wrong one.
-    const confirmation = page.locator('[role="alertdialog"], [role="dialog"]').last();
+    const confirmation = page
+      .locator('[role="alertdialog"], [role="dialog"]')
+      .last();
 
     await expect(confirmation).toBeVisible({ timeout: 15_000 });
     await expect(confirmation).toContainText(name);

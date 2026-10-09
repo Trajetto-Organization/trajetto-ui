@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import { handleUpdateKanbanColumn } from "@/actions/kanban/update-kanban-column"
 import { useUpdateColumnDialog } from "./hooks";
 
 import { Input } from "@/components/ui/input";
+
+import { ColorSwatches } from "../color-swatches";
 import type {
   UpdateColumnDialogFormState,
   UpdateColumnDialogProps,
@@ -31,6 +33,7 @@ import type {
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+import { guardFormAction } from "@/lib/action-result";
 
 const UpdateColumnForm = ({
   column,
@@ -47,17 +50,6 @@ const UpdateColumnForm = ({
     permissions.KANBAN_MANAGE,
     "write",
   );
-
-  const predefinedColors = [
-    "#64748b", // Slate
-    "#3b82f6", // Blue
-    "#f59e0b", // Amber
-    "#8b5cf6", // Violet
-    "#22c55e", // Green
-    "#ef4444", // Red
-    "#ec4899", // Pink
-    "#06b6d4", // Cyan
-  ];
 
   // Function to check if any field has been changed
   const checkIfDirty = (newTitle: string, newColor: string) => {
@@ -107,30 +99,11 @@ const UpdateColumnForm = ({
         >
           {(control) => (
             <>
-              <div className="flex gap-2">
-                {predefinedColors.map((presetColor) => (
-                  <button
-                    key={presetColor}
-                    type="button"
-                    /*
-                      A swatch with nothing but a background colour announces
-                      as "button" and nothing else. The name says which colour
-                      it is; `aria-pressed` says which one is chosen, which the
-                      black border was carrying visually and nowhere else.
-                    */
-                    aria-label={`Cor ${presetColor}`}
-                    aria-pressed={color === presetColor}
-                    className="w-8 h-8 rounded-md border-2 transition-all"
-                    style={{
-                      backgroundColor: presetColor,
-                      borderColor:
-                        color === presetColor ? "#000" : "transparent",
-                    }}
-                    onClick={() => handleColorChange(presetColor)}
-                    disabled={pending}
-                  />
-                ))}
-              </div>
+              <ColorSwatches
+                value={color}
+                onChange={handleColorChange}
+                disabled={pending}
+              />
 
               <Input
                 {...control}
@@ -146,7 +119,8 @@ const UpdateColumnForm = ({
         </FieldShell>
       </div>
 
-      <DialogFooter className="mt-6 gap-1">
+      {/* Cancelar first; the layout follows the dialog's width (decision 3.2). */}
+      <DialogFormFooter className="mt-6">
         <Button
           type="button"
           variant="outline"
@@ -162,7 +136,7 @@ const UpdateColumnForm = ({
           Atualizar Coluna
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
-      </DialogFooter>
+      </DialogFormFooter>
     </>
   );
 };
@@ -173,7 +147,10 @@ const UpdateColumnDialog = ({
   column,
 }: UpdateColumnDialogProps): JSX.Element => {
   const defaultState: UpdateColumnDialogFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateKanbanColumn, null);
+  const [state, dispatch] = useFormState(
+    guardFormAction(handleUpdateKanbanColumn),
+    null,
+  );
 
   const { formRef } = useUpdateColumnDialog({
     state,
@@ -183,7 +160,7 @@ const UpdateColumnDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent onInteractOutside={(e) => e.preventDefault()}>
+      <DialogScrollContent>
         <DialogHeader>
           <DialogTitle>Editar Coluna</DialogTitle>
           <DialogDescription>

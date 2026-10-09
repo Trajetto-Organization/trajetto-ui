@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteServiceOrderPartProps {
   businessId: string;
@@ -29,7 +32,7 @@ const handleDeleteServiceOrderPart = async ({
   const deleteServiceOrderPart = `${process.env.HTTP_REQUEST}/service-order-part/delete-service-order-part/${serviceOrderPartId}/serviceOrder/${serviceOrderId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteServiceOrderPart, {
+    const response = await apiFetch(deleteServiceOrderPart, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -40,12 +43,15 @@ const handleDeleteServiceOrderPart = async ({
     const { message } =
       (await response.json()) as DeleteServiceOrderPartResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteServiceOrderPartError: message };
+    if (!response.ok) {
+      return {
+        deleteServiceOrderPartError: message || refusalMessage(response.status),
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("service-order-part/delete-service-order-part", error);
     return {
       deleteServiceOrderPartError:
         "Ocorreu um erro inesperado ao tentar deletar a ordem de serviço da peça.",

@@ -24,4 +24,24 @@ const formatDuration = (value: number | null | undefined): string => {
   })} s`;
 };
 
-export { formatDuration, formatMoment };
+/**
+ * A usage day ("YYYY-MM-DD", the company's calendar day) as "15/09".
+ *
+ * Split, never parsed into a Date: `new Date("2026-09-15")` is UTC midnight
+ * and a browser in Brazil would print the 14th. The chart used to show the
+ * raw ISO string (DLVB-33).
+ */
+const formatDayKey = (
+  key: string | null | undefined,
+  withYear = false,
+): string => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key ?? "");
+
+  if (!match) return key ?? "";
+
+  const [, year, month, day] = match;
+
+  return withYear ? `${day}/${month}/${year}` : `${day}/${month}`;
+};
+
+export { formatDayKey, formatDuration, formatMoment };

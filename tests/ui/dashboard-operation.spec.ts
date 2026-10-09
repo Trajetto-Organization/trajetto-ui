@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { managerForThisSpec, managerToken } from "./support/operation";
+import { waitForHydration } from "./support/ui";
 
 import { readFileSync } from "node:fs";
 
@@ -55,6 +56,11 @@ async function open(page: Page, path: string, width = 1440): Promise<void> {
   });
 
   expect(page.url(), `fell through to login: ${path}`).not.toContain("/login");
+
+  // The overview asks for its numbers from the client, after hydration and
+  // after the company is resolved; "networkidle" on a busy dev server can
+  // come before either, and the 30 s that followed were not always enough.
+  await waitForHydration(page.locator("main").first());
 }
 
 /** What the API says, so the screen can be held to the same numbers. */
@@ -86,7 +92,7 @@ test.describe("the overview and the operation", () => {
     await open(page, "/dashboard");
 
     const panel = page.locator("[data-operation-panel]");
-    await expect(panel).toBeVisible({ timeout: 30_000 });
+    await expect(panel).toBeVisible({ timeout: 60_000 });
 
     /*
       Every tile, against the number the API sent — not "some number is on
@@ -120,7 +126,7 @@ test.describe("the overview and the operation", () => {
     await open(page, "/dashboard");
 
     const cards = page.locator("[data-cards]");
-    await expect(cards).toBeVisible({ timeout: 30_000 });
+    await expect(cards).toBeVisible({ timeout: 60_000 });
 
     await expect(cards).toContainText("Entregas");
     await expect(cards).toContainText("Rotas");
@@ -132,7 +138,7 @@ test.describe("the overview and the operation", () => {
     await open(page, "/dashboard", 390);
 
     const panel = page.locator("[data-operation-panel]");
-    await expect(panel).toBeVisible({ timeout: 30_000 });
+    await expect(panel).toBeVisible({ timeout: 60_000 });
 
     const overflow = await page.evaluate(() => {
       const node = document.querySelector("[data-operation-panel]");

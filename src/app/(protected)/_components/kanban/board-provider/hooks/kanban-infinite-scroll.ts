@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "react-query";
 
-import { getCookies } from "@/actions/cookies";
+import { relayUrl } from "@/lib/api-relay-paths";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import type { KanbanColumn } from "../../shared/common.types";
@@ -20,8 +20,6 @@ const fetchKanban = async ({
   signal,
 }: FetchKanbanProps) => {
   const PAGE_SIZE = 10;
-  const tokenAccess = await getCookies("tkey");
-
   try {
     const params = new URLSearchParams({
       page: String(pageParam),
@@ -30,14 +28,12 @@ const fetchKanban = async ({
     });
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/kanban/list/${businessId}?${params.toString()}`,
+      relayUrl(`/kanban/list/${encodeURIComponent(businessId)}`, params),
       {
-        credentials: "include",
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           "Accept-Encoding": "gzip",
-          Authorization: `Bearer ${tokenAccess}`,
         },
         signal,
       },

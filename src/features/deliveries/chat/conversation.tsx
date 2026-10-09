@@ -7,19 +7,19 @@ import { toast } from "sonner";
 
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronsDown,
   ChevronUp,
+  Filter,
   Loader,
   MessageCircle,
   RefreshCw,
+  X,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 
-import { getSocket, initializeSocket } from "@/socket";
+import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 
 import {
   listChatMessages,
@@ -27,6 +27,7 @@ import {
 } from "@/actions/chat/list-chat-messages";
 import { sendChatMessage } from "@/actions/chat/send-chat-message";
 import { markChatRead } from "@/actions/chat/mark-chat-read";
+import { markTicketRead } from "@/actions/chat/tickets";
 import { getChatAttachmentUrl } from "@/actions/chat/get-chat-attachment-url";
 
 import type {
@@ -39,7 +40,7 @@ import type {
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 
 import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
-import { DeliveryDetailDialog } from "../deliveries/detail-dialog";
+import { DeliveryDetailDialog } from "../deliveries/detail-dialog/lazy";
 
 import { MessageBubble } from "./message-bubble";
 import { ImageAlbumBubble } from "./image-album-bubble";
@@ -48,6 +49,21 @@ import { TypingBubble } from "./typing-bubble";
 import { RecordingBubble } from "./recording-bubble";
 import { ChatComposer, type ComposerSubmission } from "./composer";
 import { ReadOnlyNotice } from "./read-only-notice";
+import {
+  JumpToLatestButton,
+  MESSAGE_LIST_FAB_INSET_CLASS,
+  NewerMessagesButton,
+} from "./jump-to-latest-button";
+
+import { createReadThrottle, type ReadThrottle } from "./lib/read-throttle";
+import { ticketReadTarget } from "./lib/ticket-rules";
+import {
+  filterAboutText,
+  filterQueryOf,
+  filterSubjectText,
+  messageMatchesFilter,
+  ticketIdOf,
+} from "./lib/history-filter";
 
 import {
   useChatRecordingPulse,
@@ -75,10 +91,9 @@ import {
   type ChatWindowEdges,
 } from "./lib/message-window";
 
-import {
-  settleWindowLoad,
-  type WindowLoadOutcome,
-} from "./lib/window-load";
+import { settleWindowLoad, type WindowLoadOutcome } from "./lib/window-load";
+
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 import { buildImageGallery, galleryKeyOf } from "./lib/image-gallery";
 
@@ -92,6 +107,7 @@ import {
 import type {
   ChatDeliveryChip,
   ChatFocusRequest,
+  ChatHistoryFilter,
   ChatTarget,
   ClientChatMessage,
 } from "./lib/types";
@@ -105,13 +121,18 @@ import type {
 const FOCUS_HIGHLIGHT_MS = 2_600;
 
 /**
- * The query key the "Revalidar Dados" button reaches this pane through.
+ * The query key the "Atualizar" button reaches this pane through.
  *
- * `query-keys-mapping` maps the chat's tag onto it, and the shared refresh
- * hook invalidates whatever a tag maps to — so nothing new had to be
- * invented to give the button an effect here.
+ * Atualizar refetches every query on screen, this pane's included
+ * (refreshClientCache), and a reconnection invalidates it the same way.
  */
 const CHAT_CONVERSATION_QUERY_KEY = "chat-conversation";
+
+/**
+ * One mark-read per window while messages keep landing on an open pane (see
+ * lib/read-throttle). The app coalesces on the same window.
+ */
+const READ_THROTTLE_MS = 800;
 
 /**
  * What a load that failed without a sentence of its own is shown as.
@@ -122,6 +143,27 @@ const CHAT_CONVERSATION_QUERY_KEY = "chat-conversation";
  */
 const WINDOW_LOAD_FALLBACK_MESSAGE =
   "Não foi possível carregar a conversa. Verifique a conexão e tente de novo.";
+
+/**
+ * A window load from a tab older than the server's build.
+ *
+ * The action answers `undefined` then (see lib/action-result), which
+ * `settleWindowLoad` would show as the connection sentence above, and the
+ * reader would check a connection that is fine. Said through the deploy
+ * notice instead, and shown in the pane as what it is. Kept out of
+ * `window-load`, which stays pure.
+ */
+const readWindowAnswer = async (
+  request: () => Promise<ActionResponse<ListChatMessagesData>>,
+): Promise<ActionResponse<ListChatMessagesData>> => {
+  const answer = await request();
+
+  if (isStaleActionResult(answer, { background: true })) {
+    return { success: false, message: STALE_ACTION_MESSAGE };
+  }
+
+  return answer;
+};
 
 /**
  * A number that is different every time it is asked for.
@@ -192,6 +234,13 @@ interface ConversationProps {
   initialDeliveryChip: ChatDeliveryChip | null;
 
   /**
+   * Only one delivery's or one route's messages (decision 6.7). Null is the
+   * whole conversation.
+   */
+  historyFilter?: ChatHistoryFilter | null;
+  onHistoryFilterChange?: (filter: ChatHistoryFilter | null) => void;
+
+  /**
    * The search hit to open on, when the reader came from one. Null is the
    * ordinary case: the conversation opens at its end.
    */
@@ -211,11 +260,26 @@ const Conversation = ({
   canWrite,
   isReadOnly,
   initialDeliveryChip,
+  historyFilter = null,
+  onHistoryFilterChange,
   focusRequest,
   onBack,
   onThreadResolved,
 }: ConversationProps): JSX.Element => {
   const queryClient = useQueryClient();
+
+  /**
+   * The filter every load and every live arrival reads, current in the same
+   * tick (see `messagesRef` for why a ref).
+   */
+  const filterRef = useRef<ChatHistoryFilter | null>(historyFilter);
+  filterRef.current = historyFilter;
+
+  /** What each window load adds to the request to stay inside the filter. */
+  const filterQuery = useCallback(() => filterQueryOf(filterRef.current), []);
+
+  /** The newest instant a ticket's cursor was already asked to reach. */
+  const ticketReadRef = useRef<{ ticketId: string; at: string } | null>(null);
 
   // Uploads and the delivery dialog need a concrete company id; this hook
   // resolves it for both dashboard and admin modes.
@@ -464,7 +528,9 @@ const Conversation = ({
 
   /** The same contract for the edges — see `messagesRef` for why. */
   const commitWindowEdges = useCallback(
-    (update: (current: ChatWindowEdges) => ChatWindowEdges): ChatWindowEdges => {
+    (
+      update: (current: ChatWindowEdges) => ChatWindowEdges,
+    ): ChatWindowEdges => {
       const next = update(windowEdgesRef.current);
 
       windowEdgesRef.current = next;
@@ -514,7 +580,10 @@ const Conversation = ({
       setBusy(true);
 
       try {
-        return await settleWindowLoad(request, WINDOW_LOAD_FALLBACK_MESSAGE);
+        return await settleWindowLoad(
+          () => readWindowAnswer(request),
+          WINDOW_LOAD_FALLBACK_MESSAGE,
+        );
       } finally {
         inFlightLoadsRef.current -= 1;
         setBusy(false);
@@ -539,21 +608,18 @@ const Conversation = ({
    * counting a message they are looking at invites them to jump away from
    * the very thing it is pointing at.
    */
-  const dropHeldAlreadyOnScreen = useCallback(
-    (rendered: OutgoingMessage[]) => {
-      const held = heldLiveRef.current;
+  const dropHeldAlreadyOnScreen = useCallback((rendered: OutgoingMessage[]) => {
+    const held = heldLiveRef.current;
 
-      if (held.length === 0) return;
+    if (held.length === 0) return;
 
-      const remaining = withoutKnown(held, rendered);
+    const remaining = withoutKnown(held, rendered);
 
-      if (remaining.length === held.length) return;
+    if (remaining.length === held.length) return;
 
-      heldLiveRef.current = remaining;
-      setHeldLiveCount(remaining.length);
-    },
-    [],
-  );
+    heldLiveRef.current = remaining;
+    setHeldLiveCount(remaining.length);
+  }, []);
 
   /** Hands the held arrivals over and empties the buffer in one move. */
   const takeHeldLive = useCallback((): OutgoingMessage[] => {
@@ -603,6 +669,18 @@ const Conversation = ({
   const handleCloseGallery = useCallback(() => setGalleryAnchor(null), []);
 
   /**
+   * A tag in a bubble narrows the history to its route or delivery. Absent
+   * when the parent does not handle filters, and the tags stay plain text.
+   */
+  const handleFilterFromBubble = useMemo(
+    () =>
+      onHistoryFilterChange
+        ? (filter: ChatHistoryFilter) => onHistoryFilterChange(filter)
+        : undefined,
+    [onHistoryFilterChange],
+  );
+
+  /**
    * Renews ONE photo's expired link and writes it into the message.
    *
    * The viewer owns the retry button but not the message list, so it asks and
@@ -622,7 +700,11 @@ const Conversation = ({
         businessId: actionBusinessId,
       });
 
-      const renewed = result.success ? (result.data?.attachment_url ?? null) : null;
+      if (isStaleActionResult(result, { background: true })) return null;
+
+      const renewed = result.success
+        ? (result.data?.attachment_url ?? null)
+        : null;
 
       if (!renewed) return null;
 
@@ -691,24 +773,87 @@ const Conversation = ({
    * really has in front of them, never `Date.now()` and never the edge of
    * the window the panel asked the server for.
    */
-  const readThread = useCallback(
-    async (threadId: string, readAt: string | null) => {
-      // Support never advances the cursor: the driver would see the double
-      // check without anyone at the company having read him.
-      if (isReadOnly) return;
-
+  const sendRead = useCallback(
+    async ({
+      threadId,
+      readAt,
+    }: {
+      threadId: string;
+      readAt: string | null;
+    }) => {
       const result = await markChatRead({
         threadId,
         businessId: actionBusinessId,
         readAt: readAt ?? undefined,
       });
 
+      if (isStaleActionResult(result, { background: true })) return;
+
       // The badge in the list derives from the cursor just advanced.
       if (result.success) {
         queryClient.invalidateQueries(["chat-threads"]);
       }
     },
-    [actionBusinessId, isReadOnly, queryClient],
+    [actionBusinessId, queryClient],
+  );
+
+  // The throttle lives as long as the pane; its send reads the latest
+  // callback, so a company switch cannot post with a stale business id.
+  const sendReadRef = useRef(sendRead);
+  sendReadRef.current = sendRead;
+
+  const readThrottleRef = useRef<ReadThrottle | null>(null);
+
+  if (!readThrottleRef.current) {
+    readThrottleRef.current = createReadThrottle(READ_THROTTLE_MS, (read) => {
+      void sendReadRef.current(read).catch(() => undefined);
+    });
+  }
+
+  // What the reader saw before leaving the pane is read: sent, not dropped.
+  useEffect(() => () => readThrottleRef.current?.flush(), []);
+
+  const readThread = useCallback(
+    (threadId: string, readAt: string | null) => {
+      // Support never advances the cursor: the driver would see the double
+      // check without anyone at the company having read him.
+      if (isReadOnly) return;
+
+      // A ticket's conversation IS that ticket (decision 14.5): its own
+      // cursor advances, never the thread's. Asked once per new instant.
+      const ticketId = ticketIdOf(filterRef.current);
+
+      if (ticketId) {
+        // Only what is rendered is claimed: no message, no read.
+        const target = ticketReadTarget(
+          ticketReadRef.current,
+          ticketId,
+          readAt,
+        );
+
+        if (!target) return;
+
+        const { at } = target;
+        ticketReadRef.current = target;
+
+        void markTicketRead({
+          ticketId,
+          readAt: at,
+          businessId: actionBusinessId,
+        }).then((result) => {
+          if (result.success) queryClient.invalidateQueries(["chat-tickets"]);
+        });
+
+        return;
+      }
+
+      // A filtered history is not the thread. The cursor covers every
+      // message up to a moment, and most of those are not on screen.
+      if (filterRef.current) return;
+
+      readThrottleRef.current?.request(threadId, readAt);
+    },
+    [isReadOnly, actionBusinessId, queryClient],
   );
 
   /**
@@ -717,10 +862,20 @@ const Conversation = ({
    * Reading the ref is sound precisely because every write to the list goes
    * through `commitMessages`: the page that triggered this is already in
    * there, and nothing that is not in there is claimed.
+   *
+   * And only with somebody looking. A reload the tab ran in the background —
+   * a reconnection after the laptop slept, above all — used to mark the
+   * thread read on the spot: the driver saw the blue check while nobody had
+   * read him. It now waits for the focus, like a live arrival does.
    */
   const readUpToWhatIsRendered = useCallback(
     (threadId: string) => {
-      void readThread(threadId, newestReadStamp(messagesRef.current));
+      if (!document.hasFocus()) {
+        pendingReadRef.current = true;
+        return;
+      }
+
+      readThread(threadId, newestReadStamp(messagesRef.current));
     },
     [readThread],
   );
@@ -810,7 +965,14 @@ const Conversation = ({
     // Another driver's conversation has none of this one's photos.
     setGalleryAnchor(null);
 
-    setDeliveryChip(initialDeliveryChip);
+    // Writing while the history shows one delivery is writing about it.
+    const filter = filterRef.current;
+
+    setDeliveryChip(
+      filter?.kind === "delivery"
+        ? { id: filter.id, recipient_name: filter.label }
+        : initialDeliveryChip,
+    );
 
     stickToBottomRef.current = true;
     pendingReadRef.current = false;
@@ -835,21 +997,25 @@ const Conversation = ({
     > => {
       const centred = await settleWindowLoad(
         () =>
-          listChatMessages({
-            threadId: target.threadId ?? undefined,
-            driverId: target.driverId,
-            around: focusMessageId ?? undefined,
-            businessId: actionBusinessId,
-          }),
+          readWindowAnswer(() =>
+            listChatMessages({
+              threadId: target.threadId ?? undefined,
+              driverId: target.driverId,
+              around: focusMessageId ?? undefined,
+              businessId: actionBusinessId,
+              ...filterQuery(),
+            }),
+          ),
         WINDOW_LOAD_FALLBACK_MESSAGE,
       );
 
       if (centred.ok || !focusMessageId) return centred;
 
       /**
-       * The anchor did not survive: the API answers 400 for a message that
-       * belongs to another conversation, and a hit can simply be stale by
-       * the time it is clicked.
+       * The anchor did not survive: the API answers 404
+       * CHAT_MESSAGE_NOT_FOUND for a message of another conversation or
+       * outside the history filter, and a hit can simply be stale by the
+       * time it is clicked.
        *
        * The conversation still opens — at its end, like any other. Refusing
        * to show a thread because one message could not be found would punish
@@ -857,11 +1023,14 @@ const Conversation = ({
        */
       return settleWindowLoad(
         () =>
-          listChatMessages({
-            threadId: target.threadId ?? undefined,
-            driverId: target.driverId,
-            businessId: actionBusinessId,
-          }),
+          readWindowAnswer(() =>
+            listChatMessages({
+              threadId: target.threadId ?? undefined,
+              driverId: target.driverId,
+              businessId: actionBusinessId,
+              ...filterQuery(),
+            }),
+          ),
         WINDOW_LOAD_FALLBACK_MESSAGE,
       );
     };
@@ -993,8 +1162,18 @@ const Conversation = ({
     //
     // The reload ticket is the third: a conversation that failed to open has
     // no other way back, and the retry button is what bumps it.
+    //
+    // The filter is the fourth: narrowing to a route, or clearing it, asks
+    // for another window of the same thread.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target.driverId, actionBusinessId, focusRequest?.token, reloadTicket]);
+  }, [
+    target.driverId,
+    actionBusinessId,
+    focusRequest?.token,
+    reloadTicket,
+    historyFilter?.kind,
+    historyFilter?.id,
+  ]);
 
   // ==================================================== realtime wiring
   useEffect(() => {
@@ -1023,6 +1202,21 @@ const Conversation = ({
       );
 
       if (alreadyThere) return;
+
+      // A history narrowed to one delivery or route shows only its own
+      // messages; the rest of the thread is there when the filter goes. The
+      // browser holds the message either way, so the receipt still goes out.
+      const filter = filterRef.current;
+
+      if (filter && !messageMatchesFilter(filter, payload)) {
+        if (payload.senderId === driverUserId && threadIdRef.current) {
+          const stamp = findDriverStamp([payload], driverUserId);
+
+          if (stamp) reportDelivered(threadIdRef.current, stamp);
+        }
+
+        return;
+      }
 
       /**
        * A message belongs at the bottom of the pane only when the bottom of
@@ -1237,6 +1431,7 @@ const Conversation = ({
         threadId,
         before: cursor,
         businessId: actionBusinessId,
+        ...filterQuery(),
       }),
     );
 
@@ -1284,6 +1479,7 @@ const Conversation = ({
         threadId,
         after: cursor,
         businessId: actionBusinessId,
+        ...filterQuery(),
       }),
     );
 
@@ -1362,7 +1558,11 @@ const Conversation = ({
 
     try {
       outcome = await runWindowLoad(setIsJumpingToEnd, () =>
-        listChatMessages({ threadId, businessId: actionBusinessId }),
+        listChatMessages({
+          threadId,
+          businessId: actionBusinessId,
+          ...filterQuery(),
+        }),
       );
     } finally {
       // Given back before anything is decided about the answer: a page that
@@ -1439,6 +1639,7 @@ const Conversation = ({
     commitLoadError,
     commitMessages,
     commitWindowEdges,
+    filterQuery,
     runWindowLoad,
     scrollToBottom,
     settleReadIfAtEnd,
@@ -1446,7 +1647,7 @@ const Conversation = ({
   ]);
 
   /**
-   * "Revalidar Dados", arriving from the page header.
+   * "Atualizar", arriving from the page header.
    *
    * The button lives in a sibling of this pane, with no React state between
    * them, so the react-query cache is the channel — the same one the badge
@@ -1513,6 +1714,20 @@ const Conversation = ({
     }
 
     /**
+     * A conversation that has not started has no thread to jump in.
+     *
+     * The jump below needs a thread id and returned without a word when
+     * there was none — so the driver's FIRST message, sent while the tab was
+     * reconnecting, never showed up: no socket event reached the pane and
+     * the reload after the reconnection did nothing. The opening load asks
+     * by driver, and finds the thread that exists now.
+     */
+    if (!threadIdRef.current && isAnchoredAtEnd(windowEdgesRef.current)) {
+      reloadConversation();
+      return;
+    }
+
+    /**
      * Only a window anchored at the end is reloaded.
      *
      * A reader parked on a message from March asked to be there; pulling
@@ -1531,6 +1746,30 @@ const Conversation = ({
 
     void handleJumpToLatest();
   }, [refreshSignal.data, handleJumpToLatest, reloadConversation]);
+
+  /**
+   * A reconnection is a press of "Atualizar" nobody made.
+   *
+   * The live arrivals above are appended by id as they come, and the API has
+   * no replay: a driver's message sent while this tab was reconnecting — a
+   * deploy, a Wi-Fi blink — never arrived, and neither focusing the window
+   * nor the next message would bring it. Through the ticket it takes the same
+   * road as the button: reloaded only when anchored at the end, retried when
+   * the conversation never opened.
+   *
+   * Not `refetchOnReconnect`: that follows the browser's `online` event, which
+   * a socket dropped by a deploy never fires.
+   */
+  useEffect(
+    () =>
+      onRealtimeResync(() => {
+        void queryClient.invalidateQueries([
+          CHAT_CONVERSATION_QUERY_KEY,
+          target.driverId,
+        ]);
+      }),
+    [queryClient, target.driverId],
+  );
 
   // ============================================================== sending
   const performSend = useCallback(
@@ -1584,8 +1823,21 @@ const Conversation = ({
         // its track with before a single byte is fetched.
         durationMs: outgoing.duration_ms ?? undefined,
         deliveryId: outgoing.deliveryId ?? undefined,
+
+        // Only a history narrowed to a route names one; otherwise the API
+        // tags the route itself (the chip's, or the one being run).
+        routeId: outgoing.routeId ?? undefined,
         clientSubmissionId: outgoing.client_submission_id ?? undefined,
+
+        // Writing inside a ticket's conversation is writing in that ticket.
+        ticketId: ticketIdOf(filterRef.current) ?? undefined,
       });
+
+      // Not sent: the bubble says so, and the deploy notice says why.
+      if (isStaleActionResult(result)) {
+        markAsFailed(outgoing.client_submission_id);
+        return;
+      }
 
       if (!result.success || !result.data) {
         markAsFailed(outgoing.client_submission_id);
@@ -1613,8 +1865,9 @@ const Conversation = ({
       // viewer. Its `blob:` is dead weight in the tab from here on.
       releaseObjectUrl(outgoing.client_submission_id);
 
-      // First successful send consumes the pre-linked delivery chip.
-      setDeliveryChip(null);
+      // The delivery chip stays until the reader removes it: it used to be
+      // consumed by the first message, and every follow-up about the same
+      // delivery went out with no link to it (DLVP-CHAT-1).
       queryClient.invalidateQueries(["chat-threads"]);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1662,6 +1915,10 @@ const Conversation = ({
 
     const chip = withContext ? deliveryChip : null;
 
+    // Writing inside a route's history is writing about that route.
+    const routeFilter =
+      filterRef.current?.kind === "route" ? filterRef.current : null;
+
     // Registered as it is created: the send confirming, or this conversation
     // going away, is what gives it back — see `releaseObjectUrl`.
     let objectUrl: string | null = null;
@@ -1678,6 +1935,9 @@ const Conversation = ({
       attachment_url: objectUrl,
       duration_ms: durationMs ?? null,
       deliveryId: chip?.id ?? null,
+      // The tag itself arrives with the confirmed message.
+      routeId: routeFilter?.id ?? null,
+      route: null,
       broadcast_id: null,
       client_submission_id: clientSubmissionId,
       threadId: threadIdRef.current ?? "",
@@ -1915,6 +2175,32 @@ const Conversation = ({
         )}
       </div>
 
+      {/* The history narrowed to one delivery or route (decision 6.7). */}
+      {historyFilter && (
+        <div
+          className="flex min-w-0 items-center gap-2 border-b bg-muted/60 px-4
+          py-2 text-xs"
+          role="status"
+        >
+          <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate">
+            Só as mensagens {filterSubjectText(historyFilter)}
+          </span>
+          {onHistoryFilterChange && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 shrink-0 gap-1 px-2 text-xs"
+              onClick={() => onHistoryFilterChange(null)}
+            >
+              <X className="h-3.5 w-3.5" />
+              Ver toda a conversa
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* ----------------------------------------------------- messages */}
       {/* `relative` so the way back to the end can float over the history
           instead of taking a row from it. */}
@@ -1969,13 +2255,30 @@ const Conversation = ({
             <div className="flex h-full flex-col items-center justify-center gap-2">
               <MessageCircle className="h-10 w-10 text-muted-foreground/40" />
               <p className="max-w-xs text-center text-sm text-muted-foreground">
-                Diga olá 👋 — a conversa com{" "}
-                <strong>{target.driverName}</strong> começa na primeira
-                mensagem.
+                {historyFilter ? (
+                  <>
+                    Nenhuma mensagem com <strong>{target.driverName}</strong>{" "}
+                    sobre {filterAboutText(historyFilter)}.
+                  </>
+                ) : (
+                  <>
+                    Diga olá 👋 — a conversa com{" "}
+                    <strong>{target.driverName}</strong> começa na primeira
+                    mensagem.
+                  </>
+                )}
               </p>
             </div>
           ) : (
-            <div className="space-y-1.5">
+            // Room at the bottom while the way back to the end floats there,
+            // so it never sits on the last row — "Mensagens mais recentes"
+            // included (DLV-CHAT-1).
+            <div
+              className={cn(
+                "space-y-1.5",
+                windowEdges.hasNewer && MESSAGE_LIST_FAB_INSET_CLASS,
+              )}
+            >
               {windowEdges.olderCursor && (
                 <div className="flex justify-center pb-2">
                   <Button
@@ -2000,9 +2303,8 @@ const Conversation = ({
                 const first = group.messages[0];
 
                 const previousGroup = groups[index - 1];
-                const previous = previousGroup?.messages[
-                  previousGroup.messages.length - 1
-                ];
+                const previous =
+                  previousGroup?.messages[previousGroup.messages.length - 1];
 
                 const needsSeparator =
                   !previous ||
@@ -2066,6 +2368,7 @@ const Conversation = ({
                         onOpenDelivery={setDetailDeliveryId}
                         onOpenImage={handleOpenImage}
                         onRetry={handleRetry}
+                        onFilter={handleFilterFromBubble}
                       />
                     ) : (
                       <MessageBubble
@@ -2077,6 +2380,7 @@ const Conversation = ({
                         onOpenDelivery={setDetailDeliveryId}
                         onOpenImage={handleOpenImage}
                         onRetry={handleRetry}
+                        onFilter={handleFilterFromBubble}
                       />
                     )}
                   </div>
@@ -2084,23 +2388,11 @@ const Conversation = ({
               })}
 
               {windowEdges.newerCursor && (
-                <div className="flex justify-center pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    disabled={isWalkingTheWindow}
-                    onClick={handleLoadNewer}
-                  >
-                    {isLoadingNewer ? (
-                      <Loader className="mr-1 h-3 w-3 animate-spin" />
-                    ) : (
-                      <ChevronDown className="mr-1 h-3 w-3" />
-                    )}
-                    Mensagens mais recentes
-                  </Button>
-                </div>
+                <NewerMessagesButton
+                  isLoading={isLoadingNewer}
+                  disabled={isWalkingTheWindow}
+                  onLoad={() => void handleLoadNewer()}
+                />
               )}
             </div>
           )}
@@ -2119,40 +2411,17 @@ const Conversation = ({
         {/*
           The way home. Visible for exactly as long as the end of the
           conversation is out of the window — a pane that quietly stops short
-          of the newest message is how an answer gets lost.
+          of the newest message is how an answer gets lost. A round button in
+          the corner, not a pill in the middle: centred, it sat exactly on
+          "Mensagens mais recentes" at the end of the list.
         */}
         {!isLoading && !loadError && windowEdges.hasNewer && (
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-3 flex
-            justify-center"
-          >
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              className="pointer-events-auto h-8 gap-1.5 rounded-full border
-              shadow-md"
-              disabled={isWalkingTheWindow}
-              onClick={() => void handleJumpToLatest()}
-            >
-              {isJumpingToEnd ? (
-                <Loader className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ChevronsDown className="h-3.5 w-3.5" />
-              )}
-              Ir para a última mensagem
-              {heldLiveCount > 0 && (
-                <span
-                  className="h-2 w-2 rounded-full bg-primary"
-                  aria-label={
-                    heldLiveCount === 1
-                      ? "1 mensagem nova na conversa"
-                      : `${heldLiveCount} mensagens novas na conversa`
-                  }
-                />
-              )}
-            </Button>
-          </div>
+          <JumpToLatestButton
+            heldCount={heldLiveCount}
+            isJumping={isJumpingToEnd}
+            disabled={isWalkingTheWindow}
+            onJump={() => void handleJumpToLatest()}
+          />
         )}
       </div>
 

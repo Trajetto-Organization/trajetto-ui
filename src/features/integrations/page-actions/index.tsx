@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useIsFetching, useQueryClient } from "react-query";
 
-import { Plus } from "lucide-react";
+import { BookOpen } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/tooltip";
 
 import { RefreshButton } from "@/components/shared/custom/refresh-button";
+import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
+import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
+import { useRevalidateScreen } from "@/hooks/use-revalidate-screen";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -21,10 +24,13 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { INTEGRATION_DOCS } from "../lib/docs-links";
 import type { IntegrationTab } from "../lib/tabs";
+import type { IntegrationsMode } from "../lib/api-key-limits";
 
 import { ApiKeyDialog } from "../api-keys/create-dialog";
 import { WebhookFormDialog } from "../webhooks/form-dialog";
+import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 
 /**
  * What can be done to the company's integrations, in the page's top band.
@@ -34,24 +40,18 @@ import { WebhookFormDialog } from "../webhooks/form-dialog";
  * navigation and the list, reading as the list's rather than the section's.
  * Entregas moved the same buttons up beside the company selector; this is that
  * same band, for the same reason.
- *
- * Nothing is lifted out of the panels to make it work. The refresh invalidates
- * the panel's react-query key, which is the panel's own contract with the
- * cache — no callback threaded down, no state hoisted, and a panel that is not
- * mounted simply has nothing to invalidate.
  */
 interface IntegrationsPageActionsProps {
   activeTab: IntegrationTab;
   businessId: string;
+
+  /** The master's screen or the company's: the key dialog's ceiling. */
+  mode: IntegrationsMode;
 }
 
 /**
- * The cache key each tab reads, by prefix.
- *
- * Partial matching is what makes this safe: the monitor keys on
- * `[key, businessId, status, page]` and the usage panel on `[key, businessId,
- * days]`, and invalidating the prefix reaches whichever page and filter the
- * person is actually looking at without this file having to know about either.
+ * The cache key each tab reads, by prefix: the spinner follows the open
+ * tab's own request, and a create refetches the list it added to.
  */
 const QUERY_KEY: Record<IntegrationTab, string> = {
   "api-keys": "integration_api_keys",
@@ -73,13 +73,7 @@ const RATE_LIMIT_KEY: Record<IntegrationTab, string> = {
  *
  * Monitor de Envios and Uso da API are deliberately absent, and it is the same
  * rule Entregas applies to Auditoria de Comprovantes: a tab whose only action
- * is the refresh keeps it beside the numbers that refresh changes. In the
- * monitor those numbers are four metric cards sitting between the band and the
- * filter — a button three elements above them is a button nobody connects to
- * them.
- *
- * So there is one rule, not two: actions live in the band, unless the only
- * action is a refresh over figures the panel draws.
+ * is the refresh keeps it beside the numbers that refresh changes.
  */
 const CREATE_LABEL: Partial<Record<IntegrationTab, string>> = {
   "api-keys": "Nova chave",
@@ -93,6 +87,7 @@ const hasBandActions = (tab: IntegrationTab): boolean =>
 const IntegrationsPageActions = ({
   activeTab,
   businessId,
+  mode,
 }: IntegrationsPageActionsProps): JSX.Element => {
   const queryClient = useQueryClient();
 
@@ -101,8 +96,17 @@ const IntegrationsPageActions = ({
   const queryKey = QUERY_KEY[activeTab];
 
   // The spinner belongs to the panel's own request, whichever filter it is
-  // currently on — same prefix match the invalidation uses.
+  // currently on.
   const inFlight = useIsFetching([queryKey, businessId]);
+
+  // The whole tab, like every "Atualizar" (decision 2.1): the server content,
+  // the cached reads and what is on screen. It used to invalidate the open
+  // tab's own key and nothing else (REV-1).
+  const { revalidate, isRevalidating } = useRevalidateScreen();
+
+  // h-9 on /admin and /dashboard (decision 16.61); full width on a phone
+  // with the label (decision 3.6).
+  const actionClassName = usePageActionClassName();
 
   const permissionsRequired = useCheckMultiplePermissions([
     {
@@ -116,26 +120,36 @@ const IntegrationsPageActions = ({
   const createLabel = CREATE_LABEL[activeTab] ?? "";
 
   return (
-    <div
-      /*
-        The same bar Entregas uses: one row on a phone with the primary action
-        taking the width it needs, wrapping from `sm` up rather than stretching
-        into a single row that neither wraps nor shrinks.
-      */
-      className="flex w-full min-w-0 items-center gap-2 sm:w-auto
-      sm:flex-wrap sm:justify-end"
-    >
-      <div className="shrink-0">
-        <RefreshButton
-          storageKey={RATE_LIMIT_KEY[activeTab]}
-          isRefreshing={inFlight > 0}
-          hideLabelOnMobile
-          className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3"
-          onRefresh={() => {
-            void queryClient.invalidateQueries([queryKey, businessId]);
-          }}
-        />
-      </div>
+    <PageActions>
+      <RefreshButton
+        storageKey={RATE_LIMIT_KEY[activeTab]}
+        isRefreshing={isRevalidating || inFlight > 0}
+        className={actionClassName}
+        onRefresh={() => void revalidate()}
+      />
+
+      {/*
+        The developer portal, from the screen that issues keys and endpoints
+        (decision 11.1). A link, not a button: it opens in a new tab so the
+        screen stays as it is.
+      */}
+      <Button
+        asChild
+        variant="outline"
+        size="sm"
+        className={`${actionClassName} gap-2`}
+      >
+        <a
+          href={INTEGRATION_DOCS.home}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-tutorial="integrations-docs"
+        >
+          <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">Documentação da API</span>
+          <span className="sr-only"> (abre em nova aba)</span>
+        </a>
+      </Button>
 
       {createLabel !== "" && (
         <TooltipProvider delayDuration={100}>
@@ -147,22 +161,16 @@ const IntegrationsPageActions = ({
                 it is disabled would never open — which is the one moment it is
                 needed.
               */}
-              <div className="min-w-0 flex-1 sm:w-auto sm:flex-initial">
+              <div className="min-w-0">
                 <Button
                   type="button"
                   size="sm"
-                  /*
-                    `h-9` on a phone for the touch target, `h-8` from `sm` up —
-                    the height every other action bar in the product settles
-                    on. It used to inherit `size="sm"`'s h-9 at every width,
-                    which put it 4px taller than the "Atualizar" beside it.
-                  */
-                  className="h-9 w-full gap-2 sm:h-8"
+                  className={`${actionClassName} gap-2`}
                   disabled={!canWrite || !businessId}
                   onClick={() => setIsCreating(true)}
+                  data-tutorial="create-button"
                 >
-                  <Plus className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{createLabel}</span>
+                  <CreateButtonLabel>{createLabel}</CreateButtonLabel>
                 </Button>
               </div>
             </TooltipTrigger>
@@ -179,6 +187,7 @@ const IntegrationsPageActions = ({
       {isCreating && activeTab === "api-keys" && (
         <ApiKeyDialog
           businessId={businessId}
+          mode={mode}
           isOpen={isCreating}
           onClose={() => setIsCreating(false)}
           onCreated={() => {
@@ -198,8 +207,34 @@ const IntegrationsPageActions = ({
           }}
         />
       )}
-    </div>
+    </PageActions>
   );
 };
 
-export { IntegrationsPageActions, hasBandActions };
+/**
+ * Atualizar alone, for a company the screen was refused for (module, profile
+ * or inactive company). Nothing here writes, so none of the create buttons;
+ * but the refusal is a read like any other and Atualizar re-asks it (decision
+ * 2.1) — after a master enables Entregas, the screen recovers from here.
+ */
+const IntegrationsRefreshAction = ({
+  activeTab,
+}: {
+  activeTab: IntegrationTab;
+}): JSX.Element => {
+  const { revalidate, isRevalidating } = useRevalidateScreen();
+  const actionClassName = usePageActionClassName();
+
+  return (
+    <PageActions>
+      <RefreshButton
+        storageKey={RATE_LIMIT_KEY[activeTab]}
+        isRefreshing={isRevalidating}
+        className={actionClassName}
+        onRefresh={() => void revalidate()}
+      />
+    </PageActions>
+  );
+};
+
+export { IntegrationsPageActions, IntegrationsRefreshAction, hasBandActions };

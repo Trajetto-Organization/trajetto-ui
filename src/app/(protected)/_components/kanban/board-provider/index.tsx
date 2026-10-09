@@ -9,10 +9,19 @@ import { CreateColumnModal } from "../column/create-column-modal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { Loader, Loader2, Plus, Search, X } from "lucide-react";
+import {
+  Building2,
+  Loader,
+  Loader2,
+  Search,
+  SquareKanban,
+  X,
+} from "lucide-react";
 import { debounce } from "lodash";
 
 import { BusinessSelector } from "../../shared/business-selector";
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { SelectBusinessEmptyState } from "@/components/shared/custom/select-business-empty-state";
 import { useKanbanInfiniteScroll } from "./hooks/kanban-infinite-scroll";
 
 import { KanbanEmptyState } from "../empty-state";
@@ -20,11 +29,14 @@ import { formatKanbanResults } from "./helpers";
 
 import { KanbanBoardSkeleton } from "../board-skeleton";
 import { KanbanRevalidationButton } from "../revalidate-button";
+import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
 import { useAuthStore } from "@/store/auth-store";
+import { useSessionCompany } from "@/store/session-company";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 import type { KanbanBoardProviderProps } from "./board-provider.types";
 
 const KanbanBoardProvider = ({
@@ -39,6 +51,7 @@ const KanbanBoardProvider = ({
   // Get businessId from auth store if not provided via props (for dashboard mode)
   const storeBusinessId = useAuthStore((state) => state.businessId);
   const businessId = businessIdProp || storeBusinessId || undefined;
+  const session = useSessionCompany();
 
   const [searchValue, setSearchValue] = useState(initialSearch);
   const [debouncedSearchValue, setDebouncedSearchValue] =
@@ -85,7 +98,9 @@ const KanbanBoardProvider = ({
 
       // Only manage businessId in URL if we are in admin mode
       if (mode === "admin") {
-        const currentBusinessId = searchParams.get("businessId") || businessId;
+        // A value that is not a company id is not carried forward.
+        const currentBusinessId =
+          readBusinessIdParam(searchParams.get("businessId")) || businessId;
         if (currentBusinessId) {
           params.set("businessId", currentBusinessId);
         }
@@ -177,14 +192,22 @@ const KanbanBoardProvider = ({
             <BusinessSelector currentBusinessId={businessId} />
           )}
         </div>
-        <div
-          className="flex items-center justify-center 
-          h-96 rounded-lg border-2 border-dashed"
-        >
-          <p className="text-muted-foreground text-center">
-            Selecione uma empresa para visualizar seu board Kanban
-          </p>
-        </div>
+        {/* The same empty state as every screen with the selector on top
+            (decision 3.7): icon, title, and what appears once chosen. */}
+        <SelectBusinessEmptyState
+          icon={SquareKanban}
+          description="O quadro Kanban é de uma empresa específica; escolha a empresa acima para ver as colunas e os cards dela."
+        />
+      </div>
+    );
+  }
+
+  // The session's company is not known yet (store/session-company): the
+  // board is loading, not "your user has no company".
+  if (mode === "dashboard" && !businessId && session.pending) {
+    return (
+      <div aria-busy="true" data-session-company-pending>
+        <KanbanBoardSkeleton />
       </div>
     );
   }
@@ -193,15 +216,11 @@ const KanbanBoardProvider = ({
   if (mode === "dashboard" && !businessId) {
     return (
       <div className="space-y-4">
-        <div
-          className="flex items-center justify-center 
-          h-96 rounded-lg border-2 border-dashed"
-        >
-          <p className="text-muted-foreground text-center">
-            Usuário não possui uma empresa associada. Entre em contato com o
-            administrador.
-          </p>
-        </div>
+        <EmptyState
+          icon={Building2}
+          title="Nenhuma empresa associada"
+          description="Seu usuário não está vinculado a uma empresa. Entre em contato com o administrador."
+        />
       </div>
     );
   }
@@ -270,7 +289,9 @@ const KanbanBoardProvider = ({
               cooldownTimeMs: 15000,
             }}
           />
-          <Button onClick={() => refetch()}>Tentar novamente</Button>
+          <Button size="sm" className="h-9" onClick={() => refetch()}>
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
@@ -282,7 +303,10 @@ const KanbanBoardProvider = ({
         {showBusinessSelector && mode === "admin" && (
           <BusinessSelector currentBusinessId={businessId} />
         )}
-        <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-md">
+        <div
+          className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-md"
+          data-tutorial="kanban-search"
+        >
           <Search
             className="absolute left-3 top-1/2 transform
             -translate-y-1/2 text-muted-foreground h-4 w-4"
@@ -342,15 +366,17 @@ const KanbanBoardProvider = ({
                 cooldownTimeMs: 15000,
               }}
             />
+            {/* The page-action size (h-9) and the shared "+" label; the dashed
+                border stays, it reads as "a column goes here". */}
             <Button
               variant="outline"
-              className="w-full sm:w-44
-              h-10 border-dashed"
+              size="sm"
+              className="h-9 w-full border-dashed sm:w-auto"
               onClick={handleOpenColumnModal}
               disabled={!hasUserPermission}
+              data-tutorial="kanban-add-column"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Coluna
+              <CreateButtonLabel>Adicionar Coluna</CreateButtonLabel>
             </Button>
           </div>
         )}
@@ -394,15 +420,15 @@ const KanbanBoardProvider = ({
 
       {isLoading && !columns ? (
         <div
-          className="flex items-center
-          justify-center h-96"
+          className="flex h-96 items-center justify-center"
+          data-tutorial="loading"
         >
           <Loader className="h-8 w-8 animate-spin" />
         </div>
       ) : isSearchPending ? (
         <KanbanBoardSkeleton />
       ) : hasSearchResults ? (
-        <div className="h-[calc(100vh-20rem)]">
+        <div className="h-[calc(100vh-20rem)]" data-tutorial="kanban-board">
           <KanbanBoard
             key={`${businessId}-${debouncedSearchValue}`}
             board={{
@@ -424,6 +450,7 @@ const KanbanBoardProvider = ({
         <div
           className="flex items-center justify-center 
           h-96 rounded-lg border-2 border-dashed"
+          data-tutorial="kanban-empty"
         >
           <KanbanEmptyState
             searchQuery={isSearching ? debouncedSearchValue : undefined}

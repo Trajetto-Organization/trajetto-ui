@@ -36,8 +36,8 @@ const NotFound = async (): Promise<JSX.Element> => {
       </p>
 
       <div className="mt-10">
+        {/* No aria-label: the visible text is the link's name (WCAG 2.5.3). */}
         <Link
-          aria-label="Back to profile page"
           href={"/profile"}
           className={cn(
             buttonVariants({ variant: "outline" }),

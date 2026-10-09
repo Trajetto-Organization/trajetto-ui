@@ -23,7 +23,7 @@ const variantStyles = {
   },
   primary: {
     card: "border-blue-500/20 hover:border-blue-500/40",
-    icon: "bg-blue-500/10 text-blue-600",
+    icon: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     value: "text-blue-500",
   },
   success: {
@@ -33,13 +33,15 @@ const variantStyles = {
   },
   warning: {
     card: "border-yellow-500/20 hover:border-yellow-500/40",
-    icon: "bg-yellow-500/10 text-yellow-600",
-    value: "text-yellow-600",
+    // yellow-700 in light: yellow-600 is 2.94:1 on a white card, under even
+    // the 3:1 large text gets (axe, tests/a11y/admin-and-public.spec.ts).
+    icon: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-500",
+    value: "text-yellow-700 dark:text-yellow-500",
   },
   danger: {
     card: "border-red-500/20 hover:border-red-500/40",
-    icon: "bg-red-500/10 text-red-600",
-    value: "text-red-600",
+    icon: "bg-red-500/10 text-red-600 dark:text-red-400",
+    value: "text-red-600 dark:text-red-400",
   },
 };
 
@@ -72,7 +74,7 @@ function TrendIndicator({ value, label }: { value: number; label?: string }) {
       className={cn(
         "flex items-center gap-1 text-xs font-medium",
         isPositive && "text-green-600",
-        !isPositive && !isNeutral && "text-red-600",
+        !isPositive && !isNeutral && "text-red-600 dark:text-red-400",
         isNeutral && "text-muted-foreground",
       )}
     >
@@ -199,9 +201,7 @@ function StatCard({
             justify-between gap-2"
           >
             {description && (
-              <p
-                className="line-clamp-2 flex-1 text-xs text-muted-foreground"
-              >
+              <p className="line-clamp-2 flex-1 text-xs text-muted-foreground">
                 {description}
               </p>
             )}

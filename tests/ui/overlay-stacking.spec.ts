@@ -149,11 +149,30 @@ test.describe("the notifications menu over the control tower", () => {
       timeout: 30_000,
     });
 
-    await page.getByRole("button", { name: /notifica/i }).first().click();
+    await page
+      .getByRole("button", { name: /notifica/i })
+      .first()
+      .click();
 
     await expect(page.getByRole("menu").first()).toBeVisible({
       timeout: 10_000,
     });
+
+    // Measured at rest: the menu opens with a fade and a zoom from 95%, so a
+    // box read mid-animation is smaller than the menu (with no notifications
+    // it reached past the map's top edge by less than the animation shaved
+    // off, and the overlap read as none) and a screenshot taken then shows
+    // the map through the half-transparent panel.
+    await page
+      .getByRole("menu")
+      .first()
+      .evaluate((element) =>
+        Promise.all(
+          element
+            .getAnimations({ subtree: true })
+            .map((animation) => animation.finished),
+        ),
+      );
 
     const clip = await overlapOf(page);
 

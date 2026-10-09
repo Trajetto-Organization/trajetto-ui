@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { updateKanbanColumnSchema } from "@/schemas/update-kanban-column-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateKanbanColumnProps {
   message: string;
@@ -54,7 +57,7 @@ const handleUpdateKanbanColumn = async (
   const columnData = updateColumnValidation.data;
 
   try {
-    const response = await fetch(updateColumn, {
+    const response = await apiFetch(updateColumn, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -66,14 +69,17 @@ const handleUpdateKanbanColumn = async (
 
     const { message } = (await response.json()) as UpdateKanbanColumnProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateColumnError: { updateColumnErrorMessage: message },
+        updateColumnError: {
+          updateColumnErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/update-kanban-column", error);
     return {
       updateColumnError: {
         updateColumnErrorMessage:

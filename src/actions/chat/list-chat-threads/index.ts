@@ -1,11 +1,11 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
+import { classifyAccessError } from "@/lib/access-error";
 import { getCookies } from "../../cookies";
 
-import type {
-  ActionResponse,
-  ChatThreadEntry,
-} from "../chat.types";
+import type { ActionResponse, ChatThreadEntry } from "../chat.types";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ListChatThreadsProps {
   businessId?: string;
@@ -51,7 +51,7 @@ const listChatThreads = async ({
       };
     }
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/chat/list-threads?${query.toString()}`,
       {
         credentials: "include",
@@ -69,8 +69,9 @@ const listChatThreads = async ({
     if (!response.ok) {
       return {
         success: false,
-        // The module gate answers 403: the panel renders the disabled state.
-        moduleDisabled: response.status === 403,
+        // Named by the API's code, not by the status: only MODULE_NOT_ENABLED
+        // is the module state; the panel draws each refusal as what it is.
+        accessError: classifyAccessError(response.status, result),
         message: result.message || "Houve um erro ao carregar as conversas.",
       };
     }
@@ -81,6 +82,7 @@ const listChatThreads = async ({
       data: result as ListChatThreadsData,
     };
   } catch (error) {
+    logActionError("chat/list-chat-threads", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar as conversas.",

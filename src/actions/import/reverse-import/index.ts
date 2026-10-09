@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ReversalResult {
   removedDeliveries: number;
@@ -43,7 +45,7 @@ const reverseImport = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/import/reverse-import/${importId}/business/${businessId}`,
       {
         credentials: "include",
@@ -66,6 +68,7 @@ const reverseImport = async (
 
     return { success: true, message: result.message, data: result.data };
   } catch (error) {
+    logActionError("import/reverse-import", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao estornar a importação.",

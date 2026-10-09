@@ -1,13 +1,16 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
+import { apiFetch } from "@/lib/api-fetch";
 
+// The scopes a key can be issued with. `deliveries:write` opens
+// POST /integration/v1/deliveries (decision 5.10); `webhooks:manage` is still
+// reserved by the API (no route requires it) and refused at issue, so it is
+// not offered here either.
 type ApiScope =
-  | "deliveries:read"
-  | "deliveries:write"
-  | "routes:read"
-  | "events:read";
+  "deliveries:read" | "deliveries:write" | "routes:read" | "events:read";
 
 interface ApiKeyRow {
   id: string;
@@ -57,18 +60,39 @@ interface WebhookDeliveryRow {
   latency_ms: number | null;
 
   availableAt: string | null;
+
+  /**
+   * Only on a row being sent: until when the current attempt holds. Already
+   * past, the attempt died with its process and the dispatcher retakes it.
+   */
+  leaseExpiresAt?: string | null;
+
   deliveredAt: string | null;
   created_at: string;
 
   endpoint: { id: string; name: string; url: string } | null;
 }
 
+/** The monitor's periods, as the API names them. */
+type MonitorWindow = "24h" | "7d" | "30d";
+
+/** A status chip: one API status, or QUEUED for the whole queue. */
+type MonitorStatusFilter = WebhookDeliveryRow["status"] | "QUEUED";
+
 interface WebhookDeliveryMeta {
+  /** The period the cards and the list both cover. */
+  window?: MonitorWindow;
+
+  /** The list stopped counting at its cap: `total` is a floor, not a count. */
+  totalCapped?: boolean;
+
   delivered: number;
   failed: number;
+
+  /** The whole queue (PENDING and PROCESSING), whatever its age. */
   pending: number;
 
-  /** Over the last 24h, and only over what was actually delivered. */
+  /** Over the deliveries counted in `delivered`: receiver response time. */
   p95LatencyMs: number | null;
 }
 
@@ -98,6 +122,9 @@ interface ApiUsageData {
   byDay: Array<{ day: string; total: number }>;
 
   keys: Array<{ id: string; name: string; prefix: string }>;
+
+  /** The company's zone: the days above are its calendar days. */
+  timeZone?: string;
 }
 
 interface CatalogueTopic {
@@ -109,14 +136,54 @@ interface CatalogueTopic {
 interface IntegrationCatalogue {
   version: string;
   topics: CatalogueTopic[];
-  scopes: Array<{ scope: string; description: string }>;
+
+  /** What "Todos os eventos" of each family subscribes to. */
+  families?: Array<{ family: CatalogueTopic["family"]; wildcards: string[] }>;
+
+  scopes: Array<{ scope: string; description: string; reserved?: boolean }>;
 }
 
 interface ActionResponse<T = undefined> {
   success: boolean;
   message: string;
   data?: T;
+
+  /**
+   * The API's error code on a refusal, so a screen can tell "módulo não
+   * contratado" from "sem permissão" (decision 4.1) instead of reading the
+   * status alone.
+   */
+  code?: string;
+
+  /** The HTTP status of a refusal. */
+  status?: number;
 }
+
+/** A refusal, with the API's own sentence, code and status. */
+const refusal = (
+  status: number,
+  result: { message?: string; code?: string } | null | undefined,
+  fallback: string,
+): { success: false; message: string; code?: string; status: number } => ({
+  success: false,
+  message: result?.message || fallback,
+  status,
+  ...(result?.code ? { code: result.code } : {}),
+});
+
+/** The body of an answer, or null when it is not JSON (a proxy's HTML page). */
+const readJson = async (
+  response: Response,
+): Promise<Record<string, any> | null> => {
+  try {
+    return await response.json();
+  } catch (error) {
+    // Not an outage of ours: the caller answers with its own sentence. Logged
+    // because a non-JSON answer means something in front of the API spoke.
+    logActionError("integration/readJson", error);
+    return null;
+  }
+};
 
 const NO_TOKEN = {
   success: false as const,
@@ -135,7 +202,7 @@ const getIntegrationCatalogue = async (): Promise<
   ActionResponse<IntegrationCatalogue>
 > => {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integration/v1/catalogue`,
       { method: "GET", next: { revalidate: 300 } },
     );
@@ -153,6 +220,7 @@ const getIntegrationCatalogue = async (): Promise<
       data: await response.json(),
     };
   } catch (error) {
+    logActionError("integration/getIntegrationCatalogue", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar o catálogo.",
@@ -168,7 +236,7 @@ const listApiKeys = async (
   if (!tokenAccess) return NO_TOKEN;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/api-keys${withBusiness(
         businessId,
       )}`,
@@ -183,17 +251,23 @@ const listApiKeys = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
 
     if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || "Houve um erro ao carregar as chaves.",
-      };
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao carregar as chaves.",
+      );
     }
 
-    return { success: true, message: result.message, data: result.data };
+    return {
+      success: true,
+      message: result?.message ?? "",
+      data: result?.data,
+    };
   } catch (error) {
+    logActionError("integration/listApiKeys", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar as chaves.",
@@ -223,7 +297,7 @@ const createApiKey = async (
   if (!tokenAccess) return NO_TOKEN;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/api-key/${businessId}`,
       {
         credentials: "include",
@@ -236,17 +310,23 @@ const createApiKey = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
 
     if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || "Houve um erro ao emitir a chave.",
-      };
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao emitir a chave.",
+      );
     }
 
-    return { success: true, message: result.message, data: result.data };
+    return {
+      success: true,
+      message: result?.message ?? "",
+      data: result?.data,
+    };
   } catch (error) {
+    logActionError("integration/createApiKey", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao emitir a chave.",
@@ -263,7 +343,7 @@ const revokeApiKey = async (
   if (!tokenAccess) return NO_TOKEN;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/api-key/${id}/business/${businessId}`,
       {
         credentials: "include",
@@ -275,15 +355,19 @@ const revokeApiKey = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
 
-    return {
-      success: response.ok,
-      message:
-        result.message ||
-        (response.ok ? "Chave revogada." : "Houve um erro ao revogar a chave."),
-    };
+    if (!response.ok) {
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao revogar a chave.",
+      );
+    }
+
+    return { success: true, message: result?.message || "Chave revogada." };
   } catch (error) {
+    logActionError("integration/revokeApiKey", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao revogar a chave.",
@@ -299,7 +383,7 @@ const listWebhookEndpoints = async (
   if (!tokenAccess) return NO_TOKEN;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/webhook-endpoints${withBusiness(
         businessId,
       )}`,
@@ -314,17 +398,23 @@ const listWebhookEndpoints = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
 
     if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || "Houve um erro ao carregar os endpoints.",
-      };
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao carregar os endpoints.",
+      );
     }
 
-    return { success: true, message: result.message, data: result.data };
+    return {
+      success: true,
+      message: result?.message ?? "",
+      data: result?.data,
+    };
   } catch (error) {
+    logActionError("integration/listWebhookEndpoints", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar os endpoints.",
@@ -361,7 +451,7 @@ const saveWebhookEndpoint = async (
     : `${process.env.HTTP_REQUEST}/integrations/webhook-endpoint/${businessId}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       credentials: "include",
       method: id ? "PUT" : "POST",
       headers: {
@@ -371,20 +461,79 @@ const saveWebhookEndpoint = async (
       body: JSON.stringify(payload),
     });
 
-    const result = await response.json();
+    const result = await readJson(response);
 
     if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || "Houve um erro ao salvar o endpoint.",
-      };
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao salvar o endpoint.",
+      );
     }
 
-    return { success: true, message: result.message, data: result.data };
+    return {
+      success: true,
+      message: result?.message ?? "",
+      data: result?.data,
+    };
   } catch (error) {
+    logActionError("integration/saveWebhookEndpoint", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao salvar o endpoint.",
+    };
+  }
+};
+
+/**
+ * A new signing secret, shown once, like at creation.
+ *
+ * The one it replaces keeps signing beside it for 24 hours (two `v1` values
+ * in X-Trajetto-Signature), so the receiver can switch keys without losing
+ * events. Before this, the only way to change a leaked secret was deleting
+ * the endpoint — and its whole delivery history with it.
+ */
+const rotateWebhookSecret = async (
+  businessId: string,
+  id: string,
+): Promise<ActionResponse<{ id: string; secret: string | null }>> => {
+  const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) return NO_TOKEN;
+
+  try {
+    const response = await apiFetch(
+      `${process.env.HTTP_REQUEST}/integrations/webhook-endpoint/${id}/business/${businessId}/rotate-secret`,
+      {
+        credentials: "include",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenAccess}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const result = await readJson(response);
+
+    if (!response.ok) {
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao gerar o novo segredo.",
+      );
+    }
+
+    return {
+      success: true,
+      message: result?.message ?? "",
+      data: result?.data,
+    };
+  } catch (error) {
+    logActionError("integration/rotateWebhookSecret", error);
+    return {
+      success: false,
+      message: "Ocorreu um erro inesperado ao gerar o novo segredo.",
     };
   }
 };
@@ -398,7 +547,7 @@ const deleteWebhookEndpoint = async (
   if (!tokenAccess) return NO_TOKEN;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/webhook-endpoint/${id}/business/${businessId}`,
       {
         credentials: "include",
@@ -410,20 +559,76 @@ const deleteWebhookEndpoint = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
 
-    return {
-      success: response.ok,
-      message:
-        result.message ||
-        (response.ok
-          ? "Endpoint removido."
-          : "Houve um erro ao remover o endpoint."),
-    };
+    if (!response.ok) {
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao remover o endpoint.",
+      );
+    }
+
+    return { success: true, message: result?.message || "Endpoint removido." };
   } catch (error) {
+    logActionError("integration/deleteWebhookEndpoint", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao remover o endpoint.",
+    };
+  }
+};
+
+/**
+ * Turns our breaker back on, and sends what the endpoint held.
+ *
+ * Its own action rather than "save it unchanged", which was the only gesture
+ * before — and which the rule that Salvar stays disabled on an untouched form
+ * (decision 2.5) was about to take away. Nothing but the breaker changes.
+ */
+const reactivateWebhookEndpoint = async (
+  businessId: string,
+  id: string,
+): Promise<
+  ActionResponse<{ id: string; reactivated: boolean; released: number }>
+> => {
+  const tokenAccess = await getCookies("tkey");
+
+  if (!tokenAccess) return NO_TOKEN;
+
+  try {
+    const response = await apiFetch(
+      `${process.env.HTTP_REQUEST}/integrations/webhook-endpoint/${id}/business/${businessId}/reactivate`,
+      {
+        credentials: "include",
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokenAccess}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    const result = await readJson(response);
+
+    if (!response.ok) {
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao reativar o endpoint.",
+      );
+    }
+
+    return {
+      success: true,
+      message: result?.message || "Endpoint reativado.",
+      data: result?.data,
+    };
+  } catch (error) {
+    logActionError("integration/reactivateWebhookEndpoint", error);
+    return {
+      success: false,
+      message: "Ocorreu um erro inesperado ao reativar o endpoint.",
     };
   }
 };
@@ -432,7 +637,8 @@ const listWebhookDeliveries = async (
   page: number,
   pageSize: number,
   filters: {
-    status?: WebhookDeliveryRow["status"];
+    status?: MonitorStatusFilter;
+    window?: MonitorWindow;
     endpointId?: string;
     businessId?: string;
   } = {},
@@ -448,10 +654,11 @@ const listWebhookDeliveries = async (
     });
 
     if (filters.status) params.set("status", filters.status);
+    if (filters.window) params.set("window", filters.window);
     if (filters.endpointId) params.set("endpointId", filters.endpointId);
     if (filters.businessId) params.set("businessId", filters.businessId);
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/webhook-deliveries?${params}`,
       {
         credentials: "include",
@@ -465,12 +672,11 @@ const listWebhookDeliveries = async (
     );
 
     if (!response.ok) {
-      const result = await response.json();
-
-      return {
-        success: false,
-        message: result.message || "Houve um erro ao carregar o monitor.",
-      };
+      return refusal(
+        response.status,
+        await readJson(response),
+        "Houve um erro ao carregar o monitor.",
+      );
     }
 
     // NDJSON: the envelope first, then one line per delivery.
@@ -488,6 +694,7 @@ const listWebhookDeliveries = async (
       } as WebhookDeliveryPage,
     };
   } catch (error) {
+    logActionError("integration/listWebhookDeliveries", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar o monitor.",
@@ -516,7 +723,7 @@ const listApiUsage = async (
     if (filters.apiKeyId) params.set("apiKeyId", filters.apiKeyId);
     if (filters.businessId) params.set("businessId", filters.businessId);
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/api-usage?${params}`,
       {
         credentials: "include",
@@ -529,17 +736,23 @@ const listApiUsage = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
 
     if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || "Houve um erro ao carregar o uso da API.",
-      };
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao carregar o uso da API.",
+      );
     }
 
-    return { success: true, message: result.message, data: result.data };
+    return {
+      success: true,
+      message: result?.message ?? "",
+      data: result?.data,
+    };
   } catch (error) {
+    logActionError("integration/listApiUsage", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao carregar o uso da API.",
@@ -563,7 +776,7 @@ const resendWebhookDelivery = async (
   if (!tokenAccess) return NO_TOKEN;
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/integrations/webhook-delivery/${id}/business/${businessId}/resend`,
       {
         credentials: "include",
@@ -575,17 +788,22 @@ const resendWebhookDelivery = async (
       },
     );
 
-    const result = await response.json();
+    const result = await readJson(response);
+
+    if (!response.ok) {
+      return refusal(
+        response.status,
+        result,
+        "Houve um erro ao reenviar o evento.",
+      );
+    }
 
     return {
-      success: response.ok,
-      message:
-        result.message ||
-        (response.ok
-          ? "Evento reenfileirado."
-          : "Houve um erro ao reenviar o evento."),
+      success: true,
+      message: result?.message || "Evento reenfileirado.",
     };
   } catch (error) {
+    logActionError("integration/resendWebhookDelivery", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao reenviar o evento.",
@@ -601,8 +819,10 @@ export {
   listApiUsage,
   listWebhookDeliveries,
   listWebhookEndpoints,
+  reactivateWebhookEndpoint,
   resendWebhookDelivery,
   revokeApiKey,
+  rotateWebhookSecret,
   saveWebhookEndpoint,
 };
 
@@ -613,6 +833,8 @@ export type {
   ApiUsageRouteRow,
   CatalogueTopic,
   IntegrationCatalogue,
+  MonitorStatusFilter,
+  MonitorWindow,
   SaveWebhookEndpointPayload,
   WebhookDeliveryMeta,
   WebhookDeliveryPage,

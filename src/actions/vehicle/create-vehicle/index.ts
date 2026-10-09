@@ -1,14 +1,17 @@
 "use server";
 
-import { createUpdateVehicleSchema } from "@/schemas/create-update-vehicle-schema";
+import { logActionError } from "@/lib/log-action-error";
+import { createVehicleSchema } from "@/schemas/create-update-vehicle-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
-interface CreateVehicleProps {
+interface CreateVehicleResponse {
+  code?: string;
   message: string;
 }
 
 const handleCreateVehicle = async (
-  state: any,
+  state: unknown,
   createVehicleValues: FormData,
 ) => {
   const tokenAccess = await getCookies("tkey");
@@ -22,47 +25,48 @@ const handleCreateVehicle = async (
     };
   }
 
-  if (createVehicleValues.type === "RESET") {
-    return {};
-  }
-
   const businessId = createVehicleValues.get("businessId");
-  const createVehicle = `${process.env.HTTP_REQUEST}/vehicle/create-vehicle/${businessId}`;
+  const url = `${process.env.HTTP_REQUEST}/vehicle/create-vehicle/${businessId}`;
 
-  const vehicleTypeValues = Object.fromEntries(createVehicleValues.entries());
-  const createVehicleValidation =
-    createUpdateVehicleSchema.safeParse(vehicleTypeValues);
+  const { businessId: _business, ...fields } = Object.fromEntries(
+    createVehicleValues.entries(),
+  );
 
-  if (createVehicleValidation.error) {
-    const formatError = createVehicleValidation.error.flatten();
+  const createVehicleValidation = createVehicleSchema.safeParse(fields);
+
+  if (!createVehicleValidation.success) {
     return {
-      createVehicleError: formatError.fieldErrors,
+      createVehicleError: createVehicleValidation.error.flatten().fieldErrors,
     };
   }
 
-  const vehicleData = createVehicleValidation.data;
-
   try {
-    const response = await fetch(createVehicle, {
+    const response = await apiFetch(url, {
       credentials: "include",
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(vehicleData),
+      body: JSON.stringify(createVehicleValidation.data),
     });
 
-    const { message } = (await response.json()) as CreateVehicleProps;
+    const { message } = (await response.json()) as CreateVehicleResponse;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
+      // The API's own sentence: a plate taken in this company, the
+      // contracted limit with its count, a relation that does not exist.
       return {
-        createVehicleError: { createVehicleErrorMessage: message },
+        createVehicleError: {
+          createVehicleErrorMessage:
+            message || "Não foi possível criar o veículo.",
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("vehicle/create-vehicle", error);
     return {
       createVehicleError: {
         createVehicleErrorMessage:

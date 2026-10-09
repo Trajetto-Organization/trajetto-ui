@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteQuoteProps {
   quoteId: string;
@@ -22,7 +25,7 @@ const handleDeleteQuote = async ({ quoteId }: DeleteQuoteProps) => {
   const deleteQuote = `${process.env.HTTP_REQUEST}/quote/delete-quote/${quoteId}`;
 
   try {
-    const response = await fetch(deleteQuote, {
+    const response = await apiFetch(deleteQuote, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -32,12 +35,13 @@ const handleDeleteQuote = async ({ quoteId }: DeleteQuoteProps) => {
 
     const { message } = (await response.json()) as DeleteQuoteResponse;
 
-    if (!response.ok && message) {
-      return { deleteQuoteError: message };
+    if (!response.ok) {
+      return { deleteQuoteError: message || refusalMessage(response.status) };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("quote/delete-quote", error);
     return {
       deleteQuoteError:
         "Ocorreu um erro inesperado ao tentar deletar o orçamento.",

@@ -1,3 +1,5 @@
+import type { DriverVehicleOption } from "./options";
+
 interface VehicleActionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -7,8 +9,9 @@ interface VehicleActionModalProps {
     model: string;
     license_plate: string;
   } | null;
-  onViewFuels: (vehicleId: string) => void;
-  onViewServiceOrders: (vehicleId: string) => void;
+  /** Only what this driver may open; see `driverVehicleOptions`. */
+  options: DriverVehicleOption[];
+  onSelect: (href: string) => void;
 }
 
 export type { VehicleActionModalProps };

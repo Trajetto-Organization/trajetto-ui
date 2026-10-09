@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { listActivitiesCursor } from "@/actions/activity/list-activities-cursor";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { ActivityTimeline } from "../timeline";
 import type { ActivityRow } from "../lib/grouping";
@@ -73,6 +74,8 @@ const ActivityTimelineFeed = ({
         businessId,
       });
 
+      if (isStaleActionResult(response)) return;
+
       if (!response.success) {
         toast.error(response.message);
         return;
@@ -97,7 +100,7 @@ const ActivityTimelineFeed = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tutorial="activity-timeline">
       <ActivityTimeline
         activities={activities}
         showBusiness={showBusiness}

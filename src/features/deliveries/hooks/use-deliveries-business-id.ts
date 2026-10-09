@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/auth-store";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 
 /**
  * Which company the delivery screens are looking at: the master picks one
@@ -11,7 +12,12 @@ function useDeliveriesBusinessId(): string | undefined {
   const searchParams = useSearchParams();
   const storeBusinessId = useAuthStore((state) => state.businessId);
 
-  return searchParams.get("businessId") || storeBusinessId || undefined;
+  // Only a company id from the URL: it becomes a segment of API paths.
+  return (
+    readBusinessIdParam(searchParams.get("businessId")) ||
+    storeBusinessId ||
+    undefined
+  );
 }
 
 export { useDeliveriesBusinessId };

@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import type {
-  RevalidateDataState,
-  RateLimitConfig,
-} from "../data-table-revalidate.types";
+import type { RateLimitConfig } from "../data-table-revalidate.types";
 
-import { queryClientProps } from "@/lib/query-client-props";
-import {
-  revalidateDataToQueryKeyMap,
-  RevalidateDataProps,
-} from "@/lib/query-keys-mapping";
+/** Three presses in thirty seconds, then fifteen seconds of countdown. */
+const DEFAULT_RATE_LIMIT = {
+  maxClicks: 3,
+  timeWindowMs: 30000,
+  cooldownTimeMs: 15000,
+} as const;
 
 const getStorageKey = (key?: string) => key || "revalidate-rate-limit";
 const loadStorageData = (storageKey?: string) => {
@@ -45,15 +43,26 @@ const saveStorageData = (data: any, storageKey?: string) => {
   localStorage.setItem(key, JSON.stringify(data));
 };
 
-export function useDataTableRevalidate(
-  state: RevalidateDataState | null | undefined,
-  config: RateLimitConfig = {
-    maxClicks: 3, // 3 clicks
-    timeWindowMs: 30000, // in 30 seconds
-    cooldownTimeMs: 15000, // 15 second cooldown
-  },
-  revalidateDataKey?: RevalidateDataProps | RevalidateDataProps[],
-) {
+/**
+ * The rate limit every refresh button of the product shares (tables, the
+ * overview, Kanban, the client panels' "Atualizar").
+ *
+ * It does not refresh anything itself: the click handler of each button
+ * does (see useRevalidateScreen). Refreshing from an effect keyed on the
+ * page's tag list re-ran on every render of pages that pass a literal array.
+ */
+export function useRefreshRateLimit(rateLimit: RateLimitConfig = {}) {
+  // Merged with the defaults, so a caller can pass only what it changes: a
+  // partial config replacing them would leave `maxClicks` undefined, and
+  // `n > undefined` never limits.
+  const config = {
+    maxClicks: rateLimit.maxClicks ?? DEFAULT_RATE_LIMIT.maxClicks,
+    timeWindowMs: rateLimit.timeWindowMs ?? DEFAULT_RATE_LIMIT.timeWindowMs,
+    cooldownTimeMs:
+      rateLimit.cooldownTimeMs ?? DEFAULT_RATE_LIMIT.cooldownTimeMs,
+    storageKey: rateLimit.storageKey,
+  };
+
   // Initial states without accessing localStorage, avoiding hydration error
   const [isClient, setIsClient] = useState<boolean>(false);
   const [clickData, setClickData] = useState({
@@ -101,32 +110,6 @@ export function useDataTableRevalidate(
       }
     }
   }, [config.storageKey]);
-
-  useEffect(() => {
-    if (state?.revalidateDataError) {
-      toast.error(state?.revalidateDataError);
-      return;
-    }
-
-    if (state && !state.revalidateDataError && revalidateDataKey) {
-      const keys = Array.isArray(revalidateDataKey)
-        ? revalidateDataKey
-        : [revalidateDataKey];
-
-      const queryKeys = Array.from(
-        new Set(keys.flatMap((key) => revalidateDataToQueryKeyMap[key] ?? [])),
-      );
-
-      if (queryKeys.length > 0) {
-        // Invalidate all matching queries
-        Promise.all(
-          queryKeys.map((queryKey) =>
-            queryClientProps.invalidateQueries([queryKey]),
-          ),
-        );
-      }
-    }
-  }, [state, revalidateDataKey]);
 
   // Check the current rate limiting state when mounting the component
   useEffect(() => {
@@ -183,7 +166,7 @@ export function useDataTableRevalidate(
 
     // Clear old clicks outside the time window
     const validClicks = clickData.clicks.filter(
-      (timestamp: number) => now - timestamp < (config.timeWindowMs as number),
+      (timestamp: number) => now - timestamp < config.timeWindowMs,
     );
 
     if (cooldownElapsed || validClicks.length !== clickData.clicks.length) {
@@ -232,16 +215,16 @@ export function useDataTableRevalidate(
 
     // Remove clicks outside the time window
     const validClicks = newClicks.filter(
-      (timestamp: number) => now - timestamp < (config.timeWindowMs as number),
+      (timestamp: number) => now - timestamp < config.timeWindowMs,
     );
 
     // Check if the limit has been exceeded
-    if (validClicks.length > (config.maxClicks as number)) {
+    if (validClicks.length > config.maxClicks) {
       // Activates cooldown
       const updatedData = {
         clicks: validClicks,
         isLimited: true,
-        cooldownEndTime: now + (config.cooldownTimeMs as number),
+        cooldownEndTime: now + config.cooldownTimeMs,
       };
 
       setClickData(updatedData);
@@ -250,11 +233,11 @@ export function useDataTableRevalidate(
       saveStorageData(updatedData, config.storageKey);
 
       setIsRateLimited(true);
-      setCooldownRemaining(Math.ceil((config.cooldownTimeMs as number) / 1000));
+      setCooldownRemaining(Math.ceil(config.cooldownTimeMs / 1000));
 
       // Notifies the user
       toast.warning(
-        `Muitas solicitações! Aguarde ${Math.ceil((config.cooldownTimeMs as number) / 1000)} segundos.`,
+        `Muitas solicitações! Aguarde ${Math.ceil(config.cooldownTimeMs / 1000)} segundos.`,
       );
 
       // No timer here, on purpose. Setting clickData above re-runs the

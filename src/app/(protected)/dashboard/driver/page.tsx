@@ -6,13 +6,14 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { DriverContent } from "./driver-content";
+import { DriverContent } from "@/features/driver/content";
+import { DriverSkeleton } from "@/features/driver/skeleton";
 
 interface DriverQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+  // Every param the URL carries: page, search, sort, order and the filters.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const Driver = async ({
+const DashboardDriver = async ({
   searchParams,
 }: DriverQueryParamsProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
@@ -40,11 +41,15 @@ const Driver = async ({
         description="Gerencie os motoristas cadastrados, delete, edite e mantenha os dados sempre atualizados."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <DriverContent searchParams={searchParams} token={tokenAccess} />
+      <Suspense fallback={<DriverSkeleton mode="dashboard" />}>
+        <DriverContent
+          mode="dashboard"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default Driver;
+export default DashboardDriver;

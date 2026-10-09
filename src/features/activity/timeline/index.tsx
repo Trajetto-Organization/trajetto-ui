@@ -14,7 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { displayValue } from "@/lib/format-values";
 
-import { ACTIVITY_STATUS_CLASSES, groupActivitiesByDay } from "../lib/grouping";
+import { groupActivitiesByDay } from "../lib/grouping";
+import {
+  activityStatusClass,
+  activityStatusLabel,
+} from "../lib/activity-catalog";
 import type { ActivityRow } from "../lib/grouping";
 
 interface ActivityTimelineProps {
@@ -50,10 +54,7 @@ const ActivityTimeline = ({
   showBusiness,
   responseError,
 }: ActivityTimelineProps): JSX.Element => {
-  const groups = useMemo(
-    () => groupActivitiesByDay(activities),
-    [activities],
-  );
+  const groups = useMemo(() => groupActivitiesByDay(activities), [activities]);
 
   if (responseError.error) {
     return (
@@ -125,12 +126,9 @@ const ActivityTimeline = ({
                       {activity.status && (
                         <Badge
                           variant="outline"
-                          className={
-                            ACTIVITY_STATUS_CLASSES[activity.status] ??
-                            "bg-gray-100 text-gray-800 border-gray-200"
-                          }
+                          className={activityStatusClass(activity.status)}
                         >
-                          {activity.status}
+                          {activityStatusLabel(activity.status)}
                         </Badge>
                       )}
                     </div>
@@ -141,9 +139,7 @@ const ActivityTimeline = ({
 
                     <p className="text-xs text-muted-foreground">
                       {group.formatTime(activity.created_at)}
-                      {showBusiness && businessName
-                        ? ` · ${businessName}`
-                        : ""}
+                      {showBusiness && businessName ? ` · ${businessName}` : ""}
                       {activity.user?.email ? ` · ${activity.user.email}` : ""}
                     </p>
                   </div>

@@ -8,6 +8,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { commandKeywordFilter } from "@/lib/command-keyword-filter";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +22,9 @@ import { Loader, Wrench } from "lucide-react";
 import {
   displayValue,
   formatToBrazilianCurrency,
-  formatDate,
   formatNotificationDate,
 } from "@/lib/format-values";
+import { formatPickedDay } from "@/features/vehicle/lib/picked-day";
 import { useDriverServiceOrdersList } from "./hooks";
 
 const DriverServiceOrdersList = ({
@@ -67,7 +68,7 @@ const DriverServiceOrdersList = ({
     if (completionDate) {
       return (
         <Badge
-          className="bg-green-100
+          className="shrink-0 whitespace-nowrap bg-green-100
           text-green-800 hover:bg-green-300"
         >
           Concluída
@@ -77,7 +78,7 @@ const DriverServiceOrdersList = ({
 
     return (
       <Badge
-        className="bg-yellow-100
+        className="shrink-0 whitespace-nowrap bg-yellow-100
         text-yellow-800 hover:bg-yellow-300"
       >
         Em Andamento
@@ -88,7 +89,11 @@ const DriverServiceOrdersList = ({
   return (
     <div className="space-y-6 mt-7">
       {/* Command Search */}
-      <Command className="border rounded-md">
+      <Command
+        filter={commandKeywordFilter}
+        className="border rounded-md"
+        data-tutorial="driver-service-orders"
+      >
         <CommandInput placeholder="Buscar ordem de serviço por responsável, fornecedor..." />
 
         {isLoaded && !isLoading && !hasError && (
@@ -116,7 +121,7 @@ const DriverServiceOrdersList = ({
             {!hasError && serviceOrders && serviceOrders.length > 0 && (
               <div
                 className="grid grid-cols-1
-                md:grid-cols-2 lg:grid-cols-3 gap-4"
+                lg:grid-cols-2 xl:grid-cols-3 gap-4"
               >
                 {serviceOrders.map((serviceOrder: any, index: number) => {
                   const isLastElement = index === serviceOrders.length - 1;
@@ -124,19 +129,31 @@ const DriverServiceOrdersList = ({
                   return (
                     <CommandItem
                       key={serviceOrder.id}
+                      // The id, never the text: cmdk merges items with equal
+                      // values. The keywords keep the search box matching
+                      // what the card shows.
+                      value={serviceOrder.id}
+                      keywords={[
+                        serviceOrder.responsibleUser?.name,
+                        serviceOrder.supplier?.name,
+                        serviceOrder.branch?.corporate_reason,
+                      ]
+                        .filter(Boolean)
+                        .map(String)}
                       ref={isLastElement ? lastElementRef : null}
                       className="p-0 aria-selected:bg-transparent"
                     >
                       <Card className="w-full p-4 transition-all hover:shadow-lg">
-                        {/* Header: Date and Status */}
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex items-center gap-2">
+                        {/* Header: Date and Status. Wraps instead of letting
+                            the badge ride over the date on a narrow card. */}
+                        <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                          <div className="flex min-w-0 items-center gap-2">
                             <Wrench className="h-5 w-5 text-primary" />
                             <div>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 Registrado em:
                               </p>
-                              <p className="text-sm font-semibold text-gray-900 truncate">
+                              <p className="text-sm font-semibold text-foreground truncate">
                                 {displayValue(
                                   formatNotificationDate(
                                     serviceOrder.created_at,
@@ -144,7 +161,7 @@ const DriverServiceOrdersList = ({
                                   ),
                                 )}
                               </p>
-                              <p className="text-xs text-gray-600">
+                              <p className="text-xs text-muted-foreground">
                                 {getMaintenanceTypeBadge(
                                   serviceOrder.maintenance_type,
                                 )}
@@ -157,27 +174,25 @@ const DriverServiceOrdersList = ({
                         {/* Service Order Date */}
                         <div className="mb-3">
                           <p
-                            className="text-xs text-gray-500
+                            className="text-xs text-muted-foreground
                             uppercase tracking-wide mb-1"
                           >
                             Data da Ordem de Serviço
                           </p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {displayValue(
-                              formatDate(serviceOrder.date, "pt-BR"),
-                            )}
+                          <p className="text-sm font-medium text-foreground">
+                            {formatPickedDay(serviceOrder.date)}
                           </p>
                         </div>
 
                         {/* Responsible User */}
                         <div className="mb-3">
                           <p
-                            className="text-xs text-gray-500
+                            className="text-xs text-muted-foreground
                             uppercase tracking-wide mb-1"
                           >
                             Responsável
                           </p>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-foreground">
                             {displayValue(serviceOrder.responsibleUser?.name)}
                           </p>
                         </div>
@@ -186,7 +201,7 @@ const DriverServiceOrdersList = ({
                         <div className="grid grid-cols-2 gap-3 mb-3">
                           <div>
                             <p
-                              className="text-xs text-gray-500
+                              className="text-xs text-muted-foreground
                               uppercase tracking-wide mb-1"
                             >
                               Valor Total
@@ -201,22 +216,24 @@ const DriverServiceOrdersList = ({
                           </div>
                           <div className="text-right">
                             <p
-                              className="text-xs text-gray-500
+                              className="text-xs text-muted-foreground
                               uppercase tracking-wide mb-1"
                             >
                               Peças
                             </p>
-                            <p className="text-base font-semibold text-gray-900">
+                            <p className="text-base font-semibold text-foreground">
                               {displayValue(serviceOrder.parts?.length || 0)}
                             </p>
                           </div>
                         </div>
 
                         {/* Branch and Supplier */}
-                        <div className="pt-3 border-t border-gray-100">
+                        <div className="pt-3 border-t border-border">
                           <div className="text-xs mb-2 truncate">
-                            <span className="text-gray-500">Filial: </span>
-                            <span className="font-medium text-gray-900">
+                            <span className="text-muted-foreground">
+                              Filial:{" "}
+                            </span>
+                            <span className="font-medium text-foreground">
                               {displayValue(
                                 serviceOrder.branch?.corporate_reason,
                               )}
@@ -224,8 +241,10 @@ const DriverServiceOrdersList = ({
                           </div>
 
                           <div className="text-xs truncate">
-                            <span className="text-gray-500">Fornecedor: </span>
-                            <span className="font-medium text-gray-900">
+                            <span className="text-muted-foreground">
+                              Fornecedor:{" "}
+                            </span>
+                            <span className="font-medium text-foreground">
                               {displayValue(serviceOrder.supplier?.name)}
                             </span>
                           </div>
@@ -233,21 +252,18 @@ const DriverServiceOrdersList = ({
 
                         <div
                           className="mt-3 pt-3
-                          border-t border-gray-100"
+                          border-t border-border"
                         >
                           <p
-                            className="text-xs text-gray-500
+                            className="text-xs text-muted-foreground
                             uppercase tracking-wide mb-1"
                           >
                             Data de Conclusão
                           </p>
-                          <p className="text-sm text-gray-700">
+                          <p className="text-sm text-foreground">
                             {displayValue(
                               serviceOrder.completion_date
-                                ? formatDate(
-                                    serviceOrder.completion_date,
-                                    "pt-BR",
-                                  )
+                                ? formatPickedDay(serviceOrder.completion_date)
                                 : null,
                             )}
                           </p>
@@ -266,7 +282,7 @@ const DriverServiceOrdersList = ({
               !hasError && (
                 <div
                   className="grid grid-cols-1 gap-4
-                md:grid-cols-2 lg:grid-cols-3 mt-4"
+                lg:grid-cols-2 xl:grid-cols-3 mt-4"
                 >
                   {[1, 2, 3].map((i) => (
                     <Card key={i} className="p-4">

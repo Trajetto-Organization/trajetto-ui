@@ -1,0 +1,99 @@
+---
+title: Paginação e sincronização
+description: Como percorrer as listas por cursor, em que ordem os itens vêm e a receita para buscar só o que mudou desde a última sincronização.
+slug: paginacao
+updatedAt: 2026-09-29
+---
+
+As listas da API (entregas, rotas e eventos) são paginadas por cursor. Este guia explica como percorrê-las e como montar uma sincronização incremental que não perde nem duplica documentos.
+
+## Por que cursor e não página
+
+Um cursor aponta para o último item que você recebeu, não para uma posição. Se um documento novo entra no meio da varredura, a paginação por número de página desloca tudo e um item escapa entre a página 12 e a 13, em silêncio. Com cursor, isso não acontece.
+
+## Percorrendo uma lista
+
+Peça a primeira página sem `cursor`. A resposta traz os itens em `data` e o cursor da próxima página em `next_cursor`. Repita a chamada passando esse valor em `cursor` até `next_cursor` vir `null`.
+
+```json
+{
+  "data": [
+    { "id": "0192f7f0-5c1e-7a3b-9d2e-4f6a8b0c1d2e", "code": "PED-10452" }
+  ],
+  "next_cursor": "0192f7f0-5c1e-7a3b-9d2e-4f6a8b0c1d2e"
+}
+```
+
+Os parâmetros de `GET /integration/v1/deliveries`, como a referência os descreve:
+
+<OperationParameters operation="listDeliveries" />
+
+Trate o cursor como um valor opaco: não o monte nem o altere, só devolva o que recebeu.
+
+## Ordem
+
+Os itens vêm na ordem do `id`, crescente. O `id` é um UUID v7, que começa pelo instante da criação, então essa é a ordem em que os documentos foram criados. Não é a ordem em que foram alterados: um documento antigo alterado agora continua na mesma posição.
+
+## Buscando só o que mudou
+
+O parâmetro `updated_since` recebe um instante ISO 8601 e devolve só o que foi alterado a partir dele (`updated_at` maior ou igual). A receita:
+
+1. Anote o instante em que a varredura **começa**, antes da primeira página, descontando alguns minutos de margem para a diferença entre o seu relógio e o nosso.
+2. Percorra todas as páginas com `updated_since` igual ao início anotado na varredura anterior. Na primeira vez, sem `updated_since`.
+3. Ao terminar, guarde o início desta varredura: ele é o `updated_since` da próxima.
+
+Um documento alterado durante a varredura pode aparecer de novo na seguinte, e a margem faz o mesmo com alguns já vistos. Isso é proposital: é o que garante que nada escapa. Grave pelo `id` (atualize se já existe). Numa entrega, compare o `updated_at` antes de sobrescrever e fique com o mais recente.
+
+```js
+const API = process.env.TRAJETTO_API_URL;
+const KEY = process.env.TRAJETTO_API_KEY;
+
+// Devolve o instante a usar como `updated_since` na próxima rodada.
+async function syncDeliveries(since, saveDelivery) {
+  const startedAt = new Date(Date.now() - 5 * 60 * 1000);
+  let cursor = null;
+
+  do {
+    const url = new URL("/integration/v1/deliveries", API);
+    url.searchParams.set("limit", "200");
+    if (since) url.searchParams.set("updated_since", since.toISOString());
+    if (cursor) url.searchParams.set("cursor", cursor);
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${KEY}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`${response.status} ${error.code}: ${error.message}`);
+    }
+
+    const page = await response.json();
+
+    for (const delivery of page.data) {
+      await saveDelivery(delivery); // grava pelo id: inserir ou atualizar
+    }
+
+    cursor = page.next_cursor;
+  } while (cursor);
+
+  return startedAt;
+}
+```
+
+Guarde o valor devolvido só depois de a varredura inteira terminar. Se ela parar no meio (queda, 429, 503), a próxima rodada começa do mesmo `updated_since` e refaz o caminho.
+
+<Callout type="info" title="Rotas">
+  `GET /integration/v1/routes` segue a mesma paginação, a mesma ordem e o mesmo
+  `updated_since`. A rota não traz `updated_at`: grave pelo `id` e deixe a cópia
+  da varredura mais recente prevalecer, já que cada varredura começa depois de a
+  anterior terminar e lê o estado atual.
+</Callout>
+
+## Eventos
+
+Em `GET /integration/v1/events`, o `updated_since` compara com a hora em que o evento **chegou** ao Trajetto, não com `occurred_at`. O aplicativo do motorista guarda o que foi feito sem sinal e envia depois, então um evento pode chegar hoje com `occurred_at` de horas atrás. Não descarte um evento por ter `occurred_at` menor que o último que você viu: deduplique pelo `id`.
+
+## Respeitando os limites
+
+Uma varredura grande faz muitas chamadas seguidas. Use `limit=200`, o máximo por página, e trate o 429 esperando o `retry-after` antes de continuar do mesmo cursor. Veja os [limites de uso](/docs/limites).

@@ -30,7 +30,7 @@ const buildShipperColumns = (): ColumnDef<ShipperData>[] => [
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Selecionar todas"
         className="translate-y-[2px]"
       />
     ),
@@ -40,7 +40,7 @@ const buildShipperColumns = (): ColumnDef<ShipperData>[] => [
         name={`select-shipper-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Selecionar linha"
         className="translate-y-[2px]"
       />
     ),
@@ -83,9 +83,7 @@ const buildShipperColumns = (): ColumnDef<ShipperData>[] => [
     ),
     cell: ({ row }) => (
       <p className="truncate font-medium w-40">
-        {row.original.cnpj
-          ? formatCnpj(row.original.cnpj)
-          : displayValue(null)}
+        {row.original.cnpj ? formatCnpj(row.original.cnpj) : displayValue(null)}
       </p>
     ),
     enableSorting: false,

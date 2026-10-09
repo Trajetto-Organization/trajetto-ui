@@ -65,20 +65,7 @@ interface CreateVehicleChecklistFormSubmitProps {
   uploadError: string | null;
 }
 
-/**
- * Who the form is being opened by, and therefore what its first step is.
- *
- * A MASTER chooses the company (and then the branch) inside the wizard; a
- * business user starts from their own company and only picks the branch.
- * This is the scope parameter that lets one form serve both routes — the
- * whole reason the admin/dashboard twins could be collapsed.
- */
-type ChecklistFormScope =
-  | { kind: "master" }
-  | { kind: "business"; businessId: string };
-
 export type {
   CreateVehicleChecklistFormState,
   CreateVehicleChecklistFormSubmitProps,
-  ChecklistFormScope,
 };

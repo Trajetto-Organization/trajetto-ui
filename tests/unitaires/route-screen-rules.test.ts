@@ -38,7 +38,12 @@ describe("what the board offers on a route", () => {
   it("offers the handover only from planning", () => {
     expect(canReleaseRoute("PLANNED")).toBe(true);
 
-    for (const status of ["RELEASED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const) {
+    for (const status of [
+      "RELEASED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+    ] as const) {
       expect(canReleaseRoute(status), status).toBe(false);
     }
   });
@@ -64,13 +69,28 @@ describe("what the board offers on a route", () => {
 
   it("has a Portuguese label and a colour for every state", () => {
     // A status with no entry renders as a crash, not as a blank.
-    for (const status of ["PLANNED", "RELEASED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const) {
+    for (const status of [
+      "PLANNED",
+      "RELEASED",
+      "IN_PROGRESS",
+      "COMPLETED",
+      "CANCELLED",
+    ] as const) {
       expect(ROUTE_STATUS_META[status].label.length, status).toBeGreaterThan(0);
       expect(ROUTE_STATUS_META[status].badgeClassName, status).toContain("bg-");
     }
 
-    for (const status of ["PENDING", "ARRIVED", "COMPLETED", "FAILED", "CANCELLED"] as const) {
-      expect(ROUTE_STOP_STATUS_META[status].label.length, status).toBeGreaterThan(0);
+    for (const status of [
+      "PENDING",
+      "ARRIVED",
+      "COMPLETED",
+      "FAILED",
+      "CANCELLED",
+    ] as const) {
+      expect(
+        ROUTE_STOP_STATUS_META[status].label.length,
+        status,
+      ).toBeGreaterThan(0);
     }
   });
 });
@@ -136,7 +156,7 @@ describe("the cards above the board", () => {
     // sendAsNDJSON nests whatever the use case returned in `meta` under
     // `searchMeta`. Reading the top level instead yields four zeros over a
     // full operation — and nothing about the screen would look broken.
-    const data = buildStatsData(12, {
+    const data = buildStatsData({
       statusCounts: {
         PLANNED: 3,
         RELEASED: 2,
@@ -146,22 +166,24 @@ describe("the cards above the board", () => {
       },
     });
 
+    // The total is the same tally summed: every card counts one set.
     expect(data.totalRoutes).toBe(12);
     expect(data.inProgress).toBe(4);
     expect(data.completed).toBe(2);
   });
 
   it("folds released into “aguardando liberação”, because neither has left", () => {
-    const data = buildStatsData(5, {
+    const data = buildStatsData({
       statusCounts: { PLANNED: 3, RELEASED: 2 },
     });
 
     expect(data.planned).toBe(5);
+    expect(data.totalRoutes).toBe(5);
   });
 
   it("reads zero rather than undefined for a status with no routes", () => {
     // A company with nothing cancelled must not render "undefined" on a card.
-    const data = buildStatsData(0, { statusCounts: {} });
+    const data = buildStatsData({ statusCounts: {} });
 
     expect(data).toEqual({
       totalRoutes: 0,
@@ -172,8 +194,8 @@ describe("the cards above the board", () => {
   });
 
   it("survives a response that carried no aggregate at all", () => {
-    expect(buildStatsData(7, undefined).totalRoutes).toBe(7);
-    expect(buildStatsData(7, undefined).inProgress).toBe(0);
+    expect(buildStatsData(undefined).totalRoutes).toBe(0);
+    expect(buildStatsData(undefined).inProgress).toBe(0);
   });
 });
 

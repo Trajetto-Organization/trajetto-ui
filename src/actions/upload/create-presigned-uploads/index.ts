@@ -1,12 +1,11 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 type UploadType =
-  | "checklistPhotos"
-  | "odometerPhotos"
-  | "avatars"
-  | "chatAttachments";
+  "checklistPhotos" | "odometerPhotos" | "avatars" | "chatAttachments";
 
 interface PresignedUploadFile {
   originalFilename: string;
@@ -62,7 +61,7 @@ const handleCreatePresignedUploads = async ({
   const presignUrl = `${process.env.HTTP_REQUEST}/uploads/presign/${businessId}`;
 
   try {
-    const response = await fetch(presignUrl, {
+    const response = await apiFetch(presignUrl, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -85,7 +84,8 @@ const handleCreatePresignedUploads = async ({
     }
 
     return { uploads: data.uploads ?? [] };
-  } catch {
+  } catch (error) {
+    logActionError("upload/create-presigned-uploads", error);
     return {
       errorMessage: "Não foi possível autorizar o envio das imagens.",
     };

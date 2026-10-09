@@ -1,6 +1,14 @@
 "use server";
 
+import {
+  NEW_DELETION_CODE_MESSAGE,
+  errorCodeOf,
+  needsNewDeletionCode,
+  refusalMessage,
+} from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteBranchProps {
   businessId: string;
@@ -9,7 +17,8 @@ interface DeleteBranchProps {
 }
 
 interface DeleteBranchResponseProps {
-  message: string;
+  message?: string;
+  code?: string;
 }
 
 const handleDeleteBranch = async ({
@@ -35,7 +44,7 @@ const handleDeleteBranch = async ({
   const deleteBranch = `${process.env.HTTP_REQUEST}/branch/delete-branch/${branchId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteBranch, {
+    const response = await apiFetch(deleteBranch, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -45,14 +54,32 @@ const handleDeleteBranch = async ({
       body: JSON.stringify({ code }),
     });
 
-    const { message } = (await response.json()) as DeleteBranchResponseProps;
+    const body = (await response.json()) as DeleteBranchResponseProps;
+    const { message } = body;
 
-    if (!response.ok && message) {
-      return { deleteBranchError: message };
+    if (!response.ok) {
+      const errorCode = errorCodeOf(body, response.headers);
+
+      // No pending request (409 BRANCH_DELETION_NOT_REQUESTED) or an expired
+      // code: retyping cannot work, so the dialog asks for a new code instead
+      // of reading it as a generic conflict.
+      if (needsNewDeletionCode(errorCode)) {
+        return {
+          deleteBranchError: message || NEW_DELETION_CODE_MESSAGE,
+          errorCode,
+          requestNewCode: true,
+        };
+      }
+
+      return {
+        deleteBranchError: message || refusalMessage(response.status),
+        errorCode,
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("branch/delete-branch", error);
     return {
       deleteBranchError:
         "Ocorreu um erro inesperado ao tentar deletar a filial.",

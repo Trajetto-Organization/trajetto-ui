@@ -31,9 +31,7 @@ const StopMessagesPage = ({
     <div className="rounded-xl border p-6 text-center">
       <BellOff className="mx-auto h-10 w-10 text-muted-foreground" />
 
-      <h1 className="mt-4 text-xl font-semibold">
-        Parar de receber mensagens
-      </h1>
+      <h1 className="mt-4 text-xl font-semibold">Parar de receber mensagens</h1>
 
       <p className="mt-2 text-sm text-muted-foreground">
         Você deixará de receber avisos sobre esta entrega. O acompanhamento

@@ -23,7 +23,7 @@ const createUpdateFuelSchema = z.object({
         required_error: "A quilometragem atual do veículo é obrigatória.",
         invalid_type_error: "A quilometragem atual deve ser um número válido.",
       })
-      .nonnegative("A quilometragem atual deve ser um valor não negativo.")
+      // One message for zero or less: "maior que zero" says what to do.
       .min(0.1, "A quilometragem atual deve ser maior que zero.")
       .max(9999999, "A quilometragem atual não pode exceder 9.999.999 km."),
   ),
@@ -41,7 +41,6 @@ const createUpdateFuelSchema = z.object({
         required_error: "A quantidade de litros é obrigatória.",
         invalid_type_error: "A quantidade de litros deve ser um número válido.",
       })
-      .positive("A quantidade de litros deve ser um valor positivo.")
       .min(0.001, "A quantidade de litros deve ser maior que zero.")
       .max(99999.999, "A quantidade de litros não pode exceder 99.999,999 L."),
   ),
@@ -53,9 +52,9 @@ const createUpdateFuelSchema = z.object({
         invalid_type_error:
           "O preço por litro deve ser um valor numérico válido.",
       })
-      .positive("O preço por litro deve ser um valor positivo.")
-      .min(0.01, "O preço por litro deve ser no mínimo R$ 0,01")
-      .max(999.99, "O preço por litro não pode exceder R$ 999,99."),
+      .min(0.01, "O preço por litro deve ser no mínimo R$ 0,01.")
+      // Sanity cap (decision 15.9), mirrored from the API and the app.
+      .max(50, "O preço por litro não pode exceder R$ 50,00."),
   ),
   notes: z.preprocess(
     emptyStringToNull,
@@ -111,20 +110,10 @@ const createUpdateFuelSchema = z.object({
         return;
       }
 
-      // Validation: refueling date cannot be in the future
-      const refuelingDate = new Date(val);
-      const today = new Date();
-
-      today.setHours(23, 59, 59, 999); // End of today
-
-      if (refuelingDate > today) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "A data do abastecimento não pode ser no futuro.",
-        });
-
-        return;
-      }
+      // "Not in the future" is the company's calendar (decision 1.2): this
+      // runs in the Server Action, on a UTC container, where the end of the
+      // day falls at 21:00 in São Paulo. The picker already offers no future
+      // day, and the API checks it in the company's zone.
     }),
   vehicleId: z.string().uuid("O ID do veículo deve ser um UUID válido."),
   driverId: z.string().uuid("O ID do motorista deve ser um UUID válido."),
@@ -172,4 +161,15 @@ const createUpdateFuelSchema = z.object({
   ),
 });
 
-export { createUpdateFuelSchema };
+/**
+ * The edit posts only the links the person changed (FLEET-FUEL-1): a link
+ * that is absent stays as it is on the server.
+ */
+const updateFuelFormSchema = createUpdateFuelSchema.partial({
+  vehicleId: true,
+  driverId: true,
+  fuelTypeId: true,
+  branchId: true,
+});
+
+export { createUpdateFuelSchema, updateFuelFormSchema };

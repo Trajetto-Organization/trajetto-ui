@@ -1,0 +1,40 @@
+---
+title: Changelog
+description: Como a API de Integração evolui sem quebrar quem já integrou, e o que mudou na versão v1 até agora.
+slug: changelog
+updatedAt: 2026-09-29
+---
+
+## Como a API evolui
+
+A versão está no caminho (`/integration/v1`) e no campo `version` do catálogo. Dentro de uma versão, só entram mudanças **aditivas**, que não quebram quem já integrou:
+
+- endpoints, parâmetros opcionais e cabeçalhos novos;
+- campos novos numa resposta ou no `data` de um webhook;
+- tópicos novos no catálogo (um curinga como `delivery.*` passa a assiná-los sozinho).
+
+Por isso, o seu código deve ignorar campos que não conhece em vez de recusá-los. Remover ou renomear um campo, mudar o tipo de um valor ou o significado de um status é uma mudança incompatível: ela só acontece numa versão nova (`/integration/v2`), que será registrada aqui.
+
+## Setembro de 2026
+
+### Documentação
+
+- Portal de desenvolvedores em português, com guias e a [referência](/docs/referencia) gerada do documento OpenAPI que a própria API publica.
+- O documento OpenAPI público passou para a versão 3.1, com cada webhook descrito como uma chamada (cabeçalhos, corpo e respostas), um `operationId` por endpoint, grupos por recurso (Catálogo, Entregas, Rotas, Eventos) e o endereço da API em `servers`.
+- Cada endpoint publica o escopo que exige e as respostas de erro com o corpo real (`code`, `message` e, quando há, `issues` ou `requestId`), inclusive o 503 de indisponibilidade.
+- O [console interativo](/docs/console) foi atualizado e está em português.
+- [Vetor de teste](/docs/assinatura#vetor-de-teste) da assinatura, gerado pela mesma função que assina os webhooks, com um corpo no envelope real (`id`, `sequence`, `topic`, `created_at` e `data`), para conferir a sua implementação e o seu leitor de eventos sem esperar um evento.
+- `POST /integration/v1/deliveries` publica um exemplo de corpo real (`requestBody.content["application/json"].example`), aceito pela API e pelo JSON Schema publicado ao lado; o `curl` da referência envia esse exemplo.
+
+### API
+
+- **Criação de entregas:** `POST /integration/v1/deliveries`, com o escopo `deliveries:write` e o cabeçalho `Idempotency-Key` obrigatório. Veja [idempotência](/docs/idempotencia).
+- **Teto por empresa:** além do teto de cada chave, todas as chaves de uma empresa passaram a dividir um teto por minuto. A recusa por esse teto traz só o `retry-after`, sem os cabeçalhos `x-ratelimit-*` da chave, que não descrevem o teto da empresa. Veja os [limites](/docs/limites).
+- **Rotas:** as rotas e os eventos `route.*` ganharam `destination` e a saída e o retorno previstos (`planned_departure_at` e `planned_arrival_at`).
+
+### Webhooks
+
+- **Hora do fato:** os eventos de documento trazem `data.occurred_at`, a hora em que o fato aconteceu em campo, que pode ser anterior ao `created_at` do envelope.
+- **Ordem:** o envelope traz `sequence`, crescente na ordem em que os eventos foram gerados.
+- **Curingas por prefixo:** "Todos os eventos" de documentos assina `delivery.*`, `occurrence.*` e `proof.*`. O antigo `document.*` não casava com nenhum tópico e foi substituído nos endpoints já cadastrados.
+- **Troca de segredo sem perder eventos:** durante o prazo de transição, o cabeçalho de assinatura traz um `v1` por segredo. Veja [verificar a assinatura](/docs/assinatura).

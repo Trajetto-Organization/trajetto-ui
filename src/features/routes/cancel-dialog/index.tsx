@@ -2,28 +2,35 @@
 
 import { useState } from "react";
 
-import { Loader } from "lucide-react";
+import { Ban, Loader, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogScrollContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { DialogFormFooter } from "@/components/ui/dialog";
 
-import { FieldShell } from "@/components/shared/custom/field-shell";
+import { TextareaField } from "@/components/shared/custom/textarea-field";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 import { cancelRoute } from "@/actions/route/route-operations";
 import { revalidateTagName } from "@/actions/revalidate";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { cancelRouteSchema } from "@/schemas/create-update-route-schema";
 
 import type { RouteListItem } from "@/actions/route/get-route";
+
+import { cancelRouteCopy } from "../lib/cancel-copy";
 
 interface CancelRouteDialogProps {
   businessId: string;
@@ -33,10 +40,14 @@ interface CancelRouteDialogProps {
 }
 
 /**
- * Cancelling a route that already left throws away a driver's morning, so the
- * reason is required and the dialog says out loud what the cancellation will
- * do — the open stops are cancelled and their deliveries go back to the pool,
- * while what was already proven stays proven.
+ * Cancelling is how a route ends badly, and it is deliberately the only way:
+ * there is no delete. A route that ran is the record of a driver's day, and
+ * one that did not still reserved deliveries no other route could take.
+ *
+ * Same shape as Cancelar Entrega (the pattern the user approved): the title
+ * in red with its icon, what is kept ("nada é apagado"), the reason, and the
+ * "Validações e consequências" list — said by status, because a PLANNED
+ * route's driver is never told (the API only notifies once released).
  */
 const CancelRouteDialog = ({
   businessId,
@@ -45,7 +56,16 @@ const CancelRouteDialog = ({
   onClose,
 }: CancelRouteDialogProps): JSX.Element => {
   const [reason, setReason] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+
+  // Live validation (decision 16.700) with the action's own schema: the
+  // reason is checked once it is left, then as it is typed.
+  const live = useLiveValidation({
+    schema: cancelRouteSchema,
+    values: { reason },
+    controlIds: { reason: "cancel-route-reason" },
+    resetKey: isOpen,
+    validateOnSubmit: false,
+  });
 
   const [isPending, setIsPending] = useState<boolean>(false);
 
@@ -53,17 +73,13 @@ const CancelRouteDialog = ({
     (stop) => stop.status === "PENDING" || stop.status === "ARRIVED",
   ).length;
 
-  const hasDeparted = route.status === "IN_PROGRESS";
+  const copy = cancelRouteCopy({ status: route.status, openStops });
 
   const handleCancel = async () => {
     const validation = cancelRouteSchema.safeParse({ reason });
 
-    if (!validation.success) {
-      setError(validation.error.issues[0]?.message ?? "Motivo inválido.");
-      return;
-    }
+    if (!live.validate() || !validation.success) return;
 
-    setError(null);
     setIsPending(true);
 
     try {
@@ -72,6 +88,8 @@ const CancelRouteDialog = ({
         route.id,
         validation.data.reason,
       );
+
+      if (isStaleActionResult(response)) return;
 
       if (!response.success) {
         toast.error(response.message);
@@ -88,108 +106,89 @@ const CancelRouteDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      {/*
-        `DialogScrollContent`, which is what ninety other dialogs in this
-        product use and this one did not.
+    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent className="max-w-lg">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-xl text-destructive">
+            <Ban className="h-5 w-5 shrink-0" aria-hidden="true" />
+            Cancelar Rota {route.code}
+          </AlertDialogTitle>
 
-        `DialogContent` has no maximum height and no scroller: with a typed
-        reason and the "as N paradas voltam para a lista" paragraph — which
-        grows with the number of open stops — the dialog simply got taller than
-        the window, and "Cancelar rota" went off the bottom with no way to
-        reach it. The shell also brings the header and body padding, so none is
-        set here.
-      */}
-      <DialogScrollContent
-        className="max-w-lg max-h-[90vh] overflow-y-auto"
-        onInteractOutside={(event) => event.preventDefault()}
-      >
-        <DialogHeader>
-          <DialogTitle>Cancelar a Rota {route.code}?</DialogTitle>
-          <DialogDescription asChild>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>
-                {hasDeparted
-                  ? "Esta rota já saiu. O motorista será avisado no aplicativo."
-                  : "O motorista será avisado no aplicativo."}
-              </p>
+          <AlertDialogDescription className="pt-1 text-sm">
+            {copy.description}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
-              {openStops > 0 && (
-                <p>
-                  {openStops === 1
-                    ? "A parada que ainda não foi resolvida volta para a lista de entregas disponíveis."
-                    : `As ${openStops} paradas que ainda não foram resolvidas voltam para a lista de entregas disponíveis.`}{" "}
-                  O que já foi entregue ou registrado como insucesso continua
-                  valendo.
-                </p>
-              )}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
-
-        {/*
-          The shared field shell, so the message lands under the control with
-          `role="alert"` and the textarea carries `aria-invalid` — this dialog
-          used to print the reason error as a loose red sentence that nothing
-          connected to the field it was about.
-        */}
-        <FieldShell
-          label="Motivo do cancelamento *"
-          htmlFor="cancel-route-reason"
-          error={error}
+        <div
+          className="rounded-lg border border-emerald-200 bg-emerald-50
+          p-3 dark:border-emerald-900 dark:bg-emerald-950/30"
         >
-          {(control) => (
-            <Textarea
-              {...control}
-              name="reason"
-              value={reason}
-              maxLength={255}
-              disabled={isPending}
-              placeholder="Ex.: caminhão quebrou na marginal"
-              onChange={(event) => {
-                setReason(event.target.value);
-
-                // The error goes the moment the user starts fixing it.
-                if (error) setError(null);
-              }}
+          <p
+            className="flex items-start gap-2 text-sm
+            text-emerald-800 dark:text-emerald-200"
+          >
+            <ShieldCheck
+              className="mt-0.5 h-4 w-4 shrink-0"
+              aria-hidden="true"
             />
-          )}
-        </FieldShell>
+            <span>
+              <strong>Nada é apagado.</strong> A rota continua no quadro com
+              status Cancelada, com as paradas, o motorista e o motivo.
+            </span>
+          </p>
+        </div>
 
-        {/* Not ceremony: the only way anyone reconstructs why a morning was
-        thrown away is if the person who did it said so at the time. */}
-        <p className="text-xs text-muted-foreground">
-          Fica registrado na rota e no histórico da operação.
-        </p>
+        <div ref={live.ref}>
+          <TextareaField
+            label="Motivo do cancelamento *"
+            htmlfor="cancel-route-reason"
+            name="reason"
+            value={reason}
+            maxLength={255}
+            disabled={isPending}
+            placeholder="Ex.: caminhão quebrou na marginal"
+            errorName={live.errorOf("reason")}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </div>
 
-        <DialogFooter className="gap-2">
-          {/*
-            "Manter a rota", not "Cancelar".
+        <div className="text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">
+            Validações e consequências:
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {copy.consequences.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
 
-            The product's dismiss button is Cancelar everywhere else, and here
-            that would put "Cancelar" beside "Cancelar rota" — two buttons with
-            the same first word, on the one screen where picking the wrong one
-            throws away a driver's morning. The way out says what it does.
-          */}
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Manter a rota
-          </Button>
+        <DialogFormFooter className="mt-2">
+          <AlertDialogCancel
+            disabled={isPending}
+            {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
+          >
+            Cancelar
+          </AlertDialogCancel>
 
           <Button
+            type="button"
             variant="destructive"
             onClick={() => void handleCancel()}
             disabled={isPending}
           >
-            <span>Cancelar rota</span>
-            {isPending && (
-              <div className="ml-2 animate-spin">
-                <Loader className="h-4 w-4" />
-              </div>
+            {isPending ? (
+              <span className="flex items-center gap-2">
+                <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Cancelando...
+              </span>
+            ) : (
+              "Cancelar Rota"
             )}
           </Button>
-        </DialogFooter>
-      </DialogScrollContent>
-    </Dialog>
+        </DialogFormFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 

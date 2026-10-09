@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-import { boundsOf, clusterPositions } from "../lib/cluster";
-import type { TowerPosition, TrailPoint } from "@/actions/control-tower";
+import { boundsOf } from "../lib/cluster";
+import type { MapTiles } from "../lib/map-tiles";
+import { addThemedTileLayer } from "../lib/themed-tile-layer";
+import { vehicleStatus } from "../lib/vehicle-motion";
+import { markerLabel } from "./marker-html";
+import { VehicleLayer, type VehicleInput } from "./vehicle-layer";
+import { VehicleLegend } from "./vehicle-legend";
+import type { TowerPosition, TrailPoint } from "@/actions/control-tower/types";
+import {
+  LEAFLET_ATTRIBUTION_PREFIX,
+  ZOOM_CONTROL_TITLES,
+} from "@/lib/leaflet-pt-br";
 
 interface TowerMapProps {
   positions: TowerPosition[];
@@ -16,6 +26,9 @@ interface TowerMapProps {
 
   selectedDriverId: string | null;
   onSelectDriver: (driverId: string | null) => void;
+
+  /** The base map; null draws the fleet on a blank canvas (see map-tiles). */
+  tiles: MapTiles | null;
 }
 
 /**
@@ -23,33 +36,76 @@ interface TowerMapProps {
  *
  * Plain Leaflet and not react-leaflet, because that is what this codebase
  * already uses and a second map abstraction would be a second set of lifecycle
- * bugs. The markers are rebuilt on every change rather than diffed: thirty
- * markers is nothing to redraw, and a diff is where a stale dot survives a
- * driver going home.
- *
- * Tiles from OpenStreetMap, no key, like the rest of the product. A provider
- * that needs a key is a decision with a bill attached and belongs to the
- * operation, not to this file.
+ * bugs. The trucks live in a VehicleLayer that keeps one marker per truck and
+ * slides it to each new point: rebuilding them on every render made the fleet
+ * flicker and jump with every ping. A truck that leaves the fleet loses its
+ * marker in the same update, so no stale dot survives a driver going home.
  */
 const BRAZIL_CENTRE: [number, number] = [-14.235, -51.9253];
+
+/** A phone or a tablet: one finger scrolls the page, two move the map. */
+function isTouchDevice(): boolean {
+  if (typeof window === "undefined") return false;
+
+  return (
+    L.Browser.mobile ||
+    (typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches)
+  );
+}
+
+/** A tower position as the vehicle layer draws it. */
+function toVehicleInput(position: TowerPosition): VehicleInput {
+  return {
+    id: position.driverId,
+    latitude: position.latitude,
+    longitude: position.longitude,
+    heading: position.heading,
+    recordedAt: position.recordedAt,
+    status: vehicleStatus(position),
+    label: markerLabel([position]),
+  };
+}
 
 const TowerMap = ({
   positions,
   trail,
   selectedDriverId,
   onSelectDriver,
+  tiles,
 }: TowerMapProps): JSX.Element => {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
 
-  const layer = useRef<L.LayerGroup | null>(null);
+  const layer = useRef<VehicleLayer | null>(null);
   const trailLayer = useRef<L.LayerGroup | null>(null);
 
   /** Whether the map has already been framed on the fleet. */
   const framed = useRef<boolean>(false);
 
+  /**
+   * The zoom the clusters were cut at, as state.
+   *
+   * The clusters depend on the zoom and used to be computed only when the
+   * positions changed: the fleet was grouped at zoom 4 before the first
+   * fitBounds, and clicking a cluster zoomed in without splitting it until
+   * the next poll (UI-TWR-2).
+   */
+  const [zoom, setZoom] = useState<number>(4);
+
+  // Read inside the layer's click handler, which outlives renders.
+  const select = useRef({ onSelectDriver, selectedDriverId });
+
+  select.current = { onSelectDriver, selectedDriverId };
+
+  const [touch, setTouch] = useState<boolean>(false);
+
   useEffect(() => {
     if (!container.current || map.current) return;
+
+    const onTouch = isTouchDevice();
+
+    setTouch(onTouch);
 
     // Served from `public/` rather than a CDN, matching the Leaflet version
     // actually installed — and available behind a restrictive network.
@@ -62,27 +118,61 @@ const TowerMap = ({
     const instance = L.map(container.current, {
       center: BRAZIL_CENTRE,
       zoom: 4,
-      zoomControl: true,
+      // Added below with Portuguese names; the default says "Zoom in".
+      zoomControl: false,
       attributionControl: true,
+
+      // The map does not take the page's scroll (UI-TWR-5): the wheel zooms
+      // only after the map is clicked, and on a phone one finger scrolls the
+      // page while two fingers pan and pinch the map.
+      scrollWheelZoom: false,
+      dragging: !onTouch,
+      touchZoom: true,
     });
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(instance);
+    L.control.zoom(ZOOM_CONTROL_TITLES).addTo(instance);
+    instance.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
+
+    // Follows the theme live (dark style or the CSS filter).
+    const stopTiles = tiles ? addThemedTileLayer(L, instance, tiles) : null;
+
+    const enableWheel = () => instance.scrollWheelZoom.enable();
+    const disableWheel = () => instance.scrollWheelZoom.disable();
+
+    instance.on("click", enableWheel);
+    instance.on("focus", enableWheel);
+    instance.on("blur", disableWheel);
+    instance.on("mouseout", disableWheel);
+
+    instance.on("zoomend", () => setZoom(instance.getZoom()));
 
     map.current = instance;
 
-    layer.current = L.layerGroup().addTo(instance);
+    layer.current = new VehicleLayer(instance, {
+      cluster: true,
+      onSelect: (driverId) => {
+        const { onSelectDriver: choose, selectedDriverId: current } =
+          select.current;
+
+        choose(driverId === current ? null : driverId);
+      },
+    });
     trailLayer.current = L.layerGroup().addTo(instance);
 
     return () => {
+      stopTiles?.();
+      layer.current?.destroy();
       instance.remove();
+
+      // A new map (React's dev double mount, a remount) frames the fleet again.
+      framed.current = false;
 
       map.current = null;
       layer.current = null;
       trailLayer.current = null;
     };
+    // The tiles are fixed for the life of the page (read on the server).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -91,89 +181,33 @@ const TowerMap = ({
 
     if (!instance || !group) return;
 
-    group.clearLayers();
-
-    const clusters = clusterPositions(positions, instance.getZoom());
-
-    for (const cluster of clusters) {
-      const single = cluster.items.length === 1 ? cluster.items[0] : null;
-
-      // A stale dot is drawn differently rather than hidden. "Onde ele estava
-      // há duas horas" is information; a truck that silently disappears from
-      // the map is a phone call.
-      const stale = cluster.items.every((item) => !item.fresh);
-
-      const label = single
-        ? (single.vehiclePlate ?? single.driverName ?? "—")
-        : String(cluster.items.length);
-
-      const marker = L.marker([cluster.latitude, cluster.longitude], {
-        icon: L.divIcon({
-          className: "",
-          iconSize: [0, 0],
-          html: `
-            <div style="
-              transform: translate(-50%, -50%);
-              display: inline-flex;
-              align-items: center;
-              gap: 6px;
-              padding: 4px 8px;
-              border-radius: 999px;
-              font: 600 11px/1.2 system-ui, sans-serif;
-              white-space: nowrap;
-              color: #fff;
-              background: ${stale ? "#71717a" : "#2563eb"};
-              box-shadow: 0 1px 4px rgba(0,0,0,.35);
-              border: 2px solid #fff;
-              ${
-                single && single.driverId === selectedDriverId
-                  ? "outline: 3px solid #2563eb; outline-offset: 2px;"
-                  : ""
-              }
-            ">${label}</div>
-          `,
-        }),
-      });
-
-      marker.on("click", () => {
-        // A cluster is not a driver. Clicking one zooms in until it comes
-        // apart, which is the only honest answer to "which of these?".
-        if (!single) {
-          instance.setView(
-            [cluster.latitude, cluster.longitude],
-            Math.min(18, instance.getZoom() + 2),
-          );
-
-          return;
-        }
-
-        onSelectDriver(
-          single.driverId === selectedDriverId ? null : single.driverId,
-        );
-      });
-
-      marker.addTo(group);
-    }
-
-    // Framed once, on the first fleet that arrives. Re-fitting on every
-    // refresh would yank the map away from a dispatcher who had just zoomed
-    // into a neighbourhood.
+    // Framed once, on the first fleet that arrives, BEFORE clustering: the
+    // fit moves the zoom, and its zoomend re-runs this with the real one.
+    // Re-fitting on every refresh would yank the map away from a dispatcher
+    // who had just zoomed into a neighbourhood.
     if (!framed.current && positions.length > 0) {
       const box = boundsOf(positions);
 
       if (box) {
+        framed.current = true;
+
         instance.fitBounds(
           L.latLngBounds(
             L.latLng(box.south, box.west),
             L.latLng(box.north, box.east),
           ),
-          { padding: [48, 48], maxZoom: 15 },
+          { padding: [48, 48], maxZoom: 15, animate: false },
         );
 
-        framed.current = true;
+        if (instance.getZoom() !== zoom) {
+          setZoom(instance.getZoom());
+          return;
+        }
       }
     }
-  }, [positions, selectedDriverId, onSelectDriver]);
+
+    group.update(positions.map(toVehicleInput), selectedDriverId);
+  }, [positions, selectedDriverId, zoom]);
 
   useEffect(() => {
     const group = trailLayer.current;
@@ -185,18 +219,49 @@ const TowerMap = ({
     if (!trail || trail.length < 2) return;
 
     L.polyline(
-      trail.map((point) => [point.latitude, point.longitude] as [number, number]),
+      trail.map(
+        (point) => [point.latitude, point.longitude] as [number, number],
+      ),
       { color: "#2563eb", weight: 3, opacity: 0.7 },
     ).addTo(group);
   }, [trail]);
 
   return (
-    <div
-      ref={container}
-      className="h-[480px] w-full rounded-lg border"
-      role="application"
-      aria-label="Mapa da frota"
-    />
+    <div className="relative" data-tutorial="control-tower-map">
+      <div
+        ref={container}
+        className="h-[60vh] min-h-[320px] w-full rounded-lg border
+        md:h-[480px]"
+        role="application"
+        aria-label="Mapa da frota"
+      />
+
+      {/* Over the map only when it is wide enough to sit beside the
+          attribution (which the OSM licence keeps visible); under it
+          otherwise, where an overlay would cover trucks or the credit. */}
+      <VehicleLegend
+        className="mt-2 xl:absolute xl:bottom-3 xl:left-3 xl:z-[400] xl:mt-0
+        xl:max-w-[calc(100%-20rem)] xl:rounded-md xl:border xl:bg-background/90
+        xl:px-3 xl:py-2 xl:shadow-sm xl:backdrop-blur-sm"
+      />
+
+      {touch && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Use dois dedos para mover e ampliar o mapa.
+        </p>
+      )}
+
+      {!tiles && (
+        <p
+          className="pointer-events-none absolute inset-x-3 top-3 z-[400]
+          rounded-md border bg-background/90 px-3 py-2 text-xs
+          text-muted-foreground"
+        >
+          Mapa base não configurado: os veículos aparecem sem as ruas. Fale com
+          o suporte.
+        </p>
+      )}
+    </div>
   );
 };
 

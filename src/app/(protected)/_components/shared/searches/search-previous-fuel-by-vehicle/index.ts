@@ -1,5 +1,5 @@
 import { useQuery } from "react-query";
-import { getCookies } from "@/actions/cookies";
+import { relayUrl } from "@/lib/api-relay-paths";
 
 import type {
   FetchPreviousFuelProps,
@@ -15,15 +15,17 @@ const fetchPreviousFuel = async ({
     return null;
   }
 
-  const tokenAccess = await getCookies("tkey");
+  // Encoded: an ISO date with an offset ("+") would otherwise reach the API
+  // as a space. `businessId` is the record's company — on /admin, the one
+  // the MASTER selected (the API used to refuse him here).
+  const query = new URLSearchParams({ date: currentFuelDate, businessId });
+
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/fuel/get-previous-fuel/${vehicleId}?date=${currentFuelDate}&businessId=${businessId}`,
+    relayUrl(`/fuel/get-previous-fuel/${encodeURIComponent(vehicleId)}`, query),
     {
-      credentials: "include",
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenAccess}`,
       },
     },
   );
@@ -62,9 +64,16 @@ function useFetchPreviousFuel({
     queryFn: () =>
       fetchPreviousFuel({ vehicleId, currentFuelDate, businessId }),
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+
+    // Asked again whenever a form opens: the mileage it validates against
+    // moves with every refueling, including ones recorded in another session.
+    staleTime: 0,
     retry: 1,
     enabled: enabled && !!vehicleId && !!currentFuelDate && !!businessId,
+
+    // Same reason as useFetchVehicleData: another vehicle's last refueling
+    // must not stand in for this one's while it loads.
+    keepPreviousData: false,
   });
 }
 

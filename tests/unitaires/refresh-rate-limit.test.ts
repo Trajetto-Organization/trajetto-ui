@@ -162,7 +162,10 @@ const CONFIGS = FILES.flatMap((file) =>
 
 describe("and the limit is the same limit everywhere", () => {
   it("found the configurations", () => {
-    expect(CONFIGS.length).toBeGreaterThan(30);
+    // A floor for the scan itself, not a quota: the admin/dashboard copies
+    // were merged into one screen per entity (decision 8.7), which took the
+    // count from 39 to 22 on 29/09/2026 without losing a single button.
+    expect(CONFIGS.length).toBeGreaterThan(20);
   });
 
   it.each(CONFIGS.map((config) => [config.storageKey, config] as const))(
@@ -206,8 +209,7 @@ describe("and no two screens share a cooldown", () => {
 
     const collisions = [...seen.entries()]
       .filter(
-        ([key, files]) =>
-          new Set(files).size > 1 && !ALLOWED_TWICE.has(key),
+        ([key, files]) => new Set(files).size > 1 && !ALLOWED_TWICE.has(key),
       )
       .map(([key, files]) => `${key} → ${[...new Set(files)].join(" + ")}`);
 

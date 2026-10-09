@@ -6,45 +6,64 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { FuelTypeContent } from "./fuel-type-content";
+import { FuelTypeContent } from "@/features/fuel-type/content";
+import { FuelTypeSkeleton } from "@/features/fuel-type/skeleton";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 
-interface FuelTypeQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface FuelTypePageProps {
+  // Every param the URL carries: page, search, sort, order and, on /admin,
+  // the company picked at the top.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Tipo de Combustível",
-    description: `
-      Gerencie facilmente seus tipos de combustíveis cadastrados. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    description:
+      "Consulte e mantenha os tipos de combustível da frota de qualquer empresa da plataforma.",
   };
 }
 
-const FuelType = async ({
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+const AdminFuelType = async ({
   searchParams,
-}: FuelTypeQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: FuelTypePageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
         title="Tipo de Combustível"
-        description="Gerencie os tipos de combustíveis cadastrados, delete, edite e mantenha os dados sempre atualizados."
+        description="Selecione uma empresa para ver e manter os combustíveis que a frota dela usa."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
-        <FuelTypeContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. */}
+      <Suspense
+        fallback={
+          <FuelTypeSkeleton
+            mode="admin"
+            hasCompany={Boolean(
+              readBusinessIdParam(firstParam(searchParams.businessId)),
+            )}
+          />
+        }
+      >
+        <FuelTypeContent
+          mode="admin"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default FuelType;
+export default AdminFuelType;

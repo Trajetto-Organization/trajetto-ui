@@ -29,30 +29,34 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Tabs,
+  ScrollableTabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
 import type { OverviewDashboardProps } from "./shared/common.types";
-import type {
-  PermissionKey,
-  UserRole,
-} from "../shared/common.types";
+import type { PermissionKey, UserRole } from "../shared/common.types";
 
 import { useAuthStore } from "@/store/auth-store";
-import { canAccessPath } from "@/lib/route-access";
+import { canAccessPath, readablePermissionKeys } from "@/lib/route-access";
 import { ButtonRevalidation } from "./revalidation-button";
 
 import { Charts } from "./charts";
+import { showsFleetCharts } from "./charts/visibility";
 import { useTabTutorial } from "./hooks/tab-tutorial";
 
 import { getStatusBadge } from "./status-badge";
 import { quickLinks, statCards } from "./data";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
+import { comparisonDescription, comparisonLabel } from "@/lib/dashboard-counts";
 import { LimitsContent } from "../shared/limits/limits-content";
 import { SystemMetrics } from "@/features/system-metrics";
 
 import { QuickLinkCard } from "./quick-link-card";
-import { StatCard } from "./stat-card";
+import { StatCard, StatCardGrid } from "./stat-card";
 
 import { OverviewEmptyState } from "./empty-state";
 import { OperationPanel } from "./operation-panel";
@@ -66,8 +70,8 @@ const OverviewDashboard = ({
 }: OverviewDashboardProps): JSX.Element => {
   const { counts, recentActivity, deliveryOperation } = initialData;
 
-  // Hook for monitoring tab changes
-  useTabTutorial();
+  // The open tab picks the tour (Visão geral, Análise Gráfica, Limites…).
+  const onTabChange = useTabTutorial();
 
   // Both gates read the auth store, which the security check refreshes on
   // every socket event — that is what makes a granted or revoked permission
@@ -78,11 +82,16 @@ const OverviewDashboard = ({
 
   const enabledModules = storeModules ?? userLogged?.enabledModules ?? null;
 
-  const permissionKeys = (
+  // Readable keys only: a row saved with canRead false opens no page, so it
+  // must not draw a shortcut to one (ROUTE-KEY-1).
+  const permissionKeys = readablePermissionKeys(
     storePermissions.length > 0
       ? storePermissions
-      : (userLogged?.profileAccess?.permissions ?? [])
-  ).map((permission) => permission.permissionKey as PermissionKey);
+      : (userLogged?.profileAccess?.permissions ?? []).map((permission) => ({
+          permissionKey: permission.permissionKey as PermissionKey,
+          canRead: permission.canRead,
+        })),
+  );
 
   /**
    * A shortcut is worth showing exactly when its page would open, so the
@@ -133,18 +142,21 @@ const OverviewDashboard = ({
 
   return (
     <div data-tutorial="welcome">
-      <Tabs defaultValue="overview" className="space-y-6 my-9">
+      <Tabs
+        defaultValue="overview"
+        className="space-y-6 my-9"
+        onValueChange={onTabChange}
+      >
         <div
           className="flex flex-col gap-4 lg:flex-row
           lg:items-center"
         >
-          {/* justify-start + overflow-x-auto: with 3 tabs the strip can be
-          wider than small screens — it must scroll inside itself instead of
-          stretching the page (justify-center would clip the first tab). */}
-          <TabsList
+          {/* The product's one overflowing strip: one line, faded edges and
+          arrows, no native scrollbar. A bare `overflow-x-auto` here drew a
+          horizontal and a vertical bar inside the 40px box on Windows. */}
+          <ScrollableTabsList
             data-tutorial="dashboard-tabs"
-            className="w-full max-w-full justify-start
-            overflow-x-auto lg:w-auto"
+            wrapperClassName="w-full lg:w-fit"
           >
             <TabsTrigger
               value="overview"
@@ -153,7 +165,7 @@ const OverviewDashboard = ({
               data-tutorial="overview-tab"
             >
               <LineChartIcon className="h-4 w-4" />
-              <span>Overview</span>
+              <span>Visão geral</span>
             </TabsTrigger>
 
             {canView() && (
@@ -191,28 +203,10 @@ const OverviewDashboard = ({
                 <span>Sistema</span>
               </TabsTrigger>
             )}
-          </TabsList>
+          </ScrollableTabsList>
           <ButtonRevalidation
             className="lg:w-auto lg:ml-auto"
             buttonClassName="w-full lg:w-auto"
-            revalidateData={[
-              "update-entity-count",
-              "update-vehicle-status",
-              "update-maintenance-stats",
-              "update-recent-activity",
-              "update-vehicle-by-type",
-              "update-maintenance-costs",
-              "update-vehicle-count",
-              "update-driver-count",
-              "update-business-count",
-              "update-branch-count",
-              "update-part-count",
-              "update-supplier-count",
-              "update-service-order-count",
-              "update-user-count",
-              "update-fine-count",
-              "update-ai-usage",
-            ]}
             rateLimit={{
               storageKey: "admin-dashboard",
               maxClicks: 3,
@@ -224,7 +218,14 @@ const OverviewDashboard = ({
 
         {canView() && (
           <TabsContent value="charts" data-tutorial="charts-content">
-            <Charts dashboardData={initialData} userRole={userLogged?.role} />
+            <Charts
+              dashboardData={initialData}
+              userRole={userLogged?.role}
+              showFleetCharts={showsFleetCharts(
+                userLogged?.role,
+                enabledModules,
+              )}
+            />
           </TabsContent>
         )}
 
@@ -272,22 +273,20 @@ const OverviewDashboard = ({
             <OverviewEmptyState />
           ) : (
             visibleStatCards.length > 0 && (
-              <div
-                className="grid grid-cols-1 gap-4
-                sm:grid-cols-2 lg:grid-cols-4"
-                data-cards
-              >
+              <StatCardGrid>
                 {visibleStatCards.map((card) => (
                   <StatCard
                     key={card.type}
                     title={card.title}
                     value={card.value}
                     change={card.change}
+                    comparison={comparisonLabel(card.basis)}
+                    comparisonTitle={comparisonDescription(card.basis)}
                     icon={card.icon}
                     color={card.color}
                   />
                 ))}
-              </div>
+              </StatCardGrid>
             )
           )}
 
@@ -303,15 +302,12 @@ const OverviewDashboard = ({
             reload, exactly like the cards above.
           */}
           {deliveryOperation && canReachCard("deliveries") && (
-            <OperationPanel
-              operation={deliveryOperation}
-              basePath={basePath}
-            />
+            <OperationPanel operation={deliveryOperation} basePath={basePath} />
           )}
 
           {/* Recent Activity Table */}
           {/* A Card is not a table — the table it contains is. */}
-          <Card className="shadow-md mt-6">
+          <Card className="shadow-md mt-6" data-tutorial="recent-activity">
             <CardHeader>
               <div
                 className="flex flex-col gap-3 
@@ -416,6 +412,7 @@ const OverviewDashboard = ({
               className="grid grid-cols-2 gap-3
               sm:gap-4 md:grid-cols-4 mt-6"
               data-quick-links
+              data-tutorial="quick-links"
             >
               {visibleQuickLinks.map((link) => (
                 <QuickLinkCard

@@ -27,6 +27,13 @@ import type { ShipperData } from "@/actions/shipper/list-shipper";
 import { applyMask } from "@/lib/format-values";
 
 import { useShipperForm, type ShipperFormState } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
+import { createUpdateShipperSchema } from "@/schemas/create-update-shipper-schema";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  canSubmitForm,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 /**
  * Defaults and the dirty comparison must speak the exact string the masked
@@ -87,23 +94,39 @@ const ShipperFormDialogSubmit = ({
 
   const isDirty = useFormDirty({ formRef, initialValues, isOpen });
 
-  const fieldErrors = (isEditing
-    ? (state.updateShipperError ?? {})
-    : (state.createShipperError ?? {})) as Record<string, string[]>;
+  const fieldErrors = (
+    isEditing
+      ? (state.updateShipperError ?? {})
+      : (state.createShipperError ?? {})
+  ) as Record<string, string[]>;
+
+  // Controlled, so live validation reads them.
+  const [name, setName] = useState<string>(shipper?.name ?? "");
+  const [email, setEmail] = useState<string>(shipper?.email ?? "");
+
+  // Live validation (decision 16.700) with the action's own schema, over
+  // the masked strings the form posts (the schema strips the mask).
+  const live = useLiveValidation({
+    schema: createUpdateShipperSchema,
+    values: { name, cnpj, email, telephone },
+    fields: ["name", "cnpj", "email", "telephone"],
+    serverErrors: fieldErrors,
+  });
 
   return (
     <>
       {/* One field per line, like the occurrence type form: the modal is
       narrow and a two-column grid squeezed the masked fields. */}
-      <div className="grid grid-cols-1 gap-4 mt-5">
+      <div ref={live.ref} className="grid grid-cols-1 gap-4 mt-5">
         <FormInput
           label="Nome do embarcador *"
           htmlfor="name"
           name="name"
           type="text"
-          defaultValue={shipper?.name ?? ""}
+          value={name}
+          onChange={(event) => setName(event.currentTarget.value)}
           placeholder="Razão social ou nome do embarcador"
-          errorName={fieldErrors.name}
+          errorName={live.errorOf("name")}
           disabled={pending}
         />
 
@@ -116,7 +139,7 @@ const ShipperFormDialogSubmit = ({
           value={cnpj}
           onChange={(e) => setCnpj(e.target.value)}
           placeholder="00.000.000/0000-00"
-          errorName={fieldErrors.cnpj}
+          errorName={live.errorOf("cnpj")}
           disabled={pending}
         />
 
@@ -126,9 +149,10 @@ const ShipperFormDialogSubmit = ({
           name="email"
           type="text"
           autoComplete="email"
-          defaultValue={shipper?.email ?? ""}
+          value={email}
+          onChange={(event) => setEmail(event.currentTarget.value)}
           placeholder="contato@embarcador.com.br"
-          errorName={fieldErrors.email}
+          errorName={live.errorOf("email")}
           disabled={pending}
         />
 
@@ -142,7 +166,7 @@ const ShipperFormDialogSubmit = ({
           value={telephone}
           onChange={(e) => setTelephone(e.target.value)}
           placeholder="(00) 00000-0000"
-          errorName={fieldErrors.telephone}
+          errorName={live.errorOf("telephone")}
           disabled={pending}
         />
       </div>
@@ -175,6 +199,7 @@ const ShipperFormDialogSubmit = ({
           variant="outline"
           onClick={onClose}
           className="flex-1"
+          {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
         >
           Cancelar
         </Button>
@@ -182,7 +207,7 @@ const ShipperFormDialogSubmit = ({
         once something actually changed. */}
         <Button
           type="submit"
-          disabled={pending || (isEditing && !isDirty)}
+          disabled={pending || !canSubmitForm({ isEdit: isEditing, isDirty })}
           className="flex-1"
         >
           <span>{isEditing ? "Salvar Embarcador" : "Criar Embarcador"}</span>
@@ -207,7 +232,7 @@ const ShipperFormDialog = ({
   const defaultState: ShipperFormState = {};
 
   const [state, dispatch] = useFormState<ShipperFormState, FormData>(
-    isEditing ? handleUpdateShipper : handleCreateShipper,
+    guardFormAction(isEditing ? handleUpdateShipper : handleCreateShipper),
     defaultState,
   );
 
@@ -245,7 +270,12 @@ const ShipperFormDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} action={submitShipperForm}>
+        <form
+          ref={formRef}
+          action={submitShipperForm}
+          noValidate
+          data-shipper-form
+        >
           <ShipperFormDialogSubmit
             state={state}
             shipper={shipper}

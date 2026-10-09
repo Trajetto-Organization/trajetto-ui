@@ -9,7 +9,8 @@ import {
   Truck,
 } from "lucide-react";
 
-import { trackDelivery } from "@/lib/public-api";
+import { isDenial, trackDelivery } from "@/lib/public-api";
+import { formatDateOnly } from "@/lib/format-values";
 
 /**
  * NEVER indexed, and this is not a preference.
@@ -26,7 +27,8 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<string, string> = {
-  PENDING: "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40",
+  PENDING:
+    "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40",
   IN_TRANSIT: "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/30",
   DELIVERED:
     "border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30",
@@ -35,14 +37,23 @@ const STATUS_TONE: Record<string, string> = {
     "border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40",
 };
 
-function formatMoment(value: string | null): string {
+/**
+ * An instant on the carrier's clock (decision 1.1). This is a server
+ * component: without a zone it printed the container's UTC — three hours
+ * ahead for a customer in São Paulo.
+ */
+function formatMoment(value: string | null, timeZone: string): string {
   if (!value) return "—";
 
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
+    timeZone,
   }).format(new Date(value));
 }
+
+/** The API sends the carrier's zone; an older API does not. */
+const DEFAULT_TIME_ZONE = "America/Sao_Paulo";
 
 const TrackDeliveryPage = async ({
   params,
@@ -52,6 +63,26 @@ const TrackDeliveryPage = async ({
   const result = await trackDelivery(params.token);
 
   if (!result.ok || !result.data) {
+    // A busy or unreachable service is not an unknown link.
+    if (!isDenial(result)) {
+      return (
+        <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-4 px-4 py-12">
+          <div className="rounded-xl border p-6 text-center">
+            <FileWarning className="mx-auto h-10 w-10 text-muted-foreground" />
+
+            <h1 className="mt-4 text-xl font-semibold">
+              Não foi possível carregar agora
+            </h1>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              O acompanhamento está ocupado ou fora do ar neste momento. Tente
+              de novo em alguns instantes.
+            </p>
+          </div>
+        </main>
+      );
+    }
+
     return (
       <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-4 px-4 py-12">
         <div className="rounded-xl border p-6 text-center">
@@ -71,6 +102,9 @@ const TrackDeliveryPage = async ({
   }
 
   const delivery = result.data;
+
+  const timeZone =
+    (delivery as { timeZone?: string }).timeZone || DEFAULT_TIME_ZONE;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col gap-6 px-4 py-12">
@@ -95,13 +129,16 @@ const TrackDeliveryPage = async ({
 
         {delivery.status === "DELIVERED" ? (
           <p className="mt-2 text-sm">
-            Entregue em {formatMoment(delivery.deliveredAt)}
+            Entregue em {formatMoment(delivery.deliveredAt, timeZone)}
             {delivery.receivedBy ? ` para ${delivery.receivedBy}` : ""}.
           </p>
         ) : (
           delivery.scheduledDate && (
             <p className="mt-2 text-sm">
-              Previsão: {formatMoment(delivery.scheduledDate)}
+              {/* A day, not an instant (decision 1.3): no hour, and never
+                  the day before in a zone west of UTC. */}
+              Previsão:{" "}
+              {formatDateOnly(delivery.scheduledDate, { fallback: "—" })}
             </p>
           )
         )}
@@ -174,7 +211,7 @@ const TrackDeliveryPage = async ({
                   dateTime={event.at}
                   className="text-xs text-muted-foreground"
                 >
-                  {formatMoment(event.at)}
+                  {formatMoment(event.at, timeZone)}
                 </time>
               </li>
             ))}

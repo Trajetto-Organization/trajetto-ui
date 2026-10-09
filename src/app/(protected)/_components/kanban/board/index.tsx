@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { Column } from "../column";
 import { Card } from "../card";
 
@@ -18,6 +20,7 @@ import { Loader } from "lucide-react";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
+import { kanbanAccessibility } from "./accessibility";
 import { useKanbanBoard } from "./hooks";
 
 const KanbanBoard = ({
@@ -52,6 +55,10 @@ const KanbanBoard = ({
     setSelectedColumnId,
   } = useKanbanBoard({ initialBoard });
 
+  // pt-BR instructions and announcements naming the card or the column, in
+  // place of dnd-kit's English defaults (tested).
+  const accessibility = useMemo(() => kanbanAccessibility(board), [board]);
+
   return (
     <div className="h-full">
       <DndContext
@@ -60,6 +67,7 @@ const KanbanBoard = ({
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        accessibility={accessibility}
       >
         <ScrollArea className="h-full" ref={scrollContainerRef}>
           <div className="flex gap-4 pt-6 pb-8 items-start">

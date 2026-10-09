@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { Ban, Copy, Eye, PencilLine } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 import {
   RowActionItem,
   RowActions,
@@ -20,15 +17,20 @@ import {
 } from "@/actions/delivery/get-delivery";
 
 import { permissions } from "@/lib/permissions";
+import { isStaleActionResult } from "@/lib/action-result";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
 import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
-import { DELIVERY_TRANSITIONS } from "../lib/status";
+import {
+  DELIVERY_TRANSITIONS,
+  NOT_EDITABLE_REASON,
+  isDeliveryEditable,
+} from "../lib/status";
 
-import { DeliveryDetailDialog } from "./detail-dialog";
+import { DeliveryDetailDialog } from "./detail-dialog/lazy";
 import { DeliveryFormDialog } from "./form-dialog";
 
 import { CancelDeliveryDialog } from "./cancel-dialog";
@@ -84,6 +86,8 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
     try {
       const response = await getDelivery(businessId, delivery.id);
 
+      if (isStaleActionResult(response)) return;
+
       if (!response.success || !response.data) {
         toast.error(response.message);
         return;
@@ -95,12 +99,12 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
     }
   };
 
-  const isFinalState = DELIVERY_TRANSITIONS[delivery.status].length === 0;
-
+  // The API edits only PENDING and FAILED; "Em rota" used to open the form
+  // and fail on save (DLV-EDIT-2). The menu says why, with the API's words.
   const editBlocker = !canWrite
     ? permissionsRequired.tooltipMessage
-    : isFinalState
-      ? "Entregas concluídas ou canceladas não podem ser editadas."
+    : !isDeliveryEditable(delivery.status)
+      ? NOT_EDITABLE_REASON
       : null;
 
   const cancelBlocker = !canWrite
@@ -111,53 +115,36 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
 
   return (
     <>
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          aria-label={`Ver detalhes da entrega para ${delivery.recipient_name}`}
-          onClick={() => setIsDetailOpen(true)}
-        >
-          <Eye className="h-4 w-4" />
-        </Button>
+      {/* The standard menu only (decision 3.5): 160px, text items, no
+          extra eye button beside it — "Ver detalhes" is the first item. */}
+      <RowActions
+        entity={`a entrega para ${delivery.recipient_name}`}
+        isBusy={isLoadingEdit}
+      >
+        <RowActionItem
+          label="Ver detalhes"
+          onSelect={() => setIsDetailOpen(true)}
+        />
 
-        <RowActions
-          entity={`a entrega para ${delivery.recipient_name}`}
-          isBusy={isLoadingEdit}
-        >
-          <RowActionItem
-            label="Ver detalhes"
-            icon={<Eye />}
-            onSelect={() => setIsDetailOpen(true)}
-          />
+        <RowActionItem
+          label="Editar entrega"
+          blockedReason={editBlocker}
+          onSelect={() => void handleOpenEdit()}
+        />
 
-          <RowActionItem
-            label="Editar entrega"
-            icon={<PencilLine />}
-            blockedReason={editBlocker}
-            onSelect={() => void handleOpenEdit()}
-          />
+        <RowActionItem label="Copiar ID" onSelect={handleCopyID} />
 
-          <RowActionItem
-            label="Copiar ID"
-            icon={<Copy />}
-            onSelect={handleCopyID}
-          />
+        <RowActionSeparator />
 
-          <RowActionSeparator />
-
-          {/* No delete: a delivery is a fiscal record. Cancelling is the
-          ending it can have, and it preserves the history. */}
-          <RowActionItem
-            label="Cancelar entrega"
-            icon={<Ban />}
-            destructive
-            blockedReason={cancelBlocker}
-            onSelect={() => setIsCancelOpen(true)}
-          />
-        </RowActions>
-      </div>
+        {/* No delete: a delivery is a fiscal record. Cancelling is the
+        ending it can have, and it preserves the history (decision 5.1). */}
+        <RowActionItem
+          label="Cancelar entrega"
+          destructive
+          blockedReason={cancelBlocker}
+          onSelect={() => setIsCancelOpen(true)}
+        />
+      </RowActions>
 
       {isDetailOpen && businessId && (
         <DeliveryDetailDialog

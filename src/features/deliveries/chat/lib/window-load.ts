@@ -36,8 +36,7 @@ interface WindowLoadAnswer<T> {
  * how three of them ended up not telling them apart at all.
  */
 type WindowLoadOutcome<T> =
-  | { ok: true; page: T }
-  | { ok: false; message: string };
+  { ok: true; page: T } | { ok: false; message: string };
 
 /**
  * Runs one window load and answers what happened, whatever happened.

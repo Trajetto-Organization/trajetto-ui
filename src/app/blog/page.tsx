@@ -1,147 +1,94 @@
 import { Metadata } from "next";
 
-import { BlogTitleSubtitle } from "@/components/blog/blog-title-subtitle";
-import { BlogSearch } from "@/components/blog/blog-search";
+import { BlogExplorer } from "@/components/blog/blog-explorer";
+import { Eyebrow } from "@/components/site/primitives";
+import { EditorialCtaBand } from "@/components/site/editorial/cta-band";
+import { JsonLd } from "@/components/seo/json-ld";
 
-import { BlogPostsGrid } from "@/components/blog/blog-posts-grid";
-import { BlogPagination } from "@/components/blog/blog-pagination";
+import { getBlogCategories, getPosts } from "@/lib/content/blog";
+import { buildPageMetadata } from "@/lib/page-metadata";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 
-import { BlogEmptyState } from "@/components/blog/blog-empty-state";
-import { Separator } from "@/components/ui/separator";
+const DESCRIPTION =
+  "Artigos da equipe Trajetto sobre gestão de entregas, gestão de frotas, operação em campo, integrações e LGPD, com exemplos do dia a dia de transportadoras e frotistas.";
 
-import { sanityFetch } from "@/sanity/fetch";
-import { BLOG_LIST_QUERY } from "@/sanity/queries";
-
-import type { BlogListResult } from "@/sanity/types";
-
-const POSTS_PER_PAGE = 12;
-
-/** ISR: fallback de 1h; o gatilho principal é a tag `blog` via webhook. */
-export const revalidate = 3600;
-
-export const metadata: Metadata = {
-  title: "Blog",
-  description: `
-    Descubra estratégias, dicas e insights para otimizar a gestão da sua frota.
-    Blog oficial do Trajetto com conteúdo especializado em gestão de frotas,
-    logística e redução de custos operacionais.
-  `.trim(),
-  keywords: ["blog Trajetto", "gestão de frotas", "logística"],
-  alternates: {
-    canonical: `${process.env.METADATA_BASE}/blog`,
-  },
-  openGraph: {
-    title: "Blog - Trajetto | Insights sobre Gestão de Frotas",
-    description: `
-      Descubra estratégias, dicas e insights para otimizar a gestão da sua frota.
-      Conteúdo especializado em logística e gestão de frotas.
-    `.trim(),
-    url: `${process.env.METADATA_BASE}/blog`,
-    type: "website",
-    locale: "pt_BR",
-    images: [
-      {
-        url: `${process.env.METADATA_BASE}/og-default.jpg`,
-        width: 1200,
-        height: 630,
-        alt: "Blog Trajetto - Insights sobre Gestão de Frotas",
-      },
+export function generateMetadata(): Metadata {
+  const metadata = buildPageMetadata({
+    path: "/blog",
+    title: "Blog",
+    socialTitle: "Blog do Trajetto: frotas e entregas na prática",
+    description: DESCRIPTION,
+    keywords: [
+      "blog de logística",
+      "gestão de entregas",
+      "gestão de frotas",
+      "comprovante de entrega",
+      "torre de controle",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Blog | Insights sobre Gestão de Frotas",
-    description: `
-      Descubra estratégias, dicas e insights para otimizar a gestão da sua frota.
-    `.trim(),
-    images: [`${process.env.METADATA_BASE}/og-default.jpg`],
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+  });
 
-interface BlogPageProps {
-  searchParams: {
-    page?: string;
-    q?: string;
-    category?: string;
+  return {
+    ...metadata,
+    alternates: {
+      ...metadata.alternates,
+      types: { "application/rss+xml": absoluteUrl("/feed.xml") },
+    },
   };
 }
 
-const Blog = async ({ searchParams }: BlogPageProps): Promise<JSX.Element> => {
-  const currentPage = Math.max(1, Number(searchParams?.page) || 1);
+/**
+ * Static: the list of posts is known at build time and search, filters and
+ * pages run in the browser. Only summaries reach the client, never bodies.
+ */
+const Blog = (): JSX.Element => {
+  const posts = getPosts();
+  const categories = getBlogCategories();
 
-  const searchQuery = searchParams?.q?.trim() ?? "";
-  const categoryFilter = searchParams?.category?.trim() ?? "";
-
-  const start = (currentPage - 1) * POSTS_PER_PAGE;
-  const end = start + POSTS_PER_PAGE;
-
-  const data = await sanityFetch<BlogListResult>(
-    BLOG_LIST_QUERY,
-    {
-      // Parâmetros (sem injeção). `null` quando ausente → o filtro é ignorado
-      // no GROQ via `!defined($q)` / `!defined($category)`.
-      q: searchQuery ? `${searchQuery}*` : null,
-      category: categoryFilter || null,
-      start,
-      end,
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: `Blog do ${siteConfig.name}`,
+    description: DESCRIPTION,
+    url: absoluteUrl("/blog"),
+    inLanguage: siteConfig.locale,
+    publisher: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: absoluteUrl("/"),
     },
-    { tags: ["blog"] },
-  );
-
-  const posts = data?.posts ?? [];
-  const total = data?.total ?? 0;
-
-  const categories = data?.categories ?? [];
-  const totalPages = Math.ceil(total / POSTS_PER_PAGE);
-
-  const processedPosts = posts.map((post) => ({
-    _id: post._id,
-    title: post.title || "",
-    slug: post.slug,
-    excerpt: post.excerpt ?? "",
-    featuredImage: post.featuredImage ?? null,
-    publishedAt: post.publishedAt ?? new Date().toISOString(),
-    readTime: post.readTime ?? null,
-    author: post.author?.name ?? "Equipe Trajetto",
-    category: {
-      title: post.category?.title ?? "Gestão de Frotas",
-      slug: post.category?.slug ?? "",
-      color: post.category?.color ?? "#2563eb",
-    },
-  }));
-
-  const processedCategories = categories.map((cat) => ({
-    title: cat.title,
-    slug: cat.slug,
-    color: cat.color ?? "#2563eb",
-    count: cat.count ?? 0,
-  }));
+    blogPost: posts.map((post) => ({
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.description,
+      url: absoluteUrl(`/blog/${post.slug}`),
+      datePublished: post.date,
+      dateModified: post.updated ?? post.date,
+      author: { "@type": "Organization", name: post.author },
+    })),
+  };
 
   return (
-    <>
-      <BlogTitleSubtitle />
-      <BlogSearch categories={processedCategories} totalPosts={total} />
+    <main>
+      <JsonLd value={blogJsonLd} />
 
-      {processedPosts.length > 0 ? (
-        <>
-          <BlogPostsGrid posts={processedPosts} />
-          <BlogPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalPosts={total}
-            postsPerPage={POSTS_PER_PAGE}
-          />
-        </>
-      ) : (
-        <BlogEmptyState searchQuery={searchQuery} category={categoryFilter} />
-      )}
+      <BlogExplorer
+        posts={posts}
+        categories={categories}
+        intro={
+          <>
+            <Eyebrow>BLOG DO TRAJETTO</Eyebrow>
+            <h1
+              id="blog-titulo"
+              className="m-0 font-site-display text-[clamp(46px,6.4vw,88px)] font-medium leading-[.96] tracking-[-.045em] [text-wrap:balance]"
+            >
+              Guias para quem move frotas e entregas.
+            </h1>
+          </>
+        }
+      />
 
-      <Separator className="my-16" />
-    </>
+      <EditorialCtaBand />
+    </main>
   );
 };
 

@@ -1,0 +1,162 @@
+---
+title: "Comprovante de entrega digital: canhoto, foto, assinatura e QR"
+description: "Por que trocar o canhoto de papel por um comprovante digital, o que ele precisa registrar para servir de evidência e como foto, assinatura, localização e QR de verificação se completam."
+slug: "comprovante-de-entrega-digital"
+date: "2026-09-28"
+category: "entregas"
+tags: ["comprovante", "canhoto", "app do motorista", "auditoria"]
+author: "Equipe Trajetto"
+featured: true
+seo:
+  title: "Comprovante de entrega digital: por que e como"
+  description: "O que um comprovante de entrega digital precisa registrar, por que a foto sai da câmera na hora e como o QR de verificação confere se o PDF não foi alterado."
+  keywords:
+    [
+      "comprovante de entrega",
+      "canhoto digital",
+      "prova de entrega",
+      "canhoto de NF-e",
+      "assinatura digital na entrega",
+      "auditoria de comprovantes",
+    ]
+---
+
+Toda transportadora conhece a cena. A entrega aconteceu na terça, o canhoto voltou na sexta dentro de uma pasta, amassado, com uma rubrica ilegível, e o embarcador segura o pagamento do frete até alguém achar o papel. O canhoto prova que a mercadoria chegou, mas demora, se perde e diz pouco além de uma assinatura.
+
+O comprovante digital não é "o canhoto escaneado". É um conjunto de evidências capturadas no momento da entrega, amarradas ao documento certo e guardadas de um jeito que permite conferir depois que nada foi trocado. Este artigo explica o que esse conjunto precisa ter, por que cada peça existe e como conferir sem travar a operação.
+
+## Por que o canhoto de papel virou gargalo
+
+O problema do papel não é o papel em si. É o tempo e a distância entre o fato e o registro.
+
+- **Demora para voltar.** O canhoto só chega ao escritório quando o motorista volta à base, às vezes dias depois, e só então a entrega recebe baixa e o faturamento é liberado.
+- **Perda e dano.** Chuva, pasta esquecida na cabine, canhoto grampeado na nota errada. Cada papel que some vira uma discussão com o embarcador.
+- **Pouca informação.** Uma assinatura e, com sorte, uma data. O papel não diz onde, a que horas, nem quem exatamente recebeu.
+- **Conferência manual.** Alguém precisa olhar papel por papel e arquivar.
+
+Quando o destinatário diz "não recebi", quem decide a conversa é a evidência capturada na hora, no lugar, por quem estava lá.
+
+## O que um comprovante precisa provar
+
+Antes de escolher ferramenta, vale pensar em perguntas. Um comprovante útil responde a cinco:
+
+| Pergunta            | Evidência                             | Como é capturada                                                                            |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------- |
+| O que foi entregue? | Vínculo com a nota fiscal ou o pedido | O comprovante nasce dentro da entrega, que já carrega número da NF, chave de acesso e itens |
+| Quem recebeu?       | Assinatura e nome de quem recebeu     | Assinatura desenhada na tela e nome digitado pelo motorista                                 |
+| Onde?               | Coordenadas no momento da comprovação | GPS do aparelho                                                                             |
+| Quando?             | Horário do fato                       | Relógio do aparelho no momento do registro, mesmo que o envio aconteça depois               |
+| Em que estado?      | Foto do canhoto assinado              | Câmera do celular, na hora                                                                  |
+
+Nenhuma dessas peças fecha o caso sozinha. A foto do canhoto assinado, tirada naquele endereço, naquele horário e vinculada àquela nota, é muito mais difícil de contestar do que qualquer peça isolada.
+
+## As peças do comprovante digital
+
+### Foto do canhoto, pela câmera e na hora
+
+A foto é a peça central, e o que mais importa é a origem dela. Um aplicativo que aceita imagens da galeria aceita também a foto de ontem, a de outra entrega e a imagem recortada. Por isso, no app do Trajetto, a foto do comprovante sai **só da câmera**, no momento do registro e sem recorte. A galeria continua disponível nas fotos de ocorrência, mas não no comprovante.
+
+Oriente o motorista a enquadrar o canhoto inteiro, com assinatura e data visíveis, sobre uma superfície plana e com luz. Uma foto bem tirada economiza uma rejeição na auditoria.
+
+### Assinatura na tela
+
+A assinatura desenhada no celular complementa a foto. Ela não substitui o canhoto físico quando o embarcador o exige, mas registra a concordância de quem recebeu no próprio aparelho, junto com o restante da prova.
+
+### Quem recebeu
+
+Nem sempre quem recebe é o destinatário da nota. Pode ser o porteiro, um vizinho ou o almoxarife. Registrar o nome de quem recebeu evita o "mas quem assinou isso?" semanas depois.
+
+No app, esse campo é opcional, porque a foto e a assinatura já sustentam o fato. Quando a baixa é feita pelo escritório, sem foto e sem assinatura, o nome de quem recebeu passa a ser uma das poucas evidências disponíveis, e por isso o painel só aceita marcar a entrega como entregue com ele preenchido.
+
+### Localização e horário do fato
+
+O GPS registra onde o comprovante foi feito. O horário registrado é o do fato, não o do envio: se o comprovante só subiu uma hora depois, por falta de sinal, o registro continua dizendo a hora da entrega. Isso importa para o faturamento, para a pontualidade e para qualquer sistema integrado que precise datar a entrega.
+
+## Sem sinal não pode significar sem comprovante
+
+Garagem subterrânea, zona rural, doca de centro de distribuição: o motorista fica sem internet exatamente onde precisa comprovar. Um app que exige conexão obriga a "deixar para depois", e depois é quando a informação se perde.
+
+No Trajetto, o motorista registra o comprovante mesmo sem sinal. O app guarda foto, assinatura e dados no aparelho e envia quando a conexão volta, retomando o upload de onde parou. Cada envio leva um identificador gerado no aparelho: se o app reenviar o mesmo comprovante depois de uma falha de rede, a plataforma reconhece a repetição e não comprova a entrega duas vezes.
+
+<Callout type="dica" title="Na prática">
+  Peça ao motorista para conferir a tela de envios pendentes antes de encerrar o
+  dia. Um comprovante que ficou guardado no aparelho só aparece para o
+  escritório quando o celular encontra sinal.
+</Callout>
+
+## Da foto ao documento: PDF, hash e QR de verificação
+
+Evidência espalhada em várias telas é difícil de mandar para um embarcador. Por isso o Trajetto monta um **PDF do comprovante**, que reúne num só arquivo o que a operação sabe sobre aquela entrega: a nota, o destinatário, quem recebeu, o horário, a localização, a foto do canhoto e a assinatura, além do motorista, da rota, do embarcador e das ocorrências.
+
+O PDF não nasce no momento da entrega. Ele é gerado na primeira vez que alguém o abre no painel, e só para entregas que já terminaram, entregues ou com insucesso. Depois de uma correção, dá para gerá-lo de novo: o link e o QR continuam os mesmos, e a página de verificação avisa que o documento foi gerado de novo e que uma cópia impressa anterior já não é a versão atual.
+
+Dois mecanismos tornam esse PDF verificável:
+
+1. **Hash SHA-256.** Quando o PDF é gerado, a plataforma calcula uma impressão digital do arquivo. Qualquer alteração, por menor que seja, muda essa impressão.
+2. **QR e link de verificação.** O PDF traz um código QR e um link. Quem abre o link recebe uma resposta objetiva: o arquivo guardado ainda confere com a impressão registrada na geração, ou não. A conferência recalcula o hash sobre o arquivo armazenado naquele momento, em vez de confiar no que foi anotado no banco.
+
+### Quem tem o QR tem o PDF
+
+A página de verificação é pública: não pede login, basta o link ou o QR. A tela em si mostra só um resumo para reconhecer a entrega (destinatário, cidade, nota, transportadora, data da entrega e quem recebeu), além do código de integridade.
+
+O PDF que essa página oferece para download, porém, é a evidência completa. Ele traz o documento e o endereço do destinatário, as coordenadas, a foto do canhoto com a tarja de data, hora, GPS, motorista e nota, a assinatura, o nome do motorista com o CPF mascarado e o celular usado, a rota, o embarcador com o CNPJ e o tipo da ocorrência que registrou a entrega (ou, numa entrega não realizada, a que a impediu, com a foto dela). É isso que faz dele uma prova, e é por isso que o QR e o link merecem o mesmo cuidado que o próprio documento. Quem tem uma cópia impressa do comprovante, ou uma foto dela em que o QR esteja legível, consegue abrir o PDF.
+
+O link vale por um prazo definido, de cinco anos na configuração padrão, e depois deixa de responder. Até lá, o PDF fica ao alcance de quem tiver o QR ou o link, e três cuidados práticos decorrem disso:
+
+- dê aos tipos de ocorrência nomes que o destinatário possa ler, porque o tipo aparece no PDF e na página de acompanhamento (veja o artigo sobre [ocorrências de entrega](/blog/ocorrencias-de-entrega-e-reentrega));
+- conte, no aviso de privacidade da transportadora, que o comprovante reúne esses dados e fica acessível pelo QR e pelo link;
+- mande o comprovante, impresso ou em arquivo, só para quem precisa dele, e evite circular fotos em que o QR fique legível.
+
+<Callout type="atencao" title="O que o comprovante digital não é">
+  O PDF reúne fatos capturados no momento da entrega e permite conferir a
+  integridade do arquivo. Quando o certificado está instalado, ele sai assinado
+  com o certificado ICP-Brasil da Trajetto (PAdES), e a assinatura pode ser
+  conferida no validador do ITI; sem o certificado, ele sai **sem** assinatura
+  digital e não afirma validade jurídica própria, e o próprio documento diz
+  isso. Em nenhum dos casos ele substitui documentos fiscais. Se o contrato com
+  o embarcador exige outro tipo de prova, combine antes de trocar o processo.
+</Callout>
+
+## Auditoria: alguém precisa olhar antes do faturamento
+
+Capturar bem não dispensa conferir. Foto desfocada, canhoto de outra nota, foto de algo que nem é um canhoto: acontece, e o melhor momento para descobrir é antes de faturar, não na contestação.
+
+O Trajetto tem uma **fila de auditoria de comprovantes**. Cada comprovante enviado pelo app entra na fila, e uma pessoa da operação aprova ou rejeita. A rejeição exige um motivo.
+
+Quando a empresa contrata a análise por IA, cada foto chega à fila com uma leitura automática, feita na infraestrutura da Trajetto:
+
+- o comprovante está legível;
+- o número do documento confere com a entrega;
+- a data de recebimento está presente.
+
+A assinatura não é avaliada pela leitura automática: ela fica para a pessoa conferir na foto. Antes do envio, o app também faz uma pré-checagem no próprio celular, sem internet, e avisa o motorista quando o número da nota não aparece na foto ou a data de recebimento não é a do dia. A leitura é uma sugestão: ajuda a ordenar a fila e aponta o que parece errado, mas quem decide é a pessoa.
+
+A rejeição não some. Ela vira uma ocorrência "Comprovante rejeitado" na entrega e fica no histórico, mas não reabre a entrega: ela continua como Entregue, porque uma entrega comprovada não muda mais de status. O motivo digitado na rejeição vira a descrição dessa ocorrência, que fica no histórico da entrega; escreva-o com sobriedade. Se o sistema da transportadora ou do embarcador está integrado por webhooks, a aprovação e a rejeição também são avisadas, pelos eventos `proof.approved` e `proof.rejected`. Assim dá para liberar o faturamento automaticamente só depois da conferência. O artigo sobre [integração por API e webhooks](/blog/integracao-erp-tms-api-webhooks) mostra como receber esses eventos com segurança.
+
+### Escreva o critério de aprovação
+
+Uma fila de auditoria só é rápida quando todos os revisores aprovam pelas mesmas regras. Deixe por escrito, por exemplo:
+
+- o canhoto precisa ser da nota daquela entrega;
+- assinatura e data precisam estar legíveis;
+- foto cortada, tremida ou escura é rejeitada, com o motivo;
+- o que fazer depois da rejeição: ligar para o destinatário, reunir outra evidência (uma foto que o motorista mande pelo chat, por exemplo) e acertar com o embarcador, lembrando que a entrega não volta para a rota (veja o artigo sobre [ocorrências de entrega](/blog/ocorrencias-de-entrega-e-reentrega)).
+
+## Baixa pelo painel: a exceção que precisa de motivo
+
+Às vezes o comprovante não vem pelo app: o celular quebrou, o cliente confirmou por telefone, a entrega foi feita por um parceiro. O painel permite marcar a entrega como entregue, mas toda mudança manual de status exige um motivo do catálogo da empresa. Sem foto e sem GPS, o motivo é a única explicação que vai existir daqui a três meses.
+
+Trate a baixa manual como exceção e acompanhe quantas acontecem. Se ela vira rotina, o problema está no processo de campo.
+
+## Como implantar sem travar a operação
+
+1. **Combine com os embarcadores** o que vale como comprovante (foto do canhoto, assinatura na tela ou as duas) e se o canhoto físico continua sendo exigido.
+2. **Treine o enquadramento da foto** com exemplos de fotos aprovadas e rejeitadas.
+3. **Defina quem audita e em quanto tempo**, por exemplo "comprovantes do dia auditados até o fim do dia seguinte".
+4. **Escreva o que acontece com um comprovante rejeitado**, para que a decisão não dependa de quem está de plantão.
+5. **Avise o destinatário.** A mensagem de "entregue" pode levar o link de acompanhamento, que passa a levar ao comprovante depois que o PDF é gerado no painel. Veja o artigo sobre [comunicação com o cliente final](/blog/comunicacao-com-o-cliente-final).
+6. **Revise as baixas manuais toda semana.**
+
+## Resumo
+
+O comprovante digital vale pela combinação de peças capturadas na hora: foto do canhoto pela câmera, assinatura, nome de quem recebeu, localização e horário do fato, tudo ligado à nota certa. O PDF com hash e QR permite que qualquer pessoa com o link confira a integridade do arquivo e baixe a evidência completa, o que pede cuidado com quem recebe o QR. A auditoria humana, com ou sem sugestão da IA, transforma evidência em faturamento sem contestação.

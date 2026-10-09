@@ -3,7 +3,14 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "react-query";
 
-import { Mail, MessageCircle, Pencil, ShieldAlert } from "lucide-react";
+import {
+  AlertCircle,
+  Mail,
+  MessageCircle,
+  Pencil,
+  RotateCcw,
+  ShieldAlert,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,25 +23,43 @@ import {
 } from "@/actions/delivery/message-templates";
 
 import { permissions } from "@/lib/permissions";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
+import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
+
 import { MESSAGE_SLOTS, slotKey } from "./lib/catalogue";
 import { MessageTemplateDialog } from "./form-dialog";
 
 interface MessageTemplatesPanelProps {
-  businessId: string;
+  /** The company picked on /admin; empty falls back to the session's. */
+  businessId?: string;
 }
 
 /**
- * The six messages a company can write to the people waiting for its
+ * The refusal to show instead of the eight slots, or null.
+ *
+ * A failed read used to render as "Não escrita" cards, telling the
+ * dispatcher that nothing is sent when the truth was "could not read".
+ */
+function templatesLoadError(
+  answer: { success: boolean; message?: string } | undefined,
+): string | null {
+  if (!answer || answer.success) return null;
+
+  return answer.message || "Não foi possível carregar as mensagens ao cliente.";
+}
+
+/**
+ * The eight messages a company can write to the people waiting for its
  * deliveries.
  *
  * Cards rather than a table, because this is not a list that grows — it is a
- * fixed set of six slots, three moments on two channels, and a table over six
- * rows with a permanent shape is a table pretending to be data.
+ * fixed set of eight slots, four moments on two channels, and a table over
+ * eight rows with a permanent shape is a table pretending to be data.
  *
  * A slot with nothing written in it says so plainly, and says what the
  * consequence is: nothing is sent. That is the single most important sentence
@@ -44,6 +69,11 @@ interface MessageTemplatesPanelProps {
 const MessageTemplatesPanel = ({
   businessId,
 }: MessageTemplatesPanelProps): JSX.Element => {
+  // "" reached the action as `?businessId=` (a 400 read as "no messages")
+  // and the save as `/message-template/` (DLVB-03).
+  const sessionBusinessId = useDeliveriesBusinessId();
+  const companyId = businessId || sessionBusinessId || "";
+
   const [editing, setEditing] = useState<{
     slot: (typeof MESSAGE_SLOTS)[number];
     template: MessageTemplate | null;
@@ -59,11 +89,23 @@ const MessageTemplatesPanel = ({
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
-  const { data, isLoading, refetch } = useQuery(
-    ["delivery_message_template", businessId],
-    () => listMessageTemplates(businessId),
-    { refetchOnWindowFocus: false },
+  const { data, error, isLoading, isFetching, refetch } = useQuery(
+    ["delivery_message_template", companyId],
+    async () => {
+      const answer = await listMessageTemplates(companyId);
+
+      if (isStaleActionResult(answer, { background: true })) {
+        throw new Error(STALE_ACTION_MESSAGE);
+      }
+
+      return answer;
+    },
+    { refetchOnWindowFocus: false, enabled: companyId !== "" },
   );
+
+  // A thrown read (a build the server no longer has) is a failure too.
+  const loadError =
+    error instanceof Error ? error.message : templatesLoadError(data);
 
   const byKey = useMemo(() => {
     const map = new Map<string, MessageTemplate>();
@@ -75,12 +117,44 @@ const MessageTemplatesPanel = ({
     return map;
   }, [data]);
 
-  if (isLoading) {
+  if (isLoading || companyId === "") {
     return (
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2" data-tutorial="loading">
         {MESSAGE_SLOTS.map((slot) => (
           <Skeleton key={slotKey(slot.topic, slot.channel)} className="h-40" />
         ))}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div
+        role="alert"
+        className="flex flex-col items-center gap-3 rounded-lg border
+        p-6 text-center"
+      >
+        <AlertCircle className="h-6 w-6 text-destructive" />
+
+        <p className="text-sm font-medium">
+          Não foi possível carregar as mensagens ao cliente
+        </p>
+
+        <p className="max-w-md text-sm text-muted-foreground [overflow-wrap:anywhere]">
+          {loadError}
+        </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isFetching}
+          onClick={() => void refetch()}
+          className="gap-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Tentar novamente
+        </Button>
       </div>
     );
   }
@@ -104,7 +178,10 @@ const MessageTemplatesPanel = ({
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div
+        className="grid gap-3 sm:grid-cols-2"
+        data-tutorial="message-templates"
+      >
         {MESSAGE_SLOTS.map((slot) => {
           const template = byKey.get(slotKey(slot.topic, slot.channel)) ?? null;
 
@@ -152,7 +229,9 @@ const MessageTemplatesPanel = ({
                 variant="outline"
                 size="sm"
                 disabled={!canWrite}
-                title={canWrite ? undefined : permissionsRequired.tooltipMessage}
+                title={
+                  canWrite ? undefined : permissionsRequired.tooltipMessage
+                }
                 onClick={() => setEditing({ slot, template })}
                 className="w-full gap-2"
               >
@@ -166,7 +245,7 @@ const MessageTemplatesPanel = ({
 
       {editing && (
         <MessageTemplateDialog
-          businessId={businessId}
+          businessId={companyId}
           slot={editing.slot}
           template={editing.template}
           isOpen
@@ -178,4 +257,4 @@ const MessageTemplatesPanel = ({
   );
 };
 
-export { MessageTemplatesPanel };
+export { MessageTemplatesPanel, templatesLoadError };

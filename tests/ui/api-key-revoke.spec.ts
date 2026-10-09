@@ -1,5 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
-
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * Revoking an API key, from the click to the row.
@@ -18,6 +17,7 @@ import { test, expect, type Page } from "@playwright/test";
  *   revoked in the database → the list on screen says so without a reload
  */
 import { CONTEXT, API, BASE, managerForThisSpec } from "./support/operation";
+import { waitForHydration } from "./support/ui";
 
 async function api(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${API}${path}`, {
@@ -91,6 +91,71 @@ async function open(page: Page, path: string): Promise<void> {
   expect(page.url(), `fell through to login: ${path}`).not.toContain("/login");
 }
 
+/**
+ * Waits for the key's card. The list only asks for the keys once the page
+ * has hydrated AND the company is resolved — the auth store gets it in a
+ * post-hydration effect, and until then the panel shows "escolha a empresa
+ * acima". Under three workers that took longer than the 20 s this used to
+ * allow, and the card "never appeared" for a reason that was only timing.
+ */
+async function expectKeyCard(page: Page, card: Locator): Promise<void> {
+  await waitForHydration(
+    page.locator('[data-tutorial="integrations-api-keys"]').first(),
+  );
+
+  await expect(card, "o cartão da chave não apareceu na lista").toBeVisible({
+    timeout: 60_000,
+  });
+}
+
+/**
+ * Revokes what earlier runs of this file left active. The "cancel" test
+ * keeps its key alive by design, and the company may hold ten active keys:
+ * the eleventh run answered API_KEY_LIMIT_REACHED before any screen opened.
+ * Only this file's own keys, by name; nothing the fixture needs.
+ */
+async function revokeLeftovers(): Promise<void> {
+  const response = await api(
+    `/integrations/api-keys?businessId=${CONTEXT.businessId}`,
+  );
+
+  expect(response.status).toBe(200);
+
+  const rows = (await response.json()).data as Array<{
+    id: string;
+    name: string;
+    revoked_at: string | null;
+  }>;
+
+  for (const row of rows) {
+    const issuedAt = Number(
+      /^Chave (?:cancelada|revogada) (\d+)$/.exec(row.name)?.[1],
+    );
+
+    // Older than ten minutes only: a key of a test running right now in the
+    // other worker is not a leftover.
+    if (row.revoked_at || !issuedAt || Date.now() - issuedAt < 10 * 60_000)
+      continue;
+
+    // No JSON content-type on a DELETE without a body: the API refuses an
+    // empty JSON body.
+    const revoked = await fetch(
+      `${API}/integrations/api-key/${row.id}/business/${CONTEXT.businessId}`,
+      {
+        method: "DELETE",
+        headers: { authorization: `Bearer ${managerForThisSpec()}` },
+      },
+    );
+
+    // Each worker runs this hook: the other one may have revoked it first.
+    expect([200, 204, 404, 409], `revogar a sobra ${row.name}`).toContain(
+      revoked.status,
+    );
+  }
+}
+
+test.beforeAll(revokeLeftovers);
+
 test.describe("revoking a key", () => {
   test("asks in the product's own dialog, and cancelling changes nothing", async ({
     page,
@@ -103,9 +168,12 @@ test.describe("revoking a key", () => {
     // Addressed by id rather than by text: filtering divs by their content
     // lands on the innermost one, which holds the name and not the button.
     const card = page.locator(`[data-api-key="${id}"]`);
-    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expectKeyCard(page, card);
 
-    await card.getByRole("button", { name: /revogar/i }).first().click();
+    await card
+      .getByRole("button", { name: /revogar/i })
+      .first()
+      .click();
 
     // A real dialog, not the browser's: it has a heading, which
     // `window.confirm` cannot.
@@ -118,10 +186,18 @@ test.describe("revoking a key", () => {
 
     await expect(dialog).toBeHidden();
 
-    expect(
-      await isRevoked(id),
-      "cancelar revogou a chave assim mesmo",
-    ).toBe(false);
+    expect(await isRevoked(id), "cancelar revogou a chave assim mesmo").toBe(
+      false,
+    );
+
+    // Proven; now out of the way of the company's ten-key limit.
+    await fetch(
+      `${API}/integrations/api-key/${id}/business/${CONTEXT.businessId}`,
+      {
+        method: "DELETE",
+        headers: { authorization: `Bearer ${managerForThisSpec()}` },
+      },
+    );
   });
 
   test("confirming revokes it, and the list says so without a reload", async ({
@@ -135,9 +211,12 @@ test.describe("revoking a key", () => {
     // Addressed by id rather than by text: filtering divs by their content
     // lands on the innermost one, which holds the name and not the button.
     const card = page.locator(`[data-api-key="${id}"]`);
-    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expectKeyCard(page, card);
 
-    await card.getByRole("button", { name: /revogar/i }).first().click();
+    await card
+      .getByRole("button", { name: /revogar/i })
+      .first()
+      .click();
 
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible();

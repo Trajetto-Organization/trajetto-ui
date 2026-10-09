@@ -1,168 +1,55 @@
 import { MetadataRoute } from "next";
 
+import { absoluteUrl, isIndexable } from "@/lib/site";
+
+/**
+ * Per request: APP_ENV decides, and one image is promoted from staging to
+ * production, so a robots.txt frozen at build would answer for the wrong
+ * environment.
+ */
+export const dynamic = "force-dynamic";
+
+/**
+ * Permissive on purpose. Google renders pages like a browser and must fetch
+ * /_next/ (CSS, JS, optimized images); blocking it gets pages indexed
+ * unstyled. Duplicate URLs such as /blog?tag=x are handled by canonicals,
+ * not here. Robots paths are prefixes, so "/admin" covers "/admin/...".
+ */
 const robots = (): MetadataRoute.Robots => {
-  const baseUrl = process.env.METADATA_BASE;
+  if (!isIndexable()) {
+    // Staging and local servers: nothing to crawl, no sitemap to advertise.
+    return { rules: [{ userAgent: "*", disallow: "/" }] };
+  }
 
   return {
     rules: [
-      // General rules for all crawlers
       {
         userAgent: "*",
-        allow: [
-          "/",
-          "/about",
-          "/blog",
-          "/blog/*",
-          "/contact",
-          "/quote",
-          "/legal/*",
-          "/login",
-          "/forgot",
-          "/static/*",
-          "/images/*",
-          "/favicon.ico",
-          "/robots.txt",
-          "/sitemap.xml",
-        ],
+        allow: "/",
         disallow: [
-          // Protected pages
-          "/dashboard*",
-          "/admin*",
-          "/profile*",
-          "/notifications*",
+          // Signed-in areas.
+          "/dashboard",
+          "/admin",
+          "/profile",
+          "/notifications",
+          "/driver",
+          "/api/",
+          "/new-verification",
 
-          // Tokenised public pages. These have NO login by design — the token
-          // in the URL is the whole authorisation — which is exactly why a
-          // crawler must never reach one: indexing a tracking link would put
-          // somebody's delivery, their name and their city into a search
-          // engine, permanently, for a link meant only for them. The pages
-          // also carry `robots: noindex` in their own metadata; this is the
-          // belt to that pair of braces.
-          "/verificar/*",
-          "/acompanhar/*",
+          // Tokenised public pages: the token in the URL is the whole
+          // authorisation, so a crawler must never reach one — indexing a
+          // tracking link would publish somebody's delivery. The pages also
+          // send `X-Robots-Tag: noindex` (next.config.mjs) and carry noindex
+          // in their metadata.
+          "/verificar/",
+          "/acompanhar/",
 
-          // Verification Pages
-          "/new-verification*",
-
-          // API endpoints
-          "/api/*",
-
-          // Next.js Internal Files
-          "/_next/*",
-          "/_vercel/*",
-
-          // Configuration files
-          "*.json$",
-          "*.xml$",
-          "*.txt$",
-
-          // Private directories
-          "/private/*",
-          "/admin/*",
-          "/temp/*",
-          "/uploads/*",
-
-          // URLs with sensitive parameters
-          "*?token=*",
-          "*?password=*",
-          "*?key=*",
-          "*?auth=*",
-
-          // Error pages
-          "/404",
-          "/500",
-          "/error",
-
-          // Backup files
-          "*.bak$",
-          "*.backup$",
-
-          // Development Directories
-          "/test/*",
-          "/tests/*",
-          "/spec/*",
-          "/.env*",
-          "/.git*",
-          "/node_modules/*",
+          // Password reset and verification links.
+          "/*?*token=",
         ],
-        crawlDelay: 1, // 1 second between requests
       },
 
-      // Specific optimizations for Google
-      {
-        userAgent: "Googlebot",
-        allow: [
-          "/",
-          "/about",
-          "/blog",
-          "/login",
-          "/forgot",
-          "/blog/*",
-          "/contact",
-          "/quote",
-          "/legal/*",
-        ],
-        disallow: [
-          "/dashboard*",
-          "/admin*",
-          "/profile*",
-          "/notifications*",
-          "/new-verification*",
-          "/verificar/*",
-          "/acompanhar/*",
-          "/api/*",
-          "/_next/*",
-        ],
-        crawlDelay: 0, // Google may crawl more aggressively
-      },
-
-      // Optimizations for Bing
-      {
-        userAgent: "Bingbot",
-        allow: [
-          "/",
-          "/about",
-          "/blog",
-          "/login",
-          "/forgot",
-          "/blog/*",
-          "/contact",
-          "/quote",
-          "/legal/*",
-        ],
-        disallow: [
-          "/dashboard*",
-          "/admin*",
-          "/profile*",
-          "/notifications*",
-          "/new-verification*",
-          "/verificar/*",
-          "/acompanhar/*",
-          "/api/*",
-          "/_next/*",
-        ],
-        crawlDelay: 1,
-      },
-
-      // Allow social media crawlers for Open Graph
-      {
-        userAgent: "facebookexternalhit",
-        allow: "/",
-      },
-      {
-        userAgent: "Twitterbot",
-        allow: "/",
-      },
-      {
-        userAgent: "LinkedInBot",
-        allow: "/",
-      },
-      {
-        userAgent: "WhatsApp",
-        allow: "/",
-      },
-
-      // Block known malicious crawlers
+      // SEO crawlers that only consume bandwidth.
       {
         userAgent: [
           "SemrushBot",
@@ -176,11 +63,7 @@ const robots = (): MetadataRoute.Robots => {
       },
     ],
 
-    // Sitemap location - critical for SEO
-    sitemap: `${baseUrl}/sitemap.xml`,
-
-    // Host directive (optional, but recommended)
-    host: baseUrl,
+    sitemap: absoluteUrl("/sitemap.xml"),
   };
 };
 

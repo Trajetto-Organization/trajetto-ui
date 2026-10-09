@@ -288,7 +288,8 @@ const ChatImageViewer = ({
   // ============================================================= gestures
   /** Gives a pointer back to the browser, whichever one it is. */
   const releaseCapture = (node: HTMLElement, pointerId: number) => {
-    if (node.hasPointerCapture(pointerId)) node.releasePointerCapture(pointerId);
+    if (node.hasPointerCapture(pointerId))
+      node.releasePointerCapture(pointerId);
   };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -527,9 +528,9 @@ const ChatImageViewer = ({
         >
           <DialogTitle className="sr-only">Foto da conversa</DialogTitle>
           <DialogDescription className="sr-only">
-            Fotos enviadas na conversa com {conversationName}. Use as setas
-            para a esquerda e para a direita para passar de foto, ou arraste a
-            foto para o lado. Arraste para cima ou para baixo para fechar.
+            Fotos enviadas na conversa com {conversationName}. Use as setas para
+            a esquerda e para a direita para passar de foto, ou arraste a foto
+            para o lado. Arraste para cima ou para baixo para fechar.
           </DialogDescription>
 
           {/* ------------------------------------------------------ header */}
@@ -695,7 +696,9 @@ const ChatImageViewer = ({
                           // Without this the browser's own image drag hijacks
                           // the swipe the moment a mouse is used.
                           draggable={false}
-                          onLoad={() => markSlide(slide.key, slide.url, "ready")}
+                          onLoad={() =>
+                            markSlide(slide.key, slide.url, "ready")
+                          }
                           onError={() =>
                             markSlide(slide.key, slide.url, "error")
                           }

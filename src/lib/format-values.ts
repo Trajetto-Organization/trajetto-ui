@@ -1,5 +1,14 @@
-import { FormEvent } from "react";
+// Type-only, so this module has no runtime import and can be loaded by a
+// plain Node process in another time zone (tests/unitaires/helpers/in-time-zone).
+import type { FormEvent } from "react";
 
+/**
+ * Formats an INSTANT's day in the browser's zone.
+ *
+ * Not for a date-only value (a delivery's expected date, a route's day, a
+ * CNH expiry): those are stored as UTC midnight, and read here in São Paulo
+ * they show the previous day. Use `formatDateOnly` for them.
+ */
 const formatDate = (
   date: string | Date | null | undefined,
   locale: string,
@@ -34,6 +43,64 @@ const formatRg = (rg: string): string => {
   return rg;
 };
 
+const DATE_ONLY_KEY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Formats a DATE-ONLY value (decision 1.3): "17/09/2026", no time.
+ *
+ * The API stores a civil day as UTC midnight (`2026-09-17T00:00:00.000Z`) or
+ * sends it as `2026-09-17`. It is a day, not an instant, so it is read in UTC:
+ * formatted in the browser's zone it became "16/09/2026 às 21:00" in São
+ * Paulo — the route of the 17th shown on the 16th, with an hour nobody set.
+ * A value written as local midnight by older forms (`03:00Z` in Brazil) is
+ * still the same UTC day, so both storage styles show the right day.
+ *
+ * Defaults differ from the app's `formatDateOnly` on purpose: tables and
+ * dialogs here show the year and fill empty cells with "N/A", like
+ * `formatDate`; the app's cards show "17/09" and hide the line on `null`.
+ * The day read is the same.
+ */
+const formatDateOnly = (
+  value: string | Date | null | undefined,
+  options: { withYear?: boolean; fallback?: string } = {},
+): string => {
+  const { withYear = true, fallback = "N/A" } = options;
+
+  if (value === null || value === undefined || value === "") return fallback;
+
+  const key =
+    typeof value === "string" ? DATE_ONLY_KEY.exec(value.trim()) : null;
+
+  const date = key
+    ? new Date(Date.UTC(Number(key[1]), Number(key[2]) - 1, Number(key[3])))
+    : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    ...(withYear && { year: "numeric" }),
+    timeZone: "UTC",
+  }).format(date);
+};
+
+/**
+ * Today's (or `date`'s) civil day on the viewer's own calendar, as
+ * "YYYY-MM-DD" — the default for a date-only field. `toISOString().slice(0,
+ * 10)` is the UTC day: after 21:00 in São Paulo it already says tomorrow.
+ */
+const localDateKey = (date: Date = new Date()): string =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+
+/**
+ * Formats an INSTANT with its time in the browser's zone ("17/09/2026 às
+ * 14:30"). Not for date-only values: see `formatDateOnly`.
+ */
 const formatNotificationDate = (
   date: Date | string,
   locale: string = "pt-BR",
@@ -385,6 +452,8 @@ const stringToBoolean = (value: any) => {
 export {
   formatCurrencyToNumber,
   formatNotificationDate,
+  formatDateOnly,
+  localDateKey,
   formatToBrazilianCurrency,
   formatServiceOrderDisplay,
   formatNumericInput,

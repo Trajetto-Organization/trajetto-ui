@@ -1,44 +1,18 @@
 import { Metadata } from "next";
+
 import { LoginForm } from "@/components/auth/login-form";
+import { buildPageMetadata } from "@/lib/page-metadata";
 
-export const metadata: Metadata = {
+// A door, not content: kept out of search results (links still followed)
+// and out of the sitemap. Its own canonical; it used to point at the home.
+export const metadata: Metadata = buildPageMetadata({
+  path: "/login",
   title: "Entrar",
-  description: `
-    Entre com sua conta no Trajetto e aproveite todas as funcionalidades do nosso sistema de gestão de frotas inteligente. 
-    Acesse dashboards, relatórios, monitore sua frota em tempo real e muito mais.
-  `.trim(),
-  robots: {
-    index: true,
-    follow: true,
-  },
-
-  // Canonical can point to homepage or be omitted for login pages
-  alternates: {
-    canonical: process.env.METADATA_BASE,
-  },
-  openGraph: {
-    title: "Trajetto - Sistema de Gestão de Frotas",
-    description:
-      "Acesse sua conta Trajetto para gerenciar sua frota de forma inteligente.",
-    url: process.env.METADATA_BASE,
-    type: "website",
-    images: [
-      {
-        url: `${process.env.METADATA_BASE}/og-default.jpg`,
-        width: 1200,
-        height: 630,
-        alt: "Trajetto - Sistema de Gestão de Frotas",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary",
-    title: "Trajetto - Sistema de Gestão de Frotas",
-    description:
-      "Sistema inteligente para gestão e otimização de frotas empresariais.",
-    images: [`${process.env.METADATA_BASE}/og-default.jpg`],
-  },
-};
+  socialTitle: "Entrar no Trajetto",
+  description:
+    "Entre na sua conta do Trajetto para acessar a gestão de frotas e de entregas da sua empresa.",
+  noindex: true,
+});
 
 const Login = (): JSX.Element => {
   return <LoginForm />;

@@ -12,10 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 
-import type {
-  ChecklistFormScope,
-  CreateVehicleChecklistFormState,
-} from "./types";
+import type { CreateVehicleChecklistFormState } from "./types";
 import { handleCreateVehicleChecklist } from "@/actions/vehicle-checklist/create-vehicle-checklist";
 
 import { useCreateVehicleChecklistForm } from "./hooks";
@@ -38,30 +35,29 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { SelectBusinessBranchStep } from "@/app/(protected)/_components/shared/steps/select-business-branch-step";
 import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
 import { CreateVehicleChecklistFormSubmit } from "./submit";
+import { guardFormAction } from "@/lib/action-result";
+import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
+import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 
 /**
- * The one checklist creation wizard, for both routes.
- *
- * Scope decides the first step: a MASTER picks company and branch, a business
- * user starts from their own company and picks only the branch. Everything
- * after that — vehicle/driver selection and the form itself — is identical,
- * which is why the admin/dashboard twins could become this single component.
+ * The one checklist creation wizard, for /admin and /dashboard alike
+ * (decision 8.7): the company is the one on screen — picked in the /admin
+ * selector or the session's — so the wizard starts at the branch.
  */
 const CreateVehicleChecklistForm = ({
-  scope,
+  businessId,
 }: {
-  scope: ChecklistFormScope;
+  businessId: string;
 }): JSX.Element => {
   const defaultState: CreateVehicleChecklistFormState = {};
   const [state, dispatch] = useFormState<
     CreateVehicleChecklistFormState,
     FormData
-  >(handleCreateVehicleChecklist, defaultState);
+  >(guardFormAction(handleCreateVehicleChecklist), defaultState);
 
   const [checklistFiles, setChecklistFiles] = useState<Record<string, File[]>>(
     {},
@@ -75,11 +71,9 @@ const CreateVehicleChecklistForm = ({
     formRef,
     handleCloseDialog,
     currentStep,
-    commandBusinessInputValue,
     commandBranchInputValue,
     commandVehicleInputValue,
     commandDriverInputValue,
-    handleUpdateSearchBusinessInputValue,
     handleUpdateSearchBranchInputValue,
     handleUpdateSearchVehicleInputValue,
     handleUpdateSearchDriverInputValue,
@@ -94,16 +88,10 @@ const CreateVehicleChecklistForm = ({
   const { uploadProgress, uploadError, resetUpload, uploadPhotos } =
     usePhotoUpload();
 
-  // A MASTER resolves the company inside the wizard; a business user brought
-  // theirs in through the scope.
-  const businessId =
-    scope.kind === "business"
-      ? scope.businessId
-      : commandBusinessInputValue.businessId;
+  // h-9 on /admin and /dashboard (decision 16.61), full width on a phone (decision 3.6).
+  const actionClassName = usePageActionClassName();
 
-  // Business users open this behind granular permissions; a MASTER is not
-  // subject to them. The hook runs unconditionally (rules of hooks), the
-  // gate applies only where it means something.
+  // MASTER and company admins pass on their own (useCheckMultiplePermissions).
   const permissionsRequired = useCheckMultiplePermissions([
     {
       key: permissions.VEHICLE_MANAGE,
@@ -127,8 +115,7 @@ const CreateVehicleChecklistForm = ({
     },
   ]);
 
-  const isTriggerBlocked =
-    scope.kind === "business" && !permissionsRequired.hasAllPermissions;
+  const isTriggerBlocked = !permissionsRequired.hasAllPermissions;
 
   // Reset file states when modal closes or on success
   useEffect(() => {
@@ -191,14 +178,6 @@ const CreateVehicleChecklistForm = ({
     return dispatch(vehicleChecklistFormData);
   };
 
-  const scopeStepTitle =
-    scope.kind === "master" ? "Selecionar Empresa e Filial" : "Selecionar Filial";
-
-  const scopeStepDescription =
-    scope.kind === "master"
-      ? "Selecione a empresa e filial para a qual deseja criar um checklist."
-      : "Selecione a filial para a qual deseja criar um checklist.";
-
   return (
     <Dialog
       open={isCreateVehicleChecklistForm}
@@ -211,10 +190,10 @@ const CreateVehicleChecklistForm = ({
               <DialogTrigger asChild disabled={isTriggerBlocked}>
                 <Button
                   size="sm"
-                  className="h-8 w-full"
+                  className={actionClassName}
                   disabled={isTriggerBlocked}
                 >
-                  Criar Checklist
+                  <CreateButtonLabel>Novo checklist</CreateButtonLabel>
                 </Button>
               </DialogTrigger>
             </div>
@@ -234,14 +213,14 @@ const CreateVehicleChecklistForm = ({
         <DialogHeader>
           <DialogTitle className="text-xl">
             {currentStep === "select-business-branch"
-              ? scopeStepTitle
+              ? "Selecionar Filial"
               : currentStep === "select-vehicle-driver"
                 ? "Selecionar Veículo e Motorista"
                 : "Criar Novo Checklist Veicular"}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             {currentStep === "select-business-branch"
-              ? scopeStepDescription
+              ? "Selecione a filial para a qual deseja criar um checklist."
               : currentStep === "select-vehicle-driver"
                 ? "Selecione o veículo e motorista para o checklist."
                 : "Preencha as informações do checklist veicular abaixo."}
@@ -249,31 +228,15 @@ const CreateVehicleChecklistForm = ({
         </DialogHeader>
 
         {currentStep === "select-business-branch" ? (
-          scope.kind === "master" ? (
-            <SelectBusinessBranchStep
-              handleUpdateSearchBusinessInputValue={
-                handleUpdateSearchBusinessInputValue
-              }
-              handleUpdateSearchBranchInputValue={
-                handleUpdateSearchBranchInputValue
-              }
-              onContinue={handleBusinessBranchStepContinue}
-              commandBusinessInputValue={commandBusinessInputValue}
-              commandBranchInputValue={commandBranchInputValue}
-              errorBranchId={state.createVehicleChecklistError?.branchId}
-              errorBusinessId={state.createVehicleChecklistError?.businessId}
-            />
-          ) : (
-            <SelectBranchStep
-              businessId={businessId}
-              handleUpdateSearchBranchInputValue={
-                handleUpdateSearchBranchInputValue
-              }
-              onContinue={handleBusinessBranchStepContinue}
-              commandBranchInputValue={commandBranchInputValue}
-              errorBranchId={state.createVehicleChecklistError?.branchId}
-            />
-          )
+          <SelectBranchStep
+            businessId={businessId}
+            handleUpdateSearchBranchInputValue={
+              handleUpdateSearchBranchInputValue
+            }
+            onContinue={handleBusinessBranchStepContinue}
+            commandBranchInputValue={commandBranchInputValue}
+            errorBranchId={state.createVehicleChecklistError?.branchId}
+          />
         ) : currentStep === "select-vehicle-driver" ? (
           <SelectVehicleDriverStep
             businessId={businessId}

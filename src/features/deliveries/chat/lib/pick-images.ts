@@ -84,9 +84,7 @@ function selectChatImages(
         ? `Você já selecionou ${alreadyPicked} imagens — o limite é ${MAX_CHAT_IMAGES} por envio.`
         : `São no máximo ${MAX_CHAT_IMAGES} imagens por envio: ${accepted.length} ${
             accepted.length === 1 ? "entrou" : "entraram"
-          } e ${overflow} ${
-            overflow === 1 ? "ficou" : "ficaram"
-          } de fora.`,
+          } e ${overflow} ${overflow === 1 ? "ficou" : "ficaram"} de fora.`,
     );
   }
 

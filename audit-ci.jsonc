@@ -1,0 +1,26 @@
+// Supply-chain gate (INFRA-16): `npx audit-ci` in ci.yml and deploy.yml fails
+// the build on a CRITICAL advisory in a PRODUCTION dependency. Highs are
+// Dependabot's job (security updates).
+//
+// Each allowlist entry says why the advisory does not reach production and
+// when to look again. Take it out as soon as the update lands. Both below are
+// fixed only in Next >= 15.5.24: a major migration, planned apart.
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  // yarn.lock is the lockfile. Explicit: auto-detection picks npm when a
+  // stray package-lock.json is left on disk, and audits a different tree.
+  "package-manager": "yarn",
+  "critical": true,
+  "skip-dev": true,
+  "report-type": "important",
+  "allowlist": [
+    // Next < 15.5.24: RCE on Windows-hosted servers. Production runs the
+    // node:22 Alpine image on Linux. Revisar até 2026-12-31.
+    "GHSA-p293-qw3h-jr36",
+    // Next < 15.5.24: RCE in the Image Optimization API with AVIF files.
+    // Production has no remotePatterns (next.config.mjs), so /_next/image
+    // only decodes the app's own static images, not an attacker's file.
+    // Revisar até 2026-12-31.
+    "GHSA-2xp9-vwfh-vxw4"
+  ]
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import dynamic from "next/dynamic";
 
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader, Trash2, ArrowLeft } from "lucide-react";
@@ -25,12 +26,25 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
-import { FileUpload } from "./file-upload";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { handleDeleteAvatar as deleteAvatarAction } from "@/actions/user/delete-avatar";
 import { useAvatarUpload } from "./hooks";
 
 import type { AvatarUploadProps } from "./avatar-upload.types";
+import { guardFormAction } from "@/lib/action-result";
+
+// The picker and the cropper (react-dropzone, react-easy-crop, ~25 KB
+// gzipped) load when the dialog opens, not with Meu Perfil.
+const FileUpload = dynamic(
+  () => import("./file-upload").then((module) => module.FileUpload),
+  {
+    ssr: false,
+    loading: () => (
+      <Skeleton aria-busy="true" className="h-72 w-full rounded-lg" />
+    ),
+  },
+);
 
 // Upload button component - no form status needed, we'll use state
 function UploadButton({
@@ -112,7 +126,10 @@ const AvatarUpload = ({
   const [isPending, startTransition] = useTransition();
 
   // Form state only for delete (simple form action)
-  const [deleteState, deleteAction] = useFormState(deleteAvatarAction, null);
+  const [deleteState, deleteAction] = useFormState(
+    guardFormAction(deleteAvatarAction),
+    null,
+  );
 
   const {
     croppedBlob,

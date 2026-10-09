@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+import { useLiveValidation } from "@/components/shared/live-validation";
+import { validateResetUserPasswordFormSchema } from "@/schemas/reset-password-schema";
 import { useFormState, useFormStatus } from "react-dom";
 
 import { useRouter } from "next/navigation";
@@ -26,17 +29,36 @@ const ResetPasswordFormContainer = ({
 }: ResetPasswordFormContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
 
+  // The confirmation is checked against the password as either changes, once
+  // it was left (decision 16.700): the schema's refine, run on the client.
+  const [values, setValues] = useState({ password: "", confirm_password: "" });
+  const live = useLiveValidation({
+    schema: validateResetUserPasswordFormSchema,
+    values,
+    serverErrors: state.resetPasswordError,
+  });
+
   return (
-    <section className="animate-fade-in [animation-delay:400ms]">
+    <section ref={live.ref} className="animate-fade-in [animation-delay:400ms]">
       <section className="space-y-4">
+        {/* Ids without spaces: "Confirme sua senha" was not a valid id, so the
+            label and the error could not be tied to the field. */}
         <FormInput
           data-test="password"
           label={"Senha"}
-          htmlfor={"Senha"}
+          htmlfor={"password"}
           name="password"
           type="password"
+          autoComplete="new-password"
           placeholder={"Deve ter no mínimo 7 caracteres"}
-          errorName={state.resetPasswordError?.password}
+          value={values.password}
+          onChange={(event) =>
+            setValues((current) => ({
+              ...current,
+              password: event.target.value,
+            }))
+          }
+          errorName={live.errorOf("password")}
           disabled={pending || Boolean(error) || Boolean(state?.successMessage)}
           className="pr-10"
         />
@@ -44,11 +66,19 @@ const ResetPasswordFormContainer = ({
         <FormInput
           data-test="confirm-password"
           label={"Confirme sua senha"}
-          htmlfor={"Confirme sua senha"}
+          htmlfor={"confirm_password"}
           name="confirm_password"
           type="password"
+          autoComplete="new-password"
           placeholder={"As senhas devem corresponder"}
-          errorName={state.resetPasswordError?.confirm_password}
+          value={values.confirm_password}
+          onChange={(event) =>
+            setValues((current) => ({
+              ...current,
+              confirm_password: event.target.value,
+            }))
+          }
+          errorName={live.errorOf("confirm_password")}
           disabled={pending || Boolean(error) || Boolean(state?.successMessage)}
           className="pr-10"
         />
@@ -129,6 +159,7 @@ const ResetPasswordForm = (): JSX.Element => {
       </div>
 
       <form
+        noValidate
         action={(formData: FormData) => {
           formData.append("token", token as string);
           return dispatch(formData);

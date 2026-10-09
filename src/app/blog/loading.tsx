@@ -1,69 +1,47 @@
-"use client";
+import { Shimmer } from "@/components/site/editorial/shimmer";
 
-import { Skeleton } from "@/components/ui/skeleton";
-
-const POSTS_PLACEHOLDER = Array.from({ length: 12 }, (_, i) => i);
-
-const Loading = (): JSX.Element => {
-  return (
-    <div className="animate-pulse space-y-8">
-      {/* Title & Subtitle Skeleton */}
-      <div className="max-w-3xl mx-auto py-12 lg:py-24 text-center">
-        <Skeleton className="h-12 w-2/5 mx-auto mb-4" />
-        <Skeleton className="h-6 w-3/5 mx-auto" />
+/** Mirrors blog/page.tsx: hero with search, category chips, featured post, card grid. */
+const Loading = (): JSX.Element => (
+  <main aria-busy="true" aria-label="Carregando o blog">
+    <div className="px-[clamp(20px,4vw,40px)] pb-[clamp(28px,4vw,44px)] pt-[clamp(120px,15vh,160px)]">
+      <div className="mx-auto grid max-w-[1200px] grid-cols-[repeat(auto-fit,minmax(min(100%,460px),1fr))] items-end gap-x-16 gap-y-8">
+        <div className="flex flex-col gap-[22px]">
+          <Shimmer className="h-3 w-36 rounded-md" />
+          <Shimmer className="h-[clamp(140px,18vw,250px)] w-full max-w-[520px] rounded-2xl" />
+        </div>
+        <div className="flex flex-col gap-[18px]">
+          <Shimmer className="h-[84px] w-full max-w-[480px] rounded-xl" />
+          <Shimmer className="h-14 w-full rounded-2xl" />
+        </div>
       </div>
-
-      {/* Search Bar Skeleton */}
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="h-12 rounded-2xl bg-muted-foreground/20" />
+      <div className="mx-auto mt-[clamp(32px,4vw,44px)] flex max-w-[1200px] flex-wrap gap-2">
+        {[
+          "w-[88px]",
+          "w-[160px]",
+          "w-[140px]",
+          "w-[160px]",
+          "w-[120px]",
+          "w-[180px]",
+        ].map((width, index) => (
+          <Shimmer key={index} className={`h-10 rounded-full ${width}`} />
+        ))}
       </div>
+    </div>
 
-      {/* Filters Skeleton (badges) */}
-      <div className="max-w-4xl mx-auto px-4 space-y-4">
-        <div className="flex space-x-2">
-          {Array.from({ length: 5 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-8 w-20 rounded-full" />
+    <div className="px-[clamp(20px,4vw,40px)] pb-[clamp(64px,8vw,104px)]">
+      <div className="mx-auto flex max-w-[1200px] flex-col gap-[clamp(20px,3vw,28px)]">
+        <div className="border-t border-site-line pt-[18px]">
+          <Shimmer className="h-4 w-24 rounded-md" />
+        </div>
+        <Shimmer className="h-[340px] rounded-[30px]" />
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-5">
+          {Array.from({ length: 6 }, (_, index) => (
+            <Shimmer key={index} className="h-[420px] rounded-[24px]" />
           ))}
         </div>
       </div>
-
-      {/* Posts Grid Skeleton */}
-      <div
-        className="grid md:grid-cols-3 gap-8 
-        mb-16 mt-8 px-4 max-w-6xl mx-auto"
-      >
-        {POSTS_PLACEHOLDER.map((i) => (
-          <div key={i} className="space-y-4">
-            <Skeleton className="aspect-video w-full" />
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="h-5 w-full" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        ))}
-      </div>
-
-      {/* Separator */}
-      <div
-        className="h-px bg-border my-16 
-        max-w-6xl mx-auto"
-      />
-
-      {/* Newsletter Skeleton */}
-      <div
-        className="max-w-2xl mx-auto p-8 rounded-2xl 
-        bg-muted-foreground/20 space-y-6"
-      >
-        <Skeleton className="h-16 w-16 mx-auto rounded-full" />
-        <Skeleton className="h-8 w-3/5 mx-auto" />
-        <Skeleton className="h-4 w-4/5 mx-auto" />
-        <div className="flex justify-center space-x-4">
-          <Skeleton className="h-12 w-2/5 rounded-xl" />
-          <Skeleton className="h-12 w-2/5 rounded-xl" />
-        </div>
-        <Skeleton className="h-4 w-2/3 mx-auto" />
-      </div>
     </div>
-  );
-};
+  </main>
+);
 
 export default Loading;

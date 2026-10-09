@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import {
   Command,
   CommandEmpty,
@@ -7,9 +7,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Check, Loader } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 import { useVehicleInfiniteScroll } from "./hooks/vehicle-infinite-scroll";
 import { Button } from "@/components/ui/button";
@@ -23,7 +25,12 @@ const SearchVehicle = ({
   handleUpdateSearchVehicleInputValue,
   isOptional,
 }: SearchVehicleProps): JSX.Element => {
+  const fieldId = useId();
   const [showSpinner, setShowSpinner] = useState<boolean>(false);
+
+  // The typed term goes to the server (FLEET-SEARCH-1): a plate that is not
+  // in the loaded pages used to "not exist" until the list was scrolled.
+  const [search, setSearch] = useState<string>("");
 
   const {
     vehicles,
@@ -33,7 +40,25 @@ const SearchVehicle = ({
     refetch: refetchVehicles,
     hasError,
     errorMessage,
-  } = useVehicleInfiniteScroll(businessId);
+    isSearchSettled,
+  } = useVehicleInfiniteScroll(businessId, search);
+
+  // While the server's answer for the new term is on its way, the previous
+  // rows are narrowed here so the list does not show what no longer matches.
+  const term = search.trim().toLowerCase();
+  const shownVehicles =
+    isSearchSettled || !term
+      ? vehicles
+      : vehicles?.filter((vehicle) =>
+          [
+            vehicle.description,
+            vehicle.license_plate,
+            vehicle.brand,
+            vehicle.model,
+          ]
+            .filter(Boolean)
+            .some((value: string) => value.toLowerCase().includes(term)),
+        );
 
   useEffect(() => {
     if (hasError) {
@@ -49,94 +74,117 @@ const SearchVehicle = ({
   }, [isLoadingVehicle, isFetchingVehicles, hasError]);
 
   return (
-    <div className="space-y-2">
-      <div
-        className={`text-sm font-medium ${errorVehicleId ? "text-red-500" : ""}`}
-      >
-        {errorVehicleId ? errorVehicleId[0] : "Selecione o veículo"}{" "}
-        {isOptional && "(opcional)"}
-      </div>
+    /*
+      The shared field shell (decisions 3.3 and 3.4): the label stays and
+      carries the required/optional marker, the error goes under the list,
+      and the search input is marked invalid/required for a screen reader.
+      It used to be the old pattern — the error REPLACED the label.
+    */
+    <FieldShell
+      label={`Selecione o veículo ${isOptional ? "(opcional)" : "*"}`}
+      htmlFor={fieldId}
+      // cmdk owns the input id; the visible label is text, cmdk names the input.
+      labelTargetsControl={false}
+      error={errorVehicleId}
+    >
+      {(control) => (
+        <Command
+          // cmdk owns the input's id and labels it with this text.
+          label="Selecione o veículo"
+          // The server already matched plate, RENAVAM and model, which are not
+          // all in the item text; cmdk would filter them out again.
+          shouldFilter={false}
+          className={cn(
+            "h-[320px] relative border rounded-md",
+            control["aria-invalid"] && "border-red-600 dark:border-red-500",
+          )}
+        >
+          <CommandInput
+            {...control}
+            value={search}
+            onValueChange={setSearch}
+            placeholder="Buscar por placa, descrição, marca ou modelo..."
+            className="h-9"
+            aria-label="Buscar veículo"
+          />
 
-      <Command className="h-[320px] relative border rounded-md">
-        <CommandInput
-          placeholder="Buscar veículo..."
-          className="h-9"
-          aria-label="Buscar veículo"
-        />
+          {!isLoadingVehicle && !hasError && (
+            <CommandEmpty>
+              <div className="py-6 text-center">Nenhum veículo disponível</div>
+            </CommandEmpty>
+          )}
 
-        {!isLoadingVehicle && !hasError && (
-          <CommandEmpty>
-            <div className="py-6 text-center">Nenhum veículo disponível</div>
-          </CommandEmpty>
-        )}
-
-        <CommandList
-          className="max-h-[280px] [&::-webkit-scrollbar]:w-2 
+          <CommandList
+            className="max-h-[280px] [&::-webkit-scrollbar]:w-2 
           [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-transparent 
           [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-sm 
           [&::-webkit-scrollbar-thumb:hover]:bg-muted-foreground [&]:scrollbar-thin 
           [&]:scrollbar-track-transparent [&]:scrollbar-thumb-border"
-        >
-          <CommandGroup>
-            {hasError && (
-              <div
-                className="absolute inset-0 flex flex-col 
+          >
+            <CommandGroup>
+              {hasError && (
+                <div
+                  className="absolute inset-0 flex flex-col 
                 px-6 items-center justify-center text-center"
-              >
-                {errorMessage || "Erro ao carregar os veículos"}
-                <Button
-                  className="h-8 mt-2"
-                  variant={"outline"}
-                  type="button"
-                  onClick={() => refetchVehicles()}
                 >
-                  Revalidar Veículos
-                </Button>
+                  {errorMessage || "Erro ao carregar os veículos"}
+                  <Button
+                    className="h-8 mt-2"
+                    variant={"outline"}
+                    type="button"
+                    onClick={() => refetchVehicles()}
+                  >
+                    Revalidar Veículos
+                  </Button>
+                </div>
+              )}
+
+              {shownVehicles?.map((vehicle) => (
+                <CommandItem
+                  key={vehicle.id}
+                  // The row's id, never its text: cmdk merges items with equal values, so
+                  // two rows with the same text lit up together and Enter chose the first.
+                  value={vehicle.id}
+                  ref={lastVehicleRef}
+                  onSelect={() => {
+                    handleUpdateSearchVehicleInputValue({
+                      vehicleId: vehicle.id,
+                      searchVehicleInputValue: vehicle.description,
+                      vehicleLicensePlate: vehicle.license_plate,
+                    });
+                  }}
+                  className="cursor-pointer"
+                >
+                  {vehicle.description}
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (Placa: {vehicle.license_plate})
+                  </span>
+                  {selectedVehicleId === vehicle.id && (
+                    <Check className="ml-auto h-4 w-4" />
+                  )}
+                </CommandItem>
+              ))}
+
+              {isFetchingVehicles &&
+                vehicles &&
+                vehicles.length > 0 &&
+                !hasError && <Skeleton className="w-full h-7" />}
+            </CommandGroup>
+
+            {showSpinner && !vehicles?.length && (
+              <div className="flex items-center justify-center py-8">
+                <div className="flex flex-col items-center gap-3">
+                  <Loader className="animate-spin h-6 w-6 text-primary" />
+                  <span className="text-sm text-muted-foreground">
+                    Carregando veículos...
+                  </span>
+                </div>
               </div>
             )}
-
-            {vehicles?.map((vehicle) => (
-              <CommandItem
-                key={vehicle.id}
-                ref={lastVehicleRef}
-                onSelect={() => {
-                  handleUpdateSearchVehicleInputValue({
-                    vehicleId: vehicle.id,
-                    searchVehicleInputValue: vehicle.description,
-                    vehicleLicensePlate: vehicle.license_plate,
-                  });
-                }}
-                className="cursor-pointer"
-              >
-                {vehicle.description}
-                <span className="text-xs text-muted-foreground ml-2">
-                  (Placa: {vehicle.license_plate})
-                </span>
-                {selectedVehicleId === vehicle.id && (
-                  <Check className="ml-auto h-4 w-4" />
-                )}
-              </CommandItem>
-            ))}
-
-            {isFetchingVehicles &&
-              vehicles &&
-              vehicles.length > 0 &&
-              !hasError && <Skeleton className="w-full h-7" />}
-          </CommandGroup>
-
-          {showSpinner && !vehicles?.length && (
-            <div className="flex items-center justify-center py-8">
-              <div className="flex flex-col items-center gap-3">
-                <Loader className="animate-spin h-6 w-6 text-primary" />
-                <span className="text-sm text-muted-foreground">
-                  Carregando veículos...
-                </span>
-              </div>
-            </div>
-          )}
-        </CommandList>
-      </Command>
-    </div>
+          </CommandList>
+        </Command>
+      )}
+    </FieldShell>
   );
 };
 

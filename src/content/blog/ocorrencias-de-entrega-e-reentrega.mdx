@@ -1,0 +1,192 @@
+---
+title: "Ocorrências de entrega: como padronizar motivos e decidir a reentrega"
+description: "Como montar um catálogo de ocorrências que o motorista consegue usar, separar ocorrência de insucesso, registrar a mudança manual de status e decidir entre reentregar e cancelar."
+slug: "ocorrencias-de-entrega-e-reentrega"
+date: "2026-09-28"
+updated: "2026-09-29"
+category: "entregas"
+tags: ["ocorrências", "insucesso", "reentrega", "app do motorista"]
+author: "Equipe Trajetto"
+seo:
+  title: "Ocorrências de entrega e reentrega"
+  description: "Catálogo de ocorrências, diferença entre ocorrência e insucesso, motivos de mudança de status e critérios para decidir a reentrega."
+  keywords:
+    [
+      "ocorrência de entrega",
+      "insucesso de entrega",
+      "reentrega",
+      "motivo de devolução",
+      "destinatário ausente",
+      "logística reversa",
+    ]
+---
+
+Nenhuma operação de entrega chega a cem por cento de sucesso. O destinatário sai para almoçar, o número da rua não existe, a doca está fechada, a caixa chega amassada. O insucesso faz parte do trabalho. O que separa uma operação organizada de uma operação no escuro é o que acontece depois: se o motivo foi registrado de um jeito que permite agir, ou se virou um "cliente não tava" digitado às pressas no celular.
+
+Este artigo mostra como montar um catálogo de ocorrências que o motorista consegue usar, como a ocorrência se relaciona com o status da entrega e como decidir, com critério, entre tentar de novo e encerrar.
+
+## Ocorrência não é sinônimo de insucesso
+
+A primeira confusão a desfazer é tratar toda ocorrência como falha. Uma **ocorrência** é o registro de um fato na entrega. Um **insucesso** é o resultado de uma tentativa que não terminou em entrega. Nem todo fato impede a entrega.
+
+- **Ocorrência informativa:** a entrega continua. Exemplos: atraso no trajeto, embalagem com marcas de umidade que o destinatário aceitou, acesso só pela entrada de serviço.
+- **Ocorrência impeditiva:** a entrega não acontece naquela tentativa. Exemplos: destinatário ausente, endereço não localizado, recusa.
+
+No Trajetto, cada tipo de ocorrência tem duas marcações: **exige foto** e **impede a entrega**. Quando o motorista registra um tipo que impede a entrega numa entrega ainda pendente ou em rota, é esse registro que a leva para **Insucesso**. Um tipo informativo só fica registrado no histórico, sem mudar o status.
+
+Um tipo também pode ter um **formulário** com perguntas próprias e pode **exigir autorização da torre**, para que o efeito só valha depois que alguém do escritório confirmar. Os dois recursos são explicados mais adiante.
+
+## Como montar o catálogo de tipos
+
+O catálogo é o vocabulário da operação. Se ele for longo demais, o motorista escolhe o primeiro item da lista. Se for vago demais, ninguém consegue agir sobre os números depois. A tabela abaixo é um ponto de partida para discutir com a equipe, não uma norma:
+
+| Tipo                    | Impede a entrega?   | Exige foto? | Para que serve a foto                                       |
+| ----------------------- | ------------------- | ----------- | ----------------------------------------------------------- |
+| Destinatário ausente    | Sim                 | Sim         | Fachada ou portaria, para mostrar que o motorista esteve lá |
+| Endereço não localizado | Sim                 | Sim         | Placa da rua ou o ponto mais próximo que foi encontrado     |
+| Recusa do destinatário  | Sim                 | Não         | —                                                           |
+| Estabelecimento fechado | Sim                 | Sim         | Porta fechada e horário de funcionamento, se houver         |
+| Avaria na carga         | Depende do contrato | Sim         | O dano, antes de qualquer manuseio                          |
+| Área de acesso restrito | Sim                 | Não         | —                                                           |
+| Atraso no trajeto       | Não                 | Não         | —                                                           |
+
+### Regras para nomes que funcionam
+
+- **Um fato por tipo.** "Ausente ou recusou" são duas situações com ações diferentes e precisam ser dois tipos.
+- **A linguagem de quem está na rua.** O motorista escolhe o tipo na calçada, com a carga na mão. "Destinatário ausente" é melhor que "Insucesso por indisponibilidade do recebedor".
+- **Poucos tipos.** Se um tipo quase nunca é usado, ele provavelmente cabe em outro. Se um tipo é usado para tudo, ele precisa ser dividido.
+- **Descrição curta de orientação.** O campo de descrição do tipo serve para dizer quando usá-lo, e isso resolve muita dúvida no campo.
+- **Um nome que o destinatário possa ler.** No Trajetto, o nome do tipo aparece na página de acompanhamento que o destinatário recebe. "Destinatário ausente" informa; "Cliente sumiu" constrange.
+
+### A descrição também pode chegar ao destinatário
+
+A página de acompanhamento mostra só o tipo da ocorrência, nunca a descrição livre. Mas ela não é o único lugar que o destinatário alcança. Depois que a entrega termina e o PDF do comprovante é gerado, a mesma página passa a oferecer o comprovante, e o QR impresso no PDF leva ao mesmo lugar. Esse PDF lista cada ocorrência com o tipo **e a descrição**. Na prática, o texto que o motorista digitou na calçada pode ser lido pelo destinatário e por qualquer pessoa com quem ele compartilhe o link.
+
+Por isso, oriente a equipe a escrever as descrições como se o destinatário fosse lê-las: fatos, sem adjetivos e sem opinião sobre a pessoa. "Portaria informou que o morador viajou; retorno previsto na segunda" serve à operação e não constrange ninguém. O artigo sobre o [comprovante de entrega digital](/blog/comprovante-de-entrega-digital) detalha o que o PDF traz.
+
+### Quando exigir foto
+
+Exija foto quando ela for a única prova de que o motorista esteve no endereço, como nos casos de ausente, fechado e endereço não localizado, ou quando ela documenta um dano. Não exija foto por hábito: cada foto obrigatória a mais é tempo na calçada e bateria do celular.
+
+### Perguntas do tipo: o formulário da ocorrência
+
+Alguns fatos pedem mais que uma foto e uma descrição livre. Numa avaria, a operação quer saber quantos volumes foram danificados; num destinatário ausente, se a portaria foi consultada. Para isso, cada tipo pode ter um formulário próprio, com até 20 perguntas em cinco formatos: texto, número, sim/não, lista de opções e data. Cada pergunta é obrigatória ou opcional.
+
+O motorista responde no app, inclusive sem sinal, e o app não deixa enviar a ocorrência com uma pergunta obrigatória em branco. Quando o registro chega, o servidor confere as respostas contra a versão do formulário em vigor e as guarda com a ocorrência, junto com a versão em que foram dadas. Se o formulário mudou enquanto o registro esperava no aparelho e as respostas não servem mais, o app pede ao motorista que revise o formulário, sem perder o que ele já tinha preenchido.
+
+As regras do catálogo valem também para as perguntas: poucas, uma coisa por pergunta e só o que alguém vai de fato usar. Cada pergunta obrigatória é mais tempo na calçada. As respostas aparecem no histórico da entrega, no painel; não vão para a página de acompanhamento nem para o PDF do comprovante.
+
+### Tipos que pedem autorização da torre
+
+Há ocorrências que o escritório prefere confirmar antes que mudem o destino da entrega. Uma recusa pode ser resolvida com um telefonema ao embarcador; um "endereço não localizado" pode ser só um número escrito errado que a torre corrige na hora. Para esses casos, o tipo pode ser marcado como **exige autorização da torre**.
+
+Com a marcação, o relato do motorista fica **aguardando autorização**, sem efeito nenhum: a entrega não vai para Insucesso, a parada da rota continua aberta, nenhum webhook é enviado e o destinatário não recebe mensagem. Quem acompanha as entregas é avisado, e o pedido aparece na fila **Aguardando autorização da torre**, na torre de controle e na aba Ocorrências. A partir daí:
+
+- **Autorizar** aplica o efeito do tipo naquele momento. Num tipo que impede a entrega, isso é o que a seção seguinte descreve: Insucesso, parada encerrada, eventos para os sistemas integrados e o aviso ao destinatário, quando houver modelo ativo.
+- **Negar** exige um motivo e não muda nada na entrega. O motorista segue com a tentativa.
+- O motorista recebe a decisão na hora, no app e por notificação, com o motivo quando houver.
+- Sem resposta em 10 minutos, os administradores da empresa são avisados uma vez.
+- Se a tentativa terminar antes da decisão, por exemplo porque o motorista conseguiu entregar e registrou o comprovante, o comprovante prevalece e o pedido é encerrado sem decisão.
+
+Um registro feito pelo painel por quem pode decidir já sai autorizado em nome dessa pessoa. Use a marcação com parcimônia: cada tipo que pede autorização é um motorista parado na calçada esperando alguém responder.
+
+### Desative em vez de apagar
+
+Um tipo que deixou de fazer sentido deve ser desativado, não apagado. As ocorrências antigas continuam apontando para ele, e o histórico de três meses atrás precisa continuar legível. No Trajetto, um tipo inativo some da lista do motorista e é recusado em registros novos, mas continua aparecendo nas ocorrências antigas.
+
+## Motivos de mudança de status: o catálogo do escritório
+
+O motorista registra ocorrências. O escritório, às vezes, muda o status de uma entrega pelo painel: o cliente confirmou a entrega por telefone, o embarcador cancelou o pedido, a carga voltou para a base e precisa ser reprogramada.
+
+Essas mudanças manuais não têm foto, GPS nem assinatura. Por isso, no Trajetto, toda mudança de status pelo painel exige um **motivo** escolhido de um catálogo próprio da empresa, com espaço para uma anotação livre ("cliente ligou às 14h"). É esse motivo que responde, semanas depois, à pergunta "por que essa entrega está assim?".
+
+Vale aplicar ao catálogo de motivos as mesmas regras do catálogo de ocorrências: poucos itens, um fato por item, linguagem clara e desativação em vez de exclusão.
+
+## O que acontece quando o motorista registra uma ocorrência
+
+No app do Trajetto, a ocorrência leva o tipo, uma descrição opcional de até 500 caracteres, até cinco fotos, as respostas do formulário do tipo (se ele tiver um), a localização e o horário do fato. Como no comprovante, o registro funciona sem sinal: fica guardado no aparelho e sobe quando a conexão volta, sem duplicar se o envio for repetido.
+
+Quando o tipo impede a entrega e ela ainda está pendente ou em rota, várias coisas acontecem juntas (num tipo que exige autorização da torre, só depois que ela autoriza):
+
+1. A entrega vai para **Insucesso**.
+2. Os administradores e os usuários que gerenciam entregas são avisados, pelos canais que cada um escolheu.
+3. A ocorrência aparece na aba **Ocorrências**, que pode ser filtrada e exportada.
+4. Se a empresa tem webhooks configurados, o sistema integrado recebe os eventos `occurrence.reported` e `delivery.failed`.
+5. Se a empresa escreveu um modelo ativo de mensagem de "não entregue", o destinatário é avisado.
+
+## Os caminhos de uma entrega
+
+Para decidir bem, ajuda saber quais caminhos existem. A entrega no Trajetto passa por cinco status (Pendente, Em rota, Entregue, Insucesso e Cancelada), e estas são as transições possíveis:
+
+| De        | Para      | Quando                                                                         |
+| --------- | --------- | ------------------------------------------------------------------------------ |
+| Pendente  | Em rota   | A rota saiu com a entrega                                                      |
+| Pendente  | Insucesso | Uma ocorrência impeditiva foi registrada antes da saída                        |
+| Pendente  | Cancelada | O pedido foi cancelado antes de sair                                           |
+| Em rota   | Entregue  | O comprovante foi registrado no app, ou a baixa foi feita no painel com motivo |
+| Em rota   | Insucesso | Uma ocorrência impediu a entrega                                               |
+| Em rota   | Pendente  | A carga voltou para a base e será reprogramada                                 |
+| Em rota   | Cancelada | O pedido foi cancelado durante a rota                                          |
+| Insucesso | Pendente  | Decisão de reentregar                                                          |
+| Insucesso | Cancelada | Decisão de não tentar de novo                                                  |
+
+A linha de Pendente para Insucesso é a única que não se escolhe no painel: ela só acontece quando alguém registra uma ocorrência impeditiva numa entrega que ainda não saiu, como uma carga avariada no carregamento. As demais mudanças manuais seguem a tabela e pedem motivo.
+
+**Entregue** e **Cancelada** são estados finais: nenhuma das duas muda mais de status, nem pelo painel, para que a trilha de auditoria continue inteira. Pelo mesmo motivo, entrega não é excluída: o fim do ciclo é o cancelamento.
+
+Duas consequências práticas:
+
+- **Comprovante errado não reabre a entrega.** Ele é tratado na auditoria de comprovantes: a rejeição, com motivo, registra a ocorrência "Comprovante rejeitado" e avisa os sistemas integrados pelo evento `proof.rejected`. A partir daí, a operação resolve o caso com o embarcador e o destinatário, e a entrega continua como Entregue.
+- **Cancelar é definitivo.** A entrega cancelada continua ligada à chave da NF-e, e a chave não se repete dentro da empresa. A mesma nota não gera uma segunda entrega, nem por um novo XML, nem pela planilha, nem pelo cadastro manual com a chave. Cancele só o que de fato não vai mais ser entregue.
+
+## Reentrega: decidir, não empurrar
+
+O erro mais comum depois de um insucesso é devolver a entrega para a próxima rota automaticamente, sem olhar o motivo. Se o endereço estava errado, a segunda tentativa vai falhar pelo mesmo motivo, com o custo de mais uma saída.
+
+A reentrega deve ser uma decisão: a entrega volta de **Insucesso** para **Pendente** quando existe um motivo razoável para acreditar que a próxima tentativa vai dar certo. Algumas perguntas ajudam:
+
+| Motivo do insucesso     | Antes de reprogramar                             | Caminho mais comum                      |
+| ----------------------- | ------------------------------------------------ | --------------------------------------- |
+| Destinatário ausente    | Confirmar com o destinatário um dia e um período | Reentrega                               |
+| Endereço não localizado | Corrigir o endereço na entrega                   | Reentrega com o endereço revisto        |
+| Estabelecimento fechado | Conferir o horário de funcionamento              | Reentrega no horário certo              |
+| Recusa do destinatário  | Falar com o embarcador                           | Cancelar e devolver a carga             |
+| Avaria na carga         | Acionar o embarcador com as fotos                | Depende do acordo; pode virar devolução |
+
+Enquanto a entrega está em Pendente ou em Insucesso, o endereço e o contato do destinatário podem ser corrigidos no painel. Corrija antes de colocar a entrega numa rota nova, e não depois.
+
+Quando a carga precisa voltar para o embarcador, o retorno pode ser planejado como uma **coleta**, que no Trajetto segue o mesmo fluxo de uma entrega: entra numa rota, é executada pelo motorista e tem comprovante.
+
+### Quantas tentativas?
+
+Não existe número certo. O limite de tentativas depende do contrato com cada embarcador e do custo de cada saída para a sua operação. O que importa é que ele esteja escrito e seja o mesmo para todos os despachantes. Sem essa regra, uma entrega problemática pode passar semanas indo e voltando.
+
+### Avise o destinatário
+
+A mensagem de "não entregue" é a chance de o destinatário resolver o problema antes da próxima tentativa, informando outro horário, corrigindo o número ou avisando a portaria. O artigo sobre [comunicação com o cliente final](/blog/comunicacao-com-o-cliente-final) traz sugestões de texto e os cuidados com LGPD e WhatsApp.
+
+## Medir sem se enganar
+
+Com o catálogo padronizado, as ocorrências viram informação. Algumas leituras úteis para a reunião semanal:
+
+- **Insucesso por tipo.** Se "endereço não localizado" cresce, o problema provavelmente está no cadastro, e não na rua.
+- **Insucesso por embarcador.** Alguns clientes mandam endereços piores que outros. O número ajuda a conversa comercial.
+- **Insucesso por região ou rota.** Concentração num bairro pode indicar horário de entrega ruim para aquele perfil de destinatário.
+- **Reentregas que falharam de novo.** São o sinal mais claro de reentrega sem decisão.
+
+A exportação da aba Ocorrências traz os dados para a planilha de quem prepara esses números. Um cuidado: conte o insucesso pelo momento em que ele aconteceu, não pela última vez que alguém editou a entrega. Caso contrário, corrigir o endereço de uma entrega antiga faz ela aparecer como um insucesso novo.
+
+## Checklist
+
+- Catálogo de ocorrências curto, com um fato por tipo e linguagem de rua.
+- "Exige foto" só onde a foto prova presença ou documenta dano.
+- Formulário só com as perguntas que alguém vai usar; autorização da torre só onde vale deixar o motorista esperando.
+- Descrições de ocorrência escritas como se o destinatário fosse lê-las.
+- Tipos e motivos antigos desativados, nunca apagados.
+- Toda mudança manual de status com motivo e anotação.
+- Reentrega decidida pelo motivo, com endereço e contato revisados antes.
+- Limite de tentativas escrito por embarcador.
+- Destinatário avisado do insucesso.
+- Leitura semanal de insucesso por tipo, embarcador e região.
+
+Uma ocorrência bem registrada é a matéria-prima de todas as outras decisões. E ela também é evidência: uma foto de fachada com horário e localização pesa tanto numa contestação quanto o [comprovante de entrega digital](/blog/comprovante-de-entrega-digital).

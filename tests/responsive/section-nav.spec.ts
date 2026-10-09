@@ -1,4 +1,5 @@
 import { managerToken } from "../ui/support/operation";
+import { waitForHydration } from "../ui/support/ui";
 
 import { test, expect, type Page } from "@playwright/test";
 
@@ -63,9 +64,9 @@ async function open(page: Page, width: number): Promise<void> {
 const nav = (page: Page) =>
   page.getByRole("navigation", { name: "Seções de entregas" });
 
-test.describe("as seções de Entregas num celular", () => {
+test.describe("the Entregas sections on a phone", () => {
   for (const width of PHONES) {
-    test(`a ${width}px não têm barra de rolagem alguma`, async ({ page }) => {
+    test(`at ${width}px have no scrollbar at all`, async ({ page }) => {
       await open(page, width);
 
       const strip = nav(page);
@@ -131,12 +132,14 @@ test.describe("as seções de Entregas num celular", () => {
     });
   }
 
-  test("abrem todas as seções num menu", async ({ page }) => {
+  test("open every section in a menu", async ({ page }) => {
     await open(page, 390);
 
     // The section you are on, named on the control itself — the whole reason
     // a menu is acceptable here.
-    await expect(nav(page).getByText("Entregas", { exact: true })).toBeVisible();
+    await expect(
+      nav(page).getByText("Entregas", { exact: true }),
+    ).toBeVisible();
 
     await nav(page).getByRole("button").click();
 
@@ -147,7 +150,7 @@ test.describe("as seções de Entregas num celular", () => {
     for (const section of [
       "Ocorrências",
       "Monitoramento",
-      "Chat",
+      "Atendimentos",
       "Embarcadores",
       "Auditoria de Comprovantes",
     ]) {
@@ -164,13 +167,17 @@ test.describe("as seções de Entregas num celular", () => {
   });
 
   for (const width of PHONES) {
-    test(`e a barra de ações a ${width}px cabe numa linha`, async ({ page }) => {
+    test(`and the action bar at ${width}px stacks at full width, with a label`, async ({
+      page,
+    }) => {
       /**
-       * Four full-width buttons stacked — Exportar, Importar, Revalidar, Nova
-       * Entrega — put about 160px between the page title and the first
-       * delivery. Exportar and Importar are desk work; on a phone they belong
-       * in the overflow, and the row carries refresh and the thing being
-       * created.
+       * Decision 3.6, the user's standard from the legacy screens: on a phone
+       * every button of the row stacks at full width WITH its label —
+       * Atualizar included.
+       *
+       * An earlier version of this test required the opposite (Atualizar as a
+       * 36px icon, Exportar and Importar folded into a "Mais ações" menu) and
+       * was rewritten when the user rejected that design.
        */
       await open(page, width);
 
@@ -178,69 +185,58 @@ test.describe("as seções de Entregas num celular", () => {
 
       await expect(create).toBeVisible({ timeout: 30_000 });
 
-      const bar = page.locator("div", { has: create }).last();
-
-      const height = await bar.evaluate(
-        (element) => (element as HTMLElement).offsetHeight,
-      );
-
-      expect(
-        height,
-        `a barra de ações ocupa ${height}px de altura a ${width}px`,
-      ).toBeLessThanOrEqual(56);
-
-      /**
-       * The refresh control is the arrows and nothing else.
-       *
-       * "Revalidar Dados" is fourteen characters of a button the user already
-       * recognises by its icon, and on a 320px row those characters are what
-       * squeeze the one action they came here for. The NAME stays — a screen
-       * reader still hears it — which is the difference between compact and
-       * mutilated.
-       */
-      const refresh = page.getByRole("button", { name: "Revalidar Dados" });
+      const refresh = page.getByRole("button", { name: "Atualizar" });
 
       await expect(refresh).toBeVisible();
 
-      const compact = await refresh.evaluate((element) => ({
-        width: element.getBoundingClientRect().width,
+      // The words are on the button, not only in its accessible name.
+      await expect(refresh).toContainText("Atualizar");
 
-        // The box is `w-9` either way, so its width alone proves nothing: a
-        // button still carrying "Revalidar Dados" is simply a 36px box with
-        // the words spilling out of it. What gives it away is the overflow.
-        clipped: element.scrollWidth > element.clientWidth + 1,
-      }));
+      const actions = page.locator("[data-toolbar-actions]");
 
-      expect(
-        compact.width,
-        `o botão de atualizar ocupa ${Math.round(compact.width)}px da linha`,
-      ).toBeLessThanOrEqual(44);
+      const widths = await actions.evaluate((container) => {
+        const box = container.getBoundingClientRect();
 
-      expect(
-        compact.clipped,
-        "o botão de atualizar continua com o texto dentro, cortado pela caixa",
-      ).toBe(false);
+        const buttons = Array.from(
+          container.querySelectorAll<HTMLElement>("button"),
+        ).filter((button) => button.offsetParent !== null);
 
-      // The desk-only actions are gone from the row and reachable from the
-      // overflow, not simply removed.
+        return {
+          container: box.width,
+          buttons: buttons.map((button) => ({
+            name: (button.textContent ?? "").trim(),
+            width: button.getBoundingClientRect().width,
+            clipped: button.scrollWidth > button.clientWidth + 1,
+          })),
+        };
+      });
+
+      expect(widths.buttons.length).toBeGreaterThanOrEqual(2);
+
+      for (const button of widths.buttons) {
+        expect(
+          Math.abs(button.width - widths.container),
+          `"${button.name}" ocupa ${Math.round(button.width)}px de ${Math.round(widths.container)}px a ${width}px`,
+        ).toBeLessThanOrEqual(2);
+
+        expect(
+          button.clipped,
+          `"${button.name}" está com o texto cortado`,
+        ).toBe(false);
+      }
+
+      // Exportar is a button of the row like the others, not folded away.
       await expect(
         page.getByRole("button", { name: "Exportar" }),
-      ).toHaveCount(0);
-
-      await page.getByRole("button", { name: "Mais ações desta seção" }).click();
-
-      const menu = page.getByRole("menu");
-
-      await expect(menu.getByRole("menuitem", { name: /Exportar CSV/ })).toBeVisible();
-      await expect(
-        menu.getByRole("menuitem", { name: /Importar planilha/ }),
       ).toBeVisible();
     });
   }
 });
 
-test.describe("as mesmas seções numa tela grande", () => {
-  test("voltam a ser a faixa, sem a barra do sistema", async ({ page }) => {
+test.describe("the same sections on a large screen", () => {
+  test("go back to being the strip, without the system bar", async ({
+    page,
+  }) => {
     await open(page, 1440);
 
     const strip = nav(page);
@@ -248,7 +244,9 @@ test.describe("as mesmas seções numa tela grande", () => {
     await expect(strip).toBeVisible({ timeout: 30_000 });
 
     // The strip, not the menu: every section is a link the eye can scan.
-    await expect(strip.getByRole("link", { name: /Ocorrências/ })).toBeVisible();
+    await expect(
+      strip.getByRole("link", { name: /Ocorrências/ }),
+    ).toBeVisible();
 
     const verdict = await strip.evaluate((element) => {
       const list = element.querySelector("ul") as HTMLElement;
@@ -291,14 +289,13 @@ test.describe("as mesmas seções numa tela grande", () => {
       "sem barra de rolagem e sem controle: as seções finais ficaram inalcançáveis",
     ).toBeVisible();
 
-    // And on a desk the refresh button says what it does: the compact form is
-    // for the phone, not a permanent amputation.
-    await expect(
-      page.getByRole("button", { name: "Revalidar Dados" }),
-    ).toContainText("Revalidar Dados");
+    // And the refresh button says what it does, on a desk as on a phone.
+    await expect(page.getByRole("button", { name: "Atualizar" })).toContainText(
+      "Atualizar",
+    );
   });
 
-  test("e abrem já mostrando a seção em que você está", async ({ page }) => {
+  test("and open already showing the section you are on", async ({ page }) => {
     /**
      * Opening Auditoria de Comprovantes from a link used to land on a strip
      * scrolled to the start, with the active section somewhere off to the
@@ -345,4 +342,125 @@ test.describe("as mesmas seções numa tela grande", () => {
       `a seção ativa está fora da área visível da faixa (${visible!.left} a ${visible!.right} em ${visible!.width}px)`,
     ).toBe(true);
   });
+});
+
+test.describe("the tab strips that are not Entregas", () => {
+  /**
+   * Decision 3.1: every strip of tabs or chips overflows like Entregas' —
+   * one line, faded edges and arrows, no operating-system scrollbar.
+   * Integrações used to wrap onto a second line at 768px, and the /admin and
+   * /dashboard overview drew a horizontal AND a vertical bar inside the 40px
+   * box on Windows.
+   */
+  async function openAt(
+    page: Page,
+    width: number,
+    path: string,
+  ): Promise<void> {
+    await page.context().addCookies([
+      {
+        name: "tkey",
+        value: managerToken(),
+        domain: "localhost",
+        path: "/",
+      },
+    ]);
+
+    await page.addInitScript(() => {
+      const real = Storage.prototype.getItem;
+
+      Storage.prototype.getItem = function getItem(key: string) {
+        if (key.startsWith("tutorial_")) return "true";
+
+        return real.call(this, key);
+      };
+    });
+
+    await page.setViewportSize({ width, height: 900 });
+
+    await page.goto(`${BASE}${path}`, {
+      waitUntil: "networkidle",
+      timeout: 60_000,
+    });
+  }
+
+  test("Integrações at 768px stays on one line and scrolls with the arrows", async ({
+    page,
+  }) => {
+    await openAt(page, 768, "/dashboard/integrations");
+
+    const strip = page.getByRole("navigation", {
+      name: "Seções de integrações",
+    });
+
+    await expect(strip).toBeVisible({ timeout: 30_000 });
+
+    // The arrows are drawn by the hydrated rail; the server's HTML has none.
+    // "networkidle" is not hydration on a busy dev server, so wait for React
+    // to own the list and give the first measurement a moment to land.
+    await waitForHydration(strip.locator("ul"));
+    await expect
+      .poll(() =>
+        strip.evaluate((element) => {
+          const list = element.querySelector("ul") as HTMLElement;
+
+          return (
+            list.scrollWidth <= list.clientWidth + 1 ||
+            element.querySelectorAll("[data-scroll-edge]").length > 0
+          );
+        }),
+      )
+      .toBe(true);
+
+    const verdict = await strip.evaluate((element) => {
+      const list = element.querySelector("ul") as HTMLElement;
+
+      return {
+        height: list.offsetHeight,
+        scrollbarWidth: getComputedStyle(list).scrollbarWidth,
+        wraps: getComputedStyle(list).flexWrap,
+        overflows: list.scrollWidth > list.clientWidth + 1,
+        arrows: element.querySelectorAll("[data-scroll-edge]").length,
+      };
+    });
+
+    expect(verdict.wraps).not.toBe("wrap");
+    expect(verdict.height).toBeLessThanOrEqual(40);
+    expect(verdict.scrollbarWidth).toBe("none");
+
+    if (verdict.overflows) {
+      expect(
+        verdict.arrows,
+        "as abas não cabem e não há seta para alcançar as escondidas",
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  for (const width of [320, 360, 390, 768, 1024]) {
+    test(`the /dashboard overview at ${width}px does not scroll vertically`, async ({
+      page,
+    }) => {
+      await openAt(page, width, "/dashboard");
+
+      const list = page.locator('[data-tutorial="dashboard-tabs"]');
+
+      await expect(list).toBeVisible({ timeout: 30_000 });
+
+      const verdict = await list.evaluate((element) => {
+        const style = getComputedStyle(element);
+
+        return {
+          overflowY: style.overflowY,
+          scrollbarWidth: style.scrollbarWidth,
+          verticalOverflow: element.scrollHeight > element.clientHeight + 1,
+          height: (element as HTMLElement).offsetHeight,
+        };
+      });
+
+      expect(verdict.overflowY).toBe("hidden");
+      expect(verdict.scrollbarWidth).toBe("none");
+      expect(verdict.verticalOverflow).toBe(false);
+      expect(verdict.height).toBeLessThanOrEqual(40);
+    });
+  }
 });

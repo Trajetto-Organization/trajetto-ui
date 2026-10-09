@@ -1,7 +1,10 @@
 "use server";
 
-import { createUpdateVehicleChecklistSchema } from "@/schemas/create-update-vehicle-checklist-schema";
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { updateVehicleChecklistFormSchema } from "@/schemas/create-update-vehicle-checklist-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateVehicleChecklistProps {
   message: string;
@@ -25,7 +28,12 @@ const parseUploadedPhotos = (
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as UploadedPhoto[]) : [];
-  } catch {
+  } catch (error) {
+    // See the create action: the photos are already in storage.
+    logActionError(
+      "vehicle-checklist/update-vehicle-checklist (photos)",
+      error,
+    );
     return [];
   }
 };
@@ -90,7 +98,7 @@ const handleUpdateVehicleChecklist = async (
 
   // Validate form fields using Zod
   const updateChecklistValidation =
-    createUpdateVehicleChecklistSchema.safeParse(formValues);
+    updateVehicleChecklistFormSchema.safeParse(formValues);
 
   // Collect all validation errors
   const allErrors: Record<string, string[]> = {};
@@ -129,7 +137,7 @@ const handleUpdateVehicleChecklist = async (
       body.photosToRemove = photosToRemove;
     }
 
-    const response = await fetch(updateVehicleChecklist, {
+    const response = await apiFetch(updateVehicleChecklist, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -141,16 +149,18 @@ const handleUpdateVehicleChecklist = async (
 
     const { message } = (await response.json()) as UpdateVehicleChecklistProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         updateVehicleChecklistError: {
-          updateVehicleChecklistErrorMessage: message,
+          updateVehicleChecklistErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("vehicle-checklist/update-vehicle-checklist", error);
     return {
       updateVehicleChecklistError: {
         updateVehicleChecklistErrorMessage:

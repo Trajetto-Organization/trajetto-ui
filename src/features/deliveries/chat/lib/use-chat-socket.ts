@@ -41,10 +41,14 @@ function useChatSubscription(businessId?: string): void {
 
         socket.on("connect", handleConnect);
 
-        // The promise only settles on a connected socket, so `connect` has
-        // already fired for this one: the first subscription is emitted by
-        // hand and the listener above covers every reconnection after it.
-        socket.emit("chatSubscribe", { businessId });
+        // The promise settles as soon as the socket exists, connected or not.
+        // Already connected: `connect` fired before the listener above, so
+        // the first subscription goes by hand. Not yet (a handshake still
+        // pending or refused and retrying): the listener sends it, and an
+        // emit here would be buffered and sent a second time on top of it.
+        if (socket.connected) {
+          socket.emit("chatSubscribe", { businessId });
+        }
       })
       .catch(() => {
         // No realtime at all: the panel still lists and sends over HTTP.

@@ -12,6 +12,7 @@ interface CreateBusinessValidationError {
   responsible_name?: string[];
   telephone?: string[];
   email?: string[];
+  timezone?: string[];
   createBusinessErrorMessage?: string;
 }
 

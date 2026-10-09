@@ -29,7 +29,7 @@ const DeliveriesSkeleton = ({
   withStats = true,
 }: DeliveriesSkeletonProps): JSX.Element => {
   return (
-    <div className="my-6 space-y-6">
+    <div data-tutorial="loading" className="my-6 space-y-6">
       {/* The band: context and actions on one line, sections under them. */}
       <div className="space-y-3">
         <div className="flex w-full flex-wrap items-center gap-3">
@@ -37,11 +37,21 @@ const DeliveriesSkeleton = ({
             <Skeleton className="h-10 w-full sm:w-[300px]" />
           )}
 
-          <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
-            <Skeleton className="h-9 w-9 shrink-0 sm:h-8 sm:w-[104px]" />
-            <Skeleton className="hidden h-8 w-[110px] sm:block" />
-            <Skeleton className="h-9 w-9 shrink-0 sm:h-8 sm:w-[160px]" />
-            <Skeleton className="h-9 min-w-0 flex-1 sm:h-8 sm:w-[138px] sm:flex-initial" />
+          {/* PageActions: Exportar, Importar, Atualizar and Nova entrega
+              stacked at full width with their labels on a phone, one row
+              from `sm`; h-9 like the live buttons (decision 16.61). */}
+          <div
+            data-skeleton-actions
+            className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row"
+          >
+            {[
+              "sm:w-[104px]",
+              "sm:w-[110px]",
+              "sm:w-[160px]",
+              "sm:w-[138px]",
+            ].map((width) => (
+              <Skeleton key={width} className={`h-9 w-full ${width}`} />
+            ))}
           </div>
         </div>
 

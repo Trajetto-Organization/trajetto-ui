@@ -8,7 +8,7 @@ import {
 } from "../../src/features/deliveries/message-templates/lib/catalogue";
 
 /**
- * The six messages a company can write, and the suggestions it starts from.
+ * The eight messages a company can write, and the suggestions it starts from.
  *
  * The suggestions matter more than they look: they are what most carriers will
  * actually send, because most people press "usar sugestão" and adjust a word.
@@ -18,14 +18,15 @@ import {
  * the link out of.
  */
 test.describe("the message catalogue", () => {
-  test("covers the three moments on both channels, once each", () => {
-    expect(MESSAGE_SLOTS).toHaveLength(6);
+  test("covers the four moments on both channels, once each", () => {
+    expect(MESSAGE_SLOTS).toHaveLength(8);
 
     const keys = MESSAGE_SLOTS.map((slot) => slotKey(slot.topic, slot.channel));
 
-    expect(new Set(keys).size).toBe(6);
+    expect(new Set(keys).size).toBe(8);
 
-    for (const topic of ["DISPATCHED", "DELIVERED", "FAILED"]) {
+    // "A caminho" (decision 6.4) is the fourth moment.
+    for (const topic of ["DISPATCHED", "ON_THE_WAY", "DELIVERED", "FAILED"]) {
       for (const channel of ["EMAIL", "WHATSAPP"]) {
         expect(keys).toContain(`${topic}:${channel}`);
       }
@@ -38,9 +39,9 @@ test.describe("the message catalogue", () => {
     const known = new Set<string>(TEMPLATE_VARIABLES as readonly string[]);
 
     for (const slot of MESSAGE_SLOTS) {
-      const used = [...slot.suggestion.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g)].map(
-        (match) => match[1],
-      );
+      const used = [
+        ...slot.suggestion.matchAll(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g),
+      ].map((match) => match[1]);
 
       expect(used.length, slot.title).toBeGreaterThan(0);
 

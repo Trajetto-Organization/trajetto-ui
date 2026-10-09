@@ -1,9 +1,15 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
+/** Uneven on purpose, so the placeholder still looks like a real board. */
+const CARDS_PER_COLUMN = [3, 5, 2, 4] as const;
+
 const KanbanBoardSkeleton = () => {
   return (
-    <div className="h-[calc(100vh-20rem)] overflow-hidden">
+    <div
+      data-tutorial="loading"
+      className="h-[calc(100vh-20rem)] overflow-hidden"
+    >
       <ScrollArea className="h-full">
         <div className="flex gap-4 p-6 h-full">
           {Array.from({ length: 4 }).map((_, columnIndex) => (
@@ -29,8 +35,12 @@ const KanbanBoardSkeleton = () => {
                 </div>
 
                 <div className="space-y-3">
+                  {/* Fixed per column, not Math.random(): the server and the
+                      client must draw the same number of cards, or hydration
+                      fails and the board re-renders on the client. */}
                   {Array.from({
-                    length: Math.floor(Math.random() * 4) + 2,
+                    length:
+                      CARDS_PER_COLUMN[columnIndex % CARDS_PER_COLUMN.length],
                   }).map((_, cardIndex) => (
                     <div
                       key={cardIndex}

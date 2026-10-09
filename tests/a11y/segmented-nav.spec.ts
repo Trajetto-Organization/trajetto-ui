@@ -15,10 +15,7 @@ import { readFileSync } from "node:fs";
  * the selected trigger in the tab order).
  */
 const CONTEXT = JSON.parse(
-  readFileSync(
-    "../trajetto-api/tests/load/fixtures/load-context.json",
-    "utf8",
-  ),
+  readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
 );
 
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";

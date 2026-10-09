@@ -1,0 +1,101 @@
+---
+title: Erros
+description: O formato de toda resposta de erro, o que cada código significa, quais vale repetir e como pedir ajuda ao suporte com o x-request-id.
+slug: erros
+updatedAt: 2026-10-07
+---
+
+A API usa os status HTTP de sempre (400, 401, 403, 404, 409, 429, 500, 503) e, em todo erro, um corpo JSON com um `code` estável. Decida pelo `code`, não pela frase: a frase pode ser reescrita, o código não.
+
+## O corpo de um erro
+
+```json
+{
+  "code": "VALIDATION_ERROR",
+  "message": "updated_since deve ser uma data ISO 8601.",
+  "issues": ["updated_since deve ser uma data ISO 8601."]
+}
+```
+
+- `code`: o código estável, para o seu sistema decidir.
+- `message`: uma frase em português, pronta para mostrar a quem usa. No 400 `VALIDATION_ERROR` é a frase do primeiro campo recusado, como no exemplo acima; todas as frases estão em `issues`. Há duas exceções de texto fixo ou técnico, em inglês:
+  - no 400 `MALFORMED_REQUEST`, é o motivo dado pelo leitor de JSON (por exemplo, a posição em que o JSON quebrou);
+  - no 500 `INTERNAL_ERROR`, é sempre `Internal server error`.
+
+  Nesses dois casos, mostre a quem usa um texto seu, não a `message`.
+
+- `issues`: só num 400 `VALIDATION_ERROR`, uma frase em português por campo ou parâmetro recusado.
+- `requestId`: num 500 e num 503, o mesmo valor do cabeçalho `x-request-id`.
+
+Os erros de negócio e de acesso também trazem o código no cabeçalho `x-error-code`, para quem decide sem ler o corpo.
+
+## Códigos
+
+| Status | `code`                | Quando                                                                              | Repetir?                         |
+| ------ | --------------------- | ----------------------------------------------------------------------------------- | -------------------------------- |
+| 400    | `VALIDATION_ERROR`    | Um parâmetro ou campo não passou nas regras; a lista vem em `issues`.               | Não: corrija antes.              |
+| 400    | `MALFORMED_REQUEST`   | O corpo não é JSON válido.                                                          | Não: corrija antes.              |
+| 401    | `INVALID_API_KEY`     | Chave ausente, malformada, desconhecida ou revogada.                                | Não: confira a chave.            |
+| 403    | `MISSING_API_SCOPE`   | A chave não tem o escopo da rota.                                                   | Não: use uma chave com o escopo. |
+| 403    | `MODULE_NOT_ENABLED`  | A empresa da chave não tem o módulo Entregas.                                       | Não.                             |
+| 403    | `TENANT_INACTIVE`     | A empresa da chave está desativada.                                                 | Não.                             |
+| 404    | `NOT_FOUND`           | O documento não existe, ou é de outra empresa (a resposta é a mesma, de propósito). | Não: confira o id.               |
+| 429    | `RATE_LIMITED`        | Passou de um limite por minuto.                                                     | Sim, depois do `retry-after`.    |
+| 500    | `INTERNAL_ERROR`      | Uma falha nossa.                                                                    | Sim, com espera crescente.       |
+| 503    | `SERVICE_UNAVAILABLE` | O banco de dados ficou indisponível por instantes.                                  | Sim, depois do `retry-after`.    |
+
+### Ao criar entregas
+
+| Status | `code`                        | Quando                                                                               |
+| ------ | ----------------------------- | ------------------------------------------------------------------------------------ |
+| 400    | `IDEMPOTENCY_KEY_REQUIRED`    | Faltou o cabeçalho `Idempotency-Key`.                                                |
+| 400    | `IDEMPOTENCY_KEY_INVALID`     | O valor de `Idempotency-Key` não segue o formato aceito.                             |
+| 400    | `SHIPPER_INACTIVE`            | O embarcador informado está desativado no painel.                                    |
+| 404    | `SHIPPER_NOT_FOUND`           | Nenhum embarcador da sua empresa com o `shipper_id` ou `shipper_cnpj` informado.     |
+| 409    | `IDEMPOTENCY_KEY_REUSED`      | A mesma `Idempotency-Key` já foi usada com outro corpo.                              |
+| 409    | `DELIVERY_INVOICE_KEY_EXISTS` | A chave da NF-e já está cadastrada na empresa; a resposta traz o `delivery_id` dela. |
+
+Cada endpoint da [referência](/docs/referencia) lista as respostas que pode dar, com o corpo de cada uma.
+
+## Repetindo com segurança
+
+Só repita o que a tabela marca como repetível e, quando houver, espere o tempo do cabeçalho `retry-after` (em segundos). Sem ele, espere cada vez mais entre as tentativas (1 s, 2 s, 4 s, 8 s...) e desista depois de algumas. Numa escrita, repita sempre com a mesma `Idempotency-Key`, como explica o guia de [idempotência](/docs/idempotencia).
+
+<CodeTabs>
+
+```js
+async function withRetry(call, attempts = 5) {
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await call();
+
+    if (![429, 500, 503].includes(response.status) || attempt === attempts) {
+      return response;
+    }
+
+    const seconds =
+      Number(response.headers.get("retry-after")) || 2 ** (attempt - 1);
+    await new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+  }
+}
+```
+
+```python
+import time
+import urllib.error
+
+def with_retry(call, attempts=5):
+    for attempt in range(1, attempts + 1):
+        try:
+            return call()
+        except urllib.error.HTTPError as error:
+            if error.code not in (429, 500, 503) or attempt == attempts:
+                raise
+            seconds = int(error.headers.get("retry-after") or 2 ** (attempt - 1))
+            time.sleep(seconds)
+```
+
+</CodeTabs>
+
+## Falando com o suporte
+
+Toda resposta, de sucesso ou de erro, traz o cabeçalho `x-request-id`. Registre-o nos logs do seu sistema. Ao abrir um chamado, envie o `x-request-id` (ou o `requestId` do corpo), o horário e o endpoint: é com isso que a chamada é encontrada.

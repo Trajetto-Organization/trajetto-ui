@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "react-query";
 
 import { toast } from "sonner";
 
 import {
+  AlertTriangle,
+  Building2,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Inbox,
   Loader,
   ThumbsUp,
@@ -20,37 +24,57 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
-import { Textarea } from "@/components/ui/textarea";
+import { TextareaField } from "@/components/shared/custom/textarea-field";
 
+import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 
 import {
   listProofAudits,
   reviewProofAudit,
   type ProofAuditCard,
+  type ProofAuditMeta,
   type ProofAuditStatus,
 } from "@/actions/delivery/proof-audits";
 
 import { permissions } from "@/lib/permissions";
+import { useAuthStore } from "@/store/auth-store";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
-import { ProofPhotoViewer } from "./photo-viewer";
+import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
+
+import { ImageInspector } from "./image-inspector";
 
 import {
-  CRITERIA,
-  NO_SUGGESTION_NOTICE,
+  AI_STATE_LABELS,
+  AI_STATE_NOTICES,
+  AI_STATE_TONES,
   SUGGESTION_LABELS,
   SUGGESTION_TONES,
   VERDICT_LABELS,
   VERDICT_TONES,
+  aiStateOf,
+  answeredCriteria,
   asPercent,
+  comparisonRows,
+  criteriaToCheck,
 } from "./lib/criteria";
+import { devicePrecheckView } from "./lib/device-precheck";
+import {
+  REJECTION_REASON_MAX,
+  rejectionReasonProblem,
+} from "./lib/rejection-reason";
 
 interface ProofAuditsPanelProps {
-  businessId: string;
+  /**
+   * The company picked in /admin. Empty or absent on /dashboard, where the
+   * company is the session's: the panel resolves it itself (DLVB-03).
+   */
+  businessId?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -60,6 +84,9 @@ const STATUS_TABS: Array<{ value: ProofAuditStatus; label: string }> = [
   { value: "APPROVED", label: "Aprovados" },
   { value: "REJECTED", label: "Rejeitados" },
 ];
+
+/** The meta as the API sends it now; the action's type predates the window. */
+type QueueMeta = ProofAuditMeta & { agreementWindowDays?: number };
 
 const formatMoment = (value: string | null): string =>
   value
@@ -81,14 +108,80 @@ const formatMoment = (value: string | null): string =>
  * buttons say "aprovar"/"rejeitar" and not "concordar" — a reviewer agreeing
  * with a machine is a reviewer who stopped looking, which is the failure this
  * queue exists to prevent.
+ *
+ * The company: the one picked in /admin, else the session's. On /dashboard
+ * the page passed `""`, the listing sent `businessId=` and the API's refusal
+ * was drawn as an empty queue, and approving built `/business/` (DLVB-03).
+ * The queue below is keyed by the company, so switching companies starts it
+ * over — status, page and an open rejection included (decision 2.6).
+ *
+ * Only /dashboard reaches it without a company (in /admin the page shows the
+ * selector's empty state itself), and there is no selector there to point
+ * at: until the session's company arrives it is the queue loading.
  */
 const ProofAuditsPanel = ({
   businessId,
 }: ProofAuditsPanelProps): JSX.Element => {
+  const sessionBusinessId = useDeliveriesBusinessId();
+  const sessionLoaded = useAuthStore((state) => state.isLoaded);
+  const sessionRole = useAuthStore((state) => state.role);
+
+  const resolvedBusinessId = businessId || sessionBusinessId;
+
+  if (!resolvedBusinessId) {
+    // The server pass and the first client one run before setAuth, and
+    // loadAuth alone fills the role but not the company. Only a master's
+    // session really has none.
+    if (!sessionLoaded || sessionRole !== "MASTER") {
+      return (
+        <div className="space-y-4">
+          {/* The chips and the Atualizar row the queue draws above its cards. */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Skeleton className="h-9 min-w-0 flex-1 sm:w-80 sm:flex-initial" />
+            <Skeleton className="h-10 w-full sm:w-32" />
+          </div>
+
+          <QueueSkeleton />
+        </div>
+      );
+    }
+
+    return (
+      <EmptyState
+        icon={Building2}
+        title="Empresa não identificada"
+        description="A fila de comprovantes é de uma operação específica, e esta sessão não está vinculada a nenhuma empresa. No painel administrativo, escolha a empresa no seletor do topo."
+      />
+    );
+  }
+
+  return (
+    <ProofAuditQueue key={resolvedBusinessId} businessId={resolvedBusinessId} />
+  );
+};
+
+const QueueSkeleton = (): JSX.Element => (
+  <div
+    className="space-y-3"
+    aria-busy="true"
+    data-testid="proof-audit-queue-loading"
+  >
+    <Skeleton className="h-96" />
+    <Skeleton className="h-96" />
+  </div>
+);
+
+const ProofAuditQueue = ({
+  businessId,
+}: {
+  businessId: string;
+}): JSX.Element => {
   const [status, setStatus] = useState<ProofAuditStatus>("PENDING");
+  const [page, setPage] = useState<number>(1);
 
   const [rejecting, setRejecting] = useState<string | null>(null);
   const [reason, setReason] = useState<string>("");
+  const [reasonError, setReasonError] = useState<string | null>(null);
 
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -102,22 +195,74 @@ const ProofAuditsPanel = ({
 
   const canWrite = permissionsRequired.hasAllPermissions;
 
-  const { data, isLoading, refetch } = useQuery(
-    ["proof_audit", businessId, status],
-    () => listProofAudits(businessId, status, 1, PAGE_SIZE),
-    { refetchOnWindowFocus: false },
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError, error, isFetching, refetch } = useQuery(
+    ["proof_audit", businessId, status, page],
+    async () => {
+      const answer = await listProofAudits(businessId, status, page, PAGE_SIZE);
+
+      if (isStaleActionResult(answer, { background: true })) {
+        throw new Error(STALE_ACTION_MESSAGE);
+      }
+
+      // A refusal is an error on screen, never an empty queue: "nenhum
+      // comprovante" over a 400 is how the /dashboard bug hid (DLVB-03).
+      if (!answer.success || !answer.data) {
+        throw new Error(answer.message || "Houve um erro ao carregar a fila.");
+      }
+
+      return answer.data;
+    },
+    {
+      refetchOnWindowFocus: false,
+
+      // A worklist several reviewers drain at once: every chip asks again.
+      staleTime: 0,
+
+      // Another status's cards, with their Aprovar/Rejeitar buttons, must
+      // not stand in for this one's while it loads (REV-13).
+      keepPreviousData: false,
+
+      retry: false,
+    },
   );
 
-  const cards = data?.data?.data ?? [];
-  const meta = data?.data?.meta;
+  // A review moves a card between the three lists and changes all three
+  // counters, so the whole company prefix goes stale, not only the chip on
+  // screen — "Aprovados" used to keep its five-minute-old list (REV-5).
+  const refreshQueue = () =>
+    queryClient.invalidateQueries(["proof_audit", businessId]);
+
+  const cards: ProofAuditCard[] = data?.data ?? [];
+  const meta = data?.meta as QueueMeta | undefined;
+
+  const total = data?.total ?? 0;
+  const lastPage = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // The last card of the last page was decided: step back to a page that
+  // still has cards instead of showing an empty one.
+  useEffect(() => {
+    if (data && page > lastPage) setPage(lastPage);
+  }, [data, page, lastPage]);
+
+  const closeRejection = () => {
+    setRejecting(null);
+    setReason("");
+    setReasonError(null);
+  };
 
   const handleReview = async (
     card: ProofAuditCard,
     verdict: "APPROVED" | "REJECTED",
   ) => {
-    if (verdict === "REJECTED" && reason.trim().length < 5) {
-      toast.error("Diga por que o comprovante foi rejeitado.");
-      return;
+    if (verdict === "REJECTED") {
+      const problem = rejectionReasonProblem(reason);
+
+      if (problem) {
+        setReasonError(problem);
+        return;
+      }
     }
 
     setSavingId(card.id);
@@ -130,70 +275,75 @@ const ProofAuditsPanel = ({
         verdict === "REJECTED" ? reason.trim() : undefined,
       );
 
+      if (isStaleActionResult(result)) return;
+
       if (!result.success) {
-        // Verbatim: the API says either "diga por quê" or "outra pessoa já
-        // revisou", and both are exactly what the reviewer has to know.
+        // Verbatim: the API says either "diga por quê", which rule the reason
+        // broke, or "outra pessoa já revisou", and each is exactly what the
+        // reviewer has to know.
         toast.error(result.message, { duration: 8000 });
 
         // A 409 means the queue moved under them. Refetching is the only
         // honest response — leaving the stale card on screen invites a second
         // press on something that is already decided.
-        void refetch();
+        void refreshQueue();
         return;
       }
 
       toast.success(result.message);
 
-      setRejecting(null);
-      setReason("");
+      closeRejection();
 
-      void refetch();
+      void refreshQueue();
     } finally {
       setSavingId(null);
     }
   };
 
+  const countOf = (value: ProofAuditStatus): number | undefined =>
+    meta
+      ? value === "PENDING"
+        ? meta.pending
+        : value === "APPROVED"
+          ? meta.approved
+          : meta.rejected
+      : undefined;
+
   return (
     <div className="space-y-4">
       {/*
         The queue's own bar: the three counters on the left, the refresh on
-        the right, one line.
+        the right, one line from `sm`; on a phone the refresh takes the full
+        width with its label, like every page action (decision 3.6).
 
         This tab is the exception to the page's layout — every other section
         keeps its actions up beside the company selector. Here the only action
-        is "Revalidar Dados", and what it changes is these three numbers. Up
-        there it was a button on its own line, between the section strip and
-        the counters, attached to neither.
+        is "Atualizar", and what it changes is these three numbers.
       */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div
+        className="flex flex-wrap items-center gap-3"
+        data-tutorial="proof-audits-filters"
+      >
         <FilterChips
           label="Situação dos comprovantes"
           value={status}
           options={STATUS_TABS.map((tab) => ({
             ...tab,
-            count: meta
-              ? tab.value === "PENDING"
-                ? meta.pending
-                : tab.value === "APPROVED"
-                  ? meta.approved
-                  : meta.rejected
-              : undefined,
+            count: countOf(tab.value),
           }))}
           onChange={(value) => {
             setStatus(value);
+            setPage(1);
 
             // The reason box belongs to the card that was open; carrying it
             // to another queue would put somebody else's words on it.
-            setRejecting(null);
+            closeRejection();
           }}
           className="min-w-0 flex-1 sm:flex-initial"
         />
 
-        <div className="shrink-0 sm:ml-auto">
+        <PageActions className="sm:ml-auto">
           <DataTableRevalidate
-            revalidateData="update-delivery"
-            hideLabelOnMobile
-            className="h-9 w-9 p-0 sm:h-8 sm:w-auto sm:px-3"
             rateLimit={{
               storageKey: "deliveries-proof-audits-panel",
               maxClicks: 3,
@@ -201,31 +351,60 @@ const ProofAuditsPanel = ({
               cooldownTimeMs: 15000,
             }}
           />
-        </div>
+        </PageActions>
       </div>
 
       {/*
         Under the bar rather than beside it: this is a sentence about the
-        queue, not a control over it, and sharing the line with the counters
-        left it competing with them for the eye — and wrapping into the
-        button at 1024px.
+        queue, not a control over it. Bounded to a window (DLVB-04), and it
+        says which.
       */}
       {meta?.agreementRate !== null && meta?.agreementRate !== undefined && (
         <p className="text-xs text-muted-foreground">
           A leitura automática concordou com a pessoa em{" "}
           <strong>{asPercent(meta.agreementRate)}</strong> dos comprovantes
-          revisados.
+          revisados
+          {meta.agreementWindowDays
+            ? ` nos últimos ${meta.agreementWindowDays} dias`
+            : ""}
+          .
         </p>
       )}
 
-      {isLoading && (
-        <div className="space-y-3">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
+      {isLoading && <QueueSkeleton />}
+
+      {isError && !isLoading && (
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-lg border border-dashed
+          p-6 text-center"
+        >
+          <AlertTriangle className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+
+          <div className="space-y-1">
+            <p className="text-sm font-medium">
+              Não foi possível carregar a fila
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {error instanceof Error
+                ? error.message
+                : "Houve um erro ao carregar a fila."}
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            Tentar novamente
+          </Button>
         </div>
       )}
 
-      {!isLoading && cards.length === 0 && (
+      {!isLoading && !isError && cards.length === 0 && (
         <EmptyState
           icon={Inbox}
           title={
@@ -247,6 +426,14 @@ const ProofAuditsPanel = ({
         {cards.map((card) => {
           const suggestion = card.ai_suggestion;
           const isSaving = savingId === card.id;
+
+          // Why there is no reading, when there is none (DLVP-PROOF-4).
+          const readingState = aiStateOf(card);
+          const missing =
+            readingState === "read" ? "unavailable" : readingState;
+
+          // The phone's offline hint, next to the server's reading (14.2).
+          const precheck = devicePrecheckView(card);
 
           return (
             <article key={card.id} className="rounded-lg border p-4">
@@ -284,49 +471,114 @@ const ProofAuditsPanel = ({
                     {SUGGESTION_LABELS[suggestion.assessment.suggestion]}
                   </Badge>
                 ) : (
-                  <Badge variant="outline">Sem leitura automática</Badge>
+                  <Badge variant="outline" className={AI_STATE_TONES[missing]}>
+                    {AI_STATE_LABELS[missing]}
+                  </Badge>
                 )}
               </header>
 
               <div className="grid gap-4 lg:grid-cols-2">
-                <ProofPhotoViewer
+                <ImageInspector
+                  key={card.id}
                   url={card.photoUrl}
                   alt={`Canhoto da entrega para ${card.delivery.recipient_name}`}
                 />
 
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3">
                   {suggestion ? (
                     <>
                       <ul className="space-y-1.5">
-                        {CRITERIA.map((criterion) => {
-                          const verdict = suggestion.reading[
-                            criterion.key
-                          ] as keyof typeof VERDICT_LABELS;
+                        {answeredCriteria(suggestion.reading).map(
+                          (criterion) => {
+                            const verdict = criterion.verdict;
 
-                          return (
-                            <li
-                              key={criterion.key}
-                              className="flex items-start justify-between gap-3
+                            return (
+                              <li
+                                key={criterion.key}
+                                className="flex items-start justify-between gap-3
                               text-sm"
-                            >
-                              <span className="min-w-0">
-                                <span className="block">{criterion.label}</span>
-                                {verdict === "no" && (
-                                  <span className="block text-xs text-muted-foreground">
-                                    {criterion.meaning}
-                                  </span>
-                                )}
-                              </span>
-
-                              <span
-                                className={`shrink-0 text-sm font-medium ${VERDICT_TONES[verdict]}`}
                               >
-                                {VERDICT_LABELS[verdict]}
-                              </span>
-                            </li>
-                          );
-                        })}
+                                <span className="min-w-0">
+                                  <span className="block">
+                                    {criterion.label}
+                                  </span>
+                                  {verdict === "no" && (
+                                    <span className="block text-xs text-muted-foreground">
+                                      {criterion.meaning}
+                                    </span>
+                                  )}
+                                </span>
+
+                                <span
+                                  className={`shrink-0 text-sm font-medium ${VERDICT_TONES[verdict]}`}
+                                >
+                                  {VERDICT_LABELS[verdict]}
+                                </span>
+                              </li>
+                            );
+                          },
+                        )}
                       </ul>
+
+                      {/* What the reading left to a person (design P6.2):
+                          neither a tick nor a cross. */}
+                      {criteriaToCheck(suggestion.reading).length > 0 && (
+                        <div
+                          className="space-y-1 rounded-md border border-dashed p-2"
+                          aria-label="Para você conferir"
+                        >
+                          <p className="text-xs font-medium text-muted-foreground">
+                            Para você conferir
+                          </p>
+                          <ul className="space-y-1">
+                            {criteriaToCheck(suggestion.reading).map((item) => (
+                              <li key={item.key} className="text-sm">
+                                <span className="block">{item.label}</span>
+                                <span className="block text-xs text-muted-foreground">
+                                  {item.note}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* What was read next to what was expected: the model
+                          transcribes, the code compares (decision 6.9). */}
+                      {comparisonRows(suggestion.reading).length > 0 && (
+                        <dl
+                          className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)_minmax(0,1fr)]
+                          gap-x-3 gap-y-1 rounded-md border p-2 text-xs"
+                          aria-label="Lido no canhoto e esperado na entrega"
+                        >
+                          <span className="text-muted-foreground" />
+                          <span className="font-medium text-muted-foreground">
+                            Lido no canhoto
+                          </span>
+                          <span className="font-medium text-muted-foreground">
+                            Esperado
+                          </span>
+                          {comparisonRows(suggestion.reading).map((row) => (
+                            <div key={row.label} className="contents">
+                              <dt className="text-muted-foreground">
+                                {row.label}
+                              </dt>
+                              <dd
+                                className="min-w-0 truncate"
+                                title={row.read ?? undefined}
+                              >
+                                {row.read ?? "—"}
+                              </dd>
+                              <dd
+                                className="min-w-0 truncate"
+                                title={row.expected ?? undefined}
+                              >
+                                {row.expected ?? "—"}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
 
                       {suggestion.reading.observation && (
                         <p className="rounded-md bg-muted/50 p-2 text-xs">
@@ -342,8 +594,27 @@ const ProofAuditsPanel = ({
                     </>
                   ) : (
                     <p className="rounded-md bg-muted/50 p-3 text-sm">
-                      {NO_SUGGESTION_NOTICE}
+                      {AI_STATE_NOTICES[missing]}
                     </p>
+                  )}
+
+                  {precheck && (
+                    <div
+                      className="space-y-1 rounded-md border p-2 text-xs"
+                      aria-label="Pré-checagem do celular"
+                    >
+                      <p className="font-medium">{precheck.summary}</p>
+                      {precheck.details.map((detail) => (
+                        <p key={detail} className="text-muted-foreground">
+                          {detail}
+                        </p>
+                      ))}
+                      {precheck.agreement && (
+                        <p className="text-muted-foreground">
+                          {precheck.agreement}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {card.signatureUrl && (
@@ -366,11 +637,18 @@ const ProofAuditsPanel = ({
               {card.status === "PENDING" ? (
                 <div className="mt-4 space-y-3 border-t pt-4">
                   {rejecting === card.id && (
-                    <Textarea
+                    <TextareaField
+                      label="Motivo da rejeição *"
+                      htmlfor={`rejection-reason-${card.id}`}
+                      name="rejection_reason"
+                      required
                       value={reason}
-                      onChange={(event) =>
-                        setReason(event.target.value.slice(0, 500))
-                      }
+                      errorName={reasonError}
+                      maxLength={REJECTION_REASON_MAX}
+                      onChange={(event) => {
+                        setReason(event.target.value);
+                        if (reasonError) setReasonError(null);
+                      }}
                       rows={2}
                       autoFocus
                       placeholder="Por que este comprovante não serve? Ex.: canhoto de outra entrega, sem assinatura."
@@ -418,10 +696,7 @@ const ProofAuditsPanel = ({
                           size="sm"
                           variant="ghost"
                           disabled={isSaving}
-                          onClick={() => {
-                            setRejecting(null);
-                            setReason("");
-                          }}
+                          onClick={closeRejection}
                         >
                           Cancelar
                         </Button>
@@ -440,6 +715,7 @@ const ProofAuditsPanel = ({
                         onClick={() => {
                           setRejecting(card.id);
                           setReason("");
+                          setReasonError(null);
                         }}
                         className="gap-2"
                       >
@@ -450,18 +726,62 @@ const ProofAuditsPanel = ({
                   </div>
                 </div>
               ) : (
-                <p className="mt-4 flex items-center gap-2 border-t pt-4 text-xs text-muted-foreground">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {card.status === "APPROVED" ? "Aprovado" : "Rejeitado"} por{" "}
-                  {card.reviewerName ?? "alguém"} em{" "}
-                  {formatMoment(card.reviewed_at)}
-                  {card.rejection_reason ? ` — ${card.rejection_reason}` : ""}
+                <p className="mt-4 flex items-start gap-2 whitespace-pre-line border-t pt-4 text-xs text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    {card.status === "APPROVED" ? "Aprovado" : "Rejeitado"} por{" "}
+                    {card.reviewerName ?? "alguém"} em{" "}
+                    {formatMoment(card.reviewed_at)}
+                    {card.rejection_reason ? ` — ${card.rejection_reason}` : ""}
+                  </span>
                 </p>
               )}
             </article>
           );
         })}
       </div>
+
+      {total > PAGE_SIZE && (
+        <nav
+          aria-label="Páginas da fila de comprovantes"
+          className="flex items-center justify-between gap-2"
+        >
+          <p className="text-xs text-muted-foreground">
+            {total.toLocaleString("pt-BR")} comprovantes · página {page} de{" "}
+            {lastPage}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Página anterior"
+              disabled={page <= 1 || isFetching}
+              onClick={() => {
+                setPage((current) => Math.max(1, current - 1));
+                closeRejection();
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Próxima página"
+              disabled={page >= lastPage || isFetching}
+              onClick={() => {
+                setPage((current) => Math.min(lastPage, current + 1));
+                closeRejection();
+              }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </nav>
+      )}
     </div>
   );
 };

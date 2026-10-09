@@ -1,4 +1,17 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as React from "react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClientProvider, useQuery } from "react-query";
+
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 /**
  * `@/socket` opens a real socket.io client at import time. This file is about
@@ -17,6 +30,8 @@ import {
   useForceLogoutStore,
   type ForceLogoutReason,
 } from "@/lib/force-logout";
+import { queryClientProps } from "@/lib/query-client-props";
+import { useAuthStore } from "@/store/auth-store";
 
 /**
  * Being thrown out of the app, which has to be one deliberate motion.
@@ -47,7 +62,8 @@ beforeEach(() => {
   useForceLogoutStore.setState({ reason: null });
   sessionStorage.clear();
 
-  // happy-dom refuses a real navigation; the href is what is under test.
+  // happy-dom refuses a real navigation; where the tab goes is under test,
+  // whichever way the code navigates.
   Object.defineProperty(window, "location", {
     configurable: true,
     value: {
@@ -57,8 +73,18 @@ beforeEach(() => {
       set href(value: string) {
         assigned.push(value);
       },
+      assign(value: string) {
+        assigned.push(value);
+      },
     },
   });
+});
+
+beforeAll(() => {
+  (
+    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+  ).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.stubGlobal("React", React);
 });
 
 afterEach(() => {
@@ -78,10 +104,9 @@ describe("every way a session can end", () => {
 
     for (const reason of REASONS) {
       expect(REASON_TO_COPY[reason].title.length, reason).toBeGreaterThan(5);
-      expect(
-        REASON_TO_COPY[reason].description.length,
-        reason,
-      ).toBeGreaterThan(15);
+      expect(REASON_TO_COPY[reason].description.length, reason).toBeGreaterThan(
+        15,
+      );
     }
   });
 
@@ -95,6 +120,40 @@ describe("every way a session can end", () => {
         reason,
       ).toContain("redirecionando");
     }
+  });
+
+  it("says a company switched off as the company's state, not as a revoked access", () => {
+    // Decision 4.1: an inactive company (AUTH_BUSINESS_INACTIVE /
+    // TENANT_INACTIVE) is not something done to this person's own access.
+    const copy = (
+      REASON_TO_COPY as Record<string, { title: string; description: string }>
+    ).business_inactive;
+
+    expect(copy?.title).toBe("Empresa desativada");
+    expect(copy?.description).toMatch(/empresa/i);
+    expect(copy?.title).not.toBe(REASON_TO_COPY.user_revoked.title);
+  });
+
+  it("says a changed role, company or linked driver as that, not as new permissions", () => {
+    // USR-EDIT-1 / decision 4.6: the API ends the session on purpose. The
+    // overlay used to borrow permissions_changed ("Suas permissões mudaram").
+    const copy = (
+      REASON_TO_COPY as Record<string, { title: string; description: string }>
+    ).role_changed;
+
+    expect(copy?.title).toBe("Seu acesso foi alterado");
+    expect(copy?.description).toMatch(/nível de acesso, empresa ou motorista/i);
+    expect(copy?.title).not.toBe(REASON_TO_COPY.permissions_changed.title);
+  });
+
+  it("says a driver's branch switched off as the branch's state, not a deleted account", () => {
+    // AUTH_BRANCH_INACTIVE fell into access_denied ("Acesso não autorizado").
+    const copy = (
+      REASON_TO_COPY as Record<string, { title: string; description: string }>
+    ).branch_inactive;
+
+    expect(copy?.title).toBe("Filial desativada");
+    expect(copy?.title).not.toBe(REASON_TO_COPY.access_denied.title);
   });
 });
 
@@ -143,6 +202,98 @@ describe("being thrown out", () => {
      * a loop that looks like the app ignoring the revocation.
      */
     expect(url).toContain("force_logout=true");
+  });
+});
+
+describe("what the kicked-out user leaves in the tab", () => {
+  it("has nothing persisted by the time the redirect leaves", () => {
+    // The hard navigation drops memory, but not localStorage: the role and
+    // permissions persisted by the auth store stayed until some login page
+    // mounted — and a tab closed during the overlay never got there.
+    useAuthStore.getState().setAuth({
+      id: "user-a",
+      businessId: "biz-1",
+      role: "BUSINESS_ADMIN",
+      permissions: [],
+      enabledModules: ["DELIVERIES"],
+    });
+
+    forceLogout("user_revoked");
+
+    // Past the overlay's delay only: running every timer would also fire the
+    // cache's 30-minute garbage collection and prove nothing.
+    vi.advanceTimersByTime(1_000);
+
+    expect(assigned).toHaveLength(1);
+    expect(localStorage.getItem("auth-store") ?? "").not.toContain(
+      "BUSINESS_ADMIN",
+    );
+  });
+
+  /**
+   * The overlay only covers the screen: the protected tree stays mounted
+   * behind it until the document goes. Emptying the cache and resetting the
+   * auth store there (the first cut) made that tree re-render, rebuild its
+   * queries and send them again with the session already dead.
+   */
+  it("does not make the screen it is leaving ask the API again", async () => {
+    vi.useRealTimers();
+
+    useAuthStore.getState().setAuth({
+      id: "user-a",
+      businessId: "biz-1",
+      role: "BUSINESS_ADMIN",
+      permissions: [],
+      enabledModules: ["DELIVERIES"],
+    });
+
+    let requests = 0;
+
+    // A role-gated screen reading a list: most screens behind the overlay.
+    const Panel = () => {
+      const role = useAuthStore((state) => state.role);
+
+      useQuery(["shipper", "biz-1"], async () => {
+        requests += 1;
+        return [{ id: "s1" }];
+      });
+
+      return createElement("span", null, role ?? "");
+    };
+
+    const root = createRoot(document.createElement("div"));
+
+    await act(async () => {
+      root.render(
+        createElement(
+          QueryClientProvider,
+          { client: queryClientProps },
+          createElement(Panel),
+        ),
+      );
+    });
+    await act(async () => {
+      await new Promise((done) => setTimeout(done, 30));
+    });
+    expect(requests).toBe(1);
+
+    forceLogout("session_expired");
+
+    // Past the overlay's delay, with the navigation done.
+    await act(async () => {
+      await new Promise((done) => setTimeout(done, 600));
+    });
+
+    expect(assigned).toEqual([
+      "/login?error=session_expired&force_logout=true",
+    ]);
+    expect(
+      requests,
+      "a tela atrás do overlay refez a consulta com a sessão encerrada",
+    ).toBe(1);
+
+    await act(async () => root.unmount());
+    queryClientProps.clear();
   });
 });
 

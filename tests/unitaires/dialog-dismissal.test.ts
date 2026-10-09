@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 /**
  * A modal that holds what somebody typed must not vanish when they click beside
@@ -16,6 +16,12 @@ import { join, relative, resolve } from "node:path";
  *
  * ESC and the X still close, because those are deliberate. An outside click is
  * the one gesture nobody makes on purpose.
+ *
+ * The refusal now lives in the primitive (decision 3.2): DialogContent and
+ * DialogScrollContent block the outside click by default, and
+ * `tests/unitaires/dialog-primitives.test.ts` proves it by rendering them. What
+ * this scan still guards is the opt-out — `closeOnOutsideClick` exists for a
+ * viewer, and a dialog holding what somebody typed must never use it.
  *
  * Checked against the source rather than a browser because the property is
  * about EVERY dialog in the product, including the ones nobody has written a
@@ -181,13 +187,146 @@ function dialogsIn(file: string): DialogBlock[] {
       }
     }
 
-    return { file: block.file, line: block.line, openingTag: block.openingTag, body };
+    return {
+      file: block.file,
+      line: block.line,
+      openingTag: block.openingTag,
+      body,
+    };
   });
+}
+
+/** Reads a source file, or null when there is none at that path. */
+type ReadSource = (path: string) => string | null;
+
+const readFromDisk: ReadSource = (path) => {
+  try {
+    return statSync(path).isFile() ? readFileSync(path, "utf8") : null;
+  } catch {
+    return null;
+  }
+};
+
+/** The next top-level declaration after `from`: where a local component ends. */
+const DECLARATION =
+  /\n(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:const|let|function|interface|type|class|enum)\s/g;
+
+/** The text of a component declared in the same file, or null. */
+function localComponent(source: string, name: string): string | null {
+  const start = new RegExp(
+    `(?:^|\\n)(?:export\\s+)?(?:default\\s+)?(?:const|function)\\s+${name}\\b`,
+  ).exec(source);
+
+  if (!start) return null;
+
+  DECLARATION.lastIndex = start.index + start[0].length;
+  const next = DECLARATION.exec(source);
+
+  return source.slice(start.index, next ? next.index : source.length);
+}
+
+/** The file a component is imported from, for relative and `@/` imports. */
+function importedComponent(
+  file: string,
+  source: string,
+  name: string,
+  read: ReadSource,
+): { path: string; source: string } | null {
+  for (const match of source.matchAll(
+    /import\s+(type\s+)?([^;]*?)\s+from\s+["']([^"']+)["']/g,
+  )) {
+    if (match[1] || !new RegExp(`(^|[\\s{,])${name}([\\s},]|$)`).test(match[2]))
+      continue;
+
+    const specifier = match[3];
+    const base = specifier.startsWith("@/")
+      ? join(SOURCE, specifier.slice(2))
+      : specifier.startsWith(".")
+        ? resolve(dirname(file), specifier)
+        : null;
+
+    // A package (radix, lucide, next): not the product's own fields.
+    if (!base) return null;
+
+    for (const candidate of [
+      `${base}.tsx`,
+      `${base}.ts`,
+      join(base, "index.tsx"),
+      join(base, "index.ts"),
+    ]) {
+      const found = read(candidate);
+
+      if (found !== null) return { path: candidate, source: found };
+    }
+
+    return null;
+  }
+
+  return null;
+}
+
+// The primitives: a Dialog's own header or a Button hold nothing typed.
+const UI_PRIMITIVES = `${sep}components${sep}ui${sep}`;
+
+/**
+ * Whether a dialog body holds input, following the components it renders.
+ *
+ * Decision 8.7 merged each entity's /admin and /dashboard copies, and the
+ * merged dialogs moved their fields into `*Fields` and `*FormSubmit`
+ * components — declared beside the dialog or imported from the next file.
+ * A scan of the body alone stopped seeing them, so the rule below stopped
+ * asking them. Two levels reach every field the product has today.
+ */
+function holdsInput(
+  file: string,
+  source: string,
+  body: string,
+  read: ReadSource = readFromDisk,
+  depth = 2,
+  seen: Set<string> = new Set(),
+): boolean {
+  if (INPUTS.test(body)) return true;
+  if (depth === 0) return false;
+
+  for (const [, name] of body.matchAll(/<([A-Z][A-Za-z0-9]*)/g)) {
+    const key = `${file}#${name}`;
+
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const local = localComponent(source, name);
+
+    if (local !== null) {
+      if (holdsInput(file, source, local, read, depth - 1, seen)) return true;
+      continue;
+    }
+
+    const imported = importedComponent(file, source, name, read);
+
+    if (!imported || imported.path.includes(UI_PRIMITIVES)) continue;
+
+    if (
+      holdsInput(
+        imported.path,
+        imported.source,
+        imported.source,
+        read,
+        depth - 1,
+        seen,
+      )
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 const ALL = tsxFiles(SOURCE).flatMap(dialogsIn);
 
-const WITH_INPUT = ALL.filter((dialog) => INPUTS.test(dialog.body));
+const WITH_INPUT = ALL.filter((dialog) =>
+  holdsInput(dialog.file, readFileSync(dialog.file, "utf8"), dialog.body),
+);
 
 describe("the scan itself", () => {
   it("found dialogs, and found the ones holding input", () => {
@@ -196,25 +335,74 @@ describe("the scan itself", () => {
     // stops being a rule.
     expect(ALL.length).toBeGreaterThan(25);
 
-    // A floor rather than `> 0`: the rule covered 89 dialogs when it was
-    // written, and the failure mode worth catching is the count SHRINKING
-    // because a control moved behind a component this pattern does not know.
-    expect(WITH_INPUT.length).toBeGreaterThanOrEqual(89);
+    // A floor rather than `> 0`: the failure mode worth catching is the
+    // count SHRINKING because a control moved behind a component this
+    // pattern does not know. It covered 89 dialogs when written; merging the
+    // /admin and /dashboard copies of each entity (decision 8.7) deleted the
+    // duplicates on purpose. Recounted after the merges, following the
+    // components each dialog renders: 46 (45 read in the body itself, plus
+    // the avatar upload, whose file input sits in its FileUpload).
+    expect(WITH_INPUT.length).toBeGreaterThanOrEqual(46);
+  });
+
+  it("sees a field the dialog renders through a component", () => {
+    // Virtual files: the same shapes the merged dialogs have on disk.
+    const files = new Map<string, string>([
+      [
+        join(SOURCE, "fixture/local.tsx"),
+        [
+          'const BillFields = () => <Input name="x" />;',
+          "function Dialog() { return <DialogContent><BillFields /></DialogContent>; }",
+        ].join("\n"),
+      ],
+      [
+        join(SOURCE, "fixture/imported.tsx"),
+        [
+          'import { AvatarPicker } from "./avatar-picker";',
+          "function Dialog() { return <DialogContent><AvatarPicker /></DialogContent>; }",
+        ].join("\n"),
+      ],
+      [
+        join(SOURCE, "fixture/avatar-picker/index.tsx"),
+        'const AvatarPicker = () => <input type="file" />;',
+      ],
+      [
+        join(SOURCE, "fixture/viewer.tsx"),
+        [
+          'const Photo = () => <img alt="" />;',
+          "function Dialog() { return <DialogContent><Photo /></DialogContent>; }",
+        ].join("\n"),
+      ],
+    ]);
+    const read: ReadSource = (path) => files.get(path) ?? null;
+    const bodyOf = (path: string) =>
+      /<DialogContent>([\s\S]*)<\/DialogContent>/.exec(files.get(path)!)![1];
+    const probe = (name: string) => {
+      const path = join(SOURCE, `fixture/${name}.tsx`);
+      return holdsInput(path, files.get(path)!, bodyOf(path), read);
+    };
+
+    expect(probe("local"), "campo declarado ao lado do diálogo").toBe(true);
+    expect(probe("imported"), "campo importado de outro arquivo").toBe(true);
+    expect(probe("viewer"), "visualizador sem campo").toBe(false);
   });
 });
 
 describe("a dialog holding something the user typed", () => {
   it.each(
-    WITH_INPUT.map((dialog) => [
-      `${relative(SOURCE, dialog.file).split("\\").join("/")}:${dialog.line}`,
-      dialog,
-    ] as const),
-  )("%s não fecha por clique fora", (_name, dialog) => {
+    WITH_INPUT.map(
+      (dialog) =>
+        [
+          `${relative(SOURCE, dialog.file).split("\\").join("/")}:${dialog.line}`,
+          dialog,
+        ] as const,
+    ),
+  )("%s does not close on an outside click", (_name, dialog) => {
     expect(
-      dialog.openingTag.includes("onInteractOutside"),
-      "adicione onInteractOutside={(event) => event.preventDefault()} — " +
-        "um clique ao lado apaga o que a pessoa digitou, sem aviso e sem desfazer",
-    ).toBe(true);
+      /closeOnOutsideClick(?!\s*=\s*\{\s*false\s*\})/.test(dialog.openingTag),
+      "remova closeOnOutsideClick — um clique ao lado apaga o que a pessoa " +
+        "digitou, sem aviso e sem desfazer; ESC, o X e Cancelar continuam fechando",
+    ).toBe(false);
   });
 });
 
@@ -238,11 +426,13 @@ describe("a dialog holding something the user typed", () => {
 const STEP_FORWARD = /(Avançar|Próximo|Continuar|Concluir|step|Step)/;
 
 const WITH_BACK = ALL.filter((dialog) =>
-  />\s*Voltar\s*<|name="Voltar"|label="Voltar"|title="Voltar"/.test(dialog.body),
+  />\s*Voltar\s*<|name="Voltar"|label="Voltar"|title="Voltar"/.test(
+    dialog.body,
+  ),
 );
 
-describe("um diálogo que oferece Voltar", () => {
-  it("é sempre multi-step, ou não deveria dizer Voltar", () => {
+describe("a dialog that offers Voltar", () => {
+  it("is always multi-step, or should not say Voltar", () => {
     const wrong = WITH_BACK.filter(
       (dialog) => !STEP_FORWARD.test(dialog.body),
     ).map(

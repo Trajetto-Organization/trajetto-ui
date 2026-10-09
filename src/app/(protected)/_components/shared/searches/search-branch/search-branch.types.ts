@@ -10,16 +10,10 @@ interface SearchBranchProps {
   isOptional?: boolean;
 }
 
-interface FetchBranchProps {
-  cursor?: string;
-  businessId?: string;
-  signal?: AbortSignal;
-}
-
 interface FetchBranchResult {
   data: any[];
   nextCursor: string | null;
   hasMore: boolean;
 }
 
-export type { SearchBranchProps, FetchBranchProps, FetchBranchResult };
+export type { SearchBranchProps, FetchBranchResult };

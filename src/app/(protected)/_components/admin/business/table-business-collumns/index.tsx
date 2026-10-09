@@ -17,6 +17,14 @@ import {
   displayValue,
 } from "@/lib/format-values";
 
+import { timeZoneLabel } from "../timezone-field/timezones";
+
+/**
+ * The companies table. It runs in the server mode of the DataTable
+ * (decision 8.8): the column ids are the API's sort keys and facets
+ * (lib/server-table.ts), so which headers sort is the spec's call, and no
+ * column filters the loaded page.
+ */
 const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
   {
     id: "select",
@@ -32,7 +40,7 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
           (table.getIsSomePageRowsSelected() && "indeterminate")
         }
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
+        aria-label="Selecionar todas"
         className="translate-y-[2px]"
       />
     ),
@@ -42,7 +50,7 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         name={`select-business-${row.id}`}
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Selecionar linha"
         className="translate-y-[2px]"
       />
     ),
@@ -80,9 +88,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         corporateReason={row.getValue("corporate_reason")}
       />
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
     enableSorting: false,
   },
   {
@@ -98,9 +103,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("corporate_reason"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "fantasy_name",
@@ -145,9 +147,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("city"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "uf",
@@ -162,9 +161,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("uf"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "street",
@@ -207,9 +203,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(formatCnpj(row.getValue("cnpj")))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -258,9 +251,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("erp_code"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -307,9 +297,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("email"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "vehicle_limit",
@@ -329,6 +316,24 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         </p>
       );
     },
+    enableSorting: false,
+  },
+  {
+    accessorKey: "timezone",
+    meta: {
+      title: "Fuso horário",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Fuso horário" />
+    ),
+    cell: ({ row }) => (
+      <p
+        className="truncate font-medium w-56"
+        title={timeZoneLabel(row.original.timezone)}
+      >
+        {timeZoneLabel(row.original.timezone)}
+      </p>
+    ),
     enableSorting: false,
   },
   {

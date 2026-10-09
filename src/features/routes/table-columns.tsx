@@ -5,19 +5,26 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
-import { displayValue, formatNotificationDate } from "@/lib/format-values";
+import {
+  displayValue,
+  formatDateOnly,
+  formatNotificationDate,
+} from "@/lib/format-values";
 
 import type { RouteListItem } from "@/actions/route/get-route";
 
 import { ROUTE_STATUS_META, routeProgress } from "./lib/status";
+import { formatPlannedWindow } from "./lib/route-dates";
 import { RouteRowActions } from "./row-actions";
+import { RouteCodeLink } from "./route-code-link";
 
 /**
  * The dispatcher's board.
  *
- * Every filterable column returns the LABEL rather than the raw enum, so the
- * faceted filter chips read in Portuguese — the same reason the delivery table
- * does it.
+ * The column ids are the API's sort keys and facet columns (server-table.ts):
+ * sorting and filtering happen on the server over the whole company
+ * (decision 8.8), so no column filters or orders the loaded page. The cell
+ * of a sortable column shows the value the server orders by.
  *
  * The shape follows every other table in the product: the identifier first,
  * the audit dates last, the actions behind an `Ações` header. This one had
@@ -51,8 +58,9 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
       return (
         <div className="w-40">
           {/* The number is what everybody quotes on the phone; the name is
-              optional and most dispatchers never type one. */}
-          <p className="truncate font-medium">Rota {route.code}</p>
+              optional and most dispatchers never type one. It opens the
+              route's page (decision 14.7, D12). */}
+          <RouteCodeLink routeId={route.id} code={route.code} />
 
           {route.name && (
             <p className="truncate text-xs text-muted-foreground">
@@ -80,7 +88,6 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
         </Badge>
       );
     },
-    filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
   },
   {
     id: "progress",
@@ -96,7 +103,9 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
       if (total === 0) {
         // A route with no stops is a draft the dispatcher has not filled in,
         // and saying "0/0" reads like a bug.
-        return <p className="w-28 text-sm text-muted-foreground">Sem paradas</p>;
+        return (
+          <p className="w-28 text-sm text-muted-foreground">Sem paradas</p>
+        );
       }
 
       return (
@@ -119,7 +128,6 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
     cell: ({ row }) => (
       <p className="w-44 truncate">{row.getValue("driverName")}</p>
     ),
-    filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
   },
   {
     id: "vehiclePlate",
@@ -139,7 +147,6 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
         </p>
       );
     },
-    filterFn: (row, id, value: string[]) => value.includes(row.getValue(id)),
   },
   {
     accessorKey: "scheduled_date",
@@ -148,12 +155,55 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
       <DataTableColumnHeader column={column} title="Data" />
     ),
     cell: ({ row }) => (
-      <p className="w-32 truncate">
-        {displayValue(
-          formatNotificationDate(row.getValue("scheduled_date"), "pt-BR"),
-        )}
+      <p className="w-28 truncate">
+        {/* A civil day (decision 1.3), never an hour: in the browser's zone
+            the route of the 17th read "16/09/2026 às 21:00". */}
+        {formatDateOnly(row.getValue("scheduled_date"), { fallback: "—" })}
       </p>
     ),
+  },
+  {
+    accessorKey: "destination",
+    meta: { title: "Destino" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Destino" />
+    ),
+    cell: ({ row }) => {
+      const destination = row.original.destination;
+
+      return (
+        <p
+          className={`w-40 truncate ${destination ? "" : "text-muted-foreground"}`}
+          title={destination ?? undefined}
+        >
+          {destination ?? "—"}
+        </p>
+      );
+    },
+  },
+  {
+    id: "plannedWindow",
+    meta: { title: "Previsto" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Previsto" />
+    ),
+    cell: ({ row }) => {
+      // Saída e retorno previstos, on the browser's clock (decision 1.4):
+      // what the tower's punctuality compares the real departure with.
+      const planned = formatPlannedWindow(
+        row.original.planned_departure_at,
+        row.original.planned_arrival_at,
+      );
+
+      return (
+        <p
+          className={`w-36 truncate text-sm ${planned ? "" : "text-muted-foreground"}`}
+        >
+          {planned ?? "Sem horário"}
+        </p>
+      );
+    },
+    enableSorting: false,
   },
   {
     accessorKey: "started_at",

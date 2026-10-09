@@ -15,12 +15,21 @@ import robots from "../../src/app/robots";
  * notices for months, and then a customer finds their own delivery on Google.
  * So it gets a test.
  */
-const TOKENISED = ["/verificar/*", "/acompanhar/*"];
+// Robots paths are prefixes: "/verificar/" covers every token under it.
+const TOKENISED = ["/verificar/", "/acompanhar/"];
 
+/** The production rules: outside production everything is disallowed. */
 function ruleSets() {
-  const rules = robots().rules;
+  const previous = process.env.APP_ENV;
+  process.env.APP_ENV = "production";
 
-  return Array.isArray(rules) ? rules : [rules];
+  try {
+    const rules = robots().rules;
+    return Array.isArray(rules) ? rules : [rules];
+  } finally {
+    if (previous === undefined) delete process.env.APP_ENV;
+    else process.env.APP_ENV = previous;
+  }
 }
 
 test.describe("robots.txt", () => {
@@ -69,8 +78,22 @@ test.describe("robots.txt", () => {
     const allow = Array.isArray(general?.allow)
       ? general!.allow
       : [general?.allow];
+    const disallow = Array.isArray(general?.disallow)
+      ? general!.disallow
+      : [general?.disallow];
 
     expect(allow).toContain("/");
-    expect(allow).toContain("/about");
+
+    // Nothing public may sit behind a disallow prefix.
+    for (const path of [
+      "/sobre",
+      "/blog",
+      "/legal/privacidade",
+      "/orcamento",
+    ]) {
+      expect(disallow.some((prefix) => prefix && path.startsWith(prefix))).toBe(
+        false,
+      );
+    }
   });
 });

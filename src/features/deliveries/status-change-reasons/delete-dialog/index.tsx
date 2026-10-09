@@ -21,6 +21,7 @@ import { handleDeleteStatusChangeReason } from "@/actions/status-change-reason/d
 
 import { useQueryClient } from "react-query";
 import { revalidateTagName } from "@/actions/revalidate";
+import { guardFormAction } from "@/lib/action-result";
 
 interface DeleteStatusChangeReasonDialogProps {
   businessId: string;
@@ -78,13 +79,7 @@ const DeleteStatusChangeReasonFormSubmit = ({
 
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
-        <Button
-          type="submit"
-          disabled={pending}
-          variant={"secondary"}
-          className="bg-red-600/10 dark:bg-red-500/10
-          dark:text-red-500 text-red-600"
-        >
+        <Button type="submit" disabled={pending} variant="destructive">
           <ShieldAlert className="mr-1 size-5" />
           <span>Deletar Motivo</span>
 
@@ -109,7 +104,9 @@ const DeleteStatusChangeReasonDialog = ({
   const queryClient = useQueryClient();
 
   const [state, dispatch] = useFormState(
-    () => handleDeleteStatusChangeReason({ businessId, reasonId }),
+    guardFormAction(() =>
+      handleDeleteStatusChangeReason({ businessId, reasonId }),
+    ),
     null,
   );
 
@@ -151,7 +148,7 @@ const DeleteStatusChangeReasonDialog = ({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="bg-white dark:bg-[#121214]">
+      <AlertDialogContent className="bg-background">
         <form action={dispatch}>
           <DeleteStatusChangeReasonFormSubmit reasonName={reasonName} />
         </form>

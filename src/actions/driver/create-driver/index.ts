@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateDriverSchema } from "@/schemas/create-update-driver-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateDriverProps {
   message: string;
@@ -40,7 +43,7 @@ const handleCreateDriver = async (state: any, createDriverValues: FormData) => {
   const driverData = createDriverValidation.data;
 
   try {
-    const response = await fetch(createDriver, {
+    const response = await apiFetch(createDriver, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -52,14 +55,17 @@ const handleCreateDriver = async (state: any, createDriverValues: FormData) => {
 
     const { message } = (await response.json()) as CreateDriverProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createDriverError: { createDriverErrorMessage: message },
+        createDriverError: {
+          createDriverErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("driver/create-driver", error);
     return {
       createDriverError: {
         createDriverErrorMessage:

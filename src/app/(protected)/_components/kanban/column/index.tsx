@@ -105,8 +105,11 @@ const Column = ({
               )}
               {...(hasUserPermission ? attributes : {})}
               {...(hasUserPermission ? listeners : {})}
+              // dnd-kit makes the handle role="button"; it needs a name.
+              aria-label={`Mover a coluna ${column.title}`}
             >
               <GripVertical
+                aria-hidden="true"
                 className={cn(
                   "h-4 w-4",
                   hasUserPermission
@@ -128,8 +131,14 @@ const Column = ({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                data-tutorial="kanban-column-menu"
+                aria-label={`Ações da coluna ${column.title}`}
+              >
+                <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -177,6 +186,7 @@ const Column = ({
           text-muted-foreground hover:text-foreground"
           onClick={onAddCard}
           disabled={!hasUserPermission}
+          data-tutorial="kanban-add-card"
         >
           <Plus className="mr-2 h-4 w-4" />
           Adicionar Card

@@ -1,0 +1,238 @@
+---
+title: Verificar a assinatura
+description: Como provar que um webhook veio do Trajetto, com HMAC SHA-256 sobre o corpo cru, tolerância de tempo e exemplos em Node.js, Python e PHP.
+slug: assinatura
+updatedAt: 2026-09-29
+---
+
+Qualquer um que descubra a URL do seu endpoint pode mandar um POST para ela. A assinatura é o que prova que a chamada veio do Trajetto e que o corpo não foi alterado no caminho. Verifique-a antes de confiar no que chegou.
+
+## O cabeçalho
+
+Toda chamada traz o cabeçalho `X-Trajetto-Signature` neste formato:
+
+```text
+t=1790690580,v1=6c8242defe2506768332cb27dd61e02a411770a1c3561b4b812dbcabd7a5c0c5
+```
+
+- `t`: o instante da assinatura, em segundos desde 1970 (Unix).
+- `v1`: o HMAC SHA-256, em hexadecimal. Durante uma troca de segredo vêm dois `v1`.
+
+## Como verificar
+
+1. Leia `t` e todos os `v1` do cabeçalho.
+2. Recuse a chamada se `t` estiver a mais de <SignatureTolerance /> do seu relógio. A assinatura cobre o instante de propósito: sem esse limite, alguém que capturou uma chamada válida poderia repeti-la para sempre.
+3. Calcule o HMAC SHA-256 de `t`, um ponto e o **corpo cru** (`t + "." + corpo`), usando como chave o **segredo inteiro** do endpoint.
+4. Compare o resultado com cada `v1` em tempo constante. Se algum conferir, a chamada é legítima.
+
+<Callout type="atencao" title="O segredo inteiro, com whsec_">
+  A chave do HMAC é o segredo exatamente como o painel mostrou, **com o prefixo
+  `whsec_` incluído**, em bytes UTF-8. Não remova o prefixo nem decodifique o
+  resto em base64, como outras plataformas pedem: com isso a assinatura nunca
+  confere.
+</Callout>
+
+<Callout type="atencao" title="O corpo cru, antes do JSON">
+  Calcule o HMAC sobre os bytes exatos que chegaram, antes de qualquer
+  `JSON.parse`. Um corpo lido como objeto e serializado de novo muda a ordem ou
+  os espaços, e a assinatura deixa de conferir.
+</Callout>
+
+## Exemplos
+
+As funções abaixo devolvem `true` só para uma chamada assinada com o seu segredo dentro da tolerância, e `false` para qualquer outra coisa, inclusive um cabeçalho ausente ou malformado, sem lançar exceção.
+
+<CodeTabs>
+
+```js
+const crypto = require("node:crypto");
+
+// secret: o segredo inteiro, com o prefixo whsec_ (não remova nada).
+// rawBody: o corpo EXATO recebido, antes de qualquer JSON.parse.
+// Cabeçalho ausente ou malformado devolve false, nunca uma exceção.
+function verifyTrajetto(secret, rawBody, header, toleranceSeconds = 300) {
+  if (typeof header !== "string") return false;
+
+  const parts = header.split(",").map((part) => part.trim().split("="));
+  const timestamp = Number(parts.find(([key]) => key === "t")?.[1]);
+  const signatures = parts
+    .filter(([key]) => key === "v1")
+    .map(([, value]) => value);
+
+  if (!Number.isFinite(timestamp)) return false;
+  if (Math.abs(Date.now() / 1000 - timestamp) > toleranceSeconds) return false;
+
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+
+  // Só hexadecimal de 64 caracteres chega ao timingSafeEqual: outro valor
+  // do mesmo tamanho encurtaria o buffer e a comparação lançaria erro.
+  return signatures.some(
+    (signature) =>
+      /^[0-9a-f]{64}$/.test(signature) &&
+      crypto.timingSafeEqual(
+        Buffer.from(signature, "hex"),
+        Buffer.from(expected, "hex"),
+      ),
+  );
+}
+```
+
+```python
+import hashlib, hmac, time
+from typing import Optional
+
+# secret: o segredo inteiro, com o prefixo whsec_.
+# raw_body: os bytes EXATOS recebidos (request.get_data() no Flask).
+# Cabeçalho ausente ou malformado devolve False, nunca uma exceção.
+def verify_trajetto(secret: str, raw_body: bytes, header: Optional[str], tolerance: int = 300) -> bool:
+    if not isinstance(header, str):
+        return False
+    parts = [part.strip().split("=", 1) for part in header.split(",") if "=" in part]
+    timestamps = [value for key, value in parts if key == "t"]
+    signatures = [value for key, value in parts if key == "v1"]
+    try:
+        timestamp = int(timestamps[0])
+    except (IndexError, ValueError):
+        return False
+    if abs(time.time() - timestamp) > tolerance:
+        return False
+    message = timestamps[0].encode() + b"." + raw_body
+    expected = hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest().encode()
+    # bytes dos dois lados: compare_digest recusa str com caracteres fora do ASCII.
+    return any(hmac.compare_digest(expected, signature.encode("utf-8")) for signature in signatures)
+```
+
+```php
+<?php
+// $secret: o segredo inteiro, com o prefixo whsec_.
+// $rawBody = file_get_contents('php://input');
+// $header = $_SERVER['HTTP_X_TRAJETTO_SIGNATURE'] ?? null;
+// Cabeçalho ausente ou malformado devolve false, nunca uma exceção.
+function verifyTrajetto(string $secret, string $rawBody, ?string $header, int $tolerance = 300): bool {
+    if ($header === null || $header === '') { return false; }
+    $timestamp = null;
+    $signatures = [];
+    foreach (explode(',', $header) as $part) {
+        [$key, $value] = array_pad(explode('=', trim($part), 2), 2, '');
+        if ($key === 't') { $timestamp = (int) $value; }
+        if ($key === 'v1') { $signatures[] = $value; }
+    }
+    if ($timestamp === null || abs(time() - $timestamp) > $tolerance) { return false; }
+    $expected = hash_hmac('sha256', $timestamp . '.' . $rawBody, $secret);
+    foreach ($signatures as $signature) {
+        if (hash_equals($expected, $signature)) { return true; }
+    }
+    return false;
+}
+```
+
+</CodeTabs>
+
+## Lendo o corpo cru
+
+Cada framework tem o seu jeito de entregar os bytes antes do JSON:
+
+<CodeTabs>
+
+```js
+// Express: o corpo cru só nesta rota, como Buffer.
+const express = require("express");
+
+const app = express();
+
+app.post(
+  "/webhooks/trajetto",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const rawBody = req.body.toString("utf8");
+
+    if (
+      !verifyTrajetto(
+        process.env.TRAJETTO_WEBHOOK_SECRET,
+        rawBody,
+        req.get("X-Trajetto-Signature"),
+      )
+    ) {
+      return res.status(401).end();
+    }
+
+    const event = JSON.parse(rawBody);
+    // Grave o evento (deduplicando pelo event.id) e responda logo.
+    res.status(200).end();
+  },
+);
+```
+
+```python
+# Flask: request.get_data() devolve os bytes exatos.
+import json, os
+from flask import Flask, request
+
+app = Flask(__name__)
+
+@app.post("/webhooks/trajetto")
+def trajetto_webhook():
+    raw_body = request.get_data()
+    header = request.headers.get("X-Trajetto-Signature")
+    if not verify_trajetto(os.environ["TRAJETTO_WEBHOOK_SECRET"], raw_body, header):
+        return "", 401
+    event = json.loads(raw_body)
+    # Grave o evento (deduplicando pelo event["id"]) e responda logo.
+    return "", 200
+```
+
+```php
+<?php
+// PHP: php://input é o corpo cru.
+$rawBody = file_get_contents('php://input');
+$header = $_SERVER['HTTP_X_TRAJETTO_SIGNATURE'] ?? null;
+
+if (!verifyTrajetto(getenv('TRAJETTO_WEBHOOK_SECRET'), $rawBody, $header)) {
+    http_response_code(401);
+    exit;
+}
+
+$event = json_decode($rawBody, true);
+// Grave o evento (deduplicando pelo $event['id']) e responda logo.
+http_response_code(200);
+```
+
+</CodeTabs>
+
+## Trocando o segredo
+
+Em **Integrações → Webhooks**, **Gerar novo segredo** cria um segredo novo sem perder eventos. Durante as <RotationGrace /> seguintes à troca, o cabeçalho traz dois `v1`, um por segredo: `t=<timestamp>,v1=<novo>,v1=<anterior>`. Como as funções acima aceitam a chamada quando **qualquer** `v1` confere, o seu servidor continua verificando com o segredo antigo enquanto você publica o novo. Depois desse prazo, só o novo assina.
+
+## Vetor de teste
+
+Para conferir a sua implementação sem esperar um webhook, use os valores abaixo, gerados pela mesma função que assina os webhooks do Trajetto. Com este segredo e este corpo, o HMAC tem de dar exatamente o `v1` do cabeçalho. O `t` é antigo: só neste teste, passe uma tolerância grande (ou compare só o HMAC); em produção, mantenha a de <SignatureTolerance />.
+
+Segredo:
+
+```text
+whsec_79a141ed20e358894b2f4a9e75f04edab054432c1bd54c8622cf6bc290df06fb
+```
+
+Corpo cru, numa linha só (um `delivery.delivered` no mesmo envelope dos webhooks reais, descrito em [O que chega](/docs/webhooks#o-que-chega)):
+
+```text
+{"id":"01a0e5c2-7f00-7000-8000-000000000001","sequence":48213,"topic":"delivery.delivered","created_at":"2026-09-29T14:02:58.000Z","data":{"delivery_id":"01a0e5c2-7f00-7000-8000-0000000000aa","code":"PED-10452","invoice_key":"35260912345678000195550010000104521000104529","invoice_number":"10452","status":"DELIVERED","recipient_name":"Padaria São João Ltda","city":"São Paulo","uf":"SP","occurred_at":"2026-09-29T13:33:00.000Z"}}
+```
+
+Cabeçalho `X-Trajetto-Signature`:
+
+```text
+t=1790690580,v1=6c8242defe2506768332cb27dd61e02a411770a1c3561b4b812dbcabd7a5c0c5
+```
+
+O corpo tem acentos de propósito: se o HMAC não conferir só com ele, a chave ou o corpo não estão sendo lidos como UTF-8.
+
+## Se não conferir
+
+- Confira se o segredo tem o prefixo `whsec_` e está inteiro, sem espaço nem quebra de linha no fim.
+- Confira se o HMAC é calculado sobre o corpo cru, não sobre um objeto serializado de novo.
+- Confira o relógio do servidor: uma diferença maior que a tolerância recusa todas as chamadas.
+- Confira se o endpoint é o certo: cada endpoint tem o seu segredo.

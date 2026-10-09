@@ -165,9 +165,11 @@ const driverToken = (): string =>
   sessionsIfPresent()?.drivers?.[0] ?? (CONTEXT.driverTokens[0] as string);
 
 async function signIn(page: Page, token: string): Promise<void> {
-  await page.context().addCookies([
-    { name: "tkey", value: token, domain: "localhost", path: "/" },
-  ]);
+  await page
+    .context()
+    .addCookies([
+      { name: "tkey", value: token, domain: "localhost", path: "/" },
+    ]);
 
   await page.addInitScript(() => {
     const real = Storage.prototype.getItem;
@@ -302,6 +304,125 @@ async function ownDelivery(recipient: string): Promise<string> {
   return JSON.parse(body).data.id;
 }
 
+/**
+ * An occurrence of this test's own, on a delivery of its own.
+ *
+ * The load seed gives its tenants no occurrences, so a screen that disables
+ * Exportar on an empty list (correctly) left the export specs with nothing to
+ * click. Reported from the office, which may file a NOT_DELIVERED occurrence
+ * (proving a delivery is the driver's act).
+ */
+async function ownOccurrence(recipient: string): Promise<string> {
+  const deliveryId = await ownDelivery(recipient);
+  const typeName = "Cliente ausente (E2E)";
+
+  const findType = async (): Promise<string | undefined> => {
+    const listed = await api(
+      `/occurrence-type/list-occurrence-type?businessId=${CONTEXT.businessId}` +
+        `&page=1&pageSize=50&category=NOT_DELIVERED&search=${encodeURIComponent(typeName)}`,
+    );
+
+    expect(listed.status).toBe(200);
+
+    return ndjson(await listed.text())
+      .slice(1)
+      .find((row) => row.name === typeName)?.id as string | undefined;
+  };
+
+  let typeId = await findType();
+
+  if (!typeId) {
+    const created = await api(
+      `/occurrence-type/create-occurrence-type/${CONTEXT.businessId}`,
+      {
+        method: "POST",
+        body: JSON.stringify({ name: typeName, category: "NOT_DELIVERED" }),
+      },
+    );
+
+    // 409 is another worker creating the same type a moment earlier.
+    expect([201, 409]).toContain(created.status);
+
+    typeId = await findType();
+  }
+
+  expect(typeId, "o tipo de ocorrência do teste não existe").toBeTruthy();
+
+  const reported = await api(
+    `/delivery/report-occurrence/${deliveryId}/business/${CONTEXT.businessId}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        occurrenceTypeId: typeId,
+        description: "Ninguém atendeu (E2E).",
+      }),
+    },
+  );
+
+  const body = await reported.text();
+
+  expect(
+    reported.status,
+    `não foi possível registrar a ocorrência: ${body}`,
+  ).toBe(201);
+
+  return deliveryId;
+}
+
+/** A CNPJ with valid check digits, different on every call. */
+function randomCnpj(): string {
+  const base = Array.from({ length: 8 }, () =>
+    Math.floor(Math.random() * 10),
+  ).concat([0, 0, 0, 1]);
+
+  const digit = (numbers: number[]): number => {
+    const weights =
+      numbers.length === 12
+        ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+        : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const sum = numbers.reduce(
+      (total, value, index) => total + value * weights[index],
+      0,
+    );
+    const rest = sum % 11;
+
+    return rest < 2 ? 0 : 11 - rest;
+  };
+
+  const first = digit(base);
+  const second = digit([...base, first]);
+
+  return [...base, first, second].join("");
+}
+
+/**
+ * A branch of the fixture company. The load seed creates none, so the legacy
+ * Filiais table — the menu the user holds up as the standard — was empty and
+ * the comparison against it had nothing to open.
+ */
+async function ownBranch(name: string): Promise<void> {
+  const created = await api(`/branch/create-branch/${CONTEXT.businessId}`, {
+    method: "POST",
+    body: JSON.stringify({
+      corporate_reason: name,
+      cnpj: randomCnpj(),
+      cnae: "4930202",
+      cep: "01001000",
+      city: "São Paulo",
+      uf: "SP",
+      street: "Rua da Filial",
+      address_number: "1",
+      email: `filial-${Date.now()}-${Math.floor(Math.random() * 1e6)}@exemplo.com.br`,
+      responsible_name: "Responsável E2E",
+      telephone: "11999999999",
+    }),
+  });
+
+  const body = await created.text();
+
+  expect(created.status, `não foi possível criar a filial: ${body}`).toBe(201);
+}
+
 /** Any vehicle in operation. A route cannot be released without one. */
 async function anyVehicle(): Promise<string> {
   const response = await api(`/vehicle/list-vehicle?page=1&pageSize=5`);
@@ -315,6 +436,12 @@ async function anyVehicle(): Promise<string> {
   expect(vehicle, "o fixture não tem veículo ativo").toBeTruthy();
 
   return vehicle!.id as string;
+}
+
+/** Today in the fixture companies' zone (the seed keeps the default). */
+function businessToday(timeZone = "America/Sao_Paulo"): string {
+  // en-CA formats as YYYY-MM-DD.
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
 }
 
 /** Builds a route out of the deliveries handed to it. */
@@ -332,7 +459,10 @@ async function createRoute(
       // the realtime spec is about.
       vehicleId,
 
-      scheduled_date: new Date().toISOString(),
+      // A date-only column: the company's business day as YYYY-MM-DD. An ISO
+      // instant is refused (VALIDATION_ERROR), and the UTC date of one is the
+      // wrong day for three hours every evening in Brazil.
+      scheduled_date: businessToday(),
       name: routeName,
       deliveryIds,
     }),
@@ -352,6 +482,7 @@ export {
   managerForThisSpec,
   api,
   anyVehicle,
+  businessToday,
   createRoute,
   driverToken,
   fixtureBusinessId,
@@ -359,5 +490,8 @@ export {
   ndjson,
   open,
   openAsMaster,
+  ownBranch,
   ownDelivery,
+  ownOccurrence,
+  randomCnpj,
 };

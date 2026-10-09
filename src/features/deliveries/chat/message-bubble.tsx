@@ -14,11 +14,12 @@ import {
 import { cn } from "@/lib/utils";
 
 import { ChatAudioPlayer } from "./audio-player";
+import { MessageContextTags } from "./message-context-tags";
 
 import { resolveCheckState } from "./lib/check-state";
 import { formatClock } from "./lib/format";
 import { MEDIA_BUBBLE_WIDTH_CLASS } from "./lib/media-bubble";
-import type { ClientChatMessage } from "./lib/types";
+import type { ChatHistoryFilter, ClientChatMessage } from "./lib/types";
 
 interface MessageBubbleProps {
   message: ClientChatMessage;
@@ -46,6 +47,9 @@ interface MessageBubbleProps {
   onOpenImage: (message: ClientChatMessage) => void;
 
   onRetry: (message: ClientChatMessage) => void;
+
+  /** Narrows the conversation to this message's route or delivery. */
+  onFilter?: (filter: ChatHistoryFilter) => void;
 }
 
 /**
@@ -63,6 +67,7 @@ const MessageBubble = ({
   onOpenDelivery,
   onOpenImage,
   onRetry,
+  onFilter,
 }: MessageBubbleProps): JSX.Element => {
   const checkState = resolveCheckState({
     createdAt: message.created_at,
@@ -148,7 +153,9 @@ const MessageBubble = ({
             <span
               className={cn(
                 "mb-1 flex items-center gap-1 text-[11px] font-medium",
-                isOwnSide ? "text-primary-foreground/80" : "text-muted-foreground",
+                isOwnSide
+                  ? "text-primary-foreground/80"
+                  : "text-muted-foreground",
               )}
             >
               <Megaphone className="h-3 w-3" />
@@ -176,6 +183,12 @@ const MessageBubble = ({
               </span>
             </button>
           )}
+
+          <MessageContextTags
+            message={message}
+            isOwnSide={isOwnSide}
+            onFilter={onFilter}
+          />
 
           {hasImage && message.attachment_url && (
             <button
@@ -234,7 +247,9 @@ const MessageBubble = ({
           <div
             className={cn(
               "mt-0.5 flex items-center justify-end gap-1",
-              isOwnSide ? "text-primary-foreground/80" : "text-muted-foreground",
+              isOwnSide
+                ? "text-primary-foreground/80"
+                : "text-muted-foreground",
             )}
           >
             <span className="text-[10px]">

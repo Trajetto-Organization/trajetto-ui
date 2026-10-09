@@ -1,251 +1,309 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import Image from "next/image";
 import Link from "next/link";
 
-import { BookOpen, Clock, Calendar, Share2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { blogMdxComponents } from "@/components/mdx";
+import { JsonLd } from "@/components/seo/json-ld";
+import { MovingArrow } from "@/components/site/arrow-link";
+import { categoryAccent } from "@/components/site/editorial/category";
+import { EditorialCtaBand } from "@/components/site/editorial/cta-band";
+import { MobileToc } from "@/components/site/editorial/mobile-toc";
+import { ReadingProgress } from "@/components/site/editorial/reading-progress";
+import { RelatedCard } from "@/components/site/editorial/related-card";
+import { ShareButton } from "@/components/site/editorial/share-button";
+import { EditorialToc } from "@/components/site/editorial/toc";
 
-import { ShareButton } from "./share-button";
+import { getPost, getPosts, getRelatedPosts } from "@/lib/content/blog";
+import { editorialDate } from "@/components/site/editorial/date";
+import { renderMdx } from "@/lib/content/mdx";
+import { buildPageMetadata } from "@/lib/page-metadata";
+import { absoluteUrl, siteConfig } from "@/lib/site";
+import { cn } from "@/lib/utils";
 
-import { PortableTextContent } from "@/components/blog/portable-text";
-import { SanityImage } from "@/components/blog/sanity-image";
-
-import { sanityFetch } from "@/sanity/fetch";
-import { BLOG_POST_QUERY, BLOG_SLUGS_QUERY } from "@/sanity/queries";
-
-import { parseRobots, type BlogPost } from "@/sanity/types";
+import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 interface BlogPostPageProps {
   params: { slug: string };
 }
 
-/** ISR: fallback de 1h; o gatilho principal é a tag `blog` via webhook. */
-export const revalidate = 3600;
+// Every post is prerendered; an unknown slug is a real 404.
+export const dynamicParams = false;
 
-export async function generateStaticParams() {
-  const slugs = await sanityFetch<string[]>(
-    BLOG_SLUGS_QUERY,
-    {},
-    { tags: ["blog"] },
-  );
-
-  return (slugs ?? []).map((slug) => ({ slug }));
+export function generateStaticParams(): Array<{ slug: string }> {
+  return getPosts().map((post) => ({ slug: post.slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: BlogPostPageProps): Promise<Metadata> {
-  const { slug } = params;
-
-  const post = await sanityFetch<BlogPost>(
-    BLOG_POST_QUERY,
-    { slug },
-    { tags: ["blog", `blog:${slug}`] },
-  );
+export function generateMetadata({ params }: BlogPostPageProps): Metadata {
+  const post = getPost(params.slug);
 
   if (!post) {
-    return {
-      title: "Post não encontrado",
-      description: "O post solicitado não foi encontrado.",
-      robots: { index: false, follow: false },
-    };
+    return { title: "Artigo não encontrado", robots: { index: false } };
   }
 
-  const title = post.metaTitle || post.title;
-  const description = post.metaDescription || post.excerpt;
-
-  // O schema não tem `ogImage` dedicado: a imagem destacada vira o card
-  // social, recortada em 1200x630 pelo próprio CDN do Sanity.
-  const ogBase = post.featuredImage?.asset?.url;
-  const ogUrl = ogBase
-    ? `${ogBase}?w=1200&h=630&fit=crop&auto=format`
-    : undefined;
-
-  return {
-    title,
-    description,
-    alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      publishedTime: post.publishedAt,
-      modifiedTime: post._updatedAt,
-      authors: post.author?.name ? [post.author.name] : undefined,
-      images: ogUrl ? [ogUrl] : undefined,
-      url: `${process.env.METADATA_BASE}/blog/${post.slug}`,
+  return buildPageMetadata({
+    path: `/blog/${post.slug}`,
+    title: post.seo.title ?? post.title,
+    socialTitle: post.title,
+    description: post.seo.description ?? post.description,
+    keywords: post.seo.keywords.length ? post.seo.keywords : post.tags,
+    type: "article",
+    // The card image comes from ./opengraph-image.tsx, one per post.
+    defaultImage: false,
+    noindex: post.draft,
+    article: {
+      publishedTime: post.date,
+      modifiedTime: post.updated,
+      authors: [post.author],
+      section: post.category.title,
+      tags: post.tags,
     },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ogUrl ? [ogUrl] : undefined,
-    },
-    robots: parseRobots(post.robots),
-  };
+  });
 }
+
+/** The prose element: the reading bar measures it. */
+const PROSE_ID = "artigo-texto";
 
 const BlogPostPage = async ({
   params,
 }: BlogPostPageProps): Promise<JSX.Element> => {
-  const { slug } = params;
-
-  const post = await sanityFetch<BlogPost>(
-    BLOG_POST_QUERY,
-    { slug },
-    { tags: ["blog", `blog:${slug}`] },
-  );
+  const post = getPost(params.slug);
 
   if (!post) notFound();
 
-  const formattedDate = new Date(
-    post.publishedAt || new Date().toISOString(),
-  ).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
+  const { Content, toc } = await renderMdx(post.body, {
+    file: post.file,
+    components: blogMdxComponents,
   });
 
-  return (
-    <div className="py-14">
-      <Card className="max-w-4xl mx-auto overflow-hidden">
-        {/* Hero Image */}
-        {post.featuredImage?.asset?.url && (
-          <div className="aspect-video relative overflow-hidden">
-            <SanityImage
-              image={post.featuredImage}
-              alt={post.title}
-              fill
-              className="object-cover w-full h-full"
-              sizes="(max-width: 1024px) 100vw, 1024px"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-          </div>
-        )}
+  const related = getRelatedPosts(post.slug);
+  const url = absoluteUrl(`/blog/${post.slug}`);
+  // The design dates an article by its last revision.
+  const shownDate = post.updated ?? post.date;
+  const hasToc = toc.length > 2;
 
-        {/* Content */}
-        <div className="px-8 pb-7 mt-5">
-          {/* Article Header */}
-          <div className="mt-3">
-            <div
-              className="flex items-center gap-2 text-sm mb-4"
-              style={{ color: post.category?.color || "#2563eb" }}
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.description,
+    image: absoluteUrl(`/blog/${post.slug}/opengraph-image`),
+    datePublished: post.date,
+    dateModified: post.updated ?? post.date,
+    inLanguage: siteConfig.locale,
+    articleSection: post.category.title,
+    keywords: post.tags.join(", "),
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    author: {
+      "@type": "Organization",
+      name: post.author,
+      url: absoluteUrl("/sobre"),
+    },
+    publisher: {
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: absoluteUrl("/"),
+      logo: { "@type": "ImageObject", url: absoluteUrl("/favicon-512.png") },
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Início",
+        item: absoluteUrl("/"),
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Blog",
+        item: absoluteUrl("/blog"),
+      },
+      { "@type": "ListItem", position: 3, name: post.title, item: url },
+    ],
+  };
+
+  return (
+    // The category's accent (--acc) for the whole page: bar, pills, bullets, links.
+    <main className={categoryAccent(post.category.slug)}>
+      <ReadingProgress targetId={PROSE_ID} />
+      <JsonLd value={articleJsonLd} />
+      <JsonLd value={breadcrumbJsonLd} />
+
+      <article aria-labelledby="artigo-titulo">
+        <header
+          id="topo"
+          className="relative overflow-hidden px-[clamp(20px,4vw,40px)] pb-[clamp(36px,5vw,56px)] pt-[clamp(116px,14vh,150px)]"
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(45%_55%_at_50%_0%,rgb(var(--acc)/.08),transparent_70%)] dark:bg-[radial-gradient(45%_55%_at_50%_0%,rgb(var(--acc)/.12),transparent_70%)]"
+          />
+          <div className="relative mx-auto flex max-w-[860px] flex-col items-center gap-[22px] text-center">
+            <nav
+              aria-label="Trilha de navegação"
+              className="flex animate-[tpUp_.7s_cubic-bezier(.22,1,.36,1)_both] flex-wrap items-center justify-center gap-2.5"
             >
-              <BookOpen className="w-4 h-4" />
               <Link
-                href={`/blog?category=${post.category?.slug ?? ""}`}
-                className="hover:underline"
+                href="/blog"
+                className="inline-flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-full border border-site-line2 bg-site-surface py-[7px] pl-[9px] pr-3 text-[13px] font-medium outline-none transition-colors hover:border-site-ink focus-visible:ring-2 focus-visible:ring-site-ink/40"
               >
-                {post.category?.title || "Sem categoria"}
+                <ArrowLeft aria-hidden className="size-[15px]" />
+                Blog
               </Link>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tighter text-slate-800 mb-4">
+              <Link
+                href={`/blog?category=${post.category.slug}`}
+                rel="nofollow"
+                className="inline-flex min-h-[36px] items-center gap-2 whitespace-nowrap rounded-full bg-[rgb(var(--acc)/.086)] px-3 py-[7px] text-[13px] font-semibold text-[rgb(var(--acc))] outline-none focus-visible:ring-2 focus-visible:ring-site-ink/40 dark:bg-[rgb(var(--acc)/.15)]"
+              >
+                <span
+                  aria-hidden
+                  className="size-[7px] rounded-full bg-[rgb(var(--acc))]"
+                />
+                {post.category.title}
+              </Link>
+            </nav>
+
+            {post.draft ? (
+              <p className="m-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">
+                Rascunho: visível só no ambiente de desenvolvimento.
+              </p>
+            ) : null}
+
+            <h1
+              id="artigo-titulo"
+              className="m-0 animate-[tpUp_.8s_cubic-bezier(.22,1,.36,1)_.05s_both] font-site-display text-[clamp(36px,5.2vw,68px)] font-medium leading-[1.02] tracking-[-.04em] [text-wrap:balance]"
+            >
               {post.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-zinc-500">
-              <span>{post.author?.name || "Autor desconhecido"}</span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {formattedDate}
+            <p className="m-0 max-w-[680px] animate-[tpUp_.8s_cubic-bezier(.22,1,.36,1)_.12s_both] text-[clamp(17px,1.5vw,20px)] leading-[1.6] text-site-muted [text-wrap:pretty]">
+              {post.description}
+            </p>
+            <div className="flex animate-[tpUp_.8s_cubic-bezier(.22,1,.36,1)_.2s_both] flex-wrap items-center justify-center gap-x-[22px] gap-y-2.5 text-sm text-site-muted">
+              <span className="inline-flex items-center gap-2.5 font-medium text-site-ink">
+                <span
+                  aria-hidden
+                  className="relative block size-[30px] overflow-hidden rounded-full bg-[#0e0e14]"
+                >
+                  <Image
+                    src={trajettoLogo}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="absolute -left-[9px] -top-[9px] size-12 max-w-none"
+                  />
+                </span>
+                {post.author}
               </span>
-              {post.readTime && (
-                <>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {post.readTime} min de leitura
-                  </span>
-                </>
-              )}
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar aria-hidden className="size-[15px]" />
+                <time dateTime={shownDate}>{editorialDate(shownDate)}</time>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Clock aria-hidden className="size-[15px]" />
+                {post.readingTime} min de leitura
+              </span>
+              <ShareButton title={post.title} description={post.description} />
             </div>
           </div>
+        </header>
 
-          <Separator className="my-8" />
-
-          {/* Article Content */}
-          <div className="max-w-none">
-            <PortableTextContent value={post.content} />
-          </div>
-
-          <Separator className="my-8" />
-
-          {/* Author Bio */}
-          <div className="bg-muted/30 rounded-xl p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start gap-4">
-              {post.author?.avatar?.asset?.url ? (
-                <SanityImage
-                  image={post.author.avatar}
-                  alt={post.author.name}
-                  width={80}
-                  height={80}
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br
-                  from-blue-500 to-indigo-600 flex items-center flex-shrink-0
-                  justify-center text-white text-xl sm:text-2xl font-bold"
-                >
-                  {post.author?.name?.[0] || "?"}
-                </div>
-              )}
-              <div className="flex-1 min-w-0 w-full">
-                <h3 className="font-semibold text-base sm:text-lg mb-1">
-                  {post.author?.name || "Autor"}
-                </h3>
-                {post.author?.bio && (
-                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
-                    {post.author.bio}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Share */}
-          <div className="mt-8">
-            <div
-              className="flex flex-col sm:flex-row items-start sm:items-center
-              justify-between gap-4 p-4 sm:p-5 bg-gradient-to-r
-              from-zinc-50 to-blue-50/40 rounded-xl border border-zinc-200/70"
-            >
-              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <div
-                  className="p-2 sm:p-2.5 bg-white dark:bg-gray-800 rounded-lg
-                  shadow-sm border border-gray-200/60 dark:border-gray-700/60 flex-shrink-0"
-                >
-                  <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#2563eb]" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Gostou do conteúdo?
-                  </p>
-                  <p className="text-[0.65rem] sm:text-xs text-gray-600 dark:text-gray-400 mt-0.5 break-words">
-                    Compartilhe com quem pode se interessar
-                  </p>
-                </div>
-              </div>
-
-              <ShareButton
-                title={post.title}
-                description={post.excerpt}
-                className="bg-[#2563eb] text-white border-0
-                px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium
-                transition-all duration-200 shadow-sm hover:shadow-md
-                hover:shadow-[#2563eb]/25 flex items-center gap-2 w-full sm:w-auto
-                justify-center flex-shrink-0"
+        <div className="px-[clamp(20px,4vw,40px)] pb-[clamp(56px,8vw,96px)]">
+          <div
+            className={cn(
+              "mx-auto grid max-w-[1160px] grid-cols-[minmax(0,1fr)] items-start gap-[clamp(32px,5vw,72px)]",
+              hasToc && "min-[1100px]:grid-cols-[220px_minmax(0,1fr)]",
+            )}
+          >
+            {hasToc ? (
+              <EditorialToc
+                items={toc}
+                variant="article"
+                className="hidden min-[1100px]:flex"
               />
+            ) : null}
+
+            <div className="w-full min-w-0 max-w-[740px] justify-self-center">
+              {hasToc ? (
+                <MobileToc
+                  items={toc}
+                  title="NESTE ARTIGO"
+                  className="min-[1100px]:hidden"
+                />
+              ) : null}
+
+              <div
+                id={PROSE_ID}
+                className="animate-[tpIn_.8s_cubic-bezier(.22,1,.36,1)_.15s_both]"
+              >
+                <Content />
+              </div>
+
+              {post.tags.length > 0 ? (
+                <ul
+                  aria-label="Assuntos"
+                  className="m-0 mt-10 flex list-none flex-wrap gap-2 border-t border-site-line p-0 pt-6"
+                >
+                  {post.tags.map((tag) => (
+                    <li key={tag}>
+                      <Link
+                        href={`/blog?tag=${encodeURIComponent(tag)}`}
+                        rel="nofollow"
+                        className="block whitespace-nowrap rounded-full border border-site-line2 px-3 py-1.5 text-[13px] outline-none transition-colors hover:border-site-ink focus-visible:ring-2 focus-visible:ring-site-ink/40"
+                      >
+                        #{tag}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           </div>
         </div>
-      </Card>
-    </div>
+      </article>
+
+      {related.length > 0 ? (
+        <section
+          aria-labelledby="rel-titulo"
+          className="border-t border-site-line bg-site-surface px-[clamp(20px,4vw,40px)] py-[clamp(56px,8vw,96px)]"
+        >
+          <div className="mx-auto max-w-[1200px]">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+              <h2
+                id="rel-titulo"
+                className="m-0 font-site-display text-[clamp(30px,3.6vw,46px)] font-medium leading-[1.05] tracking-[-.035em]"
+              >
+                Continue lendo.
+              </h2>
+              <Link
+                href="/blog"
+                className="group/arrow inline-flex items-center gap-2 whitespace-nowrap rounded-sm text-[15px] font-medium underline-offset-[3px] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-site-ink/40"
+              >
+                Todos os artigos
+                <MovingArrow size={17} />
+              </Link>
+            </div>
+            <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(min(100%,320px),1fr))] gap-5 p-0">
+              {related.map((item) => (
+                <li key={item.slug} className="flex">
+                  <RelatedCard post={item} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+
+      <EditorialCtaBand className="pt-[clamp(40px,6vw,72px)]" />
+    </main>
   );
 };
 

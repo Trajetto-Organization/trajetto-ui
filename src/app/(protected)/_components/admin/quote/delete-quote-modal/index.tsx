@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 
 import { handleDeleteQuote } from "@/actions/quote/delete-quote";
 import { useDeleteQuoteForm } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
 
 interface DeleteQuoteModalProps {
   quote: QuoteProps;
@@ -50,22 +51,23 @@ const DeleteQuoteModalFormSubmit = ({
   const deleteQuoteModalList = [
     { data: `Todos os dados do orçamento serão excluídos permanentemente` },
     { data: `Não há registros relacionados que serão afetados` },
-    { data: `Status: ${statusLabels[quote.status]}` },
   ];
 
   return (
     <>
       <AlertDialogHeader>
-        <AlertDialogTitle>Deletar Orçamento</AlertDialogTitle>
+        <AlertDialogTitle>Excluir orçamento</AlertDialogTitle>
         <AlertDialogDescription asChild>
           <div>
-            Tem certeza que deseja deletar este orçamento?
+            Tem certeza que deseja excluir este orçamento?
             <span className="block mt-4 font-medium text-foreground">
               Informações do orçamento:
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
+              {/* As text: company, name and e-mail come from the public quote
+                  form, and this was the one place such input reached innerHTML. */}
               {deleteQuoteModalDataContactList.map(({ data }, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+                <li key={idx}>{data}</li>
               ))}
             </ul>
             <span className="block mt-4 font-medium text-foreground">
@@ -73,7 +75,7 @@ const DeleteQuoteModalFormSubmit = ({
             </span>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               {deleteQuoteModalList.map(({ data }, idx) => (
-                <li key={idx} dangerouslySetInnerHTML={{ __html: data }} />
+                <li key={idx}>{data}</li>
               ))}
             </ul>
             <span
@@ -87,15 +89,9 @@ const DeleteQuoteModalFormSubmit = ({
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-6">
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-        <Button
-          type="submit"
-          disabled={pending}
-          variant="secondary"
-          className="bg-red-600/10 dark:bg-red-500/10 
-        dark:text-red-500 text-red-600"
-        >
+        <Button type="submit" disabled={pending} variant="destructive">
           <ShieldAlert className="mr-1 size-5" />
-          <span>Deletar Orçamento</span>
+          <span>Excluir orçamento</span>
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
       </AlertDialogFooter>
@@ -109,7 +105,7 @@ const DeleteQuoteModal = ({
   onClose,
 }: DeleteQuoteModalProps): JSX.Element => {
   const [state, dispatch] = useFormState(
-    () => handleDeleteQuote({ quoteId: quote.id }),
+    guardFormAction(() => handleDeleteQuote({ quoteId: quote.id })),
     null,
   );
 
@@ -117,10 +113,7 @@ const DeleteQuoteModal = ({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent
-        className="bg-white 
-        dark:bg-[#121214]"
-      >
+      <AlertDialogContent className="bg-background">
         <form action={dispatch}>
           <DeleteQuoteModalFormSubmit quote={quote} />
         </form>

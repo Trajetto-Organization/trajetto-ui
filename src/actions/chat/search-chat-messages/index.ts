@@ -1,8 +1,10 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type { ActionResponse, SentChatMessage } from "../chat.types";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface SearchChatMessagesProps {
   businessId?: string;
@@ -42,7 +44,7 @@ const searchChatMessages = async ({
       };
     }
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/chat/search-messages?${query.toString()}`,
       {
         credentials: "include",
@@ -70,6 +72,7 @@ const searchChatMessages = async ({
       data: { data: result.data as SentChatMessage[] },
     };
   } catch (error) {
+    logActionError("chat/search-chat-messages", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao buscar mensagens.",

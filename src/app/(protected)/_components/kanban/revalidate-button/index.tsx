@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { toast } from "sonner";
 
 import { RevalidateButtonUI } from "@/app/(protected)/_components/shared/revalidate-button-ui";
-import { useDataButtonRevalidation } from "../../hooks/revalidation-button";
+import { useRevalidateScreen } from "@/hooks/use-revalidate-screen";
 
-import { useKanbanQueryClient } from "../hooks/query-client";
+import { useButtonRefreshRateLimit } from "../../hooks/revalidation-button";
 
 interface KanbanRevalidationButtonProps {
+  /** Kept for the callers; Atualizar refreshes the whole tab (decision 2.1). */
   businessId?: string;
   rateLimit?: {
     maxClicks?: number;
@@ -18,8 +18,15 @@ interface KanbanRevalidationButtonProps {
   };
 }
 
+/**
+ * The board's Atualizar. It used to invalidate only the Kanban queries, so
+ * the rest of the tab (the company selector, the user picker, the page's
+ * server tree) stayed as it was; it now goes through the one global
+ * revalidate (decision 2.1, REV-1): router.refresh, drop what nothing
+ * renders, refetch what is on screen. It takes the page actions'
+ * height (h-9, decision 16.61) and the full width on a phone.
+ */
 const KanbanRevalidationButton = ({
-  businessId,
   rateLimit = {
     maxClicks: 3,
     timeWindowMs: 30000,
@@ -27,36 +34,28 @@ const KanbanRevalidationButton = ({
     storageKey: "kanban-revalidation",
   },
 }: KanbanRevalidationButtonProps): JSX.Element => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { invalidateKanbanQueries } = useKanbanQueryClient();
+  const { revalidate, isRevalidating } = useRevalidateScreen();
 
   const { isRateLimited, cooldownRemaining, registerClick } =
-    useDataButtonRevalidation(null, rateLimit);
+    useButtonRefreshRateLimit(rateLimit);
 
   const handleRevalidate = async () => {
-    const canProceed = registerClick();
-    if (!canProceed) {
-      return;
-    }
-
-    setIsLoading(true);
+    if (!registerClick()) return;
 
     try {
-      await invalidateKanbanQueries(businessId);
-    } catch (error: any) {
+      await revalidate();
+    } catch {
       toast.error("Erro ao atualizar o board");
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <RevalidateButtonUI
-      isLoading={isLoading}
+      isLoading={isRevalidating}
       isRateLimited={isRateLimited}
       cooldownRemaining={cooldownRemaining}
-      className="w-full sm:w-auto whitespace-nowrap"
-      size="default"
+      className="h-9 w-full whitespace-nowrap sm:w-auto"
+      size="sm"
       type="button"
       onClick={handleRevalidate}
     />

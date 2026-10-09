@@ -45,7 +45,6 @@ const KanbanEmptyState = ({
       router.push(`?${params.toString()}`);
     }
 
-    // Also update the parent component's input
     if (onSearchChange) {
       onSearchChange("");
     }
@@ -56,7 +55,6 @@ const KanbanEmptyState = ({
       className="flex flex-col items-center 
       justify-center py-24 px-4"
     >
-      {/* Animated icon */}
       <div className="animate-fade-up [animation-delay:100ms] relative mb-6 sm:mb-8">
         <div
           className="absolute inset-0 bg-gradient-to-r 
@@ -78,7 +76,6 @@ const KanbanEmptyState = ({
         </div>
       </div>
 
-      {/* Title */}
       <h3
         className="animate-fade-up [animation-delay:200ms] text-base sm:text-lg md:text-xl 
         lg:text-2xl font-bold text-center 
@@ -91,7 +88,6 @@ const KanbanEmptyState = ({
             : "Nenhuma coluna disponível"}
       </h3>
 
-      {/* Description */}
       <p
         className="animate-fade-up [animation-delay:300ms] text-muted-foreground text-center max-w-xs 
         sm:max-w-sm md:max-w-md lg:max-w-lg mb-6 sm:mb-8 
@@ -146,7 +142,6 @@ const KanbanEmptyState = ({
         )}
       </p>
 
-      {/* Actions */}
       <div
         className="animate-fade-up [animation-delay:400ms] flex flex-col 
         sm:flex-row gap-4"

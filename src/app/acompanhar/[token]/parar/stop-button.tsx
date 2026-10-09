@@ -14,9 +14,9 @@ import { stopDeliveryMessages } from "./action";
  * delivery.
  */
 const StopMessagesButton = ({ token }: { token: string }): JSX.Element => {
-  const [state, setState] = useState<"idle" | "pending" | "done" | "unreachable">(
-    "idle",
-  );
+  const [state, setState] = useState<
+    "idle" | "pending" | "done" | "unreachable"
+  >("idle");
 
   if (state === "done") {
     return (
@@ -34,38 +34,38 @@ const StopMessagesButton = ({ token }: { token: string }): JSX.Element => {
   return (
     <div className="space-y-3">
       {state === "unreachable" && (
-        <p
-          className="text-sm text-red-600 dark:text-red-400"
-          role="alert"
-        >
+        <p className="text-sm text-destructive" role="alert">
           Não conseguimos falar com o servidor. Tente novamente.
         </p>
       )}
 
+      {/* The app's pending pattern (decision 16.64): disabled, spinning,
+          saying what it is doing and aria-busy until the answer arrives. */}
       <button
         type="button"
-      disabled={state === "pending"}
-      onClick={async () => {
-        setState("pending");
+        disabled={state === "pending"}
+        aria-busy={state === "pending" || undefined}
+        onClick={async () => {
+          setState("pending");
 
-        // The API answers the same sentence for a real token and an invented
-        // one, so there is no oracle in surfacing a network failure — it
-        // happens identically for both, and the person whose request never
-        // landed is the one who genuinely has to try again.
-        const reached = await stopDeliveryMessages(token);
+          // The API answers the same sentence for a real token and an invented
+          // one, so there is no oracle in surfacing a network failure — it
+          // happens identically for both, and the person whose request never
+          // landed is the one who genuinely has to try again.
+          const reached = await stopDeliveryMessages(token);
 
-        setState(reached ? "done" : "unreachable");
-      }}
+          setState(reached ? "done" : "unreachable");
+        }}
         className="inline-flex w-full items-center justify-center gap-2
         rounded-lg border px-4 py-3 text-sm font-medium
         hover:bg-muted disabled:opacity-60"
       >
         {state === "pending" ? (
-          <Loader className="h-4 w-4 animate-spin" />
+          <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />
         ) : (
-          <BellOff className="h-4 w-4" />
+          <BellOff className="h-4 w-4" aria-hidden="true" />
         )}
-        Parar mensagens
+        {state === "pending" ? "Parando…" : "Parar mensagens"}
       </button>
     </div>
   );

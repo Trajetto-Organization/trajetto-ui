@@ -317,7 +317,9 @@ const ChatAudioPlayer = ({
   };
 
   const handleCycleRate = () => {
-    const index = PLAYBACK_RATES.indexOf(rate as (typeof PLAYBACK_RATES)[number]);
+    const index = PLAYBACK_RATES.indexOf(
+      rate as (typeof PLAYBACK_RATES)[number],
+    );
 
     setRate(PLAYBACK_RATES[(index + 1) % PLAYBACK_RATES.length]);
   };

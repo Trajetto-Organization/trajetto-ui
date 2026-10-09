@@ -1,9 +1,11 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
 
 import type { ImportReport } from "../import-spreadsheet";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ImportData {
   id: string;
@@ -22,7 +24,13 @@ interface ImportData {
   duplicated: number;
   invalid: number;
 
-  report: ImportReport;
+  /**
+   * Absent from the listing, which asks for the counters only: the report
+   * has one entry per spreadsheet line. The dialog reads it with getImport
+   * when it opens. An API from before that change still sends it here, and
+   * the dialog uses it when it is present.
+   */
+  report?: ImportReport;
 
   reversed_at: string | null;
 
@@ -65,9 +73,13 @@ const listImports = async (
       businessId,
       page: String(page),
       pageSize: String(pageSize),
+
+      // The table shows counters; the per-row report of one upload comes
+      // from getImport when the operator opens it.
+      includeReport: "false",
     });
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/import/list-imports?${params}`,
       {
         credentials: "include",
@@ -104,6 +116,7 @@ const listImports = async (
       } as ImportListData,
     };
   } catch (error) {
+    logActionError("import/list-imports", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao listar as importações.",

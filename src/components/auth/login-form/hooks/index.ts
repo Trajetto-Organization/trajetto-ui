@@ -7,61 +7,15 @@ import { clearSessionState } from "@/lib/clear-session-state";
 
 import { toast } from "sonner";
 
-type MessageType = "error" | "success";
-
-interface MessageInfo {
-  text: string;
-  type: MessageType;
-}
-
-const messages: Record<string, MessageInfo> = {
-  session_expired: {
-    text: "Sua sessão expirou. Faça login novamente.",
-    type: "error",
-  },
-  session_not_renewed: {
-    text: "Não foi possível renovar sua sessão. Faça login novamente.",
-    type: "error",
-  },
-  no_user_permission: {
-    text: "Usuário sem perfil de acesso ou permissões configuradas! Por favor, contate o administrador.",
-    type: "error",
-  },
-  user_revoked: {
-    text: "Seu acesso foi revogado! Para acessar a plataforma novamente, por favor contate o administrador.",
-    type: "error",
-  },
-  driver_inactive: {
-    text: "Seu cadastro como motorista está inativo! Para acessar a plataforma novamente, por favor contate o administrador.",
-    type: "error",
-  },
-  access_denied: {
-    text: "Sua conta foi excluída ou não está autorizada. Por favor, entre em contato com o administrador.",
-    type: "error",
-  },
-  permissions_changed: {
-    text: "Suas permissões de acesso foram atualizadas. Por favor, faça login novamente para continuar.",
-    type: "error",
-  },
-  service_unavailable: {
-    text: "Não foi possível confirmar sua sessão com o servidor. Verifique sua conexão e faça login novamente.",
-    type: "error",
-  },
-  logout: {
-    text: "Você saiu da sua conta com sucesso!",
-    type: "success",
-  },
-};
-
-type MessageKey = keyof typeof messages;
+import { loginMessageFor } from "../login-messages";
 
 /**
  * Empties the previous session out of this tab, on arrival at the login page.
  *
  * Here, and only here, because this page is where every way out of the app
- * funnels: the logout button (`redirect("/login?reason=logout")`), a forced
- * logout (`window.location.href`), and the middleware's own redirect when a
- * token cannot be renewed.
+ * funnels: the logout button and a forced logout (both a full load through
+ * leaveSession in lib/clear-session-state), and the middleware's own
+ * redirect when a token cannot be renewed.
  *
  * It cannot be done on the way out instead. Clearing while the protected
  * layout is still mounted only tells its live observers to refetch, and they
@@ -96,8 +50,9 @@ function useLoginMessages() {
 
   useEffect(() => {
     const reason = searchParams.get("reason");
+    const message = loginMessageFor(reason);
 
-    if (!reason || !(reason in messages)) return;
+    if (!message) return;
     if (hasShownRef.current) return;
 
     // Client-triggered redirects (logout button, security checks) set this
@@ -118,8 +73,7 @@ function useLoginMessages() {
 
     hasShownRef.current = true;
 
-    const key = reason as MessageKey;
-    const { text, type } = messages[key];
+    const { text, type } = message;
 
     // Only the message is decided here now. Tearing the session down moved to
     // useClearPreviousSession, which runs whether or not a `reason` arrived —
@@ -127,7 +81,7 @@ function useLoginMessages() {
     // landing on /login without a recognised reason, or reloading the page,
     // kept their role and permissions in localStorage.
     if (type === "success") {
-      if (key === "logout") toast.success(text);
+      if (reason === "logout") toast.success(text);
     } else {
       toast.error(text);
     }

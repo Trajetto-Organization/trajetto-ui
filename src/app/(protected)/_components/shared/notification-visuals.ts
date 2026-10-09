@@ -14,10 +14,12 @@ import {
  */
 
 /**
- * The accent that says "you have something" — the same #f50057 the account
- * menu already uses for its notification count.
+ * The accent that says "you have something": the bell's count and the
+ * account menu's. #c2185b and not the old #f50057, which carried its white
+ * 10-12px count at 4.18:1 — under the 4.5:1 of WCAG AA (axe color-contrast on
+ * every /admin page, tests/a11y/admin-and-public.spec.ts). 5.87:1 now.
  */
-const NOTIFICATION_ACCENT_CLASS = "bg-[#f50057]";
+const NOTIFICATION_ACCENT_CLASS = "bg-[#c2185b]";
 
 interface NotificationTypeVisual {
   icon: React.ComponentType<{ className?: string }>;

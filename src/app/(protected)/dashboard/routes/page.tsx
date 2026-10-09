@@ -12,18 +12,16 @@ import { RoutesContent } from "@/features/routes/content";
 import { RoutesSkeleton } from "@/features/routes/skeleton";
 
 interface RoutesQueryParamsProps {
-  searchParams: {
-    page?: string;
-    pageSize?: string;
-    search?: string;
-    businessId?: string;
-  };
+  // Every param Next passes (sort, order, facets included); RoutesContent
+  // reads what it needs.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Rotas",
-    description: "Planeje as rotas da operação, defina a ordem das paradas e acompanhe o que já foi resolvido.",
+    description:
+      "Planeje as rotas da operação, defina a ordem das paradas e acompanhe o que já foi resolvido.",
   };
 }
 

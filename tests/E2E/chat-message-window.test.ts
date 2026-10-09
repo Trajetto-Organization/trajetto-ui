@@ -46,7 +46,9 @@ test.describe("chat message window", () => {
     // What every load answered before "pular para a mensagem" existed: more
     // history behind, nothing at all in front.
     const edges = edgesFromPage(
-      page(["c", "b", "a"], { nextCursor: cursor("a", "2026-03-01T10:00:00Z") }),
+      page(["c", "b", "a"], {
+        nextCursor: cursor("a", "2026-03-01T10:00:00Z"),
+      }),
     );
 
     expect(edges.newerCursor).toBeNull();
@@ -194,9 +196,9 @@ test.describe("chat message window", () => {
     // flight can legitimately land in both halves.
     const current = [{ id: "c" }, { id: "d" }];
 
-    expect(prependOlder(current, [{ id: "a" }, { id: "b" }, { id: "c" }])).toEqual(
-      [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }],
-    );
+    expect(
+      prependOlder(current, [{ id: "a" }, { id: "b" }, { id: "c" }]),
+    ).toEqual([{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }]);
 
     expect(appendNewer(current, [{ id: "d" }, { id: "e" }])).toEqual([
       { id: "c" },
@@ -224,8 +226,9 @@ test.describe("chat message window", () => {
   test("an arrival the page already carries is not shown twice", () => {
     // Held at T+20ms, and the page fetched afterwards has it: the buffer is
     // emptied either way, and the reader must not see it twice.
-    expect(mergeBackAtEnd([{ id: "m41" }, { id: "m42" }], [{ id: "m42" }], []))
-      .toEqual([{ id: "m41" }, { id: "m42" }]);
+    expect(
+      mergeBackAtEnd([{ id: "m41" }, { id: "m42" }], [{ id: "m42" }], []),
+    ).toEqual([{ id: "m41" }, { id: "m42" }]);
   });
 
   test("nothing held and nothing sending is the page itself", () => {
@@ -312,7 +315,9 @@ test.describe("chat message window", () => {
     expect(newestReadStamp([])).toBeNull();
 
     expect(
-      newestReadStamp([{ created_at: "2026-09-09T12:00:00.000Z", pending: true }]),
+      newestReadStamp([
+        { created_at: "2026-09-09T12:00:00.000Z", pending: true },
+      ]),
     ).toBeNull();
   });
 

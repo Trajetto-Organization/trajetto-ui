@@ -1,30 +1,26 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "react-query";
 
-import { MessageCircle } from "lucide-react";
+import { LifeBuoy } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-import { getSocket, initializeSocket } from "@/socket";
+import type { AccessError } from "@/lib/access-error";
+
+import { AccessErrorState } from "@/components/shared/custom/access-error-state";
+import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 
 import { useAuthStore } from "@/store/auth-store";
 
-import { listChatThreads } from "@/actions/chat/list-chat-threads";
 import { searchChatMessages } from "@/actions/chat/search-chat-messages";
+import { getTicket, listTickets } from "@/actions/chat/tickets";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
-import type {
-  ChatThreadEntry,
-  SentChatMessage,
-} from "@/actions/chat/chat.types";
+import type { SentChatMessage, TicketSummary } from "@/actions/chat/chat.types";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -32,18 +28,31 @@ import {
   useCheckMultiplePermissions,
 } from "@/lib/check-multiple-permissions";
 
-import { ThreadList } from "./thread-list";
 import { Conversation } from "./conversation";
+import { TicketList } from "./tickets/ticket-list";
+import { TicketHeader } from "./tickets/ticket-header";
+import { NewTicketDialog } from "./tickets/new-ticket-dialog";
 
 import { useChatSubscription } from "./lib/use-chat-socket";
-import { THREADS_REFRESH_COALESCE_MS } from "./lib/use-chat-unread";
+import {
+  THREADS_REFRESH_COALESCE_MS,
+  useTicketsSummary,
+} from "./lib/use-chat-unread";
 
 import { useDriverHints } from "./lib/use-driver-hints";
 import { chatHintVisibleMs } from "./lib/chat-hints";
 
+import { readChatLink, readTicketLink, withoutChatLink } from "./lib/chat-link";
+import {
+  TICKETS_QUERY_ROOT,
+  ticketFilterQuery,
+  type TicketFilterKey,
+} from "./lib/ticket-rules";
+import { setOpenTicketId } from "../ops-alert/open-ticket";
+
 import type {
-  ChatDeliveryChip,
   ChatFocusRequest,
+  ChatHistoryFilter,
   ChatTarget,
 } from "./lib/types";
 
@@ -52,11 +61,23 @@ interface ChatPanelProps {
   businessId?: string;
 }
 
+/** A refusal that is about access, carried through react-query. */
+class ChatAccessRefusal extends Error {
+  constructor(readonly accessError: AccessError) {
+    super(accessError.message ?? "Acesso recusado.");
+    this.name = "ChatAccessRefusal";
+  }
+}
+
+const PAGE_SIZE = 30;
+
 /**
- * The SAC side of the driver chat: conversations on the left, the open one
- * on the right, everything live over the socket the app already keeps.
- * Below `lg` the two panes become two screens with a back button — the
- * messenger pattern every phone user already knows.
+ * "Atendimentos" (decision 14.5, design §6.1): every subject with a driver
+ * is a ticket — an occurrence's, a delivery's, a route's or a general one.
+ * Tickets on the left, the open ticket's conversation on the right (the
+ * driver's thread narrowed to that ticket), with who handles it, the
+ * decision when an authorization waits, and the trail. Below `lg` the two
+ * panes become two screens with a back button.
  */
 const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
   const queryClient = useQueryClient();
@@ -76,49 +97,35 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
     },
   ]);
 
-  // Support reads every company's chat and writes in none: a message sent
-  // from here would reach the driver looking like it came from his own
-  // central. The API refuses it, so the panel never offers it.
+  // Support reads every company's tickets and writes in none.
   const isSupportReadOnly = role === "MASTER";
-
   const canWrite = writePermission.hasAllPermissions && !isSupportReadOnly;
 
+  const [filter, setFilter] = useState<TicketFilterKey>("OPEN");
   const [search, setSearch] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState<string>("");
+  const [pages, setPages] = useState<number>(1);
 
-  const [target, setTarget] = useState<ChatTarget | null>(null);
-  const [initialChip, setInitialChip] = useState<ChatDeliveryChip | null>(null);
+  const [ticket, setTicket] = useState<TicketSummary | null>(null);
 
-  /**
-   * Which message the open conversation has to land on, if any.
-   *
-   * Held here rather than inside the conversation because it is the LIST
-   * that knows a hit was clicked. The token is what tells two clicks apart:
-   * a second hit in the conversation already open changes nothing else about
-   * the pane, and without it the reader would be left where the first one
-   * put them.
-   */
+  /** The driver's whole conversation instead of one ticket (read-only). */
+  const [wholeConversation, setWholeConversation] = useState<ChatTarget | null>(
+    null,
+  );
   const [focusRequest, setFocusRequest] = useState<ChatFocusRequest | null>(
     null,
   );
-
   const focusTokenRef = useRef<number>(0);
 
+  const [newTicketDriver, setNewTicketDriver] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [mobileView, setMobileView] = useState<"list" | "conversation">("list");
 
-  /**
-   * What the other side is doing right now, per driver.
-   *
-   * Two registries and not one with a shape inside it, because the two
-   * hints are two events on the wire — they can be true at the same instant
-   * and neither may erase the other. Both are pulses and both are put out
-   * by silence; only the window differs, and the bookkeeping behind them is
-   * the same hook.
-   */
   const { active: typingDrivers, mark: markTyping } = useDriverHints(
     chatHintVisibleMs("typing"),
   );
-
   const { active: recordingDrivers, mark: markRecording } = useDriverHints(
     chatHintVisibleMs("recording"),
   );
@@ -129,34 +136,77 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Admin mode only: the master is not in any company room by birth, and
-  // asks to join the one it is looking at.
+  // A new filter or search starts from the first page.
+  useEffect(() => setPages(1), [filter, debouncedSearch]);
+
+  // The balloon must not pop a card for the ticket on screen.
+  useEffect(() => {
+    setOpenTicketId(wholeConversation ? null : (ticket?.id ?? null));
+
+    return () => setOpenTicketId(null);
+  }, [ticket?.id, wholeConversation]);
+
+  // Admin mode only: the master asks to join the company it is looking at.
   useChatSubscription(businessId);
 
+  const summary = useTicketsSummary();
+
   // ============================================================= queries
-  const threadsQuery = useQuery(
-    ["chat-threads", businessId ?? "session", debouncedSearch],
+  const ticketsQuery = useQuery(
+    [
+      TICKETS_QUERY_ROOT,
+      "list",
+      businessId ?? "session",
+      filter,
+      debouncedSearch,
+      pages,
+    ],
     async () => {
-      const result = await listChatThreads({
+      const result = await listTickets({
         businessId,
+        ...ticketFilterQuery(filter),
         search: debouncedSearch,
+        page: 1,
+        pageSize: PAGE_SIZE * pages,
       });
 
-      if (!result.success || !result.data) {
-        throw new Error(result.message);
-      }
+      if (isStaleActionResult(result, { background: true }))
+        throw new Error(STALE_ACTION_MESSAGE);
+
+      if (result.accessError) throw new ChatAccessRefusal(result.accessError);
+
+      if (!result.success || !result.data) throw new Error(result.message);
 
       return result.data;
     },
-    { refetchOnWindowFocus: true, keepPreviousData: true },
+    {
+      refetchOnWindowFocus: true,
+      keepPreviousData: true,
+      retry: (failures, error) =>
+        !(error instanceof ChatAccessRefusal) && failures < 3,
+    },
   );
 
-  const threads = useMemo(
-    () => threadsQuery.data?.data ?? [],
-    [threadsQuery.data],
-  );
+  const accessRefusal =
+    ticketsQuery.error instanceof ChatAccessRefusal
+      ? ticketsQuery.error.accessError
+      : null;
 
-  /** Two characters is where a text search starts being worth a request. */
+  const tickets = useMemo(
+    () => ticketsQuery.data?.data ?? [],
+    [ticketsQuery.data],
+  );
+  const counts = ticketsQuery.data?.counts ?? summary;
+
+  // The list is the freshest copy of the open ticket (version-ordered).
+  useEffect(() => {
+    if (!ticket) return;
+
+    const fresh = tickets.find((entry) => entry.id === ticket.id);
+
+    if (fresh && fresh.version > ticket.version) setTicket(fresh);
+  }, [tickets, ticket]);
+
   const isSearchingMessages = debouncedSearch.trim().length >= 2;
 
   const hitsQuery = useQuery(
@@ -167,111 +217,84 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
         search: debouncedSearch,
       });
 
+      if (isStaleActionResult(result, { background: true })) return [];
+
       return result.success && result.data ? result.data.data : [];
     },
-    {
-      enabled: isSearchingMessages,
-
-      /**
-       * Tied to `enabled`, and that is the whole bug fix.
-       *
-       * The query client turns `keepPreviousData` on for every query in the
-       * app. Clearing the field does change this key — so the new key has no
-       * data — but the new key is also DISABLED, so it never fetches, and
-       * react-query hands a disabled query the previous key's data forever
-       * (`queryObserver`: keepPreviousData && !dataUpdateCount && previous
-       * was a success). The "Mensagens" section therefore kept listing hits
-       * for a search that no longer existed, and only picking another
-       * conversation ever cleared it.
-       *
-       * Off while there is no search, so an empty field means an empty
-       * section; on between two real searches, which is the transition the
-       * flag exists for — the list does not blink white on every keystroke.
-       */
-      keepPreviousData: isSearchingMessages,
-    },
+    { enabled: isSearchingMessages, keepPreviousData: isSearchingMessages },
   );
 
-  // ======================================================= URL preselect
-  // "Conversar com o motorista" in the delivery detail lands here with the
-  // driver and the delivery in the URL; consumed once and cleaned away.
+  // ======================================================== deep links
+  // "Ver conversa" (occurrences, balloon, delivery detail) lands with
+  // `ticket`; the older links (driver, delivery, route) open that context's
+  // open ticket, or the driver's whole conversation when there is none.
   useEffect(() => {
-    const driverId = searchParams.get("chatDriver");
+    const params = new URLSearchParams(searchParams.toString());
+    const ticketId = readTicketLink(params);
+    const link = readChatLink(params);
 
-    if (!driverId) return;
+    if (!ticketId && !link) return;
 
-    const driverName = searchParams.get("chatDriverName") ?? "Motorista";
-    const deliveryId = searchParams.get("chatDelivery");
-    const recipient = searchParams.get("chatRecipient");
-
-    setTarget({
-      driverId,
-      driverName,
-      threadId: null,
-      driverUser: null,
-    });
-
-    setInitialChip(
-      deliveryId && recipient
-        ? { id: deliveryId, recipient_name: recipient }
-        : null,
-    );
-
-    setFocusRequest(null);
-    setMobileView("conversation");
-
-    const cleaned = new URLSearchParams(searchParams.toString());
-
-    ["chatDriver", "chatDriverName", "chatDelivery", "chatRecipient"].forEach(
-      (key) => cleaned.delete(key),
-    );
-
+    const cleaned = withoutChatLink(params);
     router.replace(`${pathname}?${cleaned.toString()}`);
+
+    void (async () => {
+      if (ticketId) {
+        const result = await getTicket({ ticketId, businessId });
+
+        if (result.success && result.data) {
+          openTicket(result.data);
+        } else if (!isStaleActionResult(result)) {
+          toast.error(result.message);
+        }
+
+        return;
+      }
+
+      if (!link) return;
+
+      const contextFilter: ChatHistoryFilter | null = link.filter;
+      setTicket(null);
+
+      const found = await listTickets({
+        businessId,
+        status: "OPEN",
+        driverId: link.driverId,
+        ...(contextFilter?.kind === "delivery" || (!contextFilter && link.chip)
+          ? { deliveryId: contextFilter?.id ?? link.chip?.id }
+          : {}),
+        ...(contextFilter?.kind === "route"
+          ? { routeId: contextFilter.id }
+          : {}),
+        pageSize: 1,
+      });
+
+      const first = found.success ? found.data?.data[0] : undefined;
+
+      if (first) {
+        openTicket(first);
+        return;
+      }
+
+      openWholeConversation({
+        driverId: link.driverId,
+        driverName: link.driverName,
+        threadId: null,
+        driverUser: null,
+      });
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // A target chosen before the list loaded (URL, new conversation) gets its
-  // thread and presence stitched in as soon as the entries arrive.
-  //
-  // A shortcut, and only that: the entry may never arrive — the list is
-  // paginated and filtered by the search box — and the conversation resolves
-  // its own thread and its own driverUser from the API regardless.
-  useEffect(() => {
-    if (!target) return;
-
-    const entry = threads.find(
-      (thread) => thread.driver.id === target.driverId,
-    );
-
-    if (!entry) return;
-
-    setTarget((current) =>
-      current && current.driverId === entry.driver.id
-        ? {
-            ...current,
-            threadId: entry.id,
-            driverName: entry.driver.name,
-            cnh: entry.driver.cnh,
-            driverUser: entry.driverUser,
-          }
-        : current,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [threads]);
 
   // ============================================================ realtime
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Previews, ordering and badges all derive from one indexed query, so
-  // refetching it is always correct. Events arrive in bursts, though — a
-  // broadcast reply, a fleet coming online after a deploy — and one refetch
-  // each would hammer the API for a single visible change.
-  const scheduleThreadsRefresh = useCallback(() => {
+  const scheduleRefresh = useCallback(() => {
     if (refreshTimerRef.current) return;
 
     refreshTimerRef.current = setTimeout(() => {
       refreshTimerRef.current = null;
-      queryClient.invalidateQueries(["chat-threads"]);
+      queryClient.invalidateQueries([TICKETS_QUERY_ROOT]);
     }, THREADS_REFRESH_COALESCE_MS);
   }, [queryClient]);
 
@@ -285,42 +308,16 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
   useEffect(() => {
     let disposed = false;
 
-    const handleChatMessage = () => {
-      if (disposed) return;
-
-      scheduleThreadsRefresh();
-    };
-
-    const handleChatPresence = () => {
-      if (disposed) return;
-
-      scheduleThreadsRefresh();
+    const handleRefresh = () => {
+      if (!disposed) scheduleRefresh();
     };
 
     const handleChatTyping = (payload?: { driverId?: string }) => {
       if (disposed || !payload?.driverId) return;
 
-      // No "stopped typing" exists on the wire: the hint is re-sent while
-      // the keyboard is busy and the window is what ends it.
       markTyping(payload.driverId, true);
     };
 
-    /**
-     * The recording hint, which pulses the same way and MAY also say when
-     * it ends.
-     *
-     * `recording` is read as "anything but an explicit false is a pulse",
-     * matching the server. The `false` is a courtesy that makes a clean
-     * ending instant instead of four seconds late; nothing depends on it.
-     *
-     * What the window does NOT rescue any more is a client that announces
-     * the start once and never pulses — an app whose bundle has not been
-     * relaunched yet. It used to be carried by a window as long as a whole
-     * recording; against four seconds its hint now dies mid-sentence, so
-     * that driver simply shows no hint rather than a stale one. That is the
-     * right side to fail on, and it is temporary: the pulse ships with the
-     * next relaunch.
-     */
     const handleChatRecording = (payload?: {
       driverId?: string;
       recording?: boolean;
@@ -338,151 +335,127 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
 
         boundSocket = socket;
 
-        socket.on("chatMessage", handleChatMessage);
-        socket.on("chatPresence", handleChatPresence);
+        socket.on("chatMessage", handleRefresh);
+        socket.on("supportTicket", handleRefresh);
         socket.on("chatTyping", handleChatTyping);
         socket.on("chatRecording", handleChatRecording);
       })
       .catch(() => {
-        // Without realtime the refresh button still refetches everything.
+        // Without realtime "Atualizar" still refetches everything.
       });
+
+    // What arrived while the socket was down is never re-emitted.
+    const stopResync = onRealtimeResync(scheduleRefresh);
 
     return () => {
       disposed = true;
+      stopResync();
 
-      boundSocket?.off("chatMessage", handleChatMessage);
-      boundSocket?.off("chatPresence", handleChatPresence);
+      boundSocket?.off("chatMessage", handleRefresh);
+      boundSocket?.off("supportTicket", handleRefresh);
       boundSocket?.off("chatTyping", handleChatTyping);
       boundSocket?.off("chatRecording", handleChatRecording);
-
-      // The timers belong to the hooks above and are cleared with them.
     };
-  }, [markRecording, markTyping, scheduleThreadsRefresh]);
+  }, [markRecording, markTyping, scheduleRefresh]);
 
   // =========================================================== selection
-  const handleSelectThread = (entry: ChatThreadEntry) => {
-    setTarget({
-      driverId: entry.driver.id,
-      driverName: entry.driver.name,
-      cnh: entry.driver.cnh,
-      threadId: entry.id,
-      driverUser: entry.driverUser,
-    });
-
-    setInitialChip(null);
-
-    // Picking a conversation is asking for the conversation, not for
-    // wherever a previous search hit had parked it.
+  function openTicket(next: TicketSummary) {
+    setTicket(next);
+    setWholeConversation(null);
     setFocusRequest(null);
-
     setMobileView("conversation");
-  };
+  }
 
-  const handleSelectDriver = (driver: {
-    id: string;
-    name: string;
-    cnh?: string;
-  }) => {
-    // Searching by message text matches no driver by name, so this lookup
-    // misses exactly when a history exists — which is fine: the pane opens
-    // on the driver and the API hands it the thread.
-    const existing = threads.find((entry) => entry.driver.id === driver.id);
+  /** The ticket stays selected: "Voltar ao atendimento" returns to it. */
+  function openWholeConversation(target: ChatTarget) {
+    setWholeConversation(target);
+    setMobileView("conversation");
+  }
 
-    if (existing) {
-      handleSelectThread(existing);
-      return;
-    }
-
-    setTarget({
-      driverId: driver.id,
-      driverName: driver.name,
-      cnh: driver.cnh,
-      threadId: null,
+  const handleSelectHit = (hit: SentChatMessage) => {
+    setTicket(null);
+    openWholeConversation({
+      driverId: hit.driver.id,
+      driverName: hit.driver.name,
+      threadId: hit.threadId,
       driverUser: null,
     });
 
-    setInitialChip(null);
-    setFocusRequest(null);
-
-    setMobileView("conversation");
-  };
-
-  /**
-   * A hit opens the conversation ON the message, not at the end of it.
-   *
-   * The focus is set AFTER the driver, on purpose: opening the driver is
-   * what clears any focus left over from a previous hit, and the two land in
-   * the same commit, so this write is the one that survives.
-   */
-  const handleSelectHit = (hit: SentChatMessage) => {
-    handleSelectDriver({ id: hit.driver.id, name: hit.driver.name });
-
     focusTokenRef.current += 1;
-
     setFocusRequest({ messageId: hit.id, token: focusTokenRef.current });
   };
 
-  const handleThreadResolved = useCallback(
-    (driverId: string, threadId: string) => {
-      setTarget((current) =>
-        current && current.driverId === driverId && !current.threadId
-          ? { ...current, threadId }
-          : current,
-      );
+  if (accessRefusal) {
+    return (
+      <div
+        className="flex min-h-[460px] items-center justify-center rounded-lg border bg-card p-6"
+        data-tutorial="chat-panel"
+      >
+        <AccessErrorState
+          kind={accessRefusal.kind}
+          message={accessRefusal.message}
+          audience={businessId ? "master" : "company"}
+        />
+      </div>
+    );
+  }
 
-      queryClient.invalidateQueries(["chat-threads"]);
-    },
-    [queryClient],
-  );
+  const conversationTarget: ChatTarget | null = wholeConversation
+    ? wholeConversation
+    : ticket
+      ? {
+          driverId: ticket.driver.id,
+          driverName: ticket.driver.name,
+          threadId: ticket.threadId,
+          driverUser: null,
+        }
+      : null;
 
-  // Presence for the open conversation always reads the freshest entry.
-  const selectedEntry = target
-    ? threads.find((entry) => entry.driver.id === target.driverId)
-    : undefined;
-
-  const presence = selectedEntry?.driverUser
-    ? {
-        online: selectedEntry.driverUser.online,
-        lastSeenAt: selectedEntry.driverUser.last_seen_at,
-      }
-    : null;
+  const historyFilter: ChatHistoryFilter | null =
+    ticket && !wholeConversation
+      ? { kind: "ticket", id: ticket.id, label: `#${ticket.number}` }
+      : null;
 
   return (
     <div
-      className="flex h-[calc(100dvh-270px)] min-h-[460px] overflow-hidden
-      rounded-lg border bg-card"
+      className="flex h-[calc(100dvh-270px)] min-h-[460px] overflow-hidden rounded-lg border bg-card"
       data-tutorial="chat-panel"
     >
       <aside
         className={cn(
-          "w-full flex-col lg:flex lg:w-80 lg:shrink-0 lg:border-r",
+          "w-full flex-col lg:flex lg:w-96 lg:shrink-0 lg:border-r",
           mobileView === "list" ? "flex" : "hidden",
         )}
       >
-        <ThreadList
-          threads={threads}
-          totalUnread={threadsQuery.data?.totalUnread ?? 0}
-          isLoading={threadsQuery.isLoading}
-          errorMessage={
-            threadsQuery.isError
-              ? (threadsQuery.error as Error).message
-              : ""
-          }
-          onRetry={() => threadsQuery.refetch()}
-          selectedDriverId={target?.driverId ?? null}
-          onSelectThread={handleSelectThread}
-          onSelectDriver={handleSelectDriver}
+        <TicketList
+          tickets={tickets}
+          counts={counts ?? null}
+          filter={filter}
+          onFilterChange={setFilter}
           search={search}
           onSearchChange={setSearch}
-          messageHits={hitsQuery.data ?? []}
+          isLoading={ticketsQuery.isLoading}
+          isRefreshing={ticketsQuery.isFetching && !ticketsQuery.isLoading}
+          errorMessage={
+            ticketsQuery.isError ? (ticketsQuery.error as Error).message : ""
+          }
+          onRetry={() => ticketsQuery.refetch()}
+          onRefresh={() => queryClient.invalidateQueries([TICKETS_QUERY_ROOT])}
+          hasMore={tickets.length < (ticketsQuery.data?.total ?? 0)}
+          isLoadingMore={ticketsQuery.isFetching && pages > 1}
+          onLoadMore={() => setPages((current) => current + 1)}
+          selectedTicketId={wholeConversation ? null : (ticket?.id ?? null)}
+          onSelectTicket={openTicket}
+          onPickDriver={(driver) =>
+            setNewTicketDriver({ id: driver.id, name: driver.name })
+          }
+          messageHits={isSearchingMessages ? (hitsQuery.data ?? []) : []}
           onSelectHit={handleSelectHit}
-          typingDrivers={typingDrivers}
-          recordingDrivers={recordingDrivers}
           canWrite={canWrite}
           isReadOnly={isSupportReadOnly}
           actionBusinessId={businessId}
           onBroadcastSent={() =>
-            queryClient.invalidateQueries(["chat-threads"])
+            queryClient.invalidateQueries([TICKETS_QUERY_ROOT])
           }
           myUserId={myUserId}
         />
@@ -494,44 +467,105 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
           mobileView === "conversation" ? "flex" : "hidden",
         )}
       >
-        {target ? (
-          <Conversation
-            key={target.driverId}
-            actionBusinessId={businessId}
-            target={target}
-            presence={presence}
-            isDriverTyping={Boolean(typingDrivers[target.driverId])}
-            isDriverRecording={Boolean(recordingDrivers[target.driverId])}
-            myUserId={myUserId}
-            canWrite={canWrite}
-            isReadOnly={isSupportReadOnly}
-            initialDeliveryChip={initialChip}
-            focusRequest={focusRequest}
-            onBack={() => setMobileView("list")}
-            onThreadResolved={handleThreadResolved}
-          />
+        {conversationTarget ? (
+          <>
+            {ticket && !wholeConversation && (
+              <TicketHeader
+                key={ticket.id}
+                ticket={ticket}
+                actionBusinessId={businessId}
+                myUserId={myUserId}
+                isReadOnly={isSupportReadOnly}
+                onBack={() => setMobileView("list")}
+                onShowWholeConversation={() =>
+                  openWholeConversation(conversationTarget)
+                }
+                onChanged={setTicket}
+              />
+            )}
+
+            {wholeConversation && (
+              <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-4 py-2 text-xs">
+                <span>
+                  Conversa completa com {wholeConversation.driverName} (somente
+                  leitura)
+                </span>
+                <button
+                  type="button"
+                  className="shrink-0 underline"
+                  onClick={() =>
+                    ticket ? setWholeConversation(null) : setMobileView("list")
+                  }
+                >
+                  {ticket
+                    ? `Voltar ao atendimento #${ticket.number}`
+                    : "Voltar"}
+                </button>
+              </div>
+            )}
+
+            <Conversation
+              key={`${conversationTarget.driverId}:${historyFilter?.id ?? "all"}`}
+              actionBusinessId={businessId}
+              target={conversationTarget}
+              presence={null}
+              isDriverTyping={Boolean(
+                typingDrivers[conversationTarget.driverId],
+              )}
+              isDriverRecording={Boolean(
+                recordingDrivers[conversationTarget.driverId],
+              )}
+              myUserId={myUserId}
+              // A closed ticket and the whole conversation are read here;
+              // writing happens inside an open ticket.
+              canWrite={
+                canWrite &&
+                Boolean(ticket) &&
+                !wholeConversation &&
+                ticket?.status === "OPEN"
+              }
+              isReadOnly={isSupportReadOnly}
+              initialDeliveryChip={null}
+              historyFilter={historyFilter}
+              onHistoryFilterChange={(next) => {
+                if (!next) openWholeConversation(conversationTarget);
+              }}
+              focusRequest={focusRequest}
+              onBack={() => setMobileView("list")}
+              onThreadResolved={() =>
+                queryClient.invalidateQueries([TICKETS_QUERY_ROOT])
+              }
+            />
+          </>
         ) : (
-          <div
-            className="hidden h-full flex-col items-center justify-center
-            gap-3 lg:flex"
-          >
-            <div
-              className="flex h-16 w-16 items-center justify-center
-              rounded-full bg-muted"
-            >
-              <MessageCircle className="h-8 w-8 text-muted-foreground/60" />
+          <div className="hidden h-full flex-col items-center justify-center gap-3 lg:flex">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <LifeBuoy className="h-8 w-8 text-muted-foreground/60" />
             </div>
             <div className="max-w-xs text-center">
-              <p className="text-sm font-medium">Chat com os motoristas</p>
+              <p className="text-sm font-medium">Atendimentos</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {isSupportReadOnly
-                  ? "Selecione uma conversa ao lado para acompanhar o histórico."
-                  : "Selecione uma conversa ao lado — ou comece uma nova pelo botão no topo da lista."}
+                  ? "Selecione um atendimento ao lado para acompanhar o histórico."
+                  : "Selecione um atendimento ao lado — ou abra um novo pelo botão no topo da lista."}
               </p>
             </div>
           </div>
         )}
       </section>
+
+      {newTicketDriver && (
+        <NewTicketDialog
+          driver={newTicketDriver}
+          actionBusinessId={businessId}
+          onOpened={(opened) => {
+            setNewTicketDriver(null);
+            queryClient.invalidateQueries([TICKETS_QUERY_ROOT]);
+            openTicket(opened);
+          }}
+          onClose={() => setNewTicketDriver(null)}
+        />
+      )}
     </div>
   );
 };

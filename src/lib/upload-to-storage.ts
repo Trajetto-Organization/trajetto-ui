@@ -2,6 +2,8 @@ import {
   handleCreatePresignedUploads,
   type UploadType,
 } from "@/actions/upload/create-presigned-uploads";
+import { handleReportClientDiagnostics } from "@/actions/diagnostics/report-client-diagnostics";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 interface UploadEntry {
   file: File;
@@ -28,6 +30,44 @@ interface UploadToStorageProps {
 
 class UploadError extends Error {}
 
+/** The storage host of a signed URL; the path and the signature stay here. */
+function hostOf(url: string): string | undefined {
+  try {
+    return new URL(url).host;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Tells the API a PUT failed (OBS-12). Fire-and-forget: the report never
+ * delays or replaces the error the form shows.
+ */
+function reportUploadFailure(
+  kind: "upload" | "network",
+  uploadUrl: string,
+  status?: number,
+): void {
+  try {
+    void handleReportClientDiagnostics({
+      errors: [
+        {
+          kind,
+          status,
+          host: hostOf(uploadUrl),
+          message:
+            kind === "upload"
+              ? `PUT ao storage recusado (HTTP ${status})`
+              : "PUT ao storage sem resposta (rede ou CORS)",
+          count: 1,
+        },
+      ],
+    }).catch(() => undefined);
+  } catch {
+    // Reporting must never be what breaks an upload.
+  }
+}
+
 // Enough to keep a connection busy without opening twenty sockets at once,
 // which on a phone connection makes every single upload slower.
 const CONCURRENCY = 3;
@@ -52,7 +92,7 @@ async function uploadToStorage({
 }: UploadToStorageProps): Promise<UploadedPhoto[]> {
   if (entries.length === 0) return [];
 
-  const { uploads, errorMessage } = await handleCreatePresignedUploads({
+  const presigned = await handleCreatePresignedUploads({
     uploadType,
     businessId,
     files: entries.map(({ file }) => ({
@@ -61,6 +101,13 @@ async function uploadToStorage({
       size: file.size,
     })),
   });
+
+  // The form shows an UploadError's message as is; this one says to reload.
+  if (isStaleActionResult(presigned)) {
+    throw new UploadError(STALE_ACTION_MESSAGE);
+  }
+
+  const { uploads, errorMessage } = presigned;
 
   if (errorMessage || !uploads) {
     throw new UploadError(
@@ -81,6 +128,19 @@ async function uploadToStorage({
   // leave workers idle waiting for the one big photo in their group.
   let cursor = 0;
 
+  // One report per upload: the workers that fail alongside the first one hit
+  // the same bucket for the same reason, and each report spends the user's
+  // hourly diagnostics budget at the API.
+  let reported = false;
+  const reportOnce = (
+    ...args: Parameters<typeof reportUploadFailure>
+  ): void => {
+    if (reported) return;
+
+    reported = true;
+    reportUploadFailure(...args);
+  };
+
   const worker = async (): Promise<void> => {
     while (cursor < entries.length) {
       const index = cursor++;
@@ -95,9 +155,16 @@ async function uploadToStorage({
         // storage rejects the PUT if it does not match what was signed.
         headers: { "Content-Type": file.type },
         body: file,
+      }).catch((error: unknown) => {
+        // No answer at all: a dropped connection, or a CORS refusal, which
+        // fetch reports the same way.
+        reportOnce("network", uploadUrl);
+        throw error;
       });
 
       if (!response.ok) {
+        reportOnce("upload", uploadUrl, response.status);
+
         throw new UploadError(
           `Falha ao enviar a imagem "${file.name}". Verifique sua conexão e tente novamente.`,
         );

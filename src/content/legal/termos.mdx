@@ -1,0 +1,288 @@
+---
+title: "Termos de Uso"
+description: "Regras de uso da plataforma Trajetto: módulos Frotas e Entregas, app do motorista, integrações e as responsabilidades da empresa cliente e do Trajetto."
+slug: "termos"
+updatedAt: "2026-10-05"
+effectiveAt: "2026-09-28"
+---
+
+## 1. Aceite e partes
+
+Estes Termos regem o uso da plataforma Trajetto: o painel web, o app Android do
+motorista, a API de integração e as páginas públicas de acompanhamento e de
+verificação de comprovantes. O Trajetto está identificado em
+[Identificação do responsável](#identificacao).
+
+- A **empresa cliente** é a transportadora, o frotista ou a empresa que
+  contrata o Trajetto. As condições comerciais (módulos, limites, preço, prazo
+  e forma de pagamento) ficam na proposta ou no contrato comercial firmado com
+  ela. Se esse contrato tratar de um tema de forma diferente destes Termos,
+  prevalece o contrato naquele tema.
+- Os **usuários** são as pessoas que a empresa cliente cadastra:
+  administradores, operadores e motoristas. Ao entrar na plataforma, o usuário
+  declara que leu e aceita estes Termos e a
+  [Política de Privacidade](/legal/privacidade).
+
+## 2. O que é o Trajetto
+
+A plataforma tem dois módulos, contratados separadamente:
+
+- **Frotas:** veículos e tipos de veículo, motoristas, filiais, abastecimentos
+  com foto do odômetro, checklists do veículo com fotos, ordens de serviço,
+  peças, fornecedores, multas, contas a pagar, quadro de tarefas, painéis e
+  exportações.
+- **Entregas:** embarcadores, importação de NF-e (XML) e de planilha, entregas
+  e coletas, rotas, torre de controle com a posição dos motoristas durante a
+  rota, app do motorista (aviso de "a caminho", chegada, comprovante com foto,
+  assinatura e recebedor, ocorrências e pausas), formulários de ocorrência e
+  autorização da torre, relatório de pausas com os alertas da Lei nº
+  13.103/2015, auditoria de comprovantes, comprovante em PDF com verificação
+  pública, link de acompanhamento e avisos ao destinatário, chat entre a
+  central e o motorista, e integrações por API e webhooks.
+
+Os dois módulos compartilham usuários, perfis de acesso e permissões,
+notificações, trilha de auditoria e verificação em duas etapas. Um módulo não
+contratado fica indisponível no painel, no app e na API.
+
+## 3. Contratação, módulos e limites
+
+- A conta da empresa cliente é criada pelo Trajetto depois da contratação. Não
+  há cadastro aberto na plataforma.
+- O Trajetto habilita os módulos e configura os limites contratados, como a
+  quantidade de veículos e a cota mensal de análises por inteligência
+  artificial. Os administradores da empresa cliente são avisados quando isso
+  muda.
+- A cota de análises por IA renova a cada mês. Quando ela acaba, as fotos
+  continuam sendo registradas normalmente, mas não são analisadas.
+
+## 4. Contas e acesso
+
+- Os usuários são cadastrados pelos administradores da empresa cliente. Cada
+  pessoa tem o próprio acesso, que é pessoal e intransferível: compartilhar
+  e-mail e senha é proibido.
+- A empresa cliente define os perfis e as permissões de cada usuário e deve
+  remover o acesso de quem deixar de trabalhar com ela.
+- Recomendamos ligar a verificação em duas etapas, principalmente para
+  administradores.
+- Pessoas autorizadas da equipe do Trajetto acessam os dados da empresa cliente
+  para prestar suporte, configurar módulos e limites e investigar falhas. As
+  alterações que fazem ficam na trilha de auditoria.
+- Suspeita de acesso indevido deve ser comunicada ao Trajetto imediatamente pelo
+  canal em [Identificação do responsável](#identificacao).
+
+## 5. Responsabilidades da empresa cliente
+
+A empresa cliente é a controladora dos dados pessoais que registra na
+plataforma, e o Trajetto é o operador (veja a
+[Política de Privacidade](/legal/privacidade)). Cabe à empresa cliente:
+
+- ter base legal para tratar os dados dos seus usuários, motoristas e
+  destinatários, e atender os pedidos desses titulares;
+- informar os motoristas, antes do uso, de que o app registra a localização
+  enquanto uma rota está em andamento, fotos, assinaturas, o local de cada
+  registro, as pausas que eles registram e as mensagens de voz do chat, e de
+  que as fotos podem ser analisadas por IA quando a empresa contrata essa
+  análise;
+- ter base legal para enviar avisos por e-mail e por WhatsApp aos
+  destinatários, inclusive o de "a caminho", escrever modelos de mensagem
+  lícitos e compatíveis com as regras do WhatsApp, e respeitar quem pedir para
+  parar de receber;
+- pedir nos formulários de ocorrência só o que a operação precisa, e
+  acompanhar os pedidos de autorização da torre: enquanto ninguém decide, a
+  ocorrência não produz efeito na entrega;
+- decidir se imprime ou compartilha o código QR do comprovante sabendo que ele
+  dá acesso ao PDF completo, com dados pessoais do destinatário, por 5 anos
+  (seção 8);
+- manter corretos os dados que cadastra, importa ou envia pela API;
+- garantir que os motoristas usem aparelhos Android com câmera, GPS e conexão
+  de dados, com o app atualizado;
+- guardar em sigilo as chaves de API e os segredos de webhook, e revogar os que
+  vazarem;
+- responder pelos atos dos seus usuários na plataforma;
+- cumprir as próprias obrigações fiscais, trabalhistas e de trânsito. A
+  plataforma organiza as informações, mas não substitui escrituração fiscal,
+  controle oficial de jornada, identificação de condutor em multas nem outras
+  obrigações legais da empresa cliente.
+
+## 6. Uso permitido
+
+É proibido:
+
+- tentar acessar dados de outra empresa cliente ou contornar permissões,
+  limites e mecanismos de segurança;
+- testar vulnerabilidades sem autorização prévia e por escrito do Trajetto. Se
+  você encontrar uma falha, avise pelo canal de contato;
+- sobrecarregar a plataforma ou extrair dados de forma automatizada fora da
+  API e dos seus limites;
+- copiar, revender, sublicenciar ou fazer engenharia reversa da plataforma;
+- registrar conteúdo ilícito, ofensivo ou discriminatório no chat, em
+  ocorrências, em modelos de mensagem ou em qualquer outro campo;
+- usar a plataforma para vigiar pessoas fora das finalidades descritas nestes
+  Termos e na Política de Privacidade.
+
+## 7. App do motorista e funcionamento sem sinal
+
+- O app é para Android. Versões antigas demais podem ser bloqueadas até a
+  atualização, para proteger a integridade dos registros.
+- O app funciona sem sinal com uma cópia das listas de trabalho de até 7 dias.
+  O que o motorista confirma sem sinal entra numa fila no aparelho e é enviado
+  quando a conexão volta, sem duplicar registros.
+- Enquanto não são enviados, esses registros existem só no aparelho. Se o
+  celular for perdido, formatado ou tiver o app desinstalado antes do envio,
+  eles podem se perder. O app avisa quando há registros pendentes antes de o
+  motorista sair da conta.
+- A foto do comprovante é tirada na hora, pela câmera; não é possível escolher
+  uma imagem da galeria.
+- O motorista registra no app o início e o fim das pausas e o aviso de "a
+  caminho", também sem sinal. O relatório de pausas aponta possíveis
+  descumprimentos das regras de jornada da Lei nº 13.103/2015 a partir das
+  pausas registradas e do tempo das rotas; a direção é estimada, e os alertas
+  não bloqueiam nada. O relatório é um apoio e não substitui o controle de
+  jornada que a lei atribui à empresa cliente.
+
+## 8. Comprovante, verificação pública e acompanhamento
+
+- O comprovante em PDF reúne os fatos capturados na entrega (dados da nota,
+  destinatário, quem recebeu, local, data e hora, foto do canhoto e
+  assinatura). A plataforma guarda um resumo criptográfico (SHA-256) do
+  arquivo, que permite conferir se ele foi alterado.
+- Quando o certificado digital da Trajetto está instalado, o PDF sai
+  assinado digitalmente com o certificado ICP-Brasil da Trajetto, conferível
+  no validador do ITI; sem ele, o PDF sai **sem assinatura digital** e diz
+  isso no próprio documento. Em nenhum dos casos ele substitui documentos
+  fiscais, e o valor dele como prova depende do caso e de quem o avalia.
+- O código QR do comprovante leva a uma página pública, sem login, que mostra
+  um resumo da entrega e permite abrir o PDF completo por 5 anos a partir da
+  geração. Depois disso, o link deixa de funcionar.
+- Um comprovante gerado de novo substitui o anterior, e a página de
+  verificação indica a versão atual.
+- O link de acompanhamento enviado ao destinatário mostra a situação e o
+  histórico da entrega, sem dados do motorista, do veículo ou da rota.
+
+## 9. Inteligência artificial
+
+- As análises de fotos por IA (odômetro, km do checklist e canhoto) rodam na
+  infraestrutura da Trajetto e são **sugestões** que podem errar. Elas não
+  aprovam nem reprovam nada sozinhas, não avaliam a assinatura do canhoto e
+  não identificam foto de tela ou montagem.
+- A pré-checagem que o app faz no celular do motorista, sem internet, também
+  é só um aviso: não impede o envio e não consome a cota de análises.
+- No comprovante, a decisão é de uma pessoa da empresa cliente, na fila de
+  auditoria. A empresa cliente responde pelas decisões que tomar a partir de
+  uma sugestão e não deve punir ninguém com base apenas nela.
+
+## 10. Integrações
+
+- As chaves de API têm escopos e um limite de requisições por minuto. O segredo
+  da chave aparece uma única vez, na criação.
+- Os webhooks são assinados; o sistema que recebe deve conferir a assinatura
+  antes de confiar no conteúdo. Cada evento pode ser reenviado por até 30 dias.
+  Um endpoint que falha seguidamente é pausado de forma automática, com o
+  motivo visível no painel, e volta a receber quando a empresa cliente o
+  reativa.
+- A documentação da API descreve os escopos, os limites, os formatos e as
+  regras de cada chamada. Ela faz parte destes Termos.
+- A empresa cliente responde pelos sistemas que recebem os dados enviados pelo
+  Trajetto e pelo uso que faz deles.
+
+## 11. Proteção de dados
+
+Como operador, o Trajetto:
+
+- trata os dados da empresa cliente só para prestar o serviço, conforme as
+  instruções dela, estes Termos e a Política de Privacidade;
+- mantém as medidas de segurança descritas na Política de Privacidade e
+  confidencialidade sobre os dados;
+- usa apenas os serviços listados na Política de Privacidade para tratar dados
+  em seu nome;
+- ajuda a empresa cliente a atender os pedidos dos titulares, no que depender
+  da plataforma;
+- avisa a empresa cliente sobre incidentes de segurança que afetem os dados
+  dela;
+- ao fim do contrato, exclui os dados da empresa cliente da plataforma como
+  descrito na seção 15, com as exceções listadas lá.
+
+## 12. Disponibilidade e mudanças no serviço
+
+- Estes Termos não fixam um nível mínimo de disponibilidade (SLA). Se o
+  contrato comercial previr um, vale o que estiver nele.
+- Manutenções e falhas podem interromper o serviço. O app do motorista continua
+  registrando sem conexão e envia tudo quando a plataforma volta.
+- A plataforma depende de serviços de terceiros, como a internet, as lojas de
+  aplicativos e os provedores de e-mail, WhatsApp e notificações. Falhas
+  desses serviços fogem ao controle do Trajetto.
+- Recursos podem mudar e evoluir. A remoção de um recurso relevante é avisada
+  com antecedência aos administradores da empresa cliente.
+
+## 13. Propriedade intelectual
+
+- A plataforma, o software, a marca, o visual e a documentação pertencem ao
+  Trajetto. A empresa cliente recebe uma licença de uso limitada, não
+  exclusiva e intransferível enquanto durar o contrato.
+- Os dados que a empresa cliente registra pertencem a ela. O Trajetto os usa
+  apenas para prestar o serviço, como descrito na Política de Privacidade.
+
+## 14. Limitação de responsabilidade
+
+- O Trajetto responde pelos danos que causar diretamente na prestação do
+  serviço, nos termos da lei.
+- O Trajetto não responde por: dados cadastrados, importados ou enviados de
+  forma incorreta pela empresa cliente; decisões tomadas a partir de sugestões
+  da IA sem revisão humana; uso indevido de credenciais ou chaves de API sob a
+  guarda da empresa cliente; registros perdidos em aparelhos antes do envio;
+  falhas de aparelhos, redes e serviços de terceiros fora do controle do
+  Trajetto; e lucros cessantes ou outros danos indiretos, na extensão
+  permitida pela lei.
+- Um limite de valor para a responsabilidade, quando houver, é o do contrato
+  comercial.
+
+{/* REVISAR: nenhum teto de responsabilidade foi publicado. A proposta anterior (valor pago nos doze meses anteriores ao evento, sem valer para dolo) espera o dono e o advogado; só entra aqui depois de confirmada. */}
+
+## 15. Suspensão e encerramento
+
+- O Trajetto pode desativar o acesso de uma empresa cliente (todos os usuários
+  dela) nos casos previstos no contrato comercial, como a falta de pagamento,
+  ou para interromper um uso que viole estes Termos ou ponha em risco a
+  segurança da plataforma ou de terceiros. Sempre que possível, com aviso
+  prévio.
+- A empresa cliente pode encerrar a relação nos termos do contrato comercial.
+- Antes do fim do contrato, a empresa cliente pode exportar os seus dados pelas
+  exportações do painel (entregas, ocorrências, veículos, motoristas,
+  abastecimentos, multas, ordens de serviço e checklists) e pela API.
+- Com o fim do contrato, o Trajetto exclui a empresa cliente da plataforma, no
+  prazo combinado no contrato ou a pedido da empresa. A exclusão apaga do banco
+  de dados os cadastros e os registros da operação dela, e os links de
+  verificação e de acompanhamento deixam de funcionar.
+- A exclusão não alcança:
+  - a trilha de auditoria, mantida pelo prazo descrito na Política de
+    Privacidade;
+  - os arquivos (fotos, assinaturas, áudios, anexos e PDFs), que continuam no
+    armazenamento privado, sem acesso pela plataforma, até serem removidos
+    pelo Trajetto. Essa remoção ainda não é automática e não tem prazo
+    definido;
+  - as cópias de segurança, que expiram no ciclo delas, em até 400 dias.
+- Dados também podem ser mantidos por mais tempo quando a lei exigir ou para
+  o exercício de direitos em processo.
+
+{/* REVISAR: a exclusão da empresa pelo produto (delete-business-usecase) recusa enquanto houver usuários, filiais ou motoristas, e um motorista com histórico não pode ser excluído. Para uma empresa que operou, a exclusão descrita acima é feita pela equipe do Trajetto fora da plataforma; confirmar o procedimento e o prazo com o dono (PUB-28). Ver a Política de Privacidade, seção 10. */}
+
+## 16. Mudanças nestes Termos
+
+O Trajetto pode atualizar estes Termos. Mudanças relevantes são avisadas aos
+administradores das empresas clientes, por e-mail ou na própria plataforma,
+com antecedência razoável. A data da última revisão fica no topo da página.
+Continuar usando a plataforma depois da vigência significa aceitar a nova
+versão; quem não concordar pode encerrar a relação nos termos do contrato
+comercial.
+
+## 17. Lei aplicável e foro
+
+Estes Termos seguem a lei brasileira. Fica eleito o foro da comarca indicada
+em [Identificação do responsável](#identificacao) para resolver qualquer
+questão sobre eles, salvo regra legal que determine outro foro.
+
+## 18. Contato
+
+Dúvidas sobre estes Termos, avisos de acesso indevido e relatos de
+vulnerabilidades devem ser enviados pelo canal em
+[Identificação do responsável](#identificacao).

@@ -1,22 +1,43 @@
+import dynamic from "next/dynamic";
 import { useState, useMemo } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DialogFormFooter } from "@/components/ui/dialog";
 import FormInput from "@/components/shared/custom/form-input";
 
 import { formatMileage } from "@/lib/format-values";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  canSubmitForm,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
+import { updateVehicleChecklistFormSchema } from "@/schemas/create-update-vehicle-checklist-schema";
+import { CHECKLIST_ANSWER_FIELDS } from "../lib/live-rules";
 import { useFetchVehicleData } from "@/app/(protected)/_components/shared/searches/search-vehicle-by-id-business";
 
 import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+import { OVERALL_CONDITION_OPTIONS } from "../lib/condition-options";
+
+import {
+  checklistEditOriginalValues,
+  isChecklistEditDirty,
+} from "../lib/edit-form";
 
 import type { UpdateVehicleChecklistFormSubmitProps } from "./types";
 import { getPhotoRequirements } from "../photo-requirements";
 
-import { PhotoUpload } from "./photo-upload";
 import { UploadProgress } from "@/components/shared/upload-progress";
+import { PhotoFieldLoading } from "@/components/shared/custom/photo-field-loading";
+
+// Its own chunk (react-dropzone): loaded with this dialog, not with the page.
+const PhotoUpload = dynamic(
+  () => import("./photo-upload").then((module) => module.PhotoUpload),
+  { ssr: false, loading: PhotoFieldLoading },
+);
 
 // Reusable select options
 const CONDITION_OPTIONS = [
@@ -28,12 +49,6 @@ const CONDITION_OPTIONS = [
 const YES_NO_OPTIONS = [
   { value: "true", label: "Sim" },
   { value: "false", label: "Não" },
-];
-
-const OVERALL_CONDITION_OPTIONS = [
-  { value: "approved", label: "Aprovado" },
-  { value: "approved_with_restrictions", label: "Aprovado com Restrições" },
-  { value: "rejected", label: "Rejeitado" },
 ];
 
 const UpdateChecklistFormSubmit = ({
@@ -63,41 +78,11 @@ const UpdateChecklistFormSubmit = ({
     businessId: checklistData.businessId as string,
   });
 
-  // Original form values from checklistData for dirty comparison
-  const originalFormValues = useMemo(() => {
-    if (!checklistData) return {};
-
-    return {
-      checklist_date: checklistData.checklist_date,
-      current_mileage: checklistData.current_mileage?.toString() || "",
-      tires_condition: checklistData.tires_condition,
-      headlights_working: checklistData.headlights_working,
-      taillights_working: checklistData.taillights_working,
-      turn_signals_working: checklistData.turn_signals_working,
-      bumpers_condition: checklistData.bumpers_condition,
-      windshield_condition: checklistData.windshield_condition,
-      mirrors_condition: checklistData.mirrors_condition,
-      seatbelts_working: checklistData.seatbelts_working,
-      dashboard_working: checklistData.dashboard_working,
-      steering_wheel_condition: checklistData.steering_wheel_condition,
-      brakes_working: checklistData.brakes_working,
-      clutch_working: checklistData.clutch_working,
-      fuel_level_adequate: checklistData.fuel_level_adequate,
-      oil_level_adequate: checklistData.oil_level_adequate,
-      radiator_water_adequate: checklistData.radiator_water_adequate,
-      brake_fluid_adequate: checklistData.brake_fluid_adequate,
-      battery_condition: checklistData.battery_condition,
-      driver_license_valid: checklistData.driver_license_valid,
-      vehicle_documents_valid: checklistData.vehicle_documents_valid,
-      insurance_valid: checklistData.insurance_valid,
-      fire_extinguisher_valid: checklistData.fire_extinguisher_valid,
-      warning_triangle_present: checklistData.warning_triangle_present,
-      jack_present: checklistData.jack_present,
-      spare_tire_condition: checklistData.spare_tire_condition,
-      overall_condition: checklistData.overall_condition,
-      notes: checklistData.notes || "",
-    };
-  }, [checklistData?.id]);
+  // What the form opened on, for the dirty check (lib/edit-form).
+  const originalFormValues = useMemo(
+    () => (checklistData ? checklistEditOriginalValues(checklistData) : {}),
+    [checklistData?.id],
+  );
 
   const [formValues, setFormValues] = useState<Record<string, any>>(() =>
     Object.keys(initialFormValues).length > 0
@@ -110,48 +95,19 @@ const UpdateChecklistFormSubmit = ({
     setFormValues((prev) => ({ ...prev, [fieldName]: value }));
   };
 
-  // Computed dirty check
-  const isDirty = Object.keys(formValues).some((key) => {
-    if (key === "_displayMileage") return false;
-    const currentValue = formValues[key];
-    const originalValue = (originalFormValues as Record<string, any>)[key];
+  // The date compares the day, not the UTC date of the strings (lib/edit-form).
+  const isDirty = checklistData
+    ? isChecklistEditDirty(originalFormValues, formValues)
+    : false;
 
-    if (!checklistData || originalValue === undefined) return false;
-
-    if (
-      typeof currentValue === "boolean" &&
-      typeof originalValue === "boolean"
-    ) {
-      return currentValue !== originalValue;
-    }
-
-    if (key === "current_mileage") {
-      const currentNumeric =
-        typeof currentValue === "number"
-          ? currentValue
-          : parseInt(currentValue) || 0;
-      const originalNumeric =
-        typeof originalValue === "number"
-          ? originalValue
-          : parseInt(originalValue) || 0;
-      return currentNumeric !== originalNumeric;
-    }
-
-    if (key === "checklist_date") {
-      const currentDate = currentValue?.toString() || "";
-      const originalDate = originalValue?.toString() || "";
-      if (!currentDate && !originalDate) return false;
-      if (!currentDate || !originalDate) return true;
-      try {
-        return currentDate.split("T")[0] !== originalDate.split("T")[0];
-      } catch {
-        return currentDate !== originalDate;
-      }
-    }
-
-    return (
-      (currentValue?.toString() || "") !== (originalValue?.toString() || "")
-    );
+  // Live validation (decision 16.700). No mileage rule against the vehicle
+  // here: the stored date is a past moment, and only the API knows the
+  // readings around it (lib/mileage-rule).
+  const live = useLiveValidation({
+    schema: updateVehicleChecklistFormSchema,
+    values: formValues,
+    fields: CHECKLIST_ANSWER_FIELDS,
+    serverErrors: state.updateVehicleChecklistError,
   });
 
   // Helper function to get safe value for selects (prevents undefined/null issues)
@@ -197,7 +153,11 @@ const UpdateChecklistFormSubmit = ({
     const formatted = formatMileage(numbersOnly);
 
     setDisplayMileage(formatted);
-    handleFieldChange("current_mileage", parseInt(numbersOnly) || 0);
+    // Empty is "missing" (the schema's required message), not zero.
+    handleFieldChange(
+      "current_mileage",
+      numbersOnly ? parseInt(numbersOnly, 10) : undefined,
+    );
   };
 
   const handleFilesChange = (fieldName: string) => (files: File[]) => {
@@ -282,7 +242,7 @@ const UpdateChecklistFormSubmit = ({
     isDirty || isEntityDirty || hasFileChange || hasPhotoRemoval;
 
   return (
-    <>
+    <div ref={live.ref}>
       <div className="space-y-4 mt-5">
         {/* Selected Items Summary */}
         <div
@@ -290,7 +250,7 @@ const UpdateChecklistFormSubmit = ({
           border-gray-200 dark:bg-gray-800 dark:border-gray-700"
         >
           <h3
-            className="font-bold text-gray-900
+            className="font-bold text-foreground
             dark:text-gray-100 mb-3"
           >
             📋 Resumo da Seleção
@@ -298,13 +258,13 @@ const UpdateChecklistFormSubmit = ({
           <div className="space-y-3">
             <div className="flex">
               <span
-                className="text-sm text-gray-600
+                className="text-sm text-muted-foreground
                 dark:text-gray-400"
               >
                 Filial:
               </span>
               <span
-                className="text-sm text-gray-900
+                className="text-sm text-foreground
                 dark:text-gray-100 flex-1 font-medium ml-2"
               >
                 {commandBranchInputValue?.searchBranchInputValue ||
@@ -314,13 +274,13 @@ const UpdateChecklistFormSubmit = ({
             </div>
             <div className="flex">
               <span
-                className="text-sm text-gray-600
+                className="text-sm text-muted-foreground
                 dark:text-gray-400"
               >
                 Veículo:
               </span>
               <span
-                className="text-sm text-gray-900
+                className="text-sm text-foreground
                 dark:text-gray-100 flex-1 font-medium ml-2"
               >
                 {commandVehicleInputValue?.searchVehicleInputValue ||
@@ -328,7 +288,7 @@ const UpdateChecklistFormSubmit = ({
                   ""}
                 {(commandVehicleInputValue?.vehicleLicensePlate ||
                   checklistData.vehicle?.license_plate) && (
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-muted-foreground ml-2">
                     (Placa:{" "}
                     {commandVehicleInputValue.vehicleLicensePlate ||
                       checklistData.vehicle?.license_plate}
@@ -339,13 +299,13 @@ const UpdateChecklistFormSubmit = ({
             </div>
             <div className="flex">
               <span
-                className="text-sm text-gray-600
+                className="text-sm text-muted-foreground
                 dark:text-gray-400"
               >
                 Motorista:
               </span>
               <span
-                className="text-sm text-gray-900
+                className="text-sm text-foreground
                 dark:text-gray-100 flex-1 font-medium ml-2"
               >
                 {commandDriverInputValue?.searchDriverInputValue ||
@@ -353,7 +313,7 @@ const UpdateChecklistFormSubmit = ({
                   ""}
                 {(commandDriverInputValue?.driverCnh ||
                   checklistData.driver?.cnh) && (
-                  <span className="text-xs text-gray-500 ml-2">
+                  <span className="text-xs text-muted-foreground ml-2">
                     (CNH:{" "}
                     {commandDriverInputValue.driverCnh ||
                       checklistData.driver?.cnh}
@@ -372,7 +332,7 @@ const UpdateChecklistFormSubmit = ({
             p-4 mb-6 border border-gray-200 dark:border-gray-700"
           >
             <p
-              className="text-sm text-gray-600
+              className="text-sm text-muted-foreground
               dark:text-gray-400 text-center"
             >
               Carregando dados do veículo...
@@ -438,15 +398,16 @@ const UpdateChecklistFormSubmit = ({
             <p className="text-sm text-green-700 dark:text-green-300">
               <strong>🚗 Dados Atuais do Veículo:</strong>
               <br />
-              Quilometragem atual: {data.current_mileage.toLocaleString()} km
+              Quilometragem atual:{" "}
+              {data.current_mileage.toLocaleString("pt-BR")} km
               <br />
               Intervalo de manutenção:{" "}
-              {data.maintenance_interval_km.toLocaleString()} km
+              {data.maintenance_interval_km.toLocaleString("pt-BR")} km
               {data.last_maintenance_mileage && (
                 <>
                   <br />
                   Última manutenção:{" "}
-                  {data.last_maintenance_mileage.toLocaleString()} km
+                  {data.last_maintenance_mileage.toLocaleString("pt-BR")} km
                 </>
               )}
             </p>
@@ -462,7 +423,7 @@ const UpdateChecklistFormSubmit = ({
             name="checklist_date"
             value={formValues.checklist_date || ""}
             onChange={handleCustomFieldChange("checklist_date")}
-            errorName={state.updateVehicleChecklistError?.checklist_date}
+            errorName={live.errorOf("checklist_date")}
             disabled={pending}
           />
 
@@ -473,7 +434,7 @@ const UpdateChecklistFormSubmit = ({
             name="current_mileage"
             type="text"
             placeholder="Ex: 50.000"
-            errorName={state.updateVehicleChecklistError?.current_mileage}
+            errorName={live.errorOf("current_mileage")}
             disabled={pending}
             value={displayMileage}
             onChange={handleMileageChange}
@@ -489,7 +450,7 @@ const UpdateChecklistFormSubmit = ({
             name="tires_condition"
             value={getSafeSelectValue(formValues.tires_condition)}
             onChange={(value) => handleFieldChange("tires_condition", value)}
-            errorName={state.updateVehicleChecklistError?.tires_condition}
+            errorName={live.errorOf("tires_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -505,7 +466,7 @@ const UpdateChecklistFormSubmit = ({
             name="fuel_level_adequate"
             value={getSafeSelectValue(formValues.fuel_level_adequate, true)}
             onChange={handleBooleanFieldChange("fuel_level_adequate")}
-            errorName={state.updateVehicleChecklistError?.fuel_level_adequate}
+            errorName={live.errorOf("fuel_level_adequate")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -524,7 +485,7 @@ const UpdateChecklistFormSubmit = ({
             name="headlights_working"
             value={getSafeSelectValue(formValues.headlights_working, true)}
             onChange={handleBooleanFieldChange("headlights_working")}
-            errorName={state.updateVehicleChecklistError?.headlights_working}
+            errorName={live.errorOf("headlights_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -540,7 +501,7 @@ const UpdateChecklistFormSubmit = ({
             name="taillights_working"
             value={getSafeSelectValue(formValues.taillights_working, true)}
             onChange={handleBooleanFieldChange("taillights_working")}
-            errorName={state.updateVehicleChecklistError?.taillights_working}
+            errorName={live.errorOf("taillights_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -559,7 +520,7 @@ const UpdateChecklistFormSubmit = ({
             name="turn_signals_working"
             value={getSafeSelectValue(formValues.turn_signals_working, true)}
             onChange={handleBooleanFieldChange("turn_signals_working")}
-            errorName={state.updateVehicleChecklistError?.turn_signals_working}
+            errorName={live.errorOf("turn_signals_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -575,7 +536,7 @@ const UpdateChecklistFormSubmit = ({
             name="bumpers_condition"
             value={getSafeSelectValue(formValues.bumpers_condition)}
             onChange={(value) => handleFieldChange("bumpers_condition", value)}
-            errorName={state.updateVehicleChecklistError?.bumpers_condition}
+            errorName={live.errorOf("bumpers_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -591,7 +552,7 @@ const UpdateChecklistFormSubmit = ({
             onChange={(value) =>
               handleFieldChange("windshield_condition", value)
             }
-            errorName={state.updateVehicleChecklistError?.windshield_condition}
+            errorName={live.errorOf("windshield_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -605,7 +566,7 @@ const UpdateChecklistFormSubmit = ({
             name="mirrors_condition"
             value={getSafeSelectValue(formValues.mirrors_condition)}
             onChange={(value) => handleFieldChange("mirrors_condition", value)}
-            errorName={state.updateVehicleChecklistError?.mirrors_condition}
+            errorName={live.errorOf("mirrors_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -619,7 +580,7 @@ const UpdateChecklistFormSubmit = ({
             name="seatbelts_working"
             value={getSafeSelectValue(formValues.seatbelts_working, true)}
             onChange={handleBooleanFieldChange("seatbelts_working")}
-            errorName={state.updateVehicleChecklistError?.seatbelts_working}
+            errorName={live.errorOf("seatbelts_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -636,7 +597,7 @@ const UpdateChecklistFormSubmit = ({
             name="dashboard_working"
             value={getSafeSelectValue(formValues.dashboard_working, true)}
             onChange={handleBooleanFieldChange("dashboard_working")}
-            errorName={state.updateVehicleChecklistError?.dashboard_working}
+            errorName={live.errorOf("dashboard_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -650,7 +611,7 @@ const UpdateChecklistFormSubmit = ({
             name="brakes_working"
             value={getSafeSelectValue(formValues.brakes_working, true)}
             onChange={handleBooleanFieldChange("brakes_working")}
-            errorName={state.updateVehicleChecklistError?.brakes_working}
+            errorName={live.errorOf("brakes_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -664,7 +625,7 @@ const UpdateChecklistFormSubmit = ({
             name="clutch_working"
             value={getSafeSelectValue(formValues.clutch_working, true)}
             onChange={handleBooleanFieldChange("clutch_working")}
-            errorName={state.updateVehicleChecklistError?.clutch_working}
+            errorName={live.errorOf("clutch_working")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -678,7 +639,7 @@ const UpdateChecklistFormSubmit = ({
             name="oil_level_adequate"
             value={getSafeSelectValue(formValues.oil_level_adequate, true)}
             onChange={handleBooleanFieldChange("oil_level_adequate")}
-            errorName={state.updateVehicleChecklistError?.oil_level_adequate}
+            errorName={live.errorOf("oil_level_adequate")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -692,9 +653,7 @@ const UpdateChecklistFormSubmit = ({
             name="radiator_water_adequate"
             value={getSafeSelectValue(formValues.radiator_water_adequate, true)}
             onChange={handleBooleanFieldChange("radiator_water_adequate")}
-            errorName={
-              state.updateVehicleChecklistError?.radiator_water_adequate
-            }
+            errorName={live.errorOf("radiator_water_adequate")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -711,7 +670,7 @@ const UpdateChecklistFormSubmit = ({
             name="brake_fluid_adequate"
             value={getSafeSelectValue(formValues.brake_fluid_adequate, true)}
             onChange={handleBooleanFieldChange("brake_fluid_adequate")}
-            errorName={state.updateVehicleChecklistError?.brake_fluid_adequate}
+            errorName={live.errorOf("brake_fluid_adequate")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -730,9 +689,7 @@ const UpdateChecklistFormSubmit = ({
             onChange={(value) =>
               handleFieldChange("steering_wheel_condition", value)
             }
-            errorName={
-              state.updateVehicleChecklistError?.steering_wheel_condition
-            }
+            errorName={live.errorOf("steering_wheel_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -746,7 +703,7 @@ const UpdateChecklistFormSubmit = ({
             name="battery_condition"
             value={getSafeSelectValue(formValues.battery_condition)}
             onChange={(value) => handleFieldChange("battery_condition", value)}
-            errorName={state.updateVehicleChecklistError?.battery_condition}
+            errorName={live.errorOf("battery_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -760,7 +717,7 @@ const UpdateChecklistFormSubmit = ({
             name="driver_license_valid"
             value={getSafeSelectValue(formValues.driver_license_valid, true)}
             onChange={handleBooleanFieldChange("driver_license_valid")}
-            errorName={state.updateVehicleChecklistError?.driver_license_valid}
+            errorName={live.errorOf("driver_license_valid")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -773,9 +730,7 @@ const UpdateChecklistFormSubmit = ({
             name="vehicle_documents_valid"
             value={getSafeSelectValue(formValues.vehicle_documents_valid, true)}
             onChange={handleBooleanFieldChange("vehicle_documents_valid")}
-            errorName={
-              state.updateVehicleChecklistError?.vehicle_documents_valid
-            }
+            errorName={live.errorOf("vehicle_documents_valid")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -788,7 +743,7 @@ const UpdateChecklistFormSubmit = ({
             name="insurance_valid"
             value={getSafeSelectValue(formValues.insurance_valid, true)}
             onChange={handleBooleanFieldChange("insurance_valid")}
-            errorName={state.updateVehicleChecklistError?.insurance_valid}
+            errorName={live.errorOf("insurance_valid")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -801,9 +756,7 @@ const UpdateChecklistFormSubmit = ({
             name="fire_extinguisher_valid"
             value={getSafeSelectValue(formValues.fire_extinguisher_valid, true)}
             onChange={handleBooleanFieldChange("fire_extinguisher_valid")}
-            errorName={
-              state.updateVehicleChecklistError?.fire_extinguisher_valid
-            }
+            errorName={live.errorOf("fire_extinguisher_valid")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -819,9 +772,7 @@ const UpdateChecklistFormSubmit = ({
               true,
             )}
             onChange={handleBooleanFieldChange("warning_triangle_present")}
-            errorName={
-              state.updateVehicleChecklistError?.warning_triangle_present
-            }
+            errorName={live.errorOf("warning_triangle_present")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -834,7 +785,7 @@ const UpdateChecklistFormSubmit = ({
             name="jack_present"
             value={getSafeSelectValue(formValues.jack_present, true)}
             onChange={handleBooleanFieldChange("jack_present")}
-            errorName={state.updateVehicleChecklistError?.jack_present}
+            errorName={live.errorOf("jack_present")}
             disabled={pending}
             placeholder="Selecione"
             options={YES_NO_OPTIONS}
@@ -849,7 +800,7 @@ const UpdateChecklistFormSubmit = ({
             onChange={(value) =>
               handleFieldChange("spare_tire_condition", value)
             }
-            errorName={state.updateVehicleChecklistError?.spare_tire_condition}
+            errorName={live.errorOf("spare_tire_condition")}
             disabled={pending}
             placeholder="Selecione a condição"
             options={CONDITION_OPTIONS}
@@ -863,7 +814,7 @@ const UpdateChecklistFormSubmit = ({
             name="overall_condition"
             value={getSafeSelectValue(formValues.overall_condition)}
             onChange={(value) => handleFieldChange("overall_condition", value)}
-            errorName={state.updateVehicleChecklistError?.overall_condition}
+            errorName={live.errorOf("overall_condition")}
             disabled={pending}
             placeholder="Selecione a condição geral"
             options={OVERALL_CONDITION_OPTIONS}
@@ -876,7 +827,7 @@ const UpdateChecklistFormSubmit = ({
             name="notes"
             type="textarea"
             placeholder="Adicione observações sobre o checklist..."
-            errorName={state.updateVehicleChecklistError?.notes}
+            errorName={live.errorOf("notes")}
             disabled={pending}
             value={formValues.notes || ""}
             onChange={(e) => handleFieldChange("notes", e.target.value)}
@@ -887,32 +838,38 @@ const UpdateChecklistFormSubmit = ({
           <UploadProgress progress={uploadProgress} error={uploadError} />
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end mt-4 gap-2">
+        {/* The dialog's width picks the layout (decision 3.2); saving stays
+            off until something changed (decision 2.5). */}
+        <DialogFormFooter className="mt-4">
           <Button
             type="button"
             variant="outline"
             onClick={handleBack}
             disabled={pending || isLoadingVehicle}
+            {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
           >
             Voltar
           </Button>
           <Button
             type="submit"
-            disabled={pending || !hasAnyChange || isLoadingVehicle}
+            disabled={
+              pending ||
+              !canSubmitForm({ isEdit: true, isDirty: hasAnyChange }) ||
+              isLoadingVehicle
+            }
           >
             {pending ? (
               <>
                 <Loader className="mr-2 h-4 w-4 animate-spin" />
-                Atualizando...
+                Salvando...
               </>
             ) : (
-              "Editar Checklist"
+              "Salvar alterações"
             )}
           </Button>
-        </div>
+        </DialogFormFooter>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -13,10 +13,12 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { useQueryClient } from "react-query";
+
 import {
   Dialog,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
   DialogHeader,
   DialogScrollContent,
   DialogTitle,
@@ -26,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
-import { revalidateTagName } from "@/actions/revalidate";
+import { revalidateTags } from "@/actions/revalidate";
 
 import {
   importDeliveryXml,
@@ -35,9 +37,20 @@ import {
 } from "@/actions/delivery/import-delivery-xml";
 
 import { cn } from "@/lib/utils";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { FileDropzone } from "@/components/shared/custom/file-dropzone";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 import { useImportXmlFiles, MAX_FILES } from "./hooks";
+import { ShipperSelector } from "../shipper-selector";
+import {
+  canCloseImportDialog,
+  importRevalidationTags,
+  importToastKind,
+} from "../../lib/import-outcome";
 
 interface ImportXmlDialogProps {
   businessId: string;
@@ -57,9 +70,13 @@ const OUTCOME_META: Record<
   duplicated: {
     label: "Já existia",
     icon: CircleSlash,
-    className: "text-yellow-600",
+    className: "text-yellow-700 dark:text-yellow-500",
   },
-  invalid: { label: "Erro", icon: CircleAlert, className: "text-red-600" },
+  invalid: {
+    label: "Erro",
+    icon: CircleAlert,
+    className: "text-red-600 dark:text-red-400",
+  },
 };
 
 const formatSize = (bytes: number): string =>
@@ -70,10 +87,29 @@ const ImportXmlDialog = ({
   isOpen,
   onClose,
 }: ImportXmlDialogProps): JSX.Element => {
-  const { files, isReading, addFiles, removeFile, clearFiles } =
+  const { files, isReading, rejection, addFiles, removeFile, clearFiles } =
     useImportXmlFiles();
 
+  // Live validation (decision 16.700): Importar is enabled and says what is
+  // missing (decision 16.701).
+  const live = useLiveValidation({
+    values: { files: files.length },
+    rules: () => ({
+      files: files.length > 0 ? null : "Escolha ao menos um XML de NF-e.",
+    }),
+    controlIds: { files: "import-xml-files" },
+    resetKey: isOpen,
+    validateOnSubmit: false,
+  });
+
+  const queryClient = useQueryClient();
+
   const [scheduledDate, setScheduledDate] = useState<string>("");
+
+  // Optional (DLV-IMP-2): forces the shipper of every note. A note whose
+  // issuer is missing or deactivated otherwise had no way in.
+  const [shipperId, setShipperId] = useState<string>("");
+
   const [isImporting, setIsImporting] = useState<boolean>(false);
 
   const [summary, setSummary] = useState<ImportSummary | null>(null);
@@ -81,8 +117,8 @@ const ImportXmlDialog = ({
   useEffect(() => {
     if (isOpen) {
       clearFiles();
-
       setScheduledDate("");
+      setShipperId("");
       setSummary(null);
     }
   }, [isOpen, clearFiles]);
@@ -90,27 +126,44 @@ const ImportXmlDialog = ({
   const resetAndClose = () => {
     clearFiles();
     setScheduledDate("");
-
+    setShipperId("");
     setSummary(null);
     onClose();
   };
 
   const handleImport = async () => {
+    if (!live.validate()) return;
+
     setIsImporting(true);
 
     try {
       const response = await importDeliveryXml(
         businessId,
         files.map(({ filename, content }) => ({ filename, content })),
-        { scheduled_date: scheduledDate || undefined },
+        {
+          scheduled_date: scheduledDate || undefined,
+          shipperId: shipperId || undefined,
+        },
       );
+
+      if (isStaleActionResult(response)) return;
 
       if (response.success && response.data) {
         setSummary(response.data);
-        toast.success(response.message);
 
-        if (response.data.imported > 0) {
-          await revalidateTagName("update-delivery");
+        // Nothing imported is not a success (every file was a duplicate or
+        // an error): the report is there, the toast says so.
+        toast[importToastKind(response.data.imported)](response.message);
+
+        // Every upload is an Importações row now (decision 5.6), and the
+        // issuers may have become shippers: all of it refreshes, not only
+        // the deliveries table.
+        const created = response.data.created_shippers.length;
+
+        await revalidateTags(importRevalidationTags(created));
+
+        if (created > 0) {
+          void queryClient.invalidateQueries(["shipper", businessId]);
         }
       } else {
         toast.error(response.message);
@@ -121,11 +174,17 @@ const ImportXmlDialog = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={resetAndClose}>
-      <DialogScrollContent
-        className="max-h-[90vh] max-w-2xl overflow-y-auto"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+    // ESC and the X wait while the upload is in flight (UI-MODAL-11), as in
+    // the spreadsheet dialog: closing lost the report being waited for.
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) =>
+        !open && canCloseImportDialog(isImporting) && resetAndClose()
+      }
+    >
+      {/* max-w-xl like the shipper and occurrence-type dialogs (the
+          reference the user named), with their full-width footer. */}
+      <DialogScrollContent className="max-h-[90vh] max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileUp className="h-5 w-5" />
@@ -137,7 +196,7 @@ const ImportXmlDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mt-2">
+        <div ref={live.ref} className="space-y-4 mt-2">
           {!summary && (
             <>
               <FileDropzone
@@ -149,7 +208,14 @@ const ImportXmlDialog = ({
                 isBusy={isReading}
                 busyLabel="Lendo arquivos..."
                 disabled={isImporting}
-                onFiles={(picked) => void addFiles(picked)}
+                id="import-xml-files"
+                // What a pick left out is said at once; "missing" waits for
+                // Importar like any field.
+                error={rejection ?? live.messageOf("files")}
+                onFiles={(picked) => {
+                  live.touch("files");
+                  void addFiles(picked);
+                }}
               />
 
               {files.length > 0 && (
@@ -200,7 +266,20 @@ const ImportXmlDialog = ({
                 </div>
               )}
 
+              <ShipperSelector
+                businessId={businessId}
+                value={shipperId}
+                onChange={setShipperId}
+                label="Embarcador (opcional)"
+                disabled={isImporting}
+              />
+              <p className="-mt-2 text-xs text-muted-foreground">
+                Sem embarcador, o emitente de cada nota vira o embarcador.
+                Escolha um quando a nota não traz o emitente.
+              </p>
+
               <div className="w-full">
+                {/* A day (decision 1.3): "YYYY-MM-DD", no time. */}
                 <DatePickerField
                   label="Data prevista de entrega (opcional)"
                   htmlfor="import_scheduled_date"
@@ -209,6 +288,7 @@ const ImportXmlDialog = ({
                   onChange={setScheduledDate}
                   disabled={isImporting}
                   allowFutureDates
+                  dateOnly
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
                   Aplicada a todas as entregas desta importação.
@@ -227,13 +307,13 @@ const ImportXmlDialog = ({
                   <p className="text-xs text-muted-foreground">Importadas</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-2xl font-semibold text-yellow-600">
+                  <p className="text-2xl font-semibold text-yellow-700 dark:text-yellow-500">
                     {summary.duplicated}
                   </p>
                   <p className="text-xs text-muted-foreground">Já existiam</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-2xl font-semibold text-red-600">
+                  <p className="text-2xl font-semibold text-red-600 dark:text-red-400">
                     {summary.invalid}
                   </p>
                   <p className="text-xs text-muted-foreground">Com erro</p>
@@ -288,8 +368,14 @@ const ImportXmlDialog = ({
             </>
           )}
 
-          <DialogFooter className="mt-6 gap-2">
-            <Button type="button" variant="outline" onClick={resetAndClose}>
+          <DialogFormFooter className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isImporting}
+              onClick={resetAndClose}
+              {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
+            >
               {summary ? "Fechar" : "Cancelar"}
             </Button>
 
@@ -297,7 +383,7 @@ const ImportXmlDialog = ({
               <Button
                 type="button"
                 onClick={() => void handleImport()}
-                disabled={isImporting || isReading || files.length === 0}
+                disabled={isImporting || isReading}
               >
                 <span>
                   Importar
@@ -310,7 +396,7 @@ const ImportXmlDialog = ({
                 )}
               </Button>
             )}
-          </DialogFooter>
+          </DialogFormFooter>
         </div>
       </DialogScrollContent>
     </Dialog>

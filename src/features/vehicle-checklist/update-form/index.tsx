@@ -12,13 +12,13 @@ import {
 import { handleUpdateVehicleChecklist } from "@/actions/vehicle-checklist/update-vehicle-checklist";
 import { useUpdateVehicleChecklistForm } from "./hooks";
 
-import { appendDataToForm } from "@/lib/append-data-form";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 
 import { MAX_CHECKLIST_TOTAL_BYTES } from "@/lib/upload-limits";
 import { UpdateChecklistFormSubmit } from "./submit";
 
 import { validateUpdatePhotoRequirements } from "../photo-requirements";
+import { checklistEditPayload } from "../lib/edit-form";
 
 import { SelectBranchStep } from "@/app/(protected)/_components/shared/steps/select-branch-step";
 import { SelectVehicleDriverStep } from "@/app/(protected)/_components/shared/steps/select-vehicle-driver-step";
@@ -28,6 +28,7 @@ import type {
   UpdateVehicleChecklistFormProps,
 } from "./types";
 import { toast } from "sonner";
+import { guardFormAction } from "@/lib/action-result";
 
 const UpdateVehicleChecklistForm = ({
   checklistData,
@@ -38,7 +39,7 @@ const UpdateVehicleChecklistForm = ({
   const [state, dispatch] = useFormState<
     UpdateVehicleChecklistFormState,
     FormData
-  >(handleUpdateVehicleChecklist, defaultState);
+  >(guardFormAction(handleUpdateVehicleChecklist), defaultState);
 
   const [checklistFiles, setChecklistFiles] = useState<Record<string, File[]>>(
     {},
@@ -90,13 +91,19 @@ const UpdateVehicleChecklistForm = ({
       vehicleChecklistFormData.set("current_mileage", numericValue);
     }
 
-    const updateVehicleChacklistData = {
-      checklistId: checklistData.id,
-      businessId: checklistData.businessId,
-      branchId: commandBranchInputValue.branchId,
-      vehicleId: commandVehicleInputValue.vehicleId,
-      driverId: commandDriverInputValue.driverId,
-    };
+    // The ids, the links the person re-pointed and the date as stored while
+    // its day is unchanged (lib/edit-form): the picker's local midnight would
+    // move the record in time, and the API checks a moved date against the
+    // vehicle's odometer history.
+    const updateVehicleChecklistData = checklistEditPayload(
+      checklistData,
+      vehicleChecklistFormData.get("checklist_date"),
+      {
+        branchId: commandBranchInputValue.branchId,
+        vehicleId: commandVehicleInputValue.vehicleId,
+        driverId: commandDriverInputValue.driverId,
+      },
+    );
 
     // Add photos to remove
     if (photosToRemove.length > 0) {
@@ -180,7 +187,12 @@ const UpdateVehicleChecklistForm = ({
 
     vehicleChecklistFormData.set("photos", JSON.stringify(photos));
 
-    appendDataToForm(vehicleChecklistFormData, updateVehicleChacklistData);
+    // Set, not appended: the date field is already in the form, and the
+    // action reads the first value of a key.
+    for (const [key, value] of Object.entries(updateVehicleChecklistData)) {
+      vehicleChecklistFormData.set(key, value);
+    }
+
     return dispatch(vehicleChecklistFormData);
   };
 

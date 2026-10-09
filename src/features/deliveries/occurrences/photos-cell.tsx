@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
 import {
   Dialog,
@@ -11,66 +10,104 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { ImageInspector } from "../proof-audits/image-inspector";
+import { occurrenceImages } from "./occurrence-images";
+
 interface OccurrencePhotosCellProps {
   photos: string[];
   occurrenceTypeName: string;
+
+  /** DELIVERED rows (decision 14.3): signed URL of the receipt photo. */
+  receiptPhoto?: string | null;
+
+  /** DELIVERED rows: signed URL of the on-screen signature. */
+  signature?: string | null;
+
+  /** DELIVERED rows: who received, as the driver typed it. */
+  receivedBy?: string | null;
 }
 
 /**
- * Thumbnails opening the same lightbox the detail dialog uses — never a
- * new tab: the signed URLs expire and the manager stays in context.
+ * Thumbnails opening the photo inspector (zoom, pan, rotation, lens) in a
+ * dialog — never a new tab: the signed URLs expire and the manager stays in
+ * context. A damaged box or a smudged document number has to be readable,
+ * which a fixed-size preview was not (DLVB-06).
+ *
+ * A proof row leads with its receipt and signature, and says who received
+ * (design §7.3).
  */
 const OccurrencePhotosCell = ({
   photos,
   occurrenceTypeName,
+  receiptPhoto,
+  signature,
+  receivedBy,
 }: OccurrencePhotosCellProps): JSX.Element => {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // The index, not the URL: a refresh signs every URL again, and the open
+  // image (and its zoom) must survive that.
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
-  if (photos.length === 0) {
+  const images = occurrenceImages({
+    photos,
+    receipt_photo: receiptPhoto,
+    signature,
+  });
+
+  if (images.length === 0 && !receivedBy) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
 
+  const preview = previewIndex === null ? null : (images[previewIndex] ?? null);
+
   return (
     <>
-      <div className="flex w-24 flex-wrap gap-1">
-        {photos.map((photoUrl, index) => (
-          <button
-            key={index}
-            type="button"
-            className="cursor-pointer"
-            onClick={() => setPreviewUrl(photoUrl)}
+      <div className="w-24 space-y-1">
+        {images.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {images.map((image, index) => (
+              <button
+                key={index}
+                type="button"
+                className="cursor-pointer"
+                aria-label={`Abrir ${image.label === "Canhoto" ? "o" : "a"} ${image.label.toLowerCase()} da ocorrência`}
+                onClick={() => setPreviewIndex(index)}
+              >
+                <img
+                  src={image.url}
+                  alt={`${image.label} da ocorrência`}
+                  className={`h-10 w-10 rounded border ${
+                    image.contain ? "bg-white object-contain" : "object-cover"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {receivedBy && (
+          <p
+            className="text-xs text-muted-foreground [overflow-wrap:anywhere]"
+            title={receivedBy}
           >
-            <img
-              src={photoUrl}
-              alt={`Foto ${index + 1} da ocorrência`}
-              className="h-10 w-10 rounded border object-cover"
-            />
-          </button>
-        ))}
+            Quem recebeu: {receivedBy}
+          </p>
+        )}
       </div>
 
-      {previewUrl && (
-        <Dialog
-          open={previewUrl !== null}
-          onOpenChange={(open) => !open && setPreviewUrl(null)}
-        >
+      {preview && (
+        <Dialog open onOpenChange={(open) => !open && setPreviewIndex(null)}>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
-              <DialogTitle>Foto da ocorrência</DialogTitle>
+              <DialogTitle>{preview.label} da ocorrência</DialogTitle>
               <DialogDescription>{occurrenceTypeName}</DialogDescription>
             </DialogHeader>
-            <div className="flex justify-center">
-              <Image
-                src={previewUrl}
-                alt="Foto da ocorrência"
-                width={800}
-                height={600}
-                className="max-w-full max-h-96 rounded-lg object-contain"
-                // Signed URL — never through Next's optimizer, same rule as
-                // the fuel photos.
-                unoptimized
-              />
-            </div>
+
+            {/* A new image is a new inspection; see ImageInspector. */}
+            <ImageInspector
+              key={previewIndex}
+              url={preview.url}
+              alt={`${preview.label} da ocorrência: ${occurrenceTypeName}`}
+            />
           </DialogContent>
         </Dialog>
       )}

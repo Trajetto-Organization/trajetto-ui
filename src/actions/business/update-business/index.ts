@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateBusinessFormSchema } from "@/schemas/create-update-business-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateBusinessProps {
   message: string;
@@ -44,7 +47,7 @@ const handleUpdateBusiness = async (
   const businessData = updateBusinessValidation.data;
 
   try {
-    const response = await fetch(updateBusiness, {
+    const response = await apiFetch(updateBusiness, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -56,14 +59,18 @@ const handleUpdateBusiness = async (
 
     const { message } = (await response.json()) as UpdateBusinessProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateBusinessError: { updateBusinessErrorMessage: message },
+        updateBusinessError: {
+          updateBusinessErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("business/update-business", error);
     return {
       updateBusinessError: {
         updateBusinessErrorMessage:

@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { handleResendTwoFactorCode } from "@/actions/user/resend-two-factor-code";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { toast } from "sonner";
+
+import {
+  RESEND_COOLDOWN_SECONDS,
+  readResendCooldown,
+  recordResend,
+} from "./resend-cooldown";
 
 function useTwoFactorForm(email: string) {
   // State to hold the OTP code
@@ -16,34 +23,27 @@ function useTwoFactorForm(email: string) {
   // Check if the OTP has exactly 6 digits
   const isOTPComplete = otpCode.length === 6;
 
-  // Initialize timer from localStorage on component mount
+  // Picks up a cooldown started before a reload (and drops the old
+  // per-e-mail entries).
   useEffect(() => {
-    const lastResendTime = localStorage.getItem(`lastResendTime-${email}`);
+    const remaining = readResendCooldown();
 
-    if (lastResendTime) {
-      const elapsedSeconds = Math.floor(
-        (Date.now() - parseInt(lastResendTime)) / 1000,
-      );
-      const remainingTime = 10 - elapsedSeconds;
-
-      if (remainingTime > 0) {
-        setResendTimer(remainingTime);
-      }
-    }
-  }, [email]);
+    if (remaining > 0) setResendTimer(remaining);
+  }, []);
 
   const handleResendCode = async () => {
     try {
       const resendTwoFactorCode = await handleResendTwoFactorCode(email);
+
+      if (isStaleActionResult(resendTwoFactorCode)) return;
 
       if (resendTwoFactorCode.twoFactorError) {
         toast.error(resendTwoFactorCode.twoFactorError);
       } else if (resendTwoFactorCode.successMessage) {
         toast.success(resendTwoFactorCode.successMessage);
 
-        // Store the current timestamp in localStorage
-        localStorage.setItem(`lastResendTime-${email}`, Date.now().toString());
-        setResendTimer(10);
+        recordResend();
+        setResendTimer(RESEND_COOLDOWN_SECONDS);
       }
     } catch (error) {
       toast.error("Falha ao reenviar o código. Por favor, tente novamente.");

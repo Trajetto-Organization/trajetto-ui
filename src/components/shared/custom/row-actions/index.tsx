@@ -31,9 +31,11 @@ import { cn } from "@/lib/utils";
  * file that needed it. The row menu is the most-used control in the product;
  * it cannot be a different control in each module.
  *
- * Sized by its own content above a 160px floor, rather than pinned to a
- * number. A fixed width either truncates a long label or leaves a gulf
- * between a short one and its icon, and both were happening.
+ * The standard is the one the user approved in the thirty-eight legacy
+ * menus (decision 3.5): 160px, text only, a long label truncated with its full
+ * text in `title`, the destructive act in red, and an action the person may
+ * not use shown disabled WITH the reason. No second button beside the menu —
+ * "Ver detalhes" is an item, not an extra eye next to the three dots.
  */
 interface RowActionsProps {
   /**
@@ -59,6 +61,7 @@ const RowActions = ({
       <Button
         variant="ghost"
         className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+        data-tutorial="row-actions"
       >
         {isBusy ? (
           <Loader className="h-4 w-4 animate-spin" />
@@ -71,17 +74,18 @@ const RowActions = ({
 
     {/* Anchored to the right edge of the trigger: the menu is the last column,
         and aligning it left would push it off the table. */}
-    <DropdownMenuContent align="end" className="min-w-[160px] max-w-[280px]">
+    <DropdownMenuContent align="end" className={ROW_ACTIONS_MENU_CLASS}>
       {children}
     </DropdownMenuContent>
   </DropdownMenu>
 );
 
-interface RowActionItemProps {
-  label: string;
+/** The legacy menu's width; every row menu in the product is this wide. */
+const ROW_ACTIONS_MENU_CLASS = "w-[160px]";
 
-  /** Right-aligned, 16px, and every item in a menu either has one or none. */
-  icon: ReactNode;
+interface RowActionItemProps {
+  /** Text only: row menus carry no icons (decision 3.5). */
+  label: string;
 
   /**
    * Why this action cannot be used right now, or `null` when it can.
@@ -92,7 +96,7 @@ interface RowActionItemProps {
    */
   blockedReason?: string | null;
 
-  /** Red label and icon. For cancelling and deleting, nothing else. */
+  /** Red label. For cancelling and deleting, nothing else. */
   destructive?: boolean;
 
   onSelect: () => void;
@@ -100,7 +104,6 @@ interface RowActionItemProps {
 
 const RowActionItem = ({
   label,
-  icon,
   blockedReason = null,
   destructive = false,
   onSelect,
@@ -108,15 +111,15 @@ const RowActionItem = ({
   const item = (
     <DropdownMenuItem
       className={cn(
-        "flex cursor-pointer items-center justify-between gap-6",
+        "block cursor-pointer truncate",
         destructive &&
           "text-red-600 focus:text-red-600 dark:text-red-500 dark:focus:text-red-500",
       )}
+      title={label}
       disabled={blockedReason !== null}
       onSelect={onSelect}
     >
-      <span className="truncate">{label}</span>
-      <span className="shrink-0 [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      {label}
     </DropdownMenuItem>
   );
 
@@ -145,4 +148,9 @@ const RowActionItem = ({
 /** Re-exported so a module never reaches past the primitive for one divider. */
 const RowActionSeparator = DropdownMenuSeparator;
 
-export { RowActions, RowActionItem, RowActionSeparator };
+export {
+  RowActions,
+  RowActionItem,
+  RowActionSeparator,
+  ROW_ACTIONS_MENU_CLASS,
+};

@@ -20,6 +20,7 @@ import { handleUpdateTwoFactorAuthentication } from "@/actions/user/update-two-f
 
 import type { UserTwoFactorAuthenticationFormProps } from "./user-two-factor-authentication.types";
 import { useTwoFactorAuthenticationForm } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
 
 const UserTwoFactorAuthenticationFormSubmit = ({
   error,
@@ -47,12 +48,7 @@ const UserTwoFactorAuthenticationFormSubmit = ({
         <Button
           type="submit"
           disabled={pending || error}
-          variant={"secondary"}
-          className={
-            isTwoFactorEnabled
-              ? "bg-red-600/10 dark:bg-red-500/10 dark:text-red-500 text-red-600"
-              : "bg-green-600/10 dark:bg-green-600/10 dark:text-green-500 text-green-600"
-          }
+          variant={isTwoFactorEnabled ? "destructive" : "default"}
         >
           {isTwoFactorEnabled ? (
             <ShieldAlert className="mr-1 size-5" />
@@ -80,7 +76,7 @@ const UserTwoFactorAuthentication = ({
   isTwoFactorEnabled,
 }: UserTwoFactorAuthenticationFormProps): JSX.Element => {
   const [state, dispatch] = useFormState(
-    handleUpdateTwoFactorAuthentication,
+    guardFormAction(handleUpdateTwoFactorAuthentication),
     null,
   );
 
@@ -99,17 +95,17 @@ const UserTwoFactorAuthentication = ({
         rounded-xl border p-4"
       >
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[15px] font-medium">
               Autenticação de Dois Fatores (2FA)
             </span>
 
             <div
-              className={`flex items-center gap-1 rounded-md 
+              className={`flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md 
                 ${
                   isTwoFactorEnabled
-                    ? "bg-green-600/10 dark:bg-green-600/10 dark:text-green-500 text-green-600"
-                    : "bg-red-600/10 dark:bg-red-500/10 dark:text-red-500 text-red-600"
+                    ? "bg-green-600/10 dark:bg-green-600/10 dark:text-green-400 text-green-700"
+                    : "bg-red-600/10 dark:bg-red-500/10 dark:text-red-400 text-red-700"
                 } p-1 pr-2 text-xs font-medium 
               `}
             >
@@ -124,8 +120,8 @@ const UserTwoFactorAuthentication = ({
               {error
                 ? null
                 : isTwoFactorEnabled
-                  ? "/ Habilitado"
-                  : "/ Desabilitado"}
+                  ? " / Habilitado"
+                  : " / Desabilitado"}
             </div>
           </div>
           <div className="text-balance text-sm text-muted-foreground">
@@ -154,7 +150,7 @@ const UserTwoFactorAuthentication = ({
                 </span>
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-white dark:bg-[#121214]">
+            <AlertDialogContent className="bg-background">
               <form action={dispatch}>
                 <UserTwoFactorAuthenticationFormSubmit
                   error={error}

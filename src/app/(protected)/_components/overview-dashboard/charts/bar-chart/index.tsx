@@ -93,12 +93,12 @@ const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
             data={chartData}
             series={[
               {
-                key: "preventive",
+                key: "internal",
                 label: "Manutenção Interna",
                 color: "#3b82f6",
               },
               {
-                key: "corrective",
+                key: "external",
                 label: "Manutenção Externa",
                 color: "#ef4444",
               },
@@ -136,7 +136,7 @@ const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
           ) : growthPercentage < 0 ? (
             <>
               Redução de {Math.abs(growthPercentage)}% no período
-              <TrendingUp className="h-4 w-4 rotate-180 text-red-400" />
+              <TrendingUp className="h-4 w-4 rotate-180 text-red-600 dark:text-red-400" />
             </>
           ) : (
             <>

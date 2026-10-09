@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { appRoutes } from "@/app/app-routes";
+import {
+  paletteEntries,
+  type NavSurface,
+} from "@/app/(protected)/_components/layout/protected-navbar-items";
 
 /**
  * Every page the product has, reachable from the command palette.
@@ -12,35 +15,18 @@ import { resolve } from "node:path";
  * that is simply short — and the palette is the fastest way around the
  * product for the people who use it all day.
  *
- * Drift is the failure mode worth testing, not the current contents. Adding a
- * page and forgetting the palette is one commit; this turns that commit red.
- *
- * Read as source text on purpose. The hook is a React component tree that
- * needs a router, a store and a session to evaluate, and what matters here is
- * a set of path strings — importing the module would buy nothing and cost a
- * pile of mocks.
+ * The palette and the sidebar now read one navigation list
+ * (protected-navbar-items); this compares that list with the route registry.
  */
-const ROUTES = readFileSync(
-  resolve(__dirname, "../../src/app/app-routes/index.ts"),
-  "utf8",
-);
+const SURFACES: NavSurface[] = ["admin", "dashboard", "driver"];
 
-const COMMAND_BAR = readFileSync(
-  resolve(
-    __dirname,
-    "../../src/app/(protected)/_components/layout/protected-command-bar-provider/hooks/index.tsx",
+const registered = [...new Set(appRoutes.map((route) => route.path))];
+
+const inPalette = new Set(
+  SURFACES.flatMap((surface) => paletteEntries(surface)).map(
+    (entry) => entry.path,
   ),
-  "utf8",
 );
-
-const pathsIn = (source: string): string[] => [
-  ...new Set(
-    [...source.matchAll(/path: "(\/[^"]+)"/g)].map((match) => match[1]),
-  ),
-];
-
-const registered = pathsIn(ROUTES);
-const inPalette = new Set(pathsIn(COMMAND_BAR));
 
 /**
  * Pages that are deliberately absent, each for a stated reason.
@@ -51,36 +37,31 @@ const inPalette = new Set(pathsIn(COMMAND_BAR));
  */
 const NOT_IN_PALETTE = new Map<string, string>([
   [
-    "/driver/kanban",
-    "Driver surface: the app is the driver's product, and the palette is a keyboard affordance for a desk.",
+    "/driver/vehicles/:vehicleId/fuels",
+    "Opened from a vehicle card: the page needs the vehicle's id.",
   ],
-  ["/driver/vehicles", "Same."],
-  ["/driver/account-payable", "Same."],
-  ["/driver/service-order", "Same."],
-  ["/driver/fuel", "Same."],
-  ["/driver/vehicle-checklist", "Same."],
-  ["/driver/fine", "Same."],
-  ["/driver/deliveries", "Same."],
+  ["/driver/vehicles/:vehicleId/service-orders", "Same."],
 ]);
 
-describe("the file reading itself", () => {
-  it("found paths in both files", () => {
-    // Without this, a regex that stopped matching would make every assertion
-    // below pass over two empty lists.
+describe("the lists themselves", () => {
+  it("are not empty", () => {
+    // Without this, a broken import would make every assertion below pass
+    // over two empty lists.
     expect(registered.length).toBeGreaterThan(20);
     expect(inPalette.size).toBeGreaterThan(20);
   });
 });
 
 describe("every registered page is in the command palette", () => {
-  it.each(
-    registered.filter((path) => !NOT_IN_PALETTE.has(path)),
-  )("%s", (path) => {
-    expect(
-      inPalette.has(path),
-      `${path} está no registro de rotas e não no ⌘K`,
-    ).toBe(true);
-  });
+  it.each(registered.filter((path) => !NOT_IN_PALETTE.has(path)))(
+    "%s",
+    (path) => {
+      expect(
+        inPalette.has(path),
+        `${path} está no registro de rotas e não no ⌘K`,
+      ).toBe(true);
+    },
+  );
 });
 
 describe("and the palette does not point anywhere unknown", () => {
@@ -101,5 +82,13 @@ describe("and the palette does not point anywhere unknown", () => {
       unknown,
       `ações do ⌘K para caminhos fora do registro: ${unknown.join(", ")}`,
     ).toEqual([]);
+  });
+
+  it("gives every action a unique id on its surface", () => {
+    for (const surface of SURFACES) {
+      const paths = paletteEntries(surface).map((entry) => entry.path);
+
+      expect(new Set(paths).size, surface).toBe(paths.length);
+    }
   });
 });

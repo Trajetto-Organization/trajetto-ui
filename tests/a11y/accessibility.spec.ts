@@ -22,10 +22,7 @@ import { readFileSync } from "node:fs";
 const AXE = readFileSync("node_modules/axe-core/axe.min.js", "utf8");
 
 const CONTEXT = JSON.parse(
-  readFileSync(
-    "../trajetto-api/tests/load/fixtures/load-context.json",
-    "utf8",
-  ),
+  readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
 );
 
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
@@ -51,6 +48,21 @@ async function signIn(page: Page): Promise<void> {
       path: "/",
     },
   ]);
+
+  // The tour auto-opens on desktop 600 ms after the page settles, which is
+  // about when axe starts: some runs scanned the page, others the page half
+  // covered by the fading-in spotlight (a "color-contrast" failure on the
+  // highlighted stat card of /dashboard/deliveries). Same suppression as
+  // admin-and-public.spec.ts; the tour is not what this file asks about.
+  await page.addInitScript(() => {
+    const real = Storage.prototype.getItem;
+
+    Storage.prototype.getItem = function getItem(key: string) {
+      if (key.startsWith("tutorial_")) return "true";
+
+      return real.call(this, key);
+    };
+  });
 }
 
 /**
@@ -113,63 +125,63 @@ test.describe("axe", () => {
   for (const target of PAGES) {
     for (const width of WIDTHS) {
       for (const theme of THEMES) {
-      test(`${target.name} @ ${width}px (${theme})`, async ({ page }) => {
-        await open(page, target.path, width, theme);
+        test(`${target.name} @ ${width}px (${theme})`, async ({ page }) => {
+          await open(page, target.path, width, theme);
 
-        // The theme has to have actually taken, or the dark run is a second
-        // light run wearing a different name.
-        const applied = await page.evaluate(() =>
-          document.documentElement.classList.contains("dark"),
-        );
+          // The theme has to have actually taken, or the dark run is a second
+          // light run wearing a different name.
+          const applied = await page.evaluate(() =>
+            document.documentElement.classList.contains("dark"),
+          );
 
-        expect(applied, `o tema ${theme} não foi aplicado`).toBe(
-          theme === "dark",
-        );
+          expect(applied, `o tema ${theme} não foi aplicado`).toBe(
+            theme === "dark",
+          );
 
-        await page.addScriptTag({ content: AXE });
+          await page.addScriptTag({ content: AXE });
 
-        const violations = await page.evaluate(async () => {
-          // @ts-expect-error injected above
-          const report = await window.axe.run(
-            {
-              /**
-               * The product, not the toolbox around it.
-               *
-               * `nextjs-portal` is the dev server's own overlay — the build
-               * indicator and the error dialog. It appears whenever a page is
-               * being recompiled, so a run that happened to land during a
-               * rebuild failed on the CONTRAST OF THE NEXT.JS LOGO, which
-               * ships in no production bundle and which nobody here can fix.
-               * A test that fails on the weather is worse than no test.
-               */
-              exclude: [["nextjs-portal"]],
-            },
-            {
-              runOnly: {
-                type: "tag",
-                values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+          const violations = await page.evaluate(async () => {
+            // @ts-expect-error injected above
+            const report = await window.axe.run(
+              {
+                /**
+                 * The product, not the toolbox around it.
+                 *
+                 * `nextjs-portal` is the dev server's own overlay — the build
+                 * indicator and the error dialog. It appears whenever a page is
+                 * being recompiled, so a run that happened to land during a
+                 * rebuild failed on the CONTRAST OF THE NEXT.JS LOGO, which
+                 * ships in no production bundle and which nobody here can fix.
+                 * A test that fails on the weather is worse than no test.
+                 */
+                exclude: [["nextjs-portal"]],
               },
-            },
-          );
+              {
+                runOnly: {
+                  type: "tag",
+                  values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+                },
+              },
+            );
 
-          return (report.violations as Array<Record<string, any>>).map(
-            (rule) => ({
-              id: rule.id as string,
-              impact: rule.impact as string,
-              help: rule.help as string,
-              nodes: (rule.nodes as Array<Record<string, any>>)
-                .slice(0, 3)
-                .map((node) => String(node.target)),
-            }),
-          );
+            return (report.violations as Array<Record<string, any>>).map(
+              (rule) => ({
+                id: rule.id as string,
+                impact: rule.impact as string,
+                help: rule.help as string,
+                nodes: (rule.nodes as Array<Record<string, any>>)
+                  .slice(0, 3)
+                  .map((node) => String(node.target)),
+              }),
+            );
+          });
+
+          expect(
+            violations.map(
+              (v) => `${v.impact} ${v.id}: ${v.help} — ${v.nodes.join(" ; ")}`,
+            ),
+          ).toEqual([]);
         });
-
-        expect(
-          violations.map(
-            (v) => `${v.impact} ${v.id}: ${v.help} — ${v.nodes.join(" ; ")}`,
-          ),
-        ).toEqual([]);
-      });
       }
     }
   }
@@ -198,9 +210,7 @@ test.describe("touch targets", () => {
           '[role="menuitem"]',
         ].join(", ");
 
-        for (const element of Array.from(
-          document.querySelectorAll(selector),
-        )) {
+        for (const element of Array.from(document.querySelectorAll(selector))) {
           const style = getComputedStyle(element);
 
           if (style.display === "none" || style.visibility === "hidden") {
@@ -247,7 +257,9 @@ test.describe("touch targets", () => {
            * `null` and was reported as a defect. Geometry does not care where
            * the page is scrolled to.
            */
-          const spread = (pseudo: string): { width: number; height: number } => {
+          const spread = (
+            pseudo: string,
+          ): { width: number; height: number } => {
             const decoration = getComputedStyle(element, pseudo);
 
             if (

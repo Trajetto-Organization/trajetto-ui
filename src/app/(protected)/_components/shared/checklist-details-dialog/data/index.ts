@@ -1,5 +1,7 @@
 import { AlertTriangle, CheckCircle, HelpCircle } from "lucide-react";
 
+import { CHECKLIST_CONDITION_LABELS } from "@/features/vehicle-checklist/server-table";
+
 // Field name → Portuguese label
 const fieldLabels: Record<string, string> = {
   current_mileage: "Quilometragem",
@@ -79,26 +81,111 @@ const aiStatusConfig: Record<string, { color: string; label: string }> = {
     color: "bg-gray-50 text-gray-500 dark:bg-gray-900 dark:text-gray-400",
     label: "Não Analisado",
   },
+  // ADR 0010 §5: a "verified" whose km was read without a fraud check.
+  km_matches: {
+    color: "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300",
+    label: "Km confere",
+  },
+  // No photo of a kind the reader covers: nothing failed, there is simply
+  // no automatic reading. Neutral, no error icon (design P6.2).
+  not_covered: {
+    color: "bg-gray-50 text-gray-600 dark:bg-gray-900 dark:text-gray-300",
+    label: "Sem leitura automática",
+  },
 };
+
+/** The sentence under "Sem leitura automática" (design P6.2). */
+const NOT_COVERED_NOTE = "Sem leitura automática — confira a foto.";
+
+/**
+ * The fields the automatic reader reads (ADR 0010 §5: only the odometer).
+ * Fuel level, tyres and "working" items are never read automatically.
+ */
+const READER_COVERED_FIELDS = ["current_mileage"];
+
+function parsedObject(value: unknown): Record<string, unknown> | null {
+  let parsed: unknown = value;
+
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+
+  return parsed && typeof parsed === "object"
+    ? (parsed as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * The status the dialog draws: the server's, except
+ * - a "verified" with any field read without a fraud check: "Km confere";
+ * - a "skipped" checklist with no photo the reader covers: "Sem leitura
+ *   automática", rather than a "não analisado" that suggests something
+ *   went wrong.
+ * The API contract does not change.
+ */
+function checklistDisplayStatus(
+  status: string | undefined,
+  context: {
+    /** Stored ai_verification_details (field → outcome), or a JSON string. */
+    details?: unknown;
+    /** The live completed event said a field was read without a fraud check. */
+    liveFraudUnassessed?: boolean;
+    /** The checklist's photos_by_field (field → storage keys). */
+    photosByField?: unknown;
+  },
+): string | undefined {
+  if (status === "verified") {
+    const stored = Object.values(parsedObject(context.details) ?? {}).some(
+      (outcome) =>
+        Boolean(outcome) &&
+        typeof outcome === "object" &&
+        (outcome as { fraudAssessed?: unknown }).fraudAssessed === false,
+    );
+
+    return context.liveFraudUnassessed || stored ? "km_matches" : status;
+  }
+
+  if (status === "skipped") {
+    // Without the photos (an older row or API) nothing can be said.
+    const photos = parsedObject(context.photosByField);
+
+    if (!photos) return status;
+
+    const covered = READER_COVERED_FIELDS.some((field) => {
+      const keys = photos[field];
+      return Array.isArray(keys) && keys.length > 0;
+    });
+
+    return covered ? status : "not_covered";
+  }
+
+  return status;
+}
 
 // Overall condition config
 const overallConditionConfig: Record<string, { label: string; color: string }> =
   {
     approved: {
-      label: "Aprovado",
+      label: CHECKLIST_CONDITION_LABELS.approved,
       color: "bg-green-100 text-green-800",
     },
     approved_with_restrictions: {
-      label: "Aprovado c/ Restrições",
+      label: CHECKLIST_CONDITION_LABELS.approved_with_restrictions,
       color: "bg-yellow-100 text-yellow-800",
     },
     rejected: {
-      label: "Rejeitado",
+      label: CHECKLIST_CONDITION_LABELS.rejected,
       color: "bg-red-100 text-red-800",
     },
   };
 
 export {
+  checklistDisplayStatus,
+  NOT_COVERED_NOTE,
   fieldLabels,
   aiStatusConfig,
   overallConditionConfig,

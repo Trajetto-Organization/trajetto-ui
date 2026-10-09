@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteServiceOrderProps {
   businessId: string;
@@ -9,6 +11,8 @@ interface DeleteServiceOrderProps {
 
 interface DeleteServiceOrderResponseProps {
   message: string;
+  /** Part lines removed with the order (their cascade). */
+  partsRemoved?: number;
 }
 
 const handleDeleteServiceOrder = async ({
@@ -27,7 +31,7 @@ const handleDeleteServiceOrder = async ({
   const deleteServiceOrder = `${process.env.HTTP_REQUEST}/service-order/delete-service-order/${serviceOrderId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteServiceOrder, {
+    const response = await apiFetch(deleteServiceOrder, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -35,15 +39,24 @@ const handleDeleteServiceOrder = async ({
       },
     });
 
-    const { message } =
+    const { message, partsRemoved } =
       (await response.json()) as DeleteServiceOrderResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteServiceOrderError: message };
+    if (!response.ok) {
+      return {
+        deleteServiceOrderError:
+          message ?? "Não foi possível excluir a ordem de serviço.",
+      };
     }
 
-    return { successMessage: message };
+    return {
+      successMessage:
+        partsRemoved && partsRemoved > 0
+          ? `${message} ${partsRemoved} peça(s) lançada(s) nela foram removidas junto.`
+          : message,
+    };
   } catch (error) {
+    logActionError("service-order/delete-service-order", error);
     return {
       deleteServiceOrderError:
         "Ocorreu um erro inesperado ao tentar deletar a ordem de serviço.",

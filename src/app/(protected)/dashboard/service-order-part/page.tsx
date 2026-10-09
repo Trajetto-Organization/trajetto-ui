@@ -1,47 +1,51 @@
 import { Suspense } from "react";
-
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { ServiceOrderPartContent } from "./service-order-part-content";
+import { ServiceOrderPartContent } from "@/features/service-order/order-parts/content";
+import { MaintenanceListSkeleton } from "@/features/service-order/skeleton";
 
-interface ServiceOrderPartQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface PageProps {
+  // Every param the URL carries: sort, order and the server-side filters too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Ordem de serviço por peça",
-    description: `
-      Gerencie facilmente as ordens de serviço das peças cadastradas. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    title: "Peças das ordens de serviço",
+    description:
+      "As peças lançadas nas ordens de serviço da frota, com quantidades, descontos e valores.",
   };
 }
 
-const ServiceOrderPart = async ({
+const DashboardServiceOrderPart = async ({
   searchParams,
-}: ServiceOrderPartQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: PageProps): Promise<JSX.Element> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Ordem de serviço por peça"}
-        description="Gerencie as ordens de serviços das peças cadastradas, delete, edite e mantenha os dados sempre atualizados."
+        title="Peças das ordens de serviço"
+        description="Lance as peças usadas em cada ordem de serviço e acompanhe quanto elas somam."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
+      {/* loading.tsx covers the navigation; this covers only the async
+          content, so the heading paints first. */}
+      <Suspense
+        fallback={
+          <MaintenanceListSkeleton mode="dashboard" actions={2} filters={1} />
+        }
+      >
         <ServiceOrderPartContent
+          mode="dashboard"
           searchParams={searchParams}
           token={tokenAccess}
         />
@@ -50,4 +54,4 @@ const ServiceOrderPart = async ({
   );
 };
 
-export default ServiceOrderPart;
+export default DashboardServiceOrderPart;

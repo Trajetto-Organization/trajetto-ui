@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createKanbanColumnSchema } from "@/schemas/create-kanban-column-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateKanbanColumnProps {
   message: string;
@@ -52,7 +55,7 @@ const handleCreateKanbanColumn = async (
   const columnData = createColumnValidation.data;
 
   try {
-    const response = await fetch(createColumn, {
+    const response = await apiFetch(createColumn, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -64,14 +67,17 @@ const handleCreateKanbanColumn = async (
 
     const { message } = (await response.json()) as CreateKanbanColumnProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createColumnError: { createColumnErrorMessage: message },
+        createColumnError: {
+          createColumnErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/create-kanban-column", error);
     return {
       createColumnError: {
         createColumnErrorMessage:

@@ -1,7 +1,9 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { parseNDJSON } from "@/lib/parse-nd-json";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ShipperData {
   id: string;
@@ -52,7 +54,7 @@ const listShippers = async (
       ...(search && { search }),
     });
 
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/shipper/list-shipper?${params}`,
       {
         credentials: "include",
@@ -89,6 +91,7 @@ const listShippers = async (
       } as ShipperListData,
     };
   } catch (error) {
+    logActionError("shipper/list-shipper", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao listar os embarcadores.",

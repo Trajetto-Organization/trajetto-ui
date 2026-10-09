@@ -77,10 +77,7 @@ function useDriverHints(visibleMs: number): DriverHints {
       // ordinary case, and an explicit "stopped" from the other side is
       // only ever a shortcut to it. Sized in `chat-hints` to outlast one
       // late pulse and no more.
-      timers.current[driverId] = setTimeout(
-        () => putOut(driverId),
-        visibleMs,
-      );
+      timers.current[driverId] = setTimeout(() => putOut(driverId), visibleMs);
     },
     [putOut, visibleMs],
   );

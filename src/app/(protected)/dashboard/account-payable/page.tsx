@@ -6,27 +6,27 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { AccountPayableContent } from "./account-payable-content";
+import { AccountPayableContent } from "@/features/account-payable/content";
+import { AccountPayableSkeleton } from "@/features/account-payable/skeleton";
 
-interface AccountPayableQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface AccountPayablePageProps {
+  // Every param the URL carries: sort, order and the filters too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Contas a pagar",
-    description: `
-      Gerencie de forma segura e intuitiva as contas a pagar de sua empresa.
-      Visualize, crie e edite privilégios para manter o controle total do sistema.`,
+    description:
+      "Registre as contas da operação, a quem se paga e o veículo que carrega o custo, e acompanhe o que está em aberto, vencido e pago.",
   };
 }
 
-const AccountPayable = async ({
+const DashboardAccountPayable = async ({
   searchParams,
-}: AccountPayableQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: AccountPayablePageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -36,12 +36,13 @@ const AccountPayable = async ({
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Contas a pagar"}
+        title="Contas a pagar"
         description="Cadastre, monitore e gerencie suas contas a pagar."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
+      <Suspense fallback={<AccountPayableSkeleton mode="dashboard" />}>
         <AccountPayableContent
+          mode="dashboard"
           searchParams={searchParams}
           token={tokenAccess}
         />
@@ -50,4 +51,4 @@ const AccountPayable = async ({
   );
 };
 
-export default AccountPayable;
+export default DashboardAccountPayable;

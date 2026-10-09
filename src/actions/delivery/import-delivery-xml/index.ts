@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ActionResponse<T = undefined> {
   success: boolean;
@@ -17,6 +19,8 @@ interface ImportResultItem {
 }
 
 interface ImportSummary {
+  /** The Importações row this upload wrote (decision 5.6). */
+  importId?: string;
   imported: number;
   duplicated: number;
   invalid: number;
@@ -39,7 +43,7 @@ const importDeliveryXml = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/import-xml/${businessId}`,
       {
         credentials: "include",
@@ -73,6 +77,7 @@ const importDeliveryXml = async (
       data: result.data as ImportSummary,
     };
   } catch (error) {
+    logActionError("delivery/import-delivery-xml", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao importar os arquivos.",

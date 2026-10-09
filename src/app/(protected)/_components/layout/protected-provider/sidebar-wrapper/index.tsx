@@ -3,6 +3,8 @@
 import { ReactNode, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 
+import { useSidebarDefaultOpen } from "./sidebar-default-open";
+
 interface SafeSidebarProviderProps {
   children: ReactNode;
 }
@@ -10,6 +12,10 @@ interface SafeSidebarProviderProps {
 const SidebarWrapper = ({
   children,
 }: SafeSidebarProviderProps): JSX.Element => {
+  // The collapsed/open choice the person left, read from the cookie on the
+  // server, so a reload does not reopen a collapsed menu.
+  const defaultOpen = useSidebarDefaultOpen();
+
   useEffect(() => {
     // 🔧 Patch to prevent react-remove-scroll error
     const originalContains = Node.prototype.contains;
@@ -34,6 +40,7 @@ const SidebarWrapper = ({
 
   return (
     <SidebarProvider
+      defaultOpen={defaultOpen}
       style={
         {
           "--sidebar-width": "16rem",

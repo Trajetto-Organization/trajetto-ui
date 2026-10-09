@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { updateKanbanCardSchema } from "@/schemas/update-kanban-card-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateKanbanCardProps {
   message: string;
@@ -52,7 +55,7 @@ const handleUpdateKanbanCard = async (
   const cardData = updateCardValidation.data;
 
   try {
-    const response = await fetch(updateCard, {
+    const response = await apiFetch(updateCard, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -64,14 +67,17 @@ const handleUpdateKanbanCard = async (
 
     const { message } = (await response.json()) as UpdateKanbanCardProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateCardError: { updateCardErrorMessage: message },
+        updateCardError: {
+          updateCardErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/update-kanban-card", error);
     return {
       updateCardError: {
         updateCardErrorMessage:

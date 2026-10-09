@@ -1,55 +1,47 @@
 "use client";
 
-/*
-  Same reason as its sibling in `tanstack-table/data-table-revalidate`:
-  `useFormState` is a client hook and this module declared nothing, so it was
-  safe by accident of who imports it rather than by design.
-*/
-import { useFormState } from "react-dom";
+import type { FormEvent } from "react";
 
-import { RevalidateButtonFormInner } from "@/app/(protected)/_components/shared/revalidate-button-ui";
-import { handleRevalidateData } from "@/actions/revalidate-data";
+import { RevalidateButtonUI } from "@/app/(protected)/_components/shared/revalidate-button-ui";
+import { useRevalidateScreen } from "@/hooks/use-revalidate-screen";
 
 import type { DataButtonRevalidateProps } from "./revalidation-button.types";
-import { useDataButtonRevalidation } from "../../hooks/revalidation-button";
+import { useButtonRefreshRateLimit } from "../../hooks/revalidation-button";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * The overview's "Atualizar": the same whole-tab refresh as every table's
+ * "Atualizar" (useRevalidateScreen). The 7/30-day charts ride on it as
+ * react-query reads; the usage limits and system metrics listen for
+ * `data-revalidated`.
+ */
 const ButtonRevalidation = ({
-  revalidateData,
   rateLimit,
   className,
   buttonClassName,
 }: DataButtonRevalidateProps): JSX.Element => {
-  const [state, dispatch] = useFormState(
-    async (_prevState: any, _formData: FormData) => {
-      const result = await handleRevalidateData(revalidateData);
-
-      if (!result?.revalidateDataError) {
-        window.dispatchEvent(new CustomEvent("data-revalidated"));
-      }
-
-      return result;
-    },
-    null,
-  );
+  const { revalidate, isRevalidating } = useRevalidateScreen();
 
   const { isRateLimited, cooldownRemaining, registerClick } =
-    useDataButtonRevalidation(state, rateLimit);
+    useButtonRefreshRateLimit(rateLimit);
 
-  const rateLimitedDispatch = (formData: FormData) => {
-    const canProceed = registerClick();
-    if (canProceed) {
-      dispatch(formData);
-    }
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!registerClick()) return;
+
+    void revalidate();
   };
 
   return (
-    <form action={rateLimitedDispatch} className={cn("w-full", className)}>
-      <RevalidateButtonFormInner
+    <form onSubmit={handleSubmit} className={cn("w-full", className)}>
+      <RevalidateButtonUI
+        isLoading={isRevalidating}
         isRateLimited={isRateLimited}
         cooldownRemaining={cooldownRemaining}
         className={buttonClassName || "w-full sm:w-auto"}
+        type="submit"
       />
     </form>
   );

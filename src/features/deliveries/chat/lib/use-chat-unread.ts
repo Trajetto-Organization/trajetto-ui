@@ -2,7 +2,9 @@
 
 import { useQuery } from "react-query";
 
-import { listChatThreads } from "@/actions/chat/list-chat-threads";
+import { getTicketsSummary } from "@/actions/chat/tickets";
+import type { TicketCounts } from "@/actions/chat/chat.types";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 import {
   getPermissionName,
@@ -32,11 +34,11 @@ const DELIVERIES_MODULE = "DELIVERIES";
 const CHAT_UNREAD_QUERY_KEY = ["chat-threads", "unread"];
 
 /**
- * The badge only ever needs `totalUnread`, and the API counts that against
- * the reader's cursor over every thread of the company — not over the page
- * it happens to return. So one thread is all this query has to carry.
+ * The tickets' summary (decision 14.5): the tab badge, the balloon's pill
+ * and the filter counts share this one cache entry. Under the tickets' root,
+ * so every `invalidateQueries(["chat-tickets"])` refreshes it too.
  */
-const UNREAD_PAGE_SIZE = 1;
+const TICKETS_SUMMARY_QUERY_KEY = ["chat-tickets", "summary"];
 
 /** Hoisted so the permission check memoizes on a stable reference. */
 const DELIVERY_READ_REQUIREMENT = [
@@ -85,43 +87,51 @@ function useChatAccess(): ChatAccess {
 }
 
 /**
- * How many conversations are waiting for this company, from any screen.
+ * The tickets' counts for this company, from any screen.
  *
- * The number is never accumulated here: it is `list-threads`' own
- * `totalUnread`, computed from the reader's cursor. A counter incremented on
- * each socket event would drift the moment a colleague read a thread, or a
- * message arrived while the tab slept.
- *
- * Every caller shares one cache entry, so the listener that keeps it fresh
- * and the badges that display it cost a single request between them.
+ * Never accumulated here: the server derives them from cursors and partial
+ * indexes; a counter incremented per socket event would drift the moment a
+ * colleague read a ticket or the socket dropped an event. The socket only
+ * says "ask again".
  */
-function useChatUnreadCount(): number {
+function useTicketsSummary(): TicketCounts | null {
   const { canUseChat } = useChatAccess();
 
   const { data } = useQuery(
-    CHAT_UNREAD_QUERY_KEY,
+    TICKETS_SUMMARY_QUERY_KEY,
     async () => {
-      const result = await listChatThreads({
-        page: 1,
-        pageSize: UNREAD_PAGE_SIZE,
-      });
+      const result = await getTicketsSummary({});
+
+      if (isStaleActionResult(result, { background: true })) {
+        throw new Error(STALE_ACTION_MESSAGE);
+      }
 
       if (!result.success || !result.data) {
         throw new Error(result.message);
       }
 
-      return result.data.totalUnread;
+      return result.data;
     },
     { enabled: canUseChat, refetchOnWindowFocus: true },
   );
 
-  // A session that lost access keeps no stale badge from the cache.
-  return canUseChat ? (data ?? 0) : 0;
+  // A session that lost access keeps no stale numbers from the cache.
+  return canUseChat ? (data ?? null) : null;
+}
+
+/**
+ * The tab badge: open tickets with something unread for this reader
+ * (design §6.1, it replaced the threads' `totalUnread`).
+ */
+function useChatUnreadCount(): number {
+  return useTicketsSummary()?.unreadOpen ?? 0;
 }
 
 export {
   useChatAccess,
   useChatUnreadCount,
+  useTicketsSummary,
+  TICKETS_SUMMARY_QUERY_KEY,
   CHAT_UNREAD_QUERY_KEY,
   THREADS_REFRESH_COALESCE_MS,
 };

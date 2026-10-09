@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useFormStatus, useFormState } from "react-dom";
 import type {
   UpdatePasswordProps,
@@ -25,6 +26,9 @@ import FormInput from "@/components/shared/custom/form-input";
 
 import { Lock } from "lucide-react";
 import { useUpdatePasswordForm } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
+import { validateUserPasswordFormSchema } from "@/schemas/update-user-password";
+import { useLiveValidation } from "@/components/shared/live-validation";
 
 const UpdatePasswordFormSubmit = ({
   state,
@@ -32,16 +36,48 @@ const UpdatePasswordFormSubmit = ({
 }: UpdateUserPasswordFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
 
+  // Controlled, so live validation reads them; the dialog mounts this on
+  // every open, so each opening starts empty.
+  const [current, setCurrent] = useState<string>("");
+  const [next, setNext] = useState<string>("");
+  const [confirm, setConfirm] = useState<string>("");
+
+  // Ids equal the field names: an id with spaces would split
+  // aria-describedby into ids that do not exist.
+  // Live validation (decision 16.700) with the action's schema. The
+  // confirmation is an object refine, which waits for the other fields; as
+  // a client rule it follows the new password as soon as it is left.
+  const live = useLiveValidation({
+    schema: validateUserPasswordFormSchema,
+    values: {
+      current_password: current,
+      new_password: next,
+      confirm_new_password: confirm,
+    },
+    // An empty confirmation is the schema's "Confirme a nova senha.", which
+    // wins over this rule; the rule only adds the mismatch.
+    rules: (values) => ({
+      confirm_new_password:
+        values.confirm_new_password !== values.new_password
+          ? "As senhas não coincidem."
+          : null,
+    }),
+    fields: ["current_password", "new_password", "confirm_new_password"],
+    serverErrors: state.userPasswordError,
+  });
+
   return (
-    <>
+    <div ref={live.ref} className="flex flex-col space-y-6">
       <FormInput
         data-test="current_password"
         label={"Senha atual"}
-        htmlfor={"Senha atual"}
+        htmlfor="current_password"
         name="current_password"
         type={"password"}
         placeholder={"Digite a sua senha atual"}
-        errorName={state.userPasswordError?.current_password}
+        value={current}
+        onChange={(event) => setCurrent(event.target.value)}
+        errorName={live.errorOf("current_password")}
         disabled={pending || error}
         className="pr-10"
         autoComplete="current-password"
@@ -50,11 +86,13 @@ const UpdatePasswordFormSubmit = ({
       <FormInput
         data-test="new_password"
         label={"Nova senha"}
-        htmlfor={"Nova senha"}
+        htmlfor="new_password"
         name="new_password"
         type={"password"}
         placeholder={"Digite sua nova senha"}
-        errorName={state.userPasswordError?.new_password}
+        value={next}
+        onChange={(event) => setNext(event.target.value)}
+        errorName={live.errorOf("new_password")}
         disabled={pending || error}
         className="pr-10"
         autoComplete="new-password"
@@ -63,11 +101,13 @@ const UpdatePasswordFormSubmit = ({
       <FormInput
         data-test="confirm_new_password"
         label={"Confirmar senha"}
-        htmlfor={"Confirmar senha"}
+        htmlfor="confirm_new_password"
         name="confirm_new_password"
         type={"password"}
         placeholder={"Confirme sua nova senha"}
-        errorName={state.userPasswordError?.confirm_new_password}
+        value={confirm}
+        onChange={(event) => setConfirm(event.target.value)}
+        errorName={live.errorOf("confirm_new_password")}
         disabled={pending || error}
         className="pr-10"
         autoComplete="new-password"
@@ -81,14 +121,14 @@ const UpdatePasswordFormSubmit = ({
           </div>
         )}
       </Button>
-    </>
+    </div>
   );
 };
 
 const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
   const defaultState: UpdateUserPasswordFormState = {};
   const [state, dispatch] = useFormState<UpdateUserPasswordFormState, FormData>(
-    handleUpdateUserPassword,
+    guardFormAction(handleUpdateUserPassword),
     defaultState,
   );
 
@@ -126,8 +166,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
               </Button>
             </DialogTrigger>
             <DialogContent
-              className="overflow-hidden p-0 bg-white 
-            dark:bg-[#121214] max-w-md rounded-2xl md:border"
+              className="overflow-hidden p-0 bg-background max-w-md rounded-2xl md:border"
               onInteractOutside={(event) => event.preventDefault()}
             >
               <div
@@ -149,6 +188,7 @@ const UserPasswordForm = ({ error }: UpdatePasswordProps): JSX.Element => {
 
               <form
                 action={dispatch}
+                noValidate
                 className="flex flex-col space-y-6 border-t
                 bg-accent/35 px-4 py-8 text-left sm:px-10"
               >

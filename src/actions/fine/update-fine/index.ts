@@ -1,11 +1,17 @@
 "use server";
 
-import { createUpdateFineSchema } from "@/schemas/create-update-fine-schema";
+import { logActionError } from "@/lib/log-action-error";
+import { readBusinessIdParam } from "@/lib/business-id-param";
+
+import { fineFormSchema } from "@/features/fine/lib/fine-form-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateFineProps {
   message: string;
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const handleUpdateFine = async (state: any, updateFineValues: FormData) => {
   const tokenAccess = await getCookies("tkey");
@@ -23,13 +29,22 @@ const handleUpdateFine = async (state: any, updateFineValues: FormData) => {
     return {};
   }
 
-  const businessId = updateFineValues.get("businessId");
-  const fineId = updateFineValues.get("fineId");
+  // Both become segments of the API path: ids or nothing.
+  const businessId = readBusinessIdParam(
+    updateFineValues.get("businessId") as string | null,
+  );
+  const fineId = String(updateFineValues.get("fineId") ?? "");
+
+  if (!businessId || !UUID.test(fineId)) {
+    return {
+      updateFineError: { updateFineErrorMessage: "Multa não encontrada!" },
+    };
+  }
 
   const updateFine = `${process.env.HTTP_REQUEST}/fines/update-fine/${fineId}/business/${businessId}`;
 
   const fineValues = Object.fromEntries(updateFineValues.entries());
-  const updateFineValidation = createUpdateFineSchema.safeParse(fineValues);
+  const updateFineValidation = fineFormSchema.safeParse(fineValues);
 
   if (updateFineValidation.error) {
     const formatError = updateFineValidation.error.flatten();
@@ -41,26 +56,39 @@ const handleUpdateFine = async (state: any, updateFineValues: FormData) => {
   const fineData = updateFineValidation.data;
 
   try {
-    const response = await fetch(updateFine, {
+    const response = await apiFetch(updateFine, {
       credentials: "include",
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(fineData),
+      // Empty optional fields go as "" so the edit can clear them (the API
+      // reads "" as null): a payment undone, a point removed.
+      body: JSON.stringify({
+        ...fineData,
+        payment_date: fineData.payment_date ?? "",
+        location: fineData.location ?? "",
+        observation: fineData.observation ?? "",
+        latitude: fineData.latitude ?? "",
+        longitude: fineData.longitude ?? "",
+      }),
     });
 
     const { message } = (await response.json()) as UpdateFineProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateFineError: { updateFineErrorMessage: message },
+        updateFineError: {
+          updateFineErrorMessage:
+            message || "Não foi possível atualizar a multa.",
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("fine/update-fine", error);
     return {
       updateFineError: {
         updateFineErrorMessage:

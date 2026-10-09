@@ -1,8 +1,10 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 
 import type { DeliveryStatus } from "../get-delivery";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ActionResponse<T = undefined> {
   success: boolean;
@@ -45,7 +47,7 @@ const updateDeliveryStatus = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/delivery/update-delivery-status/${deliveryId}/business/${businessId}`,
       {
         credentials: "include",
@@ -75,6 +77,7 @@ const updateDeliveryStatus = async (
 
     return { success: true, message: result.message };
   } catch (error) {
+    logActionError("delivery/update-delivery-status", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao mudar o status da entrega.",

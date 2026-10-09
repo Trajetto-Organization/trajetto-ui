@@ -216,11 +216,10 @@ for (const root of SERVER_ROOTS) {
   }
 }
 
-const show = (path: string) =>
-  relative(SOURCE, path).split("\\").join("/");
+const show = (path: string) => relative(SOURCE, path).split("\\").join("/");
 
-describe("a varredura em si", () => {
-  it("encontrou o grafo, os dois lados dele", () => {
+describe("the scan itself", () => {
+  it("found the graph, both sides of it", () => {
     /*
       Without this, a resolver that stopped resolving would empty every set
       below and the whole file would pass over nothing — which is how a rule
@@ -239,7 +238,7 @@ describe("a varredura em si", () => {
     ).toBeGreaterThan(150);
   });
 
-  it("e sabe que uma diretiva fora da primeira linha não vale", () => {
+  it("and knows that a directive off the first line does not count", () => {
     // The check the scan itself depends on. A `"use client"` after an import
     // is ignored by the bundler, so treating it as a boundary would make this
     // whole file blind exactly where somebody thought they were being safe.
@@ -249,7 +248,7 @@ describe("a varredura em si", () => {
   });
 });
 
-describe("nenhum hook do React é chamado no servidor", () => {
+describe("no React hook is called on the server", () => {
   /**
    * The bug the human hit on /admin, as a property.
    *
@@ -270,7 +269,7 @@ describe("nenhum hook do React é chamado no servidor", () => {
     })
     .filter((entry) => entry.hooks.length > 0);
 
-  it("em módulo nenhum alcançável a partir de uma rota", () => {
+  it("in no module reachable from a route", () => {
     const named = offenders.map((entry) => {
       const via = REACHED_VIA.get(entry.path);
 
@@ -359,7 +358,8 @@ function importedSymbols(source: string): Map<string, string> {
     }
   }
 
-  const fallback = /import\s+([A-Za-z_$][\w$]*)\s*(?:,\s*\{[^}]*\})?\s*from\s*['"]([^'"]+)['"]/g;
+  const fallback =
+    /import\s+([A-Za-z_$][\w$]*)\s*(?:,\s*\{[^}]*\})?\s*from\s*['"]([^'"]+)['"]/g;
 
   for (const [, symbol, specifier] of source.matchAll(fallback)) {
     table.set(symbol, specifier);
@@ -408,7 +408,13 @@ for (const path of SERVER_ONLY) {
     const line = source.slice(0, tag.at).split("\n").length;
 
     const record = (prop: string, value: string) => {
-      crossings.push({ file: show(path), line, component: tag.name, prop, value });
+      crossings.push({
+        file: show(path),
+        line,
+        component: tag.name,
+        prop,
+        value,
+      });
     };
 
     for (const [, prop, value] of tag.props.matchAll(COMPONENT_PROP)) {
@@ -434,7 +440,7 @@ for (const path of SERVER_ONLY) {
   }
 }
 
-describe("nada que o React não saiba serializar cruza para o cliente", () => {
+describe("nothing React cannot serialize crosses to the client", () => {
   /**
    * The second bug the human hit, as a property.
    *
@@ -449,7 +455,7 @@ describe("nada que o React não saiba serializar cruza para o cliente", () => {
    * and is not reported here; a bare `Building2` is the reference to a
    * function and is not.
    */
-  it("nem função, nem componente, nem instância de classe", () => {
+  it("neither a function, nor a component, nor a class instance", () => {
     const named = crossings.map(
       (crossing) =>
         `${crossing.file}:${crossing.line} <${crossing.component} ${crossing.prop}={${crossing.value}}>`,
@@ -459,14 +465,14 @@ describe("nada que o React não saiba serializar cruza para o cliente", () => {
       named,
       "um Server Component está passando algo não serializável para um " +
         'Client Component. Ou o componente que recebe não precisa de "use ' +
-        "client\", ou o valor precisa virar um dado (uma string, um elemento " +
+        'client", ou o valor precisa virar um dado (uma string, um elemento ' +
         "já renderizado, ou uma Server Action)",
     ).toEqual([]);
   });
 });
 
-describe("os arquivos que o Next obriga a ser client", () => {
-  it("error.tsx e global-error.tsx declaram a diretiva", () => {
+describe("the files Next requires to be client", () => {
+  it("error.tsx and global-error.tsx declare the directive", () => {
     /**
      * Not a style rule: an `error.tsx` receives `reset()` and is rendered as
      * a boundary, which React can only do on the client. Without the

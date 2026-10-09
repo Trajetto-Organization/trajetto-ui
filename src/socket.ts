@@ -1,5 +1,13 @@
 import { io, Socket } from "socket.io-client";
-import { getCookies } from "@/actions/cookies";
+import { mintSocketTicket } from "@/actions/session";
+import { loadPublicConfig } from "@/env/client";
+import { refusalRetryDelay } from "@/lib/socket-refusal";
+import { queryClientProps } from "@/lib/query-client-props";
+import {
+  CATALOG_CHANGED_EVENT,
+  applyCatalogChange,
+  isCatalogChangedEvent,
+} from "@/lib/catalog-sync";
 
 // Singleton instance
 let socketInstance: Socket | null = null;
@@ -23,8 +31,86 @@ const AUTH_REFUSALS = new Set([
   "AUTH_SESSION_INVALIDATED",
 ]);
 
+// SOCKET_TICKET_INVALID (a ticket that expired or was already spent) is not
+// on that list on purpose: it says nothing about the session, and the next
+// attempt mints a fresh ticket.
+
 const socketErrorCode = (error: Error): string | undefined =>
   (error as Error & { data?: { code?: string } }).data?.code;
+
+/** The pending retry after a refused handshake, and how many came before it. */
+let refusalRetry: ReturnType<typeof setTimeout> | null = null;
+let refusalAttempts = 0;
+
+function cancelRefusalRetry(): void {
+  if (refusalRetry) clearTimeout(refusalRetry);
+  refusalRetry = null;
+}
+
+/**
+ * Reconciliation after a reconnection.
+ *
+ * The API does not replay: its emits are fire-and-forget through the Redis
+ * adapter, with no connection-state recovery. Socket.IO brings the transport
+ * back on its own and the subscription hooks rejoin their rooms, but whatever
+ * was emitted in between — a route released during a deploy, a driver's
+ * message during a Wi-Fi blink — never reaches this tab. Each screen used to
+ * listen only to its own events, so it stayed wrong until somebody pressed
+ * Atualizar.
+ *
+ * Every connection after the first one of a socket (and a first one that
+ * only came after failed attempts) is therefore announced here, and each
+ * screen refetches what it shows. The event stays a hint; the
+ * database stays the truth.
+ *
+ * Spread over a couple of seconds: a deploy reconnects every open tab of the
+ * product at the same moment, and without the jitter each of them would fire
+ * its refetches at the API in the same instant.
+ */
+const RESYNC_JITTER_MS = 2_000;
+
+const resyncListeners = new Set<() => void>();
+let pendingResync: ReturnType<typeof setTimeout> | null = null;
+
+function cancelResync(): void {
+  if (pendingResync) clearTimeout(pendingResync);
+  pendingResync = null;
+}
+
+function scheduleResync(): void {
+  // A flapping connection reconnects several times in a few seconds; every
+  // screen refetches everything anyway, so one pending resync covers them.
+  if (pendingResync) return;
+
+  pendingResync = setTimeout(() => {
+    pendingResync = null;
+
+    [...resyncListeners].forEach((listener) => {
+      try {
+        listener();
+      } catch {
+        // One broken screen must not keep the others stale.
+      }
+    });
+  }, Math.random() * RESYNC_JITTER_MS);
+}
+
+/**
+ * Runs `listener` after every reconnection. Not on a session's first
+ * connection, since the page was just rendered from the server, unless that
+ * connection only came after failed attempts. Returns the unsubscribe, so it
+ * fits straight into a `useEffect`.
+ *
+ * Independent of the socket instance on purpose: a screen can subscribe before
+ * the socket exists, and a logout followed by a login keeps the subscription.
+ */
+function onRealtimeResync(listener: () => void): () => void {
+  resyncListeners.add(listener);
+
+  return () => {
+    resyncListeners.delete(listener);
+  };
+}
 
 const SESSION_RECOVERY_KEY = "socket_session_recovery_at";
 const SESSION_RECOVERY_COOLDOWN_MS = 30_000;
@@ -34,8 +120,8 @@ const SESSION_RECOVERY_COOLDOWN_MS = 30_000;
  *
  * The access token lives ~15 minutes and is renewed in exactly one place:
  * `middleware.ts`, server-side, on navigation. A dispatcher who leaves the
- * panel open without navigating therefore holds an expired `tkey`, and until
- * now the socket would retry against it forever — the panel went quiet, with
+ * panel open without navigating therefore has an expired `tkey` cookie, and
+ * until now the socket would retry against it forever — the panel went quiet, with
  * no error shown, until somebody pressed F5.
  *
  * The fix does NOT add a second refresher. It cannot: the API rotates refresh
@@ -93,37 +179,61 @@ async function initializeSocket(): Promise<Socket> {
     try {
       connectionStatus.isConnecting = true;
 
-      // Get the authentication token
-      const token = await getCookies("tkey");
-      if (!token) {
-        throw new Error("Token de autenticação não disponível");
+      // A ticket now, before the socket exists: a session that is already
+      // over is said here, where the caller can still see the rejection.
+      const first = await mintSocketTicket();
+
+      if (!first.ok && first.status === 401) {
+        throw new Error("Sessão expirada. Faça login novamente.");
       }
 
-      // Socket URL do environment
-      const socketUrl = process.env.NEXT_PUBLIC_HTTP_REQUEST;
-      if (!socketUrl) {
-        throw new Error("URL do socket não definida");
-      }
+      // Read at run time (src/env): the image is promoted between
+      // environments, so a build-time value would be staging's.
+      const { socketUrl } = await loadPublicConfig();
+
+      // The first attempt spends the ticket minted above; every later one
+      // (reconnection, refusal retry) mints its own.
+      let pendingTicket: string | null = first.ok ? first.ticket : null;
 
       // Create new socket instance with authentication
       const socket = io(socketUrl, {
         /**
-         * A callback, not an object.
+         * A one-use ticket, never the access token.
          *
-         * socket.io-client evaluates this on every `onopen` — so every
-         * reconnection, not just the first connection. As a static object the
-         * token was read once, at page load, and frozen there: after a deploy,
-         * a tunnel change or any drop past the token's 15-minute life, the
-         * client reconnected forever with a credential the server had already
-         * rejected. Reading the cookie here means each attempt carries
-         * whatever the middleware last wrote.
+         * The page does not hold the token any more (it is HttpOnly and no
+         * Server Action returns it). The web server mints a ticket with it
+         * (POST /user/socket-ticket): one connection, once, within 30 s.
+         *
+         * A callback, not an object: socket.io-client evaluates it on every
+         * `onopen`, so each reconnection carries a fresh ticket. A session
+         * that ended answers 401 at the mint and goes through the same
+         * recovery as a refused token (a reload, so the middleware decides).
          */
         auth: (cb: (data: object) => void) => {
-          getCookies("tkey")
-            .then((fresh) => cb({ token: fresh ?? token }))
-            // A failed server action must not stall the handshake — send what
-            // we have and let connect_error decide.
-            .catch(() => cb({ token }));
+          const ready = pendingTicket;
+
+          pendingTicket = null;
+
+          if (ready) {
+            cb({ ticket: ready });
+            return;
+          }
+
+          mintSocketTicket()
+            .then((minted) => {
+              if (minted.ok) {
+                cb({ ticket: minted.ticket });
+                return;
+              }
+
+              if (minted.status === 401) recoverExpiredSession();
+
+              // No ticket: the handshake is refused and the refusal retry
+              // below asks again with its back-off.
+              cb({});
+            })
+            // A failed server action must not stall the handshake either.
+            .catch(() => cb({}));
         },
 
         // WebSocket only, no HTTP long-polling fallback.
@@ -159,20 +269,54 @@ async function initializeSocket(): Promise<Socket> {
         randomizationFactor: 0.5,
       });
 
+      // Per instance: a new login builds a new socket, and its first
+      // connection is not a reconnection.
+      let connectedBefore = false;
+
+      // Unless it only came after failed attempts. A tab opened during a
+      // deploy is refused and retried for seconds, up to a minute with the
+      // refusal backoff, and what the API emitted meanwhile is as lost as on
+      // a reconnection. (The auth refusals reload the page, which is its own
+      // resync.)
+      let failedBefore = false;
+
       // Configure basic listeners
       socket.on("connect", () => {
+        cancelRefusalRetry();
+        refusalAttempts = 0;
         connectionStatus.isConnected = true;
         connectionStatus.isConnecting = false;
         connectionStatus.hasConnectionError = false;
         connectionStatus.errorMessage = "";
+
+        // `connect`, not the manager's `reconnect`: the latter misses the
+        // retry after a refused handshake, which is a `socket.connect()`.
+        if ((connectedBefore || failedBefore) && socketInstance === socket) {
+          scheduleResync();
+        }
+
+        connectedBefore = true;
       });
 
       socket.on("disconnect", () => {
         connectionStatus.isConnected = false;
       });
 
+      // Bound here, once per socket, rather than by a screen: the pickers it
+      // refreshes live in dialogs all over the app, and the cache it touches
+      // is this module-level client, not a component's.
+      socket.on(CATALOG_CHANGED_EVENT, (payload: unknown) => {
+        if (!isCatalogChangedEvent(payload)) return;
+
+        void applyCatalogChange(queryClientProps, payload);
+      });
+
       socket.on("connect_error", (error) => {
+        failedBefore = true;
         connectionStatus.isConnected = false;
+        // This attempt is over. The promise used to clear the flag by
+        // settling on it; it now settles before the first attempt ends.
+        connectionStatus.isConnecting = false;
         connectionStatus.hasConnectionError = true;
         connectionStatus.errorMessage = error.message;
 
@@ -182,7 +326,25 @@ async function initializeSocket(): Promise<Socket> {
         // and the panel looks connected-ish while receiving nothing.
         if (AUTH_REFUSALS.has(socketErrorCode(error) ?? "")) {
           recoverExpiredSession();
+          return;
         }
+
+        // Any other refusal from the server ended this socket: the built-in
+        // reconnection only covers a dropped transport (`active` stays true
+        // for that). Without this, a handshake refused during a deploy or a
+        // database blink left the panel mute until a reload.
+        if (socket.active) return;
+
+        cancelRefusalRetry();
+        refusalRetry = setTimeout(() => {
+          refusalRetry = null;
+
+          // A logout in the meantime owns the socket's fate.
+          if (socketInstance !== socket) return;
+          if (socket.connected || socket.active) return;
+
+          socket.connect();
+        }, refusalRetryDelay(refusalAttempts++));
       });
 
       // Connect the socket
@@ -191,16 +353,22 @@ async function initializeSocket(): Promise<Socket> {
       // Store the instance
       socketInstance = socket;
 
-      // Wait for connection or error
-      socket.on("connect", () => resolve(socket));
-      socket.on("connect_error", (error) => reject(error));
-
-      // Security timeout
-      setTimeout(() => {
-        if (!socket.connected) {
-          reject(new Error("Timeout ao conectar ao socket"));
-        }
-      }, 10000);
+      /**
+       * Handed over as soon as it exists, not once it connects.
+       *
+       * This used to resolve on `connect` and REJECT on the first
+       * `connect_error` (or after 10 s). Every screen that listens — the
+       * bell with the forced logout, the Rotas board, the chat — does
+       * `initializeSocket().then(bind).catch(nothing)`, so a tab opened
+       * during a deploy or a database blink fell into the `.catch` and never
+       * bound a listener. The refusal retry above connected a second later
+       * and the tab stayed deaf until a reload. Listeners on a socket that
+       * is not connected yet are simply waiting; whether and when it
+       * connects is told by its own events (`connect`, `connect_error`,
+       * `disconnect`) and by `getConnectionStatus()`. Same contract as the
+       * driver app's socket.
+       */
+      resolve(socket);
     } catch (error) {
       connectionStatus.isConnecting = false;
       connectionStatus.hasConnectionError = true;
@@ -212,11 +380,13 @@ async function initializeSocket(): Promise<Socket> {
     }
   });
 
-  // Clean up promise after completion
+  // Clean up promise after completion. `isConnecting` is not touched here: a
+  // resolved promise means the socket exists, not that it connected, and the
+  // socket's own `connect`/`connect_error` settle the flag (the failure path
+  // above settles it before rejecting).
   connectionPromise
     .catch(() => {})
     .finally(() => {
-      connectionStatus.isConnecting = false;
       connectionPromise = null;
     });
 
@@ -239,6 +409,13 @@ function disconnectSocket(): void {
 
   socketInstance = null;
   connectionPromise = null;
+
+  cancelRefusalRetry();
+  refusalAttempts = 0;
+
+  // A resync pending for the session that is ending would refetch as the
+  // next one, or as nobody.
+  cancelResync();
 
   connectionStatus.isConnected = false;
   connectionStatus.isConnecting = false;
@@ -275,4 +452,6 @@ export {
   isSocketConnected,
   getConnectionStatus,
   getSocket,
+  onRealtimeResync,
+  RESYNC_JITTER_MS,
 };

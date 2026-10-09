@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateFuelTypeSchema } from "@/schemas/create-update-fuel-type-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface VehicleTypeProps {
   message: string;
@@ -46,7 +49,7 @@ const handleUpdateFuelType = async (
   const fuelTypeData = updateFuelTypeValidation.data;
 
   try {
-    const response = await fetch(updateFuelType, {
+    const response = await apiFetch(updateFuelType, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -58,14 +61,18 @@ const handleUpdateFuelType = async (
 
     const { message } = (await response.json()) as VehicleTypeProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateFuelTypeError: { updateFuelTypeErrorMessage: message },
+        updateFuelTypeError: {
+          updateFuelTypeErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("fuel-type/update-fuel-type", error);
     return {
       updateFuelTypeError: {
         updateFuelTypeErrorMessage:

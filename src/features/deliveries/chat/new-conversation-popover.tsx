@@ -28,8 +28,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useDriverInfiniteScroll } from "@/app/(protected)/_components/shared/searches/search-driver/hooks/driver-infinite-scroll";
 import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
+import { useChatRecipients } from "./lib/use-chat-recipients";
 
 interface NewConversationPopoverProps {
   canWrite: boolean;
@@ -39,6 +39,10 @@ interface NewConversationPopoverProps {
 /**
  * First contact: pick any active driver and start talking. The thread only
  * comes to exist on the first message — picking costs nothing.
+ *
+ * The list is the chat's own (`/chat/recipients`, delivery_manage:read) and
+ * searched on the server: a driver beyond the loaded page is found by name or
+ * CNH, and a tower user without the driver registry sees it too.
  */
 const NewConversationPopover = ({
   canWrite,
@@ -49,18 +53,15 @@ const NewConversationPopover = ({
   const [open, setOpen] = useState<boolean>(false);
   const [searchValue, setSearchValue] = useState<string>("");
 
-  // The endpoint scopes to the session's company when no id is passed, so
-  // the empty fallback only ever happens where the button is disabled.
-  const { drivers, lastElementRef, isLoading, isFetching } =
-    useDriverInfiniteScroll(businessId ?? "");
-
-  const term = searchValue.toLowerCase();
-
-  const filteredDrivers = (drivers ?? []).filter((driver: any) =>
-    [driver.name, driver.cnh ?? ""].some((field: string) =>
-      field.toLowerCase().includes(term),
-    ),
-  );
+  const {
+    recipients,
+    lastElementRef,
+    isLoading,
+    isFetching,
+    isError,
+    errorMessage,
+    isSearchSettled,
+  } = useChatRecipients({ businessId, search: searchValue, enabled: open });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -91,16 +92,17 @@ const NewConversationPopover = ({
       </TooltipProvider>
 
       <PopoverContent className="w-72 p-0" align="start">
+        {/* The server answers the search; cmdk must not filter it again. */}
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Buscar motorista..."
+            placeholder="Buscar motorista por nome..."
             value={searchValue}
             onValueChange={setSearchValue}
             className="h-9"
           />
 
           <CommandList className="max-h-[240px]">
-            {isLoading && !drivers?.length && (
+            {isLoading && recipients.length === 0 && (
               <div className="space-y-2 p-2">
                 {Array.from({ length: 3 }).map((_, index) => (
                   <Skeleton key={index} className="h-9 w-full" />
@@ -108,27 +110,32 @@ const NewConversationPopover = ({
               </div>
             )}
 
-            {!isLoading && filteredDrivers.length === 0 && (
-              <CommandEmpty>Nenhum motorista ativo encontrado.</CommandEmpty>
+            {isError && (
+              <p className="p-3 text-center text-sm text-destructive">
+                {errorMessage}
+              </p>
             )}
 
-            {filteredDrivers.length > 0 && (
+            {!isLoading &&
+              !isError &&
+              isSearchSettled &&
+              recipients.length === 0 && (
+                <CommandEmpty>Nenhum motorista ativo encontrado.</CommandEmpty>
+              )}
+
+            {recipients.length > 0 && (
               <CommandGroup>
-                {filteredDrivers.map((driver: any, index: number) => (
+                {recipients.map((driver, index) => (
                   <CommandItem
                     key={driver.id}
                     value={driver.id}
                     ref={
-                      index === filteredDrivers.length - 1
+                      index === recipients.length - 1
                         ? lastElementRef
                         : undefined
                     }
                     onSelect={() => {
-                      onPickDriver({
-                        id: driver.id,
-                        name: driver.name,
-                        cnh: driver.cnh,
-                      });
+                      onPickDriver({ id: driver.id, name: driver.name });
 
                       setOpen(false);
                       setSearchValue("");
@@ -138,9 +145,11 @@ const NewConversationPopover = ({
                     <UserRound className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="flex min-w-0 flex-col">
                       <span className="truncate text-sm">{driver.name}</span>
-                      {driver.cnh && (
+                      {/* A conversation still opens: the thread waits for
+                          the account, and the pane says he has no app. */}
+                      {!driver.hasApp && (
                         <span className="truncate text-xs text-muted-foreground">
-                          CNH: {driver.cnh}
+                          Sem o aplicativo
                         </span>
                       )}
                     </div>
@@ -149,7 +158,7 @@ const NewConversationPopover = ({
               </CommandGroup>
             )}
 
-            {isFetching && drivers && drivers.length > 0 && (
+            {isFetching && recipients.length > 0 && (
               <div className="flex justify-center p-2">
                 <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
               </div>

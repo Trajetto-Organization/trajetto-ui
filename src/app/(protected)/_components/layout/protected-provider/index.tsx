@@ -15,6 +15,7 @@ import { handleUserResponseError, validateUserAccess } from "./security-checks";
 import { fetchNotifications } from "./fetch-notifications";
 
 import { ConnectionRetry } from "@/components/shared/connection-lost-screen/connection-retry";
+import { RENEWAL_PENDING, SESSION_RENEWAL_HEADER } from "@/lib/session-renewal";
 
 const ProtectedProvider = async ({
   children,
@@ -54,6 +55,12 @@ const ProtectedProvider = async ({
   }[] = [];
 
   let serverNotificationIds: string[] = [];
+
+  // Started before `/user/me` and awaited after the gate: it needs only the
+  // token, so the two API round trips overlap instead of running in series.
+  // It never rejects (errors become `error: true`), so an early return or a
+  // redirect below leaves nothing unhandled.
+  const notificationsRequest = fetchNotifications(tokenAccess);
 
   // Fetch user data
   let response: Response | undefined;
@@ -95,11 +102,22 @@ const ProtectedProvider = async ({
     return <ConnectionRetry alwaysVisible />;
   }
 
+  // The access token expired and the middleware could not renew it because
+  // the API was busy or down — so this 401 is the expired token talking, not
+  // a verdict on the session. Same answer as the API not responding: keep the
+  // session and let the next navigation renew it.
+  if (
+    response.status === 401 &&
+    headersList.get(SESSION_RENEWAL_HEADER) === RENEWAL_PENDING
+  ) {
+    return <ConnectionRetry alwaysVisible />;
+  }
+
   if (!response.ok) {
-    // Maps the statuses we recognise (401, 403 by message, 404) and redirects
-    // from inside — `redirect` throws `NEXT_REDIRECT`, so it must not sit in a
-    // try/catch. Returning means the status was not one of them, which at this
-    // point only leaves 5xx: the API failing rather than answering.
+    // Every verdict (401, any 403 by its code, 404) redirects from inside —
+    // `redirect` throws `NEXT_REDIRECT`, so it must not sit in a try/catch.
+    // Returning means the API did not judge the session (5xx, 429): the API
+    // failing or busy rather than answering.
     await handleUserResponseError(response);
     return <ConnectionRetry alwaysVisible />;
   }
@@ -136,7 +154,7 @@ const ProtectedProvider = async ({
     enabledModules: data.user.enabledModules ?? [],
   };
 
-  const notificationResult = await fetchNotifications(tokenAccess);
+  const notificationResult = await notificationsRequest;
 
   serverNotifications = notificationResult.notifications;
   serverNotificationIds = notificationResult.notificationIds;

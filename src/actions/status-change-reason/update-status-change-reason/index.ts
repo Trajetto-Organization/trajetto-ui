@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateStatusChangeReasonSchema } from "@/schemas/create-update-status-change-reason-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateStatusChangeReasonProps {
   message: string;
@@ -45,7 +48,7 @@ const handleUpdateStatusChangeReason = async (
   }
 
   try {
-    const response = await fetch(updateStatusChangeReason, {
+    const response = await apiFetch(updateStatusChangeReason, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -58,18 +61,21 @@ const handleUpdateStatusChangeReason = async (
       }),
     });
 
-    const { message } = (await response.json()) as UpdateStatusChangeReasonProps;
+    const { message } =
+      (await response.json()) as UpdateStatusChangeReasonProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         updateStatusChangeReasonError: {
-          updateStatusChangeReasonErrorMessage: message,
+          updateStatusChangeReasonErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("status-change-reason/update-status-change-reason", error);
     return {
       updateStatusChangeReasonError: {
         updateStatusChangeReasonErrorMessage:

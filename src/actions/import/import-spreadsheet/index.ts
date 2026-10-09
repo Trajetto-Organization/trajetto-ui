@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ActionResponse<T = undefined> {
   success: boolean;
@@ -66,7 +68,7 @@ const importSpreadsheet = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/import/import-spreadsheet/${businessId}`,
       {
         credentials: "include",
@@ -90,6 +92,7 @@ const importSpreadsheet = async (
 
     return { success: true, message: result.message, data: result.data };
   } catch (error) {
+    logActionError("import/import-spreadsheet", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao importar a planilha.",

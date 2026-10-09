@@ -1,10 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
-import {
-  BASE,
-  driverToken,
-  managerToken,
-} from "./support/operation";
+import { BASE, driverToken, managerToken } from "./support/operation";
+import { paletteEntries, paletteSearch } from "./support/palette";
 
 /**
  * A page you may not open must not be offered to you either.
@@ -56,16 +53,14 @@ const OFFICE_PAGES = [
   { name: "Integrações", path: "/dashboard/integrations" },
 ];
 
-async function openAs(
-  page: Page,
-  token: string,
-  path: string,
-): Promise<void> {
+async function openAs(page: Page, token: string, path: string): Promise<void> {
   await page.context().clearCookies();
 
-  await page.context().addCookies([
-    { name: "tkey", value: token, domain: "localhost", path: "/" },
-  ]);
+  await page
+    .context()
+    .addCookies([
+      { name: "tkey", value: token, domain: "localhost", path: "/" },
+    ]);
 
   await page.addInitScript(() => {
     const real = Storage.prototype.getItem;
@@ -85,47 +80,10 @@ async function openAs(
   });
 }
 
-/**
- * Everything the command palette is offering right now.
- *
- * The shortcut is pressed more than once on purpose. kbar binds its listener
- * during hydration, and against a dev server under three parallel workers the
- * page can be painted, answered and idle on the network while that listener is
- * still not there — so a single press lands in the gap and the palette never
- * opens. It failed about one run in six, which is the worst rate there is: too
- * rare to chase, often enough to teach people to re-run the suite.
- *
- * Pressing again is also what a person does when a shortcut does nothing, and
- * it cannot hide a real failure: the palette not opening after eight attempts
- * across sixteen seconds is the palette not opening.
- */
-async function paletteEntries(page: Page): Promise<string[]> {
-  const palette = page.locator('[role="dialog"], [role="listbox"]').first();
-
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    await page.keyboard.press("Control+k");
-
-    try {
-      await expect(palette).toBeVisible({ timeout: 2_000 });
-      break;
-    } catch {
-      // Still hydrating. Press again.
-    }
-  }
-
-  await expect(palette, "o ⌘K não abriu").toBeVisible({ timeout: 5_000 });
-
-  // Whatever the palette renders as its options, by whatever role the library
-  // gives them — read as text so this does not depend on kbar's internals.
-  const text = await palette.innerText();
-
-  await page.keyboard.press("Escape");
-
-  return text.split("\n").map((line) => line.trim()).filter(Boolean);
-}
-
-test.describe("o escritório enxerga o escritório", () => {
-  test("a gestora tem as páginas na sidebar e no ⌘K", async ({ page }) => {
+test.describe("the back office sees the back office", () => {
+  test("the manager has the pages in the sidebar and in ⌘K", async ({
+    page,
+  }) => {
     await openAs(page, MANAGER, "/dashboard");
 
     expect(page.url(), "a gestora caiu no login").not.toContain("/login");
@@ -145,9 +103,9 @@ test.describe("o escritório enxerga o escritório", () => {
       ).toBeVisible({ timeout: 30_000 });
     }
 
-    const entries = await paletteEntries(page);
-
     for (const target of OFFICE_PAGES) {
+      const entries = await paletteSearch(page, target.name);
+
       expect(
         entries.some((entry) => entry.includes(target.name)),
         `${target.name} não está no ⌘K da gestora — oferecido: ${entries.join(" | ")}`,
@@ -156,8 +114,8 @@ test.describe("o escritório enxerga o escritório", () => {
   });
 });
 
-test.describe("e o motorista não enxerga o escritório", () => {
-  test("nenhuma das páginas aparece na sidebar", async ({ page }) => {
+test.describe("and the driver does not see the back office", () => {
+  test("none of the pages shows up in the sidebar", async ({ page }) => {
     await openAs(page, DRIVER, DRIVER_HOME);
 
     expect(page.url(), "o motorista caiu no login").not.toContain("/login");
@@ -170,14 +128,19 @@ test.describe("e o motorista não enxerga o escritório", () => {
      * navigated to a route the web does not even have and "proved" the whole
      * thing against a not-found screen.
      *
-     * The driver shell has no sidebar: a header with search, notifications and
-     * the account menu, and the page under it. That is the point — there is no
-     * list of office pages because there is no list.
+     * The driver shell has its own sidebar (decision 4.8), fed by the driver's
+     * entries of the one navigation list: the driver's pages are offered, the
+     * office's never are.
      */
     await expect(
       page.getByRole("heading", { name: "Kanban", level: 2 }),
       "a tela do motorista não carregou",
     ).toBeVisible({ timeout: 30_000 });
+
+    await expect(
+      page.getByRole("link", { name: "Meus veículos", exact: true }),
+      "a sidebar do motorista não oferece as páginas dele",
+    ).toBeVisible();
 
     for (const target of OFFICE_PAGES) {
       await expect(
@@ -187,7 +150,7 @@ test.describe("e o motorista não enxerga o escritório", () => {
     }
   });
 
-  test("nem no ⌘K", async ({ page }) => {
+  test("nor in ⌘K", async ({ page }) => {
     await openAs(page, DRIVER, DRIVER_HOME);
 
     const entries = await paletteEntries(page);
@@ -206,14 +169,16 @@ test.describe("e o motorista não enxerga o escritório", () => {
      * wearing a different hat.
      */
     for (const target of OFFICE_PAGES) {
+      const found = await paletteSearch(page, target.name);
+
       expect(
-        entries.some((entry) => entry.includes(target.name)),
-        `${target.name} está sendo oferecido a um motorista no ⌘K — oferecido: ${entries.join(" | ")}`,
+        found.some((entry) => entry.includes(target.name)),
+        `${target.name} está sendo oferecido a um motorista no ⌘K — oferecido: ${found.join(" | ")}`,
       ).toBe(false);
     }
   });
 
-  test("e digitar a URL não abre a página", async ({ page }) => {
+  test("and typing the URL does not open the page", async ({ page }) => {
     // The offer is one thing; the door is another. A sidebar that hides the
     // link and a router that opens it anyway is worse than both.
     for (const target of OFFICE_PAGES) {

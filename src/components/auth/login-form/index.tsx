@@ -7,6 +7,8 @@ import Link from "next/link";
 
 import { handleLoginUser } from "@/actions/user/login-user";
 import { Button } from "@/components/ui/button";
+import { useLiveValidation } from "@/components/shared/live-validation";
+import { validateLoginUserFormSchema } from "@/schemas/login-schema";
 
 import { Loader, LockIcon, MailIcon } from "lucide-react";
 
@@ -34,6 +36,15 @@ const LoginFormContainer = ({
   const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
   const [turnstileKey, setTurnstileKey] = useState<number>(0);
 
+  // Controlled so the action's schema can check each field as it is left
+  // (decision 16.700); the action parses the same schema again.
+  const [values, setValues] = useState({ email: "", password: "" });
+  const live = useLiveValidation({
+    schema: validateLoginUserFormSchema,
+    values,
+    serverErrors: state?.loginError,
+  });
+
   // Reset Turnstile only when the token was consumed (server/turnstile errors, not Zod validation)
   useEffect(() => {
     if (state?.loginError?.loginErrorMessage) {
@@ -43,14 +54,18 @@ const LoginFormContainer = ({
   }, [state]);
 
   return (
-    <section className="animate-fade-in [animation-delay:400ms]">
+    <section ref={live.ref} className="animate-fade-in [animation-delay:400ms]">
       <div className="space-y-4">
         <FormInput
           label={"Email"}
           htmlfor={"email"}
           name="email"
           type="email"
-          errorName={state?.loginError?.email}
+          errorName={live.errorOf("email")}
+          value={values.email}
+          onChange={(event) =>
+            setValues((current) => ({ ...current, email: event.target.value }))
+          }
           placeholder={"E-mail"}
           icon={<MailIcon className="h-4 w-4 text-gray-500" />}
           disabled={pending}
@@ -62,7 +77,15 @@ const LoginFormContainer = ({
           htmlfor={"password"}
           name="password"
           type="password"
-          errorName={state?.loginError?.password}
+          errorName={live.errorOf("password")}
+          value={values.password}
+          onChange={(event) =>
+            setValues((current) => ({
+              ...current,
+              password: event.target.value,
+            }))
+          }
+          autoComplete="current-password"
           placeholder={"Senha"}
           icon={<LockIcon className="h-4 w-4 text-gray-500" />}
           disabled={pending}
@@ -104,7 +127,6 @@ const LoginFormContainer = ({
         <>
           <CaptchaTurnstile
             resetSignal={turnstileKey}
-            sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             onSuccess={(token) => {
               const input = document.getElementById(
                 "turnstile-token",
@@ -158,7 +180,9 @@ const LoginForm = (): JSX.Element => {
       {state?.twoFactor ? (
         <TwoFactorAuthenticationForm email={state.twoFactorEmail} />
       ) : (
-        <form action={dispatch}>
+        // noValidate: the schema's messages, in Portuguese and under each
+        // field, instead of the browser's bubble that blocked them.
+        <form action={dispatch} noValidate>
           <LoginFormContainer state={state ?? defaultState} />
         </form>
       )}

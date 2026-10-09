@@ -19,11 +19,13 @@ import {
 import { Bell, ChevronsUpDown, User, Loader, Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { handleLogout } from "@/actions/user/logout-user";
-import { useProtectedAccountSettings } from "./hooks";
+import { logOutUser, useProtectedAccountSettings } from "./hooks";
 
 import type { ProtectedAccountSettingsProps } from "./protected-account-settings.types";
 import { useNotificationsContext } from "../protected-provider/notifications-provider";
+import { NOTIFICATION_ACCENT_CLASS } from "../../shared/notification-visuals";
+import { cn } from "@/lib/utils";
+import { ProtectedAccountThemeMenu } from "../protected-theme-switch";
 
 const LogOutUserContainer = ({
   onPendingChange,
@@ -70,16 +72,7 @@ const ProtectedAccountSettings = ({
   userLogged,
 }: ProtectedAccountSettingsProps): JSX.Element => {
   const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
-  const [state, dispatch] = useFormState(async () => {
-    // Signal the login page to show the toast once (consumed on arrival)
-    sessionStorage.setItem("pending_login_toast", "true");
-
-    // CRITICAL: Wait for logout to complete before redirecting
-    await handleLogout();
-
-    // Redirects immediately
-    return null;
-  }, null);
+  const [state, dispatch] = useFormState(logOutUser, null);
 
   const handlePendingChange = (pending: boolean) => {
     setIsLoggingOut(pending);
@@ -102,11 +95,10 @@ const ProtectedAccountSettings = ({
           data-[state=open]:text-sidebar-accent-foreground"
           disabled={isLoggingOut}
         >
+          {/* Decorative: the name is printed right beside it, so a named
+              image would make a screen reader say it twice. */}
           <Avatar className="h-8 w-8 rounded-lg">
-            <AvatarImage
-              src={userLogged.avatar as string}
-              alt={"avatar_image"}
-            />
+            <AvatarImage src={userLogged.avatar as string} alt="" />
             <AvatarFallback className="rounded-lg">
               {userLogged.name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
@@ -131,10 +123,7 @@ const ProtectedAccountSettings = ({
             py-1.5 text-left text-sm"
           >
             <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage
-                src={userLogged.avatar as string}
-                alt={"avatar_image"}
-              />
+              <AvatarImage src={userLogged.avatar as string} alt="" />
               <AvatarFallback className="rounded-lg">
                 {userLogged.name.slice(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -167,15 +156,20 @@ const ProtectedAccountSettings = ({
               Notificações
               {unreadCount > 0 && (
                 <span
-                  className="absolute right-2 top-1/2 -translate-y-1/2
-                  flex h-5 min-w-5 px-1.5 items-center justify-center
-                  rounded-full bg-[#f50057] text-xs text-white"
+                  className={cn(
+                    `absolute right-2 top-1/2 -translate-y-1/2
+                    flex h-5 min-w-5 px-1.5 items-center justify-center
+                    rounded-full text-xs text-white`,
+                    // The bell's accent: white on the old #f50057 was 4.18:1.
+                    NOTIFICATION_ACCENT_CLASS,
+                  )}
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </Link>
           </DropdownMenuItem>
+          <ProtectedAccountThemeMenu disabled={isLoggingOut} />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <form action={dispatch}>

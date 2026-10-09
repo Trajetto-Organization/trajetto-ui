@@ -19,10 +19,12 @@ import {
  * agree with it, which is the same as not having a queue.
  */
 test.describe("the criteria on a card", () => {
-  test("mirrors the API's four, in the order they should be read", () => {
+  test("mirrors the API's five, in the order they should be read", () => {
     // Most damning first. A reviewer scanning down the list should hit the
-    // thing that invalidates the rest before the details.
+    // thing that invalidates the rest before the details — "is this a
+    // receipt at all" before anything read off it (decision 6.9).
     expect(CRITERIA.map((criterion) => criterion.key)).toEqual([
+      "isReceipt",
       "legible",
       "hasSignature",
       "documentMatches",
@@ -71,11 +73,7 @@ test.describe("the suggestion badge", () => {
   });
 
   test("has a tone for each of the three readings", () => {
-    for (const key of [
-      "looks_good",
-      "needs_review",
-      "looks_wrong",
-    ] as const) {
+    for (const key of ["looks_good", "needs_review", "looks_wrong"] as const) {
       expect(SUGGESTION_TONES[key], key).toContain("border-");
     }
   });

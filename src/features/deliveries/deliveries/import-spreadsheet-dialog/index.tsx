@@ -18,7 +18,7 @@ import {
 import {
   Dialog,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
   DialogHeader,
   DialogScrollContent,
   DialogTitle,
@@ -27,7 +27,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-import { revalidateTagName } from "@/actions/revalidate";
+import { revalidateTags } from "@/actions/revalidate";
+import {
+  canCloseImportDialog,
+  importRevalidationTags,
+  importToastKind,
+} from "../../lib/import-outcome";
 
 import {
   importSpreadsheet,
@@ -36,8 +41,13 @@ import {
 } from "@/actions/import/import-spreadsheet";
 
 import { downloadImportTemplate } from "@/actions/import/download-template";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { FileDropzone } from "@/components/shared/custom/file-dropzone";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 import { ShipperSelector } from "../shipper-selector";
 import { useImportSpreadsheet } from "./hooks";
@@ -62,9 +72,13 @@ const OUTCOME_META: Record<
   duplicated: {
     label: "Já existia",
     icon: CircleSlash,
-    className: "text-yellow-600",
+    className: "text-yellow-700 dark:text-yellow-500",
   },
-  invalid: { label: "Erro", icon: CircleAlert, className: "text-red-600" },
+  invalid: {
+    label: "Erro",
+    icon: CircleAlert,
+    className: "text-red-600 dark:text-red-400",
+  },
 };
 
 const formatSize = (bytes: number): string =>
@@ -88,9 +102,27 @@ const ImportSpreadsheetDialog = ({
   isOpen,
   onClose,
 }: ImportSpreadsheetDialogProps): JSX.Element => {
-  const { file, isReading, pickFile, clearFile } = useImportSpreadsheet();
+  const { file, isReading, rejection, pickFile, clearFile } =
+    useImportSpreadsheet();
 
   const [shipperId, setShipperId] = useState<string>("");
+
+  // Live validation (decision 16.700): Importar is enabled and says what is
+  // missing (decision 16.701); a refused file is said under the zone.
+  const live = useLiveValidation({
+    values: { shipperId, file: file?.filename ?? "" },
+    rules: () => ({
+      shipperId: shipperId ? null : "Escolha o embarcador da carga.",
+      file: rejection ?? (file ? null : "Escolha a planilha (.xlsx ou .csv)."),
+    }),
+    fields: ["shipperId", "file"],
+    controlIds: {
+      shipperId: "shipper-selector",
+      file: "import-spreadsheet-file",
+    },
+    resetKey: isOpen,
+    validateOnSubmit: false,
+  });
 
   const [isImporting, setIsImporting] = useState<boolean>(false);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
@@ -121,6 +153,8 @@ const ImportSpreadsheetDialog = ({
     try {
       const response = await downloadImportTemplate();
 
+      if (isStaleActionResult(response)) return;
+
       if (!response.success || !response.base64Data) {
         toast.error(response.message ?? "Não foi possível baixar o modelo.");
         return;
@@ -150,7 +184,7 @@ const ImportSpreadsheetDialog = ({
   };
 
   const handleImport = async () => {
-    if (!file || !shipperId) return;
+    if (!live.validate() || !file || !shipperId) return;
 
     setIsImporting(true);
 
@@ -161,17 +195,20 @@ const ImportSpreadsheetDialog = ({
         shipperId,
       );
 
+      // Nothing was imported; the file stays picked for after the reload.
+      if (isStaleActionResult(response)) return;
+
       if (response.success && response.data) {
         setResult(response.data);
 
-        if (response.data.imported > 0) {
-          toast.success(response.message);
-          await revalidateTagName("update-delivery");
-        } else {
-          // Nothing was created. Saying "sucesso" over that is how a screen
-          // teaches people to stop reading its messages.
-          toast.warning(response.message);
-        }
+        // Nothing created is not a success. Saying "sucesso" over that is how
+        // a screen teaches people to stop reading its messages.
+        toast[importToastKind(response.data.imported)](response.message);
+
+        // On every 200 (DLV-IMP-3): the upload is an Importações row even
+        // when every line was a duplicate, and the sheet may have built
+        // routes — not only the deliveries table goes stale.
+        await revalidateTags(importRevalidationTags(0));
 
         return;
       }
@@ -188,15 +225,24 @@ const ImportSpreadsheetDialog = ({
   const reportRows = [...(result?.report.rows ?? [])].sort((left, right) => {
     const weight = { invalid: 0, duplicated: 1, imported: 2 } as const;
 
-    return weight[left.outcome] - weight[right.outcome] || left.line - right.line;
+    return (
+      weight[left.outcome] - weight[right.outcome] || left.line - right.line
+    );
   });
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
-      <DialogScrollContent
-        className="max-h-[90vh] max-w-2xl overflow-y-auto"
-        onInteractOutside={(event) => event.preventDefault()}
-      >
+    // ESC and the X wait for the upload to answer. Closing mid-upload and
+    // reopening remounted the dialog with the buttons enabled again, while
+    // the first upload kept running on the API.
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) =>
+        !open && canCloseImportDialog(isImporting) && resetAndClose()
+      }
+    >
+      {/* max-w-xl like the shipper and occurrence-type dialogs (the
+          reference the user named), with their full-width footer. */}
+      <DialogScrollContent className="max-h-[90vh] max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 shrink-0" />
@@ -293,7 +339,10 @@ const ImportSpreadsheetDialog = ({
                       text-sm"
                     >
                       <Icon
-                        className={cn("mt-0.5 h-4 w-4 shrink-0", meta.className)}
+                        className={cn(
+                          "mt-0.5 h-4 w-4 shrink-0",
+                          meta.className,
+                        )}
                       />
 
                       <div className="min-w-0 flex-1">
@@ -314,14 +363,14 @@ const ImportSpreadsheetDialog = ({
               </ul>
             </div>
 
-            <DialogFooter>
+            <DialogFormFooter>
               <Button type="button" onClick={resetAndClose}>
                 Fechar
               </Button>
-            </DialogFooter>
+            </DialogFormFooter>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div ref={live.ref} className="space-y-4">
             <Button
               type="button"
               variant="outline"
@@ -341,7 +390,11 @@ const ImportSpreadsheetDialog = ({
             <ShipperSelector
               businessId={businessId}
               value={shipperId}
-              onChange={setShipperId}
+              onChange={(next) => {
+                setShipperId(next);
+                live.touch("shipperId");
+              }}
+              errorName={live.errorOf("shipperId")}
             />
 
             <p className="-mt-2 text-xs text-muted-foreground">
@@ -359,7 +412,13 @@ const ImportSpreadsheetDialog = ({
               isBusy={isReading}
               busyLabel="Lendo o arquivo..."
               disabled={isImporting}
-              onFiles={(files) => void pickFile(files)}
+              id="import-spreadsheet-file"
+              // A refusal is the answer to a pick: shown at once.
+              error={rejection ?? live.messageOf("file")}
+              onFiles={(files) => {
+                live.touch("file");
+                void pickFile(files);
+              }}
             />
 
             {file && (
@@ -387,12 +446,13 @@ const ImportSpreadsheetDialog = ({
               </div>
             )}
 
-            <DialogFooter className="gap-2">
+            <DialogFormFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={resetAndClose}
                 disabled={isImporting}
+                {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
               >
                 Cancelar
               </Button>
@@ -400,13 +460,13 @@ const ImportSpreadsheetDialog = ({
               <Button
                 type="button"
                 onClick={() => void handleImport()}
-                disabled={!file || !shipperId || isImporting || isReading}
+                disabled={isImporting || isReading}
                 className="gap-2"
               >
                 {isImporting && <Loader className="h-4 w-4 animate-spin" />}
                 Importar
               </Button>
-            </DialogFooter>
+            </DialogFormFooter>
           </div>
         )}
       </DialogScrollContent>

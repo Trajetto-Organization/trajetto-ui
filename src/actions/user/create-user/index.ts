@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { createUserSchema } from "@/schemas/create-user-schema";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateUserProps {
   message: string;
@@ -39,7 +42,7 @@ const handleCreateUser = async (state: any, createUserValues: FormData) => {
   const userData = createUserValidation.data;
 
   try {
-    const response = await fetch(createUser, {
+    const response = await apiFetch(createUser, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -51,14 +54,17 @@ const handleCreateUser = async (state: any, createUserValues: FormData) => {
 
     const { message } = (await response.json()) as CreateUserProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createUserError: { createUserErrorMessage: message },
+        createUserError: {
+          createUserErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/create-user", error);
     return {
       createUserError: {
         createUserErrorMessage:

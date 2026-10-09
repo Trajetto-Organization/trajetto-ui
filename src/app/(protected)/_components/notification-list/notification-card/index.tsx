@@ -25,6 +25,8 @@ import type { ExtendedNotificationCardProps } from "../notification-list.types";
 import { useNotificationsContext } from "../../layout/protected-provider/notifications-provider";
 
 import { cn } from "@/lib/utils";
+import { safeNotificationHref } from "@/lib/safe-href";
+import { isStaleActionResult } from "@/lib/action-result";
 import {
   formatNotificationDate,
   getNotificationVisual,
@@ -49,6 +51,8 @@ const NotificationCard = ({
     try {
       const result = await handleMarkNotificationAsRead(notification.id);
 
+      if (isStaleActionResult(result)) return;
+
       if (result.successMessage) {
         // Update BOTH sources of truth atomically
         markNotificationAsRead(notification.id);
@@ -71,6 +75,8 @@ const NotificationCard = ({
 
     try {
       const result = await handleDeleteNotification(notification.id);
+
+      if (isStaleActionResult(result)) return;
 
       if (!result.deleteNotificationError) {
         // CRITICAL: Remove from BOTH sources of truth atomically
@@ -96,6 +102,8 @@ const NotificationCard = ({
   // Same visual vocabulary as the bell dropdown: chip color by type, accent
   // dot for unread — the page is the archive of the same objects.
   const { icon: Icon, chip } = getNotificationVisual(notification.type);
+
+  const detailsHref = safeNotificationHref(notification.link);
 
   return (
     <Card
@@ -143,14 +151,16 @@ const NotificationCard = ({
       </CardContent>
       <CardFooter className="pt-0 flex flex-wrap justify-between gap-y-2">
         <div className="flex flex-wrap gap-2">
-          {notification.link && (
+          {/* The API's string is not rendered as-is: a `javascript:` link
+              would run on click. See safeNotificationHref. */}
+          {detailsHref && (
             <Button
               size="sm"
               variant="default"
               asChild
               className="whitespace-nowrap"
             >
-              <Link href={notification.link}>Ver detalhes</Link>
+              <Link href={detailsHref}>Ver detalhes</Link>
             </Button>
           )}
 

@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface BusinessEntitlementModule {
   module: string;
@@ -51,7 +53,7 @@ const getBusinessEntitlements = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/business/entitlements/${businessId}`,
       {
         credentials: "include",
@@ -79,6 +81,7 @@ const getBusinessEntitlements = async (
       data: result.data as BusinessEntitlementsData,
     };
   } catch (error) {
+    logActionError("business/entitlements/getBusinessEntitlements", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao obter os módulos da empresa.",
@@ -104,7 +107,7 @@ const getModuleImpact = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/business/entitlements/${businessId}/impact/${module}`,
       {
         credentials: "include",
@@ -132,6 +135,7 @@ const getModuleImpact = async (
       data: result.data as ModuleImpactData,
     };
   } catch (error) {
+    logActionError("business/entitlements/getModuleImpact", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao consultar o impacto do módulo.",
@@ -154,7 +158,7 @@ const updateBusinessEntitlement = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/business/entitlements/${businessId}`,
       {
         credentials: "include",
@@ -182,6 +186,7 @@ const updateBusinessEntitlement = async (
       message: result.message || "Módulo atualizado com sucesso.",
     };
   } catch (error) {
+    logActionError("business/entitlements/updateBusinessEntitlement", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao atualizar o módulo da empresa.",

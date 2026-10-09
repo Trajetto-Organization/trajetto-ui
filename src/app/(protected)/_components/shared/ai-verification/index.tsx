@@ -1,16 +1,39 @@
-import { useState } from "react";
-import { useQuery } from "react-query";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "react-query";
 
-import { BrainCircuit, Loader } from "lucide-react";
+import {
+  BrainCircuit,
+  CheckCircle2,
+  Loader,
+  PauseCircle,
+  XCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { getAIUsage } from "@/actions/business/get-ai-usage";
 import {
   getAIVerificationProgress,
   requestAIVerification,
   type AIRecordType,
 } from "@/actions/ai-analysis";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+
+import { pollInterval, progressView } from "./progress-view";
+
+/** The record's durable progress: one key, shared by the button and the box. */
+const progressKey = (recordType: AIRecordType, recordId: string) =>
+  ["ai-analysis-progress", recordType, recordId] as const;
+
+async function fetchProgress(recordType: AIRecordType, recordId: string) {
+  const response = await getAIVerificationProgress(recordType, recordId);
+
+  if (isStaleActionResult(response, { background: true })) {
+    throw new Error(STALE_ACTION_MESSAGE);
+  }
+
+  return response;
+}
 
 /**
  * "Verificar com IA": starts (or revives) the analysis of an existing
@@ -18,33 +41,32 @@ import {
  * quota-denied skips and failed runs. Progress then arrives through the
  * regular websocket events.
  *
- * Renders nothing while the company has AI disabled (limit 0): offering a
- * button that can only answer "não habilitada" is a dead end, not a feature.
+ * Shown only to whom the API says may ask (`canRequest`: the record's write
+ * permission, not a driver, AI on in the company). It used to be decided by
+ * the company's usage, which only admins may read — so a profile allowed to
+ * ask never saw the button, and the API accepted anyone who called it (AI-1).
  */
 const RequestAIVerificationButton = ({
   recordType,
   recordId,
-  businessId,
   isRetry,
 }: {
   recordType: AIRecordType;
   recordId: string;
-  businessId: string;
 
   /** Changes the label: a failed/skipped record reads "verificar novamente". */
   isRetry: boolean;
 }): JSX.Element | null => {
   const [isRequesting, setIsRequesting] = useState(false);
+  const queryClient = useQueryClient();
 
-  const { data: usageResponse } = useQuery(
-    ["ai-usage", businessId],
-    () => getAIUsage(businessId),
-    { staleTime: 60_000, refetchOnWindowFocus: false },
+  const { data } = useQuery(
+    progressKey(recordType, recordId),
+    () => fetchProgress(recordType, recordId),
+    { staleTime: 30_000, refetchOnWindowFocus: false },
   );
 
-  const aiEnabled =
-    usageResponse?.success === true &&
-    (usageResponse.data?.ai_analysis_limit ?? 0) > 0;
+  const canRequest = data?.success === true && data.data?.canRequest === true;
 
   const handleRequest = async () => {
     setIsRequesting(true);
@@ -52,17 +74,22 @@ const RequestAIVerificationButton = ({
     try {
       const result = await requestAIVerification(recordType, recordId);
 
+      if (isStaleActionResult(result)) return;
+
       if (result.success) {
         toast.success(result.message, { id: `ai-${recordId}` });
       } else {
         toast.error(result.message, { id: `ai-${recordId}` });
       }
+
+      // The box below follows the new request from its first step.
+      await queryClient.invalidateQueries(progressKey(recordType, recordId));
     } finally {
       setIsRequesting(false);
     }
   };
 
-  if (!aiEnabled) return null;
+  if (!canRequest) return null;
 
   return (
     <Button
@@ -86,7 +113,11 @@ const RequestAIVerificationButton = ({
  * Durable progress box for a record whose SERVER status says "analyzing" but
  * whose websocket history died with a page refresh: polls the analysis
  * request in the database so the dialog shows "3 de 8 fotos" (or "aguardando
- * nova tentativa") instead of a bare spinner forever.
+ * nova tentativa") instead of a bare spinner.
+ *
+ * It stops at a terminal status and reloads the screen's data once, so the
+ * record's verdict replaces the box (AI-6); the company's `aiAnalysisChanged`
+ * hint makes that immediate instead of the next 5-second poll.
  */
 const AIAnalysisProgressFallback = ({
   recordType,
@@ -95,53 +126,77 @@ const AIAnalysisProgressFallback = ({
   recordType: AIRecordType;
   recordId: string;
 }): JSX.Element => {
+  const router = useRouter();
+  const refreshed = useRef(false);
+
   const { data } = useQuery(
-    ["ai-analysis-progress", recordType, recordId],
-    () => getAIVerificationProgress(recordType, recordId),
+    progressKey(recordType, recordId),
+    () => fetchProgress(recordType, recordId),
     {
-      refetchInterval: 5000,
+      refetchInterval: (latest) => pollInterval(latest?.data),
       refetchOnWindowFocus: false,
     },
   );
 
   const progress = data?.data;
+  const view = progressView(progress);
 
-  const isWaitingRetry =
-    progress?.status === "PENDING" &&
-    progress.availableAt !== null &&
-    new Date(progress.availableAt).getTime() > Date.now();
+  useEffect(() => {
+    if (!view.terminal || refreshed.current) return;
 
-  const label = !progress
-    ? "Analisando..."
-    : isWaitingRetry
-      ? `Aguardando nova tentativa (${progress.unitsCompleted}/${progress.unitsTotal} fotos analisadas)`
-      : progress.unitsTotal > 1
-        ? `Analisando... ${progress.unitsCompleted} de ${progress.unitsTotal} fotos`
-        : "Analisando...";
+    refreshed.current = true;
+    router.refresh();
+  }, [view.terminal, router]);
 
-  const percent =
-    progress && progress.unitsTotal > 0
-      ? Math.max(
-          8,
-          Math.round((progress.unitsCompleted / progress.unitsTotal) * 100),
-        )
-      : 8;
+  const tones = {
+    running: {
+      box: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800",
+      text: "text-blue-700 dark:text-blue-300",
+      bar: "bg-blue-200 dark:bg-blue-800",
+      fill: "bg-blue-600",
+    },
+    done: {
+      box: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800",
+      text: "text-emerald-700 dark:text-emerald-300",
+      bar: "bg-emerald-200 dark:bg-emerald-800",
+      fill: "bg-emerald-600",
+    },
+    paused: {
+      box: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800",
+      text: "text-amber-800 dark:text-amber-300",
+      bar: "bg-amber-200 dark:bg-amber-800",
+      fill: "bg-amber-500",
+    },
+    failed: {
+      box: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800",
+      text: "text-red-700 dark:text-red-300",
+      bar: "bg-red-200 dark:bg-red-800",
+      fill: "bg-red-600",
+    },
+  }[view.tone];
+
+  const Icon = {
+    running: Loader,
+    paused: PauseCircle,
+    done: CheckCircle2,
+    failed: XCircle,
+  }[view.tone];
 
   return (
-    <div
-      className="bg-blue-50 dark:bg-blue-900/20 border
-      border-blue-200 dark:border-blue-800 rounded-md p-3"
-    >
+    <div className={`border rounded-md p-3 ${tones.box}`} role="status">
       <div className="flex items-center gap-2 mb-2">
-        <Loader className="h-4 w-4 animate-spin text-blue-600" />
-        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-          {label}
+        <Icon
+          className={`h-4 w-4 shrink-0 ${tones.text} ${view.tone === "running" ? "animate-spin" : ""}`}
+          aria-hidden="true"
+        />
+        <span className={`text-sm font-medium ${tones.text}`}>
+          {view.label}
         </span>
       </div>
-      <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-1.5">
+      <div className={`w-full rounded-full h-1.5 ${tones.bar}`}>
         <div
-          className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
-          style={{ width: `${percent}%` }}
+          className={`h-1.5 rounded-full transition-all duration-500 ${tones.fill}`}
+          style={{ width: `${view.percent}%` }}
         />
       </div>
     </div>

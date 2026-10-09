@@ -6,45 +6,50 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { FuelTypeContent } from "./fuel-type-content";
+import { FuelTypeContent } from "@/features/fuel-type/content";
+import { FuelTypeSkeleton } from "@/features/fuel-type/skeleton";
 
-interface FuelTypeQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface FuelTypePageProps {
+  // Every param the URL carries: page, search, sort, order and, on /admin,
+  // the company picked at the top.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Tipo de Combustível",
-    description: `
-      Gerencie facilmente seus tipos de combustíveis cadastrados. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    description:
+      "Gerencie os tipos de combustível da frota: cadastre, edite e exclua os que não estão em uso.",
   };
 }
 
-const FuelType = async ({
+const DashboardFuelType = async ({
   searchParams,
-}: FuelTypeQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: FuelTypePageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Tipo de Combustível"}
-        description="Gerencie os tipos de combustíveis cadastrados, delete, edite e mantenha os dados sempre atualizados."
+        title="Tipo de Combustível"
+        description="Cadastre os combustíveis que a frota usa: cada veículo é cadastrado com o seu."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
-        <FuelTypeContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. */}
+      <Suspense fallback={<FuelTypeSkeleton mode="dashboard" />}>
+        <FuelTypeContent
+          mode="dashboard"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default FuelType;
+export default DashboardFuelType;

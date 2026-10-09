@@ -103,7 +103,8 @@ const buildImageGallery = (messages: ClientChatMessage[]): GalleryPhoto[] => {
 const findGalleryIndex = (
   photos: GalleryPhoto[],
   key: string | null,
-): number => (key === null ? -1 : photos.findIndex((photo) => photo.key === key));
+): number =>
+  key === null ? -1 : photos.findIndex((photo) => photo.key === key);
 
 /** Any number onto a real position, or -1 for an empty gallery. */
 const clampGalleryIndex = (index: number, count: number): number => {

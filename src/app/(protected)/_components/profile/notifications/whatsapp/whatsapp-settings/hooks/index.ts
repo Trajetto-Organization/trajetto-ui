@@ -11,6 +11,7 @@ import type {
 } from "../../shared/common.types";
 
 import { updateWhatsAppSettings } from "@/actions/whatsapp/whatsapp-settings";
+import { isStaleActionResult } from "@/lib/action-result";
 
 function formatPhoneNumber(value: string): string {
   const numbers = value.replace(/\D/g, "").slice(0, 11);
@@ -67,6 +68,8 @@ function useWhatsAppSettings({
 
       try {
         const result = await updateWhatsAppSettings(requestData);
+
+        if (isStaleActionResult(result)) return;
 
         if (result.success && result.data) {
           setSettings(result.data);

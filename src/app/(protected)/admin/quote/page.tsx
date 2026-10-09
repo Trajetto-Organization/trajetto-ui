@@ -5,15 +5,15 @@ import { redirect } from "next/navigation";
 
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
+import { QuoteListSkeleton } from "@/app/(protected)/_components/admin/quote/skeleton";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { QuoteActions } from "./page-actions";
 import { QuoteContent } from "./quote-content";
 
-interface QuoteQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface QuotePageProps {
+  // Every param the URL carries: sort, order and the facets too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const Quote = async ({
   searchParams,
-}: QuoteQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: QuotePageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -43,9 +43,7 @@ const Quote = async ({
         description="Gerencie todas as solicitações de orçamento e acompanhe o processo de vendas."
       />
 
-      <QuoteActions />
-
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
+      <Suspense fallback={<QuoteListSkeleton />}>
         <QuoteContent searchParams={searchParams} token={tokenAccess} />
       </Suspense>
     </PageContainer>

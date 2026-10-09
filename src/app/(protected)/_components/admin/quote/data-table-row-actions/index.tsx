@@ -1,151 +1,92 @@
 "use client";
 
 import { useState } from "react";
-import { Row } from "@tanstack/react-table";
-
-import { MoreHorizontal, Eye, Edit, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import type { Row } from "@tanstack/react-table";
+import { toast } from "sonner";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  RowActionItem,
+  RowActionSeparator,
+  RowActions,
+} from "@/components/shared/custom/row-actions";
 
 import type { QuoteProps } from "../quote.types";
-import { ViewQuoteModal } from "../view-quote-modal";
+import { quoteStatusBlockedReason } from "../lib/row-actions";
 
+import { ViewQuoteModal } from "../view-quote-modal";
 import { UpdateQuoteStatusModal } from "../update-quote-status-modal";
 import { DeleteQuoteModal } from "../delete-quote-modal";
-
-import { toast } from "sonner";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;
 }
 
+/**
+ * The row menu (decision 3.5): 160px, text only, the destructive act in red,
+ * and "Atualizar status" disabled WITH the reason on a finished quote. The
+ * old menu was 180px with icons, said "Deletar" and greyed the status item
+ * out with no explanation.
+ */
 export function DataTableQuoteRowActions<TData>({
   row,
 }: DataTableRowActionsProps<TData>) {
   const quote = row.original as QuoteProps;
 
-  const [isViewOpen, setIsViewOpen] = useState<boolean>(false);
-  const [isUpdateOpen, setIsUpdateOpen] = useState<boolean>(false);
+  const [open, setOpen] = useState<"view" | "status" | "delete" | null>(null);
 
-  const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
-
-  const handleCopyID = (id: string) => {
+  const copy = (value: string, what: "ID" | "E-mail") => {
     navigator.clipboard
-      .writeText(id)
-      .then(() => {
-        toast.success("ID copiado para a área de transferência!");
-      })
-      .catch((err) => {
-        toast.error("Erro ao copiar o ID: " + err);
-      });
-  };
-
-  const handleCopyEmail = (email: string) => {
-    navigator.clipboard
-      .writeText(email)
-      .then(() => {
-        toast.success("E-mail copiado para a área de transferência!");
-      })
-      .catch((err) => {
-        toast.error("Erro ao copiar o e-mail: " + err);
-      });
-  };
-
-  const isQuoteClosedOrConverted = (quoteStatus: string) => {
-    return quoteStatus === "CLOSED" || quoteStatus === "CONVERTED";
+      .writeText(value)
+      .then(() =>
+        toast.success(`${what} copiado para a área de transferência!`),
+      )
+      .catch((error) => toast.error(`Erro ao copiar o ${what}: ${error}`));
   };
 
   return (
     <>
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
-          >
-            <MoreHorizontal />
-            <span className="sr-only">Abrir Menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[180px]">
-          <DropdownMenuItem
-            className="cursor-pointer flex items-center"
-            onClick={() => {
-              setIsDropdownOpen(false);
-              setIsViewOpen(true);
-            }}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Visualizar
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer flex items-center"
-            onClick={() => {
-              setIsDropdownOpen(false);
-              setIsUpdateOpen(true);
-            }}
-            disabled={isQuoteClosedOrConverted(quote.status)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Atualizar Status
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => handleCopyID(quote.id)}
-          >
-            Copiar ID
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => handleCopyEmail(quote.email)}
-          >
-            Copiar E-mail
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            className="cursor-pointer flex items-center text-red-600"
-            onClick={() => {
-              setIsDropdownOpen(false);
-              setIsDeleteOpen(true);
-            }}
-          >
-            <Trash className="mr-2 h-4 w-4" />
-            Deletar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {isViewOpen && (
-        <ViewQuoteModal
-          quote={quote}
-          isOpen={isViewOpen}
-          onClose={() => setIsViewOpen(false)}
+      <RowActions entity={`o orçamento de ${quote.company}`}>
+        <RowActionItem label="Ver detalhes" onSelect={() => setOpen("view")} />
+        <RowActionItem
+          label="Atualizar status"
+          blockedReason={quoteStatusBlockedReason(quote.status)}
+          onSelect={() => setOpen("status")}
         />
+
+        <RowActionSeparator />
+
+        <RowActionItem
+          label="Copiar ID"
+          onSelect={() => copy(quote.id, "ID")}
+        />
+        <RowActionItem
+          label="Copiar e-mail"
+          onSelect={() => copy(quote.email, "E-mail")}
+        />
+
+        <RowActionSeparator />
+
+        <RowActionItem
+          label="Excluir"
+          destructive
+          onSelect={() => setOpen("delete")}
+        />
+      </RowActions>
+
+      {open === "view" && (
+        <ViewQuoteModal quote={quote} isOpen onClose={() => setOpen(null)} />
       )}
 
-      {isUpdateOpen && (
+      {open === "status" && (
         <UpdateQuoteStatusModal
           quote={quote}
-          isOpen={isUpdateOpen}
-          onClose={() => setIsUpdateOpen(false)}
+          isOpen
+          onClose={() => setOpen(null)}
         />
       )}
 
-      {isDeleteOpen && (
-        <DeleteQuoteModal
-          quote={quote}
-          isOpen={isDeleteOpen}
-          onClose={() => setIsDeleteOpen(false)}
-        />
+      {open === "delete" && (
+        <DeleteQuoteModal quote={quote} isOpen onClose={() => setOpen(null)} />
       )}
     </>
   );

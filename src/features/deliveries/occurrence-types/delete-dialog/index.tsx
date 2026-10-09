@@ -21,6 +21,7 @@ import { handleDeleteOccurrenceType } from "@/actions/occurrence-type/delete-occ
 
 import { useQueryClient } from "react-query";
 import { revalidateTagName } from "@/actions/revalidate";
+import { guardFormAction } from "@/lib/action-result";
 
 interface DeleteOccurrenceTypeDialogProps {
   businessId: string;
@@ -82,13 +83,7 @@ const DeleteOccurrenceTypeFormSubmit = ({
       </AlertDialogHeader>
       <AlertDialogFooter className="mt-5">
         <AlertDialogCancel disabled={pending}>Cancelar</AlertDialogCancel>
-        <Button
-          type="submit"
-          disabled={pending}
-          variant={"secondary"}
-          className="bg-red-600/10 dark:bg-red-500/10
-          dark:text-red-500 text-red-600"
-        >
+        <Button type="submit" disabled={pending} variant="destructive">
           <ShieldAlert className="mr-1 size-5" />
           <span>Deletar Tipo</span>
 
@@ -113,7 +108,9 @@ const DeleteOccurrenceTypeDialog = ({
   const queryClient = useQueryClient();
 
   const [state, dispatch] = useFormState(
-    () => handleDeleteOccurrenceType({ businessId, occurrenceTypeId }),
+    guardFormAction(() =>
+      handleDeleteOccurrenceType({ businessId, occurrenceTypeId }),
+    ),
     null,
   );
 
@@ -158,7 +155,7 @@ const DeleteOccurrenceTypeDialog = ({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="bg-white dark:bg-[#121214]">
+      <AlertDialogContent className="bg-background">
         <form action={dispatch}>
           <DeleteOccurrenceTypeFormSubmit
             occurrenceTypeName={occurrenceTypeName}

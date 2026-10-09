@@ -1,9 +1,17 @@
-import type { PermissionKey } from "../(protected)/_components/shared/common.types";
+import type {
+  PermissionKey,
+  UserRole,
+} from "../(protected)/_components/shared/common.types";
 
 /** Sellable modules, mirroring the API's BusinessModule enum. */
 type BusinessModuleKey = "FLEET" | "DELIVERIES";
 
 interface AppRoute {
+  /**
+   * A segment starting with ":" matches any one segment, so a page under an
+   * id (/driver/vehicles/:vehicleId/fuels) carries its own rule instead of
+   * inheriting the parent's by prefix.
+   */
   path: string;
   title: string;
   /**
@@ -20,6 +28,12 @@ interface AppRoute {
    * point, this only decides what is worth showing and reaching.
    */
   requiredModule?: BusinessModuleKey;
+  /**
+   * Roles the page exists for, when the API restricts it by role rather than
+   * by permission (verifyUserRole). Without it the palette offered "Atividades
+   * recentes" to every employee and the edge middleware sent them back.
+   */
+  allowedRoles?: UserRole[];
 }
 
 /**
@@ -40,9 +54,16 @@ interface AppRoute {
  * suppliers, payables and fines.
  */
 const appRoutes: AppRoute[] = [
-  // ADMIN Routes (MASTER only — the back office is never module-gated)
+  // ADMIN Routes (MASTER only). The menu never hides a module from the MASTER,
+  // who works across companies: whether the SELECTED company hired it is
+  // answered on the page, with the "Módulo não contratado" state (decision
+  // 4.3). `requiredModule` here documents the page and gates company roles.
   { path: "/admin", title: "Administrativo", exact: true },
-  { path: "/admin/activity", title: "Atividades recentes" },
+  {
+    path: "/admin/activity",
+    title: "Atividades recentes",
+    allowedRoles: ["MASTER"],
+  },
   { path: "/admin/quote", title: "Orçamentos" },
   { path: "/admin/business", title: "Empresas" },
   { path: "/admin/branch", title: "Filiais" },
@@ -107,20 +128,37 @@ const appRoutes: AppRoute[] = [
   },
   {
     // The master surface of the same two screens that were missing from the
-    // dashboard side. A MASTER passes every check by role, so this is about
-    // the registry being complete rather than about gating them.
+    // dashboard side. The MASTER's menus are not gated by module (they span
+    // companies); the selected company's plan is answered on the page, by the
+    // API's MODULE_NOT_ENABLED. This is about the registry being complete.
     path: "/admin/control-tower",
     title: "Torre de Controle",
     requiredModule: "DELIVERIES",
   },
   {
+    path: "/admin/driver-pauses",
+    title: "Pausas dos motoristas",
+    requiredModule: "DELIVERIES",
+  },
+  {
+    // Decision 4.3: an API key only works with Entregas (ensure-api-key), and
+    // every webhook topic is a delivery one — a fleet-only company would mint
+    // keys that always answer 403.
     path: "/admin/integrations",
     title: "Integrações",
+    requiredModule: "DELIVERIES",
   },
 
   // DASHBOARD Routes (to BUSINESS_ADMIN and BUSINESS_USER)
   { path: "/dashboard", title: "Dashboard", exact: true },
-  { path: "/dashboard/activity", title: "Atividades recentes" },
+  {
+    // The API serves the company feed to BUSINESS_ADMIN only
+    // (activity-routes verifyUserRole); an employee sees their own actions on
+    // the dashboard card instead.
+    path: "/dashboard/activity",
+    title: "Atividades recentes",
+    allowedRoles: ["BUSINESS_ADMIN"],
+  },
   { path: "/dashboard/kanban", title: "Kanban" },
   {
     path: "/dashboard/profile-access",
@@ -249,20 +287,46 @@ const appRoutes: AppRoute[] = [
   },
   {
     /**
+     * The drivers' day from the deliveries operation (decision 6.1), with the
+     * same key the API asks for (`delivery_manage:read`, driver-pause-routes)
+     * and the same key as its neighbours in Entregas.
+     */
+    path: "/dashboard/driver-pauses",
+    title: "Pausas dos motoristas",
+    requiredPermission: "delivery_manage",
+    requiredModule: "DELIVERIES",
+  },
+  {
+    /**
      * Same gap, and a sharper one: an API key hands the whole operation of a
      * company to whoever holds it, which is why the API keeps
-     * `integration_manage` separate from every other permission. No module
-     * gate — integrations are not part of a hired module.
+     * `integration_manage` separate from every other permission. Behind
+     * Entregas since decision 4.3: the key and every webhook topic are the
+     * deliveries module's.
      */
     path: "/dashboard/integrations",
     title: "Integrações",
     requiredPermission: "integration_manage",
+    requiredModule: "DELIVERIES",
   },
 
   // DRIVER routes — no permission gate (drivers have no profile access), but
   // the module gate still applies: no fleet plan, no fuelling flow.
   { path: "/driver/kanban", title: "Kanban" },
   { path: "/driver/vehicles", title: "Veículos" },
+  {
+    // Registered on their own: by prefix they inherited /driver/vehicles,
+    // which has no module, and a driver of a company without FLEET opened
+    // them to read "módulo não habilitado" from the API.
+    path: "/driver/vehicles/:vehicleId/fuels",
+    title: "Abastecimentos",
+    requiredModule: "FLEET",
+  },
+  {
+    path: "/driver/vehicles/:vehicleId/service-orders",
+    title: "Ordens de serviço",
+    requiredModule: "FLEET",
+  },
   {
     path: "/driver/account-payable",
     title: "Contas a pagar",
@@ -272,6 +336,19 @@ const appRoutes: AppRoute[] = [
   // Other routes
   { path: "/profile", title: "Minha Conta" },
   { path: "/notifications", title: "Notificações" },
+  {
+    /**
+     * The developer portal (decision 11.1). The page itself is public — the
+     * edge gates only the private prefixes, and whoever integrates is often
+     * the customer's ERP vendor, with no login. This entry decides only who
+     * the product OFFERS it to (sidebar and ⌘K): the rule of Integrações,
+     * since only those users can mint the key the portal teaches to use.
+     */
+    path: "/docs",
+    title: "Documentação da API",
+    requiredPermission: "integration_manage",
+    requiredModule: "DELIVERIES",
+  },
 ];
 
 export { appRoutes };

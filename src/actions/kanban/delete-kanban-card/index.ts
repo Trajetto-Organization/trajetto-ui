@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteKanbanCardProps {
   message: string;
@@ -24,7 +27,7 @@ const handleDeleteKanbanCard = async ({
   const deleteCard = `${process.env.HTTP_REQUEST}/kanban/card/delete/${cardId}`;
 
   try {
-    const response = await fetch(deleteCard, {
+    const response = await apiFetch(deleteCard, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -34,14 +37,15 @@ const handleDeleteKanbanCard = async ({
 
     const { message } = (await response.json()) as DeleteKanbanCardProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        deleteCardError: message,
+        deleteCardError: message || refusalMessage(response.status),
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/delete-kanban-card", error);
     return {
       deleteCardError: "Ocorreu um erro inesperado ao tentar deletar o card.",
     };

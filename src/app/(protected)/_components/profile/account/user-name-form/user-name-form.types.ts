@@ -13,6 +13,8 @@ interface UserNameFormSubmitProps {
   handleUserName: (updatedUserName: string) => void;
   userNameValue: string;
   error: boolean;
+  /** The field's message (live validation), or null. */
+  message: string | null;
 }
 
 interface UseUserNameForm {

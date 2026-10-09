@@ -1,6 +1,8 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface TemplateResponse {
   success: boolean;
@@ -29,7 +31,7 @@ const downloadImportTemplate = async (): Promise<TemplateResponse> => {
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/import/download-template`,
       {
         credentials: "include",
@@ -63,6 +65,7 @@ const downloadImportTemplate = async (): Promise<TemplateResponse> => {
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     };
   } catch (error) {
+    logActionError("import/download-template", error);
     return {
       success: false,
       message: "Ocorreu um erro inesperado ao baixar o modelo.",

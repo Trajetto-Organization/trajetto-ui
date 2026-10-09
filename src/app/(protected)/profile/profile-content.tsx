@@ -14,6 +14,7 @@ import { UserNameForm } from "@/app/(protected)/_components/profile/account/user
 
 import { UserPasswordForm } from "@/app/(protected)/_components/profile/account/user-password-form";
 import { UserTwoFactorAuthentication } from "@/app/(protected)/_components/profile/account/user-two-factor-authentication";
+import { UserAppearance } from "@/app/(protected)/_components/profile/account/user-appearance";
 
 import { WhatsAppNotifications } from "@/app/(protected)/_components/profile/notifications/whatsapp/whatsapp-notifications";
 import { NotificationPreferences } from "@/app/(protected)/_components/profile/notifications/preferences";
@@ -37,6 +38,7 @@ async function getProfileData(token: string) {
   };
 
   let userResponseError = false;
+  let expired = false;
 
   try {
     const response = await fetch(`${process.env.HTTP_REQUEST}/user/me`, {
@@ -57,10 +59,7 @@ async function getProfileData(token: string) {
     });
 
     if (!response.ok) {
-      if (response.status === 401) {
-        redirect("/login");
-      }
-
+      expired = response.status === 401;
       userResponseError = true;
     }
 
@@ -83,6 +82,10 @@ async function getProfileData(token: string) {
   } catch (error) {
     userResponseError = true;
   }
+
+  // Outside the try: `redirect` throws, and the catch above used to swallow
+  // it, rendering the forms with an error instead of going to the login.
+  if (expired) redirect("/login");
 
   return { userLogged, userResponseError };
 }
@@ -142,22 +145,29 @@ async function getWhatsAppSettings(token: string) {
 const ProfileContent = async ({
   token,
 }: ProfileContentProps): Promise<JSX.Element> => {
-  const { userLogged, userResponseError } = await getProfileData(token);
+  // One round trip instead of three in series: the settings and the
+  // preferences need only the token. Every signed-in role sees the WhatsApp
+  // card, so its read is not wasted; the fallback role drops it below.
+  const [
+    { userLogged, userResponseError },
+    whatsappRead,
+    notificationPreferences,
+  ] = await Promise.all([
+    getProfileData(token),
+    getWhatsAppSettings(token),
+    getNotificationPreferences(token),
+  ]);
 
   const canSeeWhatsApp =
     userLogged.role === "BUSINESS_ADMIN" ||
     userLogged.role === "BUSINESS_USER" ||
     userLogged.role === "MASTER";
 
-  const whatsappSettings = canSeeWhatsApp
-    ? await getWhatsAppSettings(token)
-    : null;
-
-  const notificationPreferences = await getNotificationPreferences(token);
+  const whatsappSettings = canSeeWhatsApp ? whatsappRead : null;
 
   return (
     <Tabs defaultValue="account" className="mt-6">
-      <TabsList className="w-full sm:w-auto">
+      <TabsList className="w-full sm:w-auto" data-tutorial="profile-tabs">
         <TabsTrigger value="account" className="flex-1 sm:flex-auto gap-2">
           <Settings className="h-4 w-4" />
           Configurações
@@ -173,7 +183,7 @@ const ProfileContent = async ({
       </TabsList>
 
       <TabsContent value="account" className="mt-6">
-        <Card>
+        <Card data-tutorial="profile-account">
           <CardContent className="px-6">
             <AvatarUpload
               userName={userLogged.name}
@@ -189,6 +199,7 @@ const ProfileContent = async ({
                 error={userResponseError}
                 isTwoFactorEnabled={userLogged.two_factor_enabled}
               />
+              <UserAppearance />
             </div>
           </CardContent>
         </Card>

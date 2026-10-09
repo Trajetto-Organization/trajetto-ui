@@ -19,6 +19,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./tests/ui",
+  // Compiles every visited route on the dev server before the workers start
+  // (see the file for the failures it removes).
+  globalSetup: "./tests/ui/support/warm-up.ts",
   fullyParallel: true,
   workers: 3,
   timeout: 120_000,

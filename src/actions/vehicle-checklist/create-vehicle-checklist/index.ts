@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateVehicleChecklistSchema } from "@/schemas/create-update-vehicle-checklist-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateVehicleChecklistProps {
   message: string;
@@ -42,7 +45,13 @@ const parseUploadedPhotos = (
   try {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as UploadedPhoto[]) : [];
-  } catch {
+  } catch (error) {
+    // The browser already uploaded these photos: dropping their keys here
+    // loses them from the checklist, so it is logged, not only swallowed.
+    logActionError(
+      "vehicle-checklist/create-vehicle-checklist (photos)",
+      error,
+    );
     return [];
   }
 };
@@ -123,7 +132,7 @@ const handleCreateVehicleChecklist = async (
   const createVehicleChecklist = `${process.env.HTTP_REQUEST}/vehicle-checklist/create-vehicle-checklist/${businessId}`;
 
   try {
-    const response = await fetch(createVehicleChecklist, {
+    const response = await apiFetch(createVehicleChecklist, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -140,16 +149,18 @@ const handleCreateVehicleChecklist = async (
 
     const { message } = (await response.json()) as CreateVehicleChecklistProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         createVehicleChecklistError: {
-          createVehicleChecklistErrorMessage: message,
+          createVehicleChecklistErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("vehicle-checklist/create-vehicle-checklist", error);
     return {
       createVehicleChecklistError: {
         createVehicleChecklistErrorMessage:

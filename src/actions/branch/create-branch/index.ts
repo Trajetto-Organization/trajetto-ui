@@ -1,7 +1,9 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { createUpdateBranchSchema } from "@/schemas/create-update-branch-schema";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateBranchProps {
   message: string;
@@ -50,7 +52,7 @@ const handleCreateBranch = async (state: any, createBranchValues: FormData) => {
   const branchData = createBranchValidation.data;
 
   try {
-    const response = await fetch(createBranch, {
+    const response = await apiFetch(createBranch, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -60,16 +62,25 @@ const handleCreateBranch = async (state: any, createBranchValues: FormData) => {
       body: JSON.stringify(branchData),
     });
 
-    const { message } = (await response.json()) as CreateBranchProps;
+    const { message } = (await response
+      .json()
+      .catch(() => ({}))) as Partial<CreateBranchProps>;
 
-    if (!response.ok && message) {
+    // A refusal is a refusal with or without a message: without one it
+    // used to fall through as `{ successMessage: undefined }`, and the form
+    // neither closed nor said anything.
+    if (!response.ok) {
       return {
-        createBranchError: { createBranchErrorMessage: message },
+        createBranchError: {
+          createBranchErrorMessage:
+            message || "Não foi possível criar a filial. Tente novamente.",
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("branch/create-branch", error);
     return {
       createBranchError: {
         createBranchErrorMessage:

@@ -6,45 +6,64 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { FuelContent } from "./fuel-content";
+import { FuelContent } from "@/features/fuel/content";
+import { FuelSkeleton } from "@/features/fuel/skeleton";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 
-interface FuelQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface FuelPageProps {
+  // Every param the URL carries: page, search, sort, order, the facets and,
+  // on /admin, the company picked at the top.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Abastecimento",
-    description: `
-      Gerencie facilmente os abastecimentos cadastrados. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    description:
+      "Consulte, filtre e corrija os abastecimentos da frota de qualquer empresa da plataforma.",
   };
 }
 
-const Fuel = async ({
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+const AdminFuel = async ({
   searchParams,
-}: FuelQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: FuelPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Abastecimento"}
-        description="Gerencie os abastecimentos cadastrados, delete, edite e mantenha os dados sempre atualizados."
+        title="Abastecimento"
+        description="Selecione uma empresa para ver, filtrar e corrigir os abastecimentos da frota dela."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <FuelContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. */}
+      <Suspense
+        fallback={
+          <FuelSkeleton
+            mode="admin"
+            hasCompany={Boolean(
+              readBusinessIdParam(firstParam(searchParams.businessId)),
+            )}
+          />
+        }
+      >
+        <FuelContent
+          mode="admin"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default Fuel;
+export default AdminFuel;

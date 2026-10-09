@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteUserProps {
   message: string;
@@ -18,7 +21,7 @@ const handleDeleteUserRegistration = async (userId: string) => {
   const deleteUser = `${process.env.HTTP_REQUEST}/user/delete-user/${userId}`;
 
   try {
-    const response = await fetch(deleteUser, {
+    const response = await apiFetch(deleteUser, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -28,12 +31,13 @@ const handleDeleteUserRegistration = async (userId: string) => {
 
     const { message } = (await response.json()) as DeleteUserProps;
 
-    if (!response.ok && message) {
-      return { deleteUserError: message };
+    if (!response.ok) {
+      return { deleteUserError: message || refusalMessage(response.status) };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/delete-user-registration", error);
     return {
       deleteUserError:
         "Ocorreu um erro inesperado ao tentar deletar o usuário.",

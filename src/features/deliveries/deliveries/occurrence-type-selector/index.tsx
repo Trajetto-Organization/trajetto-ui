@@ -29,6 +29,8 @@ interface OccurrenceTypeOption {
   description?: string | null;
   blocks_delivery?: boolean;
   requires_photo?: boolean;
+  /** The platform's own type ("Comprovante rejeitado"): never offered. */
+  is_system?: boolean;
 }
 
 interface OccurrenceTypeSelectorProps {
@@ -66,17 +68,24 @@ const OccurrenceTypeSelector = ({
     [occurrenceTypes, value],
   );
 
+  // The proof audit writes "Comprovante rejeitado" itself (DLVP-OCC-3): it
+  // is history, not something a person files.
+  const offered = useMemo(
+    () => occurrenceTypes.filter((type) => !type.is_system),
+    [occurrenceTypes],
+  );
+
   const filtered = useMemo(() => {
-    if (!searchValue) return occurrenceTypes;
+    if (!searchValue) return offered;
 
     const term = searchValue.toLowerCase();
 
-    return occurrenceTypes.filter((type) =>
+    return offered.filter((type) =>
       [type.name, type.description ?? ""].some((field) =>
         field.toLowerCase().includes(term),
       ),
     );
-  }, [occurrenceTypes, searchValue]);
+  }, [offered, searchValue]);
 
   const handleSelect = (occurrenceTypeId: string) => {
     onChange(occurrenceTypeId);
@@ -159,9 +168,15 @@ const OccurrenceTypeSelector = ({
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                       <TriangleAlert className="h-4 w-4 shrink-0 text-muted-foreground" />
 
-                      <div className="flex min-w-0 flex-1 flex-col items-start">
+                      {/* Stretched, not items-start: a flex-column child is
+                          as wide as its text, so a long description never
+                          truncated and ran past the list (DLV-OT-2). */}
+                      <div className="flex min-w-0 flex-1 flex-col items-stretch">
                         <span className="flex w-full items-center gap-2">
-                          <span className="truncate text-sm font-medium">
+                          <span
+                            className="min-w-0 truncate text-sm font-medium"
+                            title={type.name}
+                          >
                             {type.name}
                           </span>
 
@@ -187,7 +202,10 @@ const OccurrenceTypeSelector = ({
                         </span>
 
                         {type.description && (
-                          <span className="truncate text-xs text-muted-foreground">
+                          <span
+                            className="line-clamp-2 w-full break-words text-xs text-muted-foreground [overflow-wrap:anywhere]"
+                            title={type.description}
+                          >
                             {type.description}
                           </span>
                         )}

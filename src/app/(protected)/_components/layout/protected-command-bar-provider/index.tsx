@@ -61,14 +61,19 @@ const ProtectedCommandBar = ({
           backdrop-blur-sm z-[99999]"
           data-kbar-portal
         >
+          {/* Theme tokens throughout: the panel was fixed white with
+              near-white item names in the dark theme. `w-full max-w-*`
+              because the positioner already keeps a 16px gutter and a
+              fixed 35rem ran past a phone's edge. */}
           <KBarAnimator
-            className="bg-white rounded-xl shadow-xl
-            flex flex-col gap-4 w-[35rem] overflow-hidden"
+            className="bg-popover text-popover-foreground border
+            rounded-xl shadow-xl flex flex-col gap-4 w-full max-w-[35rem]
+            overflow-hidden"
             data-kbar-animator
           >
             <KBarSearch
-              className="w-full outline-none
-              px-6 py-4 text-black bg-white"
+              className="w-full outline-none px-6 py-4 bg-transparent
+              text-foreground placeholder:text-muted-foreground"
               defaultPlaceholder="Digite um comando ou pesquise..."
             />
             <SearchResults />
@@ -92,15 +97,18 @@ const SearchResults = (): JSX.Element => {
           typeof item === "string" ? (
             <div
               className="text-sm uppercase px-4 pt-3
-              pb-1 text-neutral-500 font-bold"
+              pb-1 text-muted-foreground font-bold"
+              data-kbar-section
             >
               {item}
             </div>
           ) : (
             <div
               className={`flex items-center px-4 py-3 cursor-pointer ${
-                active ? "bg-[#eeeeee]" : "bg-transparent"
+                active ? "bg-accent text-accent-foreground" : "bg-transparent"
               }`}
+              data-kbar-item
+              data-active={active || undefined}
             >
               <div className="flex items-center gap-2">
                 {item.icon && <span>{item.icon}</span>}
@@ -112,8 +120,8 @@ const SearchResults = (): JSX.Element => {
                   item.shortcut.map((shortcut, index) => (
                     <div
                       key={index}
-                      className="text-gray-400 uppercase
-                      bg-slate-100 rounded-sm py-[2px] px-3
+                      className="text-muted-foreground uppercase
+                      bg-muted border rounded-sm py-[2px] px-3
                       min-w-8 w-8 text-center font-mono"
                     >
                       {shortcut}

@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Loader } from "lucide-react";
 
 import {
   Dialog,
   DialogDescription,
+  DialogFormFooter,
   DialogHeader,
   DialogScrollContent,
   DialogTitle,
@@ -22,6 +24,18 @@ import type {
   CreateBusinessSubmitProps,
   CreateBusinessFormState,
 } from "./create-business-form.types";
+import { guardFormAction } from "@/lib/action-result";
+import { createUpdateBusinessFormSchema } from "@/schemas/create-update-business-schema";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
+
+import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
+
+import { BusinessTimeZoneField } from "../timezone-field";
+import { DEFAULT_BUSINESS_TIMEZONE } from "../timezone-field/timezones";
+import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 
 const CreateBusinessFormSubmit = ({
   state,
@@ -29,44 +43,62 @@ const CreateBusinessFormSubmit = ({
   isCreateBusinessForm,
 }: CreateBusinessSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
-  const { updatedFields, cepLoading } = useCepValidation({
+  const { updatedFields, cepLoading, formValues } = useCepValidation({
     isOpen: isCreateBusinessForm,
+  });
+
+  // Where the company operates decides its "today" (decision 1.1).
+  const [timezone, setTimezone] = useState<string>(DEFAULT_BUSINESS_TIMEZONE);
+
+  // Live validation (decision 16.700): the action's schema over the values
+  // the form posts (masked, as the schema's preprocess expects them).
+  const live = useLiveValidation({
+    schema: createUpdateBusinessFormSchema,
+    values: { ...formValues, timezone },
+    serverErrors: state.createBusinessError,
+    resetKey: isCreateBusinessForm,
   });
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+      <div
+        ref={live.ref}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5"
+      >
         {updatedFields.map((field, index) => (
           <FormInput
             key={index}
             {...field}
-            errorName={
-              ((state.createBusinessError ?? {}) as Record<string, string[]>)[
-                field.name
-              ]
-            }
+            errorName={live.errorOf(field.name)}
             disabled={field.disabled || pending}
           />
         ))}
+
+        <div className="md:col-span-2">
+          <BusinessTimeZoneField
+            value={timezone}
+            onChange={setTimezone}
+            error={live.errorOf("timezone")}
+            disabled={pending}
+          />
+        </div>
       </div>
 
-      <div className="flex justify-end mt-6 gap-2">
+      {/* A wide modal: the buttons go to the right (decision 3.2). */}
+      <DialogFormFooter className="mt-6">
         <Button
           type="button"
           variant="outline"
           onClick={handleOpenCreateBusinessForm}
+          {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
         >
           Cancelar
         </Button>
         <Button type="submit" disabled={pending || cepLoading}>
           <span>Criar Empresa</span>
-          {pending && (
-            <div className="ml-2 animate-spin">
-              <Loader />
-            </div>
-          )}
+          {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
-      </div>
+      </DialogFormFooter>
     </>
   );
 };
@@ -74,12 +106,15 @@ const CreateBusinessFormSubmit = ({
 const CreateBusinessForm = (): JSX.Element => {
   const defaultState: CreateBusinessFormState = {};
   const [state, dispatch] = useFormState<CreateBusinessFormState, FormData>(
-    handleCreateBusiness,
+    guardFormAction(handleCreateBusiness),
     defaultState,
   );
 
   const { isCreateBusinessForm, handleOpenCreateBusinessForm, formRef } =
     useCreateBusinessForm(state);
+
+  // The action line's height and a full-width button on a phone (3.6).
+  const buttonClassName = usePageActionClassName();
 
   return (
     <Dialog
@@ -87,15 +122,12 @@ const CreateBusinessForm = (): JSX.Element => {
       onOpenChange={handleOpenCreateBusinessForm}
     >
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8 w-full">
-          Criar Empresa
+        <Button size="sm" className={buttonClassName}>
+          <CreateButtonLabel>Criar Empresa</CreateButtonLabel>
         </Button>
       </DialogTrigger>
 
-      <DialogScrollContent
-        className="max-w-3xl max-h-[90vh] overflow-y-auto"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogScrollContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">Criar Nova Empresa</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -104,7 +136,7 @@ const CreateBusinessForm = (): JSX.Element => {
           </DialogDescription>
         </DialogHeader>
 
-        <form ref={formRef} action={dispatch}>
+        <form ref={formRef} action={dispatch} noValidate data-business-form>
           <CreateBusinessFormSubmit
             handleOpenCreateBusinessForm={handleOpenCreateBusinessForm}
             isCreateBusinessForm={isCreateBusinessForm}

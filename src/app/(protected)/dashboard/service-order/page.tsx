@@ -1,50 +1,57 @@
 import { Suspense } from "react";
-
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { ServiceOrderContent } from "./service-order-content";
+import { ServiceOrderContent } from "@/features/service-order/content";
+import { MaintenanceListSkeleton } from "@/features/service-order/skeleton";
 
-interface ServiceOrderQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface ServiceOrderPageProps {
+  // Every param the URL carries: sort, order and the server-side filters too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Ordem de serviço",
-    description: `
-      Gerencie facilmente as ordens de serviço cadastradas. Consulte, edite e
-      remova informações essenciais de maneira rápida e segura.`,
+    title: "Ordens de serviço",
+    description:
+      "Registre e acompanhe as manutenções da frota: ordens abertas, concluídas, peças e valores.",
   };
 }
 
-const ServiceOrder = async ({
+const DashboardServiceOrder = async ({
   searchParams,
-}: ServiceOrderQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: ServiceOrderPageProps): Promise<JSX.Element> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Ordem de serviço"}
-        description="Gerencie as ordens de serviços cadastradas, delete, edite e mantenha os dados sempre atualizados."
+        title="Ordens de serviço"
+        description="Registre as manutenções da frota, acompanhe as abertas e mantenha a quilometragem dos veículos em dia."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <ServiceOrderContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the navigation; this covers only the async
+          content, so the heading paints first. */}
+      <Suspense
+        fallback={
+          <MaintenanceListSkeleton mode="dashboard" actions={3} filters={3} />
+        }
+      >
+        <ServiceOrderContent
+          mode="dashboard"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default ServiceOrder;
+export default DashboardServiceOrder;

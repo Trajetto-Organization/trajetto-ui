@@ -75,11 +75,7 @@ test.describe("resolveTrackOffset", () => {
 });
 
 test.describe("resolveSwipeCommit", () => {
-  const swipe = (
-    dx: number,
-    elapsedMs: number,
-    edges = MIDDLE,
-  ): -1 | 0 | 1 =>
+  const swipe = (dx: number, elapsedMs: number, edges = MIDDLE): -1 | 0 | 1 =>
     resolveSwipeCommit({ dx, width: STAGE.width, elapsedMs, edges });
 
   test("dragging right goes back, dragging left goes forward", () => {

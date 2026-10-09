@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePermissionSchema } from "@/schemas/create-update-permission-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface PermissionProps {
   message: string;
@@ -45,7 +48,7 @@ const handleUpdatePermission = async (
   const permissionData = updatePermissionValidation.data;
 
   try {
-    const response = await fetch(updatePermission, {
+    const response = await apiFetch(updatePermission, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -57,14 +60,18 @@ const handleUpdatePermission = async (
 
     const { message } = (await response.json()) as PermissionProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updatePermissionError: { updatePermissionErrorMessage: message },
+        updatePermissionError: {
+          updatePermissionErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("permission/update-permission", error);
     return {
       updatePermissionError: {
         updatePermissionErrorMessage:

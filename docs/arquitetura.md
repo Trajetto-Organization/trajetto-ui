@@ -50,11 +50,11 @@ vendidos separadamente para cada empresa:
 
 São três repositórios:
 
-| Repositório (GitHub)            | Pasta local          | O que é                                                                                        |
-| ------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------- |
-| `trajetto-api`                  | `trajetto-api`       | API (Fastify, Prisma, PostgreSQL, Redis), tempo real, filas, crons e o serviço local de IA/OCR |
-| `trajetto-fleet-manager-ui`     | `trajetto-ui` (este) | painel web, site público, blog e portal `/docs`                                                |
-| `trajetto-fleet-manager-mobile` | `trajetto-mobile`    | app Android do motorista (Expo)                                                                |
+| Repositório (GitHub) | Pasta local          | O que é                                                                                        |
+| -------------------- | -------------------- | ---------------------------------------------------------------------------------------------- |
+| `trajetto-api`       | `trajetto-api`       | API (Fastify, Prisma, PostgreSQL, Redis), tempo real, filas, crons e o serviço local de IA/OCR |
+| `trajetto-ui`        | `trajetto-ui` (este) | painel web, site público, blog e portal `/docs`                                                |
+| `trajetto-mobile`    | `trajetto-mobile`    | app Android do motorista (Expo)                                                                |
 
 A web **não tem banco de dados próprio**. Todo dado vem da API por HTTP e
 Socket.IO. O servidor Next só guarda o cache de dados dele, que é
@@ -106,7 +106,6 @@ src/
 scripts/check-api-routes.mjs        gate de rotas usado no promote
 .github/scripts/dokploy-webhook.mjs dispara o deploy no Dokploy
 .github/scripts/wait-for-build.mjs  espera o site servir o build novo
-compose.production.yaml     alternativa em modo Stack (deploy.md)
 ```
 
 As telas do `/admin` e do `/dashboard` são o mesmo componente em
@@ -559,6 +558,13 @@ O que se mediu na build de produção e ficou travado por teste:
    `dumb-init`) e `HEALTHCHECK` com `wget` do busybox em
    `http://127.0.0.1:3000/api/health` (intervalo de 30 s, start de 60 s, 3
    tentativas). O `wget` gasta ~1 MB por sonda; um `node -e` gastaria ~52 MB.
+
+Em staging e produção a imagem roda como **Application** do Dokploy
+(provider Docker, imagem do GHCR), um serviço do Swarm atrás do Traefik. As
+Swarm Settings da Application trocam os tempos do health check (start de
+120 s, 5 tentativas) com o mesmo comando, e definem o update `start-first`
+com rollback automático, o restart sem limite e o teto de memória
+(`deploy.md`, seção 6.4).
 
 As imagens são **amd64**. Numa VPS ARM, seria preciso build multiarquitetura
 (`platforms:` no `build-push-action`) e tirar a remoção do `sharp` x64.

@@ -10,15 +10,25 @@ import { describe, expect, it } from "vitest";
  * The stack read `latest` and the retag to `stable` only ran behind a
  * STAGING_ENABLED switch, so the `image_tag` typed into the promote button was
  * never used: a rollback to a known-good build showed a green run and
- * redeployed the bad `latest`.
+ * redeployed the bad `latest`. The Dokploy Applications now pull the moving
+ * tags the pipeline owns: `staging` and `stable`.
  */
 const read = (...path: string[]) =>
   readFileSync(resolve(process.cwd(), ...path), "utf8").replace(/\r\n/g, "\n");
 
-describe("the production web stack", () => {
-  it("deploys the tag it is told to, `stable` by default, never latest", () => {
-    expect(read("compose.production.yaml")).toMatch(
-      /image: ghcr\.io\/trajetto-organization\/trajetto-ui:\$\{UI_IMAGE_TAG:-stable\}/,
+describe("the web's Dokploy Applications", () => {
+  it("pull `staging` and `stable`, never latest", () => {
+    const deploy = read("docs", "deploy.md");
+
+    expect(deploy).toContain(
+      "Docker Image: `ghcr.io/trajetto-organization/trajetto-ui:staging`",
+    );
+    expect(deploy).toMatch(
+      /\| Docker Image +\| `ghcr\.io\/trajetto-organization\/trajetto-ui:stable` /,
+    );
+    expect(deploy).not.toContain("trajetto-ui:latest");
+    expect(read(".github", "workflows", "deploy.yml")).not.toContain(
+      "trajetto-ui:latest",
     );
   });
 
@@ -222,7 +232,8 @@ describe("the promotion of a merge into main", () => {
 describe("the single web image", () => {
   const workflow = read(".github", "workflows", "deploy.yml");
   const dockerfile = read("Dockerfile");
-  const compose = read("compose.production.yaml");
+  const envExample = read(".env.example");
+  const deploy = read("docs", "deploy.md");
 
   /** A job's text, from its key to the next top-level job. */
   const job = (name: string) => {
@@ -308,19 +319,29 @@ describe("the single web image", () => {
     expect(dockerfile).not.toMatch(/^ARG APP_ENV/m);
   });
 
-  it("gets its public values from the stack at run time", () => {
+  it("gets its public values from the Application's environment at run time", () => {
+    // The Environment block docs/deploy.md section 6.2 has the owner paste.
+    const environment =
+      deploy
+        .slice(deploy.indexOf("### 6.2 Environment"))
+        .match(/```dotenv\n([\s\S]*?)```/)?.[1] ?? "";
+
     for (const name of ["PUBLIC_API_URL", "TURNSTILE_SITE_KEY"]) {
-      expect(compose, name).toContain(`\n      ${name}: \${${name}:?`);
+      expect(environment, name).toMatch(new RegExp(`^${name}=`, "m"));
     }
 
+    expect(environment).not.toContain("NEXT_PUBLIC_");
+
     for (const name of [
+      "PUBLIC_API_URL",
       "PUBLIC_SOCKET_URL",
+      "TURNSTILE_SITE_KEY",
       "MAP_TILE_URL",
       "MAP_TILE_ATTRIBUTION",
     ]) {
-      expect(compose, name).toContain(`${name}: \${${name}:-}`);
+      expect(envExample, name).toMatch(new RegExp(`^${name}=`, "m"));
     }
 
-    expect(compose).not.toContain("NEXT_PUBLIC_");
+    expect(envExample).not.toMatch(/^NEXT_PUBLIC_/m);
   });
 });

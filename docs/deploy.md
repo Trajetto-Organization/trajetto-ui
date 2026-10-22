@@ -24,8 +24,8 @@ em `trajetto-api/docs/deploy.md`.
 3. [Os workflows](#3-os-workflows)
 4. [Configurar o GitHub (uma vez)](#4-configurar-o-github-uma-vez)
 5. [Preparar o Dokploy (uma vez)](#5-preparar-o-dokploy-uma-vez)
-6. [Criar a Application de staging](#6-criar-a-application-de-staging)
-7. [Criar a Application de produção](#7-criar-a-application-de-produção)
+6. [Criar a Application `trajetto-ui` de staging](#6-criar-a-application-trajetto-ui-de-staging)
+7. [Criar a Application `trajetto-ui` de produção](#7-criar-a-application-trajetto-ui-de-produção)
 8. [Domínio sem www, HSTS e Cloudflare](#8-domínio-sem-www-hsts-e-cloudflare)
 9. [O que a web precisa da API (e do serviço de IA)](#9-o-que-a-web-precisa-da-api-e-do-serviço-de-ia)
 10. [Checklist do primeiro deploy](#10-checklist-do-primeiro-deploy)
@@ -36,7 +36,7 @@ em `trajetto-api/docs/deploy.md`.
 15. [CSP e relatórios de violação](#15-csp-e-relatórios-de-violação)
 16. [Suítes de navegador no pipeline](#16-suítes-de-navegador-no-pipeline)
 17. [Recursos, logs e retenção de imagens](#17-recursos-logs-e-retenção-de-imagens)
-18. [Alternativa: Compose em modo Stack](#18-alternativa-compose-em-modo-stack)
+18. [O que a Application não cobre: Traefik, logs e encerramento](#18-o-que-a-application-não-cobre-traefik-logs-e-encerramento)
 19. [Solução de problemas](#19-solução-de-problemas)
 20. [Os três repositórios juntos](#20-os-três-repositórios-juntos)
 
@@ -45,7 +45,7 @@ em `trajetto-api/docs/deploy.md`.
 ## 1. Visão geral
 
 ```
-branch de trabalho ──push──▶ ci.yml (audit, Prettier, tsc, unitários, regras, gitleaks)
+branch de trabalho ──push──▶ ci.yml (audit, Prettier, ESLint, tsc, unitários, regras, gitleaks)
         │
         └─PR─▶ staging ──push──▶ deploy.yml
                                   ├─ validate        (chama ci.yml)
@@ -139,7 +139,8 @@ Jobs:
 
 - **`validate`**: `yarn install --frozen-lockfile` → `audit-ci` (CRITICAL
   em dependência de produção falha; as exceções ficam em `audit-ci.jsonc`,
-  com data de revisão) → `yarn lint:check` (Prettier) → `yarn typecheck` →
+  com data de revisão) → `yarn lint:check` (Prettier) → `yarn lint` (as
+  regras do ESLint que o `next build` aplica) → `yarn typecheck` →
   `yarn test:unit --coverage` (publica o artefato `coverage-<sha>`) →
   `yarn test:rules`. Com `API_REPO_READ_TOKEN`, faz checkout da API ao lado
   para os testes de socket.
@@ -194,7 +195,7 @@ Scripts usados pelos jobs:
 
 ## 4. Configurar o GitHub (uma vez)
 
-No repositório `Trajetto-Organization/trajetto-fleet-manager-ui`:
+No repositório `Trajetto-Organization/trajetto-ui`:
 
 1. **Criar a branch `staging`** a partir de `main`, se ela não existir:
    `git checkout main && git pull && git checkout -b staging && git push -u origin staging`.
@@ -295,18 +296,33 @@ As imagens são privadas. O Dokploy precisa de uma credencial só de leitura:
 
 O mesmo registro serve para a API, o backup e o `trajetto-ai`.
 
-### 5.2 Projeto
+### 5.2 Ambientes e projetos
 
-Crie um **Project** `trajetto` (ou um por ambiente: `trajetto-staging` e
-`trajetto-production`). Em cada ambiente ficam lado a lado a Application da
-web e o app Compose da API (que já traz o banco, o Redis, o serviço de IA e o
-backup; veja `trajetto-api/docs/deploy.md`).
+O Dokploy tem dois **environments**, `staging` e `production`. Em cada um
+há dois **projects**:
 
-## 6. Criar a Application de staging
+| Project        | O que fica nele                                                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `trajetto-api` | PostgreSQL e Redis (Databases), e as Applications `trajetto-ai`, `trajetto-api` e `trajetto-backup` (veja `trajetto-api/docs/deploy.md`) |
+| `trajetto-ui`  | **uma** Application, `trajetto-ui`: esta web. Sem banco, sem Redis, sem volume (seções 6 e 7)                                            |
 
-No projeto: **Create Service → Application**. Nome:
-`trajetto-ui-staging`. O Dokploy gera um _App Name_ interno (o nome do
-serviço no Swarm); anote-o.
+Tudo é **Application → provider Docker → imagem do GHCR**. Não há Compose
+nem template. O Dokploy roda cada Application como um serviço do Swarm atrás
+do Traefik dele, e todos os serviços dividem a rede overlay
+`dokploy-network`. O nome DNS de um serviço nessa rede é o _App Name_ que o
+painel mostra.
+
+## 6. Criar a Application `trajetto-ui` de staging
+
+1. No Dokploy, abra o environment **`staging`** e o project
+   **`trajetto-ui`**.
+2. **Create Service → Application**. Name: `trajetto-ui`. Description:
+   `Web (Next.js), imagem do GHCR`.
+3. O Dokploy gera um **App Name** (por exemplo `trajetto-ui-a1b2c3`). Ele é
+   o nome do serviço no Swarm e o nome DNS na `dokploy-network`. Anote-o: é
+   ele que aparece em `docker service ls`, no rollback de emergência (seção 12) e no arquivo do Traefik (seção 18).
+4. Siga as subseções abaixo **na ordem**. Só clique em **Deploy** no fim
+   (6.6): sem o Environment, o servidor não sobe.
 
 ### 6.1 Provider (aba General)
 
@@ -320,8 +336,9 @@ A tag `staging` só existe depois do primeiro push em `staging` (seção 10).
 
 ### 6.2 Environment
 
-Cole as variáveis de staging. A lista completa e o motivo de cada uma estão
-em `variaveis-de-ambiente.md`; o mínimo é:
+Aba **Environment**: cole as variáveis de staging e salve. A lista completa,
+com o valor de cada ambiente e o motivo de cada uma, está em
+[`variaveis-de-ambiente.md`](./variaveis-de-ambiente.md). O mínimo é:
 
 ```dotenv
 APP_ENV=staging
@@ -350,19 +367,33 @@ ele lista o nome de cada variável faltando.
 - Host: `staging.intrajetto.com`
 - Path: `/`
 - Container Port: **3000**
-- HTTPS: ligado. Certificate: **Let's Encrypt**
+- HTTPS: ligado. Certificate: **Let's Encrypt** (com a Cloudflare em
+  _Full (strict)_, o desafio HTTP passa pelo proxy; se falhar, desligue o
+  proxy só durante a emissão)
 - Salve.
 
-O Dokploy cria o roteador do Traefik da Application. Não acrescente labels
-de Traefik à mão no modo Application.
+O Dokploy cria o roteador do Traefik da Application, no arquivo
+`/etc/dokploy/traefik/dynamic/<App Name>.yml`. Não acrescente labels de
+Traefik à mão: o que vai além do domínio (o redirect do domínio sem www com
+HSTS) fica num arquivo próprio (seção 18).
 
 ### 6.4 Advanced: Swarm, recursos e saúde
 
 O `Dockerfile` já tem um `HEALTHCHECK` (`wget` em `/api/health`, intervalo de
-30 s, start de 60 s, 3 tentativas), que o Swarm usa por padrão. Para ficar
-igual à configuração validada no `compose.production.yaml`, preencha em
-**Advanced → Swarm Settings** (JSON da API do Docker; durações em
-nanossegundos):
+30 s, start de 60 s, 3 tentativas), que o Swarm usa se nada for definido.
+Esta seção é o único registro versionado da configuração da Application: o
+teste `tests/unitaires/application-swarm-settings.test.ts` lê os blocos
+abaixo. Mudou aqui ou no painel, atualize os dois e rode o teste.
+
+**Advanced → Cluster Settings:** _Replicas_ = `1`. _Registry_: o `ghcr` da
+seção 5.1. Salve.
+
+**Advanced → Swarm Settings:** cada campo abaixo é um JSON da API do Docker,
+com durações em **nanossegundos**. Cole cada um no campo do mesmo nome e
+salve.
+
+O start de 120 s e as 5 tentativas dão folga ao primeiro boot num host
+carregado.
 
 _Health Check_:
 
@@ -383,8 +414,11 @@ _Health Check_:
 }
 ```
 
-_Update Config_ (sobe a nova antes de derrubar a velha e volta sozinho se a
-nova não ficar saudável em 30 s):
+O Update Config sobe a nova task antes de derrubar a velha e volta sozinho se
+a nova não ficar saudável em 30 s. O pipeline espera o `/build-id.json` por
+90 s seguidos, mais do que essa janela.
+
+_Update Config_:
 
 ```json
 {
@@ -408,25 +442,34 @@ _Rollback Config_:
 }
 ```
 
-_Restart Policy_ (sem limite de tentativas: a web não tem estado, e um limite
-contado ao longo da vida do serviço já deixou o site fora do ar sem ninguém
-saber):
+O Restart Policy não tem limite de tentativas: a web não tem estado, e um
+limite contado ao longo da vida do serviço já deixou o site fora do ar sem
+ninguém saber. Um slot que o Swarm abandonou volta com
+`docker service update --force <App Name>`.
+
+_Restart Policy_:
 
 ```json
 { "Condition": "any", "Delay": 5000000000 }
 ```
 
-_Mode_: `{ "Replicated": { "Replicas": 1 } }`.
+_Mode_: `{ "Replicated": { "Replicas": 1 } }` (o mesmo número do Cluster
+Settings). Deixe _Placement_, _Labels_ e _Network_ vazios: o Dokploy já liga
+o serviço à `dokploy-network`.
 
-**Advanced → Resources**: _Memory Limit_ = `805306368` (768 MiB, em bytes).
+**Advanced → Resources:** _Memory Limit_ = `805306368` (768 MiB, em bytes).
 Não defina reserva nem limite de CPU: a reserva pode deixar a task sem lugar
 num host pequeno, e o limite de CPU piora a latência. O heap do Node
-(`NODE_OPTIONS=--max-old-space-size=512`) fica abaixo desse limite. Suba os
-dois juntos.
+(`NODE_OPTIONS=--max-old-space-size=512`, seção 6.2) fica abaixo desse
+limite, para um vazamento terminar num "heap out of memory" limpo e não num
+SIGKILL do cgroup. Suba os dois juntos.
 
 **Volumes:** nenhum. A web não tem estado em disco.
 
 **Banco de dados e Redis:** nenhum. A web só fala com a API.
+
+**Encerramento e rotação de log:** o Dokploy não tem campo para os dois na
+Application. Veja a seção 18.
 
 ### 6.5 Webhook de deploy
 
@@ -434,9 +477,11 @@ dois juntos.
 2. Ligue **Auto Deploy** na Application. Sem ele, o webhook responde
    recusando ("Automatic deployments are disabled") e o job falha com HTTP
    4xx.
-3. No GitHub, environment `staging`: crie o secret
-   `DOKPLOY_STAGING_WEBHOOK_URL` com essa URL. Crie também
-   `METADATA_BASE_STAGING=https://staging.intrajetto.com`.
+3. No GitHub (`Trajetto-Organization/trajetto-ui` → Settings →
+   Environments → `staging`): crie o secret `DOKPLOY_STAGING_WEBHOOK_URL`
+   com essa URL. Crie também o secret
+   `METADATA_BASE_STAGING=https://staging.intrajetto.com` (é a origem que o
+   job consulta para conferir o `/build-id.json`).
 
 O webhook só pede ao Dokploy que puxe a tag de novo e role o serviço. Quem
 escolhe **qual** imagem roda é a tag `staging`, movida pelo pipeline.
@@ -451,18 +496,19 @@ curl -s https://staging.intrajetto.com/build-id.json  # {"sha":"<commit>"}
 curl -s https://staging.intrajetto.com/robots.txt     # Disallow: /
 ```
 
-## 7. Criar a Application de produção
+## 7. Criar a Application `trajetto-ui` de produção
 
-Igual à seção 6, com estas diferenças:
+Igual à seção 6, no environment **`production`**, project **`trajetto-ui`**,
+com estas diferenças:
 
 | Item            | Produção                                                                                                                                                                                                |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nome            | `trajetto-ui-production`                                                                                                                                                                                |
+| Nome            | `trajetto-ui`, no environment `production`, project `trajetto-ui`                                                                                                                                       |
 | Docker Image    | `ghcr.io/trajetto-organization/trajetto-ui:stable`                                                                                                                                                      |
 | Environment     | `APP_ENV=production`, `METADATA_BASE=https://www.intrajetto.com`, URLs da API de produção, widget do Turnstile de produção, `RATE_LIMIT_FORWARDER_SECRET` de produção (veja `variaveis-de-ambiente.md`) |
 | Domain          | `www.intrajetto.com`, porta 3000, HTTPS com Let's Encrypt                                                                                                                                               |
-| Domínio sem www | `intrajetto.com` redireciona para `www` (seção 8)                                                                                                                                                       |
-| Webhook         | secret `DOKPLOY_PRODUCTION_WEBHOOK_URL` no environment `production`                                                                                                                                     |
+| Domínio sem www | `intrajetto.com` redireciona para `www` com HSTS (seção 8). **Não** cadastre o apex como domínio da Application                                                                                         |
+| Webhook         | secret `DOKPLOY_PRODUCTION_WEBHOOK_URL` no environment `production` do GitHub. O job confere o `/build-id.json` na origem do secret de repositório `METADATA_BASE`                                      |
 
 Os segredos de produção **nunca** são os mesmos de staging.
 
@@ -502,10 +548,10 @@ Com a Cloudflare na frente, faça isso nela:
    Esperado: `location: https://www.intrajetto.com/blog` e
    `strict-transport-security: max-age=63072000; includeSubDomains; preload`.
 
-Sem Cloudflare, a alternativa é o modo Stack (seção 18): os labels do
-`compose.production.yaml` fazem exatamente isso no Traefik
-(`<prefix>-apex-hsts` + `<prefix>-to-canonical`), e o teste
-`edge-hsts.test.ts` os guarda.
+Sem Cloudflare (ou se preferir que o redirect não dependa dela), faça o
+mesmo no Traefik do Dokploy com o arquivo da seção 18. O teste
+`tests/unitaires/edge-hsts.test.ts` guarda esse arquivo e o HSTS que o
+`next.config.mjs` manda no `www`.
 
 No staging, o domínio sem www é opcional (o staging nunca é indexado). Se
 quiser testar o mesmo redirect antes da produção, crie uma regra igual para
@@ -521,8 +567,8 @@ crie uma exceção para o caminho `/build-id.json`. Sem ela, o run mostra
 A web não tem banco, Redis, fila nem IA própria. Tudo isso é da API, e o
 manual da API (`trajetto-api/docs/deploy.md`) cobre Postgres, Redis,
 migrations, backups e o serviço local de IA/OCR (`trajetto-api/infra/ai-ocr`,
-o serviço `trajetto-ai` **dentro** do app Compose da API, sem porta pública,
-ligado à API pelo token `AI_LOCAL_TOKEN`). **A web
+a Application `trajetto-ai` no project `trajetto-api`, sem domínio,
+ligada à API pelo token `AI_LOCAL_TOKEN`). **A web
 não tem variável de IA**: a leitura de fotos e a verificação por IA chegam
 pela API, como qualquer outro dado.
 
@@ -592,8 +638,11 @@ Na ordem. Marque cada item.
 **Dokploy: staging**
 
 - [ ] Registry `ghcr.io` com o token `read:packages` (seção 5.1).
-- [ ] Application `trajetto-ui-staging` (seção 6): imagem `:staging`,
-      Environment, domínio, Swarm Settings, limite de memória, Auto Deploy.
+- [ ] Application `trajetto-ui` no project `trajetto-ui` do environment
+      `staging` (seção 6): imagem `:staging`, Environment, domínio, Cluster
+      e Swarm Settings, limite de memória, Auto Deploy.
+- [ ] Rotação de log no `/etc/docker/daemon.json` do host (seção 18), se
+      ainda não estiver lá.
 - [ ] Deploy manual verde. `/api/health`, `/build-id.json` e `robots.txt`
       conferidos.
 - [ ] Secrets `DOKPLOY_STAGING_WEBHOOK_URL` e `METADATA_BASE_STAGING` no
@@ -606,7 +655,8 @@ Na ordem. Marque cada item.
 **Dokploy: produção**
 
 - [ ] API de produção promovida primeiro.
-- [ ] Application `trajetto-ui-production` (seção 7), com imagem
+- [ ] Application `trajetto-ui` no project `trajetto-ui` do environment
+      `production` (seção 7), com imagem
       `:sha-<commit que está em staging>` neste primeiro deploy.
 - [ ] Deploy manual verde e site conferido.
 - [ ] Secrets `DOKPLOY_PRODUCTION_WEBHOOK_URL`, `API_DOCS_URL`, `DOCS_USER`
@@ -614,8 +664,8 @@ Na ordem. Marque cada item.
 - [ ] PR `staging` → `main`, merge commit, aprovação. O promote cria
       `stable`.
 - [ ] Imagem da Application trocada para `:stable`.
-- [ ] Redirect do apex e HSTS na Cloudflare (seção 8). Exceção do WAF para
-      `/build-id.json`.
+- [ ] Redirect do apex e HSTS na Cloudflare ou no Traefik (seções 8 e 18).
+      Exceção do WAF para `/build-id.json`.
 - [ ] CORS do bucket R2 de produção com `https://www.intrajetto.com`.
 
 ## 11. Promover para produção
@@ -779,20 +829,9 @@ com a API (2 × 1024 MiB), o Postgres, o Redis (512 MiB), o backup (256 MiB),
 o `trajetto-ai` (1024 MiB e 2 CPUs), o Dokploy e o Traefik. Com staging no
 mesmo host, o total dobra, ou o staging usa limites menores.
 
-**Logs:** no modo Application, o Dokploy não define a rotação de log do
-serviço. Configure-a **uma vez no host**, em `/etc/docker/daemon.json`, e
-reinicie o Docker numa janela de manutenção:
-
-```json
-{
-  "log-driver": "json-file",
-  "log-opts": { "max-size": "50m", "max-file": "5" }
-}
-```
-
-Sem isso, o log cresce até encher o disco do nó, o mesmo nó onde mora o
-volume do banco. No modo Stack, o `compose.production.yaml` já faz isso por
-serviço.
+**Logs:** o Dokploy não define a rotação de log da Application. Ela é
+configurada uma vez no host (seção 18). Sem isso, o log cresce até encher o
+disco do nó, o mesmo nó onde mora o volume do banco.
 
 **Retenção no GHCR:** cada push em `staging` publica um `sha-<commit>`, e o
 deploy de staging bem-sucedido acrescenta `staged-<commit>` no mesmo
@@ -814,32 +853,93 @@ recusado no promote (seção 11). Um rollback manual pelo Run workflow para
 essa tag ainda seria aceito, então não use uma tag cujo build falhou no
 scan.
 
-## 18. Alternativa: Compose em modo Stack
+## 18. O que a Application não cobre: Traefik, logs e encerramento
 
-O `compose.production.yaml` continua no repositório. Ele é o registro
-declarativo das configurações que a Application reproduz (environment,
-health check, update e rollback, restart, memória, rotação de log e o
-redirect do apex com HSTS), e os testes o guardam. Use-o em vez da
-Application se preferir tudo num arquivo, ou se não houver Cloudflare para o
-redirect do apex.
+O compose de produção, que não existe mais, fazia algumas coisas que o
+formulário da Application não tem. Cada uma tem o seu lugar:
 
-1. **Create Service → Compose**, tipo **Docker Stack**. Fonte Git
-   (repositório, branch `main`, caminho `compose.production.yaml`) com Auto
-   Deploy desligado, ou fonte Raw colando o arquivo.
-2. **Não** cadastre domínios na aba Domains: os roteadores estão nos labels
-   do arquivo.
-3. Environment: as variáveis de runtime **mais** `ROUTER_PREFIX`,
-   `WEB_HOST`, `WEB_APEX_HOST` e `UI_IMAGE_TAG` (`staging` ou `stable`;
-   `sha-<commit>` no primeiro deploy). Veja `variaveis-de-ambiente.md`.
-4. O webhook da aba Deployments do app Compose funciona com o mesmo
-   `dokploy-webhook.mjs`: cadastre-o no mesmo secret.
-5. Não use o modo **Docker Compose** (sem Stack): ele ignora o bloco
-   `deploy:` e não puxa de novo uma tag já presente no host. Nesse modo, o
-   promote moveria `stable` e o deploy terminaria verde com a imagem antiga.
-6. **Nenhum `-` dentro de `${VAR:?mensagem}`.** O `docker stack deploy` lê o
-   hífen como separador de valor padrão. O teste
-   `trajetto-api/tests/unitaires/lifecycle/compose-stack-render.test.ts`
-   renderiza este arquivo e barra isso.
+| O que o compose fazia                              | Onde fica agora                                                                           |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| health check, update e rollback, restart, réplicas | Advanced → Cluster Settings e Swarm Settings (seção 6.4)                                  |
+| limite de memória e heap do Node                   | Advanced → Resources e `NODE_OPTIONS` no Environment (seções 6.2 e 6.4)                   |
+| roteador do `www` (host, porta 3000, TLS)          | aba Domains (seção 6.3)                                                                   |
+| HSTS e cabeçalhos de segurança no `www`            | o próprio Next (`next.config.mjs` e `middleware.ts`), em toda resposta. Nada a configurar |
+| compressão                                         | o próprio Next (`compress: true`). Nada a configurar no Traefik                           |
+| redirect do domínio sem www com HSTS               | Cloudflare (seção 8) **ou** o arquivo do Traefik abaixo                                   |
+| rotação de log `json-file` (50 MB × 5)             | `/etc/docker/daemon.json` do host, abaixo                                                 |
+| `stop_grace_period: 30s`                           | sem campo na Application: o Swarm usa o padrão de 10 s (veja abaixo)                      |
+
+**Redirect do domínio sem www no Traefik** (produção; no staging, só se
+quiser testar com um segundo host). Crie um arquivo **separado** do que o
+Dokploy gera para a Application, para ele não ser reescrito quando você
+mexer na aba Domains. Pelo painel: **Settings → Web Server → Traefik → File
+System** (o nome varia entre versões), pasta `dynamic`, novo arquivo
+`trajetto-ui-production-apex.yml`. Ou direto no host, em
+`/etc/dokploy/traefik/dynamic/trajetto-ui-production-apex.yml`. O Traefik
+lê a pasta sozinho, sem reinício.
+
+```yaml
+http:
+  routers:
+    trajetto-ui-production-apex:
+      rule: Host(`intrajetto.com`)
+      entryPoints:
+        - websecure
+      # HSTS first, then the redirect: the 301 itself carries the header.
+      middlewares:
+        - trajetto-ui-production-apex-hsts
+        - trajetto-ui-production-to-canonical
+      # Nothing is proxied: the redirect answers before any backend.
+      service: noop@internal
+      tls:
+        certResolver: letsencrypt
+  middlewares:
+    trajetto-ui-production-apex-hsts:
+      headers:
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+    trajetto-ui-production-to-canonical:
+      redirectRegex:
+        regex: "^https?://[^/]+/(.*)"
+        replacement: "https://www.intrajetto.com/${1}"
+        permanent: true
+```
+
+- Os nomes levam o ambiente (`-production-`): staging e produção dividem o
+  mesmo Traefik, e dois roteadores ou middlewares com o mesmo nome fazem o
+  Traefik descartar os dois. Para o staging, troque `production` por
+  `staging` e os dois hosts.
+- O redirect de :80 para :443 é global e vem de
+  `trajetto-api/infra/traefik/`; este arquivo só cobre o `websecure`.
+- `letsencrypt` é o resolver padrão do Dokploy. Com a Cloudflare em _Full
+  (strict)_ na frente, o certificado do apex é emitido como o do `www`.
+- Não ligue os dois redirects ao mesmo tempo: com a regra da Cloudflare
+  ativa, o pedido nunca chega a este roteador. O HSTS da Cloudflare e o
+  deste arquivo podem coexistir.
+- Confira com os mesmos `curl -sI` da seção 8.
+
+**Rotação de log** (uma vez por host, numa janela de manutenção: reiniciar
+o Docker reinicia todos os serviços). Em `/etc/docker/daemon.json`:
+
+```json
+{
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "50m", "max-file": "5" }
+}
+```
+
+Depois, `systemctl restart docker`. A regra vale para contêineres criados a
+partir daí: faça um Redeploy de cada Application para os serviços já em pé
+passarem a rotacionar.
+
+**Encerramento:** o compose dava 30 s entre o SIGTERM e o SIGKILL. O
+formulário da Application não tem esse campo, e o Swarm usa 10 s. Para a web
+isso basta: ela não tem fila nem estado, e com `start-first` a task nova já
+está saudável e recebendo tráfego antes de a velha receber o SIGTERM. Se
+precisar dos 30 s, `docker service update --stop-grace-period 30s <App Name>`
+no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 
 ## 19. Solução de problemas
 
@@ -867,24 +967,24 @@ redirect do apex.
 
 > Esta seção é **a mesma** nos três manuais de deploy:
 > [`trajetto-api/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-api/blob/main/docs/deploy.md),
-> [`trajetto-ui/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui/blob/main/docs/deploy.md)
+> [`trajetto-ui/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-ui/blob/main/docs/deploy.md)
 > e
-> [`trajetto-mobile/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-fleet-manager-mobile/blob/main/docs/deploy.md).
+> [`trajetto-mobile/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-mobile/blob/main/docs/deploy.md).
 > Mudou aqui, mude nos outros dois. O detalhe de cada passo fica no manual do
 > repositório dono dele.
 
 ### Quem é quem
 
-|                             | API (`trajetto-api`)                                                                                                                                                                | Web (`trajetto-fleet-manager-ui`, pasta `trajetto-ui`)                                                           | App (`trajetto-fleet-manager-mobile`, pasta `trajetto-mobile`)                                                  |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Artefato                    | imagens `trajetto-api`, `trajetto-ai` e `trajetto-backup` em `ghcr.io/trajetto-organization/`                                                                                       | imagem `ghcr.io/trajetto-organization/trajetto-ui`                                                               | APK/AAB (EAS Build) e OTA (EAS Update)                                                                          |
-| Onde roda                   | Dokploy: **um app Compose (Docker Stack)** por ambiente com o `compose.production.yaml`: `api`, `trajetto-database` (Postgres), `trajetto-redis`, `trajetto-ai` e `trajetto-backup` | Dokploy: **uma Application** por ambiente, puxando a imagem do GHCR                                              | no celular do motorista (APK interno em staging, Play Store em produção)                                        |
-| Nome no Dokploy / EAS       | `trajetto-staging` e `trajetto`                                                                                                                                                     | `trajetto-ui-staging` e `trajetto-ui-production`                                                                 | perfis, ambientes e canais `staging` e `production`                                                             |
-| Como o pipeline publica     | API do Dokploy (`.github/scripts/dokploy-deploy.mjs`), que acompanha o deployment até o fim                                                                                         | webhook de deploy da Application (`.github/scripts/dokploy-webhook.mjs`), depois espera o `/build-id.json`       | `eas update` e `eas build`                                                                                      |
-| Secrets de deploy no GitHub | environments `staging` e `production`: `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_COMPOSE_ID`                                                                                       | environment `staging`: `DOKPLOY_STAGING_WEBHOOK_URL`; environment `production`: `DOKPLOY_PRODUCTION_WEBHOOK_URL` | `EXPO_TOKEN` (repositório) e `EXPO_UPDATE_PRIVATE_KEY` (environments `staging` e `production`)                  |
-| Sem os secrets              | move as tags e pula o deploy com `::notice::`                                                                                                                                       | move as tags e pula o deploy com aviso                                                                           | termina verde com aviso, sem publicar                                                                           |
-| De staging para produção    | promove por digest a imagem `sha-<7 do commit>` (tag `staging` → `stable`), sem rebuild                                                                                             | igual à API, e exige o marcador `staged-<7 do commit>` no mesmo digest                                           | promove o **commit** verde em staging (a URL da API é embutida no build, então o artefato não pode ser o mesmo) |
-| Rollback                    | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                                                                              | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                           | `ota-rollback.yml` (republica um grupo de OTA)                                                                  |
+|                             | API (`Trajetto-Organization/trajetto-api`)                                                                                                                                                                                                               | Web (`Trajetto-Organization/trajetto-ui`)                                                                                           | App (`Trajetto-Organization/trajetto-mobile`)                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Artefato                    | imagens `trajetto-api`, `trajetto-ai` e `trajetto-backup` em `ghcr.io/trajetto-organization/`                                                                                                                                                            | imagem `ghcr.io/trajetto-organization/trajetto-ui`                                                                                  | APK/AAB (EAS Build) e OTA (EAS Update)                                                                          |
+| Onde roda                   | Dokploy, projeto `trajetto-api` de cada environment (`staging` e `production`): as Applications `trajetto-api` (2 réplicas, com domínio), `trajetto-ai` e `trajetto-backup` (sem domínio), puxando as imagens do GHCR, e os Databases PostgreSQL e Redis | Dokploy, projeto `trajetto-ui` de cada environment: a Application `trajetto-ui`, puxando a imagem do GHCR                           | no celular do motorista (APK interno em staging, Play Store em produção)                                        |
+| Nome no Dokploy / EAS       | App Names `trajetto-api-staging` e `trajetto-api-production` (e `trajetto-ai-*`, `trajetto-backup-*`, `trajetto-postgres-*`, `trajetto-redis-*`)                                                                                                         | Application `trajetto-ui` no projeto `trajetto-ui` de cada environment (App Names `trajetto-ui-staging` e `trajetto-ui-production`) | perfis, ambientes e canais `staging` e `production`                                                             |
+| Como o pipeline publica     | API do Dokploy (`.github/scripts/dokploy-deploy.mjs`): `application.deploy` de cada Application, na ordem IA → API → backup, acompanhando cada deployment até o fim                                                                                      | webhook de deploy da Application (`.github/scripts/dokploy-webhook.mjs`), depois espera o `/build-id.json`                          | `eas update` e `eas build`                                                                                      |
+| Secrets de deploy no GitHub | environments `staging` e `production`: `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_API_APPLICATION_ID` (obrigatórios) e `DOKPLOY_AI_APPLICATION_ID`, `DOKPLOY_BACKUP_APPLICATION_ID` (opcionais); variável `SWARM_API_SERVICE`                            | environment `staging`: `DOKPLOY_STAGING_WEBHOOK_URL`; environment `production`: `DOKPLOY_PRODUCTION_WEBHOOK_URL`                    | `EXPO_TOKEN` (repositório) e `EXPO_UPDATE_PRIVATE_KEY` (environments `staging` e `production`)                  |
+| Sem os secrets              | move as tags e pula o deploy com `::notice::`                                                                                                                                                                                                            | move as tags e pula o deploy com aviso                                                                                              | termina verde com aviso, sem publicar                                                                           |
+| De staging para produção    | promove por digest a imagem `sha-<7 do commit>` (tag `staging` → `stable`), sem rebuild                                                                                                                                                                  | igual à API, e exige o marcador `staged-<7 do commit>` no mesmo digest                                                              | promove o **commit** verde em staging (a URL da API é embutida no build, então o artefato não pode ser o mesmo) |
+| Rollback                    | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                                                                                                                                                   | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                              | `ota-rollback.yml` (republica um grupo de OTA)                                                                  |
 
 Regras comuns aos três: a branch `staging` recebe o trabalho (push direto do
 dono ou merge de PR) e todo push nela roda a validação completa e publica o
@@ -892,32 +992,33 @@ staging; `main` só recebe PR **de `staging`**, com **merge commit** (squash e
 rebase criam um commit que o staging nunca validou, e a promoção recusa); o
 environment `production` do GitHub tem **Required reviewers** e
 _Deployment branches_ restrito a `main`, então nada chega à produção sem
-aprovação.
+aprovação. No Dokploy, as imagens privadas do GHCR são puxadas com um token
+_classic_ `read:packages`, informado no provider Docker de cada Application.
 
 ### Endereços
 
-|                        | Staging                                                                         | Produção                                                           |
-| ---------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Web                    | `https://staging.intrajetto.com`                                                | `https://www.intrajetto.com` (o apex `intrajetto.com` redireciona) |
-| API (REST e Socket.IO) | `https://trajettoapi-staging.thorsolucoes.com.br`                               | `https://trajettoapi.thorsolucoes.com.br`                          |
-| Serviço de IA          | sem endereço público: `http://trajetto-ai:8080` na rede interna da stack da API | idem                                                               |
+|                        | Staging                                                                           | Produção                                                           |
+| ---------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Web                    | `https://staging.intrajetto.com`                                                  | `https://www.intrajetto.com` (o apex `intrajetto.com` redireciona) |
+| API (REST e Socket.IO) | `https://trajettoapi-staging.thorsolucoes.com.br`                                 | `https://trajettoapi.thorsolucoes.com.br`                          |
+| Serviço de IA          | sem endereço público: `http://trajetto-ai-staging:8080` na rede `dokploy-network` | sem endereço público: `http://trajetto-ai-production:8080`         |
 
 ### O que precisa casar entre os repositórios
 
-| Valor                             | API (Environment do app Compose)                                                                        | Web (Environment da Application)                                                         | App (ambiente EAS)                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| URL pública da API                | `API_HOST` (só o host, para o roteador do Traefik) e `API_HTTP_REQUEST` (a URL)                         | `HTTP_REQUEST` (chamadas do servidor da web) e `PUBLIC_API_URL` (chamadas do navegador)  | `EXPO_PUBLIC_API_URL`                                                                 |
-| Socket.IO                         | o mesmo host da API, com WebSocket liberado na borda                                                    | `PUBLIC_SOCKET_URL` (vazia = `PUBLIC_API_URL`)                                           | o socket usa `EXPO_PUBLIC_API_URL`                                                    |
-| Origem da web                     | `HTTP_REQUEST` = a origem da web do ambiente (única origem do CORS e do Socket.IO, base dos links)      | `METADATA_BASE`                                                                          | `EXPO_PUBLIC_WEB_APPLICATION_URL` (links de Privacidade e Termos)                     |
-| Limite de tentativas por IP       | `RATE_LIMIT_FORWARDER_SECRET`                                                                           | `RATE_LIMIT_FORWARDER_SECRET`, **o mesmo valor**                                         | —                                                                                     |
-| Captcha (Turnstile)               | `TURNSTILE_SECRET_KEY` (o mesmo widget da web) e `TURNSTILE_REQUIRED`                                   | `TURNSTILE_SITE_KEY` e `TURNSTILE_SECRET_KEY`                                            | —                                                                                     |
-| Fotos no R2                       | `R2_*` (um bucket por ambiente)                                                                         | `CSP_STORAGE_ORIGINS` libera a origem do bucket; o CORS do bucket libera a origem da web | envia direto à URL pré-assinada que a API devolve (sem configuração)                  |
-| IA (leitura de fotos)             | `AI_LOCAL_TOKEN`, que o compose entrega também ao `trajetto-ai` como `AI_TOKEN` (um valor por ambiente) | nenhuma variável: a IA chega pela API                                                    | nenhuma variável                                                                      |
-| Push (FCM)                        | nenhuma: a API chama a Expo Push API                                                                    | —                                                                                        | `GOOGLE_SERVICES_JSON` (arquivo secreto no EAS) e a chave FCM V1 em `eas credentials` |
-| Rastreamento em segundo plano     | —                                                                                                       | `BACKGROUND_TRACKING`                                                                    | `EXPO_PUBLIC_BACKGROUND_TRACKING` (as duas ligam juntas)                              |
-| Versão do app                     | `MIN_MOBILE_CONTRACT` e `MOBILE_STORE_URL`                                                              | —                                                                                        | `CLIENT_CONTRACT` em `utils/client-version.ts`                                        |
-| Gate de rotas da web              | `/docs/json` com `DOCS_USER` e `DOCS_PASSWORD`                                                          | secrets `API_DOCS_URL`, `DOCS_USER`, `DOCS_PASSWORD` no environment `production`         | —                                                                                     |
-| Checkout entre repositórios no CI | `CLIENT_REPOS_READ_TOKEN` (lê a web e o app)                                                            | `API_REPO_READ_TOKEN` (lê a API)                                                         | `API_REPO_READ_TOKEN` (lê a API)                                                      |
+| Valor                             | API (Environment das Applications do projeto `trajetto-api`)                                                                                    | Web (Environment da Application)                                                         | App (ambiente EAS)                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| URL pública da API                | o host na aba _Domains_ da Application `trajetto-api` e `API_HTTP_REQUEST` (a URL)                                                              | `HTTP_REQUEST` (chamadas do servidor da web) e `PUBLIC_API_URL` (chamadas do navegador)  | `EXPO_PUBLIC_API_URL`                                                                 |
+| Socket.IO                         | o mesmo host da API, com WebSocket liberado na borda                                                                                            | `PUBLIC_SOCKET_URL` (vazia = `PUBLIC_API_URL`)                                           | o socket usa `EXPO_PUBLIC_API_URL`                                                    |
+| Origem da web                     | `HTTP_REQUEST` = a origem da web do ambiente (única origem do CORS e do Socket.IO, base dos links)                                              | `METADATA_BASE`                                                                          | `EXPO_PUBLIC_WEB_APPLICATION_URL` (links de Privacidade e Termos)                     |
+| Limite de tentativas por IP       | `RATE_LIMIT_FORWARDER_SECRET`                                                                                                                   | `RATE_LIMIT_FORWARDER_SECRET`, **o mesmo valor**                                         | —                                                                                     |
+| Captcha (Turnstile)               | `TURNSTILE_SECRET_KEY` (o mesmo widget da web) e `TURNSTILE_REQUIRED`                                                                           | `TURNSTILE_SITE_KEY` e `TURNSTILE_SECRET_KEY`                                            | —                                                                                     |
+| Fotos no R2                       | `R2_*` (um bucket por ambiente)                                                                                                                 | `CSP_STORAGE_ORIGINS` libera a origem do bucket; o CORS do bucket libera a origem da web | envia direto à URL pré-assinada que a API devolve (sem configuração)                  |
+| IA (leitura de fotos)             | `AI_LOCAL_TOKEN` na `trajetto-api` = `AI_TOKEN` na `trajetto-ai` (o mesmo valor, um por ambiente) e `AI_LOCAL_URL=http://<App Name da IA>:8080` | nenhuma variável: a IA chega pela API                                                    | nenhuma variável                                                                      |
+| Push (FCM)                        | nenhuma: a API chama a Expo Push API                                                                                                            | —                                                                                        | `GOOGLE_SERVICES_JSON` (arquivo secreto no EAS) e a chave FCM V1 em `eas credentials` |
+| Rastreamento em segundo plano     | —                                                                                                                                               | `BACKGROUND_TRACKING`                                                                    | `EXPO_PUBLIC_BACKGROUND_TRACKING` (as duas ligam juntas)                              |
+| Versão do app                     | `MIN_MOBILE_CONTRACT` e `MOBILE_STORE_URL`                                                                                                      | —                                                                                        | `CLIENT_CONTRACT` em `utils/client-version.ts`                                        |
+| Gate de rotas da web              | `/docs/json` com `DOCS_USER` e `DOCS_PASSWORD`                                                                                                  | secrets `API_DOCS_URL`, `DOCS_USER`, `DOCS_PASSWORD` no environment `production`         | —                                                                                     |
+| Checkout entre repositórios no CI | `CLIENT_REPOS_READ_TOKEN` (lê a web e o app)                                                                                                    | `API_REPO_READ_TOKEN` (lê a API)                                                         | `API_REPO_READ_TOKEN` (lê a API)                                                      |
 
 Segredos nunca são compartilhados entre staging e produção. Cada variável
 está detalhada no `docs/variaveis-de-ambiente.md` do repositório que a lê.
@@ -930,20 +1031,23 @@ está detalhada no `docs/variaveis-de-ambiente.md` do repositório que a lê.
    primeiro push em `staging` em cada repositório: a API e a web publicam
    `sha-<7>` no GHCR e pulam o deploy; o app pula o EAS até o `EXPO_TOKEN`
    existir.
-2. **Servidor:** VPS com Dokploy, Traefik ajustado com
-   `trajetto-api/infra/traefik/`, DNS na Cloudflare (Full strict) para os
-   hosts da web e da API, registry `ghcr.io` no Dokploy com um token
-   `read:packages` (o mesmo registry serve para as quatro imagens).
+2. **Servidor:** VPS com Dokploy, rotação de log no `/etc/docker/daemon.json`,
+   Traefik ajustado com `trajetto-api/infra/traefik/`, DNS na Cloudflare (Full
+   strict) para os hosts da web e da API, e um token _classic_
+   `read:packages` do GHCR (o mesmo serve para as quatro imagens).
 3. **Contas externas:** buckets R2 (fotos e backup, um de cada por
    ambiente, CORS das fotos com a origem da web), widgets do Turnstile por
    ambiente, Meta e Resend (de teste em staging), heartbeats de monitoramento.
-4. **API de staging** (`trajetto-staging`, manual da API): um único deploy
-   do app Compose sobe, juntos, o **banco** (`trajetto-database`), o
-   **Redis**, o **serviço de IA** (`trajetto-ai`, com o `AI_LOCAL_TOKEN`), o
-   backup e a `api`, que só fica pronta quando banco e Redis respondem.
-   Confira `/health/readiness` e, como MASTER na web, _Sistema → Provedores_.
-   Depois, os secrets `DOKPLOY_*` no environment `staging` da API.
-5. **Web de staging** (`trajetto-ui-staging`, manual da web): imagem
+4. **API de staging** (manual da API), no projeto `trajetto-api` do
+   environment `staging`, nesta ordem e conferindo cada um: Databases
+   **PostgreSQL** e **Redis**; Application **`trajetto-ai`** (com o
+   `AI_TOKEN`); Application **`trajetto-api`** (com `AI_LOCAL_TOKEN` igual,
+   `AI_LOCAL_URL` apontando para a IA e as URLs do banco e do Redis);
+   Application **`trajetto-backup`**. Confira `/health/readiness` e, como
+   MASTER na web, _Sistema → Provedores_. Depois, os secrets `DOKPLOY_*` e a
+   variável `SWARM_API_SERVICE` no environment `staging` da API.
+5. **Web de staging** (Application `trajetto-ui` do projeto `trajetto-ui` no
+   environment `staging`, manual da web): imagem
    `:staging`, `HTTP_REQUEST` e `PUBLIC_API_URL` apontando para a API de
    staging, o mesmo `RATE_LIMIT_FORWARDER_SECRET` da API de staging, e o
    `HTTP_REQUEST` da API de staging igual à origem da web de staging. Depois,
@@ -953,11 +1057,13 @@ está detalhada no `docs/variaveis-de-ambiente.md` do repositório que a lê.
    `EXPO_PUBLIC_API_URL` = API de staging e
    `EXPO_PUBLIC_WEB_APPLICATION_URL` = web de staging; `EXPO_TOKEN` no
    GitHub; um push em `staging` gera o APK de staging.
-7. **Produção, na mesma ordem:** app Compose `trajetto` (primeiro deploy com
-   `API_IMAGE_TAG`/`AI_IMAGE_TAG`/`BACKUP_IMAGE_TAG` = `sha-<7>`) e PR
-   `staging → main` da API, que cria `stable`; depois a Application
-   `trajetto-ui-production` e o PR da web; por último o PR do app, que gera
-   o AAB de produção apontando para a API de produção.
+7. **Produção, na mesma ordem:** a tag `stable` da API criada antes (_Run
+   workflow_ do `deploy.yml` da API com `image_tag=sha-<7>`, enquanto o
+   environment `production` ainda não tem os secrets do Dokploy); as mesmas
+   cinco peças no projeto `trajetto-api` do environment `production`, já em
+   `:stable`; os secrets de produção e o PR `staging → main` da API; depois a
+   Application `trajetto-ui` do environment `production` e o PR da web; por último o PR do
+   app, que gera o AAB de produção apontando para a API de produção.
 
 ### Ordem de cada release
 

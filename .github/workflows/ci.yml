@@ -123,6 +123,11 @@ jobs:
       - name: Lint
         run: yarn lint:check
 
+      # `next build` (the Docker image) runs the ESLint rules too and fails on
+      # an error; checking them here keeps that failure out of the image build.
+      - name: ESLint (the rules next build enforces)
+        run: yarn lint
+
       - name: Type-check
         run: yarn typecheck
 

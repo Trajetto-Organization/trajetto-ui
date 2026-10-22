@@ -15,7 +15,7 @@ essencial. Se os dois divergirem, vale o mais restritivo, e corrija o outro.
 - **Sem banco:** tudo vem da `trajetto-api` por HTTP e Socket.IO.
 - **Irmãos:** `../trajetto-api` (API, filas, IA/OCR) e `../trajetto-mobile`
   (app Android do motorista).
-- **GitHub:** `Trajetto-Organization/trajetto-fleet-manager-ui`. **Imagem:**
+- **GitHub:** `Trajetto-Organization/trajetto-ui`. **Imagem:**
   `ghcr.io/trajetto-organization/trajetto-ui`. **Hospedagem:** Dokploy
   (Application puxando a imagem do GHCR) atrás do Traefik e da Cloudflare.
 
@@ -26,7 +26,7 @@ essencial. Se os dois divergirem, vale o mais restritivo, e corrija o outro.
 | qualquer coisa                                        | este arquivo                                     |
 | cache, sessão, acesso, CSP, env, MDX, padrões de tela | `docs/arquitetura.md`                            |
 | testes                                                | `docs/testes.md`                                 |
-| workflows, Dockerfile, compose, deploy                | `docs/deploy.md`                                 |
+| workflows, Dockerfile, Dokploy, deploy                | `docs/deploy.md`                                 |
 | variáveis de ambiente                                 | `docs/variaveis-de-ambiente.md` e `.env.example` |
 | suítes de navegador locais                            | `tests/ui/README.md`                             |
 
@@ -113,7 +113,8 @@ Yarn 1 (`yarn.lock`), Node 22.
 - `happy-dom` por padrão. `// @vitest-environment node` para testes de
   arquivo, script ou servidor.
 - `tests/E2E` sem fixture de navegador. Tela com API vai para `tests/ui`.
-- Vários testes guardam os workflows, o Dockerfile, o compose e os docs
+- Vários testes guardam os workflows, o Dockerfile, a configuração da
+  Application do Dokploy e os docs
   (lista em `docs/testes.md`). Mudou um desses arquivos? Rode os testes
   correspondentes.
 - Cobertura é medida e publicada, sem piso. Não crie `thresholds`.
@@ -122,7 +123,7 @@ Yarn 1 (`yarn.lock`), Node 22.
 
 | Workflow             | Quando                                                          | O quê                                                                                                                                                                       |
 | -------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`             | push em branch de trabalho, PR para `main`, chamado pelo deploy | audit-ci, Prettier, tsc, unitários com cobertura, `test:rules`, gitleaks                                                                                                    |
+| `ci.yml`             | push em branch de trabalho, PR para `main`, chamado pelo deploy | audit-ci, Prettier, ESLint (`yarn lint`), tsc, unitários com cobertura, `test:rules`, gitleaks                                                                              |
 | `browser-suites.yml` | push em `staging` (pelo deploy), PR para `main`, toda noite     | `ui`, `a11y`, `responsive` contra a stack (pula sem `API_REPO_READ_TOKEN`)                                                                                                  |
 | `deploy.yml`         | push em `staging`                                               | validação → build único `sha-<commit>` (SBOM, proveniência, Trivy) → tag `staging` → webhook do Dokploy → espera `/build-id.json` → `staged-<commit>`                       |
 | `deploy.yml`         | push em `main` (merge commit de staging)                        | aprovação `production` → imagem do commit de staging com `staged-<commit>` → gate de rotas → tag `stable` por digest → webhook → espera `/build-id.json` → semantic-release |

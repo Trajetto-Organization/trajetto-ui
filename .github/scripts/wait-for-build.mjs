@@ -10,8 +10,8 @@
  * /build-id.json answers the commit the serving build was made from, so this
  * polls it through the real edge (Cloudflare, Traefik) until it has answered
  * the expected commit for a whole window longer than Swarm's rollback
- * monitor (30 s: the update config in docs/deploy.md and
- * compose.production.yaml). A rollback inside the window resets it.
+ * monitor (30 s: the Dokploy Application's update config, docs/deploy.md
+ * section 6.4). A rollback inside the window resets it.
  *
  * Environment:
  *   SITE_URL              public origin of the site (its canonical host)

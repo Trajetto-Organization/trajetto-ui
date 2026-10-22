@@ -18,7 +18,7 @@ estão numa tabela só, igual nos três repositórios:
 - [A regra do `NEXT_PUBLIC_`](#a-regra-do-next_public_)
 - [Runtime da aplicação (Environment da Application no Dokploy)](#runtime-da-aplicação-environment-da-application-no-dokploy)
 - [Definidas pela imagem (não mexa)](#definidas-pela-imagem-não-mexa)
-- [Só no modo Stack (`compose.production.yaml`)](#só-no-modo-stack-composeproductionyaml)
+- [Configurado na Application, não por variável](#configurado-na-application-não-por-variável)
 - [Build da imagem](#build-da-imagem)
 - [GitHub Actions: secrets e variables](#github-actions-secrets-e-variables)
 - [Só desenvolvimento e testes](#só-desenvolvimento-e-testes)
@@ -96,25 +96,22 @@ O código também lê `NEXT_RUNTIME` (em `src/instrumentation.ts`), mas quem a
 define é o próprio Next.js (`nodejs` ou `edge`, conforme o runtime que carrega
 o arquivo). Não se configura em lugar nenhum.
 
-## Só no modo Stack (`compose.production.yaml`)
+## Configurado na Application, não por variável
 
-Usadas só se a web for implantada como app **Compose em modo Docker Stack**,
-a alternativa descrita em `deploy.md`. A Application **não** usa nenhuma
-delas: o domínio, a imagem e a memória ficam nas abas da própria Application.
+A web roda como **Application** do Dokploy (provider Docker, imagem do GHCR),
+uma no project `trajetto-ui` de cada environment. Estes valores não são
+variáveis de ambiente: ficam nas abas da própria Application
+([`deploy.md`](./deploy.md), seções 6 e 7).
 
-| Variável               | Para que serve                                                                                                         | Obrig. | Produção                   | Staging                      |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------ | -------------------------- | ---------------------------- |
-| `ROUTER_PREFIX`        | prefixo único dos roteadores e middlewares do Traefik. Dois stacks com o mesmo prefixo derrubam o roteador um do outro | sim    | `trajetto`                 | `trajetto-staging`           |
-| `WEB_HOST`             | host canônico                                                                                                          | sim    | `www.intrajetto.com`       | ex. `staging.intrajetto.com` |
-| `WEB_APEX_HOST`        | host que só redireciona (301 + HSTS) para `WEB_HOST`                                                                   | sim    | `intrajetto.com`           | um segundo host de staging   |
-| `TRAEFIK_NETWORK`      | rede do Traefik                                                                                                        | não    | `dokploy-network` (padrão) | idem                         |
-| `TRAEFIK_CERTRESOLVER` | resolver de certificados                                                                                               | não    | `letsencrypt` (padrão)     | idem                         |
-| `UI_IMAGE_TAG`         | tag da imagem                                                                                                          | não    | `stable` (padrão)          | `staging`                    |
-| `UI_HEAP_MB`           | heap do V8 em MB (vira `NODE_OPTIONS`)                                                                                 | não    | `512` (padrão)             | idem                         |
-| `UI_MEMORY_LIMIT`      | limite de memória do contêiner                                                                                         | não    | `768M` (padrão)            | idem                         |
-
-Suba `UI_HEAP_MB` e `UI_MEMORY_LIMIT` juntos (o heap fica em ~2/3 do
-limite).
+| O quê                                    | Onde no Dokploy                       | Produção                                               | Staging                                             |
+| ---------------------------------------- | ------------------------------------- | ------------------------------------------------------ | --------------------------------------------------- |
+| imagem e tag                             | General → Provider Docker             | `ghcr.io/trajetto-organization/trajetto-ui:stable`     | `ghcr.io/trajetto-organization/trajetto-ui:staging` |
+| credencial do registry                   | General / Cluster Settings → Registry | `ghcr` (PAT classic com `read:packages`)               | idem                                                |
+| host, porta e HTTPS                      | Domains                               | `www.intrajetto.com`, porta 3000, Let's Encrypt        | `staging.intrajetto.com`, porta 3000, Let's Encrypt |
+| domínio sem www com HSTS                 | Cloudflare ou arquivo do Traefik      | `intrajetto.com` → `www` (`deploy.md`, seções 8 e 18)  | opcional                                            |
+| réplicas                                 | Advanced → Cluster Settings           | `1`                                                    | `1`                                                 |
+| health check, update, rollback e restart | Advanced → Swarm Settings             | JSON da seção 6.4 do `deploy.md`                       | idem                                                |
+| limite de memória                        | Advanced → Resources → Memory Limit   | `805306368` (768 MiB). Suba junto com o `NODE_OPTIONS` | idem                                                |
 
 ## Build da imagem
 
@@ -188,14 +185,16 @@ são do **cliente da API pública**, não desta web.
 
 ## Nomes antigos que não existem mais
 
-| Antigo                                                                                 | Novo                   | Observação                                                                         |
-| -------------------------------------------------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_HTTP_REQUEST`                                                             | `PUBLIC_API_URL`       | o erro de boot cita o substituto                                                   |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`                                                       | `TURNSTILE_SITE_KEY`   | idem                                                                               |
-| `NEXT_PUBLIC_MAP_TILE_URL`                                                             | `MAP_TILE_URL`         | idem                                                                               |
-| `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION`                                                     | `MAP_TILE_ATTRIBUTION` | idem                                                                               |
-| `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `SANITY_WEBHOOK_SECRET` | nenhum                 | o blog virou MDX no repositório. Não há CMS                                        |
-| `GITHUB_ACCESS_TOKEN` (num `.env.production` local antigo)                             | nenhum                 | nada lê. Se ainda existir no seu disco, revogue o token no GitHub e apague a linha |
+| Antigo                                                                                  | Novo                   | Observação                                                                                                                                    |
+| --------------------------------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_HTTP_REQUEST`                                                              | `PUBLIC_API_URL`       | o erro de boot cita o substituto                                                                                                              |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`                                                        | `TURNSTILE_SITE_KEY`   | idem                                                                                                                                          |
+| `NEXT_PUBLIC_MAP_TILE_URL`                                                              | `MAP_TILE_URL`         | idem                                                                                                                                          |
+| `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION`                                                      | `MAP_TILE_ATTRIBUTION` | idem                                                                                                                                          |
+| `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `SANITY_WEBHOOK_SECRET`  | nenhum                 | o blog virou MDX no repositório. Não há CMS                                                                                                   |
+| `GITHUB_ACCESS_TOKEN` (num `.env.production` local antigo)                              | nenhum                 | nada lê. Se ainda existir no seu disco, revogue o token no GitHub e apague a linha                                                            |
+| `ROUTER_PREFIX`, `WEB_HOST`, `WEB_APEX_HOST`, `TRAEFIK_NETWORK`, `TRAEFIK_CERTRESOLVER` | nenhum                 | eram do compose de produção, que não existe mais. Domínio na aba Domains; apex na Cloudflare ou no arquivo do Traefik (`deploy.md`, seção 18) |
+| `UI_IMAGE_TAG`, `UI_HEAP_MB`, `UI_MEMORY_LIMIT`                                         | nenhum                 | idem. A tag fica no Provider da Application, o heap em `NODE_OPTIONS` e o limite em Advanced → Resources                                      |
 
 Os arquivos `.env.development`, `.env.production` e `.env.staging` são
 gitignored. Só o `.env` local é necessário em desenvolvimento.
@@ -215,7 +214,7 @@ PUBLIC_API_URL="http://localhost:3333"
 RATE_LIMIT_FORWARDER_SECRET=""   # o mesmo da API local, se ela tiver
 ```
 
-**Staging (Environment da Application `trajetto-ui-staging`):**
+**Staging (Environment da Application `trajetto-ui`, environment `staging` do Dokploy):**
 
 ```dotenv
 APP_ENV=staging
@@ -230,7 +229,7 @@ MAP_TILE_ATTRIBUTION=<crédito do provedor>
 NODE_OPTIONS=--max-old-space-size=512
 ```
 
-**Produção (Environment da Application `trajetto-ui-production`):**
+**Produção (Environment da Application `trajetto-ui`, environment `production` do Dokploy):**
 
 ```dotenv
 APP_ENV=production

@@ -38,11 +38,11 @@ dois módulos vendidos separadamente por empresa:
   por ticket com o motorista, mensagens ao cliente final e integrações (chaves
   de API e webhooks).
 
-| Repositório (GitHub)                                      | O que é                                                                                        |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `trajetto-api`                                            | API (Fastify, Prisma, PostgreSQL, Redis), tempo real, filas, crons e o serviço local de IA/OCR |
-| `trajetto-fleet-manager-ui` (este, pasta `trajetto-ui`)   | painel web, site público, blog e portal `/docs`                                                |
-| `trajetto-fleet-manager-mobile` (pasta `trajetto-mobile`) | app do motorista, só Android (Expo)                                                            |
+| Repositório (GitHub)                        | O que é                                                                                        |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `trajetto-api`                              | API (Fastify, Prisma, PostgreSQL, Redis), tempo real, filas, crons e o serviço local de IA/OCR |
+| `trajetto-ui` (este, pasta `trajetto-ui`)   | painel web, site público, blog e portal `/docs`                                                |
+| `trajetto-mobile` (pasta `trajetto-mobile`) | app do motorista, só Android (Expo)                                                            |
 
 ## Stack
 

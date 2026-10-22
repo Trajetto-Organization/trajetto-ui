@@ -37,7 +37,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # ONE image for staging and production (decision 12.2): nothing that differs
 # between them is passed here. The API URL, socket URL, Turnstile site key,
 # map tiles and APP_ENV are read by the server at run time and handed to the
-# browser (src/env); the stack sets them (compose.production.yaml).
+# browser (src/env); the Dokploy Application's Environment sets them
+# (docs/deploy.md, docs/variaveis-de-ambiente.md).
 #
 # METADATA_BASE is the one build value besides the commit: the pages
 # prerendered at build (landing, blog, legal) print canonical and Open Graph
@@ -75,7 +76,7 @@ RUN rm -rf \
 # ---------------------------------------------------------
 FROM base AS runner
 
-LABEL org.opencontainers.image.source="https://github.com/Trajetto-Organization/trajetto-fleet-manager-ui"
+LABEL org.opencontainers.image.source="https://github.com/Trajetto-Organization/trajetto-ui"
 LABEL org.opencontainers.image.description="Trajetto UI (Next.js 14 standalone)"
 LABEL org.opencontainers.image.licenses="MIT"
 
@@ -104,6 +105,8 @@ EXPOSE 3000
 # busybox wget rather than `node -e`: measured in this base image, ~1 MB and
 # ~1 ms per probe against ~52 MB and ~54 ms for a Node process, inside the
 # container's memory limit. 127.0.0.1: busybox tries only the first address.
+# The Dokploy Application's Swarm settings override the timings (longer start
+# period, more retries) with this same command (docs/deploy.md, section 6.4).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget -q -O /dev/null http://127.0.0.1:3000/api/health
 

@@ -5,57 +5,75 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * HSTS on the bare domain, which the preload list requires.
+ * HSTS on the canonical host and on the bare domain.
  *
- * www.intrajetto.com sends `max-age=63072000; includeSubDomains; preload` from
- * next.config.mjs. But intrajetto.com is answered by Traefik alone — a
- * redirect to www with no headers middleware — so the apex never sent HSTS,
- * and hstspreload.org refuses a domain whose apex does not. The `preload` on
- * www was inert, and a first visit to http://intrajetto.com on a hostile
- * network stayed open to SSL stripping.
+ * www.intrajetto.com is served by the Next server, which sends HSTS from
+ * next.config.mjs on every path. intrajetto.com never reaches it: it only
+ * redirects to www at the edge. hstspreload.org refuses a domain whose apex
+ * does not send HSTS, so without a header on that redirect the `preload` on
+ * www is inert and a first visit to http://intrajetto.com on a hostile network
+ * stays open to SSL stripping. The web now runs as a Dokploy Application with
+ * no Traefik labels of its own, so the apex redirect is configured at the edge
+ * (Cloudflare, or a Traefik dynamic file) by docs/deploy.md; these tests keep
+ * both halves from rotting.
  */
-const compose = readFileSync(
-  resolve(process.cwd(), "compose.production.yaml"),
+const deploy = readFileSync(
+  resolve(process.cwd(), "docs", "deploy.md"),
   "utf8",
-);
+).replace(/\r\n/g, "\n");
 
-function label(name: string): string | undefined {
-  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+type HeaderRule = {
+  source: string;
+  headers: Array<{ key: string; value: string }>;
+};
 
-  return compose.match(new RegExp(`- ${escaped}=(.+)`))?.[1]?.trim();
-}
+describe("HSTS on the canonical host", () => {
+  it("is preload-grade and sent on every path by next.config.mjs", async () => {
+    const { default: config } = await import("../../next.config.mjs");
+    const rules: HeaderRule[] = await config.headers!();
+    const value = rules
+      .find((rule) => rule.source === "/(.*)")
+      ?.headers.find((item) => item.key === "Strict-Transport-Security")?.value;
 
-// Router and middleware names carry the stack's ROUTER_PREFIX, so production
-// and staging can share one Traefik (docs/deploy.md, Stack mode).
-describe("the apex redirect", () => {
-  const chain = (
-    label("traefik.http.routers.${ROUTER_PREFIX}-web-apex.middlewares") ?? ""
-  )
-    .split(",")
-    .map((name) => name.trim());
+    expect(value, "Strict-Transport-Security").toBeTruthy();
 
-  it("runs a headers middleware before redirecting", () => {
-    expect(chain.at(-1)).toBe("${ROUTER_PREFIX}-to-canonical");
-    expect(chain.length).toBeGreaterThan(1);
+    const maxAge = Number(value!.match(/max-age=(\d+)/)?.[1]);
+
+    expect(maxAge).toBeGreaterThanOrEqual(31_536_000);
+    expect(value).toContain("includeSubDomains");
+    expect(value).toContain("preload");
+  });
+});
+
+describe("the apex redirect, as docs/deploy.md configures it in Traefik", () => {
+  const block =
+    deploy.match(/```yaml\n(http:\n[\s\S]*?redirectRegex:[\s\S]*?)```/)?.[1] ??
+    "";
+
+  it("is documented as a Traefik dynamic file", () => {
+    expect(block, "bloco yaml do redirect do apex").not.toBe("");
   });
 
-  it("redirects to the canonical host of the same stack, permanently", () => {
-    const prefix =
-      "traefik.http.middlewares.${ROUTER_PREFIX}-to-canonical.redirectregex";
+  it("runs the HSTS middleware before the redirect, so the 301 carries it", () => {
+    const chain = block.match(/middlewares:\n((?:\s+- .+\n)+)/)?.[1] ?? "";
+    const names = [...chain.matchAll(/- (\S+)/g)].map((match) => match[1]);
 
-    expect(label(`${prefix}.replacement`)).toBe("https://${WEB_HOST}/$${1}");
-    expect(label(`${prefix}.permanent`)).toBe("true");
+    expect(names).toHaveLength(2);
+    expect(names[0]).toMatch(/-apex-hsts$/);
+    expect(names[1]).toMatch(/-to-canonical$/);
   });
 
-  it("sends a preload-grade HSTS on the redirect itself", () => {
-    const hsts =
-      chain.find((name) => name !== "${ROUTER_PREFIX}-to-canonical") ?? "";
-    const prefix = `traefik.http.middlewares.${hsts}.headers`;
+  it("sends a preload-grade HSTS", () => {
+    expect(
+      Number(block.match(/stsSeconds: (\d+)/)?.[1]),
+    ).toBeGreaterThanOrEqual(31_536_000);
+    expect(block).toMatch(/stsIncludeSubdomains: true/);
+    expect(block).toMatch(/stsPreload: true/);
+    expect(block).toMatch(/forceSTSHeader: true/);
+  });
 
-    expect(Number(label(`${prefix}.stsSeconds`))).toBeGreaterThanOrEqual(
-      31_536_000,
-    );
-    expect(label(`${prefix}.stsIncludeSubdomains`)).toBe("true");
-    expect(label(`${prefix}.stsPreload`)).toBe("true");
+  it("redirects permanently to the canonical host, path kept", () => {
+    expect(block).toContain('replacement: "https://www.intrajetto.com/${1}"');
+    expect(block).toMatch(/permanent: true/);
   });
 });

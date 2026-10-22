@@ -20,7 +20,7 @@ app do motorista é a `trajetto-mobile`. Os três repositórios ficam lado a
 lado em `C:/dev/trajetto/` (`trajetto-api`, `trajetto-ui`, `trajetto-mobile`).
 Alguns testes leem os irmãos e pulam quando eles não estão lá.
 
-GitHub: `Trajetto-Organization/trajetto-fleet-manager-ui`. Imagem:
+GitHub: `Trajetto-Organization/trajetto-ui`. Imagem:
 `ghcr.io/trajetto-organization/trajetto-ui`.
 
 ## Documentos que você deve consultar
@@ -119,7 +119,9 @@ scripts/check-api-routes.mjs       gate de rotas do promote
 - Variável nova: documente em `.env.example` e em
   `docs/variaveis-de-ambiente.md`. Se for obrigatória, acrescente-a ao boot
   check (`src/env/server.ts`), com teste. Se for de runtime em staging e
-  produção, acrescente-a também ao `compose.production.yaml`.
+  produção, acrescente-a também ao Environment da seção 6.2 de
+  `docs/deploy.md` e cadastre-a nas Applications do Dokploy dos dois
+  ambientes.
 - Nunca escreva, imprima ou logue o valor de um segredo. Só o nome.
 
 **Acesso e multiempresa**
@@ -176,7 +178,8 @@ scripts/check-api-routes.mjs       gate de rotas do promote
   `// @vitest-environment node` na primeira linha.
 - `tests/E2E` nunca usa as fixtures `page`/`context`/`browser`. Teste de tela
   vai para `tests/ui`.
-- Mudou um workflow, o `Dockerfile`, o compose, `src/env`, a CSP ou um doc
+- Mudou um workflow, o `Dockerfile`, a configuração da Application em
+  `docs/deploy.md`, `src/env`, a CSP ou um doc
   citado por teste? Rode os testes que guardam isso (lista em
   `docs/testes.md`, seção "Testes que guardam a infraestrutura e a
   documentação").
@@ -187,7 +190,8 @@ scripts/check-api-routes.mjs       gate de rotas do promote
 ## CI/CD em resumo
 
 - `ci.yml`: push em branch de trabalho, PR para `main` e chamado pelo deploy
-  (audit, Prettier, tsc, unitários com cobertura, regras, gitleaks).
+  (audit, Prettier, `yarn lint` com as regras do ESLint que o `next build`
+  aplica, tsc, unitários com cobertura, regras, gitleaks).
 - `browser-suites.yml`: `ui`, `a11y` e `responsive` contra a stack. Roda num
   push em staging (via deploy), num PR para main e toda noite. Pula sem
   `API_REPO_READ_TOKEN`.

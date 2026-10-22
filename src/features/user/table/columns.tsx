@@ -27,9 +27,10 @@ const YELLOW =
 
 /** The header every admin-users table uses (the column menu sorts via the URL). */
 function header<TRow = UserRow>(title: string): ColumnDef<TRow>["header"] {
-  return ({ column }) => (
-    <DataTableColumnHeader column={column} title={title} />
-  );
+  // Named so React DevTools and react/display-name can tell the headers apart.
+  return function ColumnHeader({ column }) {
+    return <DataTableColumnHeader column={column} title={title} />;
+  };
 }
 
 /** A plain text column; its id is the API's sort key where it has one. */

@@ -44,7 +44,6 @@ function usePageToolbar(): PageToolbarState {
 }
 
 /** The height rule, on its own so it can be asked without a render. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function pageActionHeightClass(_state: PageToolbarState): "h-9" {
   // One size everywhere (decision 16.61): /admin and /dashboard rows match.
   return "h-9";

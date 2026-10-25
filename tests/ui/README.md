@@ -68,7 +68,7 @@ NODE_ENV=test PORT=3334 API_HTTP_REQUEST=http://localhost:3334 npx tsx src/serve
 
 # trajetto-ui — a configuração pública é lida em runtime (decisão 12.2)
 PUBLIC_API_URL=http://localhost:3334 HTTP_REQUEST=http://localhost:3334 \
-PUBLIC_SOCKET_URL=http://localhost:3334 METADATA_BASE=http://localhost:3100 \
+METADATA_BASE=http://localhost:3100 \
 TURNSTILE_SITE_KEY=1x00000000000000000000AA \
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA \
 NODE_OPTIONS=--max-old-space-size=6144 NEXT_DEV_KEEP_PAGES=1 \

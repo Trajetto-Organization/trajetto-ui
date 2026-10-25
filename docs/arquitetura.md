@@ -255,8 +255,8 @@ resolve o problema inteiro num lugar só.
 
 ## Tempo real
 
-- O cliente Socket.IO (`src/socket.ts`) conecta em `PUBLIC_SOCKET_URL`. Sem
-  ela, conecta em `PUBLIC_API_URL`.
+- O cliente Socket.IO (`src/socket.ts`) conecta em `PUBLIC_API_URL`: o
+  Socket.IO roda na própria API, e não há variável separada para o socket.
 - O evento `catalogChanged` da API invalida as listas daquela entidade em
   todas as sessões abertas (`src/lib/catalog-sync.ts`).
 - Torre de controle, monitoramento, rotas, chat e alertas de ocorrência
@@ -279,7 +279,7 @@ momento do build, inclusive no servidor e no middleware. Se a URL da API fosse
 Por isso:
 
 - As variáveis que o navegador precisa **não** têm o prefixo `NEXT_PUBLIC_`:
-  `PUBLIC_API_URL`, `PUBLIC_SOCKET_URL`, `TURNSTILE_SITE_KEY`, `MAP_TILE_URL`,
+  `PUBLIC_API_URL`, `TURNSTILE_SITE_KEY`, `MAP_TILE_URL`,
   `MAP_TILE_ATTRIBUTION`, `MAP_TILE_URL_DARK`, `MAP_TILE_ATTRIBUTION_DARK`,
   `METADATA_BASE` e `APP_ENV` (nomes em `src/env/names.ts`).
 - O servidor as lê **por requisição** (`src/env/public-config.ts`) e as
@@ -339,8 +339,8 @@ aplicada de verdade, não é Report-Only.
   de um tenant. O resto continua valendo: sem eval, sem plugins, sem `<base>`,
   sem frames, sem scripts de hosts fora da lista.
 - O script de tema (`src/lib/theme-init-script.ts`) entra pelo **hash**.
-- **Origens liberadas:** a API (`PUBLIC_API_URL`), o socket
-  (`PUBLIC_SOCKET_URL`), o storage das URLs pré-assinadas
+- **Origens liberadas:** a API (`PUBLIC_API_URL`) e o `ws(s)://` da mesma
+  origem para o socket, o storage das URLs pré-assinadas
   (`CSP_STORAGE_ORIGINS`, por padrão `https://*.r2.cloudflarestorage.com`), os
   hosts dos tiles (lidos de `MAP_TILE_URL` e `MAP_TILE_URL_DARK`), o Turnstile
   (`https://challenges.cloudflare.com`), `nominatim.openstreetmap.org` e

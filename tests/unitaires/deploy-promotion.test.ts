@@ -334,7 +334,6 @@ describe("the single web image", () => {
 
     for (const name of [
       "PUBLIC_API_URL",
-      "PUBLIC_SOCKET_URL",
       "TURNSTILE_SITE_KEY",
       "MAP_TILE_URL",
       "MAP_TILE_ATTRIBUTION",

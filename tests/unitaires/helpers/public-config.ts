@@ -16,7 +16,6 @@ function seedPublicConfig(overrides: Partial<PublicConfig> = {}): PublicConfig {
   const apiUrl = overrides.apiUrl ?? "http://api.test";
   const config: PublicConfig = {
     apiUrl,
-    socketUrl: apiUrl,
     siteUrl: null,
     turnstileSiteKey: null,
     appEnv: "development",

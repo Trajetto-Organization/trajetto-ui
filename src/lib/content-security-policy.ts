@@ -24,11 +24,11 @@ interface ContentSecurityPolicyOptions {
   /** Per-request nonce. Without one, scripts fall back to 'unsafe-inline'. */
   nonce?: string;
 
-  /** The API the browser calls directly (Socket.IO, uploads to it in dev). */
+  /**
+   * The API the browser calls directly (uploads to it in dev), and Socket.IO's
+   * host: the socket runs on the API itself, so its ws(s) twin is listed too.
+   */
   apiOrigin?: string;
-
-  /** Socket.IO's host when it is not the API's (PUBLIC_SOCKET_URL). */
-  socketOrigin?: string;
 
   /** Where presigned uploads go and signed files come from. */
   storageOrigins?: string[];
@@ -86,16 +86,12 @@ export function parseStorageOrigins(value: string | undefined): string[] {
 export function buildContentSecurityPolicy({
   nonce,
   apiOrigin,
-  socketOrigin,
   storageOrigins = DEFAULT_STORAGE_ORIGINS,
   mapTileOrigins = [],
   dev = false,
 }: ContentSecurityPolicyOptions = {}): string {
   const api = originOf(apiOrigin);
-  const socketHost = originOf(socketOrigin);
   const socket = socketOriginOf(api);
-  const separateSocket =
-    socketHost && socketHost !== api ? socketHost : undefined;
 
   const list = (...sources: Array<string | undefined | false>) =>
     sources.filter(Boolean).join(" ");
@@ -144,8 +140,6 @@ export function buildContentSecurityPolicy({
         "'self'",
         api,
         socket,
-        separateSocket,
-        socketOriginOf(separateSocket),
         ...storageOrigins,
         TURNSTILE,
         "https://nominatim.openstreetmap.org",

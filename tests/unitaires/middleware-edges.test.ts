@@ -296,7 +296,6 @@ describe("the matcher", () => {
 describe("the content security policy", () => {
   it("names the public API host, trimmed, and allows no eval outside development", async () => {
     process.env.PUBLIC_API_URL = "  https://api.trajetto.test  ";
-    process.env.PUBLIC_SOCKET_URL = " https://socket.trajetto.test ";
 
     const policy =
       (
@@ -304,7 +303,7 @@ describe("the content security policy", () => {
       ).headers.get("content-security-policy") ?? "";
 
     expect(policy).toContain("https://api.trajetto.test");
-    expect(policy).toContain("https://socket.trajetto.test");
+    expect(policy).toContain("wss://api.trajetto.test");
     expect(policy).not.toContain("  https://api.trajetto.test");
     expect(policy).not.toContain("'unsafe-eval'");
   });

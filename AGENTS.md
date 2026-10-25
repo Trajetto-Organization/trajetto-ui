@@ -83,7 +83,7 @@ Yarn 1 (`yarn.lock`), Node 22.
    A chave leva tudo o que o `queryFn` lê. Nunca ponha `userId` na chave.
 7. **CSP aplicada** com nonce (`src/lib/content-security-policy.ts`,
    `middleware.ts`). Origem nova = variável de ambiente certa
-   (`MAP_TILE_URL`, `CSP_STORAGE_ORIGINS`, `PUBLIC_SOCKET_URL`), nunca `*`.
+   (`MAP_TILE_URL`, `CSP_STORAGE_ORIGINS`, `PUBLIC_API_URL`), nunca `*`.
 8. **Contrato com a API:** expandir e depois contrair. O promote roda
    `scripts/check-api-routes.mjs` contra o OpenAPI de produção. Rota ou
    Server Action não somem no mesmo release em que deixam de ser usadas.

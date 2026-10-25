@@ -124,13 +124,13 @@ staging ─PR─▶ main ─merge─▶ aprovação ─▶ mesma imagem, por dig
 
 ## Solução de problemas rápida
 
-| Sintoma                               | Causa provável                                                                          | O que fazer                              |
-| ------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------- |
-| O servidor não sobe e lista variáveis | obrigatória faltando                                                                    | compare o `.env` com o `.env.example`    |
-| Toda chamada falha com erro de rede   | API fora do ar ou `HTTP_REQUEST`/`PUBLIC_API_URL` errados                               | suba a API e confira as duas URLs        |
-| Login funciona e o tempo real não     | `PUBLIC_SOCKET_URL` ou o CORS da API (o `HTTP_REQUEST` da API deve ser a URL desta web) | confira as duas pontas                   |
-| 429 no login para todo mundo          | `RATE_LIMIT_FORWARDER_SECRET` diferente do da API                                       | use o mesmo valor nos dois               |
-| Mapa sem fundo em staging ou produção | `MAP_TILE_URL` vazio                                                                    | configure um provedor de tiles comercial |
+| Sintoma                               | Causa provável                                                                                               | O que fazer                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| O servidor não sobe e lista variáveis | obrigatória faltando                                                                                         | compare o `.env` com o `.env.example`    |
+| Toda chamada falha com erro de rede   | API fora do ar ou `HTTP_REQUEST`/`PUBLIC_API_URL` errados                                                    | suba a API e confira as duas URLs        |
+| Login funciona e o tempo real não     | `PUBLIC_API_URL` (o socket conecta nela) ou o CORS da API (o `HTTP_REQUEST` da API deve ser a URL desta web) | confira as duas pontas                   |
+| 429 no login para todo mundo          | `RATE_LIMIT_FORWARDER_SECRET` diferente do da API                                                            | use o mesmo valor nos dois               |
+| Mapa sem fundo em staging ou produção | `MAP_TILE_URL` vazio                                                                                         | configure um provedor de tiles comercial |
 
 A tabela completa, com os problemas de deploy, está em
 [`docs/deploy.md`](docs/deploy.md#19-solução-de-problemas).

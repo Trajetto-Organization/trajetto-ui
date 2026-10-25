@@ -1,7 +1,8 @@
 /**
  * The web's public configuration: the values the browser needs (API URL,
- * socket URL, Turnstile site key, map tiles, environment), read from the
- * server's environment at RUN time.
+ * Turnstile site key, map tiles, environment), read from the server's
+ * environment at RUN time. Socket.IO runs on the API itself, so the API URL
+ * is also the socket's host: there is no separate socket setting.
  *
  * Decision 12.2: one image is built and promoted from staging to production,
  * so nothing environment-specific may be inlined at build time. That is why
@@ -48,7 +49,6 @@ function isHttpUrl(value: unknown): value is string {
 /** What the browser receives (public-config-schema.ts holds the zod twin). */
 interface PublicConfig {
   apiUrl: string;
-  socketUrl: string;
   siteUrl: string | null;
   turnstileSiteKey: string | null;
   appEnv: AppEnv;
@@ -94,10 +94,9 @@ function readMapTiles(value: unknown): MapTiles | null | false {
 function readPublicConfig(value: unknown): PublicConfig | null {
   if (!isRecord(value)) return null;
 
-  const { apiUrl, socketUrl, siteUrl, turnstileSiteKey, appEnv, mapTiles } =
-    value;
+  const { apiUrl, siteUrl, turnstileSiteKey, appEnv, mapTiles } = value;
 
-  if (!isHttpUrl(apiUrl) || !isHttpUrl(socketUrl)) return null;
+  if (!isHttpUrl(apiUrl)) return null;
   if (siteUrl !== null && !isHttpUrl(siteUrl)) return null;
 
   if (
@@ -119,7 +118,6 @@ function readPublicConfig(value: unknown): PublicConfig | null {
 
   return {
     apiUrl,
-    socketUrl,
     siteUrl,
     turnstileSiteKey,
     appEnv: appEnv as AppEnv,
@@ -187,7 +185,6 @@ function parsePublicConfig(env: EnvSource): PublicConfigResult {
   const appEnv = appEnvFrom(env);
 
   const apiUrl = value(env, PUBLIC_ENV.apiUrl);
-  const socketUrl = value(env, PUBLIC_ENV.socketUrl);
   const siteUrl = value(env, PUBLIC_ENV.siteUrl);
   const turnstileSiteKey = value(env, PUBLIC_ENV.turnstileSiteKey) ?? null;
   const tileUrl = value(env, PUBLIC_ENV.mapTileUrl);
@@ -195,7 +192,6 @@ function parsePublicConfig(env: EnvSource): PublicConfigResult {
 
   for (const issue of [
     urlIssue(PUBLIC_ENV.apiUrl, apiUrl, true),
-    urlIssue(PUBLIC_ENV.socketUrl, socketUrl, false),
     urlIssue(PUBLIC_ENV.siteUrl, siteUrl, production),
   ]) {
     if (issue) issues.push(issue);
@@ -257,14 +253,11 @@ function parsePublicConfig(env: EnvSource): PublicConfigResult {
 
   if (issues.length > 0) return { ok: false, issues, warnings };
 
-  const api = withoutTrailingSlash(apiUrl!);
-
   return {
     ok: true,
     warnings,
     config: {
-      apiUrl: api,
-      socketUrl: socketUrl ? withoutTrailingSlash(socketUrl) : api,
+      apiUrl: withoutTrailingSlash(apiUrl!),
       siteUrl: siteUrl ? new URL(siteUrl).origin : null,
       turnstileSiteKey,
       appEnv,

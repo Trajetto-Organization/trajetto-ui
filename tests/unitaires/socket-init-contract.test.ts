@@ -158,6 +158,27 @@ async function refusedThenRetried(): Promise<void> {
   accept();
 }
 
+describe("where the socket connects", () => {
+  // Socket.IO runs on the API itself: the browser's socket host is always
+  // PUBLIC_API_URL, and a leftover PUBLIC_SOCKET_URL in a stack is ignored.
+  it("connects to the API URL, whatever a stale PUBLIC_SOCKET_URL says", async () => {
+    process.env.PUBLIC_SOCKET_URL = "https://socket.elsewhere.test";
+
+    try {
+      void socketModule.initializeSocket().catch(() => undefined);
+
+      await vi.waitFor(() => expect(fake.io).toHaveBeenCalledTimes(1));
+
+      expect(fake.io).toHaveBeenCalledWith(
+        "http://api.test",
+        expect.anything(),
+      );
+    } finally {
+      delete process.env.PUBLIC_SOCKET_URL;
+    }
+  });
+});
+
 describe("a screen that asks for the socket during a refused handshake", () => {
   it("binds its listener and hears the API once the retry connects", async () => {
     const heard = vi.fn();

@@ -19,7 +19,6 @@ import { checkWebEnv } from "@/env/server";
  */
 const VALID: PublicConfig = {
   apiUrl: "https://api.trajetto.com.br",
-  socketUrl: "https://api.trajetto.com.br",
   siteUrl: "https://trajetto.com.br",
   turnstileSiteKey: "0x4AAAA",
   appEnv: "production",
@@ -41,12 +40,15 @@ const CASES: Array<[string, unknown]> = [
     {
       ...VALID,
       apiUrl: "http://localhost:3333",
-      socketUrl: "http://localhost:3333",
       appEnv: "development",
     },
   ],
   ["an ftp API URL", { ...VALID, apiUrl: "ftp://api.example" }],
-  ["a javascript: socket URL", { ...VALID, socketUrl: "javascript:alert(1)" }],
+  ["a javascript: API URL", { ...VALID, apiUrl: "javascript:alert(1)" }],
+  [
+    "a leftover socketUrl from an older server (dropped)",
+    { ...VALID, socketUrl: "https://socket.example" },
+  ],
   ["a relative URL", { ...VALID, apiUrl: "/api" }],
   ["a non-URL site", { ...VALID, siteUrl: "trajetto" }],
   ["an empty captcha key", { ...VALID, turnstileSiteKey: "" }],

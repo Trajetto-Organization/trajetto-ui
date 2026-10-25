@@ -60,7 +60,6 @@ describe("parsePublicConfig", () => {
   it("reads a development environment, with OSM as the only fallback map", () => {
     expect(config(DEV_ENV)).toEqual({
       apiUrl: "http://localhost:3333",
-      socketUrl: "http://localhost:3333",
       siteUrl: null,
       turnstileSiteKey: null,
       appEnv: "development",
@@ -71,7 +70,6 @@ describe("parsePublicConfig", () => {
   it("reads a production environment", () => {
     expect(config(PRODUCTION_ENV)).toEqual({
       apiUrl: "https://api.intrajetto.test",
-      socketUrl: "https://api.intrajetto.test",
       siteUrl: "https://www.intrajetto.test",
       turnstileSiteKey: "0x4AAAAAAA-site",
       appEnv: "production",
@@ -82,11 +80,14 @@ describe("parsePublicConfig", () => {
     });
   });
 
-  it("uses a socket host of its own when one is set", () => {
-    expect(
-      config({ ...DEV_ENV, PUBLIC_SOCKET_URL: "https://ws.intrajetto.test/" })
-        .socketUrl,
-    ).toBe("https://ws.intrajetto.test");
+  it("has no socket host of its own: Socket.IO runs on the API", () => {
+    const result = config({
+      ...DEV_ENV,
+      PUBLIC_SOCKET_URL: "https://ws.intrajetto.test/",
+    });
+
+    expect(result).not.toHaveProperty("socketUrl");
+    expect(result.apiUrl).toBe("http://localhost:3333");
   });
 
   it("names a missing API URL and the variable it replaced", () => {

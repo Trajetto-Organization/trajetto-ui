@@ -18,7 +18,6 @@ const httpUrl = z.string().refine(isHttpUrl, {
 
 const publicConfigSchema = z.object({
   apiUrl: httpUrl,
-  socketUrl: httpUrl,
   siteUrl: httpUrl.nullable(),
   turnstileSiteKey: z.string().min(1).nullable(),
   appEnv: z.enum(["development", "staging", "production"]),

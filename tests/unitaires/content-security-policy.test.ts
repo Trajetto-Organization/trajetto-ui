@@ -453,7 +453,7 @@ describe("the hosts the policy names", () => {
     expect(connect(production)).not.toContain("staging");
   });
 
-  it("lets the page reach a socket host apart from the API", async () => {
+  it("opens the socket on the API's host only, ignoring a stale PUBLIC_SOCKET_URL", async () => {
     process.env.PUBLIC_SOCKET_URL = "https://socket.intrajetto.test";
 
     const response = await middleware(requestFor("/dashboard"));
@@ -463,7 +463,7 @@ describe("the hosts the policy names", () => {
     );
 
     expect(connect).toContain(API);
-    expect(connect).toContain("https://socket.intrajetto.test");
-    expect(connect).toContain("wss://socket.intrajetto.test");
+    expect(connect).toContain("wss://api.intrajetto.test");
+    expect(connect).not.toContain("socket.intrajetto.test");
   });
 });

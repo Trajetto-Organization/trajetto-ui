@@ -348,6 +348,7 @@ PUBLIC_API_URL=https://<host da API de staging>
 TURNSTILE_SITE_KEY=<chave do site, widget de staging>
 TURNSTILE_SECRET_KEY=<segredo, widget de staging>
 RATE_LIMIT_FORWARDER_SECRET=<o mesmo da API de staging>
+CSP_STORAGE_ORIGINS=https://trajetto-staging-storage.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 MAP_TILE_URL=<modelo https do provedor>
 MAP_TILE_ATTRIBUTION=<crédito do provedor>
 NODE_OPTIONS=--max-old-space-size=512
@@ -356,6 +357,15 @@ NODE_OPTIONS=--max-old-space-size=512
 `HTTP_REQUEST` pode ser o endereço interno da API na rede `dokploy-network`
 (`http://<App Name da API>:3333`), o que evita a volta pela Cloudflare. Na
 dúvida, use a URL pública, que sempre funciona.
+
+`PUBLIC_API_URL` também é o host do Socket.IO, que roda na própria API: não
+há variável separada para o socket.
+
+`CSP_STORAGE_ORIGINS` limita uploads e downloads ao bucket **deste**
+ambiente. `<R2_ACCOUNT_ID>` é o mesmo `R2_ACCOUNT_ID` da API de staging; a API
+pré-assina no estilo virtual-hosted
+(`https://<bucket>.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`). Vazia, a CSP
+aceita qualquer bucket R2 (`https://*.r2.cloudflarestorage.com`).
 
 O servidor **não sobe** se faltar uma obrigatória. Veja o log da Application:
 ele lista o nome de cada variável faltando.
@@ -501,14 +511,14 @@ curl -s https://staging.intrajetto.com/robots.txt     # Disallow: /
 Igual à seção 6, no environment **`production`**, project **`trajetto-ui`**,
 com estas diferenças:
 
-| Item            | Produção                                                                                                                                                                                                |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Nome            | `trajetto-ui`, no environment `production`, project `trajetto-ui`                                                                                                                                       |
-| Docker Image    | `ghcr.io/trajetto-organization/trajetto-ui:stable`                                                                                                                                                      |
-| Environment     | `APP_ENV=production`, `METADATA_BASE=https://www.intrajetto.com`, URLs da API de produção, widget do Turnstile de produção, `RATE_LIMIT_FORWARDER_SECRET` de produção (veja `variaveis-de-ambiente.md`) |
-| Domain          | `www.intrajetto.com`, porta 3000, HTTPS com Let's Encrypt                                                                                                                                               |
-| Domínio sem www | `intrajetto.com` redireciona para `www` com HSTS (seção 8). **Não** cadastre o apex como domínio da Application                                                                                         |
-| Webhook         | secret `DOKPLOY_PRODUCTION_WEBHOOK_URL` no environment `production` do GitHub. O job confere o `/build-id.json` na origem do secret de repositório `METADATA_BASE`                                      |
+| Item            | Produção                                                                                                                                                                                                                                                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Nome            | `trajetto-ui`, no environment `production`, project `trajetto-ui`                                                                                                                                                                                                                                                              |
+| Docker Image    | `ghcr.io/trajetto-organization/trajetto-ui:stable`                                                                                                                                                                                                                                                                             |
+| Environment     | `APP_ENV=production`, `METADATA_BASE=https://www.intrajetto.com`, URLs da API de produção, widget do Turnstile de produção, `RATE_LIMIT_FORWARDER_SECRET` de produção, `CSP_STORAGE_ORIGINS=https://trajetto-prod-storage.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` (só o bucket de produção; veja `variaveis-de-ambiente.md`) |
+| Domain          | `www.intrajetto.com`, porta 3000, HTTPS com Let's Encrypt                                                                                                                                                                                                                                                                      |
+| Domínio sem www | `intrajetto.com` redireciona para `www` com HSTS (seção 8). **Não** cadastre o apex como domínio da Application                                                                                                                                                                                                                |
+| Webhook         | secret `DOKPLOY_PRODUCTION_WEBHOOK_URL` no environment `production` do GitHub. O job confere o `/build-id.json` na origem do secret de repositório `METADATA_BASE`                                                                                                                                                             |
 
 Os segredos de produção **nunca** são os mesmos de staging.
 
@@ -574,15 +584,15 @@ pela API, como qualquer outro dado.
 
 O que precisa casar entre web e API em cada ambiente:
 
-| Na web                                               | Na API                                                               | Por quê                                                                                                             |
-| ---------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `HTTP_REQUEST` e `PUBLIC_API_URL`                    | o host da API (`API_HOST`)                                           | a web chama a API                                                                                                   |
-| a origem da web (`METADATA_BASE`)                    | `HTTP_REQUEST` da API = a origem desta web                           | CORS e Socket.IO da API aceitam só essa origem                                                                      |
-| `RATE_LIMIT_FORWARDER_SECRET`                        | `RATE_LIMIT_FORWARDER_SECRET`                                        | o mesmo valor. Diferente = todos os logins contados como um IP só (429 para todo mundo)                             |
-| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY`        | `TURNSTILE_SECRET_KEY` (o mesmo valor) e `TURNSTILE_REQUIRED` da API | o mesmo widget, para a API validar o token que a web manda                                                          |
-| a origem da web                                      | CORS do bucket R2 do ambiente                                        | o navegador envia fotos direto ao R2 por URL pré-assinada (`PUT`). Sem a regra, o upload falha antes de sair da aba |
-| `CSP_STORAGE_ORIGINS`                                | o bucket (`R2_*`)                                                    | a CSP precisa liberar a origem do bucket (vazio = qualquer R2)                                                      |
-| `secrets.API_DOCS_URL`, `DOCS_USER`, `DOCS_PASSWORD` | `/docs/json` e `DOCS_*` da API de produção                           | gate de rotas do promote                                                                                            |
+| Na web                                               | Na API                                                               | Por quê                                                                                                                                                                                                                                            |
+| ---------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HTTP_REQUEST` e `PUBLIC_API_URL`                    | o host da API (`API_HOST`)                                           | a web chama a API                                                                                                                                                                                                                                  |
+| a origem da web (`METADATA_BASE`)                    | `HTTP_REQUEST` da API = a origem desta web                           | CORS e Socket.IO da API aceitam só essa origem                                                                                                                                                                                                     |
+| `RATE_LIMIT_FORWARDER_SECRET`                        | `RATE_LIMIT_FORWARDER_SECRET`                                        | o mesmo valor. Diferente = todos os logins contados como um IP só (429 para todo mundo)                                                                                                                                                            |
+| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY`        | `TURNSTILE_SECRET_KEY` (o mesmo valor) e `TURNSTILE_REQUIRED` da API | o mesmo widget, para a API validar o token que a web manda                                                                                                                                                                                         |
+| a origem da web                                      | CORS do bucket R2 do ambiente                                        | o navegador envia fotos direto ao R2 por URL pré-assinada (`PUT`). Sem a regra, o upload falha antes de sair da aba                                                                                                                                |
+| `CSP_STORAGE_ORIGINS`                                | o bucket (`R2_*`)                                                    | a CSP libera só a origem do bucket do ambiente: `https://trajetto-staging-storage.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` em staging, `https://trajetto-prod-storage.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` em produção (vazio = qualquer R2) |
+| `secrets.API_DOCS_URL`, `DOCS_USER`, `DOCS_PASSWORD` | `/docs/json` e `DOCS_*` da API de produção                           | gate de rotas do promote                                                                                                                                                                                                                           |
 
 CORS do bucket R2 (painel da Cloudflare → R2 → bucket → Settings → CORS
 Policy), um por ambiente, com a origem da web daquele ambiente:
@@ -799,7 +809,7 @@ Depois de cada deploy, procure no log da Application (Dokploy → Logs) por
 
 - **Uma origem nova legítima bloqueada** (um provedor de tiles, outro
   bucket): ajuste a variável certa (`MAP_TILE_URL`, `CSP_STORAGE_ORIGINS`,
-  `PUBLIC_SOCKET_URL`) e faça um Redeploy. Não é preciso build.
+  `PUBLIC_API_URL`) e faça um Redeploy. Não é preciso build.
 - **Script inline bloqueado numa página dinâmica:** é bug da página. Abra
   uma issue com a linha do log.
 - **Origens estranhas** (extensões de navegador, `chrome-extension://`):
@@ -943,25 +953,25 @@ no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 
 ## 19. Solução de problemas
 
-| Sintoma                                             | Causa provável                                                                           | O que fazer                                                               |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Deploy "PULADO" no resumo                           | secret `DOKPLOY_*_WEBHOOK_URL` ausente                                                   | crie o secret no environment certo                                        |
-| Webhook com HTTP 400/401/404                        | Auto Deploy desligado, URL errada ou Application recriada (o token mudou)                | ligue o Auto Deploy, copie a URL de novo e atualize o secret              |
-| `A imagem … não existe no GHCR` no promote          | merge com squash ou rebase, ou commit que não passou por staging                         | refaça como merge commit, ou rode o workflow com um `image_tag` existente |
-| `O merge … difere do commit de staging`             | commit direto em `main`                                                                  | leve a mudança para `staging`, espere o deploy e faça o merge de novo     |
-| Gate de rotas lista rotas faltando                  | web promovida antes da API                                                               | promova a API e dê Re-run no job                                          |
-| `/build-id.json` com 403 no run                     | WAF ou bot fight da Cloudflare                                                           | exceção para `/build-id.json`                                             |
-| Run falha esperando o build e o site serve o antigo | o Swarm reverteu: o health check falhou                                                  | veja o log da Application (variável faltando lista os nomes)              |
-| O servidor não sobe e lista variáveis               | obrigatória faltando ou inválida                                                         | compare com `variaveis-de-ambiente.md`                                    |
-| Dokploy não puxa a imagem (`unauthorized`)          | token do GHCR vencido ou sem `read:packages`                                             | gere outro e atualize o registry                                          |
-| Toda chamada falha com erro de rede                 | API fora do ar ou `HTTP_REQUEST`/`PUBLIC_API_URL` errados                                | confira as duas URLs e a API                                              |
-| Login funciona e o tempo real não                   | `PUBLIC_SOCKET_URL` ou CORS da API (o `HTTP_REQUEST` da API deve ser a origem desta web) | confira as duas pontas                                                    |
-| 429 no login para todo mundo                        | `RATE_LIMIT_FORWARDER_SECRET` diferente da API                                           | use o mesmo valor nos dois lados                                          |
-| Upload recusado pelo navegador                      | CORS do bucket ou origem fora da CSP                                                     | regra CORS do R2 e `CSP_STORAGE_ORIGINS`                                  |
-| Mapa sem fundo em staging ou produção               | `MAP_TILE_URL` vazio                                                                     | configure um provedor de tiles comercial                                  |
-| Staging aparecendo no Google                        | `APP_ENV` diferente de `staging`                                                         | corrija e faça Redeploy. Peça remoção no Search Console                   |
-| Tela 404 logo depois de promover                    | web publicada antes da API                                                               | promova a API                                                             |
-| Suítes de navegador puladas                         | falta `API_REPO_READ_TOKEN`                                                              | crie o token (seção 16)                                                   |
+| Sintoma                                             | Causa provável                                                                                                | O que fazer                                                               |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Deploy "PULADO" no resumo                           | secret `DOKPLOY_*_WEBHOOK_URL` ausente                                                                        | crie o secret no environment certo                                        |
+| Webhook com HTTP 400/401/404                        | Auto Deploy desligado, URL errada ou Application recriada (o token mudou)                                     | ligue o Auto Deploy, copie a URL de novo e atualize o secret              |
+| `A imagem … não existe no GHCR` no promote          | merge com squash ou rebase, ou commit que não passou por staging                                              | refaça como merge commit, ou rode o workflow com um `image_tag` existente |
+| `O merge … difere do commit de staging`             | commit direto em `main`                                                                                       | leve a mudança para `staging`, espere o deploy e faça o merge de novo     |
+| Gate de rotas lista rotas faltando                  | web promovida antes da API                                                                                    | promova a API e dê Re-run no job                                          |
+| `/build-id.json` com 403 no run                     | WAF ou bot fight da Cloudflare                                                                                | exceção para `/build-id.json`                                             |
+| Run falha esperando o build e o site serve o antigo | o Swarm reverteu: o health check falhou                                                                       | veja o log da Application (variável faltando lista os nomes)              |
+| O servidor não sobe e lista variáveis               | obrigatória faltando ou inválida                                                                              | compare com `variaveis-de-ambiente.md`                                    |
+| Dokploy não puxa a imagem (`unauthorized`)          | token do GHCR vencido ou sem `read:packages`                                                                  | gere outro e atualize o registry                                          |
+| Toda chamada falha com erro de rede                 | API fora do ar ou `HTTP_REQUEST`/`PUBLIC_API_URL` errados                                                     | confira as duas URLs e a API                                              |
+| Login funciona e o tempo real não                   | `PUBLIC_API_URL` (o socket conecta nela) ou CORS da API (o `HTTP_REQUEST` da API deve ser a origem desta web) | confira as duas pontas                                                    |
+| 429 no login para todo mundo                        | `RATE_LIMIT_FORWARDER_SECRET` diferente da API                                                                | use o mesmo valor nos dois lados                                          |
+| Upload recusado pelo navegador                      | CORS do bucket ou origem fora da CSP                                                                          | regra CORS do R2 e `CSP_STORAGE_ORIGINS`                                  |
+| Mapa sem fundo em staging ou produção               | `MAP_TILE_URL` vazio                                                                                          | configure um provedor de tiles comercial                                  |
+| Staging aparecendo no Google                        | `APP_ENV` diferente de `staging`                                                                              | corrija e faça Redeploy. Peça remoção no Search Console                   |
+| Tela 404 logo depois de promover                    | web publicada antes da API                                                                                    | promova a API                                                             |
+| Suítes de navegador puladas                         | falta `API_REPO_READ_TOKEN`                                                                                   | crie o token (seção 16)                                                   |
 
 ## 20. Os três repositórios juntos
 
@@ -1008,7 +1018,7 @@ _classic_ `read:packages`, informado no provider Docker de cada Application.
 | Valor                             | API (Environment das Applications do projeto `trajetto-api`)                                                                                    | Web (Environment da Application)                                                         | App (ambiente EAS)                                                                    |
 | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | URL pública da API                | o host na aba _Domains_ da Application `trajetto-api` e `API_HTTP_REQUEST` (a URL)                                                              | `HTTP_REQUEST` (chamadas do servidor da web) e `PUBLIC_API_URL` (chamadas do navegador)  | `EXPO_PUBLIC_API_URL`                                                                 |
-| Socket.IO                         | o mesmo host da API, com WebSocket liberado na borda                                                                                            | `PUBLIC_SOCKET_URL` (vazia = `PUBLIC_API_URL`)                                           | o socket usa `EXPO_PUBLIC_API_URL`                                                    |
+| Socket.IO                         | o mesmo host da API, com WebSocket liberado na borda                                                                                            | `PUBLIC_API_URL` (o socket roda na própria API; não há variável própria)                 | o socket usa `EXPO_PUBLIC_API_URL`                                                    |
 | Origem da web                     | `HTTP_REQUEST` = a origem da web do ambiente (única origem do CORS e do Socket.IO, base dos links)                                              | `METADATA_BASE`                                                                          | `EXPO_PUBLIC_WEB_APPLICATION_URL` (links de Privacidade e Termos)                     |
 | Limite de tentativas por IP       | `RATE_LIMIT_FORWARDER_SECRET`                                                                                                                   | `RATE_LIMIT_FORWARDER_SECRET`, **o mesmo valor**                                         | —                                                                                     |
 | Captcha (Turnstile)               | `TURNSTILE_SECRET_KEY` (o mesmo widget da web) e `TURNSTILE_REQUIRED`                                                                           | `TURNSTILE_SITE_KEY` e `TURNSTILE_SECRET_KEY`                                            | —                                                                                     |

@@ -136,7 +136,7 @@ Nenhuma sobe a stack sozinha. O passo a passo local completo está em
    com a senha `WEB_E2E_PASSWORD`).
 3. **API** com `NODE_ENV=test PORT=3334 API_HTTP_REQUEST=http://localhost:3334`.
 4. **Web** em `:3100`, com `PUBLIC_API_URL`, `HTTP_REQUEST`,
-   `PUBLIC_SOCKET_URL`, `METADATA_BASE` e as **chaves de teste públicas** do
+   `METADATA_BASE` e as **chaves de teste públicas** do
    Turnstile (`1x00000000000000000000AA` e
    `1x0000000000000000000000000000000AA`, que sempre aprovam). Localmente,
    use `next dev -p 3100` com `NEXT_DEV_KEEP_PAGES=1` e

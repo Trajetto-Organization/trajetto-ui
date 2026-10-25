@@ -22,7 +22,6 @@ vi.hoisted(() => {
 
 const SERVED = {
   apiUrl: "https://api.served.test",
-  socketUrl: "https://api.served.test",
   siteUrl: "https://www.served.test",
   turnstileSiteKey: "served-site-key",
   appEnv: "production",

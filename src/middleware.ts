@@ -54,7 +54,6 @@ const AUTH_ROUTES = [
  */
 function publicHosts(): {
   apiOrigin?: string;
-  socketOrigin?: string;
   mapTileOrigins: string[];
 } {
   const env = process.env;
@@ -73,7 +72,6 @@ function publicHosts(): {
 
   return {
     apiOrigin: env[PUBLIC_ENV.apiUrl]?.trim(),
-    socketOrigin: env[PUBLIC_ENV.socketUrl]?.trim(),
     mapTileOrigins: [
       ...new Set([tileOrigin, darkOrigin].filter((o): o is string => !!o)),
     ],

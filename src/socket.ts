@@ -189,14 +189,15 @@ async function initializeSocket(): Promise<Socket> {
 
       // Read at run time (src/env): the image is promoted between
       // environments, so a build-time value would be staging's.
-      const { socketUrl } = await loadPublicConfig();
+      // Socket.IO runs on the API itself, so the API URL is its host.
+      const { apiUrl } = await loadPublicConfig();
 
       // The first attempt spends the ticket minted above; every later one
       // (reconnection, refusal retry) mints its own.
       let pendingTicket: string | null = first.ok ? first.ticket : null;
 
       // Create new socket instance with authentication
-      const socket = io(socketUrl, {
+      const socket = io(apiUrl, {
         /**
          * A one-use ticket, never the access token.
          *

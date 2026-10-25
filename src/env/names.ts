@@ -8,7 +8,6 @@
  */
 const PUBLIC_ENV = {
   apiUrl: "PUBLIC_API_URL",
-  socketUrl: "PUBLIC_SOCKET_URL",
   turnstileSiteKey: "TURNSTILE_SITE_KEY",
   mapTileUrl: "MAP_TILE_URL",
   mapTileAttribution: "MAP_TILE_ATTRIBUTION",

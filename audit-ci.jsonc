@@ -21,6 +21,11 @@
     // Production has no remotePatterns (next.config.mjs), so /_next/image
     // only decodes the app's own static images, not an attacker's file.
     // Revisar até 2026-12-31.
-    "GHSA-2xp9-vwfh-vxw4"
+    "GHSA-2xp9-vwfh-vxw4",
+    // Next <= 15.5.27: RCE through sharp's decoder on glibc Linux. The
+    // advisory's workaround is applied: sharp is pinned to >= 0.35.5
+    // (package.json), and production runs on Alpine (musl), not glibc.
+    // Revisar até 2026-12-31.
+    "GHSA-2464-fhr4-w9xw"
   ]
 }

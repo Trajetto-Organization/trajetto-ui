@@ -113,6 +113,10 @@ jobs:
       MASTER_USER_EMAIL: test-master@example.com
       MASTER_USER_INITIAL_PASSWORD: test-master-password-ci-only
       LOAD_BASE_URL: http://localhost:3334
+      # Job-wide, not only on the server step: the seed and mint scripts load
+      # the API's env schema too, and it refuses to load without HTTP_REQUEST.
+      HTTP_REQUEST: http://localhost:3100
+      API_HTTP_REQUEST: http://localhost:3334
 
     steps:
       - name: Checkout the web app
@@ -186,8 +190,6 @@ jobs:
         env:
           NODE_ENV: test
           PORT: 3334
-          HTTP_REQUEST: http://localhost:3100
-          API_HTTP_REQUEST: http://localhost:3334
         run: |
           nohup npx tsx src/server.ts > ../api.log 2>&1 &
           for _ in $(seq 1 60); do

@@ -508,6 +508,9 @@ test("checklist through the form, with the three required photos", async () => {
 async function submitServiceOrder(
   vehicle: { id: string; term: string },
   description: string,
+  // Checks on the filled form. They run BEFORE the submit: a save that
+  // answers fast closes the dialog, and a field read after the click is gone.
+  beforeSubmit?: (dialog: Locator) => Promise<void>,
 ): Promise<Locator> {
   const { page } = office;
   const dialog = await openCreate(
@@ -550,6 +553,8 @@ async function submitServiceOrder(
   await expect(
     dialog.getByLabel(/^Quilometragem atual do veículo/),
   ).not.toHaveValue("", { timeout: 30_000 });
+
+  await beforeSubmit?.(dialog);
 
   await dialog.getByRole("button", { name: "Criar Ordem de Serviço" }).click();
 
@@ -628,12 +633,14 @@ test("the first order of a vehicle with no previous maintenance is created too",
   const dialog = await submitServiceOrder(
     { id: vehicleId, term: `Caminhão ${label}` },
     `Primeira revisão ${RUN}`,
+    async (form) => {
+      // No previous review: the read-only copy is empty and says it is
+      // optional.
+      await expect(
+        form.getByLabel(/^Quilometragem da última revisão \(opcional\)/),
+      ).toHaveValue("");
+    },
   );
-
-  // No previous review: the read-only copy is empty and says it is optional.
-  await expect(
-    dialog.getByLabel(/^Quilometragem da última revisão \(opcional\)/),
-  ).toHaveValue("");
 
   await expectSaved(page, dialog);
 });

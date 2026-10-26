@@ -76,7 +76,9 @@ interface UsageSnapshot {
  * the tab, a limit the MASTER raised never showed — "Atualizar" fetched
  * it and the older event covered it (DLVP-ADM-2). `serverAskedAt` is when the
  * request behind `server` left: an event heard after that may be newer than
- * the answer; one heard before it is not.
+ * the answer; one heard before it, or in the same millisecond, is not — the
+ * server reads the database after its request leaves (a tie used to go to
+ * the socket, and a fast machine showed the old limit after Atualizar).
  *
  * The socket's `resetAt` is the NEXT reset; it used to be written over the
  * period's START (`ai_analysis_reset_at`), so "Último reset" showed next
@@ -88,7 +90,7 @@ function freshestUsage(
   realtime: BusinessUsageData | undefined,
 ): UsageSnapshot | null {
   if (!realtime) return server;
-  if (server && (realtime.receivedAt ?? 0) < serverAskedAt) return server;
+  if (server && (realtime.receivedAt ?? 0) <= serverAskedAt) return server;
 
   return {
     ai_analysis_used: realtime.used,

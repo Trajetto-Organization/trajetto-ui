@@ -184,4 +184,22 @@ describe("the quota card's words (AI-10, AI-15)", () => {
       ai_analysis_next_reset_at: "2026-10-01T03:00:00.000Z",
     });
   });
+
+  // Red before: an event heard in the same millisecond the request left won,
+  // and a fast machine showed the old limit after Atualizar. The server reads
+  // the database after its request leaves, so on a tie its answer is at least
+  // as new as the event.
+  it("takes the server's answer when the event was heard the same millisecond", () => {
+    const merged = freshestUsage(
+      {
+        ai_analysis_limit: 500,
+        ai_analysis_used: 7,
+        ai_analysis_reset_at: null,
+      },
+      1_000,
+      { used: 7, limit: 100, remaining: 93, resetAt: null, receivedAt: 1_000 },
+    );
+
+    expect(merged?.ai_analysis_limit).toBe(500);
+  });
 });

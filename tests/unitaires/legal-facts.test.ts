@@ -433,47 +433,66 @@ function accessTokenLife(): number {
 }
 
 /**
- * The bucket lifecycle of the backups, as the API's operations docs record
- * it. Searched across every Markdown file of the API's docs/ (the restore
- * procedure moved from a runbook of its own into the consolidated deploy
- * guide), but exactly one stated lifecycle is accepted: two disagreeing
+ * How long the database backups are kept, as the API's deploy guide records
+ * the Dokploy backup of the PostgreSQL Database (the only backup since
+ * 2026-10-26). Dokploy keeps a count of copies ("Keep Latest"), not a period:
+ * the count is a number of days only while the schedule runs once a day, so
+ * the schedule is checked too. Every section of the guide that states a
+ * "Keep Latest" is read, and exactly one value is accepted: two disagreeing
  * copies would make the promise ambiguous.
  */
-// Whitespace-tolerant: the docs wrap at 80 columns, and a line break inside
-// the sentence is formatting, not a different promise.
-const BACKUP_LIFECYCLE =
-  /`pg\/daily\/`\s+(\d+)\s+dias,\s+`pg\/weekly\/`\s+(\d+),\s+`pg\/monthly\/`\s+(\d+)/g;
+const BACKUP_GUIDE = "docs/deploy.md";
+// Tolerant of the Markdown around the value: `Keep Latest` = `30`,
+// **Keep Latest:** 30 or a table row | Keep Latest | 30 |.
+const BACKUP_KEEP_LATEST = /Keep Latest\W{0,16}(\d+)/g;
+// A five-field cron written in code: `0 3 * * *`. Only cron characters, so
+// another five-word code span in the section is not taken for a schedule.
+const BACKUP_CRON = /`((?:[\d*/,-]+ ){4}[\d*/,-]+)`/g;
 
-function backupLifecycleSources(): string[] {
-  const dir = resolve(API, "docs");
+function backupRetentionDays(): number {
+  const sections = api(BACKUP_GUIDE)
+    .split(/^## /m)
+    .filter((section) => section.includes("Keep Latest"));
 
-  if (!existsSync(dir)) return [];
+  const kept = new Set(
+    sections.flatMap((section) =>
+      [...section.matchAll(BACKUP_KEEP_LATEST)].map((match) => match[1]),
+    ),
+  );
 
-  return readdirSync(dir)
-    .filter((name) => name.endsWith(".md"))
-    .map((name) => `docs/${name}`);
-}
-
-function backupLifecycle(): { daily: number; weekly: number; monthly: number } {
-  const stated = new Set<string>();
-
-  for (const path of backupLifecycleSources()) {
-    for (const match of api(path).matchAll(BACKUP_LIFECYCLE)) {
-      stated.add(`${match[1]}/${match[2]}/${match[3]}`);
-    }
-  }
-
-  if (stated.size === 0)
-    throw new Error("lifecycle dos backups não encontrado em docs/*.md da API");
-  if (stated.size > 1) {
+  if (kept.size === 0) {
     throw new Error(
-      `lifecycle dos backups divergente nos docs da API: ${[...stated].join(", ")}`,
+      `"Keep Latest" do backup do Dokploy não encontrado em ${BACKUP_GUIDE} da API`,
+    );
+  }
+  if (kept.size > 1) {
+    throw new Error(
+      `"Keep Latest" divergente em ${BACKUP_GUIDE} da API: ${[...kept].join(", ")}`,
     );
   }
 
-  const [daily, weekly, monthly] = [...stated][0].split("/").map(Number);
+  const schedules = sections.flatMap((section) =>
+    [...section.matchAll(BACKUP_CRON)].map((match) => match[1]),
+  );
 
-  return { daily, weekly, monthly };
+  if (schedules.length === 0) {
+    throw new Error(
+      `agenda (cron) do backup não encontrada em ${BACKUP_GUIDE}`,
+    );
+  }
+
+  // Once a day: fixed minute and hour, every day of every month and week.
+  const notDaily = schedules.filter(
+    (cron) => !/^\d{1,2} \d{1,2} \* \* \*$/.test(cron),
+  );
+
+  if (notDaily.length > 0) {
+    throw new Error(
+      `backup não é diário em ${BACKUP_GUIDE} (${notDaily.join(", ")}): "Keep Latest" deixa de ser um número de dias`,
+    );
+  }
+
+  return Number([...kept][0]);
 }
 
 const AUTHORIZATION_QUEUE =
@@ -673,26 +692,19 @@ const FACTS: Fact[] = [
     stated: [["privacidade", "no máximo § desde a entrada"]],
   },
   {
-    name: "cópias de segurança diárias",
+    name: "cópias de segurança do banco (diárias, as mais recentes)",
     origin: "api",
-    source: "docs/*.md (backup lifecycle)",
-    value: () => days(backupLifecycle().daily),
-    stated: [["privacidade", "Diárias por §"]],
-  },
-  {
-    name: "cópias de segurança semanais",
-    origin: "api",
-    source: "docs/*.md (backup lifecycle)",
-    value: () => days(backupLifecycle().weekly),
-    stated: [["privacidade", "semanais por §"]],
-  },
-  {
-    name: "cópias de segurança mensais (a mais longa)",
-    origin: "api",
-    source: "docs/*.md (backup lifecycle)",
-    value: () => days(backupLifecycle().monthly),
+    source: "docs/deploy.md (backup do Dokploy: Keep Latest e agenda diária)",
+    value: () => days(backupRetentionDays()),
     stated: [
-      ["privacidade", "mensais por §"],
+      [
+        "privacidade",
+        "| Cópias de segurança do banco de dados | Diárias, guardadas por §",
+      ],
+      [
+        "privacidade",
+        "Cópias de segurança diárias do banco de dados, guardadas por §",
+      ],
       ["termos", "expiram no ciclo delas, em até §"],
     ],
   },

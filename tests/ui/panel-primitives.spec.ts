@@ -46,6 +46,21 @@ async function chipShape(page: Page, group: string) {
     timeout: 30_000,
   });
 
+  // The group can be visible while its chips are still mounting: on a busy
+  // CI runner the first panel measured a 0px chip next to 32px in the others.
+  // Read the shape once every chip has a box, not mid-render.
+  await expect
+    .poll(
+      () =>
+        chips.evaluate((element) =>
+          [...element.querySelectorAll("button")].every(
+            (button) => (button as HTMLElement).offsetHeight > 0,
+          ),
+        ),
+      { message: `${group}: os filtros não terminaram de renderizar` },
+    )
+    .toBe(true);
+
   return chips.evaluate((element) => {
     const buttons = [
       ...element.querySelectorAll("button"),

@@ -76,6 +76,10 @@ test.describe("the Entregas sections on a phone", () => {
       const verdict = await strip.evaluate((element) => {
         const boxes = [element, ...element.querySelectorAll("*")];
 
+        // An unreadable width is no border: one NaN made Math.max NaN for the
+        // whole strip in CI, and NaN fails every comparison.
+        const px = (value: string) => Number.parseFloat(value) || 0;
+
         let horizontal = 0;
         let vertical = 0;
 
@@ -91,12 +95,10 @@ test.describe("the Entregas sections on a phone", () => {
            * system took — the 15px slab that used to eat this strip.
            */
           const bordersY =
-            parseFloat(style.borderTopWidth) +
-            parseFloat(style.borderBottomWidth);
+            px(style.borderTopWidth) + px(style.borderBottomWidth);
 
           const bordersX =
-            parseFloat(style.borderLeftWidth) +
-            parseFloat(style.borderRightWidth);
+            px(style.borderLeftWidth) + px(style.borderRightWidth);
 
           horizontal = Math.max(
             box.offsetHeight - box.clientHeight - bordersY,

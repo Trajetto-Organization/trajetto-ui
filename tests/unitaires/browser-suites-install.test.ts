@@ -41,6 +41,16 @@ describe("browser-suites.yml", () => {
     }
   });
 
+  it("runs the browsers on a pinned Ubuntu Playwright supports, not ubuntu-latest", () => {
+    // ubuntu-latest moved to 26.04 and `playwright install --with-deps
+    // chromium` (1.56) refused it: "does not support chromium on
+    // ubuntu26.04-x64". A pinned image moves only when Playwright does.
+    const job = workflow.slice(workflow.indexOf("\n  browser-suites:"));
+    const runner = /\n    runs-on: (\S+)/.exec(job)?.[1];
+
+    expect(runner).toMatch(/^ubuntu-\d{2}\.\d{2}$/);
+  });
+
   it("mints the form-login accounts after the MASTER sessions", () => {
     // The specs that sign in through the form read browser-users.json; the
     // nightly job never wrote it and every one of them threw.

@@ -69,7 +69,9 @@ jobs:
     name: UI, a11y and responsive against a running stack
     needs: gate
     if: needs.gate.outputs.enabled == 'true'
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: Playwright installs Chromium's system deps
+    # only on the Ubuntu releases it supports, and 1.56 refused 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
 
     services:

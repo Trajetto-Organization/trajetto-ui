@@ -23,7 +23,12 @@ export default defineConfig({
   // (see the file for the failures it removes).
   globalSetup: "./tests/ui/support/warm-up.ts",
   fullyParallel: true,
-  workers: 3,
+  // CI: the 4-vCPU runner also hosts Postgres, the API and the web server, so
+  // fewer browsers at once, and one retry for a timing flake. A real defect
+  // fails both attempts and still fails the job; a test that passed only on
+  // the retry is listed as "flaky" in the report, not hidden.
+  workers: process.env.CI ? 2 : 3,
+  retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
   reporter: [["list"]],
   use: {

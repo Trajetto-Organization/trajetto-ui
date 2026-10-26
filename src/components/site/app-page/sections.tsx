@@ -1,6 +1,5 @@
-import Image from "next/image";
-
 import { ArrowLink } from "@/components/site/arrow-link";
+import { CtaBandMark } from "@/components/site/cta-band-mark";
 import {
   Container,
   Eyebrow,
@@ -8,8 +7,6 @@ import {
 } from "@/components/site/primitives";
 import { Reveal } from "@/components/site/reveal";
 import { DocumentLink } from "@/components/shared/document-link";
-
-import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 import { APP_FAQ, FEATURES } from "./content";
 import { AppFaq } from "./faq";
@@ -105,13 +102,7 @@ const AppClosingCta = (): JSX.Element => (
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(50%_80%_at_100%_100%,rgba(216,27,96,.22),transparent_70%),radial-gradient(40%_60%_at_85%_0%,rgba(106,63,224,.22),transparent_70%)]"
       />
-      <Image
-        src={trajettoLogo}
-        alt=""
-        aria-hidden
-        sizes="(max-width: 900px) 70vw, 620px"
-        className="pointer-events-none absolute right-[-8%] top-1/2 h-auto w-[min(620px,70%)] max-w-none -translate-y-1/2 opacity-90"
-      />
+      <CtaBandMark />
       <div className="relative max-w-[620px]">
         <SectionHeading id="cta-titulo" size="xl">
           Coloque o app na mão dos seus motoristas.

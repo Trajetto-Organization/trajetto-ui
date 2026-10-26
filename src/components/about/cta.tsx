@@ -1,7 +1,5 @@
-import Image from "next/image";
-
-import logo from "@/assets/logo/trajetto-logo.png";
 import { ArrowLink } from "@/components/site/arrow-link";
+import { CtaBandMark } from "@/components/site/cta-band-mark";
 import { SectionHeading } from "@/components/site/primitives";
 import { Reveal } from "@/components/site/reveal";
 
@@ -16,13 +14,7 @@ const AboutCta = (): JSX.Element => (
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(50%_80%_at_100%_100%,rgba(216,27,96,.22),transparent_70%),radial-gradient(40%_60%_at_85%_0%,rgba(106,63,224,.22),transparent_70%)]"
       />
-      <Image
-        src={logo}
-        alt=""
-        aria-hidden="true"
-        sizes="620px"
-        className="pointer-events-none absolute right-[-8%] top-1/2 h-auto w-[min(620px,70%)] -translate-y-1/2 opacity-90 max-[640px]:opacity-25"
-      />
+      <CtaBandMark />
       <div className="relative max-w-[620px]">
         <SectionHeading
           id="cta-titulo"

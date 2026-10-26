@@ -1,0 +1,3 @@
+# The traced logo is compared byte for byte by scripts/build-logo-mark.mjs --check;
+# a CRLF checkout on Windows would make it look stale.
+src/assets/logo/trajetto-mark.svg text eol=lf

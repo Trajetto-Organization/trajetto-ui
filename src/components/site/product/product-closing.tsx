@@ -1,11 +1,8 @@
-import Image from "next/image";
-
 import { ArrowLink, MovingArrow } from "@/components/site/arrow-link";
+import { CtaBandMark } from "@/components/site/cta-band-mark";
 import { SectionHeading } from "@/components/site/primitives";
 import { Reveal } from "@/components/site/reveal";
 import { DocumentLink } from "@/components/shared/document-link";
-
-import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 import type { ProductContent } from "./content";
 
@@ -67,15 +64,7 @@ const ProductCta = ({ product }: { product: ProductContent }): JSX.Element => (
             "radial-gradient(50% 80% at 100% 100%, rgba(216,27,96,.22), transparent 70%), radial-gradient(40% 60% at 85% 0%, rgba(106,63,224,.22), transparent 70%)",
         }}
       />
-      <Image
-        src={trajettoLogo}
-        alt=""
-        aria-hidden
-        width={620}
-        height={620}
-        sizes="(min-width: 900px) 620px, 70vw"
-        className="pointer-events-none absolute right-[-8%] top-1/2 h-auto w-[min(620px,70%)] -translate-y-1/2 opacity-90"
-      />
+      <CtaBandMark />
       <div className="relative max-w-[620px]">
         <SectionHeading id="cta-titulo" size="xl">
           {product.ctaTitle}

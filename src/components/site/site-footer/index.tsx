@@ -47,7 +47,7 @@ const SiteFooter = (): JSX.Element => {
       <div className="mx-auto max-w-[1200px]">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-9">
           <div className="flex min-w-0 flex-col gap-3.5 min-[480px]:min-w-[220px]">
-            <SiteLogo className="self-start" />
+            <SiteLogo className="self-start" priority={false} />
             <p className="m-0 max-w-[260px] text-sm leading-normal text-site-muted">
               Gestão de frotas e de entregas em uma única plataforma.
             </p>

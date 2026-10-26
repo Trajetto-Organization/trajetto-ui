@@ -1,9 +1,6 @@
-import Image from "next/image";
-
 import { ArrowLink } from "@/components/site/arrow-link";
+import { CtaBandMark } from "@/components/site/cta-band-mark";
 import { cn } from "@/lib/utils";
-
-import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 /**
  * "Da leitura à operação.": the dark closing band of the blog and of each
@@ -22,15 +19,7 @@ const EditorialCtaBand = ({ className }: { className?: string }) => (
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(50%_80%_at_100%_100%,rgba(216,27,96,.22),transparent_70%),radial-gradient(40%_60%_at_85%_0%,rgba(106,63,224,.22),transparent_70%)]"
       />
-      <Image
-        src={trajettoLogo}
-        alt=""
-        aria-hidden
-        width={620}
-        height={620}
-        sizes="620px"
-        className="pointer-events-none absolute right-[-8%] top-1/2 h-auto w-[min(620px,70%)] max-w-none -translate-y-1/2 opacity-90"
-      />
+      <CtaBandMark />
       <div className="relative max-w-[620px]">
         <h2
           id="cta-titulo"

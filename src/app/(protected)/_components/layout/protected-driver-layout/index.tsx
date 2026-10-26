@@ -78,10 +78,10 @@ const DriverLayout = ({
               <div className="flex gap-2 py-2 text-sidebar-accent-foreground">
                 <div
                   className="flex aspect-square size-8 items-center
-                justify-center rounded-lg bg-sidebar-primary
-                text-sidebar-primary-foreground"
+                justify-center rounded-lg bg-[#0e0e14] ring-1
+                ring-inset ring-white/10"
                 >
-                  <ProtectedTrajettoLogo className="size-4" />
+                  <ProtectedTrajettoLogo />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Trajetto</span>

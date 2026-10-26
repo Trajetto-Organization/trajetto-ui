@@ -118,9 +118,9 @@ const DefaultLayout = ({
                 <div
                   className="flex aspect-square size-8
                   items-center justify-center rounded-lg
-                  bg-sidebar-primary text-sidebar-primary-foreground"
+                  bg-[#0e0e14] ring-1 ring-inset ring-white/10"
                 >
-                  <company.logo className="size-4" />
+                  <company.logo />
                 </div>
                 <div
                   className="grid flex-1 text-left

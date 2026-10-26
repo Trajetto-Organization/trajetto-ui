@@ -793,18 +793,17 @@ function rasterImports(entry: string): string[] {
 }
 
 describe("the public pages stay light", () => {
-  // The logo and the partners' photos stay; everything else is drawn in
-  // HTML and CSS.
+  // The partners' photos stay; everything else is drawn in HTML and CSS.
+  // The logo is a vector file (trajetto-mark.svg), so it is not raster.
   const ALLOWED = [
     "src/assets/about/gabriel-about-co-founder.webp",
     "src/assets/about/jomar-about-co-founder.webp",
     "src/assets/about/michael-about-co-founder.webp",
     "src/assets/about/thiago-about-co-founder.webp",
-    "src/assets/logo/trajetto-logo.png",
   ];
 
   it.each(PAGE_ENTRIES)(
-    "%s imports no raster image but the logo and the partners",
+    "%s imports no raster image but the partners",
     (entry) => {
       const outside = rasterImports(entry).filter(
         (image) => !ALLOWED.includes(image),
@@ -823,7 +822,7 @@ describe("the public pages stay light", () => {
 
   it("the walk does see an image import, so an empty result means something", () => {
     // Guard against a walker that silently resolves nothing: /about shows
-    // the partners' photos, and its navbar the logo.
+    // the partners' photos.
     expect(rasterImports("src/app/sobre/page.tsx")).toEqual(ALLOWED);
   });
 });

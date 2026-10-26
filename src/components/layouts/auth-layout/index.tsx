@@ -1,12 +1,10 @@
-import Image from "next/image";
 import { BellIcon } from "lucide-react";
 
 import { Notifications } from "./notifications";
 import { NavigateButton } from "./navigate-button";
 
+import { LogoMark } from "@/components/shared/logo-mark";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-
-import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -24,16 +22,8 @@ const AuthLayout = ({ children }: AuthLayoutProps): JSX.Element => {
           bg-muted p-10 text-white lg:flex dark:border-r"
         >
           <div className="absolute inset-0 bg-zinc-900" />
-          <div className="relative z-20 flex items-center text-lg font-medium">
-            <Image
-              src={trajettoLogo}
-              alt="Trajetto Logo"
-              width={120}
-              height={32}
-              className="h-10 w-auto"
-              placeholder="blur"
-              priority
-            />
+          <div className="relative z-20 flex items-center gap-2.5 text-lg font-medium">
+            <LogoMark width={36} priority />
             Trajetto
           </div>
           <section className="relative z-20 mt-auto left-[15%]">

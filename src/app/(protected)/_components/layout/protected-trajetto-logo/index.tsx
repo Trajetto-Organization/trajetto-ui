@@ -1,19 +1,10 @@
-import Image from "next/image";
-import trajettoLogo from "@/assets/logo/trajetto-logo.png";
+import { LogoMark } from "@/components/shared/logo-mark";
 
+/** The sidebar's brand tile mark (22x11); the word sits next to it. */
 const ProtectedTrajettoLogo = ({
   className,
 }: {
   className?: string;
-}): JSX.Element => (
-  <Image
-    src={trajettoLogo}
-    alt="Trajetto"
-    width={120}
-    height={32}
-    className={`h-7 w-auto ${className || ""}`}
-    placeholder="blur"
-  />
-);
+}): JSX.Element => <LogoMark width={22} priority className={className} />;
 
 export { ProtectedTrajettoLogo };

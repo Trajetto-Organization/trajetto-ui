@@ -1,13 +1,13 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import Image from "next/image";
 import Link from "next/link";
 
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
 
 import { blogMdxComponents } from "@/components/mdx";
 import { JsonLd } from "@/components/seo/json-ld";
+import { LogoMark } from "@/components/shared/logo-mark";
 import { MovingArrow } from "@/components/site/arrow-link";
 import { categoryAccent } from "@/components/site/editorial/category";
 import { EditorialCtaBand } from "@/components/site/editorial/cta-band";
@@ -23,8 +23,6 @@ import { renderMdx } from "@/lib/content/mdx";
 import { buildPageMetadata } from "@/lib/page-metadata";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
-
-import trajettoLogo from "@/assets/logo/trajetto-logo.png";
 
 interface BlogPostPageProps {
   params: { slug: string };
@@ -191,15 +189,9 @@ const BlogPostPage = async ({
               <span className="inline-flex items-center gap-2.5 font-medium text-site-ink">
                 <span
                   aria-hidden
-                  className="relative block size-[30px] overflow-hidden rounded-full bg-[#0e0e14]"
+                  className="grid size-[30px] shrink-0 place-items-center rounded-full bg-[#0e0e14]"
                 >
-                  <Image
-                    src={trajettoLogo}
-                    alt=""
-                    width={48}
-                    height={48}
-                    className="absolute -left-[9px] -top-[9px] size-12 max-w-none"
-                  />
+                  <LogoMark width={20} />
                 </span>
                 {post.author}
               </span>

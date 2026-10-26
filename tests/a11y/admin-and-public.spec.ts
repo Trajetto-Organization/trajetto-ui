@@ -2,6 +2,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
 
+import { gotoSettled } from "../ui/support/network";
+
 /**
  * The back office and the public site against WCAG (decision 13.3).
  *
@@ -84,8 +86,8 @@ async function open(
 
   await page.setViewportSize({ width, height: 900 });
 
-  const response = await page.goto(`${BASE}${path}`, {
-    waitUntil: "networkidle",
+  // "networkidle" minus the captcha's never-ending request (support/network).
+  const response = await gotoSettled(page, `${BASE}${path}`, {
     timeout: 90_000,
   });
 

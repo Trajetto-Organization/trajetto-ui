@@ -81,7 +81,15 @@ describe("apiFetch", () => {
 
     await apiFetch("http://api.test/vehicle/delete/1", AUTHENTICATED);
 
-    expect(revalidatePath).toHaveBeenCalledWith("/", "layout");
+    // The protected route group, never "/": the root layout's tag is on every
+    // prerendered page, and dropping their cache made /legal/[policy] and
+    // /blog/[slug] (dynamicParams = false) answer 404 until the next deploy.
+    expect(revalidatePath).toHaveBeenCalledWith("/(protected)", "layout");
+    expect(revalidatePath).not.toHaveBeenCalledWith("/", "layout");
+    expect(
+      statSync(resolve("src/app/(protected)/layout.tsx")).isFile(),
+      "the revalidated group must be the one whose layout runs the gate",
+    ).toBe(true);
   });
 
   it.each([

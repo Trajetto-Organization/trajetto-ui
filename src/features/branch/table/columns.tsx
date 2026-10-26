@@ -63,7 +63,7 @@ function buildBranchColumns(scope: BranchScope): ColumnDef<BranchRow>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Identificador" />
       ),
-      cell: ({ row }) => text(row.original.id, "w-72"),
+      cell: ({ row }) => text(row.original.id, "w-80"),
       enableHiding: false,
     },
     {

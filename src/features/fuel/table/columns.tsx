@@ -91,7 +91,7 @@ function buildFuelColumns(): ColumnDef<FuelProps>[] {
       accessorKey: "id",
       meta: { title: "Identificador" },
       header: header("Identificador"),
-      cell: ({ row }) => cellText(row.original.id, "w-72"),
+      cell: ({ row }) => cellText(row.original.id, "w-80"),
       enableHiding: false,
     },
     {

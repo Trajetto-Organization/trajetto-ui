@@ -53,7 +53,7 @@ const buildServiceOrderColumns = (
     accessorKey: "id",
     meta: { title: "Identificador" },
     header: header("Identificador"),
-    cell: ({ row }) => text(row.original.id, "w-72"),
+    cell: ({ row }) => text(row.original.id, "w-80"),
     enableHiding: false,
   },
   {

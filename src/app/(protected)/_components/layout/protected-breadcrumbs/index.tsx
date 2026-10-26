@@ -18,8 +18,11 @@ const ProtectedBreadCrumbs = (): JSX.Element | null => {
   if (breadcrumbs.length === 0) return null;
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    // One line that shrinks from its last crumb: the header is h-14 and sits
+    // beside a fixed-width search, so a long page name ends in an ellipsis
+    // (full name in its title) instead of pushing the header past <main>.
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList className="flex-nowrap">
         {breadcrumbs.map((item, index) => (
           <Fragment key={item.title}>
             {index !== breadcrumbs.length - 1 && (
@@ -41,8 +44,10 @@ const ProtectedBreadCrumbs = (): JSX.Element | null => {
                 3" — the position of the current page, which is the one thing
                 a breadcrumb exists to convey. */}
             {index === breadcrumbs.length - 1 && (
-              <BreadcrumbItem>
-                <BreadcrumbPage>{item.title}</BreadcrumbPage>
+              <BreadcrumbItem className="min-w-0">
+                <BreadcrumbPage className="block truncate" title={item.title}>
+                  {item.title}
+                </BreadcrumbPage>
               </BreadcrumbItem>
             )}
           </Fragment>

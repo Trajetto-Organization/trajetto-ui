@@ -192,6 +192,9 @@ test("role changed: the open tab signs out on its own", async ({ browser }) => {
     ).text(),
   )[0]?.id as string;
 
+  // No businessId in the body: the company of a record never changes through
+  // an edit, and the API refuses the field with any value (decision 16.100,
+  // tenant-locked-field.ts). The web form does not send it either.
   await ok(
     await apiAs(master.token, `/user/update-user/${people.role.id}`, {
       method: "PATCH",
@@ -199,7 +202,6 @@ test("role changed: the open tab signs out on its own", async ({ browser }) => {
         role: "BUSINESS_USER",
         userType: "employee",
         profileAccessId: profileId,
-        businessId,
       }),
     }),
     "mudar papel",

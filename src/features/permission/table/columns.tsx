@@ -52,7 +52,7 @@ function buildPermissionColumns(scope: AdminScope): ColumnDef<PermissionRow>[] {
       meta: { title: "Identificador" },
       header: header<PermissionRow>("Identificador"),
       cell: ({ row }) => (
-        <p className="w-72 truncate font-medium">
+        <p className="w-80 truncate font-medium">
           {displayValue(row.original.id)}
         </p>
       ),

@@ -2,6 +2,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
 
+import { gotoSettled } from "../ui/support/network";
+
 /**
  * The back office and the public site from 320px to 1920px (decision 13.3).
  *
@@ -90,8 +92,9 @@ for (const target of PAGES) {
 
         await page.setViewportSize({ width, height: 900 });
 
-        const response = await page.goto(`${BASE}${target.path}`, {
-          waitUntil: "networkidle",
+        // "networkidle" minus the captcha's never-ending request on /login
+        // (support/network): with it the page never went idle.
+        const response = await gotoSettled(page, `${BASE}${target.path}`, {
           timeout: 90_000,
         });
 

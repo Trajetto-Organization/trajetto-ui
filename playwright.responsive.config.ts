@@ -22,5 +22,8 @@ export default defineConfig({
   use: {
     ...devices["Desktop Chrome"],
     baseURL: process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100",
+    // The users' browser, not the CI runner's UTC/en-US (see the UI config).
+    locale: "pt-BR",
+    timezoneId: "America/Sao_Paulo",
   },
 });

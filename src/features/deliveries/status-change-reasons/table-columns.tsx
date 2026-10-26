@@ -48,7 +48,7 @@ const buildStatusChangeReasonColumns =
         <DataTableColumnHeader column={column} title="Identificador" />
       ),
       cell: ({ row }) => (
-        <p className="truncate font-medium w-72">
+        <p className="truncate font-medium w-80">
           {displayValue(row.getValue("id"))}
         </p>
       ),

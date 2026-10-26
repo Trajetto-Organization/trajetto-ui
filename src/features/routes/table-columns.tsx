@@ -38,8 +38,10 @@ const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
+    // w-80, as in every identifier column: a UUID in Inter 14px/500 measures
+    // 268 to 315px, so the old w-72 (288px) cut about half of them.
     cell: ({ row }) => (
-      <p className="w-72 truncate font-medium">
+      <p className="w-80 truncate font-medium">
         {displayValue(row.getValue("id"))}
       </p>
     ),

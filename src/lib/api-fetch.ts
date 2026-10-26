@@ -20,7 +20,18 @@ import { readableValidationMessage } from "@/lib/api-error";
  *
  * The response is returned untouched (the code is read from a clone), so
  * the action still answers with its message.
+ *
+ * Scoped to the protected route group, never "/": any revalidatePath makes
+ * the action answer with the re-rendered current page (pathWasRevalidated),
+ * so the scope changes nothing for the gate. What "/" changed was every
+ * prerendered page of the site — they all carry the root layout's implicit
+ * tag. Their cache entries were dropped, and a page with
+ * `dynamicParams = false` (/legal/[policy], /blog/[slug]) then answered 404
+ * to every visitor until the next deploy (Next's no-fallback path on a cache
+ * miss): one session ending mid-action took the legal pages down, and the
+ * public pages that prefetch those links stopped settling.
  */
+const PROTECTED_LAYOUT = "/(protected)";
 
 function isAuthenticated(init?: RequestInit): boolean {
   const headers = new Headers(init?.headers);
@@ -103,7 +114,7 @@ async function apiFetch(
 
   try {
     if (isAuthenticated(init) && (await endsSession(response))) {
-      revalidatePath("/", "layout");
+      revalidatePath(PROTECTED_LAYOUT, "layout");
     }
   } catch {
     // Reading the answer must never break the action that asked for it; and

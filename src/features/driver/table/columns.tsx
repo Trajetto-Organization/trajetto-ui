@@ -92,7 +92,7 @@ function buildDriverColumns(mode: DriverScope): ColumnDef<DriverRow>[] {
       ),
       enableHiding: false,
     },
-    textColumn("id", "Identificador", "w-72", undefined, {
+    textColumn("id", "Identificador", "w-80", undefined, {
       enableHiding: false,
     }),
     {

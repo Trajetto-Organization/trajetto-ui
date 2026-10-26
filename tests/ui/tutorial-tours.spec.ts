@@ -258,6 +258,29 @@ async function settledStep(page: Page): Promise<StepState> {
     .toBe(true)
     .catch(() => undefined);
 
+  /**
+   * The step's own motion has ended. The engine reports a move done at 55% of
+   * the flip (engine/stage.ts, FLIP_DONE_AT) so the new copy fades in while
+   * the card settles; the last ~10% of the way is still travelling then. On a
+   * loaded runner frames come late and that tail outlasted the 150 ms below:
+   * a card still landing read as "o cartão pula". At rest the stage writes
+   * the bare goal (`translate3d(…)`); mid-tween it appends a translate/scale.
+   * A placement that flips by itself is still caught: it re-places the card
+   * at rest, with no tween, and the 400 ms comparison below sees it move.
+   */
+  await expect
+    .poll(
+      () =>
+        card(page).evaluate(
+          (element) =>
+            element.dataset.phase === "shown" &&
+            !/\b(translate|translateY|scale)\(/.test(element.style.transform),
+        ),
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+    .catch(() => undefined);
+
   // One more frame of tracking after the reveal scroll.
   await page.waitForTimeout(150);
 

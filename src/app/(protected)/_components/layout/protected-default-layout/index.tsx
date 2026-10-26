@@ -184,8 +184,15 @@ const DefaultLayout = ({
               gap-2 transition-[width,height] ease-linear border-b
               md:group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12"
             >
-              <div className="flex items-center gap-2 px-4">
-                <SidebarTrigger className="-ml-1" data-sidebar-trigger />
+              {/* min-w-0: the page name is the part that gives way. At 768px
+                  the open sidebar leaves 512px, the search button is 256px,
+                  and "Integrações" pushed the header 16px past <main>, which
+                  clips it; the name now ends in an ellipsis instead. */}
+              <div className="flex min-w-0 items-center gap-2 px-4">
+                <SidebarTrigger
+                  className="-ml-1 shrink-0"
+                  data-sidebar-trigger
+                />
                 <Separator orientation="vertical" className="mr-2 h-4" />
 
                 <ProtectedBreadCrumbs />

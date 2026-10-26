@@ -263,18 +263,29 @@ jobs:
 
       # Each suite runs even when the one before failed: three independent
       # answers are worth more than the first failure.
+      #
+      # TZ for the specs' own Node side, the browser's zone being set in the
+      # configs (timezoneId): the runner is UTC, and after 21:00 in São Paulo
+      # a date computed as "today" there is tomorrow for the API. Only on the
+      # suites, never on the servers, which must behave as in the image.
       - name: UI suite
         working-directory: trajetto-ui
+        env:
+          TZ: America/Sao_Paulo
         run: npx playwright test -c playwright.ui.config.ts
 
       - name: Accessibility suite
         if: ${{ !cancelled() }}
         working-directory: trajetto-ui
+        env:
+          TZ: America/Sao_Paulo
         run: npx playwright test -c playwright.a11y.config.ts
 
       - name: Responsive suite
         if: ${{ !cancelled() }}
         working-directory: trajetto-ui
+        env:
+          TZ: America/Sao_Paulo
         run: npx playwright test -c playwright.responsive.config.ts
 
       - name: Upload traces and server logs

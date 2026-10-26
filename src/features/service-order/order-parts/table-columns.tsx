@@ -45,7 +45,7 @@ const buildOrderPartColumns = (
     accessorKey: "id",
     meta: { title: "Identificador" },
     header: header("Identificador"),
-    cell: ({ row }) => text(row.original.id, "w-72"),
+    cell: ({ row }) => text(row.original.id, "w-80"),
     enableHiding: false,
   },
   {
@@ -118,7 +118,7 @@ const buildOrderPartColumns = (
     accessorKey: "serviceOrderId",
     meta: { title: "Ordem de serviço" },
     header: header("Ordem de serviço"),
-    cell: ({ row }) => text(row.original.serviceOrderId, "w-72"),
+    cell: ({ row }) => text(row.original.serviceOrderId, "w-80"),
   },
   {
     accessorKey: "created_at",

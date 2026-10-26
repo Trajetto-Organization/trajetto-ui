@@ -147,10 +147,30 @@ test.describe("the two Entregas imports", () => {
         dialog.getByRole("button", { name: "Cancelar" }),
       ).toBeVisible();
 
+      /**
+       * Without a file, Importar is there and enabled (decision 16.701):
+       * pressing it keeps the dialog open and says what is missing, under
+       * the drop zone, instead of a grey button that explains nothing.
+       */
+      const submit = dialog.getByRole("button", { name: /^Importar/ });
+
       await expect(
-        dialog.getByRole("button", { name: /^Importar/ }),
-        "sem seleção o importar tem de estar desabilitado, não ausente",
-      ).toBeDisabled();
+        submit,
+        "sem seleção o importar tem de estar presente e habilitado",
+      ).toBeEnabled();
+
+      await submit.click();
+
+      await expect(
+        dialog.getByText(
+          which === "Planilha"
+            ? "Escolha a planilha (.xlsx ou .csv)."
+            : "Escolha ao menos um XML de NF-e.",
+        ),
+        "importar sem arquivo não disse o que falta",
+      ).toBeVisible();
+
+      await expect(dialog).toBeVisible();
 
       // "Voltar" promises a previous step, and there is none in either.
       await expect(dialog.getByRole("button", { name: /^Voltar/ })).toHaveCount(

@@ -674,7 +674,12 @@ test("the back office sees the route in the tower and in monitoring", async () =
   await expect(page.getByText("1 rota concluída nas últimas 2 h")).toBeVisible({
     timeout: 60_000,
   });
-  await expect(page.getByText(`${operation.plate} · concluída`)).toBeVisible({
+  // The truck is a map marker named "<plate> — Rota concluída" (its title and
+  // accessible name, vehicle-marker.ts): the plate span inside it only shows
+  // on hover, focus or street zoom, so it is found by that name, not by text.
+  await expect(
+    page.getByTitle(`${operation.plate} — Rota concluída`, { exact: true }),
+  ).toBeVisible({
     timeout: 60_000,
   });
 

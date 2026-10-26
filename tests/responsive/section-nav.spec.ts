@@ -321,19 +321,46 @@ test.describe("the same sections on a large screen", () => {
 
     await expect(strip).toBeVisible({ timeout: 30_000 });
 
-    const visible = await strip.evaluate((element) => {
-      const list = element.querySelector("ul") as HTMLElement;
+    /**
+     * The scroll to the active section is the hydrated rail's effect; the
+     * server's HTML is a strip at scrollLeft 0. "networkidle" is not
+     * hydration on a loaded runner (the CI run read 1367–1602 of 1072px, the
+     * server's position), so wait for React to own the list and poll: a
+     * section still off-screen after that is the real defect, and the
+     * assertion below reports it with its numbers.
+     */
+    await waitForHydration(strip.locator("ul"));
 
-      const current = list.querySelector<HTMLElement>('[aria-current="page"]');
+    const measure = () =>
+      strip.evaluate((element) => {
+        const list = element.querySelector("ul") as HTMLElement;
 
-      if (!current) return null;
+        const current = list.querySelector<HTMLElement>(
+          '[aria-current="page"]',
+        );
 
-      return {
-        left: current.offsetLeft - list.scrollLeft,
-        right: current.offsetLeft + current.offsetWidth - list.scrollLeft,
-        width: list.clientWidth,
-      };
-    });
+        if (!current) return null;
+
+        return {
+          left: current.offsetLeft - list.scrollLeft,
+          right: current.offsetLeft + current.offsetWidth - list.scrollLeft,
+          width: list.clientWidth,
+        };
+      });
+
+    await expect
+      .poll(
+        async () => {
+          const box = await measure();
+
+          return box !== null && box.left >= 0 && box.right <= box.width;
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(true)
+      .catch(() => undefined);
+
+    const visible = await measure();
 
     expect(visible, "nenhuma seção está marcada como atual").not.toBeNull();
 

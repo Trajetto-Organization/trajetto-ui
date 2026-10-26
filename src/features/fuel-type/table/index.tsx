@@ -58,7 +58,7 @@ function buildFuelTypeColumns(): ColumnDef<FuelTypeRow>[] {
         <DataTableColumnHeader column={column} title="Identificador" />
       ),
       cell: ({ row }) => (
-        <p className="w-72 truncate font-medium">{row.original.id}</p>
+        <p className="w-80 truncate font-medium">{row.original.id}</p>
       ),
       enableHiding: false,
     },

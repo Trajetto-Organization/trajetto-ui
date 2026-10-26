@@ -29,6 +29,14 @@ export default defineConfig({
   use: {
     ...devices["Desktop Chrome"],
     baseURL: process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100",
+    // The browser of the people who use it, wherever the suite runs. A CI
+    // runner is UTC and en-US: after 21:00 in São Paulo its "today" is
+    // already tomorrow, and the refuelling form refused the date picked as
+    // "no futuro" (the API judges the date in the company's zone).
+    // The Node side of the specs (a date picked "today") reads TZ, set to
+    // the same zone by the workflow.
+    locale: "pt-BR",
+    timezoneId: "America/Sao_Paulo",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

@@ -41,7 +41,7 @@ const buildFineColumns = (): ColumnDef<FineRow>[] => [
       <DataTableColumnHeader column={column} title="Identificador" />
     ),
     cell: ({ row }) => (
-      <p className="w-72 truncate font-medium">
+      <p className="w-80 truncate font-medium">
         {displayValue(row.original.id)}
       </p>
     ),

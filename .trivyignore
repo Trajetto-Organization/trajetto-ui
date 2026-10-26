@@ -1,0 +1,19 @@
+# Exceptions for the image scan (deploy.yml, "Scan the image for fixable
+# critical vulnerabilities"). The same advisories, with the same reasons, are
+# in audit-ci.jsonc; each is fixed only in Next >= 15.5.24, a major migration
+# planned apart. Take a line out as soon as the update lands. Trivy stops
+# honouring a line after its exp: date, so a forgotten one fails the build.
+
+# Next < 15.5.24 (GHSA-p293-qw3h-jr36): RCE on Windows-hosted servers.
+# Production runs the node:22 Alpine image on Linux.
+CVE-2026-75604 exp:2026-12-31
+
+# Next < 15.5.24: RCE in the Image Optimization API with AVIF files.
+# Production has no remotePatterns (next.config.mjs), so /_next/image only
+# decodes the app's own static images.
+GHSA-2xp9-vwfh-vxw4 exp:2026-12-31
+
+# Next <= 15.5.27: RCE through sharp's decoder on glibc Linux. The advisory's
+# workaround is applied (sharp >= 0.35.5 in package.json) and the image is
+# Alpine (musl).
+GHSA-2464-fhr4-w9xw exp:2026-12-31

@@ -164,9 +164,13 @@ jobs:
           IMAGE: ghcr.io/trajetto-organization/trajetto-ui@${{ steps.build.outputs.digest }}
           EXIT_CODE: ${{ vars.IMAGE_SCAN_ENFORCE == 'true' && '1' || '0' }}
         run: |
+          # .trivyignore: the advisories reasoned out in audit-ci.jsonc, each
+          # with an expiry date; the container only sees it if it is mounted.
           docker run --rm -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+            -v "$PWD/.trivyignore:/.trivyignore:ro" \
             aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
             image --scanners vuln --severity CRITICAL --ignore-unfixed \
+            --ignorefile /.trivyignore \
             --exit-code "$EXIT_CODE" "$IMAGE"
 
   # Staging redeploys on its own, with no approval: that is the whole point of

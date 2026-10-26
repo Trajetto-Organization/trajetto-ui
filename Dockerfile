@@ -15,7 +15,11 @@
 # Dependabot (docker ecosystem) moves the tag and the digest together.
 FROM node:22.21.1-alpine@sha256:0340fa682d72068edf603c305bfbc10e23219fb0e40df58d9ea4d6f33a9798bf AS base
 
-RUN apk add --no-cache ca-certificates dumb-init
+# The base image's OpenSSL lags Alpine's fixes (the scan flagged libcrypto3
+# 3.5.4 with 3.5.6 out); upgrading here takes them without waiting for a new
+# node image digest.
+RUN apk upgrade --no-cache libcrypto3 libssl3 \
+    && apk add --no-cache ca-certificates dumb-init
 
 # ---------------------------------------------------------
 # STAGE 2: Builder (Install and Compile)
@@ -93,6 +97,13 @@ RUN addgroup --gid 1001 --system nodejs \
     && adduser --uid 1001 --system --ingroup nodejs --shell /bin/sh nextjs \
     && mkdir .next \
     && chown nextjs:nodejs .next
+
+# The runtime is `node server.js`: no package manager. The Node image ships
+# npm, corepack and yarn, and the scan flagged npm's bundled `tar`; they are
+# also code nothing here needs, so they leave the image.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+    /opt/yarn-v* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

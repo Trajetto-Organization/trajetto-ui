@@ -138,6 +138,17 @@ describe("the Limites de uso tab", () => {
 
     await revalidate();
 
+    // The refetch is a real round trip through the fake server; on a loaded
+    // CI runner it outlasted settle()'s 20 ms. Wait for the answer (bounded)
+    // instead of a fixed pause; a tab that never shows it still fails.
+    for (
+      let tries = 0;
+      tries < 50 && limits.aiUsage?.ai_analysis_limit !== 500;
+      tries += 1
+    ) {
+      await settle();
+    }
+
     expect(
       limits.aiUsage?.ai_analysis_limit,
       "o limite novo não apareceu",

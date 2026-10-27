@@ -121,13 +121,13 @@ Yarn 1 (`yarn.lock`), Node 22.
 
 ## CI/CD
 
-| Workflow             | Quando                                                          | O quê                                                                                                                                                                       |
-| -------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ci.yml`             | push em branch de trabalho, PR para `main`, chamado pelo deploy | audit-ci, Prettier, ESLint (`yarn lint`), tsc, unitários com cobertura, `test:rules`, gitleaks                                                                              |
-| `browser-suites.yml` | push em `staging` (pelo deploy), PR para `main`, toda noite     | `ui`, `a11y`, `responsive` contra a stack (pula sem `API_REPO_READ_TOKEN`)                                                                                                  |
-| `deploy.yml`         | push em `staging`                                               | validação → build único `sha-<commit>` (SBOM, proveniência, Trivy) → tag `staging` → webhook do Dokploy → espera `/build-id.json` → `staged-<commit>`                       |
-| `deploy.yml`         | push em `main` (merge commit de staging)                        | aprovação `production` → imagem do commit de staging com `staged-<commit>` → gate de rotas → tag `stable` por digest → webhook → espera `/build-id.json` → semantic-release |
-| `deploy.yml`         | Run workflow em `main` com `image_tag`                          | rollback para qualquer tag imutável                                                                                                                                         |
+| Workflow             | Quando                                                          | O quê                                                                                                                                                                                 |
+| -------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`             | push em branch de trabalho, PR para `main`, chamado pelo deploy | audit-ci, Prettier, ESLint (`yarn lint`), tsc, unitários com cobertura, `test:rules`, gitleaks                                                                                        |
+| `browser-suites.yml` | push em `staging` (pelo deploy), PR para `main`, toda noite     | `ui`, `a11y`, `responsive` contra a stack (pula sem `API_REPO_READ_TOKEN`)                                                                                                            |
+| `deploy.yml`         | push em `staging`                                               | validação → build único `sha-<commit>` (SBOM, proveniência, Trivy) → tag `staging` → deploy pela API do Dokploy → espera `/build-id.json` → `staged-<commit>`                         |
+| `deploy.yml`         | push em `main` (merge commit de staging)                        | aprovação `production` → imagem do commit de staging com `staged-<commit>` → gate de rotas → tag `stable` por digest → deploy no Dokploy → espera `/build-id.json` → semantic-release |
+| `deploy.yml`         | Run workflow em `main` com `image_tag`                          | rollback para qualquer tag imutável                                                                                                                                                   |
 
 Regras: build uma vez, promover por digest; sem `latest`; actions fixadas por
 SHA com a versão comentada; `packages: write` só nos jobs que publicam;

@@ -9,7 +9,7 @@ promoção para produção, o rollback e a operação do dia a dia.
 > estão prontos. Enquanto os secrets do Dokploy não existem, o pipeline
 > constrói e publica a imagem no GHCR, move as tags `staging` e `stable` e
 > **pula** o deploy com um aviso. Quando você criar as Applications e
-> cadastrar os webhooks (seções 5 a 7), os deploys passam a acontecer
+> cadastrar os secrets do Dokploy (seções 5 a 7), os deploys passam a acontecer
 > sozinhos.
 
 Documentos irmãos: [`variaveis-de-ambiente.md`](./variaveis-de-ambiente.md)
@@ -51,14 +51,14 @@ branch de trabalho ──push──▶ ci.yml (audit, Prettier, ESLint, tsc, uni
                                   ├─ validate        (chama ci.yml)
                                   ├─ browser-suites  (chama browser-suites.yml: ui, a11y, responsive)
                                   ├─ build           UMA imagem ─▶ ghcr.io/trajetto-organization/trajetto-ui:sha-<commit>
-                                  └─ deploy-staging  tag `staging` ─▶ webhook Dokploy (staging) ─▶ /build-id.json
+                                  └─ deploy-staging  tag `staging` ─▶ deploy pela API do Dokploy (staging) ─▶ /build-id.json
                                                         │
         staging ──PR──▶ main   (ci.yml + browser-suites.yml validam o merge)
                           │
                      merge commit ──push──▶ deploy.yml
                                   ├─ promote-production  (environment `production`, aprovação)
                                   │    acha sha-<commit de staging> ─▶ gate de rotas da API
-                                  │    ─▶ tag `stable` = mesmo digest ─▶ webhook Dokploy (produção) ─▶ /build-id.json
+                                  │    ─▶ tag `stable` = mesmo digest ─▶ deploy pela API do Dokploy (produção) ─▶ /build-id.json
                                   └─ release             semantic-release (tag, CHANGELOG, GitHub Release)
 ```
 
@@ -81,7 +81,7 @@ Os princípios que não mudam:
 - **API primeiro, web depois.** O promote confere se a API de produção serve
   todas as rotas que a build chama (seção 13).
 - **O deploy só é verde quando o site serve o build novo.** Depois do
-  webhook, o job espera o `/build-id.json` responder o commit promovido por
+  deploy no Dokploy, o job espera o `/build-id.json` responder o commit promovido por
   90 s seguidos, mais do que a janela de 30 s do rollback automático do Swarm.
 
 Imagem: `ghcr.io/trajetto-organization/trajetto-ui`, Node 22 Alpine, saída
@@ -165,14 +165,14 @@ Detalhes na seção 16 e em `testes.md`.
 
 ### `deploy.yml`: build, staging, promote e release
 
-| Job                  | Roda em                                                                  | Faz                                                                                                                                                                                                       |
-| -------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `validate`           | push em `staging`                                                        | chama `ci.yml`                                                                                                                                                                                            |
-| `browser-suites`     | push em `staging`                                                        | chama `browser-suites.yml`                                                                                                                                                                                |
-| `build`              | push em `staging`, depois dos dois acima                                 | build **único** com cache GHA, SBOM e proveniência (`mode=min`), push de `sha-<commit>`, Trivy por digest (só relata até `IMAGE_SCAN_ENFORCE=true`)                                                       |
-| `deploy-staging`     | depois do `build` (environment `staging`)                                | confere se o run ainda é o HEAD de `staging` (runs mais velhos param, verdes), move `staging` para o digest, chama o webhook do Dokploy, espera o `/build-id.json` e, por último, grava `staged-<commit>` |
-| `promote-production` | push em `main`, ou **Run workflow** em `main` (environment `production`) | acha a imagem (seção 11), roda o gate de rotas, move `stable` para o digest, chama o webhook, espera o `/build-id.json`                                                                                   |
-| `release`            | push em `main`, depois do promote                                        | semantic-release: tag, `CHANGELOG.md` e GitHub Release                                                                                                                                                    |
+| Job                  | Roda em                                                                  | Faz                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validate`           | push em `staging`                                                        | chama `ci.yml`                                                                                                                                                                                                  |
+| `browser-suites`     | push em `staging`                                                        | chama `browser-suites.yml`                                                                                                                                                                                      |
+| `build`              | push em `staging`, depois dos dois acima                                 | build **único** com cache GHA, SBOM e proveniência (`mode=min`), push de `sha-<commit>`, Trivy por digest (só relata até `IMAGE_SCAN_ENFORCE=true`)                                                             |
+| `deploy-staging`     | depois do `build` (environment `staging`)                                | confere se o run ainda é o HEAD de `staging` (runs mais velhos param, verdes), move `staging` para o digest, faz o deploy pela API do Dokploy, espera o `/build-id.json` e, por último, grava `staged-<commit>` |
+| `promote-production` | push em `main`, ou **Run workflow** em `main` (environment `production`) | acha a imagem (seção 11), roda o gate de rotas, move `stable` para o digest, faz o deploy no Dokploy, espera o `/build-id.json`                                                                                 |
+| `release`            | push em `main`, depois do promote                                        | semantic-release: tag, `CHANGELOG.md` e GitHub Release                                                                                                                                                          |
 
 Concorrência: um run por branch de cada vez (`deploy-<ref>`), e
 `deploy-staging` e `promote-production` com grupos próprios, nunca cancelados
@@ -183,10 +183,16 @@ comentada.
 
 Scripts usados pelos jobs:
 
-- `.github/scripts/dokploy-webhook.mjs`: faz um POST no webhook da
-  Application. Sem o secret, avisa e sai com sucesso (`deployed=false`).
-  Exige https, tenta de novo um 5xx, falha de vez num 4xx e nunca imprime a
-  URL.
+- `.github/scripts/dokploy-deploy.mjs`: o **mesmo script** da
+  `trajetto-api` (um teste compara os dois). Chama `application.deploy` na
+  API do Dokploy e acompanha o deployment que ele criou: falha na hora se o
+  Dokploy não conseguir rodar o deploy (imagem que não baixa, chave ou id
+  errado) e, quando o deployment termina em `error`, dispara de novo, até 3
+  tentativas (`DOKPLOY_ATTEMPTS`). Foi assim que o download da imagem
+  interrompido pelo IPv6 da VPS (27/10/2026) deixou de quebrar o run. Exige
+  https e nunca imprime a chave. Antes dele, o job confere os três secrets:
+  nenhum = Dokploy ainda não existe (aviso, run verde); só alguns = erro de
+  configuração (falha).
 - `.github/scripts/wait-for-build.mjs`: consulta `<site>/build-id.json` pela
   borda real (Cloudflare e Traefik) até responder o commit esperado por 90 s
   seguidos (`WAIT_STABLE_SECONDS`), com limite de 600 s
@@ -213,10 +219,11 @@ No repositório `Trajetto-Organization/trajetto-ui`:
    [`variaveis-de-ambiente.md` → GitHub Actions](./variaveis-de-ambiente.md#github-actions-secrets-e-variables).
    Resumo:
    - repositório: `METADATA_BASE` e `API_REPO_READ_TOKEN`;
-   - environment `staging`: `DOKPLOY_STAGING_WEBHOOK_URL` e
-     `METADATA_BASE_STAGING`;
-   - environment `production`: `DOKPLOY_PRODUCTION_WEBHOOK_URL`,
-     `API_DOCS_URL`, `DOCS_USER` e `DOCS_PASSWORD`;
+   - environment `staging`: `DOKPLOY_URL`, `DOKPLOY_API_KEY`,
+     `DOKPLOY_UI_APPLICATION_ID` e `METADATA_BASE_STAGING`;
+   - environment `production`: `DOKPLOY_URL`, `DOKPLOY_API_KEY`,
+     `DOKPLOY_UI_APPLICATION_ID`, `API_DOCS_URL`, `DOCS_USER` e
+     `DOCS_PASSWORD`;
    - apague os secrets antigos listados lá.
 4. **Proteção de branches**: use **Rulesets** (Settings → Rules →
    Rulesets → New branch ruleset), não a regra clássica de branch. O motivo
@@ -481,20 +488,33 @@ SIGKILL do cgroup. Suba os dois juntos.
 **Encerramento e rotação de log:** o Dokploy não tem campo para os dois na
 Application. Veja a seção 18.
 
-### 6.5 Webhook de deploy
+### 6.5 Secrets do deploy (API do Dokploy)
 
-1. Aba **Deployments**: copie a **Webhook URL**.
-2. Ligue **Auto Deploy** na Application. Sem ele, o webhook responde
-   recusando ("Automatic deployments are disabled") e o job falha com HTTP
-   4xx.
+O pipeline faz o deploy pela API do Dokploy, como a `trajetto-api`, e não
+pelo webhook da Application: o webhook responde 200 assim que enfileira o
+deploy, e uma falha do Dokploy (imagem que não baixou) só aparecia 10 minutos
+depois, quando o `/build-id.json` não mudava.
+
+1. **Id da Application:** abra a Application `trajetto-ui` do environment
+   `staging`; o id é o último trecho da URL do painel
+   (`…/application/<id>`).
+2. **Chave de API:** Dokploy → **Settings → Profile → API/CLI** →
+   **Generate**. A mesma chave da `trajetto-api` serve (ela vale para o
+   painel inteiro). Trate-a como senha.
 3. No GitHub (`Trajetto-Organization/trajetto-ui` → Settings →
-   Environments → `staging`): crie o secret `DOKPLOY_STAGING_WEBHOOK_URL`
-   com essa URL. Crie também o secret
-   `METADATA_BASE_STAGING=https://staging.intrajetto.com` (é a origem que o
-   job consulta para conferir o `/build-id.json`).
+   Environments → `staging`), crie os secrets:
+   - `DOKPLOY_URL`: a URL do painel, `https://…` (sem barra no fim);
+   - `DOKPLOY_API_KEY`: a chave;
+   - `DOKPLOY_UI_APPLICATION_ID`: o id do passo 1;
+   - `METADATA_BASE_STAGING=https://staging.intrajetto.com` (a origem que o
+     job consulta para conferir o `/build-id.json`).
+4. Apague os secrets antigos `DOKPLOY_STAGING_WEBHOOK_URL` e
+   `DOKPLOY_PRODUCTION_WEBHOOK_URL`: nada mais os lê.
 
-O webhook só pede ao Dokploy que puxe a tag de novo e role o serviço. Quem
-escolhe **qual** imagem roda é a tag `staging`, movida pelo pipeline.
+O deploy só pede ao Dokploy que puxe a tag de novo e role o serviço. Quem
+escolhe **qual** imagem roda é a tag `staging`, movida pelo pipeline. O
+**Auto Deploy** da Application não é usado (ele só liga o webhook) e pode
+ficar desligado.
 
 ### 6.6 Primeiro deploy
 
@@ -518,7 +538,7 @@ com estas diferenças:
 | Environment     | `APP_ENV=production`, `METADATA_BASE=https://www.intrajetto.com`, URLs da API de produção, widget do Turnstile de produção, `RATE_LIMIT_FORWARDER_SECRET` de produção, `CSP_STORAGE_ORIGINS=https://trajetto-prod-storage.<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` (só o bucket de produção; veja `variaveis-de-ambiente.md`) |
 | Domain          | `www.intrajetto.com`, porta 3000, HTTPS com Let's Encrypt                                                                                                                                                                                                                                                                      |
 | Domínio sem www | `intrajetto.com` redireciona para `www` com HSTS (seção 8). **Não** cadastre o apex como domínio da Application                                                                                                                                                                                                                |
-| Webhook         | secret `DOKPLOY_PRODUCTION_WEBHOOK_URL` no environment `production` do GitHub. O job confere o `/build-id.json` na origem do secret de repositório `METADATA_BASE`                                                                                                                                                             |
+| Deploy          | secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY` e `DOKPLOY_UI_APPLICATION_ID` (o id da Application de **produção**) no environment `production` do GitHub. O job confere o `/build-id.json` na origem do secret de repositório `METADATA_BASE`                                                                                        |
 
 Os segredos de produção **nunca** são os mesmos de staging.
 
@@ -655,10 +675,10 @@ Na ordem. Marque cada item.
       ainda não estiver lá.
 - [ ] Deploy manual verde. `/api/health`, `/build-id.json` e `robots.txt`
       conferidos.
-- [ ] Secrets `DOKPLOY_STAGING_WEBHOOK_URL` e `METADATA_BASE_STAGING` no
-      environment `staging`.
-- [ ] Novo push em `staging`: o job agora chama o webhook e espera o
-      `/build-id.json`. Run verde.
+- [ ] Secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_UI_APPLICATION_ID`
+      e `METADATA_BASE_STAGING` no environment `staging` (seção 6.5).
+- [ ] Novo push em `staging`: o job agora faz o deploy pela API do Dokploy
+      e espera o `/build-id.json`. Run verde.
 - [ ] CORS do bucket R2 de staging com a origem do staging.
 - [ ] Turnstile: widget com o host de staging.
 
@@ -669,8 +689,9 @@ Na ordem. Marque cada item.
       `production` (seção 7), com imagem
       `:sha-<commit que está em staging>` neste primeiro deploy.
 - [ ] Deploy manual verde e site conferido.
-- [ ] Secrets `DOKPLOY_PRODUCTION_WEBHOOK_URL`, `API_DOCS_URL`, `DOCS_USER`
-      e `DOCS_PASSWORD` no environment `production`.
+- [ ] Secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_UI_APPLICATION_ID`
+      (id da Application de produção), `API_DOCS_URL`, `DOCS_USER` e
+      `DOCS_PASSWORD` no environment `production`.
 - [ ] PR `staging` → `main`, merge commit, aprovação. O promote cria
       `stable`.
 - [ ] Imagem da Application trocada para `:stable`.
@@ -713,7 +734,9 @@ O caminho normal é o merge do PR `staging` → `main`. O job
    aviso.
 5. **Move `stable`** para o digest, do lado do servidor
    (`docker buildx imagetools create`), sem pull nem rebuild.
-6. **Webhook** da Application de produção. Sem o secret, é pulado com aviso.
+6. **Deploy pela API do Dokploy** da Application de produção, com até 3
+   tentativas se o deployment terminar em erro. Sem os secrets, é pulado com
+   aviso.
 7. **Espera** `https://www.intrajetto.com/build-id.json` responder o commit
    promovido por 90 s seguidos. Se o Swarm reverter (health check falhou), o
    run falha.
@@ -732,7 +755,7 @@ O resumo do run mostra o digest promovido. Guarde-o para um rollback.
    `image_tag` = `sha-<commit bom>` (ou `main-<sha>` de um build antigo).
 3. Aprove o environment `production`. O job valida a tag, roda o gate de
    rotas contra o código daquele build, move `stable` para o digest dele,
-   chama o webhook e espera o `/build-id.json`.
+   faz o deploy no Dokploy e espera o `/build-id.json`.
 
 **Pelo Dokploy (se o GitHub estiver fora):** na Application de produção,
 troque a imagem para `ghcr.io/trajetto-organization/trajetto-ui:sha-<commit bom>`
@@ -955,8 +978,9 @@ no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 
 | Sintoma                                             | Causa provável                                                                                                | O que fazer                                                               |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Deploy "PULADO" no resumo                           | secret `DOKPLOY_*_WEBHOOK_URL` ausente                                                                        | crie o secret no environment certo                                        |
-| Webhook com HTTP 400/401/404                        | Auto Deploy desligado, URL errada ou Application recriada (o token mudou)                                     | ligue o Auto Deploy, copie a URL de novo e atualize o secret              |
+| Deploy "PULADO" no resumo                           | secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY` e `DOKPLOY_UI_APPLICATION_ID` ausentes                               | crie os três no environment certo (seção 6.5)                             |
+| `O Dokploy recusou o deploy`: HTTP 401/404          | chave revogada, id errado ou Application recriada (o id mudou)                                                | gere a chave ou copie o id de novo e atualize o secret                    |
+| `terminou em 'error' … depois de 3 tentativas`      | imagem que não baixa (credencial do GHCR, rede da VPS) ou spec recusada                                       | veja o log do deployment no painel (aba Deployments da Application)       |
 | `A imagem … não existe no GHCR` no promote          | merge com squash ou rebase, ou commit que não passou por staging                                              | refaça como merge commit, ou rode o workflow com um `image_tag` existente |
 | `O merge … difere do commit de staging`             | commit direto em `main`                                                                                       | leve a mudança para `staging`, espere o deploy e faça o merge de novo     |
 | Gate de rotas lista rotas faltando                  | web promovida antes da API                                                                                    | promova a API e dê Re-run no job                                          |
@@ -985,16 +1009,16 @@ no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 
 ### Quem é quem
 
-|                             | API (`Trajetto-Organization/trajetto-api`)                                                                                                                                                                                                                                                          | Web (`Trajetto-Organization/trajetto-ui`)                                                                                           | App (`Trajetto-Organization/trajetto-mobile`)                                                                   |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Artefato                    | imagens `trajetto-api` e `trajetto-ai` em `ghcr.io/trajetto-organization/`                                                                                                                                                                                                                          | imagem `ghcr.io/trajetto-organization/trajetto-ui`                                                                                  | APK/AAB (EAS Build) e OTA (EAS Update)                                                                          |
-| Onde roda                   | Dokploy, projeto `trajetto-api` de cada environment (`staging` e `production`): as Applications `trajetto-api` (2 réplicas, com domínio) e `trajetto-ai` (sem domínio), puxando as imagens do GHCR, e os Databases PostgreSQL (com o backup diário do próprio Dokploy para o Cloudflare R2) e Redis | Dokploy, projeto `trajetto-ui` de cada environment: a Application `trajetto-ui`, puxando a imagem do GHCR                           | no celular do motorista (APK interno em staging, Play Store em produção)                                        |
-| Nome no Dokploy / EAS       | App Names `trajetto-api-staging` e `trajetto-api-production` (e `trajetto-ai-*`, `trajetto-postgres-*`, `trajetto-redis-*`)                                                                                                                                                                         | Application `trajetto-ui` no projeto `trajetto-ui` de cada environment (App Names `trajetto-ui-staging` e `trajetto-ui-production`) | perfis, ambientes e canais `staging` e `production`                                                             |
-| Como o pipeline publica     | API do Dokploy (`.github/scripts/dokploy-deploy.mjs`): `application.deploy` de cada Application, na ordem IA → API, acompanhando cada deployment até o fim                                                                                                                                          | webhook de deploy da Application (`.github/scripts/dokploy-webhook.mjs`), depois espera o `/build-id.json`                          | `eas update` e `eas build`                                                                                      |
-| Secrets de deploy no GitHub | environments `staging` e `production`: `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_API_APPLICATION_ID` (obrigatórios) e `DOKPLOY_AI_APPLICATION_ID` (opcional); variável `SWARM_API_SERVICE`                                                                                                         | environment `staging`: `DOKPLOY_STAGING_WEBHOOK_URL`; environment `production`: `DOKPLOY_PRODUCTION_WEBHOOK_URL`                    | `EXPO_TOKEN` (repositório) e `EXPO_UPDATE_PRIVATE_KEY` (environments `staging` e `production`)                  |
-| Sem os secrets              | move as tags e pula o deploy com `::notice::`                                                                                                                                                                                                                                                       | move as tags e pula o deploy com aviso                                                                                              | termina verde com aviso, sem publicar                                                                           |
-| De staging para produção    | promove por digest a imagem `sha-<7 do commit>` (tag `staging` → `stable`), sem rebuild                                                                                                                                                                                                             | igual à API, e exige o marcador `staged-<7 do commit>` no mesmo digest                                                              | promove o **commit** verde em staging (a URL da API é embutida no build, então o artefato não pode ser o mesmo) |
-| Rollback                    | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                                                                                                                                                                                              | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                              | `ota-rollback.yml` (republica um grupo de OTA)                                                                  |
+|                             | API (`Trajetto-Organization/trajetto-api`)                                                                                                                                                                                                                                                          | Web (`Trajetto-Organization/trajetto-ui`)                                                                                                                                                                       | App (`Trajetto-Organization/trajetto-mobile`)                                                                   |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Artefato                    | imagens `trajetto-api` e `trajetto-ai` em `ghcr.io/trajetto-organization/`                                                                                                                                                                                                                          | imagem `ghcr.io/trajetto-organization/trajetto-ui`                                                                                                                                                              | APK/AAB (EAS Build) e OTA (EAS Update)                                                                          |
+| Onde roda                   | Dokploy, projeto `trajetto-api` de cada environment (`staging` e `production`): as Applications `trajetto-api` (2 réplicas, com domínio) e `trajetto-ai` (sem domínio), puxando as imagens do GHCR, e os Databases PostgreSQL (com o backup diário do próprio Dokploy para o Cloudflare R2) e Redis | Dokploy, projeto `trajetto-ui` de cada environment: a Application `trajetto-ui`, puxando a imagem do GHCR                                                                                                       | no celular do motorista (APK interno em staging, Play Store em produção)                                        |
+| Nome no Dokploy / EAS       | App Names `trajetto-api-staging` e `trajetto-api-production` (e `trajetto-ai-*`, `trajetto-postgres-*`, `trajetto-redis-*`)                                                                                                                                                                         | Application `trajetto-ui` no projeto `trajetto-ui` de cada environment (App Names `trajetto-ui-staging` e `trajetto-ui-production`)                                                                             | perfis, ambientes e canais `staging` e `production`                                                             |
+| Como o pipeline publica     | API do Dokploy (`.github/scripts/dokploy-deploy.mjs`): `application.deploy` de cada Application, na ordem IA → API, acompanhando cada deployment até o fim e disparando de novo, até 3 vezes, o que termina em erro                                                                                 | API do Dokploy com o **mesmo** `.github/scripts/dokploy-deploy.mjs` (cópia comparada por teste): `application.deploy` da Application `trajetto-ui`, acompanhando o deployment, depois espera o `/build-id.json` | `eas update` e `eas build`                                                                                      |
+| Secrets de deploy no GitHub | environments `staging` e `production`: `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_API_APPLICATION_ID` (obrigatórios) e `DOKPLOY_AI_APPLICATION_ID` (opcional); variável `SWARM_API_SERVICE`                                                                                                         | environments `staging` e `production`: `DOKPLOY_URL`, `DOKPLOY_API_KEY` e `DOKPLOY_UI_APPLICATION_ID`                                                                                                           | `EXPO_TOKEN` (repositório) e `EXPO_UPDATE_PRIVATE_KEY` (environments `staging` e `production`)                  |
+| Sem os secrets              | move as tags e pula o deploy com `::notice::`                                                                                                                                                                                                                                                       | move as tags e pula o deploy com aviso                                                                                                                                                                          | termina verde com aviso, sem publicar                                                                           |
+| De staging para produção    | promove por digest a imagem `sha-<7 do commit>` (tag `staging` → `stable`), sem rebuild                                                                                                                                                                                                             | igual à API, e exige o marcador `staged-<7 do commit>` no mesmo digest                                                                                                                                          | promove o **commit** verde em staging (a URL da API é embutida no build, então o artefato não pode ser o mesmo) |
+| Rollback                    | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                                                                                                                                                                                              | _Run workflow_ do `deploy.yml` com `image_tag=sha-<7>`                                                                                                                                                          | `ota-rollback.yml` (republica um grupo de OTA)                                                                  |
 
 Regras comuns aos três: a branch `staging` recebe o trabalho (push direto do
 dono ou merge de PR) e todo push nela roda a validação completa e publica o
@@ -1064,7 +1088,8 @@ está detalhada no `docs/variaveis-de-ambiente.md` do repositório que a lê.
    `:staging`, `HTTP_REQUEST` e `PUBLIC_API_URL` apontando para a API de
    staging, o mesmo `RATE_LIMIT_FORWARDER_SECRET` da API de staging, e o
    `HTTP_REQUEST` da API de staging igual à origem da web de staging. Depois,
-   `DOKPLOY_STAGING_WEBHOOK_URL` e `METADATA_BASE_STAGING` no environment
+   `DOKPLOY_URL`, `DOKPLOY_API_KEY` (a mesma chave da API serve),
+   `DOKPLOY_UI_APPLICATION_ID` e `METADATA_BASE_STAGING` no environment
    `staging` da web.
 6. **App de staging** (manual do app): ambiente EAS `preview` (o EAS não
    tem ambiente `staging`; o perfil `staging` lê o `preview`) com

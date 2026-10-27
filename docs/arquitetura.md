@@ -104,7 +104,7 @@ src/
   instrumentation.ts        confere as variáveis obrigatórias no boot
   socket.ts                 cliente Socket.IO
 scripts/check-api-routes.mjs        gate de rotas usado no promote
-.github/scripts/dokploy-webhook.mjs dispara o deploy no Dokploy
+.github/scripts/dokploy-deploy.mjs dispara o deploy no Dokploy
 .github/scripts/wait-for-build.mjs  espera o site servir o build novo
 ```
 

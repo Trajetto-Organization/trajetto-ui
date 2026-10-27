@@ -28,12 +28,12 @@ estão numa tabela só, igual nos três repositórios:
 
 ## Onde cada valor mora
 
-| Lugar                                                                    | O que vai lá                                                                                    | Quem lê                                            |
-| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `.env` local (gitignored)                                                | desenvolvimento. Copie do `.env.example`                                                        | `next dev` (o Next lê `.env` e `.env.development`) |
-| **Environment da Application no Dokploy** (uma Application por ambiente) | tudo de runtime, staging e produção                                                             | o contêiner, a cada requisição                     |
-| **GitHub → Settings → Secrets and variables → Actions**                  | o build arg `METADATA_BASE`, os webhooks do Dokploy, o gate de rotas, o token de leitura da API | `.github/workflows/*.yml`                          |
-| **GitHub → Settings → Environments** (`staging`, `production`)           | secrets que só o job daquele ambiente deve ver                                                  | os jobs `deploy-staging` e `promote-production`    |
+| Lugar                                                                    | O que vai lá                                                                              | Quem lê                                            |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| `.env` local (gitignored)                                                | desenvolvimento. Copie do `.env.example`                                                  | `next dev` (o Next lê `.env` e `.env.development`) |
+| **Environment da Application no Dokploy** (uma Application por ambiente) | tudo de runtime, staging e produção                                                       | o contêiner, a cada requisição                     |
+| **GitHub → Settings → Secrets and variables → Actions**                  | o build arg `METADATA_BASE`, a API do Dokploy, o gate de rotas, o token de leitura da API | `.github/workflows/*.yml`                          |
+| **GitHub → Settings → Environments** (`staging`, `production`)           | secrets que só o job daquele ambiente deve ver                                            | os jobs `deploy-staging` e `promote-production`    |
 
 A imagem é **uma só** para staging e produção. **Nada** de ambiente vai no
 build, exceto `METADATA_BASE` (sempre a origem de produção) e `GIT_SHA`.
@@ -128,19 +128,19 @@ criado antes serve como `production`.
 
 ### Secrets
 
-| Nome                             | Escopo recomendado                                            | Usado por                                                                          | Para que serve                                                                                                            | Sem ele                                                                       |
-| -------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `METADATA_BASE`                  | repositório                                                   | `deploy.yml` → `build` (build arg) e `promote-production` (conferência do rollout) | origem de produção, ex. `https://www.intrajetto.com`                                                                      | build com canonicals vazios; o promote não confere o rollout (aviso)          |
-| `METADATA_BASE_STAGING`          | environment `staging` (ou repositório)                        | `deploy-staging`                                                                   | origem do staging, para esperar o `/build-id.json`                                                                        | a conferência do rollout de staging é pulada (aviso)                          |
-| `DOKPLOY_STAGING_WEBHOOK_URL`    | environment `staging`                                         | `deploy-staging`                                                                   | webhook de deploy da Application de staging (aba Deployments do Dokploy)                                                  | o deploy no Dokploy é pulado com aviso. A tag `staging` move mesmo assim      |
-| `DOKPLOY_PRODUCTION_WEBHOOK_URL` | environment `production`                                      | `promote-production`                                                               | webhook de deploy da Application de produção                                                                              | o deploy no Dokploy é pulado com aviso. A tag `stable` move mesmo assim       |
-| `API_DOCS_URL`                   | environment `production`                                      | `promote-production`                                                               | `https://<API de produção>/docs/json`, para o gate de rotas (`scripts/check-api-routes.mjs`)                              | o gate é pulado com aviso                                                     |
-| `DOCS_USER`, `DOCS_PASSWORD`     | environment `production`                                      | idem                                                                               | Basic auth do `/docs` da API de produção (os mesmos `DOCS_USER`/`DOCS_PASSWORD` da API)                                   | o gate falha ao ler o documento (código 2) se `API_DOCS_URL` existir sem eles |
-| `API_REPO_READ_TOKEN`            | **repositório** (o `ci.yml` chamado roda fora de environment) | `ci.yml`, `browser-suites.yml`                                                     | token de leitura de `Trajetto-Organization/trajetto-api`: fine-grained PAT com _Contents: Read-only_ só nesse repositório | `ci.yml` pula os testes de socket; as suítes de navegador são puladas (aviso) |
-| `GITHUB_TOKEN`                   | automático                                                    | login no GHCR, semantic-release                                                    |                                                                                                                           |                                                                               |
+| Nome                         | Escopo recomendado                                            | Usado por                                                                          | Para que serve                                                                                                            | Sem ele                                                                                                   |
+| ---------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `METADATA_BASE`              | repositório                                                   | `deploy.yml` → `build` (build arg) e `promote-production` (conferência do rollout) | origem de produção, ex. `https://www.intrajetto.com`                                                                      | build com canonicals vazios; o promote não confere o rollout (aviso)                                      |
+| `METADATA_BASE_STAGING`      | environment `staging` (ou repositório)                        | `deploy-staging`                                                                   | origem do staging, para esperar o `/build-id.json`                                                                        | a conferência do rollout de staging é pulada (aviso)                                                      |
+| `DOKPLOY_URL`                | environments `staging` e `production`                         | `deploy-staging`, `promote-production`                                             | URL do painel do Dokploy (`https://…`), para o `application.deploy`                                                       | sem os três `DOKPLOY_*`, o deploy é pulado com aviso (a tag move mesmo assim); com só alguns, o job falha |
+| `DOKPLOY_API_KEY`            | environments `staging` e `production`                         | idem                                                                               | chave de API do Dokploy (a mesma da `trajetto-api` serve)                                                                 | idem                                                                                                      |
+| `DOKPLOY_UI_APPLICATION_ID`  | environments `staging` e `production` (um id em cada)         | idem                                                                               | id da Application `trajetto-ui` daquele environment (último trecho da URL dela no painel)                                 | idem                                                                                                      |
+| `API_DOCS_URL`               | environment `production`                                      | `promote-production`                                                               | `https://<API de produção>/docs/json`, para o gate de rotas (`scripts/check-api-routes.mjs`)                              | o gate é pulado com aviso                                                                                 |
+| `DOCS_USER`, `DOCS_PASSWORD` | environment `production`                                      | idem                                                                               | Basic auth do `/docs` da API de produção (os mesmos `DOCS_USER`/`DOCS_PASSWORD` da API)                                   | o gate falha ao ler o documento (código 2) se `API_DOCS_URL` existir sem eles                             |
+| `API_REPO_READ_TOKEN`        | **repositório** (o `ci.yml` chamado roda fora de environment) | `ci.yml`, `browser-suites.yml`                                                     | token de leitura de `Trajetto-Organization/trajetto-api`: fine-grained PAT com _Contents: Read-only_ só nesse repositório | `ci.yml` pula os testes de socket; as suítes de navegador são puladas (aviso)                             |
+| `GITHUB_TOKEN`               | automático                                                    | login no GHCR, semantic-release                                                    |                                                                                                                           |                                                                                                           |
 
-Os webhooks do Dokploy levam o token da Application na própria URL. Trate-os
-como senha.
+A chave de API do Dokploy dá acesso ao painel inteiro. Trate-a como senha.
 
 ### Variables
 
@@ -151,8 +151,9 @@ como senha.
 
 ### Para apagar (nada mais lê)
 
-`STAGING_ENABLED`, `DOKPLOY_URL`, `DOKPLOY_API_KEY`, `DOKPLOY_COMPOSE_ID`
-(do desenho antigo, que chamava a API do Dokploy), `PORTAINER_WEBHOOK_URL`,
+`DOKPLOY_STAGING_WEBHOOK_URL` e `DOKPLOY_PRODUCTION_WEBHOOK_URL` (o deploy
+passou a ser pela API do Dokploy em 27/10/2026), `STAGING_ENABLED`,
+`DOKPLOY_COMPOSE_ID` (do desenho com Compose), `PORTAINER_WEBHOOK_URL`,
 `PORTAINER_STAGING_WEBHOOK_URL`, `NEXT_PUBLIC_SANITY_*`,
 `SANITY_WEBHOOK_SECRET`, `NEXT_PUBLIC_HTTP_REQUEST`,
 `NEXT_PUBLIC_HTTP_REQUEST_STAGING`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` e
@@ -256,7 +257,8 @@ NODE_OPTIONS=--max-old-space-size=512
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `RATE_LIMIT_FORWARDER_SECRET`                 | gere **uma vez por ambiente**, com `openssl rand -hex 32`, e cole o mesmo valor na API e na web daquele ambiente                                             |
 | `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | painel da Cloudflare → Turnstile → Add widget, com os hostnames do ambiente (`www.intrajetto.com`, `intrajetto.com`; o host de staging no widget de staging) |
-| `DOKPLOY_*_WEBHOOK_URL`                       | Dokploy → Application → aba **Deployments** → Webhook URL                                                                                                    |
+| `DOKPLOY_API_KEY`                             | Dokploy → **Settings → Profile → API/CLI** → Generate (a mesma chave da `trajetto-api` serve)                                                                |
+| `DOKPLOY_UI_APPLICATION_ID`                   | o último trecho da URL da Application `trajetto-ui` no painel (`…/application/<id>`), um por environment                                                     |
 | `API_REPO_READ_TOKEN`                         | GitHub → Settings → Developer settings → Fine-grained tokens, com dono `Trajetto-Organization`, só o repositório `trajetto-api` e _Contents: Read-only_      |
 | `DOCS_USER` / `DOCS_PASSWORD`                 | os mesmos configurados na API de produção                                                                                                                    |
 | Credencial do GHCR no Dokploy                 | PAT _classic_ com só `read:packages` (veja `deploy.md`)                                                                                                      |

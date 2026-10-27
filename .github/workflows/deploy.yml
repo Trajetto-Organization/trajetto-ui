@@ -5,14 +5,14 @@ name: Deploy
 #   push to staging ─▶ validate (ci.yml) + browser suites (browser-suites.yml)
 #                   ─▶ build ONE image ─▶ GHCR  sha-<commit>  (immutable)
 #                   ─▶ deploy-staging: tag `staging` moved to that digest
-#                      ─▶ Dokploy staging webhook ─▶ /build-id.json check
+#                      ─▶ Dokploy API deploy ─▶ /build-id.json check
 #
 #   PR staging → main ─▶ ci.yml + browser-suites.yml (pull_request triggers)
 #
 #   merge into main ─▶ promote-production (GitHub Environment `production`):
 #                      finds the staging image of the merged commit, checks the
 #                      production API serves every route it calls, moves
-#                      `stable` to that digest ─▶ Dokploy production webhook
+#                      `stable` to that digest ─▶ Dokploy API deploy
 #                      ─▶ /build-id.json check ─▶ release (semantic-release)
 #
 #   Run workflow (on main) with image_tag ─▶ the same promote job, for any
@@ -180,8 +180,9 @@ jobs:
   #
   # The tag always moves. The Dokploy call and the rollout check are skipped
   # with a notice while their secrets do not exist (Dokploy is not created
-  # yet): DOKPLOY_STAGING_WEBHOOK_URL (the Application's deploy webhook) and
-  # METADATA_BASE_STAGING (the staging site's origin).
+  # yet): DOKPLOY_URL, DOKPLOY_API_KEY and DOKPLOY_UI_APPLICATION_ID (the
+  # Dokploy API, as in trajetto-api) and METADATA_BASE_STAGING (the staging
+  # site's origin).
   deploy-staging:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -190,7 +191,7 @@ jobs:
     environment:
       name: staging
 
-    # One staging deploy at a time: two webhook calls on the same app would
+    # One staging deploy at a time: two deploys of the same app would
     # race. Never cancelled midway.
     concurrency:
       group: deploy-staging
@@ -240,21 +241,51 @@ jobs:
             "ghcr.io/trajetto-organization/trajetto-ui@${DIGEST}"
           echo "trajetto-ui:staging → sha-${GITHUB_SHA::7} (${DIGEST})" >> "$GITHUB_STEP_SUMMARY"
 
-      # Dokploy's deploy webhook makes the Application pull its tag again and
-      # roll the service. The URL carries the Application's token: it lives
-      # only in the secret and is never printed.
-      - name: Deploy to staging (Dokploy)
+      # All three secrets: deploy. None: Dokploy does not exist yet — a
+      # notice, and the run stays green (staging has moved; the Application
+      # picks it up on its next deploy). Some: a configuration mistake, which
+      # fails instead of looking like "not set up yet". The same gate and
+      # script as trajetto-api.
+      - name: Is the staging deploy configured?
         id: dokploy
         if: steps.head.outputs.current == 'true'
         env:
-          WEBHOOK_URL: ${{ secrets.DOKPLOY_STAGING_WEBHOOK_URL }}
-          WEBHOOK_SECRET_NAME: DOKPLOY_STAGING_WEBHOOK_URL
-        run: node .github/scripts/dokploy-webhook.mjs
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_UI_APPLICATION_ID: ${{ secrets.DOKPLOY_UI_APPLICATION_ID }}
+        run: |
+          missing=""
+          [ -n "$DOKPLOY_URL" ] || missing="$missing DOKPLOY_URL"
+          [ -n "$DOKPLOY_API_KEY" ] || missing="$missing DOKPLOY_API_KEY"
+          [ -n "$DOKPLOY_UI_APPLICATION_ID" ] || missing="$missing DOKPLOY_UI_APPLICATION_ID"
+          if [ -z "$missing" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ "$missing" = " DOKPLOY_URL DOKPLOY_API_KEY DOKPLOY_UI_APPLICATION_ID" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy de staging pulado: o environment staging ainda não tem DOKPLOY_URL, DOKPLOY_API_KEY e DOKPLOY_UI_APPLICATION_ID (docs/deploy.md). A tag staging já aponta para este build."
+            echo "Deploy de staging **pulado**: Dokploy ainda não configurado. A tag \`staging\` já aponta para este build." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Configuração parcial do Dokploy no environment staging: faltam${missing} (docs/deploy.md)."
+            exit 1
+          fi
+
+      # application.deploy through Dokploy's API, following the deployment it
+      # creates: an image pull that dies midway (the VPS's IPv6 route to GHCR,
+      # 27/10/2026) fails in seconds and is deployed again, instead of a
+      # webhook's 200 followed by ten minutes of waiting on the old build.
+      - name: Deploy to staging (Dokploy)
+        if: steps.head.outputs.current == 'true' && steps.dokploy.outputs.enabled == 'true'
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_UI_APPLICATION_ID }}
+          DOKPLOY_APP_LABEL: trajetto-ui
+        run: node .github/scripts/dokploy-deploy.mjs
 
       # The staging site must answer THIS commit, through the real edge, for
       # longer than Swarm's rollback monitor (see the promote below).
       - name: Wait for the site to serve this build
-        if: steps.head.outputs.current == 'true' && steps.dokploy.outputs.deployed == 'true' && vars.ROLLOUT_VERIFY != 'off'
+        if: steps.head.outputs.current == 'true' && steps.dokploy.outputs.enabled == 'true' && vars.ROLLOUT_VERIFY != 'off'
         env:
           SITE_URL: ${{ secrets.METADATA_BASE_STAGING }}
           EXPECTED_SHA: ${{ github.sha }}
@@ -467,15 +498,41 @@ jobs:
             "ghcr.io/trajetto-organization/trajetto-ui@${DIGEST}"
           echo "trajetto-ui:stable → ${IMAGE_TAG} (${DIGEST})" >> "$GITHUB_STEP_SUMMARY"
 
-      # Skipped with a notice while DOKPLOY_PRODUCTION_WEBHOOK_URL does not
-      # exist: `stable` has moved, and the Application picks it up on its
-      # next deploy.
-      - name: Deploy to production (Dokploy)
+      # All three secrets: deploy. None: Dokploy does not exist yet — a
+      # notice, and the run stays green (stable has moved; the Application
+      # picks it up on its next deploy). Some: a configuration mistake, which
+      # fails instead of looking like "not set up yet". The same gate and
+      # script as trajetto-api.
+      - name: Is the production deploy configured?
         id: dokploy
         env:
-          WEBHOOK_URL: ${{ secrets.DOKPLOY_PRODUCTION_WEBHOOK_URL }}
-          WEBHOOK_SECRET_NAME: DOKPLOY_PRODUCTION_WEBHOOK_URL
-        run: node .github/scripts/dokploy-webhook.mjs
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_UI_APPLICATION_ID: ${{ secrets.DOKPLOY_UI_APPLICATION_ID }}
+        run: |
+          missing=""
+          [ -n "$DOKPLOY_URL" ] || missing="$missing DOKPLOY_URL"
+          [ -n "$DOKPLOY_API_KEY" ] || missing="$missing DOKPLOY_API_KEY"
+          [ -n "$DOKPLOY_UI_APPLICATION_ID" ] || missing="$missing DOKPLOY_UI_APPLICATION_ID"
+          if [ -z "$missing" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ "$missing" = " DOKPLOY_URL DOKPLOY_API_KEY DOKPLOY_UI_APPLICATION_ID" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Deploy de produção pulado: o environment production ainda não tem DOKPLOY_URL, DOKPLOY_API_KEY e DOKPLOY_UI_APPLICATION_ID (docs/deploy.md). A tag stable já aponta para este build."
+            echo "Deploy de produção **pulado**: Dokploy ainda não configurado. A tag \`stable\` já aponta para este build." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Configuração parcial do Dokploy no environment production: faltam${missing} (docs/deploy.md)."
+            exit 1
+          fi
+
+      - name: Deploy to production (Dokploy)
+        if: steps.dokploy.outputs.enabled == 'true'
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_UI_APPLICATION_ID }}
+          DOKPLOY_APP_LABEL: trajetto-ui
+        run: node .github/scripts/dokploy-deploy.mjs
 
       # The proof the promote shipped. Swarm rolls a failing build back on its
       # own (failure_action: rollback) and the old one keeps serving — a green
@@ -486,7 +543,7 @@ jobs:
       # canonical origin. ROLLOUT_VERIFY=off is the explicit opt-out, logged
       # in the summary.
       - name: Wait for the site to serve the promoted build
-        if: steps.dokploy.outputs.deployed == 'true' && vars.ROLLOUT_VERIFY != 'off'
+        if: steps.dokploy.outputs.enabled == 'true' && vars.ROLLOUT_VERIFY != 'off'
         env:
           SITE_URL: ${{ secrets.METADATA_BASE }}
           EXPECTED_SHA: ${{ steps.revision.outputs.sha }}

@@ -292,20 +292,42 @@ describe("the single web image", () => {
     expect(job("build")).toContain("type=sha,prefix=sha-");
   });
 
-  it("deploys through the Dokploy webhook, and waits only when something was deployed", () => {
-    expect(job("deploy-staging")).toContain(
-      "WEBHOOK_URL: ${{ secrets.DOKPLOY_STAGING_WEBHOOK_URL }}",
-    );
-    expect(job("promote-production")).toContain(
-      "WEBHOOK_URL: ${{ secrets.DOKPLOY_PRODUCTION_WEBHOOK_URL }}",
-    );
+  it("deploys through the Dokploy API like the API repository, and waits only when something was deployed", () => {
+    // It was the Application's deploy webhook, which answers 200 the moment
+    // the deploy is queued: on 27/10/2026 the image pull failed in Dokploy
+    // after 5 s and the run only found out 10 minutes later, from the site.
+    // dokploy-deploy.mjs follows the deployment and deploys again on error.
+    for (const [name, environment] of [
+      ["deploy-staging", "staging"],
+      ["promote-production", "production"],
+    ] as const) {
+      const steps = job(name);
 
-    for (const name of ["deploy-staging", "promote-production"]) {
-      expect(job(name), name).toContain(
-        "run: node .github/scripts/dokploy-webhook.mjs",
+      expect(steps, name).not.toContain("dokploy-webhook");
+      expect(steps, name).not.toContain("WEBHOOK_URL");
+      expect(steps, name).toContain(
+        "run: node .github/scripts/dokploy-deploy.mjs",
       );
-      expect(job(name), name).toMatch(
-        /if: .*steps\.dokploy\.outputs\.deployed == 'true'/,
+      expect(steps, name).toContain("DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}");
+      expect(steps, name).toContain(
+        "DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}",
+      );
+      expect(steps, name).toContain(
+        "DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_UI_APPLICATION_ID }}",
+      );
+      expect(steps, name).toContain("DOKPLOY_APP_LABEL: trajetto-ui");
+      // None of the three = not set up yet (a notice); some = a mistake.
+      expect(steps, name).toMatch(/echo "enabled=true" >> "\$GITHUB_OUTPUT"/);
+      expect(steps, name).toMatch(
+        new RegExp(
+          `::error::Configuração parcial do Dokploy no environment ${environment}`,
+        ),
+      );
+      expect(steps, name).toMatch(
+        /if: .*steps\.dokploy\.outputs\.enabled == 'true'.*\n(?:.*\n)*?\s+run: node \.github\/scripts\/dokploy-deploy\.mjs/,
+      );
+      expect(steps, name).toMatch(
+        /- name: Wait for the site to serve [^\n]*\n\s+if: .*steps\.dokploy\.outputs\.enabled == 'true'/,
       );
     }
   });

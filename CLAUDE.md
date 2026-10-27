@@ -94,7 +94,7 @@ tests/E2E/                         regras puras (Playwright, sem navegador)
 tests/{ui,a11y,responsive}/        Playwright contra a stack
 scripts/check-api-routes.mjs       gate de rotas do promote
 .github/workflows/{ci,deploy,browser-suites}.yml
-.github/scripts/{dokploy-webhook,wait-for-build}.mjs
+.github/scripts/{dokploy-deploy,wait-for-build}.mjs
 ```
 
 ## Convenções obrigatórias
@@ -197,12 +197,13 @@ scripts/check-api-routes.mjs       gate de rotas do promote
   `API_REPO_READ_TOKEN`.
 - `deploy.yml`:
   - push em `staging` → validação → **um** build `sha-<commit>` → tag
-    `staging` → webhook Dokploy → espera `/build-id.json` → marcador
+    `staging` → deploy pela API do Dokploy (o mesmo script da API) → espera
+    `/build-id.json` → marcador
     `staged-<commit>` (último passo);
   - push em `main` (merge commit de staging) → aprovação `production` → acha
     a imagem do commit de staging → exige `staged-<commit>` no mesmo digest
     → gate de rotas → tag `stable` **por
-    digest** → webhook → espera `/build-id.json` → semantic-release;
+    digest** → deploy no Dokploy → espera `/build-id.json` → semantic-release;
   - Run workflow com `image_tag` = rollback (não exige o marcador).
 - O job `release` faz push do `CHANGELOG.md` direto em `main`: o Ruleset de
   `main` precisa do app GitHub Actions na bypass list (`docs/deploy.md` §4).

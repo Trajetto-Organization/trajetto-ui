@@ -181,12 +181,69 @@ test.describe("the notifications menu over the control tower", () => {
         ),
       );
 
+    // The Torre's own header (views, refresh cadence, full screen) put the
+    // map below the reach of a short menu (no notifications), and the app
+    // header doesn't stick, so scrolling can't bring them together. What is
+    // under test is the stacking order, not the layout: pull the map up under
+    // the open menu with a negative margin — a margin creates no stacking
+    // context, so the order measured is the page's own.
+    await page.evaluate(() => {
+      const panel = document.querySelector('[role="menu"]');
+      const canvas = document.querySelector(".leaflet-container");
+      const block = canvas?.parentElement;
+
+      if (!panel || !canvas || !block) return;
+
+      const gap =
+        canvas.getBoundingClientRect().top -
+        (panel.getBoundingClientRect().bottom - 80);
+
+      if (gap > 0) block.style.marginTop = `-${Math.ceil(gap)}px`;
+    });
+
     const clip = await overlapOf(page);
 
     expect(
       clip,
       "o menu e o mapa não se sobrepõem; o teste não mediu nada",
     ).not.toBeNull();
+
+    /**
+     * What is on top, asked of the browser itself.
+     *
+     * A grid of points over the shared rectangle, hit-tested while the menu
+     * is open: each must land inside the menu. Hit-testing follows the paint
+     * order, and Leaflet's panes take pointer events — with the bug (the
+     * panes' z-index 400 in the page's own stacking context, above the menu's
+     * z-50) the points land on the map. The pixel comparison this replaced
+     * depended on the tiles: over a pale tile set (or a short menu, whose
+     * overlap is its blank footer) a menu correctly on top still changed
+     * only a few pixels.
+     */
+    const outside = await page.evaluate((rect) => {
+      const misses: string[] = [];
+
+      for (let column = 1; column <= 5; column += 1) {
+        for (let row = 1; row <= 3; row += 1) {
+          const x = rect.x + (rect.width * column) / 6;
+          const y = rect.y + (rect.height * row) / 4;
+          const hit = document.elementFromPoint(x, y);
+
+          if (!hit?.closest('[role="menu"]')) {
+            misses.push(
+              `${Math.round(x)},${Math.round(y)}: ${hit?.className?.toString().slice(0, 60) ?? "nada"}`,
+            );
+          }
+        }
+      }
+
+      return misses;
+    }, clip as Rect);
+
+    expect(
+      outside,
+      "pontos da área em comum caem no mapa, não no menu — o mapa está pintando por cima",
+    ).toEqual([]);
 
     const withMenu = await page.screenshot({ clip: clip as Rect });
 
@@ -214,12 +271,17 @@ test.describe("the notifications menu over the control tower", () => {
       `o mapa muda sozinho em ${Math.round(noise * 100)}% da área; a medição não distingue mais nada`,
     ).toBeLessThan(0.1);
 
+    // Kept as evidence on the report: the menu changes what the shared
+    // rectangle shows (how much depends on the tile set; the verdict is the
+    // hit test above).
     const covered = await differingFraction(mapAlone, withMenu);
 
-    expect(
-      covered,
-      `o menu só muda ${Math.round(covered * 100)}% dos pixels que divide com o mapa — o mapa está pintando por cima`,
-    ).toBeGreaterThan(0.5);
+    test.info().annotations.push({
+      type: "covered",
+      description: `${Math.round(covered * 100)}% dos pixels em comum mudam com o menu`,
+    });
+
+    expect(covered).toBeGreaterThan(0);
   });
 
   test("and the map keeps its own controls on top of itself", async ({

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Request } from "@playwright/test";
 
 import { open } from "./support/operation";
 import { waitForHydration } from "./support/ui";
@@ -18,42 +18,63 @@ import { waitForHydration } from "./support/ui";
 const PANEL = "/dashboard/integrations?tab=webhooks";
 
 /**
- * Calls of ONE server action, which is how a panel asks for its list again.
+ * Reads of ONE list, which is how a panel asks for its data again.
  *
- * Counting every POST to the page URL counted the wrong things: the shell runs
- * its own server actions on the same URL — the session check, the
- * notifications — and under three parallel workers that turned "exactly three
- * refreshes" into nine. Next stamps each action with a `Next-Action` header,
- * so the first call after the first press names the one being measured and
+ * Panels read through the relay (a GET under /api/relay/...) since reads left
+ * the Server Actions — Next runs actions one at a time per tab — and a few
+ * still read through an action. Counting every request counted the wrong
+ * things: the shell reads on its own (the session, the notifications, the
+ * ticket badge), and under three parallel workers that turned "exactly three
+ * refreshes" into nine. The first read after the first press names the one
+ * being measured — the relay path, or the action's `Next-Action` id — and
  * everything else is somebody else's traffic.
  */
-function countActions(page: Page): {
+function listReadKey(request: Request): string | null {
+  const url = new URL(request.url());
+
+  if (
+    request.method() === "GET" &&
+    url.pathname.startsWith("/api/relay/integrations/")
+  ) {
+    return `relay:${url.pathname}`;
+  }
+
+  if (
+    request.method() === "POST" &&
+    url.pathname.includes("/dashboard/integrations")
+  ) {
+    const action = request.headers()["next-action"];
+
+    return action ? `action:${action}` : null;
+  }
+
+  return null;
+}
+
+function countListReads(page: Page): {
   count: () => number;
   times: () => number[];
-  identify: (id: string) => void;
+  identify: (key: string) => void;
 } {
-  const seen: Array<{ action: string; at: number }> = [];
+  const seen: Array<{ key: string; at: number }> = [];
 
   let watching: string | null = null;
 
   page.on("request", (request) => {
-    if (request.method() !== "POST") return;
-    if (!request.url().includes("/dashboard/integrations")) return;
+    const key = listReadKey(request);
 
-    const action = request.headers()["next-action"];
+    if (!key) return;
 
-    if (!action) return;
-
-    seen.push({ action, at: Date.now() });
+    seen.push({ key, at: Date.now() });
   });
 
-  const mine = () => seen.filter((entry) => entry.action === watching);
+  const mine = () => seen.filter((entry) => entry.key === watching);
 
   return {
     count: () => mine().length,
     times: () => mine().map((entry) => entry.at),
-    identify: (id: string) => {
-      watching = id;
+    identify: (key: string) => {
+      watching = key;
     },
   };
 }
@@ -86,21 +107,19 @@ function mostWithinWindow(times: number[]): number {
   }, 0);
 }
 
-/** The action id behind the refresh button, learnt from one press. */
-async function actionBehind(
+/** The list read behind the refresh button, learnt from one press. */
+async function readBehind(
   page: Page,
   press: () => Promise<void>,
 ): Promise<string> {
   const request = page.waitForRequest(
-    (candidate) =>
-      candidate.method() === "POST" &&
-      Boolean(candidate.headers()["next-action"]),
+    (candidate) => listReadKey(candidate) !== null,
     { timeout: 20_000 },
   );
 
   await press();
 
-  return (await request).headers()["next-action"];
+  return listReadKey(await request) as string;
 }
 
 const refreshOn = (page: Page) =>
@@ -168,11 +187,11 @@ test.describe("a panel's Atualizar button", () => {
 
     // Counted from here: the page's own first load is not what is being
     // measured.
-    const traffic = countActions(page);
+    const traffic = countListReads(page);
 
-    // One press to learn which action the button runs, then the rest.
+    // One press to learn which read the button runs, then the rest.
     traffic.identify(
-      await actionBehind(page, async () => {
+      await readBehind(page, async () => {
         await expect(button).toBeEnabled({ timeout: 15_000 });
         await button.click();
       }),

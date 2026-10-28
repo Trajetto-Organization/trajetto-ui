@@ -222,22 +222,36 @@ test.describe("revoking a key", () => {
     await expect(dialog).toBeVisible();
 
     /**
-     * Server-action calls, counted from the click onwards.
+     * The calls, counted from the click onwards.
      *
-     * The revoke is one; the panel asking for the list again is another. A
-     * version that revoked and never refetched left the row saying "active"
-     * over a key that was already dead — and asserting only on the row's text
-     * could not see it here, because editing the panel's source to test that
-     * makes the dev server hot-reload the page, which refetches by itself.
-     * Counting the calls does not care.
+     * The revoke is a Server Action; the panel asking for the list again is a
+     * read — through the relay since reads left the actions (Next runs
+     * actions one at a time per tab). A version that revoked and never
+     * refetched left the row saying "active" over a key that was already
+     * dead — and asserting only on the row's text could not see it here,
+     * because editing the panel's source to test that makes the dev server
+     * hot-reload the page, which refetches by itself. Counting the calls does
+     * not care.
      */
     const actionCalls: string[] = [];
+    const listReads: string[] = [];
 
     page.on("request", (request) => {
-      if (request.method() !== "POST") return;
-      if (!request.url().includes("/dashboard/integrations")) return;
+      const url = new URL(request.url());
 
-      actionCalls.push(request.url());
+      if (
+        request.method() === "POST" &&
+        url.pathname.includes("/dashboard/integrations")
+      ) {
+        actionCalls.push(request.url());
+      }
+
+      if (
+        request.method() === "GET" &&
+        url.pathname.startsWith("/api/relay/integrations/")
+      ) {
+        listReads.push(request.url());
+      }
     });
 
     await dialog.getByRole("button", { name: /^revogar$/i }).click();
@@ -256,9 +270,10 @@ test.describe("revoking a key", () => {
       "a lista continua mostrando a chave como ativa",
     ).toContainText(/revogada/i, { timeout: 20_000 });
 
+    expect(actionCalls.length, "a revogação não saiu").toBeGreaterThan(0);
     expect(
-      actionCalls.length,
+      listReads.length,
       "o painel revogou e não pediu a lista de novo",
-    ).toBeGreaterThan(1);
+    ).toBeGreaterThan(0);
   });
 });

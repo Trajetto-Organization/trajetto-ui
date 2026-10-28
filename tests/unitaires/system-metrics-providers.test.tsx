@@ -1,5 +1,6 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "react-query";
 
 import {
   afterEach,
@@ -11,18 +12,15 @@ import {
   vi,
 } from "vitest";
 
-const actions = vi.hoisted(() => ({ getHealthProviders: vi.fn() }));
-
-vi.mock("@/actions/health/get-health-providers", () => ({
-  getHealthProviders: actions.getHealthProviders,
-}));
-
 // Puts React in scope for the classic-runtime JSX of the modules below.
 import { React } from "./helpers/render-html";
 
 import type { ProviderReadiness } from "@/actions/health/get-health-providers";
 import type { ProviderChannelMetrics } from "@/actions/health/get-health-metrics";
 import { ProviderReadinessCard } from "@/features/system-metrics/provider-readiness-card";
+import { refreshSystemMetrics } from "@/features/system-metrics/reads";
+
+import { refusal, stubRelay } from "./helpers/relay-fetch";
 import {
   providerChannelStatus,
   readinessBadge,
@@ -181,6 +179,7 @@ describe("readiness badges", () => {
 
 let host: HTMLDivElement;
 let root: Root;
+let client: QueryClient;
 
 beforeAll(() => {
   (
@@ -189,7 +188,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
-  actions.getHealthProviders.mockReset();
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
@@ -198,14 +197,29 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  client.clear();
+  vi.unstubAllGlobals();
 });
+
+/** Renders the card and lets its relay read land. */
+async function renderCard(): Promise<void> {
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={client}>
+        <ProviderReadinessCard />
+      </QueryClientProvider>,
+    ),
+  );
+
+  await act(async () => {
+    await new Promise((done) => setTimeout(done, 10));
+  });
+}
 
 describe("ProviderReadinessCard", () => {
   it("shows each provider, the missing variables by name, and the summary", async () => {
-    actions.getHealthProviders.mockResolvedValue({
-      success: true,
-      message: "ok",
-      data: {
+    const relay = stubRelay({
+      "/health/providers": () => ({
         checked_at: "2026-10-07T12:00:00.000Z",
         cached: false,
         providers: [
@@ -221,13 +235,15 @@ describe("ProviderReadinessCard", () => {
             message: "Nenhum WhatsApp sai.",
           }),
         ],
-      },
+      }),
     });
 
-    await act(async () => root.render(<ProviderReadinessCard />));
+    await renderCard();
 
     // The first read takes the API's cache.
-    expect(actions.getHealthProviders).toHaveBeenCalledWith(false);
+    const [first] = relay.callsTo("/health/providers");
+
+    expect(first?.query.has("refresh")).toBe(false);
 
     const text = host.textContent ?? "";
 
@@ -239,31 +255,35 @@ describe("ProviderReadinessCard", () => {
   });
 
   it("probes again, past the cache, on Atualizar", async () => {
-    actions.getHealthProviders.mockResolvedValue({
-      success: true,
-      message: "ok",
-      data: {
+    const relay = stubRelay({
+      "/health/providers": () => ({
         checked_at: "2026-10-07T12:00:00.000Z",
         cached: true,
         providers: [provider({})],
-      },
+      }),
     });
 
-    await act(async () => root.render(<ProviderReadinessCard />));
+    await renderCard();
     await act(async () => {
-      window.dispatchEvent(new Event("data-revalidated"));
+      await refreshSystemMetrics(client);
     });
 
-    expect(actions.getHealthProviders).toHaveBeenLastCalledWith(true);
+    const reads = relay.callsTo("/health/providers");
+
+    expect(reads).toHaveLength(2);
+    expect(reads[1].query.get("refresh")).toBe("true");
   });
 
   it("says why when the API refuses", async () => {
-    actions.getHealthProviders.mockResolvedValue({
-      success: false,
-      message: "Acesso negado.",
+    stubRelay({
+      "/health/providers": () =>
+        refusal(403, {
+          code: "AUTH_ROLE_FORBIDDEN",
+          message: "Acesso negado.",
+        }),
     });
 
-    await act(async () => root.render(<ProviderReadinessCard />));
+    await renderCard();
 
     expect(host.textContent).toContain("Acesso negado.");
   });

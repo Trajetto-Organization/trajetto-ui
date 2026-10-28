@@ -172,9 +172,7 @@ const PermissionFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterPermissionWrite(
-        isEdit ? "update-permission" : "create-permission",
-      ).catch(() =>
+      void refreshAfterPermissionWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

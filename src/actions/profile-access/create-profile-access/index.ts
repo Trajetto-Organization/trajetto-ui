@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateProfileAccessSchema } from "@/schemas/create-update-profile-access-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateProfileAccessProps {
   message: string;
@@ -69,6 +70,10 @@ const handleCreateProfileAccess = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-profile-access");
 
     return { successMessage: message };
   } catch (error) {

@@ -55,31 +55,10 @@ const api = vi.hoisted(() => ({
 
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
-vi.mock("@/actions/integration", () => ({
-  listApiKeys: async (businessId?: string) => {
-    api.keyCalls += 1;
-    api.keyBusinessIds.push(businessId);
-    return api.keys;
-  },
-  listWebhookDeliveries: async (
-    _page: number,
-    _size: number,
-    filters: { status?: string },
-  ) => {
-    api.deliveries.push({ status: filters.status });
+// The writes stay Server Actions; the panels' reads go through the relay.
+vi.mock("@/actions/integration", () => ({}));
 
-    return {
-      success: true,
-      message: "",
-      data: {
-        data: [],
-        total: 0,
-        meta: { delivered: 0, failed: 0, pending: 0, p95LatencyMs: null },
-      },
-    };
-  },
-}));
-
+import { ndjson, refusal, stubRelay } from "./helpers/relay-fetch";
 import { useAuthStore } from "@/store/auth-store";
 import { queryClientProps } from "@/lib/query-client-props";
 import { IntegrationsContent } from "@/features/integrations/content";
@@ -87,6 +66,28 @@ import { IntegrationsContent } from "@/features/integrations/content";
 beforeAll(() => {
   vi.stubGlobal("React", React);
 });
+
+/**
+ * The keys list as the relay answers it: `api.keys` is written as the value
+ * the screen reads (`success`, `code`, `status`), and becomes the API's
+ * envelope or its refusal on the wire.
+ */
+async function keysReply(): Promise<unknown> {
+  const answer = (await api.keys) as {
+    success: boolean;
+    message?: string;
+    data?: unknown;
+    code?: string;
+    status?: number;
+  };
+
+  if (answer.success) return { data: answer.data };
+
+  return refusal(answer.status ?? 500, {
+    ...(answer.code ? { code: answer.code } : {}),
+    message: answer.message,
+  });
+}
 
 const A = "018f0000-0000-7000-8000-00000000000a";
 const B = "018f0000-0000-7000-8000-00000000000b";
@@ -101,6 +102,35 @@ beforeEach(() => {
   api.keyBusinessIds.length = 0;
   api.deliveries.length = 0;
   localStorage.clear();
+
+  stubRelay({
+    "/integrations/api-keys": (url) => {
+      api.keyCalls += 1;
+      api.keyBusinessIds.push(url.searchParams.get("businessId") ?? undefined);
+
+      return keysReply();
+    },
+    "/integrations/webhook-deliveries": (url) => {
+      api.deliveries.push({
+        status: url.searchParams.get("status") ?? undefined,
+      });
+
+      return ndjson(
+        {
+          total: 0,
+          page: 1,
+          pageSize: 20,
+          searchMeta: {
+            delivered: 0,
+            failed: 0,
+            pending: 0,
+            p95LatencyMs: null,
+          },
+        },
+        [],
+      );
+    },
+  });
 
   useAuthStore.setState({
     role: "MASTER",

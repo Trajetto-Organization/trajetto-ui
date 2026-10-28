@@ -38,13 +38,26 @@ function proofSignatureBadge(
 ): ProofSignatureBadge {
   const signature = document.signature;
 
-  if (signature?.status === "SIGNED") {
+  // "ICP-Brasil" only when the API checked the certificate's chain up to an
+  // ICP-Brasil root. A certificate that merely says O=ICP-Brasil in its
+  // issuer (the staging test certificate does) signs, but claims nothing.
+  if (signature?.status === "SIGNED" && signature.icp_brasil === true) {
     return {
       signed: true,
       label: "Assinado digitalmente (ICP-Brasil)",
       reason: signature.signer_name
         ? `Assinado por ${signature.signer_name} com certificado ICP-Brasil.`
         : "Assinado com certificado ICP-Brasil.",
+    };
+  }
+
+  if (signature?.status === "SIGNED") {
+    return {
+      signed: true,
+      label: "Assinado digitalmente",
+      reason: signature.signer_name
+        ? `Assinado por ${signature.signer_name}, com certificado fora da cadeia ICP-Brasil.`
+        : "Assinado com certificado fora da cadeia ICP-Brasil.",
     };
   }
 

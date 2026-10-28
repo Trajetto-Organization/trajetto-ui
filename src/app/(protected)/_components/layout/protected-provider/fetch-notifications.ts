@@ -1,3 +1,5 @@
+import { SERVER_READ_TIMEOUT_MS } from "@/lib/session-access";
+
 import type {
   FetchNotificationsResult,
   ServerNotification,
@@ -16,6 +18,9 @@ async function fetchNotifications(
         },
         credentials: "include",
         next: { tags: ["update-notification"] },
+        // Bounded like every server read: a slow list ends as `error`, a
+        // toast, never as a held stream.
+        signal: AbortSignal.timeout(SERVER_READ_TIMEOUT_MS),
       },
     );
 

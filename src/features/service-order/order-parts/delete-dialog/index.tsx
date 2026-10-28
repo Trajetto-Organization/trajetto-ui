@@ -79,10 +79,7 @@ const DeleteOrderPartDialog = ({
       toast.success(state.successMessage);
       onClose();
 
-      refreshMaintenanceData("update-service-order-part", [
-        "service_order",
-        "part",
-      ]).catch(() =>
+      refreshMaintenanceData(["service_order", "part"]).catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
     }

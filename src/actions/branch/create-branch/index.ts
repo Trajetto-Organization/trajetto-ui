@@ -4,6 +4,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { createUpdateBranchSchema } from "@/schemas/create-update-branch-schema";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateBranchProps {
   message: string;
@@ -77,6 +78,10 @@ const handleCreateBranch = async (state: any, createBranchValues: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-branch");
 
     return { successMessage: message };
   } catch (error) {

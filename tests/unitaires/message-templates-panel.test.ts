@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { refusal, stubRelay } from "./helpers/relay-fetch";
+
 /**
  * The customer messages panel (DLVB-03).
  *
@@ -12,7 +14,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * `?businessId=` (a 400) and the refusal rendered as six "Não escrita" cards,
  * telling the dispatcher that nothing is sent when the truth was "could not
  * read". The panel now falls back to the session's company and shows a
- * failed read as a failure, with a way to try again.
+ * failed read as a failure, with a way to try again. The read is a relay
+ * GET (it was a Server Action queued behind the page's other reads).
  */
 vi.hoisted(() => {
   (
@@ -25,7 +28,6 @@ vi.hoisted(() => {
 const SESSION_BUSINESS = "018f0000-0000-7000-8000-0000000000b1";
 
 const templates = vi.hoisted(() => ({
-  listMessageTemplates: vi.fn(),
   saveMessageTemplate: vi.fn(),
 }));
 
@@ -47,7 +49,7 @@ vi.mock("@/lib/check-multiple-permissions", () => ({
 
 import {
   MessageTemplatesPanel,
-  templatesLoadError,
+  fetchMessageTemplates,
 } from "@/features/deliveries/message-templates/panel";
 
 const roots: Root[] = [];
@@ -60,6 +62,7 @@ afterEach(async () => {
 
   document.body.innerHTML = "";
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
 });
 
 async function render(businessId: string | undefined): Promise<HTMLElement> {
@@ -93,26 +96,27 @@ async function render(businessId: string | undefined): Promise<HTMLElement> {
 
 describe("the company the panel reads", () => {
   it("falls back to the session's company when the page passes none", async () => {
-    templates.listMessageTemplates.mockResolvedValue({
-      success: true,
-      message: "",
-      data: [],
+    const relay = stubRelay({
+      "/delivery/message-templates": () => ({ data: [] }),
     });
 
     await render("");
 
-    expect(templates.listMessageTemplates).toHaveBeenCalledWith(
-      SESSION_BUSINESS,
-    );
+    const [read] = relay.callsTo("/delivery/message-templates");
+
+    expect(read?.query.get("businessId")).toBe(SESSION_BUSINESS);
   });
 });
 
 describe("a failed read", () => {
   it("is shown as a failure, not as six empty slots", async () => {
-    templates.listMessageTemplates.mockResolvedValue({
-      success: false,
-      message:
-        "Empresa não identificada. Selecione uma empresa para continuar.",
+    stubRelay({
+      "/delivery/message-templates": () =>
+        refusal(400, {
+          code: "BUSINESS_REQUIRED",
+          message:
+            "Empresa não identificada. Selecione uma empresa para continuar.",
+        }),
     });
 
     const host = await render(SESSION_BUSINESS);
@@ -127,11 +131,20 @@ describe("a failed read", () => {
     expect(host.textContent).toContain("Tentar novamente");
   });
 
-  it("names a missing message only when the read succeeded", () => {
-    expect(templatesLoadError({ success: true })).toBeNull();
-    expect(templatesLoadError(undefined)).toBeNull();
-    expect(templatesLoadError({ success: false, message: "" })).toContain(
-      "Não foi possível",
+  it("says it could not read when the refusal brought no sentence", async () => {
+    stubRelay({
+      "/delivery/message-templates": () =>
+        new Response("<html>bad gateway</html>", { status: 502 }),
+    });
+
+    await expect(fetchMessageTemplates(SESSION_BUSINESS)).rejects.toThrow(
+      "Não foi possível carregar as mensagens ao cliente.",
     );
+  });
+
+  it("reads an answer without rows as nothing written yet", async () => {
+    stubRelay({ "/delivery/message-templates": () => ({}) });
+
+    await expect(fetchMessageTemplates(SESSION_BUSINESS)).resolves.toEqual([]);
   });
 });

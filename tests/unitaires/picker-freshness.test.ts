@@ -480,8 +480,10 @@ describe("another company's list while the new one loads", () => {
             ? [{ id: "b1", name: "Motorista da Beta" }]
             : [{ id: "a1", name: "Motorista da Alfa" }];
 
+        // More pages behind this one: a list the cache holds whole would
+        // answer a term itself, and the term below must reach the server.
         return ndjsonResponse([
-          { meta: { searchMeta: { nextCursor: null, hasMore: false } } },
+          { meta: { searchMeta: { nextCursor: "a1", hasMore: true } } },
           ...found,
         ]);
       }),

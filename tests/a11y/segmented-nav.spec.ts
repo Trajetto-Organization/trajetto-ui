@@ -13,6 +13,10 @@ import { readFileSync } from "node:fs";
  * that the current one is announced and not merely drawn, and that the whole
  * strip is reachable by keyboard, which it was not before (Radix keeps only
  * the selected trigger in the tab order).
+ *
+ * The Torre de controle's views (`?view=`) are the same strip since the
+ * product meeting of 14/10/2026, and four of them used to be sections of
+ * Entregas: they are held to the same promises.
  */
 const CONTEXT = JSON.parse(
   readFileSync("../trajetto-api/tests/load/fixtures/load-context.json", "utf8"),
@@ -25,11 +29,21 @@ const STRIPS = [
     path: "/dashboard/integrations",
     label: "Seções de integrações",
     name: "integrations",
+    param: "tab",
   },
   {
     path: "/dashboard/deliveries",
     label: "Seções de entregas",
     name: "deliveries",
+    param: "tab",
+  },
+  {
+    // Named: the bare Torre replaces itself with the view this browser chose
+    // last, which would move the marker under the test's feet.
+    path: "/dashboard/control-tower?view=routes",
+    label: "Visões da torre de controle",
+    name: "control tower",
+    param: "view",
   },
 ] as const;
 
@@ -93,7 +107,7 @@ for (const strip of STRIPS) {
       const href = await links.nth(index).getAttribute("href");
 
       expect(href, `${strip.name}: item ${index} has no href`).toMatch(
-        /^\?tab=/,
+        new RegExp(`^\\?${strip.param}=`),
       );
     }
 
@@ -110,8 +124,17 @@ for (const strip of STRIPS) {
     const target = nav.getByRole("link").nth(2);
     const label = (await target.innerText()).trim();
 
+    // The item's own value, not just "some ?tab=": the Torre opens with
+    // `?view=` already in its URL, so a bare param match would not wait.
+    const wanted = new URLSearchParams(
+      ((await target.getAttribute("href")) ?? "").replace(/^\?/, ""),
+    ).get(strip.param);
+
     await target.click();
-    await page.waitForURL(/tab=/, { timeout: 30_000 });
+    await page.waitForURL(
+      (url) => url.searchParams.get(strip.param) === wanted,
+      { timeout: 30_000 },
+    );
     await page.waitForLoadState("networkidle");
 
     const current = page
@@ -120,10 +143,12 @@ for (const strip of STRIPS) {
 
     await expect(current).toHaveCount(1);
 
-    expect(
-      (await current.innerText()).trim(),
+    // Retried, not read once: the section behind the strip streams in after
+    // the URL changes (next/dynamic, no prefetch), and the strip with it.
+    await expect(
+      current,
       `${strip.name}: the marker did not follow the click`,
-    ).toBe(label);
+    ).toHaveText(label);
   });
 
   test(`${strip.name}: the keyboard reaches every item`, async ({ page }) => {

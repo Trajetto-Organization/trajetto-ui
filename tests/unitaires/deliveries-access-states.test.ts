@@ -14,7 +14,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *
  * The real server component runs here with the API answered by a stub; the
  * client panels around it are placeholders, because what is under test is
- * which state the page picks.
+ * which state the page picks. The operation's sections (monitoring,
+ * occurrences, tickets, proof audit) moved to the Torre on 14/10/2026 and
+ * are checked there (control-tower-views-server.test.ts).
  */
 vi.mock("next/navigation", () => ({
   redirect: (to: string) => {
@@ -238,33 +240,6 @@ describe("a 403 is said as what it is", () => {
     expect(html).toContain("Módulo Entregas não contratado");
     expect(html).toContain("sua empresa");
   });
-
-  it("does the same on the monitoring board", async () => {
-    answers = [
-      [/\/user\/me$/, { status: 503, body: {} }],
-      [
-        /operation-summary/,
-        { status: 403, body: { code: "PERMISSION_DENIED" } },
-      ],
-    ];
-
-    const html = await render("dashboard", { tab: "monitoring" });
-
-    expect(html).toContain("Sem permissão para esta seção");
-    expect(html).not.toContain("não contratado");
-  });
-
-  it("and on the chat's probe", async () => {
-    answers = [
-      [/\/user\/me$/, { status: 503, body: {} }],
-      [/list-threads/, { status: 403, body: { code: "TENANT_INACTIVE" } }],
-    ];
-
-    const html = await render("dashboard", { tab: "chat" });
-
-    expect(html).toContain("Empresa desativada");
-    expect(html).not.toContain("não contratado");
-  });
 });
 
 describe("the MASTER on /admin/deliveries (decisions 3.7 and 4.3)", () => {
@@ -310,8 +285,9 @@ describe("the MASTER on /admin/deliveries (decisions 3.7 and 4.3)", () => {
     expect(html).toContain("esta empresa");
     expect(html).toContain(`data-manage="${COMPANY}"`);
 
-    // Decided before the tab is fetched: the client panels show it too.
-    expect(requested.some((url) => url.includes("list-delivery"))).toBe(false);
+    // The refusal decides what renders, even with the tab's list read beside
+    // it (item 8: the independent reads leave together).
+    expect(html).not.toContain("data-table=");
   });
 
   it("sees a switched-off company as switched off, with no module button", async () => {
@@ -355,19 +331,6 @@ describe("the MASTER on /admin/deliveries (decisions 3.7 and 4.3)", () => {
 
     expect(html).toContain('data-table="deliveries"');
     expect(html).not.toContain("não contratado");
-  });
-
-  it("sees the same state on a client-panel tab (chat)", async () => {
-    answers = [
-      [/\/user\/me$/, masterMe],
-      [probe, { status: 403, body: { code: "MODULE_NOT_ENABLED" } }],
-      [/list-threads/, { status: 200, body: { data: [] } }],
-    ];
-
-    const html = await render("admin", { tab: "chat", businessId: COMPANY });
-
-    expect(html).toContain("Módulo Entregas não contratado");
-    expect(html).not.toContain('data-panel="chat"');
   });
 });
 
@@ -428,26 +391,6 @@ describe("the tables answered on the server (decision 8.8)", () => {
     expect(html).toContain("statusCounts");
   });
 
-  it("sends the occurrence feed's sort and facets", async () => {
-    answers = [
-      [/\/user\/me$/, adminMe],
-      [/list-occurrences/, { status: 200, body: "" }],
-    ];
-
-    await render("dashboard", {
-      tab: "occurrences",
-      sort: "typeName",
-      order: "asc",
-      severity: "blocking",
-    });
-
-    const query = listQuery("/delivery/list-occurrences");
-
-    expect(query.get("sort")).toBe("typeName");
-    expect(query.get("order")).toBe("asc");
-    expect(query.get("severity")).toBe("blocking");
-  });
-
   // SERVER-TABLE-CATALOG: Embarcadores, Tipos, Motivos and Importações
   // filtered and sorted only the loaded page, although their listings take
   // sort, order and the facets (decision 8.8).
@@ -502,6 +445,30 @@ describe("the tables answered on the server (decision 8.8)", () => {
     },
   );
 
+  it("asks the imports for their counters only, not each upload's report", async () => {
+    answers = [
+      [/\/user\/me$/, adminMe],
+      [/list-imports/, { status: 200, body: "" }],
+    ];
+
+    await render("dashboard", { tab: "imports" });
+
+    expect(listQuery("/import/list-imports").get("includeReport")).toBe(
+      "false",
+    );
+  });
+
+  it("opens the deliveries on today, and reads them with the session", async () => {
+    answers = [
+      [/\/user\/me$/, adminMe],
+      [/list-delivery/, { status: 200, body: "" }],
+    ];
+
+    await render("dashboard", {});
+
+    expect(listQuery("/delivery/list-delivery").get("period")).toBe("today");
+  });
+
   it("sends only what the endpoint knows", async () => {
     answers = [
       [/\/user\/me$/, adminMe],
@@ -536,15 +503,6 @@ describe("the client panels act on a company (DLVB-03)", () => {
     expect(html).toContain(`data-business="${COMPANY}"`);
   });
 
-  it("and the proof audit queue", async () => {
-    answers = [[/\/user\/me$/, adminMe]];
-
-    const html = await render("dashboard", { tab: "proof-audits" });
-
-    expect(html).toContain('data-panel="proof-audits"');
-    expect(html).toContain(`data-business="${COMPANY}"`);
-  });
-
   it("gives them the company picked on /admin", async () => {
     answers = [
       [
@@ -566,5 +524,23 @@ describe("the client panels act on a company (DLVB-03)", () => {
     });
 
     expect(html).toContain(`data-business="${COMPANY}"`);
+  });
+});
+
+describe("an old link to a section that moved to the Torre", () => {
+  it("does not draw it on Entregas any more", async () => {
+    answers = [
+      [/\/user\/me$/, adminMe],
+      [/list-delivery/, { status: 200, body: "" }],
+    ];
+
+    for (const tab of ["monitoring", "occurrences", "chat", "proof-audits"]) {
+      const html = await render("dashboard", { tab });
+
+      // The page redirects these first (movedDeliveryTabHref); reached
+      // anyway, the content falls back to the first tab.
+      expect(html, tab).toContain('data-active="deliveries"');
+      expect(html, tab).not.toContain("data-panel=");
+    }
   });
 });

@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import type { ColumnDef, Table } from "@tanstack/react-table";
 
-import { Checkbox } from "@/components/ui/checkbox";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
 import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
@@ -27,52 +26,19 @@ import { FuelTypeRowActions } from "./row-actions";
 function buildFuelTypeColumns(): ColumnDef<FuelTypeRow>[] {
   return [
     {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todos"
-          className="translate-y-[2px]"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "id",
-      meta: { title: "Identificador" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Identificador" />
-      ),
-      cell: ({ row }) => (
-        <p className="w-80 truncate font-medium">{row.original.id}</p>
-      ),
-      enableHiding: false,
-    },
-    {
       accessorKey: "description",
-      meta: { title: "Tipo do combustível" },
+      meta: { title: "Descrição" },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Tipo do combustível" />
+        <DataTableColumnHeader column={column} title="Descrição" />
       ),
       cell: ({ row }) => (
         <p className="w-48 truncate font-medium">
           {displayValue(row.original.description)}
         </p>
       ),
+      // The description ("Diesel S10") is the type's identifier: what the
+      // refueling form offers.
+      enableHiding: false,
     },
     {
       accessorKey: "created_at",

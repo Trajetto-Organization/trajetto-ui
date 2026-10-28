@@ -16,7 +16,7 @@ import { usePageActionClassName } from "@/app/(protected)/_components/layout/pro
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 
-import { handleExportVehicle } from "@/actions/vehicle/export-vehicle";
+import { exportVehicleRequest } from "@/lib/export-requests";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -70,7 +70,7 @@ const VehiclePageActions = ({
 
   // The export follows the screen: its company, search and filters (5.8).
   const exportVehicles = (search?: string, format?: "csv" | "excel") =>
-    handleExportVehicle(search, format, {
+    exportVehicleRequest(search, format, {
       businessId,
       filters: vehicleListQuery(Object.fromEntries(searchParams.entries())),
     });
@@ -81,7 +81,7 @@ const VehiclePageActions = ({
     <PageActions>
       <ExportButton
         hasData={hasData}
-        exportAction={exportVehicles}
+        exportRequest={exportVehicles}
         entityName="relatório de veículos"
         writePermission={exportPermissions.hasAllPermissions}
       />

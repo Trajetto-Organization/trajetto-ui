@@ -16,11 +16,9 @@ import {
 
 import { Switch } from "@/components/ui/switch";
 
-import {
-  getBusinessEntitlements,
-  updateBusinessEntitlement,
-} from "@/actions/business/entitlements";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { updateBusinessEntitlement } from "@/actions/business/entitlements";
+import { isStaleActionResult } from "@/lib/action-result";
+import { fetchBusinessEntitlements } from "@/lib/business-reads";
 
 import { DisableModuleDialog } from "../disable-dialog";
 
@@ -83,19 +81,12 @@ const ManageEntitlementsForm = ({
 
   const { data: response, isLoading } = useQuery(
     ["business-entitlements", businessId],
-    async () => {
-      const entitlements = await getBusinessEntitlements(businessId);
-
-      // Thrown, so a refetch (the one after each toggle) keeps the modules
-      // it last read; an `undefined` answer would replace them and read as
-      // "every module off". A first open has nothing to keep and still shows
-      // them off, under the deploy notice.
-      if (isStaleActionResult(entitlements, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      return entitlements;
-    },
+    // A relay GET (lib/business-reads): a refusal rejects, so a refetch
+    // (the one after each toggle) keeps the modules it last read instead of
+    // replacing them with "every module off".
+    async ({ signal }) => ({
+      data: await fetchBusinessEntitlements(businessId, { signal }),
+    }),
     { enabled: isOpen, refetchOnWindowFocus: false },
   );
 
@@ -117,10 +108,10 @@ const ManageEntitlementsForm = ({
 
       if (result.success) {
         // The switch shows the answer now, not when the refetch lands: that
-        // refetch is a Server Action, queued behind whatever the router is
-        // doing (the plan change also refreshes the MASTER's screens), and a
-        // toast saying "atualizado" beside a switch still off read as a
-        // failure for as long as it took — 30 s on a busy server.
+        // refetch used to be a Server Action, queued behind whatever the
+        // router was doing (the plan change also refreshes the MASTER's
+        // screens), and a toast saying "atualizado" beside a switch still
+        // off read as a failure for as long as it took.
         queryClient.setQueryData<typeof response>(
           ["business-entitlements", businessId],
           (current) =>

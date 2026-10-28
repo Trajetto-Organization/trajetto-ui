@@ -262,6 +262,8 @@ describe("the deliveries table on the server (decision 8.8)", () => {
       order: "desc",
       status: "PENDING,FAILED",
       shipperId: SHIPPER,
+      // The list opens on today (meeting of 14/10/2026); the API is told.
+      period: "today",
     });
   });
 });
@@ -418,15 +420,22 @@ describe("the delivery detail's links and photos (decision 6.7, DLVB-06)", () =>
 
 describe("the deliveries and occurrences tables (decision 8.8)", () => {
   it("are always answered on the server, never by filtering the loaded page", () => {
-    const table = readFileSync(
-      resolve(__dirname, "../../src/features/deliveries/table/index.tsx"),
-      "utf8",
-    );
+    // Each tab's table is its own module (table/index.tsx loads them).
+    const read = (file: string) =>
+      readFileSync(
+        resolve(__dirname, "../../src/features/deliveries/table", file),
+        "utf8",
+      );
+
+    const deliveries = read("deliveries.tsx");
 
     // The page always sends the sort and facet params; a read without
     // searchMeta used to drop back to the page-only filters.
-    expect(table).toMatch(/server=\{DELIVERY_TABLE\}/);
-    expect(table).not.toMatch(/serverMode/);
-    expect(table).not.toMatch(/buildOccurrenceColumns/);
+    expect(deliveries).toMatch(/server=\{DELIVERY_TABLE\}/);
+
+    for (const table of [read("index.tsx"), deliveries]) {
+      expect(table).not.toMatch(/serverMode/);
+      expect(table).not.toMatch(/buildOccurrenceColumns/);
+    }
   });
 });

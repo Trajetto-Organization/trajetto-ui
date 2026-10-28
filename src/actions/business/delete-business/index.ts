@@ -9,6 +9,7 @@ import {
 import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface DeleteBusinessProps {
   businessId: string;
@@ -74,6 +75,10 @@ const handleDeleteBusiness = async ({
         errorCode,
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("delete-business");
 
     return { successMessage: message };
   } catch (error) {

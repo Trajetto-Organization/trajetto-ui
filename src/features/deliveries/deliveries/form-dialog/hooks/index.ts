@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import { revalidateTagName } from "@/actions/revalidate";
-
 interface DeliveryFieldErrors {
   shipperId?: string[];
   code?: string[];
@@ -73,19 +71,7 @@ function useDeliveryForm({ state, onClose }: UseDeliveryFormProps) {
       toastShownRef.current = true;
       toast.success(state.successMessage);
 
-      const performRevalidation = async () => {
-        try {
-          await revalidateTagName("update-delivery");
-        } catch (error: any) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("Erro na revalidação:", error);
-          }
-
-          toast.error("Erro ao atualizar dados. Recarregue a página.");
-        }
-      };
-
-      performRevalidation();
+      // The action re-rendered the screen in its own response.
       onClose();
     }
 

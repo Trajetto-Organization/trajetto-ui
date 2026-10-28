@@ -51,12 +51,14 @@ const TOURS: string[] = [
   "/dashboard/vehicle",
   "/dashboard/driver",
   "/dashboard/deliveries",
-  "/dashboard/deliveries?tab=occurrences",
-  "/dashboard/deliveries?tab=monitoring",
-  "/dashboard/deliveries?tab=chat",
   "/dashboard/deliveries?tab=shippers",
   "/dashboard/routes",
-  "/dashboard/control-tower",
+  // Every view named: the bare Torre opens on the view this browser chose
+  // last, which is not necessarily Rotas (its default).
+  "/dashboard/control-tower?view=routes",
+  "/dashboard/control-tower?view=panel",
+  "/dashboard/control-tower?view=occurrences",
+  "/dashboard/control-tower?view=tickets",
   "/dashboard/driver-pauses",
   "/dashboard/integrations?tab=api-keys",
   "/dashboard/integrations?tab=webhooks",
@@ -536,11 +538,11 @@ test.describe("table: row with actions and empty table (decision 9.1)", () => {
 });
 
 test.describe("tab in the URL and route page", () => {
-  test("?tab=occurrences opens the Ocorrências tour, not the Entregas one", async ({
+  test("?view=occurrences opens the Ocorrências tour, not the Torre's default one", async ({
     page,
   }) => {
     await signInWithTours(page, DESKTOPS[0]);
-    await goto(page, "/dashboard/deliveries?tab=occurrences");
+    await goto(page, "/dashboard/control-tower?view=occurrences");
     await ensureTourOpen(page);
 
     await settledStep(page);

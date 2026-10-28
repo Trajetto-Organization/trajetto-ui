@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
@@ -17,47 +16,16 @@ import { ShipperRowActions } from "./row-actions";
 
 const buildShipperColumns = (): ColumnDef<ShipperData>[] => [
   {
-    id: "select",
-    meta: {
-      title: "Seleção",
-    },
-    header: ({ table }) => (
-      <Checkbox
-        id="select-all-shippers"
-        name="select-all-shippers"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Selecionar todas"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-shipper-${row.id}`}
-        name={`select-shipper-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Selecionar linha"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "id",
-    meta: {
-      title: "Identificador",
-    },
+    // The shipper's CNPJ is how the operation and the NF-e name it. Some
+    // shippers are registered without one: the name then identifies the row.
+    accessorKey: "cnpj",
+    meta: { title: "CNPJ" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
+      <DataTableColumnHeader column={column} title="CNPJ" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-80">
-        {displayValue(row.getValue("id"))}
+      <p className="truncate font-medium w-40">
+        {row.original.cnpj ? formatCnpj(row.original.cnpj) : row.original.name}
       </p>
     ),
     enableSorting: false,
@@ -74,19 +42,6 @@ const buildShipperColumns = (): ColumnDef<ShipperData>[] => [
         {displayValue(row.getValue("name"))}
       </p>
     ),
-  },
-  {
-    accessorKey: "cnpj",
-    meta: { title: "CNPJ" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="CNPJ" />
-    ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-40">
-        {row.original.cnpj ? formatCnpj(row.original.cnpj) : displayValue(null)}
-      </p>
-    ),
-    enableSorting: false,
   },
   {
     accessorKey: "email",

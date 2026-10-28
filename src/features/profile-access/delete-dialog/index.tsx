@@ -51,7 +51,7 @@ const DeleteProfileAccessDialog = ({
 
       toast.success(result.successMessage ?? "Perfil de acesso deletado.");
 
-      void refreshAfterProfileWrite("delete-profile-access").catch(() =>
+      void refreshAfterProfileWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

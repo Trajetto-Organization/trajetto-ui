@@ -41,7 +41,12 @@ vi.mock("next/navigation", () => ({
 vi.mock("next/dynamic", () => ({
   default: () =>
     function TowerMapStub(props: {
-      positions: Array<{ driverId: string; driverName: string; state: string }>;
+      positions: Array<{
+        driverId: string;
+        driverName: string;
+        state: string;
+        latitude: number;
+      }>;
       onSelectDriver: (driverId: string) => void;
     }) {
       return createElement(
@@ -54,6 +59,7 @@ vi.mock("next/dynamic", () => ({
               key: position.driverId,
               type: "button",
               "data-state": position.state,
+              "data-latitude": String(position.latitude),
               onClick: () => props.onSelectDriver(position.driverId),
             },
             `Selecionar ${position.driverName}`,
@@ -116,7 +122,7 @@ type Answer = {
 };
 
 const api = vi.hoisted(() => ({
-  towerAnswers: [] as Array<() => Answer>,
+  towerAnswers: [] as Array<() => Answer | Promise<Answer>>,
   towerCalls: [] as Array<string | undefined>,
   trailCalls: [] as Array<{ driverId: string; businessId?: string }>,
 }));
@@ -450,6 +456,76 @@ describe("a point from the socket (UI-TWR-4)", () => {
       container.querySelector("button[data-state]")?.getAttribute("data-state"),
     ).toBe("moving");
   });
+});
+
+/**
+ * A read in flight when a point arrives. Every read used to clear the
+ * socket's dots, so the read's older snapshot replaced the point received
+ * meanwhile and the truck jumped back until its next ping.
+ */
+describe("a point that arrives during a reread", () => {
+  it("keeps the truck where the newer point put it", async () => {
+    const recorded = new Date(Date.now() - 20_000).toISOString();
+
+    let answerReread: (answer: Answer) => void = () => undefined;
+
+    api.towerAnswers = [
+      () => ({ success: true, message: "", data: tower([ANA(recorded)]) }),
+      () =>
+        new Promise<Answer>((resolve) => {
+          answerReread = resolve;
+        }),
+    ];
+
+    const { container } = await render(
+      createElement(ControlTowerPanel, { businessId: BUSINESS_A }),
+    );
+
+    const latitude = () =>
+      container
+        .querySelector("button[data-latitude]")
+        ?.getAttribute("data-latitude");
+
+    expect(await until(() => latitude() === "-18.9")).toBe(true);
+
+    // A reconnection asks for the tower again; the read hangs.
+    await act(async () => {
+      [...resync].forEach((listener) => listener());
+    });
+
+    expect(await until(() => api.towerCalls.length === 2)).toBe(true);
+
+    // Meanwhile the phone reports from further down the road.
+    await act(async () => {
+      socket.fire("driverPosition", {
+        driverId: "d1",
+        routeId: "r1",
+        latitude: -18.99,
+        longitude: -48.2,
+        speed: null,
+        heading: null,
+        recordedAt: new Date().toISOString(),
+      });
+    });
+
+    expect(await until(() => latitude() === "-18.99")).toBe(true);
+
+    // The read lands with the snapshot taken before that point (another
+    // battery reading, so it is a new answer and not the same one shared).
+    await act(async () => {
+      answerReread({
+        success: true,
+        message: "",
+        data: tower([{ ...ANA(recorded), battery: 80 }]),
+      });
+    });
+
+    await act(async () => {
+      await new Promise((done) => setTimeout(done, 50));
+    });
+
+    expect(latitude(), "o caminhão voltou para o ponto antigo").toBe("-18.99");
+  }, 10_000);
 });
 
 describe("a route event", () => {

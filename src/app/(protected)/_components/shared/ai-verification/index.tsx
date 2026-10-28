@@ -13,11 +13,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
-  getAIVerificationProgress,
   requestAIVerification,
+  type AIAnalysisProgress,
   type AIRecordType,
 } from "@/actions/ai-analysis";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { isStaleActionResult } from "@/lib/action-result";
+import { relayUrl } from "@/lib/api-relay-paths";
+import { relayAnswer, relayJson } from "@/lib/relay-read";
 
 import { pollInterval, progressView } from "./progress-view";
 
@@ -25,14 +27,27 @@ import { pollInterval, progressView } from "./progress-view";
 const progressKey = (recordType: AIRecordType, recordId: string) =>
   ["ai-analysis-progress", recordType, recordId] as const;
 
-async function fetchProgress(recordType: AIRecordType, recordId: string) {
-  const response = await getAIVerificationProgress(recordType, recordId);
+/**
+ * A relay GET (lib/relay-read): polled while an analysis runs, it took a
+ * turn in Next's one-at-a-time Server Action queue on every tick. Answered
+ * as a value (`success`, `data`), a refusal included.
+ */
+async function fetchProgress(
+  recordType: AIRecordType,
+  recordId: string,
+  signal?: AbortSignal,
+) {
+  const errorMessage = "Houve um erro ao consultar o progresso da IA.";
 
-  if (isStaleActionResult(response, { background: true })) {
-    throw new Error(STALE_ACTION_MESSAGE);
-  }
-
-  return response;
+  return relayAnswer(
+    relayJson<{ data: AIAnalysisProgress }>(
+      relayUrl(
+        `/ai-analysis/progress/${encodeURIComponent(recordType)}/${encodeURIComponent(recordId)}`,
+      ),
+      { signal, errorMessage },
+    ).then((answer) => answer.data),
+    errorMessage,
+  );
 }
 
 /**
@@ -62,7 +77,7 @@ const RequestAIVerificationButton = ({
 
   const { data } = useQuery(
     progressKey(recordType, recordId),
-    () => fetchProgress(recordType, recordId),
+    ({ signal }) => fetchProgress(recordType, recordId, signal),
     { staleTime: 30_000, refetchOnWindowFocus: false },
   );
 
@@ -131,7 +146,7 @@ const AIAnalysisProgressFallback = ({
 
   const { data } = useQuery(
     progressKey(recordType, recordId),
-    () => fetchProgress(recordType, recordId),
+    ({ signal }) => fetchProgress(recordType, recordId, signal),
     {
       refetchInterval: (latest) => pollInterval(latest?.data),
       refetchOnWindowFocus: false,

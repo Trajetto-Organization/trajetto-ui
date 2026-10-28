@@ -154,11 +154,64 @@ export function buildContentSecurityPolicy({
     // Nothing frames this app, not even itself: clickjacking needs a frame.
     ["frame-ancestors", "'none'"],
     ["form-action", "'self'"],
-    ["report-uri", "/api/csp-report"],
+    ...reportingDirectives(),
   ];
 
   return directives.map(([name, value]) => `${name} ${value}`).join("; ");
 }
+
+/** Where browsers send violations (src/app/api/csp-report/route.ts). */
+const CSP_REPORT_PATH = "/api/csp-report";
+
+/** The Reporting API name of that endpoint, declared by `Reporting-Endpoints`. */
+const CSP_REPORT_GROUP = "csp-endpoint";
+
+const REPORTING_ENDPOINTS_HEADER = "Reporting-Endpoints";
+
+/**
+ * Both reporting directives: `report-to` for browsers with the Reporting API
+ * (which then ignore `report-uri`), `report-uri` for the rest. The endpoint
+ * reads both formats.
+ */
+function reportingDirectives(): Array<[string, string]> {
+  return [
+    ["report-uri", CSP_REPORT_PATH],
+    ["report-to", CSP_REPORT_GROUP],
+  ];
+}
+
+/** The `Reporting-Endpoints` value that names the group `report-to` uses. */
+function reportingEndpoints(): string {
+  return `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"`;
+}
+
+/**
+ * Trusted Types, step 1: Report-Only, sent next to the enforced policy.
+ *
+ * Every DOM sink that turns a string into script (innerHTML, script.src,
+ * eval…) is reported unless the value went through a named policy. Needs no
+ * nonce, so it rides on prerendered pages too. The names are the ones Next
+ * creates: `nextjs#bundler` is webpack's chunk loader
+ * (next/dist/build/webpack-config.js) and `nextjs` its client helper
+ * (next/dist/client/trusted-types.js); `default` is the slot a future
+ * enforcement step may fill. Nothing is blocked: the reports say what would
+ * break before anything is enforced.
+ */
+const TRUSTED_TYPES_REPORT_ONLY_POLICY = [
+  ["require-trusted-types-for", "'script'"],
+  ["trusted-types", "nextjs nextjs#bundler default"],
+  ...reportingDirectives(),
+]
+  .map(([name, value]) => `${name} ${value}`)
+  .join("; ");
+
+export {
+  CSP_REPORT_GROUP,
+  CSP_REPORT_PATH,
+  REPORTING_ENDPOINTS_HEADER,
+  TRUSTED_TYPES_REPORT_ONLY_POLICY,
+  reportingEndpoints,
+};
 
 /** The sign-in pages: rendered per request ((auth)/layout.tsx is force-dynamic). */
 const AUTH_PATHS = new Set([

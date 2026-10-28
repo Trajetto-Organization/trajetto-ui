@@ -67,59 +67,79 @@ const DeliveriesSkeleton = ({
         </div>
       )}
 
-      {/* The table's own toolbar: search, the filters, the view menu. */}
-      <div className="flex w-full flex-wrap items-center gap-2">
-        <Skeleton className="h-8 w-full sm:w-[270px]" />
+      <DeliveriesTableSkeleton />
+    </div>
+  );
+};
 
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-8 w-28" />
+/**
+ * The table part alone — its toolbar, the rows and the pagination — for the
+ * moment a tab's table code is still on its way (table/index.tsx loads each
+ * tab's table as its own chunk). Same shapes as the page skeleton above, so
+ * the page around it does not move.
+ */
+const DeliveriesTableSkeleton = (): JSX.Element => (
+  <>
+    {/* The table's own toolbar: the period on its own line (meeting of
+          14/10/2026), then search, the filters, the view menu. */}
+    <div className="flex w-full flex-wrap items-center gap-2">
+      <div data-skeleton-period className="flex w-full items-center gap-1">
+        <Skeleton className="h-4 w-4" />
+        {["w-14", "w-16", "w-[72px]", "w-[72px]", "w-28"].map((width) => (
+          <Skeleton key={width} className={`h-8 ${width}`} />
         ))}
-
-        <Skeleton className="h-8 w-full sm:ml-auto sm:w-28" />
       </div>
 
-      <div className="rounded-md border">
-        <div className="flex items-center gap-4 border-b px-4 py-3">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-5 flex-1" />
-          ))}
-        </div>
+      <Skeleton className="h-8 w-full sm:w-[270px]" />
 
-        <div className="divide-y">
-          {Array.from({ length: 8 }).map((_, row) => (
-            <div key={row} className="flex items-center gap-4 px-4 py-4">
-              {Array.from({ length: 5 }).map((_, column) => (
-                <Skeleton
-                  key={column}
-                  className="h-4 flex-1"
-                  style={{
-                    /*
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Skeleton key={index} className="h-8 w-28" />
+      ))}
+
+      <Skeleton className="h-8 w-full sm:ml-auto sm:w-28" />
+    </div>
+
+    <div className="rounded-md border">
+      <div className="flex items-center gap-4 border-b px-4 py-3">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Skeleton key={index} className="h-5 flex-1" />
+        ))}
+      </div>
+
+      <div className="divide-y">
+        {Array.from({ length: 8 }).map((_, row) => (
+          <div key={row} className="flex items-center gap-4 px-4 py-4">
+            {Array.from({ length: 5 }).map((_, column) => (
+              <Skeleton
+                key={column}
+                className="h-4 flex-1"
+                style={{
+                  /*
                       Ragged on purpose, and derived from the cell rather than
                       drawn at random: `Math.random()` in a render gives the
                       server one number and the client another, which React
                       calls a hydration mismatch and answers by throwing the
                       server's markup away.
                     */
-                    maxWidth: `${62 + ((row * 7 + column * 13) % 38)}%`,
-                  }}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row">
-        <Skeleton className="h-5 w-56" />
-
-        <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-6">
-          <Skeleton className="h-8 w-28" />
-          <Skeleton className="h-8 w-16" />
-          <Skeleton className="h-8 w-24" />
-        </div>
+                  maxWidth: `${62 + ((row * 7 + column * 13) % 38)}%`,
+                }}
+              />
+            ))}
+          </div>
+        ))}
       </div>
     </div>
-  );
-};
 
-export { DeliveriesSkeleton };
+    <div className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row">
+      <Skeleton className="h-5 w-56" />
+
+      <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-6">
+        <Skeleton className="h-8 w-28" />
+        <Skeleton className="h-8 w-16" />
+        <Skeleton className="h-8 w-24" />
+      </div>
+    </div>
+  </>
+);
+
+export { DeliveriesSkeleton, DeliveriesTableSkeleton };

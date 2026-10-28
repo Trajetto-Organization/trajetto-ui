@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 /**
  * The floating alert (decision 14.6) mounted for real: a socket event pops
  * the card, the card leads to the ticket, closing the ticket elsewhere takes
@@ -78,12 +80,9 @@ vi.mock("@/features/deliveries/chat/lib/use-chat-unread", () => ({
       : null,
 }));
 
+// Saving the switch stays a Server Action; reading it is a relay GET of
+// /notification/preferences (ops-alert/sound-preference).
 vi.mock("@/actions/chat/tickets", () => ({
-  getOpsAlertSound: async () => ({
-    success: true,
-    message: "",
-    data: { sound: false },
-  }),
   updateOpsAlertSound: (...args: unknown[]) => state.updateSound(...args),
 }));
 
@@ -176,6 +175,10 @@ beforeEach(() => {
       }
     },
   );
+
+  stubRelay({
+    "/notification/preferences": () => ({ opsAlert: { sound: false } }),
+  });
 });
 
 afterEach(async () => {
@@ -240,8 +243,9 @@ describe("the operations alert balloon", () => {
       card.click();
     });
 
+    // The tickets are the Torre's Atendimentos (meeting of 14/10/2026).
     expect(state.push).toHaveBeenCalledWith(
-      "/dashboard/deliveries?tab=chat&ticket=tk2",
+      "/dashboard/control-tower?view=tickets&ticket=tk2",
     );
     expect(pane.textContent).not.toContain("Pedido de autorização");
   });

@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { Table } from "@tanstack/react-table";
 import {
   Building2,
@@ -9,8 +7,8 @@ import {
   CircleDot,
   Layers,
   FileSpreadsheet,
-  Route as RouteIcon,
   ShieldAlert,
+  Tags,
   Truck,
   X,
 } from "lucide-react";
@@ -18,26 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
 import { useSearch } from "@/lib/search-params";
-
-import { permissions } from "@/lib/permissions";
-import {
-  getPermissionName,
-  useCheckMultiplePermissions,
-} from "@/lib/check-multiple-permissions";
-
-import type { DeliveryListItem } from "@/actions/delivery/get-delivery";
-
-import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
-import { AddToRouteDialog } from "@/features/routes/add-to-route-dialog";
-import { addToRouteBlocker } from "@/features/routes/lib/add-to-route";
 
 import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
 import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
@@ -46,9 +25,11 @@ import { facetOptions } from "@/app/(protected)/_components/shared/tanstack-tabl
 
 import type { DeliveryTab } from "../lib/tabs";
 import {
+  DELIVERY_KIND_FILTER_LABELS,
   DELIVERY_STATUS_FILTER_LABELS,
   type DeliveryListSearchMeta,
 } from "../deliveries/server-table";
+import { DeliveriesPeriodFilter } from "./period-filter";
 import {
   ACTIVE_LABELS,
   IMPORT_STATUS_LABELS,
@@ -66,6 +47,11 @@ interface DeliveriesTableToolbarProps<TData> {
    * the tab falls back to filtering the loaded page.
    */
   serverFacets?: DeliveryListSearchMeta["facets"];
+  /**
+   * The days the deliveries listing covered, and whether an exact search
+   * made the API ignore them (`searchMeta.period`).
+   */
+  periodMeta?: DeliveryListSearchMeta["period"];
   /**
    * A catalog tab answered on the server (decision 8.8): its filters' counts,
    * from `searchMeta.facets`. Absent, the tab filters the loaded page.
@@ -201,6 +187,7 @@ function catalogFilters(
 export function DeliveriesTableToolbar<TData>({
   activeTab,
   serverFacets,
+  periodMeta,
   catalogFacets,
   table,
   error,
@@ -208,37 +195,6 @@ export function DeliveriesTableToolbar<TData>({
   setIsLoading,
 }: DeliveriesTableToolbarProps<TData>) {
   const { handleSearch, searchParams, isPending } = useSearch();
-
-  const businessId = useDeliveriesBusinessId();
-  const [isAssignOpen, setIsAssignOpen] = useState<boolean>(false);
-
-  const permissionsRequired = useCheckMultiplePermissions([
-    {
-      key: permissions.DELIVERY_MANAGE,
-      action: "write",
-      label: getPermissionName(permissions.DELIVERY_MANAGE),
-    },
-  ]);
-
-  const canWrite = permissionsRequired.hasAllPermissions;
-
-  // "Adicionar à rota" reads the checked rows straight from the table
-  // instance the DataTable injects; only the deliveries tab has the
-  // selection column.
-  const selectedDeliveries =
-    activeTab === "deliveries" && table
-      ? table
-          .getSelectedRowModel()
-          .rows.map((row) => row.original as DeliveryListItem)
-      : [];
-
-  const pendingSelection = selectedDeliveries.filter(
-    (delivery) => delivery.status === "PENDING",
-  );
-
-  // The API would refuse a mixed batch anyway; the button explains before
-  // the request instead of after it.
-  const selectionBlocker = addToRouteBlocker(selectedDeliveries);
 
   // On the server the filters bring their own "Resetar" (and live in the URL).
   const catalogServerFiltered = catalogFacets !== undefined;
@@ -259,6 +215,16 @@ export function DeliveriesTableToolbar<TData>({
 
   return (
     <div className="flex flex-wrap items-center gap-2 w-full">
+      {/* The list opens on today (meeting of 14/10/2026): the period comes
+          first, on its own line, because it frames every number below.
+          Never disabled by a failed read: a 30-day or a 92-day range is the
+          likeliest cause of one, and a shorter period is the way out. */}
+      {activeTab === "deliveries" && (
+        <div className="w-full">
+          <DeliveriesPeriodFilter periodMeta={periodMeta} />
+        </div>
+      )}
+
       {SEARCH_PLACEHOLDER[activeTab] !== "" && (
         <SearchInputWithLoading
           data-tutorial="deliveries-search"
@@ -309,6 +275,14 @@ export function DeliveriesTableToolbar<TData>({
                 icon: Truck,
                 options: facetOptions(serverFacets?.driverId),
               },
+              {
+                // Entrega, Ordem de serviço or Coleta: a closed set, no
+                // counts from the API.
+                columnId: "kind",
+                title: "Tipo",
+                icon: Tags,
+                options: facetOptions(undefined, DELIVERY_KIND_FILTER_LABELS),
+              },
             ]}
           />
         )}
@@ -344,73 +318,6 @@ export function DeliveriesTableToolbar<TData>({
         <div className="w-full sm:w-auto sm:ml-auto">
           <DataTableViewOptions table={table} />
         </div>
-      )}
-
-      {/* Selection turns into a floating action pill over the table —
-      Gmail-style bulk mode. It never disturbs the toolbar layout, and
-      z-40 keeps it under the dialogs (z-50). */}
-      {selectedDeliveries.length > 0 && (
-        <div
-          data-tutorial="deliveries-assign"
-          className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2
-          flex items-center gap-3 rounded-full border bg-background
-          px-4 py-2 shadow-lg animate-in fade-in slide-in-from-bottom-2"
-        >
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            {selectedDeliveries.length} selecionada
-            {selectedDeliveries.length > 1 ? "s" : ""}
-          </span>
-
-          <TooltipProvider delayDuration={100}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0}>
-                  <Button
-                    size="sm"
-                    className="h-8 flex items-center gap-1"
-                    disabled={!canWrite || selectionBlocker !== null}
-                    onClick={() => setIsAssignOpen(true)}
-                  >
-                    <RouteIcon className="h-4 w-4" />
-                    Adicionar à rota
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {(!canWrite || selectionBlocker) && (
-                <TooltipContent className="max-w-xs">
-                  <p>
-                    {!canWrite
-                      ? permissionsRequired.tooltipMessage
-                      : selectionBlocker}
-                  </p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 flex items-center gap-1"
-            onClick={() => table?.resetRowSelection()}
-            aria-label="Limpar seleção"
-          >
-            Limpar
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* The route is the unit of assignment (decision 14.7): the
-      selection joins a route, never a driver directly. */}
-      {businessId && isAssignOpen && (
-        <AddToRouteDialog
-          businessId={businessId}
-          deliveries={pendingSelection}
-          isOpen={isAssignOpen}
-          onClose={() => setIsAssignOpen(false)}
-          onAdded={() => table?.resetRowSelection()}
-        />
       )}
     </div>
   );

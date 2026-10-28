@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
-import { getOpsAlertSound, updateOpsAlertSound } from "@/actions/chat/tickets";
+import { updateOpsAlertSound } from "@/actions/chat/tickets";
 
 import { useChatAccess } from "../chat/lib/use-chat-unread";
 import { OPS_ALERT_SOUND_KEY } from "./ops-alert-balloon";
+import { fetchOpsAlertSound } from "./sound-preference";
 
 /**
  * "Alertas da operação" in the profile (decision 14.6, design §6.5): the
@@ -27,13 +28,7 @@ const OpsAlertSoundSetting = (): JSX.Element | null => {
 
   const query = useQuery(
     OPS_ALERT_SOUND_KEY,
-    async () => {
-      const result = await getOpsAlertSound();
-
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data.sound;
-    },
+    ({ signal }) => fetchOpsAlertSound({ signal }),
     { enabled: canUseChat, staleTime: 5 * 60_000 },
   );
 

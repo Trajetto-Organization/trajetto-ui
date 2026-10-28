@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 /**
  * Live validation (decision 16.700) on the create/edit dialogs of the access
  * and catalogue screens and of Entregas: access profile, permission, shipper,
@@ -93,18 +95,6 @@ vi.mock("@/actions/occurrence-type/create-occurrence-type", () => ({
 vi.mock("@/actions/occurrence-type/update-occurrence-type", () => ({
   handleUpdateOccurrenceType: vi.fn(),
 }));
-vi.mock("@/actions/business/get-ai-usage", () => ({
-  getAIUsage: async () => ({
-    success: true,
-    data: {
-      ai_analysis_limit: 100,
-      ai_analysis_used: 10,
-      ai_analysis_in_progress: 0,
-      ai_analysis_reset_at: null,
-      ai_analysis_timezone: "America/Sao_Paulo",
-    },
-  }),
-}));
 vi.mock("@/actions/branch/create-branch", () => ({
   handleCreateBranch: vi.fn(),
 }));
@@ -119,12 +109,6 @@ vi.mock("@/actions/business/update-ai-limit", () => ({
 }));
 vi.mock("@/actions/business/update-vehicle-limit", () => ({
   handleUpdateVehicleLimit: vi.fn(),
-}));
-vi.mock("@/actions/business/entitlements", () => ({
-  getBusinessEntitlements: async () => ({
-    success: true,
-    data: { vehicle_limit: 45, vehicle_count: 30, vehicle_inactive_count: 2 },
-  }),
 }));
 vi.mock("@/actions/route/create-route", () => ({ handleCreateRoute: vi.fn() }));
 vi.mock("@/actions/route/update-route", () => ({ handleUpdateRoute: vi.fn() }));
@@ -313,6 +297,32 @@ beforeEach(() => {
     role: "BUSINESS_ADMIN",
     enabledModules: ["FLEET", "DELIVERIES"],
   } as never);
+
+  // The limit dialogs read the company's usage and plan through the relay.
+  stubRelay([
+    [
+      /^\/business\/get-ai-usage\/[^/]+$/,
+      () => ({
+        data: {
+          ai_analysis_limit: 100,
+          ai_analysis_used: 10,
+          ai_analysis_in_progress: 0,
+          ai_analysis_reset_at: null,
+          ai_analysis_timezone: "America/Sao_Paulo",
+        },
+      }),
+    ],
+    [
+      /^\/business\/entitlements\/[^/]+$/,
+      () => ({
+        data: {
+          vehicle_limit: 45,
+          vehicle_count: 30,
+          vehicle_inactive_count: 2,
+        },
+      }),
+    ],
+  ]);
 });
 
 afterEach(async () => {
@@ -320,6 +330,7 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   root = null;
   document.body.innerHTML = "";
+  vi.unstubAllGlobals();
 });
 
 describe("the access profile dialog", () => {

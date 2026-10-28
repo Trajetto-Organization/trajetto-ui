@@ -5,6 +5,7 @@ import { getCookies } from "../../cookies";
 
 import type { DeliveryStatus } from "../get-delivery";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface ActionResponse<T = undefined> {
   success: boolean;
@@ -74,6 +75,10 @@ const updateDeliveryStatus = async (
           result.message || "Houve um erro ao mudar o status da entrega.",
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-delivery");
 
     return { success: true, message: result.message };
   } catch (error) {

@@ -39,6 +39,7 @@ vi.mock("@/features/routes/row-actions", () => ({
 }));
 
 import { RoutesTable } from "@/features/routes/table";
+import { LIST_QUERY_DEBOUNCE_MS } from "@/lib/search-params";
 import { routesListQuery } from "@/features/routes/server-table";
 
 // This runner compiles JSX with the classic runtime.
@@ -72,6 +73,13 @@ afterEach(async () => {
 async function click(element: Element): Promise<void> {
   await act(async () => {
     (element as HTMLElement).click();
+  });
+}
+
+/** A filter tick waits this long for the next one before it goes out. */
+async function afterFilterPause(): Promise<void> {
+  await act(async () => {
+    await new Promise((done) => setTimeout(done, LIST_QUERY_DEBOUNCE_MS + 50));
   });
 }
 
@@ -231,6 +239,7 @@ describe("the routes board filters on the server", () => {
 
     await click(filterButton(host, "Motorista"));
     await click(option("Bruno"));
+    await afterFilterPause();
 
     expect(navigation.push).toHaveBeenCalledWith(
       `?search=zona&driverId=${BRUNO}`,
@@ -245,6 +254,7 @@ describe("the routes board filters on the server", () => {
 
     await click(filterButton(host, "Veículo"));
     await click(option("AAA1A11"));
+    await afterFilterPause();
 
     expect(navigation.push).toHaveBeenCalledWith(`?vehicleId=${TRUCK}`, {
       scroll: false,

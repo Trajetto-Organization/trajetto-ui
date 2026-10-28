@@ -7,6 +7,12 @@ import middleware from "@/middleware";
 import { refreshAnswerEndsSession } from "@/lib/session-renewal";
 import { apiForwardingHeaders } from "@/lib/api-forwarding";
 
+// A refresh token of its own per request: the middleware shares one renewal
+// among requests racing on the same refresh token and keeps its answer for
+// a few seconds, and each case here is a session of its own.
+let session = 0;
+const nextSession = () => (session += 1);
+
 /**
  * What the middleware does when the access token has expired.
  *
@@ -34,7 +40,7 @@ const expiredAccess = jwt({
 function requestFor(path = "/dashboard", extra: Record<string, string> = {}) {
   return new NextRequest(`http://app.test${path}`, {
     headers: {
-      cookie: `tkey=${expiredAccess}; rkey=refresh-token-value`,
+      cookie: `tkey=${expiredAccess}; rkey=refresh-token-${nextSession()}`,
       "x-forwarded-for": "10.0.0.9, 189.40.1.7",
       ...extra,
     },
@@ -126,7 +132,7 @@ describe("the headers handed to the page", () => {
     const response = await middleware(
       new NextRequest("http://app.test/dashboard", {
         headers: {
-          cookie: `tkey=${fresh}; rkey=refresh-token-value`,
+          cookie: `tkey=${fresh}; rkey=refresh-token-${nextSession()}`,
           "x-session-renewal": "pending",
         },
       }),
@@ -146,7 +152,9 @@ describe("the headers handed to the page", () => {
 
     const response = await middleware(
       new NextRequest("http://app.test/dashboard/vehicles", {
-        headers: { cookie: `tkey=${fresh}; rkey=refresh-token-value` },
+        headers: {
+          cookie: `tkey=${fresh}; rkey=refresh-token-${nextSession()}`,
+        },
       }),
     );
 

@@ -12,6 +12,8 @@ import { useAuthStore } from "@/store/auth-store";
 import { canAccessPath } from "@/lib/route-access";
 
 import { useChatUnreadCount } from "@/features/deliveries/chat/lib/use-chat-unread";
+import { towerEntryHref } from "@/features/control-tower/lib/views";
+import { useRememberedTowerView } from "@/features/control-tower/lib/use-remembered-view";
 
 import {
   Collapsible,
@@ -92,6 +94,23 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
   // cursor of their own — support included.
   const chatUnread = useChatUnreadCount();
 
+  // The Torre opens on the view this browser chose last, rendered by the
+  // server at once (lib/views, towerEntryHref).
+  const rememberedTowerView = useRememberedTowerView();
+
+  /**
+   * A menu link's target and prefetch. The page already on screen is not
+   * prefetched: its URL differs from the one shown only by the query (none),
+   * and in Next 14 such a prefetch renders the whole page again on the
+   * server — every list of Entregas read a second time just because the
+   * menu was drawn. Other pages keep the automatic prefetch, which stops at
+   * their loading.tsx and reads nothing.
+   */
+  const linkProps = (url: string) => ({
+    href: towerEntryHref(url, rememberedTowerView),
+    ...(pathname === url && { prefetch: false }),
+  });
+
   return (
     <SidebarMenu>
       {items.map((item) => {
@@ -128,7 +147,7 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
                           asChild
                           isActive={pathname === subItem.url}
                         >
-                          <Link href={subItem.url}>
+                          <Link {...linkProps(subItem.url)}>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -147,7 +166,7 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
                 tooltip={item.title}
                 isActive={pathname === item.url}
               >
-                <Link href={item.url}>
+                <Link {...linkProps(item.url)}>
                   {item.icon && <Icon />}
                   <span>{item.title}</span>
                 </Link>
@@ -158,8 +177,9 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
               that is what sits behind it. The hover and active overrides
               `SidebarMenuBadge` carries for text colour have to be answered
               at the same variant, or the number turns grey under the
-              pointer. */}
-              {item.url.endsWith("/deliveries") && chatUnread > 0 && (
+              pointer. On the Torre since the tickets moved there (meeting
+              of 14/10/2026). */}
+              {item.url.endsWith("/control-tower") && chatUnread > 0 && (
                 <SidebarMenuBadge
                   className={cn(
                     `h-5 min-w-5 rounded-full px-1 text-[10px] font-bold
@@ -170,8 +190,8 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
                   )}
                   aria-label={`${chatUnread} ${
                     chatUnread === 1
-                      ? "conversa não lida"
-                      : "conversas não lidas"
+                      ? "atendimento não lido"
+                      : "atendimentos não lidos"
                   }`}
                 >
                   {chatUnread > 99 ? "99+" : chatUnread}

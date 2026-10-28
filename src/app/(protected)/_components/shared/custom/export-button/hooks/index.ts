@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import type { ExportButtonProps, ExportFormat } from "../export-button.types";
 import { toast } from "sonner";
-import { isStaleActionResult } from "@/lib/action-result";
-import { localDateKey } from "@/lib/format-values";
+
+import { downloadExport } from "@/lib/export-download";
 
 import { EXPORT_NEEDS_WRITE } from "../export-rules";
 
@@ -18,13 +18,26 @@ function formatBytes(bytes?: number) {
   return `${value.toFixed(2)} ${sizes[i]}`;
 }
 
+/**
+ * The Exportar button's click: the file comes straight from the API through
+ * the same-origin relay (src/lib/export-download.ts), streamed — no Server
+ * Action holds it, base64-encoded, in the server's memory any more.
+ */
 function useExportButton({
-  exportAction,
+  exportRequest,
   entityName,
   writePermission,
-}: ExportButtonProps) {
+}: Pick<
+  ExportButtonProps,
+  "exportRequest" | "entityName" | "writePermission"
+>) {
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const searchParams = useSearchParams();
+
+  // Leaving the page drops the download, and with it the API's work.
+  const inFlight = useRef<AbortController | null>(null);
+
+  useEffect(() => () => inFlight.current?.abort(), []);
 
   async function handleExport(format: ExportFormat) {
     // Exporting is a write (decision 4.2). The button is already disabled;
@@ -37,72 +50,40 @@ function useExportButton({
 
     setIsExporting(true);
 
+    const controller = new AbortController();
+    inFlight.current = controller;
+
     try {
       const search = searchParams.get("search") || "";
-      const result = await exportAction(search, format);
+      const result = await downloadExport(exportRequest(search, format), {
+        signal: controller.signal,
+      });
 
-      if (isStaleActionResult(result)) return;
-
-      if (!result.success || !result.base64Data) {
-        toast.error(
-          result.message || `Erro ao exportar ${entityName}. Tente novamente.`,
-        );
+      if (!result.ok) {
+        if (!result.aborted) {
+          toast.error(
+            result.message ||
+              `Erro ao exportar ${entityName}. Tente novamente.`,
+          );
+        }
 
         return;
       }
 
-      // Convert base64 -> Uint8Array
-      const byteCharacters = atob(result.base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
+      const sizeLabel = formatBytes(result.size);
 
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-
-      const byteArray = new Uint8Array(byteNumbers);
-
-      // Use mimeType if provided
-      const blob = new Blob([byteArray], {
-        type:
-          result.mimeType ||
-          (format === "csv" ? "text/csv" : "application/octet-stream"),
-      });
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-
-      a.style.display = "none";
-      a.href = url;
-
-      // The server's name (the API dates it with the company's day), or a
-      // fallback dated by the viewer's calendar: the UTC day read tomorrow
-      // after 21:00 in São Paulo.
-      a.download =
-        result.filename ||
-        `${entityName}-${localDateKey()}.${format === "csv" ? "csv" : "xlsx"}`;
-
-      document.body.appendChild(a);
-      a.click();
-
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      // compute size, prefer server-provided fileSize
-      const sizeInBytes = result.fileSize ?? byteArray.length;
-      const sizeLabel = formatBytes(sizeInBytes);
-
-      // Assemble the final message including filename and size
+      // The final message names the file and its size.
       const filenameLabel = result.filename ? ` "${result.filename}"` : "";
       const sizeSuffix = sizeLabel ? ` (${sizeLabel})` : "";
 
       toast.success(
-        result.message && result.message.length > 0
-          ? `${result.message}${sizeSuffix}`
-          : `${entityName}${filenameLabel} exportado com sucesso!${sizeSuffix}`,
+        `${entityName}${filenameLabel} exportado com sucesso!${sizeSuffix}`,
       );
-    } catch (error) {
+    } catch {
       toast.error(`Erro ao exportar ${entityName}. Tente novamente.`);
     } finally {
+      if (inFlight.current === controller) inFlight.current = null;
+
       setIsExporting(false);
     }
   }

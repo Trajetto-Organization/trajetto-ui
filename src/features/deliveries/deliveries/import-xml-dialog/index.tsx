@@ -30,14 +30,14 @@ import { Separator } from "@/components/ui/separator";
 import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { revalidateTags } from "@/actions/revalidate";
 
-import {
-  importDeliveryXml,
-  type ImportSummary,
-  type ImportResultItem,
+import type {
+  ImportSummary,
+  ImportResultItem,
 } from "@/actions/delivery/import-delivery-xml";
 
 import { cn } from "@/lib/utils";
-import { isStaleActionResult } from "@/lib/action-result";
+
+import { sendXmlImport } from "./hooks/import-client";
 
 import { FileDropzone } from "@/components/shared/custom/file-dropzone";
 import {
@@ -137,7 +137,8 @@ const ImportXmlDialog = ({
     setIsImporting(true);
 
     try {
-      const response = await importDeliveryXml(
+      // Through the relay: past the 1 MB a Server Action takes.
+      const response = await sendXmlImport(
         businessId,
         files.map(({ filename, content }) => ({ filename, content })),
         {
@@ -145,8 +146,6 @@ const ImportXmlDialog = ({
           shipperId: shipperId || undefined,
         },
       );
-
-      if (isStaleActionResult(response)) return;
 
       if (response.success && response.data) {
         setSummary(response.data);

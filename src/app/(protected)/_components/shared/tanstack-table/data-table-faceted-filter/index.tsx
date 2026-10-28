@@ -5,6 +5,7 @@ import { Check, PlusCircle } from "lucide-react";
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useSharedListQuery } from "@/lib/search-params";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,30 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   Icon?: React.ComponentType<{ className?: string }>;
 }
 
+type FilterValue = string | boolean;
+
+/**
+ * The column's values with `value` ticked or unticked; none left clears the
+ * filter. Applied to the latest value, not to the one this render read, so
+ * two quick ticks both count.
+ */
+function toggleFilterValue(
+  current: unknown,
+  value: FilterValue,
+): FilterValue[] | undefined {
+  const selected = new Set<FilterValue>(
+    Array.isArray(current) ? (current as FilterValue[]) : [],
+  );
+
+  if (selected.has(value)) {
+    selected.delete(value);
+  } else {
+    selected.add(value);
+  }
+
+  return selected.size > 0 ? Array.from(selected) : undefined;
+}
+
 function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
@@ -55,6 +80,10 @@ function DataTableFacetedFilter<TData, TValue>({
   Icon,
   dynamicOptionIcon,
 }: DataTableFacetedFilterProps<TData, TValue>) {
+  // Closing the popover means "done": what was ticked goes out now instead
+  // of after the pause a server table waits for more ticks.
+  const listQuery = useSharedListQuery();
+
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(
     column?.getFilterValue() as (string | boolean)[],
@@ -80,7 +109,11 @@ function DataTableFacetedFilter<TData, TValue>({
   if (finalOptions.length === 0) return null;
 
   return (
-    <Popover>
+    <Popover
+      onOpenChange={(open) => {
+        if (!open) listQuery?.flush();
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -165,18 +198,11 @@ function DataTableFacetedFilter<TData, TValue>({
                     // the first. The label stays searchable as a keyword.
                     value={String(option.value)}
                     keywords={[option.label]}
-                    onSelect={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value);
-                      } else {
-                        selectedValues.add(option.value);
-                      }
-
-                      const filterValues = Array.from(selectedValues);
-                      column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined,
-                      );
-                    }}
+                    onSelect={() =>
+                      column?.setFilterValue((current: unknown) =>
+                        toggleFilterValue(current, option.value),
+                      )
+                    }
                     className="cursor-pointer"
                   >
                     <div
@@ -231,4 +257,4 @@ function DataTableFacetedFilter<TData, TValue>({
   );
 }
 
-export { DataTableFacetedFilter };
+export { DataTableFacetedFilter, toggleFilterValue };

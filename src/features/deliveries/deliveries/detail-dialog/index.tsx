@@ -45,7 +45,6 @@ import { DeliveryTimeline } from "../timeline";
 import { ProofDocumentSection } from "../proof-document";
 import { reportDeliveryOccurrence } from "@/actions/delivery/report-delivery-occurrence";
 
-import { revalidateTagName } from "@/actions/revalidate";
 import {
   displayValue,
   formatDateOnly,
@@ -85,6 +84,7 @@ import { useAuthStore } from "@/store/auth-store";
 import {
   buildChatSearchParams,
   buildTicketSearchParams,
+  ticketsHref,
 } from "../../chat/lib/chat-link";
 import { ChatLinkedMessages } from "../../chat/linked-messages";
 import { LinkedTickets } from "../../chat/tickets/linked-tickets";
@@ -216,9 +216,8 @@ const DeliveryDetailDialog = ({
   const refreshDetail = async () => {
     void queryClient.invalidateQueries(["delivery-detail", deliveryId]);
 
-    // The list behind the dialog is server-rendered — its cache tag is what
-    // makes the new status show up there.
-    await revalidateTagName("update-delivery");
+    // The list behind the dialog is server-rendered: the status action
+    // revalidates and its own response carries the re-rendered list.
   };
 
   // Decision 5.3: marking as delivered from the panel has no photo or
@@ -404,9 +403,9 @@ const DeliveryDetailDialog = ({
                     {delivery.driver.name}
                   </p>
 
-                  {/* Hidden on the chat tab itself — that is where this
+                  {/* Hidden on the tickets view itself — that is where this
                       button leads, with the delivery pre-linked. */}
-                  {routeSearchParams.get("tab") !== "chat" && (
+                  {routeSearchParams.get("view") !== "tickets" && (
                     <Button
                       type="button"
                       variant="outline"
@@ -429,7 +428,7 @@ const DeliveryDetailDialog = ({
                           },
                         );
 
-                        router.push(`${pathname}?${params.toString()}`);
+                        router.push(ticketsHref(pathname, params));
                         onClose();
                       }}
                     >
@@ -623,7 +622,7 @@ const DeliveryDetailDialog = ({
                       ticketId,
                     );
 
-                    router.push(`${pathname}?${params.toString()}`);
+                    router.push(ticketsHref(pathname, params));
                     onClose();
                   }}
                 />
@@ -652,7 +651,7 @@ const DeliveryDetailDialog = ({
                       filter: "delivery",
                     });
 
-                    router.push(`${pathname}?${params.toString()}`);
+                    router.push(ticketsHref(pathname, params));
                     onClose();
                   }}
                 />

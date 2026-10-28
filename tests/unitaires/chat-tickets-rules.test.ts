@@ -306,7 +306,9 @@ describe("links to a ticket", () => {
       "tk1",
     );
 
-    expect(params.get("tab")).toBe("chat");
+    // The Torre's Atendimentos view since the meeting of 14/10/2026.
+    expect(params.get("view")).toBe("tickets");
+    expect(params.get("tab")).toBeNull();
     expect(params.get("businessId")).toBe("b1");
     expect(params.get("page")).toBeNull();
     expect(params.get("chatDriver")).toBeNull();
@@ -314,7 +316,7 @@ describe("links to a ticket", () => {
     expect(readChatLink(params)).toBeNull();
     expect([...withoutChatLink(params).keys()].sort()).toEqual([
       "businessId",
-      "tab",
+      "view",
     ]);
   });
 

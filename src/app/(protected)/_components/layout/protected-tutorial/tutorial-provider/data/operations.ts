@@ -1,4 +1,4 @@
-import { CONTROL_TOWER_TUTORIAL_STEPS } from "@/features/control-tower/tutorial";
+import { CONTROL_TOWER_TOURS } from "@/features/control-tower/tutorial";
 
 import type { TutorialConfig, TutorialStep } from "../tutorial-provider.types";
 
@@ -334,7 +334,7 @@ const activityTour: TutorialStep[] = [
 const operationsTours: TutorialConfig = {
   "/dashboard/routes": routesTour,
   "/dashboard/routes/:routeId": routeDetailTour,
-  "/dashboard/control-tower": CONTROL_TOWER_TUTORIAL_STEPS,
+  ...CONTROL_TOWER_TOURS,
   "/dashboard/driver-pauses": pausesTour,
   ...integrationsTours,
   "/dashboard/kanban": kanbanTour,

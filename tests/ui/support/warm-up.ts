@@ -24,11 +24,30 @@ const CONTEXT = "../trajetto-api/tests/load/fixtures/load-context.json";
 
 const PUBLIC = ["/login", "/docs", "/docs/assinatura"];
 
+/**
+ * The tabs of Entregas and the views of the Torre de controle (product
+ * meeting of 14/10/2026; src/features/deliveries/lib/tabs.ts and
+ * src/features/control-tower/lib/views.ts). Each tab's table and each view's
+ * panel is its own chunk (next/dynamic), requested only when that tab or
+ * view renders, so each is opened by name. The views are always named: the
+ * bare Torre opens on the view this browser chose last.
+ */
+const DELIVERY_TABS = [
+  "deliveries",
+  "shippers",
+  "imports",
+  "occurrence-types",
+  "status-change-reasons",
+  "message-templates",
+];
+
+const TOWER_VIEWS = ["routes", "panel", "occurrences", "tickets", "audit"];
+
 const MANAGER = [
   "/dashboard",
-  "/dashboard/deliveries",
+  ...DELIVERY_TABS.map((tab) => `/dashboard/deliveries?tab=${tab}`),
   "/dashboard/routes",
-  "/dashboard/control-tower",
+  ...TOWER_VIEWS.map((view) => `/dashboard/control-tower?view=${view}`),
   "/dashboard/integrations",
   "/dashboard/vehicle",
   "/dashboard/vehicle-checklist",
@@ -128,11 +147,25 @@ export default async function warmUp(): Promise<void> {
     master?: string;
     managers?: string[];
     drivers?: string[];
+    businessId?: string;
   } | null;
   const context = readJson(CONTEXT) as { managerTokens?: string[] } | null;
 
   const manager =
     sessions?.managers?.[0] ?? context?.managerTokens?.[0] ?? null;
+
+  // Without a company, /admin's Entregas and Torre render only the selector:
+  // the MASTER specs open them with the fixture's company, so does this.
+  const company = sessions?.businessId;
+  const master = company
+    ? [
+        ...MASTER,
+        `/admin/deliveries?businessId=${company}&tab=deliveries`,
+        ...TOWER_VIEWS.map(
+          (view) => `/admin/control-tower?businessId=${company}&view=${view}`,
+        ),
+      ]
+    : MASTER;
 
   const started = Date.now();
   const browser = await chromium.launch();
@@ -142,7 +175,7 @@ export default async function warmUp(): Promise<void> {
       ...(await visit(browser, null, PUBLIC)),
       ...(manager ? await visit(browser, manager, MANAGER) : []),
       ...(sessions?.master
-        ? await visit(browser, sessions.master, MASTER)
+        ? await visit(browser, sessions.master, master)
         : []),
       ...(sessions?.drivers?.[0]
         ? await visit(browser, sessions.drivers[0], DRIVER)

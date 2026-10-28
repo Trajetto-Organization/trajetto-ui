@@ -19,11 +19,9 @@ import { Progress } from "@/components/ui/progress";
 import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateVehicleLimit } from "@/actions/business/update-vehicle-limit";
-import {
-  getBusinessEntitlements,
-  type BusinessEntitlementsData,
-} from "@/actions/business/entitlements";
-import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
+import type { BusinessEntitlementsData } from "@/actions/business/entitlements";
+import { guardFormAction } from "@/lib/action-result";
+import { fetchBusinessEntitlements } from "@/lib/business-reads";
 import { updateVehicleLimitSchema } from "@/schemas/update-vehicle-limit-schema";
 import {
   IGNORE_BLUR_ATTRIBUTE,
@@ -253,12 +251,12 @@ const UpdateVehicleLimitForm = ({
   useEffect(() => {
     if (isOpen) {
       setIsLoadingUsage(true);
-      getBusinessEntitlements(businessId)
-        .then((response) => {
-          if (isStaleActionResult(response, { background: true })) return;
-
-          setEntitlements(response.success ? (response.data ?? null) : null);
-        })
+      // A relay GET (lib/business-reads).
+      fetchBusinessEntitlements(businessId)
+        .then(
+          (data) => setEntitlements(data),
+          () => setEntitlements(null),
+        )
         .finally(() => setIsLoadingUsage(false));
     }
   }, [isOpen, businessId]);

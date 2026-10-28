@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateBusinessFormSchema } from "@/schemas/create-update-business-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateBusinessProps {
   message: string;
@@ -67,6 +68,10 @@ const handleUpdateBusiness = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-business");
 
     return { successMessage: message };
   } catch (error) {

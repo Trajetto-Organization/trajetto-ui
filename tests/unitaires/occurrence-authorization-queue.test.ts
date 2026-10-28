@@ -37,10 +37,6 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(api.search),
 }));
 
-vi.mock("@/actions/chat/tickets", () => ({
-  listTickets: (...args: unknown[]) => api.listTickets(...args),
-}));
-
 const toasts = vi.hoisted(() => ({
   success: vi.fn(),
   error: vi.fn(),
@@ -49,12 +45,9 @@ const toasts = vi.hoisted(() => ({
 
 vi.mock("sonner", () => ({ toast: toasts }));
 
+// The decision is a server action; the queue itself is read through the
+// relay (the stubbed `fetch` below).
 vi.mock("@/actions/delivery/occurrence-authorizations", () => ({
-  listPendingAuthorizations: async () => ({
-    success: true,
-    message: "",
-    data: { data: api.queue, total: api.total, businessId: "b1" },
-  }),
   decideOccurrenceAuthorization: (...args: unknown[]) => api.decide(...args),
 }));
 
@@ -75,6 +68,8 @@ vi.mock("@/lib/check-multiple-permissions", () => ({
   }),
   getPermissionName: () => "Gerenciar Entregas",
 }));
+
+import { stubRelay } from "./helpers/relay-fetch";
 
 import {
   addressLine,
@@ -248,7 +243,28 @@ beforeEach(() => {
   toasts.success.mockReset();
   toasts.error.mockReset();
   toasts.info.mockReset();
+
+  // The queue (GET /delivery/occurrence-authorizations) and the ticket
+  // lookup of "Ver conversa" (GET /chat/tickets), as the API answers them.
+  stubRelay({
+    "/delivery/occurrence-authorizations": () => ({
+      data: api.queue,
+      total: api.total,
+      businessId: "b1",
+    }),
+    "/chat/tickets": (url) =>
+      api.listTickets(Object.fromEntries(url.searchParams)),
+  });
 });
+
+/** A few ticks for the relay answers (fetch, then the body) to land. */
+async function settle(): Promise<void> {
+  for (let tick = 0; tick < 5; tick += 1) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  }
+}
 
 afterEach(async () => {
   if (root) await act(async () => root!.unmount());
@@ -283,9 +299,7 @@ async function render(
   });
 
   // The query resolves on the next ticks.
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  await settle();
 }
 
 const button = (label: string, scope: ParentNode = document.body) =>
@@ -519,9 +533,7 @@ describe("the screen behind the queue (review r1)", () => {
       button("Autorizar", document.querySelector('[role="dialog"]')!),
     );
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+    await settle();
 
     expect(api.decide).toHaveBeenCalledWith("b1", "a", "APPROVED", undefined);
     expect(onQueueChanged).toHaveBeenCalledTimes(1);
@@ -529,17 +541,21 @@ describe("the screen behind the queue (review r1)", () => {
 });
 
 describe("Ver conversa on a request (decision 14.5)", () => {
-  it("leads to the request's ticket in the deliveries area, keeping only the company", () => {
+  it("leads to the request's ticket in the Torre's Atendimentos, keeping only the company", () => {
     expect(
       queueTicketHref(
         "/admin/control-tower",
         "businessId=b1&day=2026-10-05",
         "tk1",
       ),
-    ).toBe("/admin/deliveries?businessId=b1&tab=chat&ticket=tk1");
+    ).toBe("/admin/control-tower?businessId=b1&view=tickets&ticket=tk1");
     expect(
-      queueTicketHref("/dashboard/deliveries", "tab=occurrences&page=3", "tk1"),
-    ).toBe("/dashboard/deliveries?tab=chat&ticket=tk1");
+      queueTicketHref(
+        "/dashboard/control-tower",
+        "view=occurrences&page=3",
+        "tk1",
+      ),
+    ).toBe("/dashboard/control-tower?view=tickets&ticket=tk1");
   });
 
   it("opens the ticket, and only says so when there is none", () => {
@@ -559,13 +575,14 @@ describe("Ver conversa on a request (decision 14.5)", () => {
     api.pathname = "/admin/control-tower";
     api.search = "businessId=b1";
     api.listTickets.mockResolvedValue({
-      success: true,
-      message: "",
-      data: { data: [{ id: "tk9" }] },
+      data: [{ id: "tk9" }],
+      total: 1,
+      counts: {},
     });
 
     await render();
     await click(button("Ver conversa"));
+    await settle();
 
     expect(api.listTickets).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -575,21 +592,18 @@ describe("Ver conversa on a request (decision 14.5)", () => {
       }),
     );
     expect(api.push).toHaveBeenCalledWith(
-      "/admin/deliveries?businessId=b1&tab=chat&ticket=tk9",
+      "/admin/control-tower?businessId=b1&view=tickets&ticket=tk9",
     );
   });
 
   it("tells the operator when the request has no ticket, and goes nowhere", async () => {
     api.queue = [request("a", 3)];
     api.total = 1;
-    api.listTickets.mockResolvedValue({
-      success: true,
-      message: "",
-      data: { data: [] },
-    });
+    api.listTickets.mockResolvedValue({ data: [], total: 0, counts: {} });
 
     await render();
     await click(button("Ver conversa"));
+    await settle();
 
     expect(api.push).not.toHaveBeenCalled();
     expect(toasts.info).toHaveBeenCalledWith(

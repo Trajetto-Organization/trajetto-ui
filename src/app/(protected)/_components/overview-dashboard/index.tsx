@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
@@ -54,6 +55,7 @@ import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { comparisonDescription, comparisonLabel } from "@/lib/dashboard-counts";
 import { LimitsContent } from "../shared/limits/limits-content";
 import { SystemMetrics } from "@/features/system-metrics";
+import { refreshSystemMetrics } from "@/features/system-metrics/reads";
 
 import { QuickLinkCard } from "./quick-link-card";
 import { StatCard, StatCardGrid } from "./stat-card";
@@ -70,8 +72,15 @@ const OverviewDashboard = ({
 }: OverviewDashboardProps): JSX.Element => {
   const { counts, recentActivity, deliveryOperation } = initialData;
 
-  // The open tab picks the tour (Visão geral, Análise Gráfica, Limites…).
-  const onTabChange = useTabTutorial();
+  // The open tab picks the tour (Visão geral, Análise Gráfica, Limites…),
+  // and what "Atualizar" refreshes: Sistema reads only its own two queries.
+  const setTutorialTab = useTabTutorial();
+  const [activeTab, setActiveTab] = useState<string>("overview");
+
+  const onTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setTutorialTab(tab);
+  };
 
   // Both gates read the auth store, which the security check refreshes on
   // every socket event — that is what makes a granted or revoked permission
@@ -207,6 +216,11 @@ const OverviewDashboard = ({
           <ButtonRevalidation
             className="lg:w-auto lg:ml-auto"
             buttonClassName="w-full lg:w-auto"
+            onRevalidate={
+              isMaster && activeTab === "system"
+                ? refreshSystemMetrics
+                : undefined
+            }
             rateLimit={{
               storageKey: "admin-dashboard",
               maxClicks: 3,

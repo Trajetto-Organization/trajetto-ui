@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
@@ -17,53 +16,6 @@ const formQuestionCount = (stored: unknown): number =>
   readFormFields(stored)?.length ?? 0;
 
 const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
-  {
-    id: "select",
-    meta: {
-      title: "Seleção",
-    },
-    header: ({ table }) => (
-      <Checkbox
-        id="select-all-occurrence-types"
-        name="select-all-occurrence-types"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Selecionar todas"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-occurrence-type-${row.id}`}
-        name={`select-occurrence-type-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Selecionar linha"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "id",
-    meta: {
-      title: "Identificador",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
-    ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-80">
-        {displayValue(row.getValue("id"))}
-      </p>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
   {
     accessorKey: "name",
     meta: { title: "Nome" },
@@ -83,6 +35,9 @@ const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
         )}
       </div>
     ),
+    // The name is the type's identifier: unique per company, what the
+    // driver picks in the app.
+    enableHiding: false,
   },
   {
     // Decision 14.3: Entrega / Não entrega / Pausa (server facet `category`).

@@ -3,7 +3,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
@@ -64,37 +63,15 @@ function textColumn(
  */
 function buildDriverColumns(mode: DriverScope): ColumnDef<DriverRow>[] {
   return [
-    {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          id="select-all-drivers"
-          name="select-all-drivers"
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todos"
-          className="translate-y-[2px]"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          id={`select-driver-${row.id}`}
-          name={`select-driver-${row.id}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableHiding: false,
-    },
-    textColumn("id", "Identificador", "w-80", undefined, {
-      enableHiding: false,
-    }),
+    // The CPF identifies a driver across companies and documents; the CNH
+    // column below tells homonyms apart too.
+    textColumn(
+      "cpf",
+      "CPF",
+      "w-28",
+      (value) => displayValue(formatCpf(value as string)),
+      { enableHiding: false },
+    ),
     {
       accessorKey: "status",
       meta: { title: "Status" },
@@ -158,13 +135,6 @@ function buildDriverColumns(mode: DriverScope): ColumnDef<DriverRow>[] {
       },
     },
     textColumn(
-      "cpf",
-      "CPF",
-      "w-28",
-      (value) => displayValue(formatCpf(value as string)),
-      { enableHiding: false },
-    ),
-    textColumn(
       "rg",
       "RG",
       "w-24",
@@ -198,7 +168,6 @@ function buildDriverColumns(mode: DriverScope): ColumnDef<DriverRow>[] {
       ),
       enableHiding: false,
     },
-    textColumn("branchId", "Identificador da filial", "w-48"),
     {
       id: "branchName",
       accessorFn: (row) => row.branch?.corporate_reason,

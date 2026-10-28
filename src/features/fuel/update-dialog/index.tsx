@@ -408,7 +408,7 @@ const UpdateFuelDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterFuelWrite("update-fuel").catch(() =>
+      void refreshAfterFuelWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

@@ -129,7 +129,10 @@ describe("chat link (delivery and route details)", () => {
     });
 
     expect(params.get("businessId")).toBe("b1");
-    expect(params.get("tab")).toBe("chat");
+    // The Torre's Atendimentos view (meeting of 14/10/2026); the Rotas
+    // page's own params stay behind.
+    expect(params.get("view")).toBe("tickets");
+    expect(params.get("tab")).toBeNull();
     expect(params.get("page")).toBeNull();
 
     expect(readChatLink(params)).toEqual({
@@ -141,7 +144,7 @@ describe("chat link (delivery and route details)", () => {
 
     expect([...withoutChatLink(params).keys()].sort()).toEqual([
       "businessId",
-      "tab",
+      "view",
     ]);
   });
 

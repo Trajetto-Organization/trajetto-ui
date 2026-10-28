@@ -6,10 +6,13 @@ import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
 /**
- * Ten sections and a 360px screen.
+ * Six sections and a 360px screen.
  *
- * Entregas has ten tabs. Laid out as a strip they want about 1431px, and the
- * strip kept the browser's own scrollbar to reach the rest — which on Windows
+ * Entregas had ten tabs (six since the product meeting of 14/10/2026: the
+ * operation's four are views of the Torre de controle). Laid out as a strip
+ * the ten wanted about 1431px (the six still want about 900px, more than a
+ * phone or a 1024px laptop with the sidebar open has), and the strip kept the
+ * browser's own scrollbar to reach the rest — which on Windows
  * is a grey slab drawn INSIDE the 40px box. It ate enough of those 40 pixels
  * that the content no longer fit vertically either, so a row of tabs came out
  * with a horizontal scrollbar, a vertical scrollbar and two little arrows. On
@@ -150,11 +153,11 @@ test.describe("the Entregas sections on a phone", () => {
     await expect(menu).toBeVisible();
 
     for (const section of [
-      "Ocorrências",
-      "Monitoramento",
-      "Atendimentos",
       "Embarcadores",
-      "Auditoria de Comprovantes",
+      "Importações",
+      "Tipos de Ocorrência",
+      "Motivos de Status",
+      "Mensagens ao Cliente",
     ]) {
       await expect(
         menu.getByRole("menuitem", { name: new RegExp(section) }),
@@ -235,19 +238,32 @@ test.describe("the Entregas sections on a phone", () => {
   }
 });
 
-test.describe("the same sections on a large screen", () => {
+test.describe("the same sections on a computer screen", () => {
+  /**
+   * Measured at 1024px, not 1440px.
+   *
+   * The ten sections overflowed a 1440px page; the six left since the meeting
+   * of 14/10/2026 fit it, and on a strip that fits there is nothing for the
+   * arrows to reach and no off-screen section to scroll to — the two things
+   * these tests exist to check. A 1024px laptop with the sidebar open gives
+   * the page about 650px for about 900px of sections: still the strip (from
+   * `md` up), still overflowing.
+   */
+  const DESK = 1024;
+
   test("go back to being the strip, without the system bar", async ({
     page,
   }) => {
-    await open(page, 1440);
+    await open(page, DESK);
 
     const strip = nav(page);
 
     await expect(strip).toBeVisible({ timeout: 30_000 });
 
-    // The strip, not the menu: every section is a link the eye can scan.
+    // The strip, not the menu: every section is a link the eye can scan —
+    // the last one too, which starts off to the right.
     await expect(
-      strip.getByRole("link", { name: /Ocorrências/ }),
+      strip.getByRole("link", { name: /Mensagens ao Cliente/ }),
     ).toBeVisible();
 
     const verdict = await strip.evaluate((element) => {
@@ -282,7 +298,7 @@ test.describe("the same sections on a large screen", () => {
 
     expect(
       verdict.overflows,
-      "as dez seções passaram a caber em 1440px; este teste precisa ser revisto",
+      `as seis seções passaram a caber em ${DESK}px; este teste precisa ser revisto`,
     ).toBe(true);
 
     // Something has to reach what is off-screen, since the scrollbar is gone.
@@ -299,7 +315,8 @@ test.describe("the same sections on a large screen", () => {
 
   test("and open already showing the section you are on", async ({ page }) => {
     /**
-     * Opening Auditoria de Comprovantes from a link used to land on a strip
+     * Opening the last section from a link (Auditoria de Comprovantes, when
+     * there were ten; Mensagens ao Cliente now) used to land on a strip
      * scrolled to the start, with the active section somewhere off to the
      * right — the one thing the strip exists to show.
      */
@@ -312,9 +329,9 @@ test.describe("the same sections on a large screen", () => {
       },
     ]);
 
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize({ width: DESK, height: 900 });
 
-    await page.goto(`${BASE}/dashboard/deliveries?tab=proof-audits`, {
+    await page.goto(`${BASE}/dashboard/deliveries?tab=message-templates`, {
       waitUntil: "networkidle",
       timeout: 60_000,
     });

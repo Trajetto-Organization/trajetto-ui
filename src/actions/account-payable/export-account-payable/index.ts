@@ -1,5 +1,10 @@
 "use server";
 
+// Deprecated: the screen downloads this export through the relay, streamed
+// (src/lib/export-download.ts, src/lib/export-requests.ts). Kept for one
+// release only for the tabs opened before the deploy, which still call this
+// action (expand, then contract); remove it in the next release.
+
 import { logActionError } from "@/lib/log-action-error";
 import { readBusinessIdParam } from "@/lib/business-id-param";
 import { getCookies } from "../../cookies";

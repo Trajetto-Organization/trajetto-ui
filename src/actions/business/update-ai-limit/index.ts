@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { updateAILimitSchema } from "@/schemas/update-ai-limit-schema";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateAILimitResponse {
   message: string;
@@ -63,6 +64,10 @@ const handleUpdateAILimit = async (state: any, formData: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-ai-usage");
 
     return { successMessage: message };
   } catch (error) {

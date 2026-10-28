@@ -36,6 +36,34 @@ describe("the signature copy on /verificar", () => {
     }
   });
 
+  // The staging test certificate says O=ICP-Brasil in its issuer but chains
+  // to no ICP-Brasil root: it signs, and the page must claim nothing more.
+  it.each([
+    ["outside the ICP-Brasil chain", false],
+    ["whose chain was never checked (older document or API)", null],
+    ["from an API that doesn't say", undefined],
+  ])(
+    "claims no ICP-Brasil validity for a document signed %s",
+    (_, icpBrasil) => {
+      const copy = signatureCopy(
+        {
+          status: "SIGNED",
+          profile: "CMS_DETACHED",
+          signerName: "TRAJETTO SISTEMAS LTDA",
+          signedAt: "2026-10-06T13:00:00.000Z",
+          icpBrasil,
+        },
+        "America/Sao_Paulo",
+      );
+
+      expect(copy.signed).toBe(true);
+      expect(copy.title).toBe("Assinado digitalmente");
+      expect(copy.body).toContain("fora da cadeia ICP-Brasil");
+      expect(copy.validator).toBeNull();
+      expect(copy.footer).toContain("não afirma validade jurídica");
+    },
+  );
+
   it("says who signed and until when, and points at the ITI validator, for a signed one", () => {
     const copy = signatureCopy(
       {
@@ -44,6 +72,7 @@ describe("the signature copy on /verificar", () => {
         signerName: "TRAJETTO SISTEMAS LTDA",
         signedAt: "2026-10-06T13:00:00.000Z",
         certNotAfter: "2027-09-30T23:59:59.000Z",
+        icpBrasil: true,
       },
       "America/Sao_Paulo",
     );
@@ -126,6 +155,7 @@ describe("the /verificar page", () => {
       signerName: "TRAJETTO SISTEMAS LTDA",
       signedAt: "2026-10-06T13:00:00.000Z",
       certNotAfter: "2027-09-30T23:59:59.000Z",
+      icpBrasil: true,
     });
 
     expect(html).toContain(

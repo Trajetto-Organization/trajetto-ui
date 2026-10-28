@@ -52,11 +52,11 @@ function DataTablePagination<TData>({
    * Tables without a checkbox column were still announcing "0 de 1 linha(s)
    * selecionadas." — a counter for a control that is not on screen, which
    * reads like something is broken. Where there is nothing to select, the
-   * useful number is how many rows this page is showing.
+   * useful number is how many rows this page is showing. The table says
+   * whether it selects (DataTable turns it on with `bulkActions`), rather
+   * than this guessing from a column id.
    */
-  const isSelectable = table
-    .getAllColumns()
-    .some((column) => column.id === "select");
+  const isSelectable = Boolean(table.options.enableRowSelection);
 
   const rowsOnPage = table.getFilteredRowModel().rows.length;
 

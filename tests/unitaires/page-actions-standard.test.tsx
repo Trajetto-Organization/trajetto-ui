@@ -19,23 +19,11 @@ const router = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
 }));
-const actions = vi.hoisted(() => ({
-  getHealthMetrics: vi.fn(),
-  getHealthProviders: vi.fn(),
-}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => router,
   usePathname: () => "/dashboard/vehicle",
   useSearchParams: () => new URLSearchParams(),
-}));
-
-vi.mock("@/actions/health/get-health-metrics", () => ({
-  getHealthMetrics: actions.getHealthMetrics,
-}));
-
-vi.mock("@/actions/health/get-health-providers", () => ({
-  getHealthProviders: actions.getHealthProviders,
 }));
 
 // Puts React in scope for the classic-runtime JSX of the modules below.
@@ -49,6 +37,8 @@ import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 import { StatCard } from "@/app/(protected)/_components/overview-dashboard/stat-card";
 import { SystemMetrics } from "@/features/system-metrics";
+
+import { stubRelay } from "./helpers/relay-fetch";
 
 void React;
 
@@ -356,11 +346,13 @@ describe("the stat card", () => {
 
 describe("the Sistema tab grid", () => {
   beforeEach(() => {
-    actions.getHealthProviders.mockResolvedValue({ success: true, data: null });
-    actions.getHealthMetrics.mockResolvedValue({
-      success: true,
-      message: "",
-      data: {
+    stubRelay({
+      "/health/providers": () => ({
+        checked_at: "2026-10-08T12:00:00.000Z",
+        cached: true,
+        providers: [],
+      }),
+      "/health/metrics": () => ({
         timestamp: "2026-10-08T12:00:00.000Z",
         database: {
           active_connections: 6,
@@ -369,8 +361,12 @@ describe("the Sistema tab grid", () => {
         },
         outbox: { pending: 0, failed: 0, oldest_pending_seconds: null },
         ai_pipeline: { pending: 0, running: 0 },
-      },
+      }),
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   /** The grid cell (the Card) that holds a card title. */

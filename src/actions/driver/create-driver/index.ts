@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateDriverSchema } from "@/schemas/create-update-driver-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateDriverProps {
   message: string;
@@ -62,6 +63,10 @@ const handleCreateDriver = async (state: any, createDriverValues: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-driver");
 
     return { successMessage: message };
   } catch (error) {

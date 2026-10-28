@@ -2,14 +2,8 @@ import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/auth-store";
 
 import type { UserLoggedData } from "../layout.types";
-import { toast } from "sonner";
 
-function useProtectedLayout(
-  userLogged: UserLoggedData,
-  notificationError: boolean = false,
-) {
-  const notificationToastDisplayed = useRef<boolean>(false);
-
+function useProtectedLayout(userLogged: UserLoggedData) {
   const storeUpdated = useRef<boolean>(false);
   const { setAuth } = useAuthStore();
 
@@ -29,16 +23,9 @@ function useProtectedLayout(
     }
   }, [userLogged, setAuth]);
 
-  // Notifications are not a security gate, so a failure here is a toast and
-  // the app carries on. A failed *user* fetch is the opposite and no longer
-  // reaches this component: the provider redirects to the login rather than
-  // render a session it could not confirm.
-  useEffect(() => {
-    if (notificationError && !notificationToastDisplayed.current) {
-      toast.error("Não foi possível carregar suas notificações!");
-      notificationToastDisplayed.current = true;
-    }
-  }, [notificationError]);
+  // A failed notifications read is said by the bell's own sync
+  // (sync-notifications-wrapper): it streams in after the page, so this
+  // component no longer knows about it.
 }
 
 export { useProtectedLayout };

@@ -3,9 +3,12 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import {
+  IdCell,
+  shortId,
+} from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { formatAccountPayableCategory } from "@/lib/account-payable-category";
 import {
@@ -44,28 +47,20 @@ const money = (value: number | null | undefined, width = "w-28") =>
 function buildAccountPayableColumns(): ColumnDef<AccountPayableRow>[] {
   return [
     {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-          className="translate-y-[2px]"
-        />
+      // The bill's own number (invoice, boleto): what the supplier quotes.
+      // A bill registered without one shows its compact record id.
+      id: "document_number",
+      accessorKey: "document_number",
+      meta: { title: "Nº do documento" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Nº do documento" />
       ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
+      cell: ({ row }) =>
+        row.original.document_number ? (
+          text(row.original.document_number, "w-32")
+        ) : (
+          <IdCell id={row.original.id} />
+        ),
       enableHiding: false,
     },
     {
@@ -174,15 +169,6 @@ function buildAccountPayableColumns(): ColumnDef<AccountPayableRow>[] {
       cell: ({ row }) => text(row.original.vehicle?.license_plate, "w-24"),
     },
     {
-      id: "document_number",
-      accessorKey: "document_number",
-      meta: { title: "Nº do documento" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Nº do documento" />
-      ),
-      cell: ({ row }) => text(row.original.document_number, "w-32"),
-    },
-    {
       id: "description",
       accessorKey: "description",
       meta: { title: "Descrição" },
@@ -229,7 +215,7 @@ function buildAccountPayableColumns(): ColumnDef<AccountPayableRow>[] {
       cell: ({ row }) =>
         text(
           row.original.serviceOrderId
-            ? `OS #${row.original.serviceOrderId.slice(-12)}`
+            ? `OS #${shortId(row.original.serviceOrderId)}`
             : null,
           "w-36",
         ),

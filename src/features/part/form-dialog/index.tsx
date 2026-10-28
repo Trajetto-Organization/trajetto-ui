@@ -266,7 +266,7 @@ const PartFormDialog = ({
       toast.success(rawState.successMessage);
       onClose();
 
-      refreshMaintenanceData("update-part", ["part"]).catch(() =>
+      refreshMaintenanceData(["part"]).catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
     }

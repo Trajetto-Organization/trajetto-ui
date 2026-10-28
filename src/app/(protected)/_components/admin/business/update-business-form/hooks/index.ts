@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { UpdateBusinessFormState } from "../update-business-form.types";
 
-import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
@@ -36,18 +35,15 @@ function useUpdateBusinessForm({
       // Start revalidation in background
       const performRevalidation = async () => {
         try {
-          await Promise.all([
-            revalidateTagName("update-business"),
-            queryClientProps.resetQueries({
-              predicate: (query) => {
-                const isMatch =
-                  Array.isArray(query.queryKey) &&
-                  query.queryKey[0] === "business";
+          await queryClientProps.resetQueries({
+            predicate: (query) => {
+              const isMatch =
+                Array.isArray(query.queryKey) &&
+                query.queryKey[0] === "business";
 
-                return isMatch;
-              },
-            }),
-          ]);
+              return isMatch;
+            },
+          });
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {
             console.error("Erro na revalidação:", error);

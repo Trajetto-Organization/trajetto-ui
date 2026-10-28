@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { DialogFormFooter } from "@/components/ui/dialog";
 
 import { handleDeleteFine } from "@/actions/fine/delete-fine";
-import { revalidateTags } from "@/actions/revalidate";
 import { isStaleActionResult } from "@/lib/action-result";
 
 import type { FineRow } from "./lib/types";
@@ -71,8 +70,6 @@ const DeleteFineDialog = ({
         ("successMessage" in result && result.successMessage) ||
           "Multa deletada com sucesso!",
       );
-      // The list and the overview's fine count both read these tags.
-      await revalidateTags(["update-fine", "update-fine-count"]);
       onClose();
     } finally {
       setIsPending(false);

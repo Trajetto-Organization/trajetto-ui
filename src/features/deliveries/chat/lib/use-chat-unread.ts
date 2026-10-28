@@ -2,9 +2,7 @@
 
 import { useQuery } from "react-query";
 
-import { getTicketsSummary } from "@/actions/chat/tickets";
 import type { TicketCounts } from "@/actions/chat/chat.types";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 import {
   getPermissionName,
@@ -13,6 +11,8 @@ import {
 
 import { permissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth-store";
+
+import { fetchTicketsSummary } from "./chat-reads";
 
 /**
  * One refetch of the thread list per burst of realtime events.
@@ -97,21 +97,12 @@ function useChatAccess(): ChatAccess {
 function useTicketsSummary(): TicketCounts | null {
   const { canUseChat } = useChatAccess();
 
+  // Through the relay, not a Server Action: it runs on every protected page
+  // and on every focus, and as an action it held the queue every other read
+  // of the page waited in.
   const { data } = useQuery(
     TICKETS_SUMMARY_QUERY_KEY,
-    async () => {
-      const result = await getTicketsSummary({});
-
-      if (isStaleActionResult(result, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message);
-      }
-
-      return result.data;
-    },
+    ({ signal }) => fetchTicketsSummary({}, { signal }),
     { enabled: canUseChat, refetchOnWindowFocus: true },
   );
 

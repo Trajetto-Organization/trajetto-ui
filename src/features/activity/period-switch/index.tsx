@@ -1,10 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarRange } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { PeriodSwitch } from "@/app/(protected)/_components/shared/period-switch";
 
 interface ActivityPeriodSwitchProps {
   period: "7d" | "30d";
@@ -17,7 +15,8 @@ const PERIODS: Array<{ value: "7d" | "30d"; label: string }> = [
 
 /**
  * Window for the cards only — the listing keeps its own paging, so changing
- * the period never moves the reader away from the page being read.
+ * the period never moves the reader away from the page being read. The
+ * control itself is shared with Entregas (shared/period-switch).
  */
 const ActivityPeriodSwitch = ({
   period,
@@ -33,24 +32,13 @@ const ActivityPeriodSwitch = ({
   };
 
   return (
-    <div className="flex items-center gap-2" data-tutorial="activity-period">
-      <CalendarRange className="h-4 w-4 text-muted-foreground" />
-
-      <div className="flex items-center gap-1">
-        {PERIODS.map((option) => (
-          <Button
-            key={option.value}
-            type="button"
-            size="sm"
-            variant={period === option.value ? "secondary" : "ghost"}
-            className={cn("h-8", period === option.value && "font-medium")}
-            onClick={() => handleChangePeriod(option.value)}
-          >
-            {option.label}
-          </Button>
-        ))}
-      </div>
-    </div>
+    <PeriodSwitch
+      value={period}
+      options={PERIODS}
+      onChange={handleChangePeriod}
+      label="Período das atividades"
+      dataTutorial="activity-period"
+    />
   );
 };
 

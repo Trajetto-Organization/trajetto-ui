@@ -31,23 +31,36 @@ interface Expectation {
   /** And one that must, so the closed ones are not just a broken session. */
   open: string;
   /**
-   * The tab strips, exactly and in order: /dashboard's (by role) and
-   * /dashboard/deliveries' (by permission; null where the page is closed).
+   * The tab strips, exactly and in order: /dashboard's (by role),
+   * /dashboard/deliveries' and the Torre's views (by permission; null where
+   * the page is closed).
    */
-  tabs: { dashboard: string[]; deliveries: string[] | null };
+  tabs: {
+    dashboard: string[];
+    deliveries: string[] | null;
+    tower: string[] | null;
+  };
 }
 
+// The registrations only since the meeting of 14/10/2026: the operation's
+// sections are views of the Torre de controle.
 const ALL_DELIVERY_TABS = [
   "Entregas",
-  "Ocorrências",
-  "Monitoramento",
-  "Atendimentos",
   "Embarcadores",
+  "Importações",
   "Tipos de Ocorrência",
   "Motivos de Status",
-  "Importações",
   "Mensagens ao Cliente",
-  "Auditoria de Comprovantes",
+];
+
+// The map panel that was the whole Torre before (Painel) and the four
+// sections that left Entregas (Monitoramento is Rotas now), in display order.
+const ALL_TOWER_VIEWS = [
+  "Rotas",
+  "Painel",
+  "Ocorrências",
+  "Atendimentos",
+  "Auditoria",
 ];
 
 // "Análise Gráfica" and "Limites de Uso" are the administrator's; an
@@ -82,7 +95,11 @@ const CASES: Expectation[] = [
       "/dashboard/activity",
     ],
     open: "/dashboard/fine",
-    tabs: { dashboard: USER_DASHBOARD_TABS, deliveries: ALL_DELIVERY_TABS },
+    tabs: {
+      dashboard: USER_DASHBOARD_TABS,
+      deliveries: ALL_DELIVERY_TABS,
+      tower: ALL_TOWER_VIEWS,
+    },
   },
   {
     who: "readOnlyUser",
@@ -106,7 +123,11 @@ const CASES: Expectation[] = [
       "/dashboard/driver",
     ],
     open: "/dashboard/deliveries",
-    tabs: { dashboard: USER_DASHBOARD_TABS, deliveries: ALL_DELIVERY_TABS },
+    tabs: {
+      dashboard: USER_DASHBOARD_TABS,
+      deliveries: ALL_DELIVERY_TABS,
+      tower: ALL_TOWER_VIEWS,
+    },
   },
   {
     who: "fleetOnlyAdmin",
@@ -125,7 +146,7 @@ const CASES: Expectation[] = [
       "/dashboard/integrations",
     ],
     open: "/dashboard/fuel",
-    tabs: { dashboard: ADMIN_DASHBOARD_TABS, deliveries: null },
+    tabs: { dashboard: ADMIN_DASHBOARD_TABS, deliveries: null, tower: null },
   },
   {
     who: "deliveriesOnlyAdmin",
@@ -144,7 +165,11 @@ const CASES: Expectation[] = [
       "/dashboard/service-order",
     ],
     open: "/dashboard/routes",
-    tabs: { dashboard: ADMIN_DASHBOARD_TABS, deliveries: ALL_DELIVERY_TABS },
+    tabs: {
+      dashboard: ADMIN_DASHBOARD_TABS,
+      deliveries: ALL_DELIVERY_TABS,
+      tower: ALL_TOWER_VIEWS,
+    },
   },
 ];
 
@@ -244,6 +269,26 @@ for (const expectation of CASES) {
         deliveryTabs,
         `abas de Entregas de ${expectation.who}`,
       ).toHaveText(expectation.tabs.deliveries);
+
+      if (!expectation.tabs.tower) return;
+
+      // The view named in the URL: the bare Torre may replace itself with
+      // the view this browser chose last, mid-check.
+      await page.goto(`${BASE}/dashboard/control-tower?view=routes`, {
+        waitUntil: "domcontentloaded",
+      });
+      await noErrorSurface(page, "/dashboard/control-tower");
+
+      // The desk strip again; the label's span, not the tickets' badge.
+      const towerViews = page.locator(
+        'nav[aria-label="Visões da torre de controle"]:has(ul) li a > span:first-of-type',
+      );
+
+      await expect(towerViews.first()).toBeVisible({ timeout: 60_000 });
+      await expect(
+        towerViews,
+        `visões da Torre de ${expectation.who}`,
+      ).toHaveText(expectation.tabs.tower);
     });
 
     test("typing the URL does not open what was not offered", async () => {

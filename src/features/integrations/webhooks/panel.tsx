@@ -28,13 +28,14 @@ import {
 
 import {
   deleteWebhookEndpoint,
-  listWebhookEndpoints,
   reactivateWebhookEndpoint,
   type WebhookEndpointRow,
 } from "@/actions/integration";
 
 import { permissions } from "@/lib/permissions";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { isStaleActionResult } from "@/lib/action-result";
+
+import { fetchWebhookEndpoints } from "../lib/reads";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
@@ -89,15 +90,8 @@ const WebhooksPanel = ({ businessId }: WebhooksPanelProps): JSX.Element => {
 
   const { data, isLoading, refetch } = useQuery(
     ["integration_webhook_endpoints", businessId],
-    async () => {
-      const answer = await listWebhookEndpoints(businessId || undefined);
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      return answer;
-    },
+    // A relay GET (lib/reads).
+    ({ signal }) => fetchWebhookEndpoints(businessId || undefined, { signal }),
     { refetchOnWindowFocus: false },
   );
 

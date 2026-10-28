@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { handleDeleteStatusChangeReason } from "@/actions/status-change-reason/delete-status-change-reason";
 
 import { useQueryClient } from "react-query";
-import { revalidateTagName } from "@/actions/revalidate";
 import { guardFormAction } from "@/lib/action-result";
 
 interface DeleteStatusChangeReasonDialogProps {
@@ -126,7 +125,6 @@ const DeleteStatusChangeReasonDialog = ({
 
       const performRevalidation = async () => {
         try {
-          await revalidateTagName("update-status-change-reason");
           await queryClient.invalidateQueries(["status_change_reason"]);
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {

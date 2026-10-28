@@ -666,9 +666,11 @@ test("the back office sees the route in the tower and in monitoring", async () =
   const { page } = office;
 
   // Both stops are settled (one delivered, one Insucesso), so the route
-  // ended by itself: the tower shows it among the routes concluded in the
-  // last two hours, and the truck where the phone last reported it.
-  await page.goto(`${BASE}/dashboard/control-tower`, {
+  // ended by itself: the tower's map panel shows it among the routes
+  // concluded in the last two hours, and the truck where the phone last
+  // reported it. Named in the URL: the bare Torre opens on Rotas, or on the
+  // view this browser chose last (product meeting of 14/10/2026).
+  await page.goto(`${BASE}/dashboard/control-tower?view=panel`, {
     waitUntil: "domcontentloaded",
   });
   await expect(page.getByText("1 rota concluída nas últimas 2 h")).toBeVisible({
@@ -683,7 +685,9 @@ test("the back office sees the route in the tower and in monitoring", async () =
     timeout: 60_000,
   });
 
-  await page.goto(`${BASE}/dashboard/deliveries?tab=monitoring`, {
+  // Monitoramento and Ocorrências were tabs of Entregas; they are the
+  // Torre's Rotas and Ocorrências views now.
+  await page.goto(`${BASE}/dashboard/control-tower?view=routes`, {
     waitUntil: "domcontentloaded",
   });
   await expect(
@@ -693,7 +697,7 @@ test("the back office sees the route in the tower and in monitoring", async () =
       .first(),
   ).toBeVisible({ timeout: 60_000 });
 
-  await page.goto(`${BASE}/dashboard/deliveries?tab=occurrences`, {
+  await page.goto(`${BASE}/dashboard/control-tower?view=occurrences`, {
     waitUntil: "domcontentloaded",
   });
   await expect(page.getByText("Cliente ausente").first()).toBeVisible({
@@ -704,7 +708,8 @@ test("the back office sees the route in the tower and in monitoring", async () =
 test("the back office approves the proof in the audit", async () => {
   const { page } = office;
 
-  await page.goto(`${BASE}/dashboard/deliveries?tab=proof-audits`, {
+  // The Torre's Auditoria view (a tab of Entregas before 14/10/2026).
+  await page.goto(`${BASE}/dashboard/control-tower?view=audit`, {
     waitUntil: "domcontentloaded",
   });
 

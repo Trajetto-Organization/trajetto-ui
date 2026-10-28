@@ -1,5 +1,5 @@
 import { io, Socket } from "socket.io-client";
-import { mintSocketTicket } from "@/actions/session";
+import { mintSocketTicket, type SocketTicketResult } from "@/actions/session";
 import { loadPublicConfig } from "@/env/client";
 import { refusalRetryDelay } from "@/lib/socket-refusal";
 import { queryClientProps } from "@/lib/query-client-props";
@@ -112,6 +112,40 @@ function onRealtimeResync(listener: () => void): () => void {
   };
 }
 
+/**
+ * How long a ticket mint may take before it counts as a transient refusal.
+ *
+ * The mint is a POST and stays a Server Action (the relay is GET-only), and
+ * Next 14 runs Server Actions one at a time: a navigation while the mint
+ * waits in that queue drops it with a promise that never settles. Without a
+ * deadline the first connection — every realtime screen of the tab — waited
+ * forever, and so did a handshake whose `auth` callback never answered. The
+ * page's reads no longer use that queue (lib/relay-read), so a mint rarely
+ * waits at all; this covers the navigation.
+ */
+const TICKET_MINT_DEADLINE_MS = 10_000;
+
+function mintTicketWithinDeadline(): Promise<SocketTicketResult> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(
+      () => resolve({ ok: false, status: 503, code: null }),
+      TICKET_MINT_DEADLINE_MS,
+    );
+
+    mintSocketTicket().then(
+      (minted) => {
+        clearTimeout(timer);
+        resolve(minted);
+      },
+      () => {
+        // A failed Server Action is a transport failure, not a verdict.
+        clearTimeout(timer);
+        resolve({ ok: false, status: 503, code: null });
+      },
+    );
+  });
+}
+
 const SESSION_RECOVERY_KEY = "socket_session_recovery_at";
 const SESSION_RECOVERY_COOLDOWN_MS = 30_000;
 
@@ -181,7 +215,7 @@ async function initializeSocket(): Promise<Socket> {
 
       // A ticket now, before the socket exists: a session that is already
       // over is said here, where the caller can still see the rejection.
-      const first = await mintSocketTicket();
+      const first = await mintTicketWithinDeadline();
 
       if (!first.ok && first.status === 401) {
         throw new Error("Sessão expirada. Faça login novamente.");
@@ -220,7 +254,7 @@ async function initializeSocket(): Promise<Socket> {
             return;
           }
 
-          mintSocketTicket()
+          mintTicketWithinDeadline()
             .then((minted) => {
               if (minted.ok) {
                 cb({ ticket: minted.ticket });

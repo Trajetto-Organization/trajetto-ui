@@ -17,7 +17,6 @@ import {
 import { toast } from "sonner";
 
 import { updateDeliveryStatus } from "@/actions/delivery/update-delivery-status";
-import { revalidateTagName } from "@/actions/revalidate";
 import { isStaleActionResult } from "@/lib/action-result";
 
 import { StatusReasonSelector } from "@/app/(protected)/_components/shared/selectors/status-reason-selector";
@@ -93,7 +92,6 @@ const CancelDeliveryDialog = ({
       }
 
       toast.success(result.message);
-      await revalidateTagName("update-delivery");
 
       onClose();
     } finally {

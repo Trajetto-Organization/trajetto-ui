@@ -8,6 +8,7 @@ import { ChatLinkedMessages } from "@/features/deliveries/chat/linked-messages";
 import {
   buildChatSearchParams,
   buildTicketSearchParams,
+  ticketsHref,
 } from "@/features/deliveries/chat/lib/chat-link";
 import { LinkedTickets } from "@/features/deliveries/chat/tickets/linked-tickets";
 
@@ -44,16 +45,15 @@ const RouteConversations = ({
 
   if (!driver) return null;
 
-  const area = pathname?.startsWith("/admin") ? "/admin" : "/dashboard";
-
-  // "Ver conversa": the Atendimentos tab on that ticket, same area, same company.
+  // "Ver conversa": the Torre's Atendimentos on that ticket, same area,
+  // same company.
   const openTicket = (ticketId: string) => {
     const params = buildTicketSearchParams(
       currentSearchParams?.toString() ?? "",
       ticketId,
     );
 
-    router.push(`${area}/deliveries?${params.toString()}`);
+    router.push(ticketsHref(pathname, params));
   };
 
   const openChatOnRoute = () => {
@@ -66,7 +66,7 @@ const RouteConversations = ({
       },
     );
 
-    router.push(`${area}/deliveries?${params.toString()}`);
+    router.push(ticketsHref(pathname, params));
   };
 
   return (

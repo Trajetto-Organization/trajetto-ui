@@ -58,7 +58,7 @@ const DeleteFuelDialog = ({
 
       toast.success(result.successMessage ?? "Abastecimento excluído.");
 
-      void refreshAfterFuelWrite("delete-fuel").catch(() =>
+      void refreshAfterFuelWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

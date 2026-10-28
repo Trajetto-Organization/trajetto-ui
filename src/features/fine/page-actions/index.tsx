@@ -17,7 +17,7 @@ import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tansta
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import type { ExportFormat } from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
 
-import { handleExportFine } from "@/actions/fine/export-fine";
+import { exportFineRequest } from "@/lib/export-requests";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -91,7 +91,7 @@ const FinePageActions = ({
   ]);
 
   const exportFines = (search?: string, format?: ExportFormat) =>
-    handleExportFine({
+    exportFineRequest({
       search,
       format,
       businessId,
@@ -102,7 +102,7 @@ const FinePageActions = ({
     <PageActions>
       <ExportButton
         hasData={hasData}
-        exportAction={exportFines}
+        exportRequest={exportFines}
         entityName="relatório de multas"
         writePermission={canExport.hasAllPermissions}
       />

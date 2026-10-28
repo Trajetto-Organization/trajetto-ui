@@ -4,6 +4,7 @@ import { refusalMessage } from "@/lib/api-error";
 import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface DeleteQuoteProps {
   quoteId: string;
@@ -38,6 +39,10 @@ const handleDeleteQuote = async ({ quoteId }: DeleteQuoteProps) => {
     if (!response.ok) {
       return { deleteQuoteError: message || refusalMessage(response.status) };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("delete-quote");
 
     return { successMessage: message };
   } catch (error) {

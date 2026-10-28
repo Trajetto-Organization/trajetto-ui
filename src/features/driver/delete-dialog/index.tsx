@@ -67,7 +67,7 @@ const DeleteDriverDialog = ({
 
       toast.success(result.successMessage ?? "Motorista deletado.");
 
-      void refreshAfterDriverWrite("delete-driver").catch(() =>
+      void refreshAfterDriverWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

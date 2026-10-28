@@ -204,7 +204,11 @@ describe("the buttons on the company selector's line", () => {
 
   const exportButton = () =>
     createElement(ExportButton, {
-      exportAction: async () => ({ success: true }),
+      exportRequest: () => ({
+        url: "/api/relay/vehicle/export-vehicle",
+        fallbackFilename: "veiculos.csv",
+        refusalFallback: "Não foi possível exportar.",
+      }),
       hasData: true,
       writePermission: true,
     });

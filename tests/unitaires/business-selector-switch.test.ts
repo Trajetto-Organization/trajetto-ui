@@ -286,6 +286,52 @@ describe("switching company", () => {
     });
   });
 
+  it("keeps a custom period's days, so it does not fall back to today", async () => {
+    // A custom period is three params: kept without its days,
+    // `period=custom` alone read as an invalid range and opened on today.
+    navigation.current = new URLSearchParams({
+      businessId: A,
+      tab: "deliveries",
+      period: "custom",
+      from: "2026-10-01",
+      to: "2026-10-15",
+      page: "2",
+    }).toString();
+
+    await mountSelector(A);
+    await act(async () => selector.handleBusinessChange(B));
+
+    const next = new URLSearchParams(
+      String(navigation.push.mock.calls[0][0]).replace(/^\?/, ""),
+    );
+
+    expect(Object.fromEntries(next)).toEqual({
+      businessId: B,
+      tab: "deliveries",
+      period: "custom",
+      from: "2026-10-01",
+      to: "2026-10-15",
+    });
+  });
+
+  it("drops stray days that do not belong to a custom period", async () => {
+    navigation.current = new URLSearchParams({
+      businessId: A,
+      period: "7d",
+      from: "2026-10-01",
+      to: "2026-10-15",
+    }).toString();
+
+    await mountSelector(A);
+    await act(async () => selector.handleBusinessChange(B));
+
+    const next = new URLSearchParams(
+      String(navigation.push.mock.calls[0][0]).replace(/^\?/, ""),
+    );
+
+    expect(Object.fromEntries(next)).toEqual({ businessId: B, period: "7d" });
+  });
+
   it("does nothing when the same company is picked again", async () => {
     navigation.current = `businessId=${A}&page=2`;
 

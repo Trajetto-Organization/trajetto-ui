@@ -28,9 +28,6 @@ import { isStaleActionResult } from "@/lib/action-result";
 import {
   assignTicket,
   closeTicket,
-  getTicket,
-  listTicketAssignees,
-  listTicketEvents,
   reopenTicket,
 } from "@/actions/chat/tickets";
 import type {
@@ -38,6 +35,12 @@ import type {
   TicketDetail,
   TicketSummary,
 } from "@/actions/chat/chat.types";
+
+import {
+  fetchTicket,
+  fetchTicketAssignees,
+  fetchTicketEvents,
+} from "../lib/chat-reads";
 
 import { formatThreadTime } from "../lib/format";
 import {
@@ -91,52 +94,40 @@ const TicketHeader = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showEvents, setShowEvents] = useState<boolean>(false);
 
+  // Relay GETs (lib/chat-reads): the detail and who can take it leave
+  // together, beside the list's own read, instead of queueing as actions.
   const detailQuery = useQuery(
     [TICKETS_QUERY_ROOT, "detail", ticket.id, ticket.version],
-    async (): Promise<TicketDetail> => {
-      const result = await getTicket({
-        ticketId: ticket.id,
-        businessId: actionBusinessId,
-      });
-
-      if (
-        isStaleActionResult(result, { background: true }) ||
-        !result.success ||
-        !result.data
-      ) {
-        throw new Error(result.message);
-      }
-
-      return result.data;
-    },
+    ({ signal }): Promise<TicketDetail> =>
+      fetchTicket(
+        { ticketId: ticket.id, businessId: actionBusinessId },
+        { signal },
+      ),
     { staleTime: 0 },
   );
 
   const eventsQuery = useQuery(
     [TICKETS_QUERY_ROOT, "events", ticket.id, ticket.version],
-    async () => {
-      const result = await listTicketEvents({
-        ticketId: ticket.id,
-        businessId: actionBusinessId,
-      });
+    async ({ signal }) => {
+      const answer = await fetchTicketEvents(
+        { ticketId: ticket.id, businessId: actionBusinessId },
+        { signal },
+      );
 
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data.data;
+      return answer.data;
     },
     { enabled: showEvents },
   );
 
   const assigneesQuery = useQuery(
     [TICKETS_QUERY_ROOT, "assignees", actionBusinessId ?? "session"],
-    async () => {
-      const result = await listTicketAssignees({
-        businessId: actionBusinessId,
-      });
+    async ({ signal }) => {
+      const answer = await fetchTicketAssignees(
+        { businessId: actionBusinessId },
+        { signal },
+      );
 
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data.data;
+      return answer.data;
     },
     { enabled: !isReadOnly, staleTime: 60_000 },
   );

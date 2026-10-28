@@ -66,6 +66,93 @@ describe("Entregas (the table most people open)", () => {
         ...inside(graph, "features/deliveries/monitoring/index.tsx"),
       ]).toEqual([]);
     });
+
+    // Measured on 28/10/2026: one module held every tab's table, so the
+    // first load of Entregas carried the occurrence types' form builder, the
+    // occurrences' photo inspector and authorization queue (a Torre view
+    // since 14/10) and the route dialogs, whichever tab was open.
+    it(`${page}: loads each tab's table when the tab renders`, () => {
+      expect([
+        ...inside(graph, "features/deliveries/table/deliveries.tsx"),
+        ...inside(graph, "features/deliveries/table/shippers.tsx"),
+        ...inside(graph, "features/deliveries/table/imports.tsx"),
+        ...inside(graph, "features/deliveries/table/occurrence-types.tsx"),
+        ...inside(graph, "features/deliveries/table/status-change-reasons.tsx"),
+        ...inside(graph, "features/deliveries/occurrences/table.tsx"),
+        ...inside(graph, "features/deliveries/occurrence-types/form-builder/"),
+        ...inside(
+          graph,
+          "features/deliveries/occurrence-authorizations/queue.tsx",
+        ),
+        ...inside(graph, "features/deliveries/proof-audits/image-inspector/"),
+        ...inside(graph, "features/routes/add-to-route-dialog/"),
+      ]).toEqual([]);
+      // Non-vacuous: the table primitive is reached through the tabs only.
+      expect(graph.has("npm:@tanstack/react-table")).toBe(false);
+    });
+
+    it(`${page}: opens the action bar's dialogs on the first click`, () => {
+      expect([
+        ...inside(graph, "features/deliveries/deliveries/form-dialog/"),
+        ...inside(graph, "features/deliveries/deliveries/import-xml-dialog/"),
+        ...inside(
+          graph,
+          "features/deliveries/deliveries/import-spreadsheet-dialog/",
+        ),
+        ...inside(graph, "features/deliveries/shippers/form-dialog/"),
+        ...inside(graph, "features/deliveries/occurrence-types/form-dialog/"),
+        ...inside(
+          graph,
+          "features/deliveries/status-change-reasons/form-dialog/",
+        ),
+      ]).toEqual([]);
+      expect(
+        inside(graph, "features/deliveries/page-actions/index.tsx"),
+      ).toHaveLength(1);
+    });
+  }
+});
+
+describe("the Torre de controle (393 kB on first load once the views moved in)", () => {
+  for (const page of [
+    "src/app/(protected)/dashboard/control-tower/page.tsx",
+    "src/app/(protected)/admin/control-tower/page.tsx",
+  ]) {
+    const graph = clientStaticGraph(page);
+
+    it(`${page}: ships the shell and the views strip`, () => {
+      expect(
+        inside(graph, "features/control-tower/shell/index.tsx"),
+      ).toHaveLength(1);
+      expect(
+        inside(graph, "features/control-tower/views/tabs.tsx"),
+      ).toHaveLength(1);
+    });
+
+    it(`${page}: loads each view's client code when the view renders`, () => {
+      expect([
+        // Painel
+        ...inside(graph, "features/control-tower/panel.tsx"),
+        ...inside(graph, "features/control-tower/widgets/"),
+        // Ocorrências: the table, its row menus and the action bar
+        ...inside(graph, "features/deliveries/occurrences/"),
+        ...inside(graph, "features/deliveries/table/deliveries.tsx"),
+        ...inside(graph, "features/deliveries/page-actions/index.tsx"),
+        // Atendimentos, Auditoria, Rotas' board
+        ...inside(graph, "features/deliveries/chat/index.tsx"),
+        ...inside(graph, "features/deliveries/proof-audits/panel.tsx"),
+        ...inside(graph, "features/deliveries/monitoring/index.tsx"),
+        // What waits for the tower (Rotas, Painel, Auditoria)
+        ...inside(
+          graph,
+          "features/deliveries/occurrence-authorizations/queue.tsx",
+        ),
+      ]).toEqual([]);
+    });
+
+    it(`${page}: keeps zod out (the strip and the cadence read only keys)`, () => {
+      expect(graph.has("npm:zod")).toBe(false);
+    });
   }
 });
 

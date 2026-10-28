@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { createUserSchema } from "@/schemas/create-user-schema";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateUserProps {
   message: string;
@@ -61,6 +62,10 @@ const handleCreateUser = async (state: any, createUserValues: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-user-registration");
 
     return { successMessage: message };
   } catch (error) {

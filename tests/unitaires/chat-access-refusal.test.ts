@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { queryClientProps } from "@/lib/query-client-props";
+
+import { refusal, stubRelay } from "./helpers/relay-fetch";
+
 /**
  * The chat's conversation list refused with a 403 (decision 4.1, DLV-RO-1).
  *
@@ -82,35 +86,11 @@ describe("listChatThreads", () => {
 
 // ------------------------------------------------------------------ panel
 
-const threads = vi.hoisted(() => ({ listChatThreads: vi.fn() }));
-
-vi.mock("@/actions/chat/list-chat-threads", async (importOriginal) => {
-  const real =
-    await importOriginal<typeof import("@/actions/chat/list-chat-threads")>();
-
-  return {
-    // The action's own suite above runs the real one.
-    listChatThreads: (...args: Parameters<typeof real.listChatThreads>) =>
-      threads.listChatThreads.getMockImplementation()
-        ? threads.listChatThreads(...args)
-        : real.listChatThreads(...args),
-  };
-});
-// Decision 14.5: the panel lists tickets now; the same refusal rules apply.
-vi.mock("@/actions/chat/tickets", () => ({
-  listTickets: (...args: unknown[]) => threads.listChatThreads(...args),
-  getTicket: async () => ({ success: false, message: "" }),
-}));
+// Decision 14.5: the panel lists tickets now (a relay read of /chat/tickets,
+// lib/chat-reads); the same refusal rules apply to the API's 403.
 vi.mock("@/features/deliveries/chat/lib/use-chat-unread", () => ({
   THREADS_REFRESH_COALESCE_MS: 500,
   useTicketsSummary: () => null,
-}));
-vi.mock("@/actions/chat/search-chat-messages", () => ({
-  searchChatMessages: async () => ({
-    success: true,
-    message: "",
-    data: { data: [] },
-  }),
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: () => undefined, push: () => undefined }),
@@ -151,10 +131,6 @@ describe("ChatPanel", () => {
   let root: Root | null = null;
   let host: HTMLDivElement | null = null;
 
-  beforeEach(() => {
-    threads.listChatThreads.mockReset();
-  });
-
   afterEach(async () => {
     if (root) await act(async () => root!.unmount());
     host?.remove();
@@ -169,9 +145,15 @@ describe("ChatPanel", () => {
     document.body.appendChild(host);
     root = createRoot(host);
 
+    // The app's own retry rule (one more try, transient failures only),
+    // without its one-second pause.
     const client = new QueryClient({
-      // The panel's own retry rule is under test; the client default is not.
-      defaultOptions: { queries: { retry: 3, retryDelay: 1 } },
+      defaultOptions: {
+        queries: {
+          ...queryClientProps.getDefaultOptions().queries,
+          retryDelay: 1,
+        },
+      },
     });
 
     await act(async () => {
@@ -190,14 +172,13 @@ describe("ChatPanel", () => {
   }
 
   it("draws a revoked permission as such, asked once", async () => {
-    threads.listChatThreads.mockImplementation(async () => ({
-      success: false,
-      message: "Seu perfil não inclui Gerenciar Entregas.",
-      accessError: {
-        kind: "permission-denied",
-        message: "Seu perfil não inclui Gerenciar Entregas.",
-      },
-    }));
+    const relay = stubRelay({
+      "/chat/tickets": () =>
+        refusal(403, {
+          code: "PERMISSION_DENIED",
+          message: "Seu perfil não inclui Gerenciar Entregas.",
+        }),
+    });
 
     await renderPanel();
 
@@ -209,18 +190,17 @@ describe("ChatPanel", () => {
 
     // Not the list's generic error with a retry that can only fail again.
     expect(document.querySelector("[data-thread-list]")).toBeNull();
-    expect(threads.listChatThreads).toHaveBeenCalledTimes(1);
+    expect(relay.callsTo("/chat/tickets")).toHaveLength(1);
   });
 
   it("draws the module state only for MODULE_NOT_ENABLED", async () => {
-    threads.listChatThreads.mockImplementation(async () => ({
-      success: false,
-      message: "Módulo desabilitado.",
-      accessError: {
-        kind: "module-not-enabled",
-        message: "Módulo desabilitado.",
-      },
-    }));
+    stubRelay({
+      "/chat/tickets": () =>
+        refusal(403, {
+          code: "MODULE_NOT_ENABLED",
+          message: "Módulo desabilitado.",
+        }),
+    });
 
     await renderPanel();
 
@@ -230,10 +210,10 @@ describe("ChatPanel", () => {
   });
 
   it("keeps the list's own error for a failure that is not about access", async () => {
-    threads.listChatThreads.mockImplementation(async () => ({
-      success: false,
-      message: "Houve um erro ao carregar as conversas.",
-    }));
+    stubRelay({
+      "/chat/tickets": () =>
+        refusal(500, { message: "Houve um erro ao carregar as conversas." }),
+    });
 
     await renderPanel();
 

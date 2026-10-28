@@ -21,6 +21,13 @@ interface ActionResponse<T = undefined> {
   success: boolean;
   message: string;
   data?: T;
+
+  /**
+   * The API took the undo to the background (202: more than 500 deliveries
+   * to remove). The screen follows it on GET /import/get-import until
+   * `reversal.state` says DONE.
+   */
+  pending?: boolean;
 }
 
 /**
@@ -63,6 +70,16 @@ const reverseImport = async (
       return {
         success: false,
         message: result.message || "Houve um erro ao estornar a importação.",
+      };
+    }
+
+    // Large undos run in batches in the background (28/10/2026): the body
+    // is the progress, not the result.
+    if (response.status === 202) {
+      return {
+        success: true,
+        pending: true,
+        message: result.message || "Estorno em andamento.",
       };
     }
 

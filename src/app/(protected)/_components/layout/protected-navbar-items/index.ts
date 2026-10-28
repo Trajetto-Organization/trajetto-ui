@@ -198,7 +198,7 @@ const NAVIGATION: Record<NavSurface, NavNode[]> = {
       icon: "package",
       section: "navegação",
       shortcut: ["e", "n"],
-      keywords: "entregas embarcadores ocorrências",
+      keywords: "entregas embarcadores importações cadastros",
     },
     {
       path: "/admin/routes",
@@ -214,7 +214,9 @@ const NAVIGATION: Record<NavSurface, NavNode[]> = {
       icon: "tower",
       section: "navegação",
       shortcut: ["t", "c"],
-      keywords: "torre controle mapa rastreamento veículos",
+      // The operation's views since the meeting of 14/10/2026.
+      keywords:
+        "torre controle mapa rastreamento veículos monitoramento rotas ocorrências atendimentos auditoria comprovantes",
     },
     {
       path: "/admin/driver-pauses",
@@ -489,7 +491,7 @@ const NAVIGATION: Record<NavSurface, NavNode[]> = {
       icon: "package",
       section: "navegação",
       shortcut: ["e", "n"],
-      keywords: "entregas embarcadores ocorrências",
+      keywords: "entregas embarcadores importações cadastros",
     },
     {
       path: "/dashboard/routes",
@@ -505,7 +507,9 @@ const NAVIGATION: Record<NavSurface, NavNode[]> = {
       icon: "tower",
       section: "navegação",
       shortcut: ["t", "c"],
-      keywords: "torre controle mapa rastreamento veículos",
+      // The operation's views since the meeting of 14/10/2026.
+      keywords:
+        "torre controle mapa rastreamento veículos monitoramento rotas ocorrências atendimentos auditoria comprovantes",
     },
     {
       path: "/dashboard/driver-pauses",

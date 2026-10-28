@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isNewerPosition,
   mergeLivePosition,
+  pruneLivePositions,
 } from "@/features/control-tower/lib/live-positions";
 
 /**
@@ -59,5 +60,40 @@ describe("mergeLivePosition", () => {
     const merged = mergeLivePosition({}, position(t1));
 
     expect(merged["driver-1"]).toEqual(position(t1));
+  });
+});
+
+/**
+ * A read used to wipe every socket dot. A point that arrived while the read
+ * was in flight was replaced by the read's older snapshot, and the truck
+ * jumped back until its next ping.
+ */
+describe("pruneLivePositions", () => {
+  const t3 = "2026-09-24T12:02:00.000Z";
+
+  it("keeps a dot recorded after the read's own point", () => {
+    const live = { "driver-1": position(t3, -23.9) };
+
+    expect(pruneLivePositions(live, [position(t2)])).toBe(live);
+  });
+
+  it("drops a dot the read already covers, or the same instant", () => {
+    expect(
+      pruneLivePositions({ "driver-1": position(t1) }, [position(t2)]),
+    ).toEqual({});
+    expect(
+      pruneLivePositions({ "driver-1": position(t2) }, [position(t2)]),
+    ).toEqual({});
+  });
+
+  it("drops a driver the read does not list: the read decides who is on the map", () => {
+    const live = {
+      "driver-1": position(t3),
+      "driver-2": { ...position(t3), driverId: "driver-2" },
+    };
+
+    expect(Object.keys(pruneLivePositions(live, [position(t2)]))).toEqual([
+      "driver-1",
+    ]);
   });
 });

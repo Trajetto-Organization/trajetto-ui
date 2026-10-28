@@ -2,8 +2,6 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { Checkbox } from "@/components/ui/checkbox";
-
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import {
@@ -32,38 +30,14 @@ const text = (value: string | null | undefined, width: string) => (
 function buildBranchColumns(scope: BranchScope): ColumnDef<BranchRow>[] {
   return [
     {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-          className="translate-y-[2px]"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      id: "id",
-      accessorKey: "id",
-      meta: { title: "Identificador" },
+      // The CNPJ is the branch's identifier: each branch has its own.
+      id: "cnpj",
+      accessorKey: "cnpj",
+      meta: { title: "CNPJ" },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Identificador" />
+        <DataTableColumnHeader column={column} title="CNPJ" />
       ),
-      cell: ({ row }) => text(row.original.id, "w-80"),
+      cell: ({ row }) => text(formatCnpj(row.original.cnpj), "w-36"),
       enableHiding: false,
     },
     {
@@ -143,15 +117,6 @@ function buildBranchColumns(scope: BranchScope): ColumnDef<BranchRow>[] {
         <DataTableColumnHeader column={column} title="Número" />
       ),
       cell: ({ row }) => text(row.original.address_number, "w-20"),
-    },
-    {
-      id: "cnpj",
-      accessorKey: "cnpj",
-      meta: { title: "CNPJ" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="CNPJ" />
-      ),
-      cell: ({ row }) => text(formatCnpj(row.original.cnpj), "w-36"),
     },
     {
       id: "complement",

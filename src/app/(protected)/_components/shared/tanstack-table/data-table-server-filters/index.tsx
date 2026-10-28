@@ -6,6 +6,7 @@ import { Table } from "@tanstack/react-table";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useSharedListQuery } from "@/lib/search-params";
 
 import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
 import type { FacetOption } from "../data-table/server-table";
@@ -39,6 +40,8 @@ function DataTableServerFilters<TData>({
   filters,
   dataTutorial,
 }: DataTableServerFiltersProps<TData>) {
+  const listQuery = useSharedListQuery();
+
   const isFiltered = (table?.getState().columnFilters.length ?? 0) > 0;
 
   return (
@@ -68,7 +71,12 @@ function DataTableServerFilters<TData>({
       {isFiltered && (
         <Button
           variant="ghost"
-          onClick={() => table?.resetColumnFilters()}
+          // One request for the whole reset, sent now: no pause to wait for
+          // more ticks after "clear everything".
+          onClick={() => {
+            table?.resetColumnFilters();
+            listQuery?.flush();
+          }}
           className="h-8 px-2 lg:px-3 flex items-center gap-1"
         >
           Resetar

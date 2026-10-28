@@ -24,4 +24,26 @@ export async function register(): Promise<void> {
 
     throw error;
   }
+
+  if (process.env.NODE_ENV === "production") startDocsWarmUp();
+}
+
+/**
+ * The developer portal's first visit after a deploy compiled its MDX and
+ * fetched the API's OpenAPI document while the reader waited
+ * (src/app/docs/_lib/warm-up.ts). Started here, not awaited: the boot goes
+ * on, and a failure is a log line, never a crash. Production only — under
+ * `next dev` it would compile the portal's routes for nobody.
+ */
+function startDocsWarmUp(): void {
+  void import("@/app/docs/_lib/warm-up")
+    .then(({ selfBaseUrl, warmUpDocs }) =>
+      warmUpDocs({ baseUrl: selfBaseUrl() }),
+    )
+    .catch((error: unknown) => {
+      console.error(
+        "[docs-warm-up] could not start:",
+        error instanceof Error ? error.message : error,
+      );
+    });
 }

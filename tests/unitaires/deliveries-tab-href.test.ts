@@ -7,20 +7,15 @@ import { describe, expect, it, vi } from "vitest";
  * The link from one Entregas tab to another (decision 8.8, table-infra §6.1).
  *
  * The strip copied the whole URL and removed only page and search. The
- * deliveries and occurrences tables now keep their sort and facet filters
- * in the URL, so leaving Ocorrências sorted by type and filtered to
- * "Impeditiva" opened Entregas with `sort=typeName&severity=blocking` — a
- * sort key list-delivery refuses with a 400, and a filter that is not its.
+ * tables keep their sort, facet filters and — on Entregas — the period in
+ * the URL, so leaving Tipos de Ocorrência sorted and filtered opened
+ * Entregas with a sort key list-delivery refuses with a 400, and a filter
+ * that is not its.
  */
 const current = vi.hoisted(() => ({ query: "" }));
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(current.query),
-}));
-
-vi.mock("@/features/deliveries/chat/lib/use-chat-unread", () => ({
-  useChatUnreadCount: () => 0,
-  useTicketsSummary: () => null,
 }));
 
 import { DeliveriesTabs } from "@/features/deliveries/tabs";
@@ -48,18 +43,17 @@ describe("the Entregas strip", () => {
     current.query = new URLSearchParams({
       businessId: COMPANY,
       pageSize: "20",
-      tab: "occurrences",
+      tab: "occurrence-types",
       page: "3",
       search: "nf",
-      sort: "typeName",
+      sort: "name",
       order: "desc",
-      severity: "blocking",
-      occurrenceTypeId: "018f0000-0000-7000-8000-0000000000aa",
-      deliveryStatus: "FAILED",
+      category: "NOT_DELIVERED",
+      is_active: "true",
     }).toString();
 
     const html = renderHtml(
-      createElement(DeliveriesTabs, { activeTab: "occurrences" }),
+      createElement(DeliveriesTabs, { activeTab: "occurrence-types" }),
     );
 
     const next = hrefOf(html, "deliveries");
@@ -72,7 +66,8 @@ describe("the Entregas strip", () => {
   });
 
   it("keeps the open tab's own URL, so clicking it again wipes nothing", () => {
-    current.query = "tab=deliveries&sort=status&order=asc&status=PENDING";
+    current.query =
+      "tab=deliveries&sort=status&order=asc&status=PENDING&period=7d&kind=SERVICE_ORDER";
 
     const html = renderHtml(
       createElement(DeliveriesTabs, { activeTab: "deliveries" }),
@@ -83,19 +78,51 @@ describe("the Entregas strip", () => {
       sort: "status",
       order: "asc",
       status: "PENDING",
+      period: "7d",
+      kind: "SERVICE_ORDER",
     });
+
+    // The period belongs to the deliveries table, not to the next tab.
+    expect(Object.fromEntries(hrefOf(html, "shippers"))).toEqual({
+      tab: "shippers",
+    });
+  });
+
+  it("draws only the registrations: the operation moved to the Torre", () => {
+    current.query = "";
+
+    const html = renderHtml(
+      createElement(DeliveriesTabs, { activeTab: "deliveries" }),
+    );
+
+    for (const tab of [
+      "deliveries",
+      "shippers",
+      "imports",
+      "occurrence-types",
+      "status-change-reasons",
+      "message-templates",
+    ]) {
+      expect(() => hrefOf(html, tab), tab).not.toThrow();
+    }
+
+    for (const moved of ["monitoring", "occurrences", "chat", "proof-audits"]) {
+      expect(() => hrefOf(html, moved), moved).toThrow();
+    }
   });
 });
 
 describe("deliveryTabHref", () => {
-  it("drops a chat deep link when leaving the chat", () => {
+  it("drops the deliveries' filters and period when leaving them", () => {
     const href = deliveryTabHref(
-      new URLSearchParams("tab=chat&chatDriver=d1&chatDelivery=x&businessId=b"),
-      "chat",
-      "monitoring",
+      new URLSearchParams(
+        "tab=deliveries&period=custom&from=2026-10-01&to=2026-10-02&businessId=b",
+      ),
+      "deliveries",
+      "imports",
     );
 
-    expect(href).toBe("?businessId=b&tab=monitoring");
+    expect(href).toBe("?businessId=b&tab=imports");
   });
 
   it("cleans the fallback tab's link when the URL named a tab it may not open", () => {

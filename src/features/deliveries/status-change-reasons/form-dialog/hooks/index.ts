@@ -2,8 +2,6 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
 import { toast } from "sonner";
 
-import { revalidateTagName } from "@/actions/revalidate";
-
 interface StatusChangeReasonFormState {
   successMessage?: string;
   createStatusChangeReasonError?: {
@@ -50,8 +48,6 @@ function useStatusChangeReasonForm({
 
       const performRevalidation = async () => {
         try {
-          await revalidateTagName("update-status-change-reason");
-
           // The picker inside the status dialog keeps its own react-query
           // cache. Revalidating the server tag alone would leave a retired
           // reason still on offer — or a brand new one missing, which is how

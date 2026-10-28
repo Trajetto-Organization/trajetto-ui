@@ -30,16 +30,18 @@ import { PageActions } from "@/app/(protected)/_components/layout/protected-page
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 
 import {
-  listProofAudits,
   reviewProofAudit,
   type ProofAuditCard,
+  type ProofAuditListData,
   type ProofAuditMeta,
   type ProofAuditStatus,
 } from "@/actions/delivery/proof-audits";
 
 import { permissions } from "@/lib/permissions";
 import { useAuthStore } from "@/store/auth-store";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { isStaleActionResult } from "@/lib/action-result";
+import { relayUrl } from "@/lib/api-relay-paths";
+import { relayNdjson } from "@/lib/relay-read";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
@@ -199,20 +201,31 @@ const ProofAuditQueue = ({
 
   const { data, isLoading, isError, error, isFetching, refetch } = useQuery(
     ["proof_audit", businessId, status, page],
-    async () => {
-      const answer = await listProofAudits(businessId, status, page, PAGE_SIZE);
+    // A relay GET (lib/relay-read): every chip asks again, and as a Server
+    // Action each ask waited for the page's other reads. A refusal rejects
+    // and is an error on screen, never an empty queue: "nenhum comprovante"
+    // over a 400 is how the /dashboard bug hid (DLVB-03).
+    async ({ signal }): Promise<ProofAuditListData> => {
+      const { meta, data } = await relayNdjson<ProofAuditCard>(
+        relayUrl(
+          "/delivery/proof-audits",
+          new URLSearchParams({
+            businessId,
+            status,
+            page: String(page),
+            pageSize: String(PAGE_SIZE),
+          }),
+        ),
+        { signal, errorMessage: "Houve um erro ao carregar a fila." },
+      );
 
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      // A refusal is an error on screen, never an empty queue: "nenhum
-      // comprovante" over a 400 is how the /dashboard bug hid (DLVB-03).
-      if (!answer.success || !answer.data) {
-        throw new Error(answer.message || "Houve um erro ao carregar a fila.");
-      }
-
-      return answer.data;
+      return {
+        data,
+        total: meta?.total ?? data.length,
+        currentPage: meta?.page ?? page,
+        pageSize: meta?.pageSize ?? PAGE_SIZE,
+        meta: meta?.searchMeta,
+      };
     },
     {
       refetchOnWindowFocus: false,

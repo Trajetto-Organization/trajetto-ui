@@ -6,6 +6,7 @@ import { readBusinessIdParam } from "@/lib/business-id-param";
 import { fineFormSchema } from "@/features/fine/lib/fine-form-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateFineProps {
   message: string;
@@ -85,6 +86,10 @@ const handleUpdateFine = async (state: any, updateFineValues: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-fine");
 
     return { successMessage: message };
   } catch (error) {

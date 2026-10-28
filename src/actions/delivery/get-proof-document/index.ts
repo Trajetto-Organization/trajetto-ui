@@ -52,6 +52,13 @@ interface ProofDocumentSignature {
   cert_not_after: string | null;
   signed_at: string | null;
   unsigned_reason: ProofUnsignedReason | null;
+
+  /**
+   * Whether the signing certificate chains to an ICP-Brasil root (checked by
+   * the API since 28/10/2026). Null or absent: not known (an older document
+   * or API), never claimed.
+   */
+  icp_brasil?: boolean | null;
 }
 
 interface ActionResponse<T = undefined> {

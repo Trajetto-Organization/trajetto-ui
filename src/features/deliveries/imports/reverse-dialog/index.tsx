@@ -25,6 +25,7 @@ import { revalidateTags } from "@/actions/revalidate";
 
 import { revalidateDataToQueryKeyMap } from "@/lib/query-keys-mapping";
 import { isStaleActionResult } from "@/lib/action-result";
+import { followReversal } from "./follow-reversal";
 
 interface ReverseImportDialogProps {
   businessId: string;
@@ -60,6 +61,19 @@ const ReverseImportDialog = ({
   const [isPending, setIsPending] = useState<boolean>(false);
   const [result, setResult] = useState<ReversalResult | null>(null);
 
+  // Deliveries already removed by an undo running in the background.
+  const [removedSoFar, setRemovedSoFar] = useState<number | null>(null);
+
+  const refreshAfterUndo = async () => {
+    // An upload creates deliveries and routes, so its own list is not the
+    // only thing that went stale.
+    await revalidateTags(["update-import", "update-delivery"]);
+
+    for (const key of revalidateDataToQueryKeyMap["update-import"]) {
+      void queryClient.invalidateQueries([key]);
+    }
+  };
+
   const handleReverse = async () => {
     setIsPending(true);
 
@@ -68,23 +82,51 @@ const ReverseImportDialog = ({
 
       if (isStaleActionResult(response)) return;
 
-      if (!response.success || !response.data) {
+      if (!response.success) {
+        toast.error(response.message);
+        return;
+      }
+
+      // More than 500 deliveries: the API removes them in batches in the
+      // background and the result arrives on the import record.
+      if (response.pending) {
+        setRemovedSoFar(0);
+
+        const outcome = await followReversal({
+          businessId,
+          importId,
+          onProgress: setRemovedSoFar,
+        });
+
+        if (outcome.kind === "done") {
+          setResult(outcome.result);
+          toast.success("Importação estornada.");
+          await refreshAfterUndo();
+        } else if (outcome.kind === "interrupted") {
+          toast.error(
+            `O estorno parou depois de remover ${outcome.removedDeliveries} entrega(s). Peça o estorno de novo para continuar de onde parou.`,
+          );
+          await refreshAfterUndo();
+        } else {
+          toast.info(
+            "O estorno continua em segundo plano. Acompanhe pela lista de importações.",
+          );
+        }
+
+        return;
+      }
+
+      if (!response.data) {
         toast.error(response.message);
         return;
       }
 
       setResult(response.data);
       toast.success(response.message);
-
-      // An upload creates deliveries and routes, so its own list is not the
-      // only thing that went stale.
-      await revalidateTags(["update-import", "update-delivery"]);
-
-      for (const key of revalidateDataToQueryKeyMap["update-import"]) {
-        void queryClient.invalidateQueries([key]);
-      }
+      await refreshAfterUndo();
     } finally {
       setIsPending(false);
+      setRemovedSoFar(null);
     }
   };
 
@@ -217,9 +259,11 @@ const ReverseImportDialog = ({
                 hover:bg-destructive/90 sm:w-auto"
               >
                 {isPending ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2" aria-live="polite">
                     <Loader className="h-4 w-4 animate-spin" />
-                    Estornando...
+                    {removedSoFar === null
+                      ? "Estornando..."
+                      : `Estornando... ${removedSoFar} removida(s)`}
                   </span>
                 ) : (
                   "Estornar"

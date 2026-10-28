@@ -8,8 +8,20 @@
  * No directive: the server actions and the client page actions import it.
  */
 
-/** The facet params each export accepts, as the list API names them. */
-const DELIVERY_EXPORT_FILTERS = ["status", "shipperId", "driverId"] as const;
+/**
+ * The facet params each export accepts, as the list API names them. The
+ * deliveries' include the Tipo and the period (meeting of 14/10/2026): the
+ * file is the list on screen, today's by default.
+ */
+const DELIVERY_EXPORT_FILTERS = [
+  "status",
+  "shipperId",
+  "driverId",
+  "kind",
+  "period",
+  "from",
+  "to",
+] as const;
 
 const OCCURRENCE_EXPORT_FILTERS = [
   "severity",

@@ -1,11 +1,11 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { DataTableQuoteRowActions } from "../data-table-row-actions";
 
 import type { QuoteProps } from "../quote.types";
@@ -31,49 +31,15 @@ const statusLabels = {
 
 const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
   {
-    id: "select",
-    meta: {
-      title: "Seleção",
-    },
-    header: ({ table }) => (
-      <Checkbox
-        id="select-all-quotes"
-        name="select-all-quotes"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Selecionar todas"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-quote-${row.id}`}
-        name={`select-quote-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Selecionar linha"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
+    // A quote request has no number of its own: the compact record id.
     accessorKey: "id",
     meta: {
-      title: "Identificador",
+      title: "ID",
     },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
+      <DataTableColumnHeader column={column} title="ID" />
     ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-80">
-        {displayValue(row.getValue("id"))}
-      </p>
-    ),
+    cell: ({ row }) => <IdCell id={row.original.id} />,
     enableSorting: false,
     enableHiding: false,
   },

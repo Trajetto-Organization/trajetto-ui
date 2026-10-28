@@ -3,7 +3,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 import type { FuelProps } from "@/app/(protected)/_components/shared/common.types";
@@ -63,35 +62,13 @@ const cellText = (
 function buildFuelColumns(): ColumnDef<FuelProps>[] {
   return [
     {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todos"
-          className="translate-y-[2px]"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "id",
-      meta: { title: "Identificador" },
-      header: header("Identificador"),
-      cell: ({ row }) => cellText(row.original.id, "w-80"),
+      // A refueling is told apart by the vehicle and the day (the column
+      // after this one); it has no number of its own.
+      id: "vehicle_license_plate",
+      accessorFn: (row) => row.vehicle?.license_plate,
+      meta: { title: "Placa" },
+      header: header("Placa"),
+      cell: ({ row }) => cellText(row.original.vehicle?.license_plate, "w-28"),
       enableHiding: false,
     },
     {
@@ -102,6 +79,7 @@ function buildFuelColumns(): ColumnDef<FuelProps>[] {
       // that day, not the one before in the browser's zone.
       cell: ({ row }) =>
         cellText(formatPickedDay(row.original.refueling_date), "w-44"),
+      enableHiding: false,
     },
     {
       id: "created_from",
@@ -164,19 +142,6 @@ function buildFuelColumns(): ColumnDef<FuelProps>[] {
       enableHiding: false,
     },
     {
-      id: "vehicle_license_plate",
-      accessorFn: (row) => row.vehicle?.license_plate,
-      meta: { title: "Placa do veículo" },
-      header: header("Placa do veículo"),
-      cell: ({ row }) => cellText(row.original.vehicle?.license_plate, "w-28"),
-    },
-    {
-      accessorKey: "vehicleId",
-      meta: { title: "Identificador do veículo" },
-      header: header("Identificador do veículo"),
-      cell: ({ row }) => cellText(row.original.vehicleId, "w-48"),
-    },
-    {
       id: "vehicle_description",
       accessorFn: (row) => row.vehicle?.description,
       meta: { title: "Descrição do veículo" },
@@ -198,12 +163,6 @@ function buildFuelColumns(): ColumnDef<FuelProps>[] {
       cell: ({ row }) => cellText(row.original.vehicle?.model, "w-32"),
     },
     {
-      accessorKey: "driverId",
-      meta: { title: "Identificador do motorista" },
-      header: header("Identificador do motorista"),
-      cell: ({ row }) => cellText(row.original.driverId, "w-48"),
-    },
-    {
       id: "driver_name",
       accessorFn: (row) => row.driver?.name,
       meta: { title: "Nome do motorista" },
@@ -218,23 +177,11 @@ function buildFuelColumns(): ColumnDef<FuelProps>[] {
       cell: ({ row }) => cellText(row.original.driver?.cnh, "w-32"),
     },
     {
-      accessorKey: "fuelTypeId",
-      meta: { title: "Identificador do combustível" },
-      header: header("Identificador do combustível"),
-      cell: ({ row }) => cellText(row.original.fuelTypeId, "w-48"),
-    },
-    {
       id: "fuel_type_description",
       accessorFn: (row) => row.fuelType?.description,
       meta: { title: "Tipo de combustível" },
       header: header("Tipo de combustível"),
       cell: ({ row }) => cellText(row.original.fuelType?.description, "w-32"),
-    },
-    {
-      accessorKey: "branchId",
-      meta: { title: "Identificador da filial" },
-      header: header("Identificador da filial"),
-      cell: ({ row }) => cellText(row.original.branchId, "w-48"),
     },
     {
       id: "branchName",

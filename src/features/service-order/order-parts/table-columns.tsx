@@ -3,6 +3,10 @@
 import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import {
+  IdCell,
+  shortId,
+} from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -42,10 +46,12 @@ const buildOrderPartColumns = (
   scope: FleetScope,
 ): ColumnDef<OrderPartRow>[] => [
   {
+    // A part line has no number of its own: the compact record id.
     accessorKey: "id",
-    meta: { title: "Identificador" },
-    header: header("Identificador"),
-    cell: ({ row }) => text(row.original.id, "w-80"),
+    meta: { title: "ID" },
+    header: header("ID"),
+    cell: ({ row }) => <IdCell id={row.original.id} />,
+    enableSorting: false,
     enableHiding: false,
   },
   {
@@ -115,10 +121,20 @@ const buildOrderPartColumns = (
       text(row.original.serviceOrder.vehicle.description, "w-48"),
   },
   {
+    // Also the facet behind "Ver Peças da Ordem" (ORDER_PART_TABLE), so the
+    // column stays, hidden by default (OrderPartTable); shown, it reads as
+    // the same "OS #…" as everywhere else.
     accessorKey: "serviceOrderId",
     meta: { title: "Ordem de serviço" },
     header: header("Ordem de serviço"),
-    cell: ({ row }) => text(row.original.serviceOrderId, "w-80"),
+    cell: ({ row }) => (
+      <p
+        className="w-40 truncate font-mono text-sm font-medium"
+        title={row.original.serviceOrderId}
+      >
+        OS #{shortId(row.original.serviceOrderId)}
+      </p>
+    ),
   },
   {
     accessorKey: "created_at",

@@ -3,6 +3,7 @@
 import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface ActionResponse<T = undefined> {
   success: boolean;
@@ -76,6 +77,10 @@ const reportDeliveryOccurrence = async (
             : undefined,
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-delivery");
 
     return {
       success: true,

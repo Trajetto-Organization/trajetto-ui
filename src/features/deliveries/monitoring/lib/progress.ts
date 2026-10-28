@@ -10,49 +10,6 @@ import type {
 
 import { currentOnTheWayStopId } from "@/features/routes/lib/status";
 
-/** A driver's day as both boards count it (decision 7.1). */
-interface DriverDayCounts {
-  designated: number;
-  inRoute: number;
-  deliveredToday: number;
-  failedToday: number;
-}
-
-interface DriverProgress {
-  /** Delivered + failed: stops with an outcome. */
-  resolved: number;
-  total: number;
-
-  /** resolved / total, in whole %. */
-  completion: number;
-
-  /** delivered / total, in whole %. */
-  deliveredRate: number;
-}
-
-/**
- * How far a driver's day got (DLV-MON-3, DLVP-MON-2).
- *
- * It was delivered / (designated + in route + delivered): the failures left
- * both sides, so 3 delivered and 7 refused read 100%. A refused address is
- * resolved — the driver is done with it — so it counts in the completion,
- * and the success share is shown beside it.
- */
-function driverProgress(row: DriverDayCounts): DriverProgress {
-  const resolved = row.deliveredToday + row.failedToday;
-  const total = row.designated + row.inRoute + resolved;
-
-  const percent = (value: number) =>
-    total > 0 ? Math.round((value / total) * 100) : 0;
-
-  return {
-    resolved,
-    total,
-    completion: percent(resolved),
-    deliveredRate: percent(row.deliveredToday),
-  };
-}
-
 type StopDot =
   "delivered" | "failed" | "pending" | "arrived" | "on_the_way" | "cancelled";
 
@@ -269,17 +226,10 @@ export {
   DOT_LABELS,
   applyStopOnTheWay,
   applyStopSettled,
-  driverProgress,
   isStopOnTheWay,
   isStopSettled,
   onTheWayStopOf,
   progressOf,
   stopDot,
 };
-export type {
-  DriverDayCounts,
-  DriverProgress,
-  StopDot,
-  StopOnTheWayEvent,
-  StopSettledEvent,
-};
+export type { StopDot, StopOnTheWayEvent, StopSettledEvent };

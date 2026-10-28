@@ -2,8 +2,6 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
 import { toast } from "sonner";
 
-import { revalidateTagName } from "@/actions/revalidate";
-
 interface DeleteShipperFormState {
   successMessage?: string;
   deleteShipperError?: string;
@@ -31,8 +29,6 @@ function useDeleteShipperForm(
 
       const performRevalidation = async () => {
         try {
-          await revalidateTagName("update-shipper");
-
           // The selector inside the delivery form runs its own react-query
           // cache, so revalidating the server tag alone never reaches it. The
           // pickers read with refetchOnMount and a short staleTime

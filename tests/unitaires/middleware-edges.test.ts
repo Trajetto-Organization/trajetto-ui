@@ -32,11 +32,18 @@ function requestFor(
   path: string,
   token?: string,
   refresh = "refresh",
+  extra: Record<string, string> = {},
 ): NextRequest {
   return new NextRequest(`http://app.test${path}`, {
-    headers: token ? { cookie: `tkey=${token}; rkey=${refresh}` } : {},
+    headers: {
+      ...(token ? { cookie: `tkey=${token}; rkey=${refresh}` } : {}),
+      ...extra,
+    },
   });
 }
+
+/** What the browser says of the app's own navigations (Fetch Metadata). */
+const SAME_ORIGIN = { "sec-fetch-site": "same-origin" };
 
 const target = (response: Response) => {
   const location = response.headers.get("location");
@@ -65,6 +72,8 @@ describe("forced logout", () => {
       requestFor(
         "/dashboard?force_logout=true&error=tenant_inactive",
         sessionFor("BUSINESS_USER"),
+        "refresh",
+        SAME_ORIGIN,
       ),
     );
 
@@ -76,7 +85,12 @@ describe("forced logout", () => {
 
   it("says the session expired when no reason came", async () => {
     const response = await middleware(
-      requestFor("/dashboard?force_logout=true"),
+      requestFor(
+        "/dashboard?force_logout=true",
+        undefined,
+        "refresh",
+        SAME_ORIGIN,
+      ),
     );
 
     expect(target(response)).toBe("/login?reason=session_expired");
@@ -87,7 +101,12 @@ describe("forced logout", () => {
     const token = sessionFor("BUSINESS_USER");
 
     const response = await middleware(
-      requestFor("/login?force_logout=true&error=logout", token),
+      requestFor(
+        "/login?force_logout=true&error=logout",
+        token,
+        "refresh",
+        SAME_ORIGIN,
+      ),
     );
 
     expect(target(response)).toBe("/login?reason=logout");
@@ -105,6 +124,8 @@ describe("forced logout", () => {
       requestFor(
         "/login?force_logout=true&error=permissions_changed",
         sessionFor("BUSINESS_USER"),
+        "refresh",
+        SAME_ORIGIN,
       ),
     );
 
@@ -113,14 +134,26 @@ describe("forced logout", () => {
   });
 
   it("calls nothing without an access token", async () => {
-    await middleware(requestFor("/login?force_logout=true&error=logout"));
+    await middleware(
+      requestFor(
+        "/login?force_logout=true&error=logout",
+        undefined,
+        "refresh",
+        SAME_ORIGIN,
+      ),
+    );
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("only on force_logout=true", async () => {
     const response = await middleware(
-      requestFor("/dashboard?force_logout=1", sessionFor("BUSINESS_USER")),
+      requestFor(
+        "/dashboard?force_logout=1",
+        sessionFor("BUSINESS_USER"),
+        "refresh",
+        SAME_ORIGIN,
+      ),
     );
 
     expect(target(response)).toBeNull();

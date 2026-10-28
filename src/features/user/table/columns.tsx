@@ -3,7 +3,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
@@ -53,55 +52,16 @@ function textColumn(
   };
 }
 
-/** The selection column, the same in every admin-users table. */
-function selectColumn<TRow = UserRow>(name: string): ColumnDef<TRow> {
-  return {
-    id: "select",
-    meta: { title: "Seleção" },
-    header: ({ table }) => (
-      <Checkbox
-        id={`select-all-${name}`}
-        name={`select-all-${name}`}
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Selecionar todos"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-${name}-${row.id}`}
-        name={`select-${name}-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Selecionar linha"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  };
-}
-
 /** The columns every user table has: identity, verification, access, dates. */
 function accountColumns(): ColumnDef<UserRow>[] {
   return [
+    // The e-mail is the account's identifier: unique, what the person logs
+    // in with and what support asks for.
     {
-      accessorKey: "id",
-      meta: { title: "Identificador" },
-      header: header("Identificador"),
-      cell: ({ row }) => (
-        <p className="w-80 truncate font-medium">
-          {displayValue(row.original.id)}
-        </p>
-      ),
+      ...textColumn("email", "E-mail", "w-48", (row) => row.email),
       enableHiding: false,
     },
     textColumn("name", "Nome do usuário", "w-36", (row) => row.name),
-    textColumn("email", "E-mail", "w-48", (row) => row.email),
     {
       accessorKey: "two_factor_enabled",
       meta: { title: "Verificação (2FA)" },
@@ -171,7 +131,6 @@ function dateColumns(): ColumnDef<UserRow>[] {
  */
 function buildUserColumns(scope: AdminScope): ColumnDef<UserRow>[] {
   return [
-    selectColumn("users"),
     ...accountColumns(),
     {
       accessorKey: "role",
@@ -215,7 +174,6 @@ function buildUserColumns(scope: AdminScope): ColumnDef<UserRow>[] {
  */
 function buildMasterColumns(): ColumnDef<UserRow>[] {
   return [
-    selectColumn("masters"),
     ...accountColumns(),
     ...dateColumns(),
     {
@@ -234,5 +192,4 @@ export {
   buildUserColumns,
   dateColumns,
   header,
-  selectColumn,
 };

@@ -140,8 +140,9 @@ describe("AUTHORIZATION_QUEUE_ROOT", () => {
 
 describe("queueTicketHref", () => {
   it("opens in the company area when the path is unknown", () => {
+    // The Torre's Atendimentos since the meeting of 14/10/2026.
     expect(queueTicketHref(null, "", "t1")).toMatch(
-      /^\/dashboard\/deliveries\?/,
+      /^\/dashboard\/control-tower\?/,
     );
   });
 });

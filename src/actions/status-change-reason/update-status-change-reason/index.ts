@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateStatusChangeReasonSchema } from "@/schemas/create-update-status-change-reason-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateStatusChangeReasonProps {
   message: string;
@@ -72,6 +73,10 @@ const handleUpdateStatusChangeReason = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-status-change-reason");
 
     return { successMessage: message };
   } catch (error) {

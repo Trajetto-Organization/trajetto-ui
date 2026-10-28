@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import {
-  listWebhookDeliveries,
   resendWebhookDelivery,
   type MonitorStatusFilter,
   type MonitorWindow,
@@ -27,7 +26,9 @@ import {
 } from "@/actions/integration";
 
 import { permissions } from "@/lib/permissions";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { isStaleActionResult } from "@/lib/action-result";
+
+import { fetchWebhookDeliveries } from "../lib/reads";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
@@ -94,19 +95,18 @@ const MonitorPanel = ({ businessId }: MonitorPanelProps): JSX.Element => {
 
   const { data, isLoading, isFetching, refetch } = useQuery(
     ["integration_webhook_deliveries", businessId, period, status, page],
-    async () => {
-      const answer = await listWebhookDeliveries(page, PAGE_SIZE, {
-        status: status === "ALL" ? undefined : status,
-        window: period,
-        businessId: businessId || undefined,
-      });
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      return answer;
-    },
+    // A relay GET (lib/reads), cancelled when the filter moves on.
+    ({ signal }) =>
+      fetchWebhookDeliveries(
+        page,
+        PAGE_SIZE,
+        {
+          status: status === "ALL" ? undefined : status,
+          window: period,
+          businessId: businessId || undefined,
+        },
+        { signal },
+      ),
     {
       refetchOnWindowFocus: false,
       keepPreviousData: true,

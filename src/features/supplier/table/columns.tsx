@@ -2,8 +2,6 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { Checkbox } from "@/components/ui/checkbox";
-
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 
 import {
@@ -30,28 +28,14 @@ const text = (value: string | null | undefined, width: string) => (
 function buildSupplierColumns(): ColumnDef<SupplierRow>[] {
   return [
     {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todos"
-          className="translate-y-[2px]"
-        />
+      // The CNPJ is the supplier's identifier, the one on its invoices.
+      id: "cnpj",
+      accessorKey: "cnpj",
+      meta: { title: "CNPJ" },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="CNPJ" />
       ),
-      cell: ({ row }) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
+      cell: ({ row }) => text(formatCnpj(row.original.cnpj), "w-40"),
       enableHiding: false,
     },
     {
@@ -62,16 +46,6 @@ function buildSupplierColumns(): ColumnDef<SupplierRow>[] {
         <DataTableColumnHeader column={column} title="Nome" />
       ),
       cell: ({ row }) => text(row.original.name, "w-56"),
-      enableHiding: false,
-    },
-    {
-      id: "cnpj",
-      accessorKey: "cnpj",
-      meta: { title: "CNPJ" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="CNPJ" />
-      ),
-      cell: ({ row }) => text(formatCnpj(row.original.cnpj), "w-40"),
     },
     {
       id: "email",

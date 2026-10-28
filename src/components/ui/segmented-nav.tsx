@@ -90,6 +90,20 @@ interface SegmentedNavProps {
 const mobileTutorialAnchor = (anchor?: string): string | undefined =>
   anchor ? `${anchor}-mobile` : undefined;
 
+/**
+ * The sections are never prefetched.
+ *
+ * Every section here is the same page with another query (`?tab=`,
+ * `?view=`). In Next 14 without PPR, the automatic prefetch of such a link
+ * renders the whole page on the server — the loading.tsx cut-off only
+ * applies BELOW a segment, and the render starts at the page segment
+ * itself — so drawing Entregas' strip rendered every tab with its data, one
+ * server render and a list read per section the person never opened (24 API
+ * calls to open one tab). A click now asks for the section it names, and
+ * the page's loading.tsx/Suspense skeleton covers the wait.
+ */
+const SECTION_PREFETCH = false;
+
 const SegmentedNav = ({
   items,
   activeValue,
@@ -175,6 +189,7 @@ const SegmentedNav = ({
                 <DropdownMenuItem key={item.value} asChild>
                   <Link
                     href={hrefFor(item.value)}
+                    prefetch={SECTION_PREFETCH}
                     aria-current={isActive ? "page" : undefined}
                     data-tutorial={mobileTutorialAnchor(item.dataTutorial)}
                     className="flex cursor-pointer items-center gap-2"
@@ -274,6 +289,7 @@ const SegmentedNav = ({
               >
                 <Link
                   href={hrefFor(item.value)}
+                  prefetch={SECTION_PREFETCH}
                   // The one the user is on, said out loud rather than only
                   // drawn.
                   aria-current={isActive ? "page" : undefined}

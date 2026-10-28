@@ -22,9 +22,10 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
 /**
- * The API, as the two server actions answer it: a queue per status that the
- * review moves a card across. Replaced because they run on the Next server;
- * the panel, its queries and the cache are the real ones.
+ * The API: a queue per status that the review moves a card across. The
+ * listing is a relay GET (the stubbed `fetch` answers it) and the review a
+ * server action, which runs on the Next server; the panel, its queries and
+ * the cache are the real ones.
  */
 const api = vi.hoisted(() => {
   type Status = "PENDING" | "APPROVED" | "REJECTED";
@@ -67,31 +68,6 @@ const api = vi.hoisted(() => {
 });
 
 vi.mock("@/actions/delivery/proof-audits", () => ({
-  listProofAudits: async (
-    _businessId: string,
-    status: "PENDING" | "APPROVED" | "REJECTED",
-  ) => {
-    if (api.hold === status) {
-      await new Promise<void>((release) => api.released.push(release));
-    }
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        data: [...api.queues[status]],
-        total: api.queues[status].length,
-        currentPage: 1,
-        pageSize: 20,
-        meta: {
-          pending: api.queues.PENDING.length,
-          approved: api.queues.APPROVED.length,
-          rejected: api.queues.REJECTED.length,
-          agreementRate: null,
-        },
-      },
-    };
-  },
   reviewProofAudit: async (
     _businessId: string,
     auditId: string,
@@ -110,6 +86,8 @@ vi.mock("@/actions/delivery/proof-audits", () => ({
     return { success: true, message: "Comprovante revisado." };
   },
 }));
+
+import { ndjson, stubRelay } from "./helpers/relay-fetch";
 
 import { queryClientProps } from "@/lib/query-client-props";
 import { useAuthStore } from "@/store/auth-store";
@@ -140,6 +118,33 @@ beforeEach(() => {
   };
   api.hold = null;
   api.released = [];
+
+  // GET /delivery/proof-audits, NDJSON like the API; a held status waits.
+  stubRelay({
+    "/delivery/proof-audits": async (url) => {
+      const status = url.searchParams.get("status") as
+        "PENDING" | "APPROVED" | "REJECTED";
+
+      if (api.hold === status) {
+        await new Promise<void>((release) => api.released.push(release));
+      }
+
+      return ndjson(
+        {
+          total: api.queues[status].length,
+          page: 1,
+          pageSize: 20,
+          searchMeta: {
+            pending: api.queues.PENDING.length,
+            approved: api.queues.APPROVED.length,
+            rejected: api.queues.REJECTED.length,
+            agreementRate: null,
+          },
+        },
+        [...api.queues[status]],
+      );
+    },
+  });
 
   useAuthStore.getState().setAuth({
     id: "reviewer",

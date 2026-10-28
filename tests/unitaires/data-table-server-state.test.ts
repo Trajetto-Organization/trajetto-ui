@@ -49,6 +49,7 @@ import { buildOccurrenceColumns } from "@/features/deliveries/occurrences/table-
 import type { OccurrenceRow } from "@/features/deliveries/lib/panels";
 
 import { formatNotificationDate } from "@/lib/format-values";
+import { LIST_QUERY_DEBOUNCE_MS } from "@/lib/search-params";
 
 // This runner compiles JSX with the classic runtime.
 (globalThis as { React?: typeof React }).React = React;
@@ -96,6 +97,13 @@ async function pressEnter(element: Element): Promise<void> {
 async function click(element: Element): Promise<void> {
   await act(async () => {
     (element as HTMLElement).click();
+  });
+}
+
+/** Lets the list's filter pause (LIST_QUERY_DEBOUNCE_MS) run out. */
+async function settle(ms: number): Promise<void> {
+  await act(async () => {
+    await new Promise((done) => setTimeout(done, ms));
   });
 }
 
@@ -370,6 +378,12 @@ describe("the occurrence feed (pilot)", () => {
     await click(filterButton(host, "Gravidade"));
     await click(option("Impeditiva"));
 
+    // A tick waits a moment for the next one, then goes out alone.
+    expect(navigation.push).not.toHaveBeenCalled();
+
+    await settle(LIST_QUERY_DEBOUNCE_MS + 50);
+
+    expect(navigation.push).toHaveBeenCalledTimes(1);
     expect(navigation.push).toHaveBeenCalledWith(
       "?tab=occurrences&severity=blocking",
       { scroll: false },
@@ -526,26 +540,15 @@ describe("the row selection across server queries", () => {
   };
 
   const columns: ColumnDef<Assignable>[] = [
-    {
-      id: "select",
-      header: "Seleção",
-      cell: ({ row }) =>
-        createElement("input", {
-          type: "checkbox",
-          "aria-label": `Selecionar ${row.original.name}`,
-          checked: row.getIsSelected(),
-          onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
-            row.toggleSelected(event.target.checked),
-        }),
-    },
     { accessorKey: "name", header: "Nome" },
   ];
 
   let table: Table<Assignable> | null = null;
+  let batch: Assignable[] = [];
 
-  // The toolbar slot receives the table instance, like the deliveries toolbar
-  // that reads getSelectedRowModel() for the batch.
-  function SelectionProbe(props: { table?: Table<Assignable> }) {
+  // The toolbar slot receives the table instance; the bulk actions receive
+  // the checked rows, like "Adicionar à rota" on the deliveries tab.
+  function TableProbe(props: { table?: Table<Assignable> }) {
     table = props.table ?? null;
 
     return null;
@@ -558,7 +561,14 @@ describe("the row selection across server queries", () => {
       meta: { total: 30, page: 1, pageSize: 10 },
       responseError: NO_ERROR,
       server,
-      toolbar: createElement(SelectionProbe),
+      toolbar: createElement(TableProbe),
+      bulkActions: {
+        render: ({ rows }) => {
+          batch = rows;
+
+          return null;
+        },
+      },
     });
 
   const selected = () =>
@@ -569,8 +579,13 @@ describe("the row selection across server queries", () => {
       (row) => row.querySelectorAll("td")[1]?.textContent,
     );
 
-  const check = (host: HTMLElement, name: string) =>
-    click(host.querySelector(`input[aria-label="Selecionar ${name}"]`)!);
+  const check = (host: HTMLElement, name: string) => {
+    const row = Array.from(host.querySelectorAll("tbody tr")).find(
+      (candidate) => candidate.textContent?.includes(name),
+    );
+
+    return click(row!.querySelector('[role="checkbox"]')!);
+  };
 
   it("keeps the checked delivery checked when the server reorders the page", async () => {
     const host = await mount(element([ANA, BRUNO]));
@@ -583,6 +598,7 @@ describe("the row selection across server queries", () => {
 
     expect(selected()).toEqual(["Ana"]);
     expect(checkedOnScreen(host)).toEqual(["Ana"]);
+    expect(batch.map((row) => row.name)).toEqual(["Ana"]);
   });
 
   it("drops a checked delivery the new filter leaves out, and checks no other", async () => {
@@ -595,6 +611,7 @@ describe("the row selection across server queries", () => {
 
     expect(selected()).toEqual([]);
     expect(checkedOnScreen(host)).toEqual([]);
+    expect(batch).toEqual([]);
     // Nothing out of sight stays selected (the header's "some selected").
     expect(table!.getState().rowSelection).toEqual({});
     expect(table!.getIsSomeRowsSelected()).toBe(false);

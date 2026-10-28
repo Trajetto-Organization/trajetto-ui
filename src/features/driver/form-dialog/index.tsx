@@ -378,9 +378,7 @@ const DriverFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterDriverWrite(
-        isEdit ? "update-driver" : "create-driver",
-      ).catch(() =>
+      void refreshAfterDriverWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

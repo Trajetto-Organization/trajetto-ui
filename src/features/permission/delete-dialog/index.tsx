@@ -54,7 +54,7 @@ const DeletePermissionDialog = ({
 
       toast.success(result.successMessage ?? "Permissão deletada.");
 
-      void refreshAfterPermissionWrite("delete-permission").catch(() =>
+      void refreshAfterPermissionWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

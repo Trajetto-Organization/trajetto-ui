@@ -41,10 +41,12 @@ import {
   applyLivePosition,
   hasUnknownDriver,
   mergeLivePosition,
+  pruneLivePositions,
   type LiveUpdate,
 } from "./lib/live-positions";
 import type { MapTiles } from "./lib/map-tiles";
 import { useRefetchScheduler } from "./lib/refetch-scheduler";
+import { useTowerRefresh } from "./shell/refresh";
 import { companyZoneNote, formatEventMoment } from "./lib/tower-format";
 import { FOREGROUND_ONLY_NOTICE } from "./lib/tracking-notice";
 import { OccurrenceAuthorizationQueue } from "@/features/deliveries/occurrence-authorizations/queue";
@@ -91,16 +93,6 @@ interface ControlTowerPanelProps {
    */
   backgroundTracking?: boolean;
 }
-
-/**
- * How often the numbers are refetched.
- *
- * Thirty seconds. The dots move over the socket the instant a phone reports,
- * and route events refetch at once; this is the floor for everything else —
- * and a dispatcher who leaves this open all day would otherwise make 2.880
- * requests a shift for a funnel that changes a few times an hour.
- */
-const REFRESH_MS = 30_000;
 
 /** How often the dots age (fresh → sem reportar) between two reads. */
 const CLOCK_TICK_MS = 30_000;
@@ -159,6 +151,11 @@ const ControlTowerPanel = ({
 
   const [now, setNow] = useState<number>(() => Date.now());
 
+  // The Torre's cadence (1, 3 or 5 min, shell/refresh): its timer rereads
+  // this panel's queries. The dots move over the socket the instant a phone
+  // reports, and route events refetch at once; the timer is the floor.
+  const { minutes } = useTowerRefresh();
+
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
 
@@ -180,7 +177,6 @@ const ControlTowerPanel = ({
     },
     {
       refetchOnWindowFocus: false,
-      refetchInterval: REFRESH_MS,
       keepPreviousData: true,
       retry: retryTransient,
     },
@@ -278,11 +274,12 @@ const ControlTowerPanel = ({
   }, [businessId, scheduleRefetch]);
 
   // A refetch is the authority: it carries names, plates and route states.
-  // The socket's dots are only newer until the next one lands.
+  // A socket dot only outlives it when recorded after the read's own point —
+  // one that arrived while the read was in flight (lib/live-positions).
   useEffect(() => {
     if (!tower) return;
 
-    setLive({});
+    setLive((current) => pruneLivePositions(current, tower.positions));
   }, [tower]);
 
   // Somebody started a route since the last read: their dot has no name,
@@ -429,7 +426,7 @@ const ControlTowerPanel = ({
           title={
             connected
               ? "As posições chegam no instante em que o telefone envia."
-              : "Sem conexão em tempo real: a torre se atualiza a cada 30 segundos."
+              : `Sem conexão em tempo real: a torre se atualiza a cada ${minutes} min.`
           }
         >
           {connected ? (
@@ -570,4 +567,4 @@ const ControlTowerPanel = ({
   );
 };
 
-export { ControlTowerPanel, REFRESH_MS };
+export { ControlTowerPanel };

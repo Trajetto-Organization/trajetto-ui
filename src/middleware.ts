@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseJwt } from "./lib/decode-jwt";
 import { apiForwardingHeaders } from "./lib/api-forwarding";
+import { createSingleFlight } from "./lib/single-flight";
 import { sessionCookieOptions } from "./lib/session-cookie-options";
 import {
+  REPORTING_ENDPOINTS_HEADER,
+  TRUSTED_TYPES_REPORT_ONLY_POLICY,
   buildContentSecurityPolicy,
   createNonce,
   parseStorageOrigins,
+  reportingEndpoints,
   rendersPerRequest,
 } from "./lib/content-security-policy";
 import {
@@ -40,6 +44,71 @@ const AUTH_ROUTES = [
   "/forgot/password",
   "/new-verification",
 ];
+
+/**
+ * How long a navigation waits for the token renewal. The whole request is
+ * held while it runs, and an answer this late is the API in trouble: the page
+ * then shows the reconnection screen (renewal pending), never a logout.
+ */
+const REFRESH_TIMEOUT_MS = 3_000;
+
+const PRIVATE_PREFIXES = [
+  "/dashboard",
+  "/admin",
+  "/profile",
+  "/notifications",
+  "/driver",
+];
+
+function isPrivatePath(pathname: string): boolean {
+  return PRIVATE_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
+/**
+ * A speculative fetch: the router's prefetch of a link (`Next-Router-Prefetch`
+ * on the "auto" kind every <Link> uses) or the browser's own (`Purpose` /
+ * `Sec-Purpose: prefetch`). Nobody is waiting on it, and a page full of links
+ * whose token just expired would each POST the same refresh token.
+ */
+function isPrefetch(req: NextRequest): boolean {
+  if (req.headers.has("next-router-prefetch")) return true;
+
+  const purpose = `${req.headers.get("purpose") ?? ""} ${req.headers.get("sec-purpose") ?? ""}`;
+
+  return /\bprefetch\b/i.test(purpose);
+}
+
+/**
+ * Where an expired access token is worth renewing: the authenticated area
+ * (its pages, RSC navigations and the Server Actions posted to them), the
+ * sign-in pages (a dead session is cleared there instead of bouncing the
+ * person to a dashboard that would log them out), and the relay the browser
+ * reads through. Never a public page: a visitor with old cookies browsing the
+ * site cost one API refresh per page, and a refused one answered their form
+ * POST (the quote, the tracking opt-out) with a redirect to the login.
+ */
+function needsLiveSession(pathname: string): boolean {
+  return (
+    isPrivatePath(pathname) ||
+    AUTH_ROUTES.includes(pathname) ||
+    pathname.startsWith("/api/relay/")
+  );
+}
+
+/**
+ * Whether the browser says this request comes from the app itself.
+ *
+ * `force_logout=true` revokes the session on the API and deletes the
+ * cookies. The app only ever reaches it from its own pages (the protected
+ * layout's redirect, `forceLogout`), so a link on another site that does the
+ * same is refused: Fetch Metadata says `same-origin` for the app's own
+ * navigations and redirects, `none` for one the person typed or bookmarked.
+ */
+function isOwnNavigation(req: NextRequest): boolean {
+  const site = req.headers.get("sec-fetch-site");
+
+  return site === "same-origin" || site === "none";
+}
 
 /**
  * The browser-facing hosts for the policy, from the same variables the
@@ -106,7 +175,10 @@ async function route(req: NextRequest): Promise<NextResponse> {
   // 0. FORCE LOGOUT (from ProtectedProvider security checks)
   // Redirects to /login?reason=errorType for toast display
   // ============================================
-  if (req.nextUrl.searchParams.get("force_logout") === "true") {
+  const forceLogoutRequested =
+    req.nextUrl.searchParams.get("force_logout") === "true";
+
+  if (forceLogoutRequested && isOwnNavigation(req)) {
     const errorType =
       req.nextUrl.searchParams.get("error") || "session_expired";
 
@@ -123,87 +195,70 @@ async function route(req: NextRequest): Promise<NextResponse> {
   forwardedHeaders.delete(SESSION_RENEWAL_HEADER);
 
   // ============================================
-  // 1. TOKEN REFRESH (runs FIRST, before anything)
+  // 1. ROUTE CLASSIFICATION
   // ============================================
-  if (decodeJwt && refreshToken) {
-    const currentTime = Date.now() / 1000;
-    if (decodeJwt.exp < currentTime) {
-      let refreshResponse: Response | null = null;
+  const isPrivateRoute = isPrivatePath(pathname);
 
-      try {
-        refreshResponse = await fetch(
-          `${process.env.HTTP_REQUEST}/user/refresh-token`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              // Anonymous route limited per address: say which browser this
-              // is for, or every web user shares this server's budget.
-              ...apiForwardingHeaders(req.headers),
-            },
-            body: JSON.stringify({ token: refreshToken }),
-          },
-        );
-      } catch {
-        // The API did not answer. That says nothing about the session.
-        refreshResponse = null;
-      }
+  // ============================================
+  // 2. TOKEN REFRESH (before any access decision)
+  // ============================================
+  const tokenExpired = Boolean(
+    decodeJwt && refreshToken && decodeJwt.exp < Date.now() / 1000,
+  );
 
-      if (refreshResponse && !refreshResponse.ok) {
-        if (refreshAnswerEndsSession(refreshResponse.status)) {
-          // The refresh runs the session eligibility check too: a company
-          // switched off or a revoked user is said as such, not as an
-          // expired session.
-          const body: unknown = await refreshResponse.json().catch(() => null);
+  if (tokenExpired && isPrivateRoute && isPrefetch(req)) {
+    // Not renewed here, and not rendered with the expired token either: the
+    // layout would read its 401 as a verdict and the router would keep that
+    // render. A non-RSC answer makes the router fall back to a full
+    // navigation when the link is actually clicked, and that request renews.
+    return new NextResponse(null, {
+      status: 204,
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
 
-          return handleLogout(
-            req,
-            refreshRefusalReason(refreshResponse.status, body),
-          );
-        }
-      }
+  if (tokenExpired && needsLiveSession(pathname) && !isPrefetch(req)) {
+    const renewal = await renewSessionOnce(refreshToken!, () =>
+      renewSession(req, refreshToken!),
+    );
 
-      if (!refreshResponse || !refreshResponse.ok) {
-        // Busy, failing or unreachable: keep the session and carry on with
-        // the expired token. The layout sees the flag and shows the
-        // reconnection screen instead of reading the expired token's 401 as
-        // a verdict; the next navigation tries the refresh again.
-        forwardedHeaders.set(SESSION_RENEWAL_HEADER, RENEWAL_PENDING);
-      } else {
-        const { token, refresh_token } =
-          (await refreshResponse.json()) as RefreshUserSessionProps;
-
-        // Redirect to same page with fresh cookies. Same attributes as the
-        // login sets: both live as long as the new refresh token, so a
-        // refreshed session and a fresh one behave alike.
-        const response = NextResponse.redirect(new URL(req.url));
-        const cookieOptions = sessionCookieOptions(refresh_token);
-
-        response.cookies.set("tkey", token, cookieOptions);
-        response.cookies.set("rkey", refresh_token, cookieOptions);
-
-        return response;
-      }
+    if (renewal.kind === "refused") {
+      // The refresh runs the session eligibility check too: a company
+      // switched off or a revoked user is said as such, not as an expired
+      // session.
+      return handleLogout(req, renewal.reason);
     }
+
+    if (renewal.kind === "renewed") {
+      // Redirect to same page with fresh cookies. Same attributes as the
+      // login sets: both live as long as the new refresh token, so a
+      // refreshed session and a fresh one behave alike.
+      const response = NextResponse.redirect(new URL(req.url));
+      const cookieOptions = sessionCookieOptions(renewal.refreshToken);
+
+      response.cookies.set("tkey", renewal.token, cookieOptions);
+      response.cookies.set("rkey", renewal.refreshToken, cookieOptions);
+
+      return response;
+    }
+
+    // Busy, failing, slow or unreachable: keep the session and carry on with
+    // the expired token. The layout sees the flag and shows the reconnection
+    // screen instead of reading the expired token's 401 as a verdict; the
+    // next navigation tries the refresh again.
+    forwardedHeaders.set(SESSION_RENEWAL_HEADER, RENEWAL_PENDING);
   }
 
   const userRole = decodeJwt?.role || "";
   const driverId = decodeJwt?.driverId || null;
 
   // ============================================
-  // 2. ROUTE CLASSIFICATION
-  // ============================================
-  const isPrivateRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/notifications") ||
-    pathname.startsWith("/driver");
-
-  // ============================================
   // 3. PUBLIC ROUTES - redirect authenticated users away from login
   // ============================================
-  if (!isPrivateRoute && accessToken) {
+  // Not with a force_logout the browser did not vouch for (step 0): bouncing
+  // that request to the dashboard would loop through the layout's own
+  // redirect back here. The sign-in page renders instead.
+  if (!isPrivateRoute && accessToken && !forceLogoutRequested) {
     if (AUTH_ROUTES.includes(pathname)) {
       let redirectPath = "/dashboard";
 
@@ -317,7 +372,87 @@ async function route(req: NextRequest): Promise<NextResponse> {
   response.headers.set("x-pathname", pathname);
   response.headers.set("Content-Security-Policy", contentSecurityPolicy);
 
+  // Trusted Types, observed before enforced: reports what would break, blocks
+  // nothing. Response only — Next reads the nonce from the request's CSP
+  // headers, and this policy has none to give.
+  response.headers.set(
+    "Content-Security-Policy-Report-Only",
+    TRUSTED_TYPES_REPORT_ONLY_POLICY,
+  );
+  response.headers.set(REPORTING_ENDPOINTS_HEADER, reportingEndpoints());
+
   return response;
+}
+
+type SessionRenewal =
+  | { kind: "renewed"; token: string; refreshToken: string }
+  | { kind: "refused"; reason: string }
+  | { kind: "unavailable" };
+
+/**
+ * The requests of one page racing to renew the same session share a single
+ * POST /user/refresh-token (see lib/single-flight.ts): the API reads too many
+ * presentations of one refresh token as theft. An "unavailable" answer is not
+ * kept, so the next request tries again.
+ */
+const renewSessionOnce = createSingleFlight<SessionRenewal>({
+  keepMs: 10_000,
+  maxEntries: 5_000,
+  keep: (renewal) => renewal.kind !== "unavailable",
+});
+
+/**
+ * POST /user/refresh-token, bounded. Only an answer from the API that says no
+ * ends the session; a timeout, a dropped connection, a 429 or a 5xx — or a
+ * 200 whose body never arrives whole — is "unavailable", which keeps it.
+ */
+async function renewSession(
+  req: NextRequest,
+  refreshToken: string,
+): Promise<SessionRenewal> {
+  try {
+    const response = await fetch(
+      `${process.env.HTTP_REQUEST}/user/refresh-token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Anonymous route limited per address: say which browser this is
+          // for, or every web user shares this server's budget.
+          ...apiForwardingHeaders(req.headers),
+        },
+        body: JSON.stringify({ token: refreshToken }),
+        cache: "no-store",
+        signal: AbortSignal.timeout(REFRESH_TIMEOUT_MS),
+      },
+    );
+
+    if (!response.ok) {
+      if (!refreshAnswerEndsSession(response.status)) {
+        return { kind: "unavailable" };
+      }
+
+      const body: unknown = await response.json().catch(() => null);
+
+      return {
+        kind: "refused",
+        reason: refreshRefusalReason(response.status, body),
+      };
+    }
+
+    const { token, refresh_token } =
+      (await response.json()) as RefreshUserSessionProps;
+
+    if (typeof token !== "string" || typeof refresh_token !== "string") {
+      return { kind: "unavailable" };
+    }
+
+    return { kind: "renewed", token, refreshToken: refresh_token };
+  } catch {
+    // The API did not answer in time, or at all. That says nothing about the
+    // session.
+    return { kind: "unavailable" };
+  }
 }
 
 const REVOKE_TIMEOUT_MS = 3_000;

@@ -130,9 +130,7 @@ const ProfileAccessFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterProfileWrite(
-        isEdit ? "update-profile-access" : "create-profile-access",
-      ).catch(() =>
+      void refreshAfterProfileWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

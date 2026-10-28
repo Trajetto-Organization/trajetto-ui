@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import {
   Activity,
   BrainCircuit,
@@ -27,15 +26,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 
-import {
-  getHealthMetrics,
-  type HealthMetricsData,
-} from "@/actions/health/get-health-metrics";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
-
 import { formatNotificationDate } from "@/lib/format-values";
 
 import { ProviderReadinessCard } from "./provider-readiness-card";
+import { useHealthMetrics } from "./reads";
 import {
   TONE_BADGE_CLASS,
   providerChannelStatus,
@@ -80,45 +74,15 @@ const formatMs = (value: number | null | undefined) =>
  * it fans out, whatever happens to its deliveries.
  */
 const SystemMetrics = (): JSX.Element => {
-  const [metrics, setMetrics] = useState<HealthMetricsData | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // A relay GET beside the providers' (reads.ts): the two leave together,
+  // and the page's "Atualizar" on this tab refetches just them
+  // (refreshSystemMetrics). A failed refresh keeps the last numbers.
+  const metricsQuery = useHealthMetrics();
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  const loadMetrics = useCallback(async () => {
-    setIsLoading(true);
-
-    try {
-      const response = await getHealthMetrics();
-
-      if (isStaleActionResult(response, { background: true })) {
-        setErrorMessage(STALE_ACTION_MESSAGE);
-        return;
-      }
-
-      if (response.success && response.data) {
-        setMetrics(response.data);
-        setErrorMessage(null);
-      } else {
-        setErrorMessage(response.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadMetrics();
-  }, [loadMetrics]);
-
-  // The page's "Atualizar" button broadcasts this event; the limits
-  // panel already listens to it, and so does this tab.
-  useEffect(() => {
-    const handler = () => void loadMetrics();
-
-    window.addEventListener("data-revalidated", handler);
-    return () => window.removeEventListener("data-revalidated", handler);
-  }, [loadMetrics]);
+  const metrics = metricsQuery.data ?? null;
+  const errorMessage =
+    metricsQuery.error instanceof Error ? metricsQuery.error.message : null;
+  const isLoading = metricsQuery.isFetching;
 
   const connectionUsage = metrics?.database.connection_usage_percent ?? 0;
 

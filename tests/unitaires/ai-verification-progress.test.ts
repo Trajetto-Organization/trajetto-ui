@@ -13,6 +13,8 @@ import {
   vi,
 } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 const router = vi.hoisted(() => ({ refresh: vi.fn() }));
 
 vi.mock("next/navigation", () => ({
@@ -23,19 +25,13 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-/** The API's answers for the record, as the server actions return them. */
+/** The API's answers for the record, as the relay hands them over. */
 const api = vi.hoisted(() => ({
   progress: [] as Array<Record<string, unknown>>,
   calls: 0,
 }));
 
 vi.mock("@/actions/ai-analysis", () => ({
-  getAIVerificationProgress: async () => {
-    const answer = api.progress[Math.min(api.calls, api.progress.length - 1)];
-    api.calls += 1;
-
-    return { success: true, message: "ok", data: answer };
-  },
   requestAIVerification: async () => ({
     success: true,
     message: "Verificação IA iniciada.",
@@ -92,6 +88,21 @@ beforeEach(() => {
   api.progress = [];
   api.calls = 0;
   router.refresh.mockClear();
+
+  // The progress is a relay GET now (it polls, and as a Server Action every
+  // poll took a turn in Next's one-at-a-time action queue).
+  stubRelay([
+    [
+      /^\/ai-analysis\/progress\/[^/]+\/[^/]+$/,
+      () => {
+        const answer =
+          api.progress[Math.min(api.calls, api.progress.length - 1)];
+        api.calls += 1;
+
+        return { data: answer };
+      },
+    ],
+  ]);
 });
 
 const unmounts: Array<() => Promise<void>> = [];
@@ -99,6 +110,8 @@ const unmounts: Array<() => Promise<void>> = [];
 afterEach(async () => {
   while (unmounts.length) await unmounts.pop()!();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.stubGlobal("React", React);
 });
 
 async function render(element: React.ReactElement): Promise<HTMLElement> {

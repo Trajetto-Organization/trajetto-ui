@@ -17,13 +17,11 @@ import { Button } from "@/components/ui/button";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-  listMessageTemplates,
-  type MessageTemplate,
-} from "@/actions/delivery/message-templates";
+import type { MessageTemplate } from "@/actions/delivery/message-templates";
 
+import { relayUrl } from "@/lib/api-relay-paths";
+import { readQuery, relayJson } from "@/lib/relay-read";
 import { permissions } from "@/lib/permissions";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
@@ -40,17 +38,24 @@ interface MessageTemplatesPanelProps {
 }
 
 /**
- * The refusal to show instead of the eight slots, or null.
+ * The company's written messages, through the relay (lib/relay-read).
  *
- * A failed read used to render as "Não escrita" cards, telling the
- * dispatcher that nothing is sent when the truth was "could not read".
+ * A Server Action until now: on this tab it waited in Next's one-at-a-time
+ * action queue behind the reads every protected page makes on mount.
  */
-function templatesLoadError(
-  answer: { success: boolean; message?: string } | undefined,
-): string | null {
-  if (!answer || answer.success) return null;
+async function fetchMessageTemplates(
+  businessId: string,
+  signal?: AbortSignal,
+): Promise<MessageTemplate[]> {
+  const answer = await relayJson<{ data?: MessageTemplate[] }>(
+    relayUrl("/delivery/message-templates", readQuery({ businessId })),
+    {
+      signal,
+      errorMessage: "Não foi possível carregar as mensagens ao cliente.",
+    },
+  );
 
-  return answer.message || "Não foi possível carregar as mensagens ao cliente.";
+  return answer.data ?? [];
 }
 
 /**
@@ -91,26 +96,19 @@ const MessageTemplatesPanel = ({
 
   const { data, error, isLoading, isFetching, refetch } = useQuery(
     ["delivery_message_template", companyId],
-    async () => {
-      const answer = await listMessageTemplates(companyId);
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      return answer;
-    },
+    ({ signal }) => fetchMessageTemplates(companyId, signal),
     { refetchOnWindowFocus: false, enabled: companyId !== "" },
   );
 
-  // A thrown read (a build the server no longer has) is a failure too.
-  const loadError =
-    error instanceof Error ? error.message : templatesLoadError(data);
+  // The refusal to show instead of the eight slots. A failed read used to
+  // render as "Não escrita" cards, telling the dispatcher that nothing is
+  // sent when the truth was "could not read".
+  const loadError = error instanceof Error ? error.message : null;
 
   const byKey = useMemo(() => {
     const map = new Map<string, MessageTemplate>();
 
-    for (const template of data?.data ?? []) {
+    for (const template of data ?? []) {
       map.set(slotKey(template.topic, template.channel), template);
     }
 
@@ -257,4 +255,4 @@ const MessageTemplatesPanel = ({
   );
 };
 
-export { MessageTemplatesPanel, templatesLoadError };
+export { MessageTemplatesPanel, fetchMessageTemplates };

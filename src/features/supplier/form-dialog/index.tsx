@@ -203,9 +203,7 @@ const SupplierFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterSupplierWrite(
-        isEdit ? "update-supplier" : "create-supplier",
-      ).catch(() =>
+      void refreshAfterSupplierWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

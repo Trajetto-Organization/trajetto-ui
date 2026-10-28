@@ -17,7 +17,7 @@ import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tansta
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import type { ExportFormat } from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
 
-import { handleExportAccountPayable } from "@/actions/account-payable/export-account-payable";
+import { exportAccountPayableRequest } from "@/lib/export-requests";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -81,8 +81,8 @@ const AccountPayablePageActions = ({
     },
   ]);
 
-  const exportAction = (search?: string, format?: ExportFormat) =>
-    handleExportAccountPayable({
+  const exportRequest = (search?: string, format?: ExportFormat) =>
+    exportAccountPayableRequest({
       businessId: scope === "admin" ? businessId : undefined,
       search,
       format,
@@ -93,7 +93,7 @@ const AccountPayablePageActions = ({
     <PageActions>
       <ExportButton
         hasData={hasData}
-        exportAction={exportAction}
+        exportRequest={exportRequest}
         entityName="relatório de contas a pagar"
         writePermission={exportPermissions.hasAllPermissions}
       />

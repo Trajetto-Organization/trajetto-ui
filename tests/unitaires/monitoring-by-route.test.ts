@@ -14,13 +14,13 @@ import {
 } from "vitest";
 
 /**
- * The monitoring tab by route (decision 6.6) and by driver (DLV-MON-3).
+ * The monitoring board by route (decision 6.6), the Torre's default view.
  *
- * By route: each route of the day with its completion and one dot per
- * delivery — green delivered, red not delivered, grey pending — repainted by
- * the socket when a stop settles. By driver: the progress used to be
- * delivered / (designated + in route + delivered), so the refused addresses
- * left both sides of the fraction.
+ * Each route of the day with its completion and one dot per delivery — green
+ * delivered, red not delivered, grey pending — repainted by the socket when a
+ * stop settles. The board by driver beside it was dropped by the product
+ * meeting of 14/10/2026: a second strip of tabs inside the Torre's own view
+ * strip, for numbers the route cards already carry.
  */
 const router = vi.hoisted(() => ({
   refresh: vi.fn(),
@@ -29,8 +29,8 @@ const router = vi.hoisted(() => ({
 }));
 
 const place = vi.hoisted(() => ({
-  pathname: "/dashboard/deliveries",
-  search: "tab=monitoring",
+  pathname: "/dashboard/control-tower",
+  search: "view=routes",
 }));
 
 vi.mock("next/navigation", () => ({
@@ -70,7 +70,6 @@ vi.mock("@/socket", () => ({
 const api = vi.hoisted(() => ({
   calls: 0,
   routeCompanies: [] as Array<string | undefined>,
-  driverCompanies: [] as Array<string | undefined>,
   routePages: [] as number[],
 
   /** A board of its own for a case; null answers the one-route day below. */
@@ -92,87 +91,64 @@ const stop = (id: string, sequence: number, status: string) => ({
       : null,
 });
 
-vi.mock("@/actions/control-tower", () => ({
-  getDriverMonitoring: async (options: { businessId?: string } = {}) => {
-    api.driverCompanies.push(options.businessId);
+/**
+ * The board's read, as the API answers it through the relay
+ * (GET /route/monitoring): `{ data }`. The company and the page are read off
+ * the query the board sent.
+ */
+const routeMonitoring = (url: URL) => {
+  const page = Number(url.searchParams.get("page") ?? 1);
 
-    return {
-      success: true,
-      message: "",
-      data: {
-        day: "2026-09-28",
-        timeZone: "America/Sao_Paulo",
-        drivers: [
-          {
-            driverId: "d1",
-            driverName: "Ana",
-            cnh: "123",
-            // Today's route only: the summary's 5 counted tomorrow's too.
-            designated: 2,
-            inRoute: 0,
-            deliveredToday: 3,
-            failedToday: 2,
+  api.calls += 1;
+  api.routeCompanies.push(url.searchParams.get("businessId") ?? undefined);
+  api.routePages.push(page);
+
+  if (api.board) return { data: api.board(page) };
+
+  return {
+    data: {
+      day: "2026-09-28",
+      meta: { total: 1, page: 1, pageSize: 20 },
+      routes: [
+        {
+          id: "r1",
+          code: 12,
+          name: "Centro",
+          destination: "Uberlândia",
+          status: "IN_PROGRESS",
+          scheduledDate: "2026-09-28",
+          plannedDepartureAt: null,
+          startedAt: "2026-09-28T11:00:00.000Z",
+          completedAt: null,
+          driver: { id: "d1", name: "Ana" },
+          vehiclePlate: "ABC1D23",
+          progress: {
+            total: 4,
+            delivered: 1,
+            failed: 1,
+            pending: 2,
+            cancelled: 0,
+            arrived: 0,
+            onTheWay: 0,
+            completion: 50,
+            deliveredRate: 25,
           },
-        ],
-      },
-    };
-  },
-  getRouteMonitoring: async (
-    options: { businessId?: string; page?: number } = {},
-  ) => {
-    api.calls += 1;
-    api.routeCompanies.push(options.businessId);
-    api.routePages.push(options.page ?? 1);
+          stops: [
+            stop("s1", 1, "COMPLETED"),
+            stop("s2", 2, "FAILED"),
+            stop("s3", 3, "PENDING"),
+            stop("s4", 4, "PENDING"),
+          ],
+        },
+      ],
+    },
+  };
+};
 
-    if (api.board)
-      return { success: true, message: "", data: api.board(options.page ?? 1) };
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        day: "2026-09-28",
-        meta: { total: 1, page: 1, pageSize: 20 },
-        routes: [
-          {
-            id: "r1",
-            code: 12,
-            name: "Centro",
-            destination: "Uberlândia",
-            status: "IN_PROGRESS",
-            scheduledDate: "2026-09-28",
-            plannedDepartureAt: null,
-            startedAt: "2026-09-28T11:00:00.000Z",
-            completedAt: null,
-            driver: { id: "d1", name: "Ana" },
-            vehiclePlate: "ABC1D23",
-            progress: {
-              total: 4,
-              delivered: 1,
-              failed: 1,
-              pending: 2,
-              cancelled: 0,
-              arrived: 0,
-              onTheWay: 0,
-              completion: 50,
-              deliveredRate: 25,
-            },
-            stops: [
-              stop("s1", 1, "COMPLETED"),
-              stop("s2", 2, "FAILED"),
-              stop("s3", 3, "PENDING"),
-              stop("s4", 4, "PENDING"),
-            ],
-          },
-        ],
-      },
-    };
-  },
-}));
+import { stubRelay } from "./helpers/relay-fetch";
 
 import { queryClientProps } from "@/lib/query-client-props";
 import { MonitoringPanel } from "@/features/deliveries/monitoring";
-import { driverProgress } from "@/features/deliveries/monitoring/lib/progress";
 import { settledBoardPage } from "@/features/deliveries/monitoring/lib/board-page";
 
 beforeAll(() => {
@@ -185,11 +161,13 @@ beforeAll(() => {
 beforeEach(() => {
   api.calls = 0;
   api.routeCompanies = [];
-  api.driverCompanies = [];
   api.routePages = [];
   api.board = null;
-  place.pathname = "/dashboard/deliveries";
-  place.search = "tab=monitoring";
+  stubRelay({
+    "/route/monitoring": routeMonitoring,
+  });
+  place.pathname = "/dashboard/control-tower";
+  place.search = "view=routes";
   socket.reset();
 });
 
@@ -242,34 +220,38 @@ const dots = (container: HTMLElement) =>
     dot.getAttribute("data-dot"),
   );
 
-describe("the tab strip and the company", () => {
-  it("is the product's scrollable tab strip (decision 3.1)", async () => {
+describe("one view, by route, and the company", () => {
+  it("has no board by driver any more (meeting of 14/10/2026)", async () => {
     const container = await renderPanel();
 
-    const tablist = container.querySelector("[role='tablist']");
+    expect(await until(() => dots(container).length === 4)).toBe(true);
 
-    expect(tablist).toBeTruthy();
-    expect(tablist?.closest("[data-scroll-rail]")).toBeTruthy();
+    // No inner tab strip: the Torre's own strip is the only one on screen.
+    expect(container.querySelector("[role='tablist']")).toBeNull();
+    expect(container.textContent).not.toContain("Por motorista");
+    expect(container.textContent).not.toContain("Carga do dia por motorista");
+
+    // The board never asks for the per-driver read.
+    expect(
+      api.routeCompanies.length,
+      "o quadro por rota não foi lido",
+    ).toBeGreaterThan(0);
   });
 
   it("never asks for another company from /dashboard, whatever the address says", async () => {
     place.search =
-      "tab=monitoring&businessId=018f0000-0000-7000-8000-00000000000b";
+      "view=routes&businessId=018f0000-0000-7000-8000-00000000000b";
 
-    const container = await renderPanel();
+    await renderPanel();
 
     expect(await until(() => api.routeCompanies.length > 0)).toBe(true);
     expect(api.routeCompanies).toEqual([undefined]);
-
-    expect(await openDriverBoard(container)).toBe(true);
-    expect(await until(() => api.driverCompanies.length > 0)).toBe(true);
-    expect(api.driverCompanies).toEqual([undefined]);
   });
 
   it("reads the company the MASTER picked on /admin", async () => {
-    place.pathname = "/admin/deliveries";
+    place.pathname = "/admin/control-tower";
     place.search =
-      "tab=monitoring&businessId=018f0000-0000-7000-8000-00000000000b";
+      "view=routes&businessId=018f0000-0000-7000-8000-00000000000b";
 
     await renderPanel();
 
@@ -412,64 +394,5 @@ describe("a page the list moved under (DLVP-MON-1)", () => {
     // The previous page still on screen while the next one loads.
     expect(settledBoardPage(2, meta(1, 20))).toBe(2);
     expect(settledBoardPage(2, undefined)).toBe(2);
-  });
-});
-
-async function openDriverBoard(container: HTMLElement) {
-  await act(async () => {
-    const trigger = [...container.querySelectorAll("button")].find(
-      (button) => button.textContent === "Por motorista",
-    );
-
-    // Radix tabs switch on mousedown, not on click.
-    trigger?.dispatchEvent(
-      new MouseEvent("mousedown", { bubbles: true, button: 0 }),
-    );
-    trigger?.click();
-  });
-
-  return until(() =>
-    (container.textContent ?? "").includes("Carga do dia por motorista"),
-  );
-}
-
-describe("the board by driver (DLV-MON-3)", () => {
-  it("counts the refused addresses as resolved, over the day's load only", async () => {
-    const container = await renderPanel();
-
-    expect(await openDriverBoard(container)).toBe(true);
-
-    // The tower's definition of the day (decision 7.1): 2 designated on
-    // today's route, not the summary's 5 of any date. 3 delivered + 2
-    // refused of 7: the old bar said 3 / (5 + 3) = 38%.
-    expect(
-      await until(() => (container.textContent ?? "").includes("5 de 7 · 71%")),
-    ).toBe(true);
-    expect(container.textContent).toContain("2 designadas");
-    expect(container.textContent).not.toContain("5 designadas");
-  });
-
-  it("rereads the day when a route event arrives", async () => {
-    const container = await renderPanel();
-
-    expect(await openDriverBoard(container)).toBe(true);
-    expect(await until(() => api.driverCompanies.length === 1)).toBe(true);
-
-    await act(async () => {
-      socket.fire("routeEvent", { type: "route.started", routeId: "r1" });
-    });
-
-    expect(await until(() => api.driverCompanies.length === 2)).toBe(true);
-  });
-
-  it("keeps the delivered share apart from the completion", () => {
-    expect(
-      driverProgress({
-        designated: 0,
-        inRoute: 0,
-        deliveredToday: 3,
-        failedToday: 7,
-      }),
-    ).toEqual({ resolved: 10, total: 10, completion: 100, deliveredRate: 30 });
   });
 });

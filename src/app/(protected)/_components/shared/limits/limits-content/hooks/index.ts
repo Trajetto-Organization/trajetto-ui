@@ -10,14 +10,10 @@ import {
 } from "@/store/ai-verification-store";
 import { DATA_REVALIDATED_EVENT } from "@/lib/refresh-client-cache";
 import { AI_USAGE_CHANGED_EVENT } from "@/lib/ai-analysis-sync";
-import { getAIUsage, type AIUsageData } from "@/actions/business/get-ai-usage";
+import type { AIUsageData } from "@/actions/business/get-ai-usage";
+import type { BusinessEntitlementsData } from "@/actions/business/entitlements";
 
-import {
-  getBusinessEntitlements,
-  type BusinessEntitlementsData,
-} from "@/actions/business/entitlements";
-
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { fetchAIUsage, fetchBusinessEntitlements } from "@/lib/business-reads";
 
 import type { UseLimitsContent } from "../limits-content.types";
 
@@ -81,19 +77,20 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
     if (!businessId) return;
 
     let timer: ReturnType<typeof setTimeout> | null = null;
-    let cancelled = false;
+    const abort = new AbortController();
 
     const refetchQuietly = () => {
       const askedAt = Date.now();
 
-      void getAIUsage(businessId).then((response) => {
-        if (cancelled) return;
-        if (isStaleActionResult(response, { background: true })) return;
+      fetchAIUsage(businessId, { signal: abort.signal }).then(
+        (usage) => {
+          if (abort.signal.aborted) return;
 
-        if (response.success && response.data) {
-          setServerUsage({ businessId, usage: response.data, askedAt });
-        }
-      });
+          setServerUsage({ businessId, usage, askedAt });
+        },
+        // Quiet on purpose: the card keeps the numbers it has.
+        () => undefined,
+      );
     };
 
     const handler = (event: Event) => {
@@ -107,7 +104,7 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
     window.addEventListener(AI_USAGE_CHANGED_EVENT, handler);
 
     return () => {
-      cancelled = true;
+      abort.abort();
       if (timer) clearTimeout(timer);
       window.removeEventListener(AI_USAGE_CHANGED_EVENT, handler);
     };
@@ -117,8 +114,10 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
     if (!businessId) return;
 
     // An answer that arrives after the company (or the refresh) changed is
-    // dropped: a late one used to overwrite the newer company's numbers.
-    let cancelled = false;
+    // dropped, and its request cancelled: a late one used to overwrite the
+    // newer company's numbers.
+    const abort = new AbortController();
+    const { signal } = abort;
 
     setIsLoading(true);
     setServerUsage(null);
@@ -127,39 +126,42 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
 
     const askedAt = Date.now();
 
-    getAIUsage(businessId)
-      .then((response) => {
-        if (cancelled) return;
+    // Relay GETs (lib/business-reads), so the usage and the plan leave
+    // together; as Server Actions the plan waited for the usage to answer.
+    fetchAIUsage(businessId, { signal })
+      .then(
+        (usage) => {
+          if (signal.aborted) return;
 
-        if (isStaleActionResult(response, { background: true })) {
-          setErrorMessage(STALE_ACTION_MESSAGE);
-          return;
-        }
+          setServerUsage({ businessId, usage, askedAt });
+        },
+        (error: unknown) => {
+          if (signal.aborted) return;
 
-        if (response.success && response.data) {
-          setServerUsage({ businessId, usage: response.data, askedAt });
-        } else {
-          setErrorMessage(response.message);
-        }
-      })
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Houve um erro ao tentar obter os dados de uso da verificação IA.",
+          );
+        },
+      )
       .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        if (!signal.aborted) setIsLoading(false);
       });
 
     // The company's plan (modules + contracted fleet) rides along: same
     // page, same refresh triggers.
-    void getBusinessEntitlements(businessId).then((response) => {
-      if (cancelled) return;
-      if (isStaleActionResult(response, { background: true })) return;
-
-      setPlan({
-        businessId,
-        data: response.success ? (response.data ?? null) : null,
-      });
-    });
+    fetchBusinessEntitlements(businessId, { signal }).then(
+      (data) => {
+        if (!signal.aborted) setPlan({ businessId, data });
+      },
+      () => {
+        if (!signal.aborted) setPlan({ businessId, data: null });
+      },
+    );
 
     return () => {
-      cancelled = true;
+      abort.abort();
     };
   }, [businessId, refreshTrigger]);
 

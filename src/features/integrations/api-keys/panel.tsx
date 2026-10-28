@@ -60,7 +60,7 @@ const ApiKeysPanel = ({ businessId }: ApiKeysPanelProps): JSX.Element => {
 
   const { data, isLoading, refetch } = useQuery(
     apiKeysQueryKey(businessId),
-    () => fetchApiKeys(businessId),
+    ({ signal }) => fetchApiKeys(businessId, signal),
     { refetchOnWindowFocus: false },
   );
 

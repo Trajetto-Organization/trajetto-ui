@@ -71,9 +71,7 @@ const RevokeAccessDialog = ({
           (accessRevoked ? "Acesso restaurado." : "Acesso revogado."),
       );
 
-      void refreshAfterUserWrite(
-        kind === "master" ? "revoke-master-user" : "revoke-user-registration",
-      ).catch(() =>
+      void refreshAfterUserWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

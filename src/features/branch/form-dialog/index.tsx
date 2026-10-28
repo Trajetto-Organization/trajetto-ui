@@ -177,9 +177,7 @@ const BranchFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterBranchWrite(
-        isEdit ? "update-branch" : "create-branch",
-      ).catch(() =>
+      void refreshAfterBranchWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

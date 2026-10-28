@@ -21,12 +21,14 @@ import {
 } from "@/lib/check-multiple-permissions";
 import { useAuthStore } from "@/store/auth-store";
 
-import { listTickets, openTicket } from "@/actions/chat/tickets";
+import { openTicket } from "@/actions/chat/tickets";
+import { relayAnswer } from "@/lib/relay-read";
 
 import { useDeliveriesBusinessId } from "../hooks/use-deliveries-business-id";
 import { DeliveryDetailDialog } from "../deliveries/detail-dialog/lazy";
 import { OccurrenceHistoryDialog } from "../chat/tickets/occurrence-history-dialog";
-import { buildTicketSearchParams } from "../chat/lib/chat-link";
+import { buildTicketSearchParams, ticketsHref } from "../chat/lib/chat-link";
+import { fetchTickets } from "../chat/lib/chat-reads";
 import {
   occurrenceConversationStep,
   openTicketBlockedReason,
@@ -91,19 +93,22 @@ const OccurrenceRowActions = ({
       ticketId,
     );
 
-    router.push(`${pathname}?${params.toString()}`);
+    router.push(ticketsHref(pathname, params));
   };
 
   // A viewing action: it goes to the ticket or explains, never creates one.
   const openConversation = async () => {
-    const found = await listTickets({
-      businessId: chatBusinessId,
-      status: "ALL",
-      occurrenceId: occurrence.id,
-      pageSize: 1,
-    });
-
-    if (isStaleActionResult(found)) return;
+    // A relay GET (lib/chat-reads): it no longer waits behind whatever
+    // Server Action the page has in flight.
+    const found = await relayAnswer(
+      fetchTickets({
+        businessId: chatBusinessId,
+        status: "ALL",
+        occurrenceId: occurrence.id,
+        pageSize: 1,
+      }),
+      "Houve um erro ao carregar os atendimentos.",
+    );
 
     if (!found.success) {
       toast.error(found.message);

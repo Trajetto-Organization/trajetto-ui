@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo } from "react";
 
 import type {
   ColumnFiltersState,
   OnChangeFn,
   SortingState,
 } from "@tanstack/react-table";
+
+import type { ListQuery } from "@/lib/search-params";
 
 import {
   readColumnFilters,
@@ -22,65 +23,60 @@ import {
  *
  * The URL is the state: the server component reads the same params to ask
  * the API, a shared link reopens the same view, and Back undoes a filter.
- * Changing either pushes a new URL (page reset to 1) inside a transition, and
- * `onNavigate` lets the table show its loading state until the rows arrive.
+ * Both are read from the list query (lib/search-params), so a ticked filter
+ * shows at once, before the server answers, and the next tick builds on it
+ * instead of on a URL that has not caught up. A sort navigates at once; the
+ * filters wait a moment, so several ticks become one request.
  */
 function useServerTableState(
   spec: ServerTableSpec | undefined,
-  onNavigate?: () => void,
+  query: Pick<ListQuery, "params" | "change">,
 ) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const [, startTransition] = useTransition();
+  const { params, change } = query;
 
   const sorting = useMemo<SortingState>(
-    () => (spec ? readSorting(searchParams, spec) : []),
-    [searchParams, spec],
+    () => (spec ? readSorting(params, spec) : []),
+    [params, spec],
   );
 
   const columnFilters = useMemo<ColumnFiltersState>(
-    () => (spec ? readColumnFilters(searchParams, spec) : []),
-    [searchParams, spec],
-  );
-
-  const navigate = useCallback(
-    (params: URLSearchParams) => {
-      const next = params.toString();
-
-      // Same URL, same rows: no request and no spinner that never ends.
-      if (next === searchParams.toString()) return;
-
-      onNavigate?.();
-
-      startTransition(() => {
-        router.push(`?${next}`, { scroll: false });
-      });
-    },
-    [onNavigate, router, searchParams],
+    () => (spec ? readColumnFilters(params, spec) : []),
+    [params, spec],
   );
 
   const onSortingChange = useCallback<OnChangeFn<SortingState>>(
     (updater) => {
       if (!spec) return;
 
-      const next = typeof updater === "function" ? updater(sorting) : updater;
+      change((current) => {
+        const next =
+          typeof updater === "function"
+            ? updater(readSorting(current, spec))
+            : updater;
 
-      navigate(writeSorting(searchParams, next, spec));
+        return writeSorting(current, next, spec);
+      });
     },
-    [navigate, searchParams, sorting, spec],
+    [change, spec],
   );
 
   const onColumnFiltersChange = useCallback<OnChangeFn<ColumnFiltersState>>(
     (updater) => {
       if (!spec) return;
 
-      const next =
-        typeof updater === "function" ? updater(columnFilters) : updater;
+      change(
+        (current) => {
+          const next =
+            typeof updater === "function"
+              ? updater(readColumnFilters(current, spec))
+              : updater;
 
-      navigate(writeColumnFilters(searchParams, next, spec));
+          return writeColumnFilters(current, next, spec);
+        },
+        { debounce: true },
+      );
     },
-    [columnFilters, navigate, searchParams, spec],
+    [change, spec],
   );
 
   return {

@@ -25,7 +25,9 @@ import { waitForHydration } from "../ui/support/ui";
  *
  * With one deliberate exception, which is also here: Auditoria de
  * Comprovantes keeps its refresh next to its own Na fila / Aprovados /
- * Rejeitados counters, because that is what it changes.
+ * Rejeitados counters, because that is what it changes. It is a view of the
+ * Torre de controle since the product meeting of 14/10/2026 (`?view=audit`),
+ * with the same frame — company, actions, views strip, content.
  */
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
 
@@ -111,6 +113,9 @@ const STRIP = 'nav[aria-label="Seções de entregas"]:has(ul)';
  * the list.
  */
 const RAIL = `${STRIP} > ul`;
+
+/** The Torre's views strip, desk variant, for the same reason as STRIP. */
+const TOWER_STRIP = 'nav[aria-label="Visões da torre de controle"]:has(ul)';
 
 const STATS = '[data-tutorial="data-page-stats"]';
 
@@ -243,10 +248,11 @@ test.describe("the composition of the Entregas page", () => {
   /**
    * Two rails, two rules, and the rule is the number of sections.
    *
-   * Entregas has ten, which between them want more width than a 1440px page
-   * has — so the rail is the page's width and the sections divide it. Left to
-   * hug, it stopped 120px short of a 1920px screen with bare background beside
-   * it, which is where this whole round started.
+   * Entregas had ten, which between them wanted more width than a 1440px page
+   * has, and keeps six since the meeting of 14/10/2026, which still nearly
+   * fill it — so the rail is the page's width and the sections divide it.
+   * Left to hug, it stopped 120px short of a 1920px screen with bare
+   * background beside it, which is where this whole round started.
    *
    * Integrações has four, wanting about 526px. Filling stretched each one to
    * 390px: a segmented control pulled until the labels float in the middle of
@@ -458,23 +464,43 @@ test.describe("the composition of the Entregas page", () => {
      * only action is the refresh, and what it refreshes is the three counters
      * the panel draws — Na fila, Aprovados, Rejeitados. Up in the band it was
      * a button on its own line, two elements away from the numbers it changes.
+     *
+     * The queue moved to the Torre de controle with the meeting of
+     * 14/10/2026 (`?view=audit`; the old `?tab=proof-audits` redirects
+     * there), and the rule moved with it: no action bar up beside the views.
      */
-    await openAsManager(page, "/dashboard/deliveries?tab=proof-audits", 1440);
+    await openAsManager(page, "/dashboard/control-tower?view=audit", 1440);
 
-    const strip = await boxOf(page, STRIP);
+    /*
+      The queue is its own chunk now (next/dynamic), with a skeleton until it
+      arrives: wait for its bar, not for "main", before measuring anything.
+    */
+    const CHIPS = '[data-tutorial="proof-audits-filters"] [role="group"]';
+
+    await expect(page.locator(CHIPS)).toBeVisible({ timeout: 60_000 });
+
+    const refreshForm = page
+      .locator('[data-tutorial="proof-audits-filters"] form')
+      .filter({ hasText: "Atualizar" })
+      .first();
+
+    await expect(refreshForm).toBeVisible({ timeout: 30_000 });
+
+    const strip = await boxOf(page, TOWER_STRIP);
+
+    expect(
+      strip,
+      "a faixa de visões da torre não está na página",
+    ).not.toBeNull();
 
     expect(
       await boxOf(page, "[data-toolbar-actions]"),
-      "a Auditoria voltou a pôr Atualizar lá em cima, junto com as outras abas",
+      "a Auditoria voltou a pôr Atualizar lá em cima, junto com as outras visões",
     ).toBeNull();
 
-    const chips = await boxOf(page, '[role="group"]');
+    const chips = await boxOf(page, CHIPS);
 
-    const refresh = await page
-      .locator("form")
-      .filter({ hasText: "Atualizar" })
-      .first()
-      .boundingBox();
+    const refresh = await refreshForm.boundingBox();
 
     expect(chips, "os contadores da fila não estão na página").not.toBeNull();
     expect(refresh, "o botão Atualizar não está na página").not.toBeNull();
@@ -489,7 +515,7 @@ test.describe("the composition of the Entregas page", () => {
 
     expect(
       refreshBox.top,
-      "Atualizar ficou acima da faixa de seções",
+      "Atualizar ficou acima da faixa de visões",
     ).toBeGreaterThan(strip!.bottom);
 
     expect(
@@ -556,9 +582,10 @@ test.describe("the Entregas cards", () => {
     page,
   }) => {
     /**
-     * Every tab asked for four columns whatever it had. Ocorrências and
-     * Motivos have three cards, so a wide screen drew three and an empty
-     * fourth — 270px of nothing at the widest part of the page.
+     * Every tab asked for four columns whatever it had. Ocorrências (a view
+     * of the Torre since 14/10/2026) and Motivos have three cards, so a wide
+     * screen drew three and an empty fourth — 270px of nothing at the widest
+     * part of the page.
      */
     await openAsManager(
       page,

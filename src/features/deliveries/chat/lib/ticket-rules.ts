@@ -10,15 +10,17 @@ import type { TicketScope, TicketStatusFilter } from "@/actions/chat/tickets";
 
 import { optionalMultilineText } from "../../lib/text-rules";
 
+import {
+  TICKETS_QUERY_ROOT,
+  TICKETS_SUMMARY_ROOT,
+  ticketBadge,
+} from "./ticket-keys";
+
 /**
  * The support tickets' pure rules on the web (decision 14.5): the list's
  * filters, the words of each kind/outcome/event, what "Encerrar" offers and
  * what its note needs. Tested without a browser.
  */
-
-/** The react-query roots the tickets live under. */
-const TICKETS_QUERY_ROOT = "chat-tickets";
-const TICKETS_SUMMARY_ROOT = "chat-tickets-summary";
 
 type TicketFilterKey =
   "OPEN" | "MINE" | "UNASSIGNED" | "PENDING_AUTHORIZATION" | "CLOSED";
@@ -240,17 +242,6 @@ function ticketFailureMessage(
     default:
       return fallback;
   }
-}
-
-/** The tab badge: unread open tickets, and a red dot while a request waits. */
-function ticketBadge(counts: TicketCounts | null | undefined): {
-  count: number;
-  urgent: boolean;
-} {
-  return {
-    count: counts?.unreadOpen ?? 0,
-    urgent: (counts?.pendingAuthorization ?? 0) > 0,
-  };
 }
 
 export {

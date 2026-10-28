@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { updateFuelFormSchema } from "@/schemas/create-update-fuel-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateFuelProps {
   message: string;
@@ -93,6 +94,10 @@ const handleUpdateFuel = async (state: any, updateFuelValues: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-fuel");
 
     return { successMessage: message };
   } catch (error) {

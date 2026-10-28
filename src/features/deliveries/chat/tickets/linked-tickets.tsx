@@ -18,8 +18,9 @@ import {
 } from "@/lib/check-multiple-permissions";
 import { useAuthStore } from "@/store/auth-store";
 
-import { listTickets, openTicket } from "@/actions/chat/tickets";
+import { openTicket } from "@/actions/chat/tickets";
 
+import { fetchTickets } from "../lib/chat-reads";
 import { formatThreadTime } from "../lib/format";
 import {
   TICKETS_QUERY_ROOT,
@@ -77,25 +78,21 @@ const LinkedTickets = ({
       context.kind,
       context.id,
     ],
-    async () => {
-      const result = await listTickets({
-        businessId: actionBusinessId,
-        status: "ALL",
-        ...(context.kind === "delivery"
-          ? { deliveryId: context.id }
-          : { routeId: context.id }),
-        pageSize: 20,
-      });
+    // A relay GET (lib/chat-reads), beside the detail's own reads.
+    async ({ signal }) => {
+      const answer = await fetchTickets(
+        {
+          businessId: actionBusinessId,
+          status: "ALL",
+          ...(context.kind === "delivery"
+            ? { deliveryId: context.id }
+            : { routeId: context.id }),
+          pageSize: 20,
+        },
+        { signal },
+      );
 
-      if (
-        isStaleActionResult(result, { background: true }) ||
-        !result.success ||
-        !result.data
-      ) {
-        throw new Error(result.message);
-      }
-
-      return result.data.data;
+      return answer.data;
     },
     { staleTime: 0, refetchOnWindowFocus: false },
   );

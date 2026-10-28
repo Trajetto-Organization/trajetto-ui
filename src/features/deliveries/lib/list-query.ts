@@ -1,6 +1,6 @@
 import { serverTableQuery } from "@/app/(protected)/_components/shared/tanstack-table/data-table/server-table";
 
-import { DELIVERY_TABLE } from "../deliveries/server-table";
+import { deliveriesListQuery } from "../deliveries/server-table";
 import { OCCURRENCE_TABLE } from "../occurrences/server-table";
 
 import { catalogListQuery, isCatalogTab } from "./catalog-tables";
@@ -17,8 +17,8 @@ function deliveryTabListQuery(
   tab: string,
   searchParams: ParamSource,
 ): Record<string, string> {
-  if (tab === "deliveries")
-    return serverTableQuery(searchParams, DELIVERY_TABLE);
+  // Deliveries add their period (lib/period) to the sort and facets.
+  if (tab === "deliveries") return deliveriesListQuery(searchParams);
   if (tab === "occurrences")
     return serverTableQuery(searchParams, OCCURRENCE_TABLE);
   if (isCatalogTab(tab)) return catalogListQuery(tab, searchParams);

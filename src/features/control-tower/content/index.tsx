@@ -5,14 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { RadioTower } from "lucide-react";
 
 import { SelectBusinessEmptyState } from "@/components/shared/custom/select-business-empty-state";
-import { BusinessSelector } from "@/app/(protected)/_components/shared/business-selector";
-import { ProtectedPageToolbar } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { useSessionCompany } from "@/store/session-company";
 import { Skeleton } from "@/components/ui/skeleton";
 import { readBusinessIdParam } from "@/lib/business-id-param";
 
 import type { MapTiles } from "../lib/map-tiles";
-import { ControlTowerPageActions } from "../page-actions";
 import { ControlTowerPanel } from "../panel";
 
 interface ControlTowerContentProps {
@@ -28,7 +25,9 @@ interface ControlTowerContentProps {
 }
 
 /**
- * The tower is one client surface: a map, the widgets and a socket.
+ * The Torre's Painel view: a map, the widgets and a socket, one client
+ * surface. The company selector, Atualizar and the views strip are the
+ * Torre's own header now (views/index.tsx), shared by every view.
  *
  * Nothing here is server-rendered. The map cannot be — Leaflet touches
  * `window` at import time — and rendering the widgets on the server while the
@@ -37,7 +36,6 @@ interface ControlTowerContentProps {
  */
 const ControlTowerContent = ({
   mode,
-  searchParams,
   tiles,
   backgroundTracking = false,
 }: ControlTowerContentProps): JSX.Element => {
@@ -61,22 +59,7 @@ const ControlTowerContent = ({
   const companyPending = mode === "dashboard" && !businessId && session.pending;
 
   return (
-    <div className="my-6 space-y-6">
-      {/*
-        The same band Rotas and Entregas use: the company on the left and
-        Atualizar in the actions slot beside it (decision 3.6) —
-        h-9 (decision 16.61), full width on a phone. It used to live
-        inside the panel, on a line of its own and at another height.
-      */}
-      <ProtectedPageToolbar
-        context={
-          mode === "admin" ? (
-            <BusinessSelector currentBusinessId={searchParams.businessId} />
-          ) : undefined
-        }
-        actions={businessId ? <ControlTowerPageActions /> : undefined}
-      />
-
+    <div className="space-y-6">
       {companyPending ? (
         <div
           className="space-y-4"

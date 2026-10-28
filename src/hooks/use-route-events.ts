@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 import { queryClientProps } from "@/lib/query-client-props";
 
+import {
+  EVENT_MIN_GAP_MS,
+  EVENT_SETTLE_MS,
+  createRefetchScheduler,
+} from "@/features/control-tower/lib/refetch-scheduler";
+
 import { useOperationsSubscription } from "./use-operations-subscription";
 
 /**
@@ -29,15 +35,27 @@ import { useOperationsSubscription } from "./use-operations-subscription";
  */
 
 /**
- * How long to wait before refetching.
+ * How long a burst of events gathers before the refresh.
  *
  * A route finishing its last twelve stops produces twelve events in a few
- * seconds, and one refetch per event is twelve full page renders for one
- * truck arriving. The window is long enough to collapse a burst and short
- * enough that nobody notices it — the alternative, refetching per event, is
- * how a realtime board becomes the heaviest read in the product.
+ * seconds, and one refresh per event is twelve full page renders for one
+ * truck arriving. The same window the Torre and the monitoring board use
+ * (lib/refetch-scheduler).
  */
-const SETTLE_MS = 1_200;
+const SETTLE_MS = EVENT_SETTLE_MS;
+
+/**
+ * The shortest gap between two refreshes of the page.
+ *
+ * This used to be a 1.2 s trailing debounce with no max wait. Under a steady
+ * stream (a big tenant settles a stop every few seconds all day) it restarted
+ * on every event and NEVER fired: Entregas and Rotas stopped following the
+ * operation exactly when it was busiest. And events a few seconds apart each
+ * paid a full `router.refresh()`. Coalesced instead: one refresh per burst,
+ * never two within ten seconds, the reasons that arrive meanwhile riding
+ * along with the next one.
+ */
+const MIN_GAP_MS = EVENT_MIN_GAP_MS;
 
 /**
  * How often to look again once a refresh is being held back.
@@ -59,6 +77,8 @@ const ROUTE_EVENT_QUERY_ROOTS = [
   "delivery-detail",
   "proof_audit",
   "unrouted-deliveries",
+  // The trail of a route drawn on its map grows with every stop worked.
+  "route-trail",
 ] as const;
 
 /**
@@ -115,7 +135,6 @@ function useRouteEvents(businessId?: string, _tags?: string[]): void {
     // Deliberately NOT gated on `businessId`. The listener has to bind on the
     // dashboard surface too, where the room was joined by the server and the
     // id never reaches this component.
-    let timer: ReturnType<typeof setTimeout> | null = null;
     let held: ReturnType<typeof setInterval> | null = null;
 
     let disposed = false;
@@ -155,11 +174,14 @@ function useRouteEvents(businessId?: string, _tags?: string[]): void {
       });
     };
 
-    const handle = () => {
-      if (timer) clearTimeout(timer);
+    // One refresh per burst, never two within MIN_GAP_MS (see SETTLE_MS).
+    const scheduler = createRefetchScheduler({
+      run: refresh,
+      settleMs: SETTLE_MS,
+      minGapMs: MIN_GAP_MS,
+    });
 
-      timer = setTimeout(refresh, SETTLE_MS);
-    };
+    const handle = () => scheduler.schedule();
 
     /*
       Awaited rather than read synchronously. On a first paint the socket does
@@ -195,7 +217,7 @@ function useRouteEvents(businessId?: string, _tags?: string[]): void {
 
       stopResync();
 
-      if (timer) clearTimeout(timer);
+      scheduler.dispose();
       if (held) clearInterval(held);
 
       getSocket()?.off("routeEvent", handle);
@@ -203,4 +225,11 @@ function useRouteEvents(businessId?: string, _tags?: string[]): void {
   }, [businessId, router]);
 }
 
-export { useRouteEvents, SETTLE_MS, RETRY_MS, ROUTE_EVENT_QUERY_ROOTS };
+export {
+  useRouteEvents,
+  isCoveredByDialog,
+  MIN_GAP_MS,
+  SETTLE_MS,
+  RETRY_MS,
+  ROUTE_EVENT_QUERY_ROOTS,
+};

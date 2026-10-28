@@ -35,12 +35,13 @@ import {
 } from "@/components/shared/live-validation";
 
 import { openTicket } from "@/actions/chat/tickets";
+import type { TicketSummary } from "@/actions/chat/chat.types";
+
 import {
-  listTicketContexts,
+  fetchTicketContexts,
   type TicketContextKind,
   type TicketContextOption,
-} from "@/actions/chat/tickets/list-ticket-contexts";
-import type { TicketSummary } from "@/actions/chat/chat.types";
+} from "../lib/chat-reads";
 
 import {
   NEW_TICKET_ABOUT_OPTIONS,
@@ -58,7 +59,7 @@ interface NewTicketDialogProps {
 
 /**
  * The chosen driver's open deliveries or routes, in the shape CursorCombobox
- * reads. One server-searched page (list-ticket-contexts): no infinite scroll.
+ * reads. One server-searched page (fetchTicketContexts): no infinite scroll.
  */
 function useTicketContexts(input: {
   businessId?: string;
@@ -77,18 +78,17 @@ function useTicketContexts(input: {
       input.kind,
       term,
     ],
-    async () => {
-      const result = await listTicketContexts({
-        businessId: input.businessId,
-        driverId: input.driverId,
-        kind: input.kind,
-        search: term,
-      });
-
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data;
-    },
+    // A relay GET (lib/chat-reads), cancelled when the term moves on.
+    ({ signal }) =>
+      fetchTicketContexts(
+        {
+          businessId: input.businessId,
+          driverId: input.driverId,
+          kind: input.kind,
+          search: term,
+        },
+        { signal },
+      ),
     {
       enabled: input.enabled,
       staleTime: 30_000,

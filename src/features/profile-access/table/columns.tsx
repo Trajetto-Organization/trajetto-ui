@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
-import { header, selectColumn } from "@/features/user/table/columns";
+import { header } from "@/features/user/table/columns";
 import type { AdminScope } from "@/features/user/lib/scope";
 
 import { countLabel } from "../lib/profile-access-rules";
@@ -26,27 +26,17 @@ function buildProfileAccessColumns(
   scope: AdminScope,
 ): ColumnDef<ProfileAccessRow>[] {
   return [
-    selectColumn<ProfileAccessRow>("profiles"),
     {
-      accessorKey: "id",
-      meta: { title: "Identificador" },
-      header: header<ProfileAccessRow>("Identificador"),
-      cell: ({ row }) => (
-        <p className="w-80 truncate font-medium">
-          {displayValue(row.original.id)}
-        </p>
-      ),
-      enableHiding: false,
-    },
-    {
+      // The name is the profile's identifier, unique per company.
       accessorKey: "name",
-      meta: { title: "Perfil de acesso" },
-      header: header<ProfileAccessRow>("Perfil de acesso"),
+      meta: { title: "Nome" },
+      header: header<ProfileAccessRow>("Nome"),
       cell: ({ row }) => (
         <p className="w-48 truncate font-medium">
           {displayValue(row.original.name)}
         </p>
       ),
+      enableHiding: false,
     },
     {
       accessorKey: "usersCount",

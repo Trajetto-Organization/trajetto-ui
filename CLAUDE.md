@@ -79,7 +79,7 @@ src/app/(protected)/{admin,dashboard,driver}/<entidade>/  page.tsx + loading.tsx
 src/app/(protected)/_components/   layout, tutoriais, alertas, DataTable, seletores com busca
 src/app/(auth)/                    login, 2FA, recuperação de senha
 src/app/app-routes/index.ts        FONTE ÚNICA de acesso (permissão, módulo, papéis) de toda página
-src/app/api/{health,csp-report,relay}  health, relatório de CSP, relay same-origin (só GET)
+src/app/api/{health,csp-report,relay}  health, relatório de CSP, relay same-origin (GET de leitura; POST só nas duas importações)
 src/app/{docs,blog,legal,acompanhar,verificar,…}  site público
 src/features/<entidade>/           a tela da entidade (a MESMA para /admin e /dashboard)
 src/actions/<domínio>/             Server Actions ("use server") que chamam a API
@@ -139,11 +139,13 @@ scripts/check-api-routes.mjs       gate de rotas do promote
 - Leitura de página: Server Component com `fetch` em
   `${process.env.HTTP_REQUEST}/…` e tags de `src/lib/revalidation-tags.ts`.
 - Escrita: Server Action em `src/actions/<domínio>/<ação>/index.ts`. Ela lê
-  `tkey` do cookie, valida com zod, chama `apiFetch` e revalida as tags. Uma
+  `tkey` do cookie, valida com zod, chama `apiFetch` e revalida as tags (na
+  própria action: o cliente não chama outra action depois de salvar). Uma
   recusa sempre volta com mensagem.
 - Leitura no navegador: pelo relay `/api/relay/...` (acrescente o caminho a
   `src/lib/api-relay-paths.ts`). Nunca mande o token para o JavaScript da
-  página.
+  página. `queryFn` do react-query nunca é Server Action (o Next roda as
+  actions uma de cada vez): use `src/lib/relay-read.ts`.
 - react-query v3: em seletor com `refetchOnMount: false`, use
   **`resetQueries`**, não `invalidateQueries` (motivo em
   `docs/arquitetura.md`). A chave leva tudo o que o `queryFn` lê.

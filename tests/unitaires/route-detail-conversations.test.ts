@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 /**
  * "Conversas" on the route's page (decision 6.7; the page replaced the
  * detail dialog in decision 14.7): the driver's one thread,
@@ -29,8 +31,6 @@ const state = vi.hoisted(() => ({
   search: "businessId=018f0000-0000-7000-8000-00000000000b&page=2",
   role: "MASTER",
   push: vi.fn(),
-  listChatMessages: vi.fn(),
-  listTickets: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -54,30 +54,25 @@ vi.mock("@/store/auth-store", () => {
   };
 });
 
-vi.mock("@/actions/chat/list-chat-messages", () => ({
-  listChatMessages: (...args: unknown[]) => state.listChatMessages(...args),
-}));
-
+// Opening a ticket stays a Server Action; the lists are relay reads
+// (lib/chat-reads), answered below by API path.
 vi.mock("@/actions/chat/tickets", () => ({
-  listTickets: (...args: unknown[]) => state.listTickets(...args),
   openTicket: vi.fn(),
 }));
 
 import { RouteConversations } from "@/features/routes/detail-page/route-conversations";
 
 let root: Root | null = null;
+let relay: ReturnType<typeof stubRelay>;
 
 beforeEach(() => {
   state.pathname = `/admin/routes/${ROUTE}`;
   state.search = `businessId=${BUSINESS}&page=2`;
   state.role = "MASTER";
   state.push.mockReset();
-  state.listChatMessages.mockReset();
-  state.listTickets.mockReset();
-  state.listTickets.mockResolvedValue({
-    success: true,
-    message: "",
-    data: {
+
+  relay = stubRelay({
+    "/chat/tickets": () => ({
       data: [
         {
           id: "tk1",
@@ -88,12 +83,8 @@ beforeEach(() => {
           assignee: null,
         },
       ],
-    },
-  });
-  state.listChatMessages.mockResolvedValue({
-    success: true,
-    message: "",
-    data: {
+    }),
+    "/chat/list-messages": () => ({
       threadId: "t1",
       data: [
         {
@@ -105,14 +96,24 @@ beforeEach(() => {
         },
       ],
       nextCursor: null,
-    },
+    }),
   });
 });
+
+/** The query of the one read made to an API path. */
+function askedOf(path: string): URLSearchParams {
+  const calls = relay.callsTo(path);
+
+  expect(calls, `${path} não foi pedido`).toHaveLength(1);
+
+  return calls[0].query;
+}
 
 afterEach(async () => {
   await act(async () => root?.unmount());
   root = null;
   document.body.innerHTML = "";
+  vi.unstubAllGlobals();
 });
 
 async function settle(times = 5): Promise<void> {
@@ -158,13 +159,11 @@ describe("Conversas in the route's detail", () => {
     expect(section).not.toBeNull();
     expect(section!.textContent).toContain("Saindo do CD");
 
-    expect(state.listChatMessages).toHaveBeenCalledWith(
-      expect.objectContaining({
-        driverId: DRIVER,
-        routeId: ROUTE,
-        businessId: BUSINESS,
-      }),
-    );
+    const asked = askedOf("/chat/list-messages");
+
+    expect(asked.get("driverId")).toBe(DRIVER);
+    expect(asked.get("routeId")).toBe(ROUTE);
+    expect(asked.get("businessId")).toBe(BUSINESS);
   });
 
   it("opens the chat on this route, in the admin area, keeping the company", async () => {
@@ -182,9 +181,11 @@ describe("Conversas in the route's detail", () => {
     const [path, query] = target.split("?");
     const params = new URLSearchParams(query);
 
-    expect(path).toBe("/admin/deliveries");
+    // The Torre's Atendimentos (meeting of 14/10/2026).
+    expect(path).toBe("/admin/control-tower");
     expect(params.get("businessId")).toBe(BUSINESS);
-    expect(params.get("tab")).toBe("chat");
+    expect(params.get("view")).toBe("tickets");
+    expect(params.get("tab")).toBeNull();
     expect(params.get("page")).toBeNull();
     expect(params.get("chatDriver")).toBe(DRIVER);
     expect(params.get("chatRoute")).toBe(ROUTE);
@@ -199,9 +200,10 @@ describe("Conversas in the route's detail", () => {
 
     await openDetail();
 
-    expect(state.listChatMessages).toHaveBeenCalledWith(
-      expect.objectContaining({ businessId: undefined, routeId: ROUTE }),
-    );
+    const asked = askedOf("/chat/list-messages");
+
+    expect(asked.get("businessId")).toBeNull();
+    expect(asked.get("routeId")).toBe(ROUTE);
 
     const open = [...document.querySelectorAll("button")].find(
       (node) => node.textContent?.trim() === "Abrir no chat",
@@ -210,13 +212,13 @@ describe("Conversas in the route's detail", () => {
     await act(async () => open.click());
 
     expect((state.push.mock.calls[0] as [string])[0]).toMatch(
-      /^\/dashboard\/deliveries\?/,
+      /^\/dashboard\/control-tower\?/,
     );
   });
 });
 
 describe("Atendimentos in the route's detail (decision 14.5, design §6.4)", () => {
-  it("lists the route's tickets and opens one in the deliveries area, keeping the company", async () => {
+  it("lists the route's tickets and opens one in the Torre, keeping the company", async () => {
     await openDetail();
 
     const section = document.querySelector(
@@ -225,9 +227,10 @@ describe("Atendimentos in the route's detail (decision 14.5, design §6.4)", () 
 
     expect(section).not.toBeNull();
     expect(section!.textContent).toContain("#128");
-    expect(state.listTickets).toHaveBeenCalledWith(
-      expect.objectContaining({ routeId: ROUTE, businessId: BUSINESS }),
-    );
+    const asked = askedOf("/chat/tickets");
+
+    expect(asked.get("routeId")).toBe(ROUTE);
+    expect(asked.get("businessId")).toBe(BUSINESS);
 
     const view = [...section!.querySelectorAll("button")].find(
       (node) => node.textContent?.trim() === "Ver conversa",
@@ -239,9 +242,11 @@ describe("Atendimentos in the route's detail (decision 14.5, design §6.4)", () 
     const [path, query] = target.split("?");
     const params = new URLSearchParams(query);
 
-    expect(path).toBe("/admin/deliveries");
+    // The Torre's Atendimentos (meeting of 14/10/2026).
+    expect(path).toBe("/admin/control-tower");
     expect(params.get("businessId")).toBe(BUSINESS);
-    expect(params.get("tab")).toBe("chat");
+    expect(params.get("view")).toBe("tickets");
+    expect(params.get("tab")).toBeNull();
     expect(params.get("ticket")).toBe("tk1");
     expect(params.get("page")).toBeNull();
   });

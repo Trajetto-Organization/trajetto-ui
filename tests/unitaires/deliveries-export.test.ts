@@ -6,7 +6,7 @@ vi.mock("@/lib/log-action-error", () => ({ logActionError: vi.fn() }));
 import { handleExportDelivery } from "@/actions/delivery/export-delivery";
 import { handleExportOccurrence } from "@/actions/delivery/export-occurrence";
 
-import { exportActionFor } from "@/features/deliveries/lib/export-action";
+import { exportRequestFor } from "@/features/deliveries/lib/export-action";
 import { exportErrorMessage } from "@/features/deliveries/lib/export-query";
 
 /**
@@ -53,19 +53,24 @@ function queryOf(url: string): URLSearchParams {
 }
 
 describe("the export bound by the page", () => {
-  it("sends the company chosen on /admin and the table's facets", async () => {
-    const bound = exportActionFor("deliveries", {
+  // The page builds a relay URL now (src/lib/export-download.ts); the query
+  // it carries is what the action used to send.
+  it("sends the company chosen on /admin and the table's facets", () => {
+    const bound = exportRequestFor("deliveries", {
       businessId: BUSINESS,
       searchParams: new URLSearchParams(
         `page=3&status=PENDING,FAILED&shipperId=${SHIPPER}&sort=status&order=desc&tab=deliveries`,
       ),
     });
 
-    const result = await bound("mercado", "excel");
+    const request = bound("mercado", "excel");
 
-    expect(result.success).toBe(true);
+    expect(request.url.startsWith("/api/relay/delivery/export-delivery?")).toBe(
+      true,
+    );
+    expect(request.fallbackFilename).toBe("entregas.xlsx");
 
-    const query = queryOf(requested[0]);
+    const query = queryOf(request.url);
 
     expect(query.get("businessId")).toBe(BUSINESS);
     expect(query.get("search")).toBe("mercado");
@@ -78,19 +83,17 @@ describe("the export bound by the page", () => {
     expect(query.has("tab")).toBe(false);
   });
 
-  it("sends the occurrence feed's facets for the occurrences tab", async () => {
-    const bound = exportActionFor("occurrences", {
+  it("sends the occurrence feed's facets for the occurrences tab", () => {
+    const request = exportRequestFor("occurrences", {
       businessId: BUSINESS,
       searchParams: new URLSearchParams(
         `severity=blocking&occurrenceTypeId=${TYPE}&deliveryStatus=FAILED`,
       ),
-    });
+    })(undefined, "csv");
 
-    await bound(undefined, "csv");
+    expect(request.url).toContain("/api/relay/delivery/export-occurrence?");
 
-    expect(requested[0]).toContain("/delivery/export-occurrence?");
-
-    const query = queryOf(requested[0]);
+    const query = queryOf(request.url);
 
     expect(query.get("businessId")).toBe(BUSINESS);
     expect(query.get("severity")).toBe("blocking");
@@ -98,16 +101,18 @@ describe("the export bound by the page", () => {
     expect(query.get("deliveryStatus")).toBe("FAILED");
   });
 
-  it("sends no company when the page has none (the API uses the session's)", async () => {
-    await exportActionFor("deliveries", {
+  it("sends no company when the page has none (the API uses the session's)", () => {
+    const request = exportRequestFor("deliveries", {
       businessId: null,
       searchParams: new URLSearchParams(""),
     })(undefined, "csv");
 
-    expect(queryOf(requested[0]).has("businessId")).toBe(false);
+    expect(queryOf(request.url).has("businessId")).toBe(false);
   });
 });
 
+// Unused by the screen since the relay download; kept one release for the
+// tabs opened before the deploy, which still call them (expand, contract).
 describe("the actions themselves", () => {
   it("carry the company for the MASTER (DLV-EXP-1)", async () => {
     await handleExportDelivery(undefined, "csv", { businessId: BUSINESS });

@@ -10,15 +10,17 @@ import { getCookies } from "@/actions/cookies";
 
 import { DeliveriesContent } from "@/features/deliveries/content";
 import { DeliveriesSkeleton } from "@/features/deliveries/skeleton";
+import { movedDeliveryTabHref } from "@/features/deliveries/lib/tabs";
 
 interface DeliveriesQueryParamsProps {
+  /** Every param of the URL: the table's sort, facets and period too. */
   searchParams: {
     tab?: string;
     page?: string;
     pageSize?: string;
     search?: string;
     businessId?: string;
-  };
+  } & Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,6 +39,15 @@ const DashboardDeliveries = async ({
 
   if (!tokenAccess) {
     redirect("/login");
+  }
+
+  // Monitoramento, Ocorrências, Atendimentos and Auditoria are views of the
+  // Torre since the meeting of 14/10/2026. Their old links — notifications,
+  // e-mails, bookmarks — land there with every other param kept.
+  const moved = movedDeliveryTabHref("/dashboard", searchParams);
+
+  if (moved) {
+    redirect(moved);
   }
 
   return (

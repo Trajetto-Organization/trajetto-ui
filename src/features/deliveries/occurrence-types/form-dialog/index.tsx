@@ -28,7 +28,7 @@ import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateOccurrenceType } from "@/actions/occurrence-type/create-occurrence-type";
 import { handleUpdateOccurrenceType } from "@/actions/occurrence-type/update-occurrence-type";
-import { getAIUsage } from "@/actions/business/get-ai-usage";
+import { fetchAIUsage } from "@/lib/business-reads";
 
 import type { OccurrenceTypeData } from "@/actions/occurrence-type/list-occurrence-type";
 import { useOccurrenceTypeForm, type OccurrenceTypeFormState } from "./hooks";
@@ -149,13 +149,11 @@ const OccurrenceTypeFormDialogSubmit = ({
   // shows no warning rather than a wrong one.
   const aiUsage = useQuery(
     ["ai-usage", businessId],
-    async () => {
-      const response = await getAIUsage(businessId);
-
-      return response.success
-        ? (response.data?.ai_analysis_limit ?? null)
-        : null;
-    },
+    ({ signal }) =>
+      fetchAIUsage(businessId, { signal }).then(
+        (usage) => usage?.ai_analysis_limit ?? null,
+        () => null,
+      ),
     {
       enabled: isOpen && sections.receiptPhoto && businessId !== "",
       staleTime: 5 * 60_000,

@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { Loader, PlugZap } from "lucide-react";
 
 import {
@@ -13,58 +12,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-import {
-  getHealthProviders,
-  type ProviderReadinessData,
-} from "@/actions/health/get-health-providers";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 import { formatNotificationDate } from "@/lib/format-values";
 
+import { useProviderReadiness } from "./reads";
 import { TONE_BADGE_CLASS, readinessBadge, readinessSummary } from "./rules";
 
 /**
  * "Configurei as variáveis — está funcionando?" (contract §32/§33), answered
  * by the API's read-only probes. The first read takes the API's 30-second
- * cache; "Atualizar" asks for fresh probes. Nothing secret reaches the
- * screen: variable names and states only.
+ * cache; "Atualizar" asks for fresh probes (refreshSystemMetrics). Nothing
+ * secret reaches the screen: variable names and states only.
  */
 const ProviderReadinessCard = (): JSX.Element => {
-  const [data, setData] = useState<ProviderReadinessData | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const query = useProviderReadiness();
 
-  const load = useCallback(async (refresh: boolean) => {
-    setIsLoading(true);
-
-    try {
-      const response = await getHealthProviders(refresh);
-
-      if (isStaleActionResult(response, { background: true })) {
-        setErrorMessage(STALE_ACTION_MESSAGE);
-        return;
-      }
-
-      if (response.success && response.data) {
-        setData(response.data);
-        setErrorMessage(null);
-      } else {
-        setErrorMessage(response.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load(false);
-  }, [load]);
-
-  useEffect(() => {
-    const handler = () => void load(true);
-
-    window.addEventListener("data-revalidated", handler);
-    return () => window.removeEventListener("data-revalidated", handler);
-  }, [load]);
+  const data = query.data ?? null;
+  const errorMessage =
+    query.error instanceof Error ? query.error.message : null;
+  const isLoading = query.isFetching;
 
   const summary = readinessSummary(data?.providers);
 

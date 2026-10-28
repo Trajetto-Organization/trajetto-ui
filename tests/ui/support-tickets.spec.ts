@@ -127,7 +127,7 @@ test("the driver opens a ticket and the bubble alerts the back office without re
 
   await expect(page).toHaveURL(
     new RegExp(
-      `tab=chat.*ticket=${opened.ticketId}|ticket=${opened.ticketId}.*tab=chat`,
+      `view=tickets.*ticket=${opened.ticketId}|ticket=${opened.ticketId}.*view=tickets`,
     ),
     {
       timeout: 60_000,
@@ -201,8 +201,10 @@ test("a read-only person sees the ticket and no write button", async ({
 }) => {
   const reader = await signedInContext(browser, "readOnlyUser");
 
+  // The tickets are the Torre's Atendimentos view since the product meeting
+  // of 14/10/2026; the deep link keeps its `ticket` param.
   await reader.page.goto(
-    `${BASE}/dashboard/deliveries?tab=chat&ticket=${opened.ticketId}`,
+    `${BASE}/dashboard/control-tower?view=tickets&ticket=${opened.ticketId}`,
     {
       waitUntil: "domcontentloaded",
     },
@@ -363,7 +365,7 @@ test("an authorization request arrives red and is authorized from the bubble", a
   );
 
   await card.click();
-  await expect(page).toHaveURL(/tab=chat/, { timeout: 60_000 });
+  await expect(page).toHaveURL(/view=tickets/, { timeout: 60_000 });
 
   const dialog = page.getByRole("dialog", { name: "Autorizar e encerrar" });
   await clickUntilVisible(

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 /**
  * The chat's two pickers — "Nova conversa" and "Aviso em massa" — on the
  * chat's own recipients list (DLVP-BCAST-2) and the notice's audience and
@@ -25,15 +27,10 @@ vi.hoisted(() => {
 (globalThis as { React?: typeof React }).React = React;
 
 const actions = vi.hoisted(() => ({
-  listChatRecipients: vi.fn(),
   sendChatMessage: vi.fn(),
   toasts: [] as Array<[string, string]>,
 }));
 
-vi.mock("@/actions/chat/list-chat-recipients", () => ({
-  listChatRecipients: (...args: unknown[]) =>
-    actions.listChatRecipients(...args),
-}));
 vi.mock("@/actions/chat/send-chat-message", () => ({
   sendChatMessage: (...args: unknown[]) => actions.sendChatMessage(...args),
 }));
@@ -51,10 +48,6 @@ vi.mock("sonner", () => ({
   ),
 }));
 
-// The picker would reach the driver registry through a raw fetch; it must
-// not be called at all any more.
-const registryFetch = vi.fn(async () => new Response("{}", { status: 403 }));
-
 const WITH_APP = [
   { id: "d1", name: "João", hasApp: true },
   { id: "d2", name: "Maria", hasApp: true },
@@ -68,6 +61,13 @@ const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
+
+/**
+ * The recipients are a relay read of /chat/recipients (lib/chat-reads). The
+ * picker used to reach the driver registry through a raw fetch; any read
+ * other than the chat's own list is a failure here.
+ */
+let relay: ReturnType<typeof stubRelay>;
 
 async function render(element: React.ReactElement): Promise<HTMLElement> {
   host = document.createElement("div");
@@ -108,10 +108,12 @@ beforeEach(() => {
   audience = { withApp: 2, withoutApp: 1 };
   actions.toasts.length = 0;
   actions.sendChatMessage.mockReset();
-  actions.listChatRecipients.mockReset();
 
-  actions.listChatRecipients.mockImplementation(
-    async ({ app, search }: { app?: string; search?: string }) => {
+  relay = stubRelay({
+    "/chat/recipients": (url) => {
+      const app = url.searchParams.get("app");
+      const search = url.searchParams.get("search");
+
       const pool =
         app === "WITH_APP"
           ? WITH_APP
@@ -120,23 +122,16 @@ beforeEach(() => {
             : [...WITH_APP, ...WITHOUT_APP];
 
       return {
-        success: true,
-        message: "",
-        data: {
-          data: pool.filter(
-            (row) =>
-              !search || row.name.toLowerCase().includes(search.toLowerCase()),
-          ),
-          nextCursor: null,
-          hasMore: false,
-          audience,
-        },
+        data: pool.filter(
+          (row) =>
+            !search || row.name.toLowerCase().includes(search.toLowerCase()),
+        ),
+        nextCursor: null,
+        hasMore: false,
+        audience,
       };
     },
-  );
-
-  vi.stubGlobal("fetch", registryFetch);
-  registryFetch.mockClear();
+  });
 });
 
 afterEach(async () => {
@@ -187,10 +182,17 @@ describe("the Nova conversa popover", () => {
 
     await settle(450);
 
-    expect(actions.listChatRecipients).toHaveBeenCalledWith(
-      expect.objectContaining({ businessId: "b1", search: "mar" }),
+    expect(
+      relay
+        .callsTo("/chat/recipients")
+        .some(
+          ({ query }) =>
+            query.get("businessId") === "b1" && query.get("search") === "mar",
+        ),
+    ).toBe(true);
+    expect(relay.calls.map(({ path }) => path)).toEqual(
+      relay.calls.map(() => "/chat/recipients"),
     );
-    expect(registryFetch).not.toHaveBeenCalled();
   });
 });
 

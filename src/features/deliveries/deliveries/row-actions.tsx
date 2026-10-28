@@ -10,14 +10,14 @@ import {
 } from "@/components/shared/custom/row-actions";
 
 import { toast } from "sonner";
-import {
-  getDelivery,
-  type DeliveryDetail,
-  type DeliveryListItem,
+import type {
+  DeliveryDetail,
+  DeliveryListItem,
 } from "@/actions/delivery/get-delivery";
 
 import { permissions } from "@/lib/permissions";
-import { isStaleActionResult } from "@/lib/action-result";
+import { fetchDelivery } from "@/lib/delivery-reads";
+import { relayAnswer } from "@/lib/relay-read";
 import {
   getPermissionName,
   useCheckMultiplePermissions,
@@ -84,9 +84,12 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
     setIsLoadingEdit(true);
 
     try {
-      const response = await getDelivery(businessId, delivery.id);
-
-      if (isStaleActionResult(response)) return;
+      // A relay GET (lib/delivery-reads): it no longer waits behind
+      // whatever Server Action the page has in flight.
+      const response = await relayAnswer(
+        fetchDelivery(businessId, delivery.id),
+        "Ocorreu um erro inesperado ao carregar a entrega.",
+      );
 
       if (!response.success || !response.data) {
         toast.error(response.message);

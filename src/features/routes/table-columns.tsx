@@ -27,32 +27,16 @@ import { RouteCodeLink } from "./route-code-link";
  * of a sortable column shows the value the server orders by.
  *
  * The shape follows every other table in the product: the identifier first,
- * the audit dates last, the actions behind an `Ações` header. This one had
- * been built without them, which is only visible when a support call starts
- * with "me passa o ID dessa rota" and there is nothing on screen to read out.
+ * the audit dates last, the actions behind an `Ações` header. The identifier
+ * is the route's code, sequential per company: what a support call quotes
+ * ("a rota 42"). The raw UUID that used to lead the table is in the row menu.
  */
 const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
   {
-    accessorKey: "id",
-    meta: { title: "Identificador" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
-    ),
-    // w-80, as in every identifier column: a UUID in Inter 14px/500 measures
-    // 268 to 315px, so the old w-72 (288px) cut about half of them.
-    cell: ({ row }) => (
-      <p className="w-80 truncate font-medium">
-        {displayValue(row.getValue("id"))}
-      </p>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
     accessorKey: "code",
-    meta: { title: "Rota" },
+    meta: { title: "Código" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Rota" />
+      <DataTableColumnHeader column={column} title="Código" />
     ),
     cell: ({ row }) => {
       const route = row.original;

@@ -15,7 +15,10 @@ import {
 } from "@/lib/check-multiple-permissions";
 import { isStaleActionResult } from "@/lib/action-result";
 
-import type { RouteDetailResult } from "@/actions/route/get-route";
+import type {
+  RouteDetailResult,
+  RouteVisitedPoint,
+} from "@/actions/route/get-route";
 import {
   releaseRoute,
   removeRouteStops,
@@ -45,6 +48,12 @@ import { UNSAVED_ORDER_MESSAGE } from "../lib/leave-guard";
  * Leaflet touches `window` at import time, so the map is never part of the
  * server render — the tower does the same.
  */
+/**
+ * One empty list for a route without visited points: a fresh `[]` on every
+ * render re-ran the map's stops effect on every ping of the driver.
+ */
+const NO_VISITED_POINTS: RouteVisitedPoint[] = [];
+
 const RouteMap = dynamic(
   () => import("./route-map").then((module) => module.RouteMap),
   {
@@ -378,7 +387,7 @@ const RouteDetailView = ({
             driverLabel={
               route.vehicle?.license_plate ?? route.driver?.name ?? "Motorista"
             }
-            visitedPoints={route.visitedPoints ?? []}
+            visitedPoints={route.visitedPoints ?? NO_VISITED_POINTS}
             businessId={businessId}
             routeId={route.id}
             driverId={route.driverId}

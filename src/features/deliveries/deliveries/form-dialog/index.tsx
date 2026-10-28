@@ -20,6 +20,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FieldShell } from "@/components/shared/custom/field-shell";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import FormInput from "@/components/shared/custom/form-input";
 import { applyMask } from "@/lib/format-values";
@@ -56,6 +63,13 @@ import { handleUpdateDelivery } from "@/actions/delivery/update-delivery";
 import type { DeliveryDetail } from "@/actions/delivery/get-delivery";
 
 import { ShipperSelector } from "../shipper-selector";
+import {
+  DEFAULT_DELIVERY_KIND,
+  DELIVERY_KIND_LABELS,
+  WRITABLE_DELIVERY_KINDS,
+  deliveryKindOf,
+  type WritableDeliveryKind,
+} from "../../lib/kind";
 
 import { useDeliveryForm, type DeliveryFormState } from "./hooks";
 import { guardFormAction } from "@/lib/action-result";
@@ -184,6 +198,16 @@ const isItemSent = (item: ItemRow): boolean =>
   item.unit_value.trim() !== "" ||
   item.quantity.trim() !== "";
 
+/**
+ * The type the form opens on: the delivery's own, or Entrega for a new one.
+ * A Coleta is the spreadsheet's (only it creates one): shown, not offered.
+ */
+const kindOf = (delivery?: DeliveryDetail | null): WritableDeliveryKind => {
+  const kind = delivery ? deliveryKindOf(delivery) : DEFAULT_DELIVERY_KIND;
+
+  return kind === "PICKUP" ? DEFAULT_DELIVERY_KIND : kind;
+};
+
 const firstIssue = (result: {
   success: boolean;
   error?: { issues: { message: string }[] };
@@ -221,6 +245,8 @@ const DeliveryFormDialogSubmit = ({
   isOpen,
   items,
   setItems,
+  kind,
+  setKind,
   shipperId,
   setShipperId,
   scheduledDate,
@@ -234,6 +260,8 @@ const DeliveryFormDialogSubmit = ({
   isOpen: boolean;
   items: ItemRow[];
   setItems: (updater: (prev: ItemRow[]) => ItemRow[]) => void;
+  kind: WritableDeliveryKind;
+  setKind: (value: WritableDeliveryKind) => void;
   shipperId: string;
   setShipperId: (value: string) => void;
   scheduledDate: string;
@@ -250,6 +278,10 @@ const DeliveryFormDialogSubmit = ({
   // are the dispatcher's on a typed delivery but the note's on an XML one.
   const keyLocked = isEditing && Boolean(delivery.invoice_key);
   const itemsLocked = isEditing && delivery.import?.source === "NFE_XML";
+
+  // A Coleta came from the spreadsheet and keeps its type: the form only
+  // writes Entrega or Ordem de serviço (meeting of 14/10/2026).
+  const kindLocked = isEditing && deliveryKindOf(delivery) === "PICKUP";
 
   // react-input-mask only behaves predictably when controlled: left
   // uncontrolled, deleting through the mask's literals resurrects digits.
@@ -330,6 +362,7 @@ const DeliveryFormDialogSubmit = ({
     initialValues,
     isOpen,
     extraValues: [
+      [kind, kindOf(delivery)],
       [shipperId, delivery?.shipper?.id ?? ""],
       [scheduledDate, delivery?.scheduled_date?.slice(0, 10) ?? ""],
       [itemsFingerprint(items), itemsFingerprint(itemsOf(delivery))],
@@ -370,12 +403,14 @@ const DeliveryFormDialogSubmit = ({
         ADDRESS_FIELDS.map((name) => [name, addressValues[name] ?? ""]),
       ),
       ...textFields,
+      ...(kindLocked ? {} : { kind }),
       shipperId,
       recipient_telephone: recipientTelephone,
       scheduled_date: scheduledDate,
     },
     rules: () => (itemsLocked ? {} : itemRules(items)),
     fields: [
+      ...(kindLocked ? [] : ["kind"]),
       "shipperId",
       "recipient_name",
       "recipient_telephone",
@@ -389,7 +424,7 @@ const DeliveryFormDialogSubmit = ({
       "notes",
     ],
     serverErrors: fieldErrors,
-    controlIds: { shipperId: "shipper-selector" },
+    controlIds: { shipperId: "shipper-selector", kind: "delivery-kind" },
     resetKey: isOpen,
   });
 
@@ -426,6 +461,64 @@ const DeliveryFormDialogSubmit = ({
           a press on Cancelar is never read as leaving a field. */}
       <div ref={live.ref}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+          {/* What the record is (meeting of 14/10/2026): an Entrega or an
+              Ordem de serviço — a stop to perform a service at the address,
+              like collecting returnable baskets. Same route, driver and
+              proof; the type labels it and filters the list. */}
+          <FieldShell
+            label="Tipo *"
+            htmlFor="delivery-kind"
+            error={kindLocked ? null : live.errorOf("kind")}
+            hint={
+              kindLocked
+                ? "Coleta importada pela planilha: o tipo não muda por aqui."
+                : undefined
+            }
+          >
+            {(control) => (
+              <>
+                <Select
+                  value={kindLocked ? "PICKUP" : kind}
+                  onValueChange={(value) =>
+                    setKind(value as WritableDeliveryKind)
+                  }
+                  disabled={pending || kindLocked}
+                >
+                  <SelectTrigger
+                    {...control}
+                    className={cn(
+                      "w-full",
+                      control["aria-invalid"] &&
+                        "border-red-600 dark:border-red-500",
+                    )}
+                    data-delivery-kind-trigger
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {kindLocked && (
+                      <SelectItem value="PICKUP">
+                        {DELIVERY_KIND_LABELS.PICKUP}
+                      </SelectItem>
+                    )}
+                    {WRITABLE_DELIVERY_KINDS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {DELIVERY_KIND_LABELS[option]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* A Radix Select is not a form control: the value travels
+                    in a hidden input. Absent on a Coleta, so the edit keeps
+                    its type. */}
+                {!kindLocked && (
+                  <input type="hidden" name="kind" value={kind} />
+                )}
+              </>
+            )}
+          </FieldShell>
+
           <ShipperSelector
             businessId={businessId}
             value={shipperId}
@@ -861,6 +954,7 @@ const DeliveryFormDialog = ({
   const idempotencyKeyFor = useIdempotencyKey(state);
 
   const [items, setItems] = useState<ItemRow[]>([]);
+  const [kind, setKind] = useState<WritableDeliveryKind>(DEFAULT_DELIVERY_KIND);
   const [scheduledDate, setScheduledDate] = useState<string>("");
 
   const [shipperId, setShipperId] = useState<string>("");
@@ -870,6 +964,7 @@ const DeliveryFormDialog = ({
 
     // Controlled fields do not take defaultValue, so they are seeded here.
     setItems(itemsOf(delivery));
+    setKind(kindOf(delivery));
     setScheduledDate(delivery?.scheduled_date?.slice(0, 10) ?? "");
 
     setShipperId(delivery?.shipper?.id ?? "");
@@ -929,8 +1024,8 @@ const DeliveryFormDialog = ({
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             {isEditing
-              ? "Corrija destinatário, endereço, itens e observações. A chave da NF-e pode ser informada uma vez; depois de gravada, não muda."
-              : "Entrada manual. Informe o destinatário e o endereço; a chave da NF-e é opcional, mas evita duplicidade quando o XML for importado."}
+              ? "Corrija o tipo, o destinatário, o endereço, os itens e as observações. A chave da NF-e pode ser informada uma vez; depois de gravada, não muda."
+              : "Entrada manual. Escolha o tipo (entrega ou ordem de serviço) e informe o destinatário e o endereço; a chave da NF-e é opcional, mas evita duplicidade quando o XML for importado."}
           </DialogDescription>
         </DialogHeader>
 
@@ -945,6 +1040,8 @@ const DeliveryFormDialog = ({
             isOpen={isOpen}
             items={items}
             setItems={setItems}
+            kind={kind}
+            setKind={setKind}
             shipperId={shipperId}
             setShipperId={setShipperId}
             scheduledDate={scheduledDate}

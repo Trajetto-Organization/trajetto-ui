@@ -1,10 +1,10 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import {
   displayValue,
   formatDateOnly,
@@ -13,6 +13,7 @@ import {
 
 import type { DeliveryListItem } from "@/actions/delivery/get-delivery";
 import { DELIVERY_STATUS_META } from "../lib/status";
+import { DELIVERY_KIND_LABELS, deliveryKindOf } from "../lib/kind";
 
 import { DeliveryRowActions } from "./row-actions";
 
@@ -23,52 +24,74 @@ import { DeliveryRowActions } from "./row-actions";
  */
 const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
   {
-    id: "select",
-    meta: {
-      title: "Seleção",
+    // The client's order number, with the NF-e under it: what a dispatcher
+    // reads off the paperwork. A delivery typed without either falls back to
+    // the compact record id, never the raw UUID.
+    id: "code",
+    accessorFn: (row) => row.code ?? row.invoice_number ?? "",
+    meta: { title: "Código" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Código" />
+    ),
+    cell: ({ row }) => {
+      const { code, invoice_number: invoice } = row.original;
+
+      // The type, only when it is not the usual one (meeting of 14/10/2026):
+      // a badge on every row saying "Entrega" would be noise on a list that
+      // is almost all deliveries.
+      const kind = deliveryKindOf(row.original);
+      const kindBadge =
+        kind === "DELIVERY" ? null : (
+          <Badge
+            variant="outline"
+            data-delivery-kind={kind}
+            className="mb-0.5 w-fit border-sky-300 bg-sky-50 px-1.5 py-0 text-[10px]
+            text-sky-800 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-200"
+          >
+            {DELIVERY_KIND_LABELS[kind]}
+          </Badge>
+        );
+
+      if (!code && !invoice) {
+        return (
+          <div className="flex w-36 flex-col">
+            {kindBadge}
+            <IdCell id={row.original.id} />
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex w-36 flex-col">
+          {kindBadge}
+          <p className="truncate font-medium">{code ?? `NF-e: ${invoice}`}</p>
+          {code && invoice && (
+            <p className="truncate text-xs text-muted-foreground">
+              NF-e: {invoice}
+            </p>
+          )}
+        </div>
+      );
     },
-    header: ({ table }) => (
-      <Checkbox
-        id="select-all-deliveries"
-        name="select-all-deliveries"
-        data-tutorial="deliveries-select-all"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Selecionar todas"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-delivery-${row.id}`}
-        name={`select-delivery-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Selecionar linha"
-        className="translate-y-[2px]"
-      />
-    ),
     enableSorting: false,
     enableHiding: false,
   },
   {
-    accessorKey: "id",
-    meta: {
-      title: "Identificador",
-    },
+    // The Tipo filter's column (server facet `kind`). Hidden by default: the
+    // badge in the first column already tells the exceptions apart, and the
+    // table stays compact; "Visualizar" shows it for whoever wants it.
+    id: "kind",
+    accessorFn: (row) => DELIVERY_KIND_LABELS[deliveryKindOf(row)],
+    meta: { title: "Tipo" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
+      <DataTableColumnHeader column={column} title="Tipo" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-80">
-        {displayValue(row.getValue("id"))}
+      <p className="truncate font-medium w-32">
+        {DELIVERY_KIND_LABELS[deliveryKindOf(row.original)]}
       </p>
     ),
     enableSorting: false,
-    enableHiding: false,
   },
   {
     accessorKey: "recipient_name",
@@ -77,16 +100,9 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
       <DataTableColumnHeader column={column} title="Destinatário" />
     ),
     cell: ({ row }) => (
-      <div className="w-56">
-        <p className="truncate font-medium">
-          {displayValue(row.getValue("recipient_name"))}
-        </p>
-        {row.original.code && (
-          <p className="truncate text-xs text-muted-foreground">
-            Pedido: {row.original.code}
-          </p>
-        )}
-      </div>
+      <p className="truncate font-medium w-56">
+        {displayValue(row.getValue("recipient_name"))}
+      </p>
     ),
   },
   {
@@ -150,19 +166,6 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
       </p>
     ),
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
-  },
-  {
-    accessorKey: "invoice_number",
-    meta: { title: "NF-e" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="NF-e" />
-    ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-24">
-        {displayValue(row.getValue("invoice_number"))}
-      </p>
-    ),
-    enableSorting: false,
   },
   {
     id: "driverName",

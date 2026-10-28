@@ -4,6 +4,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { readBusinessIdParam } from "@/lib/business-id-param";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface DeleteFineProps {
   fineId: string;
@@ -60,6 +61,10 @@ const handleDeleteFine = async ({ fineId, businessId }: DeleteFineProps) => {
         deleteFineError: message || "Não foi possível deletar a multa.",
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-fine");
 
     return { successMessage: message || "Multa deletada com sucesso!" };
   } catch (error) {

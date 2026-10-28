@@ -183,7 +183,12 @@ describe("the table's faceted filter", () => {
 
     await key(input, "Enter");
 
-    expect(setFilterValue).toHaveBeenLastCalledWith(["PENDING_REVIEW"]);
+    // The filter toggles through an updater (it must build on the latest
+    // value, not on the one this render read): run it from "nothing chosen".
+    const [update] = setFilterValue.mock.lastCall ?? [];
+    const chosen = typeof update === "function" ? update(undefined) : update;
+
+    expect(chosen).toEqual(["PENDING_REVIEW"]);
   });
 
   it("still searches by the label the person reads", async () => {

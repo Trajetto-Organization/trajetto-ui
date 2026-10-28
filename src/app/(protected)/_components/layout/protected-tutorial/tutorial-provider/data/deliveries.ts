@@ -15,18 +15,19 @@ import {
 /**
  * Tours of Entregas: one per tab (DELIVERY_TABS), each with its own "seen"
  * flag. Key "/dashboard/deliveries" is the Entregas tab; the others are
- * "/dashboard/deliveries/<tab>" (see engine/tutorial-key).
+ * "/dashboard/deliveries/<tab>" (see engine/tutorial-key). The operation's
+ * sections moved to the Torre de controle on 14/10/2026, and their tours
+ * with them (features/control-tower/tutorial).
  */
 
 const tabsStep = (): TutorialStep => ({
   anchor: "deliveries-tabs",
   title: "Seções de Entregas 📑",
-  content: `O módulo tem dez seções, cada uma com a sua tabela ou painel:
-  • Entregas, Ocorrências, Monitoramento e Atendimentos: o dia a dia da operação
-  • Embarcadores, Tipos de Ocorrência e Motivos de Status: os cadastros
-  • Importações, Mensagens ao Cliente e Auditoria de Comprovantes: o que entra, o que sai e o que foi comprovado
-  NOTA: Você só vê as seções que o seu perfil pode ler. Cada seção tem o próprio tutorial, que abre na primeira visita.
-  DICA: A seção fica na URL, então um link compartilhado reabre a mesma tela.`,
+  content: `Entregas reúne o que é cadastrado ou importado:
+  • Entregas, Embarcadores e Importações: o que entra na operação
+  • Tipos de Ocorrência, Motivos de Status e Mensagens ao Cliente: a configuração
+  NOTA: Monitoramento, Ocorrências, Atendimentos e Auditoria de Comprovantes ficam na Torre de Controle, como visões da operação. Os links antigos levam direto para lá.
+  DICA: A seção fica na URL, então um link compartilhado reabre a mesma tela. Você só vê as seções que o seu perfil pode ler.`,
   placement: "bottom",
 });
 
@@ -68,16 +69,25 @@ const deliveriesTab: TutorialStep[] = [
     content: `Cadastra uma entrega sem arquivo.
     PERMISSÕES NECESSÁRIAS:
     • ESCRITA em Gerenciar Entregas
-    Obrigatórios: Embarcador, Destinatário e endereço (o CEP preenche cidade, bairro e rua).
+    Obrigatórios: Tipo (Entrega ou Ordem de serviço), Embarcador, Destinatário e endereço (o CEP preenche cidade, bairro e rua).
+    NOTA: Ordem de serviço é uma parada para executar um serviço no endereço, como recolher cestos retornáveis. Segue a mesma rota, o mesmo motorista e o mesmo comprovante.
     Opcionais: telefone e e-mail do destinatário, código do pedido, chave da NF-e, data prevista, itens e observações.
     NOTA: A chave da NF-e é definida uma vez: editável enquanto vazia, fixa depois.`,
     placement: "bottom",
     optional: true,
   },
+  {
+    anchor: "deliveries-period",
+    title: "Período 📅",
+    content: `A lista abre em Hoje. Troque para 7, 14 ou 30 dias, ou escolha um período personalizado de até 92 dias.
+    Os cartões, a paginação e a exportação seguem o período escolhido.
+    NOTA: O período fica na URL e vale pela data de criação da entrega, no fuso da empresa.`,
+    placement: "bottom",
+  },
   searchStep(
     "Buscar Entregas 🔍",
     `Encontre uma entrega pelo ID, destinatário, pedido, NF-e, cidade, motorista ou CNH.
-    DICA: A busca percorre todas as entregas da empresa, não só a página carregada.`,
+    DICA: A busca procura no período escolhido; o ID, o pedido, a chave ou o número da NF-e exatos procuram em todas as datas.`,
     "deliveries-search",
   ),
   filtersStep(
@@ -85,11 +95,12 @@ const deliveriesTab: TutorialStep[] = [
     `Os filtros respondem às perguntas do dia:
     • Status: pendente, em rota, entregue, insucesso ou cancelada
     • Embarcador: a carga de um remetente
-    • Motorista: a carga de um condutor`,
+    • Motorista: a carga de um condutor
+    • Tipo: entrega, ordem de serviço ou coleta`,
   ),
   tableStep(
     "Tabela de Entregas 📋",
-    `Cada linha traz destinatário, embarcador, destino, status, rota e data prevista (só a data, sem horário).
+    `Cada linha traz destinatário, embarcador, destino, status, rota e data prevista (só a data, sem horário). Uma ordem de serviço ou uma coleta tem o tipo marcado no código.
     O status segue um caminho definido:
     • Pendente → Em rota (só com rota iniciada pelo motorista) ou Cancelada
     • Em rota → Entregue, Insucesso, de volta a Pendente, ou Cancelada
@@ -116,130 +127,6 @@ const deliveriesTab: TutorialStep[] = [
     NOTA: Ações que o seu perfil não pode usar aparecem desabilitadas, com o motivo ao passar o mouse.`,
   ),
   viewOptionsStep(),
-];
-
-const occurrencesTab: TutorialStep[] = [
-  welcomeStep(
-    "Ocorrências 📋",
-    `Tudo o que o motorista registrou nas entregas, numa tabela só: entregas normais, não entregas e pausas, com fotos, local e respostas do formulário do tipo.
-    PERMISSÕES NECESSÁRIAS:
-    • LEITURA em Gerenciar Ocorrências`,
-  ),
-  tabsStep(),
-  {
-    anchor: "occurrence-authorization-queue",
-    title: "Aguardando Autorização da Torre ⏳",
-    content: `Ocorrências de tipos que exigem autorização ficam aqui até alguém aprovar ou negar, com motivo.
-    O motorista recebe a resposta na hora. Sem resposta em 10 minutos, o aviso sobe para os administradores.
-    NOTA: Se o motorista comprovar a entrega enquanto o pedido está pendente, a comprovação prevalece.`,
-    placement: "bottom",
-    optional: true,
-  },
-  exportStep("Ocorrências", "Gerenciar Ocorrências", [
-    "Tipo, categoria e gravidade",
-    "Entrega, destinatário e motorista",
-    "Data e local do registro",
-  ]),
-  revalidateStep(),
-  searchStep(
-    "Buscar Ocorrências 🔍",
-    "Procure pelo ID da ocorrência, ID da entrega, destinatário ou tipo.",
-    "deliveries-search",
-  ),
-  filtersStep(
-    "deliveries-filters",
-    `Separe o urgente do informativo:
-    • Categoria: entrega, não entrega ou pausa
-    • Gravidade: impeditivas (derrubam a entrega) ou informativas
-    • Tipo e Status da entrega`,
-  ),
-  tableStep(
-    "Fotos, Local e Formulário 📸",
-    `Clique numa miniatura para ver a foto grande sem sair da tela; "Ver no mapa" abre o ponto exato do registro.
-    IMPORTANTE: As linhas chegam da mais recente para a mais antiga: o topo da tabela é o agora da operação.`,
-  ),
-  rowActionsStep(
-    "Ações da Ocorrência ⚙️",
-    `O menu de três pontos (⋮) leva à entrega (Ver Entrega), ao histórico da ocorrência e ao atendimento ligado a ela (Ver conversa ou Abrir atendimento), e copia os IDs.`,
-  ),
-  viewOptionsStep(),
-];
-
-const monitoringTab: TutorialStep[] = [
-  welcomeStep(
-    "Monitoramento da Operação 📊",
-    `A resposta rápida para "como está a operação agora?", no dia da empresa (no fuso dela).
-    PERMISSÕES NECESSÁRIAS:
-    • LEITURA em Gerenciar Entregas`,
-  ),
-  tabsStep(),
-  {
-    ...statsStep(),
-    title: "Números do Dia 📈",
-    content: `Os cartões contam os documentos ativos no dia: com rota hoje, na rua agora ou resolvidos hoje — a mesma conta da Torre de Controle e do painel inicial.
-    • Sem rota: pendentes que ainda precisam entrar numa rota
-    • Designadas: nas rotas de hoje, ainda não saíram
-    • Em rota, Entregues e Insucessos do dia`,
-  },
-  revalidateStep(
-    "Atualizar",
-    "O quadro também se atualiza sozinho quando uma parada é resolvida.",
-  ),
-  {
-    anchor: "monitoring-board",
-    title: "Por Rota | Por Motorista 🚚",
-    content: `Duas visões do mesmo dia:
-    • Por rota: cada rota com o percentual de conclusão e uma linha de pontos por entrega (verde entregue, vermelho não entregue, cinza pendente), em tempo real
-    • Por motorista: a carga do dia de cada condutor, o mais ocupado primeiro
-    DICA: A posição ao vivo no mapa fica na Torre de Controle.`,
-    placement: "top",
-  },
-];
-
-const ticketsTab: TutorialStep[] = [
-  welcomeStep(
-    "Atendimentos 💬",
-    `Cada assunto com o motorista é um atendimento (ticket): de uma ocorrência (aberto sozinho quando o motorista registra), de uma rota, ou iniciado pela central.
-    O atendimento tem situação (aberto ou encerrado), histórico completo, quem atendeu e quem encerrou.
-    PERMISSÕES NECESSÁRIAS:
-    • LEITURA em Gerenciar Entregas para ver
-    • ESCRITA em Gerenciar Entregas para responder e encerrar`,
-  ),
-  tabsStep(),
-  {
-    anchor: "chat-threads",
-    title: "Lista de Atendimentos 📋",
-    content: `Filtre por Abertos, Meus, Sem atendente e Aguardando autorização, ou busque por assunto, motorista ou #número.
-    • Atualizar recarrega a lista
-    • Novo atendimento abre um assunto com qualquer motorista ativo
-    • O megafone envia um aviso em massa, individual, para os motoristas com o aplicativo`,
-    placement: "right",
-  },
-  {
-    anchor: "chat-conversation",
-    variants: [
-      {
-        anchor: "chat-panel",
-        content: `Ao abrir um atendimento, a conversa aparece aqui, com os botões de encerramento, Atendente (assumir, liberar ou transferir), Histórico e Conversa completa do motorista.
-        IMPORTANTE: Encerrar o atendimento de uma ocorrência que exige autorização é o gesto de autorizar ou negar o motorista a seguir.`,
-      },
-    ],
-    title: "A Conversa 🚚",
-    content: `Mensagens em tempo real, com presença, "digitando..." e confirmação de leitura. O motorista responde com texto, foto e áudio.
-    No topo ficam os botões de encerramento, Atendente (assumir, liberar ou transferir), Histórico e Conversa completa do motorista.
-    IMPORTANTE: Encerrar o atendimento de uma ocorrência que exige autorização é o gesto de autorizar ou negar o motorista a seguir. As mensagens são registro da operação: não há como editar nem apagar.`,
-    placement: "left",
-    spotlightPadding: 4,
-  },
-  {
-    anchor: "ops-alert-balloon",
-    title: "Balão de Alertas 🔔",
-    content: `Quando chega uma ocorrência, um pedido de autorização ou uma mensagem de atendimento, este balão aparece no canto inferior direito de qualquer tela e leva direto ao atendimento.
-    O botão de som ao lado liga ou desliga o alerta sonoro só para você (também em Minha Conta → Notificações).`,
-    placement: "top",
-    // The balloon renders only while an alert is pending: explain it anyway.
-    centerWhenMissing: true,
-  },
 ];
 
 const shippersTab: TutorialStep[] = [
@@ -410,35 +297,13 @@ const messageTemplatesTab: TutorialStep[] = [
   },
 ];
 
-const proofAuditsTab: TutorialStep[] = [
-  welcomeStep(
-    "Auditoria de Comprovantes 🧾",
-    `A fila de comprovantes de entrega para conferência: a leitura automática do canhoto (é um canhoto? o número da NF confere? há data e assinatura?) e a decisão de uma pessoa.
-    PERMISSÕES NECESSÁRIAS:
-    • LEITURA em Gerenciar Entregas`,
-  ),
-  tabsStep(),
-  {
-    anchor: "proof-audits-filters",
-    title: "Na Fila, Aprovados, Rejeitados 🎯",
-    content: `Os contadores separam o que falta conferir do que já foi decidido; clique num deles para filtrar a fila.
-    O botão Atualizar, ao lado, busca esses números de novo.
-    NOTA: Abaixo aparece com que frequência a leitura automática concordou com a pessoa nos últimos dias.`,
-    placement: "bottom",
-  },
-];
-
 const deliveriesTours: TutorialConfig = {
   "/dashboard/deliveries": deliveriesTab,
-  "/dashboard/deliveries/occurrences": occurrencesTab,
-  "/dashboard/deliveries/monitoring": monitoringTab,
-  "/dashboard/deliveries/chat": ticketsTab,
   "/dashboard/deliveries/shippers": shippersTab,
+  "/dashboard/deliveries/imports": importsTab,
   "/dashboard/deliveries/occurrence-types": occurrenceTypesTab,
   "/dashboard/deliveries/status-change-reasons": statusReasonsTab,
-  "/dashboard/deliveries/imports": importsTab,
   "/dashboard/deliveries/message-templates": messageTemplatesTab,
-  "/dashboard/deliveries/proof-audits": proofAuditsTab,
 };
 
 export { deliveriesTours };

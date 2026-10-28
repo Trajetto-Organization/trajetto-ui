@@ -75,7 +75,7 @@ const DeletePartDialog = ({
       toast.success(state.successMessage);
       onClose();
 
-      refreshMaintenanceData("update-part", ["part"]).catch(() =>
+      refreshMaintenanceData(["part"]).catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
     }

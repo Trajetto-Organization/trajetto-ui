@@ -52,7 +52,7 @@ const DeleteAccountPayableDialog = ({
 
       toast.success(result.successMessage ?? "Conta a pagar excluída.");
 
-      void refreshAfterAccountPayableWrite("delete-account-payable").catch(() =>
+      void refreshAfterAccountPayableWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

@@ -107,6 +107,45 @@ describe("ProtectedProvider", () => {
     expect(requested).toHaveLength(2);
   });
 
+  // The second defect: even overlapped, the layout awaited the 50
+  // notifications before rendering anything under it, so every protected
+  // page waited for the slower of the two. The list now streams in its own
+  // Suspense boundary behind the page.
+  it("renders the page without waiting for the notifications", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) =>
+        url.includes("/user/me")
+          ? Promise.resolve(new Response(JSON.stringify(USER), { status: 200 }))
+          : // The list never answers.
+            new Promise<Response>(() => undefined),
+      ),
+    );
+
+    await expect(ProtectedProvider({ children: null })).resolves.toBeTruthy();
+  });
+
+  it("bounds the session read, and a timeout keeps the session", async () => {
+    const signals: Array<AbortSignal | null | undefined> = [];
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) => {
+        signals.push(init?.signal);
+
+        return url.includes("/user/me")
+          ? Promise.reject(
+              new DOMException("The operation timed out.", "TimeoutError"),
+            )
+          : Promise.resolve(new Response('{"meta":{}}\n', { status: 200 }));
+      }),
+    );
+
+    // The connection screen (mocked to null here), never a redirect.
+    await expect(ProtectedProvider({ children: null })).resolves.toBeDefined();
+    expect(signals.every((signal) => signal instanceof AbortSignal)).toBe(true);
+  });
+
   it("still logs out on the API's verdict, whatever the notifications answered", async () => {
     vi.stubGlobal(
       "fetch",

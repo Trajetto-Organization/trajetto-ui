@@ -127,7 +127,7 @@ const DeleteBranchDialog = ({
 
       toast.success(result.successMessage ?? "Filial excluída.");
 
-      void refreshAfterBranchWrite("delete-branch").catch(() =>
+      void refreshAfterBranchWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

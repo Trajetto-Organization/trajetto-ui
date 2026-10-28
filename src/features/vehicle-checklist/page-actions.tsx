@@ -6,7 +6,7 @@ import { PageActions } from "@/app/(protected)/_components/layout/protected-page
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 
-import { handleExportVehicleChecklist } from "@/actions/vehicle-checklist/export-vehicle-checklist";
+import { exportVehicleChecklistRequest } from "@/lib/export-requests";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -41,7 +41,7 @@ const VehicleChecklistPageActions = ({
 
   // The export follows the screen: its company, search and filters (5.8).
   const exportChecklists = (search?: string, format?: "csv" | "excel") =>
-    handleExportVehicleChecklist(search, format, {
+    exportVehicleChecklistRequest(search, format, {
       businessId,
       filters: checklistListQuery(Object.fromEntries(searchParams.entries())),
     });
@@ -50,7 +50,7 @@ const VehicleChecklistPageActions = ({
     <PageActions>
       <ExportButton
         hasData={hasData}
-        exportAction={exportChecklists}
+        exportRequest={exportChecklists}
         entityName="relatório de checklist veicular"
         writePermission={exportPermissions.hasAllPermissions}
       />

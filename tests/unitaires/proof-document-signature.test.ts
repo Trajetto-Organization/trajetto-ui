@@ -22,6 +22,7 @@ const signed = {
     cert_not_after: "2027-09-30T23:59:59.000Z",
     signed_at: "2026-10-06T13:00:00.000Z",
     unsigned_reason: null,
+    icp_brasil: true,
   },
 };
 
@@ -58,6 +59,19 @@ describe("the receipt's signature badge", () => {
     expect(badge.signed).toBe(true);
     expect(badge.label).toBe("Assinado digitalmente (ICP-Brasil)");
     expect(badge.reason).toContain("TRAJETTO TECNOLOGIA LTDA");
+  });
+
+  it("drops the ICP-Brasil claim when the API didn't confirm the chain", () => {
+    for (const icp_brasil of [false, null, undefined]) {
+      const badge = proofSignatureBadge({
+        ...signed,
+        signature: { ...signed.signature, icp_brasil },
+      });
+
+      expect(badge.signed).toBe(true);
+      expect(badge.label).toBe("Assinado digitalmente");
+      expect(badge.reason).toContain("fora da cadeia ICP-Brasil");
+    }
   });
 
   it("gives the reason of an unsigned document", () => {

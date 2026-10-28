@@ -6,6 +6,11 @@ import {
 } from "@/app/(protected)/_components/shared/tanstack-table/data-table/server-table";
 
 import { DELIVERY_STATUS_META } from "../lib/status";
+import { DELIVERY_KINDS, DELIVERY_KIND_LABELS } from "../lib/kind";
+import {
+  deliveryPeriodQuery,
+  type DeliveryListPeriodMeta,
+} from "../lib/period";
 
 /**
  * The deliveries table on the server (decision 8.8). Sort keys and facet
@@ -33,6 +38,9 @@ const DELIVERY_TABLE: ServerTableSpec = assertServerTableSpec({
     // the server, scoped to the company.
     shipperName: { param: "shipperId", values: "uuid" },
     driverName: { param: "driverId", values: "uuid" },
+    // Entrega, Ordem de serviço or Coleta (meeting of 14/10/2026). The API
+    // filters by it without a count per option.
+    kind: { param: "kind", values: DELIVERY_KINDS },
   },
 });
 
@@ -44,6 +52,11 @@ const DELIVERY_STATUS_FILTER_LABELS: Record<string, string> =
     ]),
   );
 
+/** The Tipo filter's options: the labels only (no counts from the API). */
+const DELIVERY_KIND_FILTER_LABELS: Record<string, string> = {
+  ...DELIVERY_KIND_LABELS,
+};
+
 /** The listing's `meta.searchMeta`, as the API streams it. */
 interface DeliveryListSearchMeta {
   statusCounts?: Record<string, number>;
@@ -52,23 +65,34 @@ interface DeliveryListSearchMeta {
     shipperId?: FacetCount[];
     driverId?: FacetCount[];
   };
+  /**
+   * The days the page and the counts cover, in the company's zone; null for
+   * every date. Absent from an API older than the period.
+   */
+  period?: DeliveryListPeriodMeta | null;
 }
 
 /** The page's searchParams (server) or the URL's (client). */
 type ParamSource = Parameters<typeof serverTableQuery>[0];
 
 /**
- * The sort and filter params to add to `/delivery/list-delivery` and to the
- * export, read from the page's searchParams. Next to page, pageSize, search
- * and businessId, which the page already sends.
+ * The sort, filter and period params to add to `/delivery/list-delivery`
+ * and to the export, read from the page's searchParams. Next to page,
+ * pageSize, search and businessId, which the page already sends. The period
+ * always travels: the list opens on today (lib/period), while an API with no
+ * period answers every date.
  */
 function deliveriesListQuery(
   searchParams: ParamSource,
 ): Record<string, string> {
-  return serverTableQuery(searchParams, DELIVERY_TABLE);
+  return {
+    ...serverTableQuery(searchParams, DELIVERY_TABLE),
+    ...deliveryPeriodQuery(searchParams),
+  };
 }
 
 export {
+  DELIVERY_KIND_FILTER_LABELS,
   DELIVERY_STATUS_FILTER_LABELS,
   DELIVERY_TABLE,
   deliveriesListQuery,

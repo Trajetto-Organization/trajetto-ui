@@ -74,9 +74,7 @@ const DeleteUserDialog = ({
 
       toast.success(result.successMessage ?? "Usuário deletado.");
 
-      void refreshAfterUserWrite(
-        kind === "master" ? "delete-master-user" : "delete-user-registration",
-      ).catch(() =>
+      void refreshAfterUserWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

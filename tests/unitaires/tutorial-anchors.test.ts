@@ -11,6 +11,7 @@ import {
 import { resolveTutorialKey } from "@/app/(protected)/_components/layout/protected-tutorial/engine/tutorial-key";
 import { DELIVERY_TABS } from "@/features/deliveries/lib/tabs";
 import { INTEGRATION_TABS } from "@/features/integrations/lib/tabs";
+import { TOWER_VIEWS } from "@/features/control-tower/lib/views";
 
 import type { TutorialStep } from "@/app/(protected)/_components/layout/protected-tutorial/tutorial-provider/tutorial-provider.types";
 
@@ -174,10 +175,11 @@ function pageFileOf(key: string): string | null {
 const SHELL = anchorsIn(SHELL_FILES);
 
 /**
- * Entregas is one page.tsx with ten tabs, and four of them render a panel of
- * their own instead of the shared table. Judging a tab by the union of the
- * whole page let any tab vouch for the others; each tab is judged by the
- * shared frame plus its own body.
+ * Entregas is one page.tsx with six tabs, and one of them renders a panel of
+ * its own instead of the shared table; the Torre is one page.tsx with five
+ * views, each a different body (meeting of 14/10/2026). Judging a tab or a
+ * view by the union of the whole page let any of them vouch for the others;
+ * each is judged by the shared frame plus its own body.
  */
 const DELIVERIES_CONTENT = resolve(
   SRC,
@@ -193,15 +195,23 @@ const panelFile = (specifier: string): string => {
 };
 
 const DELIVERY_PANELS: Record<string, string> = {
-  chat: panelFile("../chat"),
-  monitoring: panelFile("../monitoring"),
   "message-templates": panelFile("../message-templates/panel"),
-  "proof-audits": panelFile("../proof-audits/panel"),
 };
 
 const DELIVERIES_TABLE = panelFile("../table");
 
 const DELIVERIES_KEY = /^\/(?:dashboard|admin)\/deliveries(?:\/([a-z-]+))?$/;
+
+/** The body each view of the Torre renders (features/control-tower/views). */
+const TOWER_VIEW_BODIES: Record<string, string> = {
+  routes: panelFile("../monitoring"),
+  panel: resolve(SRC, "features/control-tower/content/index.tsx"),
+  occurrences: DELIVERIES_TABLE,
+  tickets: panelFile("../chat"),
+  audit: panelFile("../proof-audits/panel"),
+};
+
+const TOWER_KEY = /^\/(?:dashboard|admin)\/control-tower(?:\/([a-z-]+))?$/;
 
 const filesCache = new Map<string, Set<string>>();
 
@@ -213,9 +223,17 @@ function tourFiles(key: string): Set<string> {
 
   const pageFile = pageFileOf(key) as string;
   const deliveries = DELIVERIES_KEY.exec(key);
+  const tower = TOWER_KEY.exec(key);
   let files: Set<string>;
 
-  if (!deliveries) {
+  if (tower) {
+    const body = TOWER_VIEW_BODIES[tower[1] ?? "routes"];
+    const bodies = new Set(Object.values(TOWER_VIEW_BODIES));
+
+    files = importGraph(pageFile, bodies);
+
+    for (const file of importGraph(body)) files.add(file);
+  } else if (!deliveries) {
     files = importGraph(pageFile);
   } else {
     const panel = DELIVERY_PANELS[deliveries[1] ?? "deliveries"];
@@ -358,6 +376,20 @@ describe("every screen has a tour (decision 9.2)", () => {
         resolveTutorialKey({
           pathname: `${section}/deliveries`,
           urlTab: tab.value,
+        }),
+      ).filter((key) => !tutorialConfigs[key]);
+
+      expect(missing).toEqual([]);
+    },
+  );
+
+  it.each(["/dashboard", "/admin"])(
+    "%s/control-tower has a tour per view",
+    (section) => {
+      const missing = TOWER_VIEWS.map((view) =>
+        resolveTutorialKey({
+          pathname: `${section}/control-tower`,
+          urlView: view.value,
         }),
       ).filter((key) => !tutorialConfigs[key]);
 

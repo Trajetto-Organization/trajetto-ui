@@ -13,8 +13,7 @@ import { RefreshButton } from "@/components/shared/custom/refresh-button";
 import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
 import { useRevalidateScreen } from "@/hooks/use-revalidate-screen";
-import { listApiUsage } from "@/actions/integration";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { fetchApiUsage } from "../lib/reads";
 
 import { formatDayKey } from "../lib/format";
 
@@ -56,17 +55,9 @@ const UsagePanel = ({ businessId }: UsagePanelProps): JSX.Element => {
 
   const { data, isLoading, isFetching } = useQuery(
     ["integration_api_usage", businessId, days],
-    async () => {
-      const answer = await listApiUsage(days, {
-        businessId: businessId || undefined,
-      });
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      return answer;
-    },
+    // A relay GET (lib/reads), cancelled when the period moves on.
+    ({ signal }) =>
+      fetchApiUsage(days, { businessId: businessId || undefined }, { signal }),
     {
       refetchOnWindowFocus: false,
       keepPreviousData: true,

@@ -31,7 +31,10 @@ const PAGES = [
   { path: "/dashboard", name: "dashboard" },
   { path: "/dashboard/deliveries", name: "deliveries" },
   { path: "/dashboard/routes", name: "routes" },
-  { path: "/dashboard/control-tower", name: "control tower" },
+  // The map panel, the screen the Torre was before it had views (meeting of
+  // 14/10/2026). Named: the bare Torre opens on Rotas, or on the view this
+  // browser chose last.
+  { path: "/dashboard/control-tower?view=panel", name: "control tower" },
   { path: "/dashboard/integrations", name: "integrations" },
   { path: "/dashboard/vehicle", name: "vehicles" },
 ] as const;
@@ -390,4 +393,50 @@ test.describe("keyboard", () => {
       ).toEqual([]);
     });
   }
+});
+
+test.describe("row selection", () => {
+  /**
+   * Checkboxes only where a bulk action uses them: Entregas › Entregas
+   * ("Adicionar à rota"). Sixteen other lists drew a checkbox column nothing
+   * acted on, a named control with no purpose announced in every row. The
+   * header is checked rather than the rows, so an empty list still answers.
+   */
+  test("only the deliveries list draws checkboxes, each one named", async ({
+    page,
+  }) => {
+    for (const target of PAGES.filter(
+      ({ name }) => name === "routes" || name === "vehicles",
+    )) {
+      await open(page, target.path, 1440);
+
+      await expect(page.locator("table thead th").first()).toBeVisible({
+        timeout: 30_000,
+      });
+
+      await expect(
+        page.locator('table [role="checkbox"]'),
+        `${target.name}: caixas de seleção sem ação em lote`,
+      ).toHaveCount(0);
+    }
+
+    await open(page, "/dashboard/deliveries", 1440);
+
+    const selectAll = page.locator('table thead [role="checkbox"]');
+
+    await expect(selectAll).toHaveCount(1, { timeout: 30_000 });
+    await expect(selectAll).toHaveAttribute(
+      "aria-label",
+      "Selecionar todas as linhas",
+    );
+
+    const unnamed = await page
+      .locator('table tbody [role="checkbox"]')
+      .evaluateAll(
+        (boxes) =>
+          boxes.filter((box) => !box.getAttribute("aria-label")?.trim()).length,
+      );
+
+    expect(unnamed, "caixa de seleção sem nome acessível").toBe(0);
+  });
 });

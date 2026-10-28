@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "react-query";
 
-import { listOccurrenceTypes } from "@/actions/occurrence-type/list-occurrence-type";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { fetchOccurrenceTypes } from "@/lib/delivery-reads";
 import { CATALOG_STALE_TIME_MS } from "@/lib/query-client-props";
 
 /** One page covers the catalogue: a handful of types a dispatcher maintains. */
@@ -19,19 +18,11 @@ const OCCURRENCE_TYPES_PAGE_SIZE = 100;
 function useOccurrenceTypes(businessId: string) {
   const { data, isLoading } = useQuery(
     ["occurrence-types-select", businessId],
-    async () => {
-      const answer = await listOccurrenceTypes(
-        businessId,
-        1,
-        OCCURRENCE_TYPES_PAGE_SIZE,
-      );
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      return answer;
-    },
+    // A relay GET (lib/delivery-reads), beside the delivery's own read.
+    ({ signal }) =>
+      fetchOccurrenceTypes(businessId, 1, OCCURRENCE_TYPES_PAGE_SIZE, {
+        signal,
+      }),
     {
       refetchOnWindowFocus: false,
       staleTime: CATALOG_STALE_TIME_MS,
@@ -40,7 +31,7 @@ function useOccurrenceTypes(businessId: string) {
 
   // A retired type keeps explaining old occurrences; it is never offered.
   const occurrenceTypes = useMemo(
-    () => (data?.data?.data ?? []).filter((type) => type.is_active),
+    () => (data?.data ?? []).filter((type) => type.is_active),
     [data],
   );
 

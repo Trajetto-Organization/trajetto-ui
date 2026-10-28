@@ -127,10 +127,18 @@ describe("an authenticated page", () => {
   it("is enforced, not only reported", async () => {
     const response = await middleware(requestFor("/dashboard"));
 
-    expect(response.headers.get("content-security-policy")).toBeTruthy();
-    expect(
-      response.headers.get("content-security-policy-report-only"),
-    ).toBeNull();
+    expect(response.headers.get("content-security-policy")).toContain(
+      "script-src",
+    );
+
+    // Report-Only carries the Trusted Types observation and nothing of the
+    // policy itself: a script-src there would only be a suggestion.
+    const reportOnly =
+      response.headers.get("content-security-policy-report-only") ?? "";
+
+    expect(reportOnly).toContain("require-trusted-types-for 'script'");
+    expect(reportOnly).not.toContain("script-src");
+    expect(reportOnly).not.toContain("default-src");
   });
 
   it("allows the theme script by its hash, beside the nonce", async () => {

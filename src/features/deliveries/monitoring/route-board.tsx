@@ -21,19 +21,13 @@ import { AccessErrorState } from "@/components/shared/custom/access-error-state"
 import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 import { useOperationsSubscription } from "@/hooks/use-operations-subscription";
 
-import { getRouteMonitoring } from "@/actions/control-tower";
 import type {
   MonitoredRoute,
   RouteMonitoringData,
 } from "@/actions/control-tower/types";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
-
 import {
-  TowerRequestError,
   accessErrorOf,
   describeFailure,
-  retryTransient,
-  unwrapAnswer,
 } from "@/features/control-tower/lib/tower-request";
 import {
   companyZoneNote,
@@ -43,6 +37,7 @@ import {
 import { useRefetchScheduler } from "@/features/control-tower/lib/refetch-scheduler";
 
 import { settledBoardPage } from "./lib/board-page";
+import { fetchRouteMonitoring, retryBoardOnce } from "./lib/board-reads";
 import {
   DOT_LABELS,
   applyStopOnTheWay,
@@ -99,23 +94,17 @@ const RouteBoard = ({ businessId, mode }: RouteBoardProps): JSX.Element => {
 
   const board = useQuery(
     queryKey,
-    async () => {
-      const answer = await getRouteMonitoring({
-        businessId,
-        page,
-        pageSize: PAGE_SIZE,
-      });
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new TowerRequestError(STALE_ACTION_MESSAGE);
-      }
-
-      return unwrapAnswer(answer);
-    },
+    // A relay GET (lib/board-reads): a burst of route events no longer
+    // queues it behind the page's other reads.
+    ({ signal }) =>
+      fetchRouteMonitoring(
+        { businessId, page, pageSize: PAGE_SIZE },
+        { signal },
+      ),
     {
       keepPreviousData: true,
       refetchOnWindowFocus: false,
-      retry: retryTransient,
+      retry: retryBoardOnce,
     },
   );
 

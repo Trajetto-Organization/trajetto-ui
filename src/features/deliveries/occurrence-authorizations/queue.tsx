@@ -27,11 +27,14 @@ import { useOperationsSubscription } from "@/hooks/use-operations-subscription";
 
 import {
   decideOccurrenceAuthorization,
-  listPendingAuthorizations,
   type PendingAuthorization,
+  type PendingAuthorizationsData,
 } from "@/actions/delivery/occurrence-authorizations";
-import { listTickets } from "@/actions/chat/tickets";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { isStaleActionResult } from "@/lib/action-result";
+import { relayUrl } from "@/lib/api-relay-paths";
+import { readQuery, relayAnswer, relayJson } from "@/lib/relay-read";
+
+import { fetchTickets } from "../chat/lib/chat-reads";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -111,25 +114,24 @@ const OccurrenceAuthorizationQueue = ({
 
   const query = useQuery(
     queryKey,
-    async () => {
-      const answer = await listPendingAuthorizations(businessId || undefined);
-
-      if (isStaleActionResult(answer, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      if (!answer.success || !answer.data) {
-        throw Object.assign(new Error(answer.message), { code: answer.code });
-      }
-
-      return answer.data;
-    },
+    // A relay GET: polled, it took a turn in Next's one-at-a-time Server
+    // Action queue on every tick. A refusal (no delivery read) rejects with
+    // the API's `code` and status, and the client does not retry it.
+    ({ signal }) =>
+      relayJson<PendingAuthorizationsData>(
+        relayUrl(
+          "/delivery/occurrence-authorizations",
+          readQuery({ businessId: businessId || undefined }),
+        ),
+        {
+          signal,
+          errorMessage: "Houve um erro ao carregar os pedidos de autorização.",
+        },
+      ),
     {
       refetchInterval: REFRESH_MS,
       refetchOnWindowFocus: true,
       keepPreviousData: true,
-      // A refusal (no delivery read) is an answer, not a blip.
-      retry: false,
     },
   );
 
@@ -214,14 +216,15 @@ const OccurrenceAuthorizationQueue = ({
   // "Ver conversa" (decision 14.5): the request's ticket, found by its
   // occurrence. It only looks; the report already opened the ticket.
   const openConversation = async (request: PendingAuthorization) => {
-    const found = await listTickets({
-      businessId: businessId || undefined,
-      status: "ALL",
-      occurrenceId: request.id,
-      pageSize: 1,
-    });
-
-    if (isStaleActionResult(found)) return;
+    const found = await relayAnswer(
+      fetchTickets({
+        businessId: businessId || undefined,
+        status: "ALL",
+        occurrenceId: request.id,
+        pageSize: 1,
+      }),
+      "Houve um erro ao carregar os atendimentos.",
+    );
 
     if (!found.success) {
       toast.error(found.message);

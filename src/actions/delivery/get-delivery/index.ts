@@ -9,6 +9,11 @@ type DeliveryStatus =
 
 interface DeliveryListItem {
   id: string;
+  /**
+   * Entrega, Ordem de serviço or Coleta (meeting of 14/10/2026). Absent from
+   * an API older than the field: a delivery.
+   */
+  kind?: "DELIVERY" | "SERVICE_ORDER" | "PICKUP";
   code: string | null;
   invoice_key: string | null;
   invoice_number: string | null;

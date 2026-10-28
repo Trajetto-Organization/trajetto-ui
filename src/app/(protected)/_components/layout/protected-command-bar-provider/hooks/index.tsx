@@ -8,6 +8,11 @@ import type {
 import { canAccessPath, readablePermissionKeys } from "@/lib/route-access";
 
 import {
+  readRememberedTowerView,
+  towerEntryHref,
+} from "@/features/control-tower/lib/views";
+
+import {
   navigationSurface,
   paletteEntries,
   protectedNavIcons,
@@ -57,10 +62,14 @@ function useCommandBarActions({
         keywords: entry.keywords,
         icon: <Icon className="w-5 h-5" />,
         // A page outside the panel opens in its own tab, as the sidebar does.
+        // The Torre opens on the view this browser chose last, like the
+        // sidebar's link (read at the click: nothing here is rendered).
         perform: () =>
           entry.newTab
             ? window.open(entry.path, "_blank", "noopener,noreferrer")
-            : router.push(entry.path),
+            : router.push(
+                towerEntryHref(entry.path, readRememberedTowerView()),
+              ),
         path: entry.path,
       };
     });

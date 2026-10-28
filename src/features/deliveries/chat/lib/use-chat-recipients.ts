@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useInfiniteQuery } from "react-query";
 
-import { listChatRecipients } from "@/actions/chat/list-chat-recipients";
 import type {
   ChatAudienceCount,
   ChatRecipient,
@@ -12,7 +11,8 @@ import type {
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { normalizeSearch, SEARCH_DEBOUNCE_MS } from "@/hooks/use-cursor-search";
 import { CATALOG_STALE_TIME_MS } from "@/lib/query-client-props";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+
+import { fetchChatRecipients } from "./chat-reads";
 
 /** Rows per page: a picker shows about this many before scrolling. */
 const RECIPIENTS_PAGE_SIZE = 20;
@@ -60,25 +60,19 @@ function useChatRecipients({
       "chat-recipients",
       { app: app ?? "ALL", search: term },
     ],
-    async ({ pageParam }) => {
-      const result = await listChatRecipients({
-        businessId: businessId ?? undefined,
-        search: term || undefined,
-        app,
-        cursor: pageParam as string | undefined,
-        limit: RECIPIENTS_PAGE_SIZE,
-      });
-
-      if (isStaleActionResult(result, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message);
-      }
-
-      return result.data;
-    },
+    // A relay GET (lib/chat-reads): a term typed fast cancels the read it
+    // replaces instead of queueing behind it as a Server Action did.
+    ({ pageParam, signal }) =>
+      fetchChatRecipients(
+        {
+          businessId: businessId ?? undefined,
+          search: term || undefined,
+          app,
+          cursor: pageParam as string | undefined,
+          limit: RECIPIENTS_PAGE_SIZE,
+        },
+        { signal },
+      ),
     {
       getNextPageParam: (last) =>
         last.hasMore ? (last.nextCursor ?? undefined) : undefined,

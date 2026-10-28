@@ -27,7 +27,7 @@ import { exportBlocker } from "./export-rules";
 const ExportButton = ({
   className,
   hasData = false,
-  exportAction,
+  exportRequest,
   entityName = "relatório",
   writePermission,
 }: ExportButtonProps): JSX.Element => {
@@ -41,7 +41,7 @@ const ExportButton = ({
   const blocker = exportBlocker({ writePermission, isMaster, hasData });
 
   const { handleExport, isExporting } = useExportButton({
-    exportAction,
+    exportRequest,
     entityName,
     // The handler refuses on the same rule the button is disabled by.
     writePermission: Boolean(writePermission) || isMaster,

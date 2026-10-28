@@ -40,12 +40,30 @@ const api = vi.hoisted(() => ({
 
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
-vi.mock("@/actions/integration", () => ({
-  listApiUsage: () =>
-    api.pending ? new Promise(() => undefined) : Promise.resolve(api.answer),
-}));
+// The read goes through the relay; nothing here writes.
+vi.mock("@/actions/integration", () => ({}));
 
+import { refusal, stubRelay } from "./helpers/relay-fetch";
 import { UsagePanel } from "@/features/integrations/usage/panel";
+
+/**
+ * `api.answer` is written as the value the panel reads; on the wire it is
+ * the API's envelope, or its refusal with the status.
+ */
+function usageReply(): unknown {
+  if (api.pending) return new Promise(() => undefined);
+
+  const answer = api.answer as {
+    success: boolean;
+    message?: string;
+    data?: unknown;
+    status?: number;
+  };
+
+  if (answer.success) return { data: answer.data };
+
+  return refusal(answer.status ?? 500, { message: answer.message });
+}
 
 beforeAll(() => {
   vi.stubGlobal("React", React);
@@ -56,6 +74,8 @@ let root: Root | null = null;
 beforeEach(() => {
   localStorage.clear();
   api.pending = false;
+
+  stubRelay({ "/integrations/api-usage": usageReply });
 
   api.answer = {
     success: true,

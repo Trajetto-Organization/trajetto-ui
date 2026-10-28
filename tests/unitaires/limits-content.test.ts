@@ -4,6 +4,8 @@ import { createRoot } from "react-dom/client";
 
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 /**
  * Limites de Uso (DASH-MOD-1, decision 2.6).
  *
@@ -12,6 +14,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
  * deliveries-only carrier read a quota that seemed not to be theirs. And on
  * /admin, a company switch kept the previous company's plan on screen until
  * the next answer, and an answer that came back late overwrote the new one.
+ * The usage and the plan were also Server Actions, run one after the other
+ * by Next; they are relay GETs now, sent together and cancelled on a switch.
  */
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(""),
@@ -33,15 +37,6 @@ const api = vi.hoisted(() => ({
   plans: new Map<string, Pending<unknown>>(),
 }));
 
-vi.mock("@/actions/business/get-ai-usage", () => ({
-  getAIUsage: (businessId: string) => api.usage.get(businessId)!.promise,
-}));
-
-vi.mock("@/actions/business/entitlements", () => ({
-  getBusinessEntitlements: (businessId: string) =>
-    api.plans.get(businessId)!.promise,
-}));
-
 import {
   AI_QUOTA_NOTE,
   aiQuotaScope,
@@ -61,7 +56,23 @@ afterEach(async () => {
   while (unmounts.length) await unmounts.pop()!();
   api.usage.clear();
   api.plans.clear();
+  vi.unstubAllGlobals();
+  vi.stubGlobal("React", React);
 });
+
+/** The relay answers each company's reads with the deferred bodies above. */
+function stubCompanyReads() {
+  return stubRelay([
+    [
+      /^\/business\/get-ai-usage\/[^/]+$/,
+      (url) => api.usage.get(url.pathname.split("/").pop()!)!.promise,
+    ],
+    [
+      /^\/business\/entitlements\/[^/]+$/,
+      (url) => api.plans.get(url.pathname.split("/").pop()!)!.promise,
+    ],
+  ]);
+}
 
 const on = (...modules: string[]) =>
   ["FLEET", "DELIVERIES"].map((module) => ({
@@ -126,8 +137,6 @@ const A = "018f0000-0000-7000-8000-00000000000a";
 const B = "018f0000-0000-7000-8000-00000000000b";
 
 const usageOf = (used: number) => ({
-  success: true,
-  message: "",
   data: {
     ai_analysis_used: used,
     ai_analysis_limit: 100,
@@ -136,8 +145,6 @@ const usageOf = (used: number) => ({
 });
 
 const planOf = (vehicles: number) => ({
-  success: true,
-  message: "",
   data: {
     modules: on("FLEET"),
     vehicle_limit: 10,
@@ -152,6 +159,8 @@ describe("switching company on /admin", () => {
       api.usage.set(id, deferred());
       api.plans.set(id, deferred());
     }
+
+    const relay = stubCompanyReads();
 
     const seen: Array<ReturnType<typeof useLimitsContent>> = [];
 
@@ -171,6 +180,13 @@ describe("switching company on /admin", () => {
       root.render(createElement(Probe, { businessId: A }));
     });
 
+    // Both of A's reads are out before either answers: a relay GET does not
+    // wait for the other the way two Server Actions did.
+    expect(relay.calls.map((call) => call.path)).toEqual([
+      `/business/get-ai-usage/${A}`,
+      `/business/entitlements/${A}`,
+    ]);
+
     // A's plan arrives; A's usage is still on its way when the master
     // switches to B.
     await act(async () => {
@@ -183,9 +199,11 @@ describe("switching company on /admin", () => {
       root.render(createElement(Probe, { businessId: B }));
     });
 
-    // Under B, A's plan is gone at once rather than shown until B answers.
+    // Under B, A's plan is gone at once rather than shown until B answers,
+    // and A's usage, still on its way, is cancelled.
     expect(seen.at(-1)?.businessId).toBe(B);
     expect(seen.at(-1)?.entitlements).toBeNull();
+    expect(relay.calls[0].signal?.aborted).toBe(true);
 
     await act(async () => {
       api.usage.get(B)!.resolve(usageOf(3));

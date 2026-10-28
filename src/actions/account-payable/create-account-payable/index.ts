@@ -6,6 +6,7 @@ import { idempotencyHeaderOf } from "@/lib/idempotency-key";
 import { getCookies } from "../../cookies";
 import { createAccountPayableSchema } from "@/schemas/create-update-account-payable-schema";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateAccountPayableProps {
   message: string;
@@ -78,6 +79,10 @@ const handleCreateAccountPayable = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-account-payable");
 
     return { successMessage: message, warnings: warnings ?? [] };
   } catch (error) {

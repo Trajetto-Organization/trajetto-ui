@@ -164,7 +164,8 @@ vi.mock("@/actions/route/assignment-preview", () => ({
 
 // The pickers read their lists here; the dialogs under test are not about
 // paging, so each list is one fixed page.
-vi.mock("@/hooks/use-cursor-search", () => ({
+vi.mock("@/hooks/use-cursor-search", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/use-cursor-search")>()),
   useCursorSearch: ({ queryKey }: { queryKey: unknown[] }) => ({
     items:
       queryKey[0] === "driver"
@@ -180,6 +181,7 @@ vi.mock("@/hooks/use-cursor-search", () => ({
           ],
     lastElementRef: () => {},
     isFetching: false,
+    isFetchingNextPage: false,
     isLoading: false,
     isError: false,
     hasError: false,

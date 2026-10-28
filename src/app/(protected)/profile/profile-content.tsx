@@ -20,6 +20,7 @@ import { WhatsAppNotifications } from "@/app/(protected)/_components/profile/not
 import { NotificationPreferences } from "@/app/(protected)/_components/profile/notifications/preferences";
 
 import type { NotificationPreferenceRow } from "@/actions/notifications";
+import { SERVER_READ_TIMEOUT_MS, readSessionUser } from "@/lib/session-access";
 
 interface ProfileContentProps {
   token: string;
@@ -37,53 +38,29 @@ async function getProfileData(token: string) {
     driverId: null as string | null,
   };
 
-  let userResponseError = false;
-  let expired = false;
+  // The same answer the protected layout's gate read in this request.
+  const session = await readSessionUser(token);
 
-  try {
-    const response = await fetch(`${process.env.HTTP_REQUEST}/user/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      next: {
-        tags: [
-          "update-username",
-          "update-2fa",
-          "whatsapp-settings",
-          "email-notifications",
-          "activity-notifications",
-        ],
-      },
-    });
+  const userResponseError = session.kind !== "ok";
+  const expired = session.kind === "refused" && session.status === 401;
 
-    if (!response.ok) {
-      expired = response.status === 401;
-      userResponseError = true;
-    }
+  if (session.kind === "ok") {
+    const user: UserLoggedProps["user"] = session.user;
 
-    const data: UserLoggedProps = await response.json();
-
-    if (data?.user) {
-      userLogged = {
-        email: data.user.email,
-        name: data.user.name,
-        avatar: data.user.avatar || null,
-        role: data.user.role,
-        two_factor_enabled: data.user.two_factor_enabled as boolean,
-        email_notifications_enabled:
-          data.user.email_notifications_enabled ?? true,
-        activity_notifications_enabled:
-          data.user.activity_notifications_enabled ?? true,
-        driverId: data.user.driverId || null,
-      };
-    }
-  } catch (error) {
-    userResponseError = true;
+    userLogged = {
+      email: user.email,
+      name: user.name,
+      avatar: user.avatar || null,
+      role: user.role,
+      two_factor_enabled: user.two_factor_enabled as boolean,
+      email_notifications_enabled: user.email_notifications_enabled ?? true,
+      activity_notifications_enabled:
+        user.activity_notifications_enabled ?? true,
+      driverId: user.driverId || null,
+    };
   }
 
-  // Outside the try: `redirect` throws, and the catch above used to swallow
+  // Never inside a try/catch: `redirect` throws, and a catch used to swallow
   // it, rendering the forms with an error instead of going to the login.
   if (expired) redirect("/login");
 
@@ -103,6 +80,7 @@ async function getNotificationPreferences(
         },
         credentials: "include",
         next: { tags: ["notification-preferences"] },
+        signal: AbortSignal.timeout(SERVER_READ_TIMEOUT_MS),
       },
     );
 
@@ -128,6 +106,7 @@ async function getWhatsAppSettings(token: string) {
         },
         credentials: "include",
         next: { tags: ["whatsapp-settings"] },
+        signal: AbortSignal.timeout(SERVER_READ_TIMEOUT_MS),
       },
     );
 

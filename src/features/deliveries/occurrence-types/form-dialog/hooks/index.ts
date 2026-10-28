@@ -2,8 +2,6 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "react-query";
 import { toast } from "sonner";
 
-import { revalidateTagName } from "@/actions/revalidate";
-
 interface OccurrenceTypeFormState {
   successMessage?: string;
   createOccurrenceTypeError?: {
@@ -47,8 +45,6 @@ function useOccurrenceTypeForm({ state, onClose }: UseOccurrenceTypeFormProps) {
 
       const performRevalidation = async () => {
         try {
-          await revalidateTagName("update-occurrence-type");
-
           // The selectors inside the delivery form keep their own
           // react-query cache, so revalidating the server tag alone
           // left a deactivated record still selectable there.

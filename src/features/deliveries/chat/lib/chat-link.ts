@@ -1,7 +1,7 @@
 import type { ChatDeliveryChip, ChatHistoryFilter } from "./types";
 
 /**
- * The chat tab, opened from somewhere else — on a driver, with a delivery in
+ * The tickets, opened from somewhere else — on a driver, with a delivery in
  * the composer's chip, and optionally with the history already narrowed to
  * that delivery or to a route (decision 6.7).
  *
@@ -9,6 +9,11 @@ import type { ChatDeliveryChip, ChatHistoryFilter } from "./types";
  * the panel cannot drift on parameter names. The panel consumes the params
  * once and removes them from the URL; the company selector drops them on a
  * switch (they are not in its allowlist).
+ *
+ * Since the product meeting of 14/10/2026 the tickets are the Atendimentos
+ * view of the Torre de controle (`?view=tickets`), not a tab of Entregas:
+ * `ticketsHref` says where, and Entregas redirects the old `?tab=chat`
+ * links there with their params.
  */
 const CHAT_LINK_PARAMS = [
   "chatDriver",
@@ -51,21 +56,47 @@ function routeLabel(code: number | string): string {
   return `Rota ${code}`;
 }
 
+/** The Torre's view the tickets live in (features/control-tower/lib/views). */
+const TICKETS_VIEW = "tickets";
+
 /**
- * The query string that opens the chat on `target`, keeping what `current`
- * already carries (the MASTER's `businessId`, above all).
+ * Where the tickets open: the Torre, in the area the caller is in (/admin
+ * or /dashboard), with the query a builder below made.
+ */
+function ticketsHref(
+  pathname: string | null | undefined,
+  params: URLSearchParams,
+): string {
+  const area = pathname?.startsWith("/admin") ? "/admin" : "/dashboard";
+
+  return `${area}/control-tower?${params.toString()}`;
+}
+
+/**
+ * The page's own params of a link to the tickets: only the MASTER's company.
+ * The rest of the screen the link leaves from — Entregas' filters, a route's
+ * page, another view's table — means nothing on the tickets.
+ */
+function ticketsBase(current: string | URLSearchParams): URLSearchParams {
+  const params = new URLSearchParams();
+  const businessId = new URLSearchParams(current.toString()).get("businessId");
+
+  if (businessId) params.set("businessId", businessId);
+
+  params.set("view", TICKETS_VIEW);
+
+  return params;
+}
+
+/**
+ * The query string that opens the tickets on `target`, keeping the MASTER's
+ * `businessId` from `current`.
  */
 function buildChatSearchParams(
   current: string | URLSearchParams,
   target: ChatLinkTarget,
 ): URLSearchParams {
-  const params = new URLSearchParams(current.toString());
-
-  params.set("tab", "chat");
-  params.delete("page");
-  params.delete("search");
-
-  for (const name of CHAT_LINK_PARAMS) params.delete(name);
+  const params = ticketsBase(current);
 
   params.set("chatDriver", target.driver.id);
   params.set("chatDriverName", target.driver.name);
@@ -95,20 +126,14 @@ function buildChatSearchParams(
 
 /**
  * The query string that opens one ticket, when the caller knows only the
- * ticket ("Ver conversa" of an occurrence, a balloon card). Same cleanup as
- * the builder above, so a previous link never rides along.
+ * ticket ("Ver conversa" of an occurrence, a balloon card). Same base as the
+ * builder above, so a previous link never rides along.
  */
 function buildTicketSearchParams(
   current: string | URLSearchParams,
   ticketId: string,
 ): URLSearchParams {
-  const params = new URLSearchParams(current.toString());
-
-  params.set("tab", "chat");
-  params.delete("page");
-  params.delete("search");
-
-  for (const name of CHAT_LINK_PARAMS) params.delete(name);
+  const params = ticketsBase(current);
 
   params.set("ticket", ticketId);
 
@@ -170,8 +195,10 @@ function withoutChatLink(params: URLSearchParams): URLSearchParams {
 
 export {
   CHAT_LINK_PARAMS,
+  TICKETS_VIEW,
   buildChatSearchParams,
   buildTicketSearchParams,
+  ticketsHref,
   readTicketLink,
   readChatLink,
   routeLabel,

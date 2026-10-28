@@ -34,13 +34,7 @@ const text = (value: unknown, width: string) => (
 
 /** The parts catalog table; sortable/filterable ids are the API's keys (PART_TABLE). */
 const buildPartColumns = (scope: FleetScope): ColumnDef<PartRow>[] => [
-  {
-    accessorKey: "id",
-    meta: { title: "Identificador" },
-    header: header("Identificador"),
-    cell: ({ row }) => text(row.original.id, "w-80"),
-    enableHiding: false,
-  },
+  // The description is the part's identifier in the catalog (it has no SKU).
   {
     accessorKey: "description",
     meta: { title: "Descrição" },

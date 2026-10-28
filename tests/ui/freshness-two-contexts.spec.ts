@@ -425,10 +425,11 @@ test("audit: the proof approved by the MASTER leaves the manager's queue with At
     "comprovante",
   );
 
-  // The manager has the queue open with the card in it.
+  // The manager has the queue open with the card in it: the Torre's
+  // Auditoria view since the product meeting of 14/10/2026.
   const { page } = manager;
 
-  await page.goto(`${BASE}/dashboard/deliveries?tab=proof-audits`, {
+  await page.goto(`${BASE}/dashboard/control-tower?view=audit`, {
     waitUntil: "domcontentloaded",
   });
 

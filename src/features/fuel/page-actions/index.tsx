@@ -7,7 +7,7 @@ import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tansta
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import type { ExportFormat } from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
 
-import { handleExportFuel } from "@/actions/fuel/export-fuel";
+import { exportFuelRequest } from "@/lib/export-requests";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
@@ -36,8 +36,8 @@ const FuelPageActions = ({
   const businessId = useScopedBusinessId(scope);
   const canExport = useHasPermission(permissions.FUEL_MANAGE, "write");
 
-  const exportAction = (search?: string, format?: ExportFormat) =>
-    handleExportFuel(search, format, {
+  const exportRequest = (search?: string, format?: ExportFormat) =>
+    exportFuelRequest(search, format, {
       ...businessIdQuery(scope, businessId),
       ...fuelFilterQuery(searchParams),
     });
@@ -46,7 +46,7 @@ const FuelPageActions = ({
     <PageActions>
       <ExportButton
         hasData={hasData}
-        exportAction={exportAction}
+        exportRequest={exportRequest}
         entityName="relatório de abastecimentos"
         writePermission={canExport}
       />

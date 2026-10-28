@@ -14,7 +14,7 @@ import {
 } from "vitest";
 
 /**
- * The API as the server actions answer it; they run on the Next server.
+ * The API, as the dialog's relay reads reach it (the stubbed `fetch` below).
  */
 const api = vi.hoisted(() => ({
   status: "PENDING",
@@ -24,27 +24,7 @@ const api = vi.hoisted(() => ({
   typeCalls: 0,
 }));
 
-vi.mock("@/actions/delivery/get-delivery", () => ({
-  getDelivery: async (_businessId: string, id: string) => {
-    api.deliveryCalls += 1;
-    return { success: true, message: "", data: { id, status: api.status } };
-  },
-}));
-
-vi.mock("@/actions/status-change-reason/list-status-change-reason", () => ({
-  listStatusChangeReasons: async () => ({
-    success: true,
-    message: "",
-    data: { data: [...api.reasons] },
-  }),
-}));
-
-vi.mock("@/actions/occurrence-type/list-occurrence-type", () => ({
-  listOccurrenceTypes: async () => {
-    api.typeCalls += 1;
-    return { success: true, message: "", data: { data: [...api.types] } };
-  },
-}));
+import { ndjson, stubRelay } from "./helpers/relay-fetch";
 
 import { queryClientProps } from "@/lib/query-client-props";
 import { useDeliveryDetail } from "@/hooks/use-delivery-detail";
@@ -74,6 +54,31 @@ beforeEach(() => {
   api.reasons = [{ id: "r1", name: "Pedido do cliente", is_active: true }];
   api.deliveryCalls = 0;
   api.typeCalls = 0;
+
+  stubRelay([
+    [
+      /^\/delivery\/get-delivery\/[^/]+\/business\/[^/]+$/,
+      (url) => {
+        api.deliveryCalls += 1;
+
+        const id = url.pathname.split("/")[5];
+
+        return { data: { id, status: api.status } };
+      },
+    ],
+    [
+      "/status-change-reason/list-status-change-reason",
+      () => ndjson({ total: api.reasons.length }, [...api.reasons]),
+    ],
+    [
+      "/occurrence-type/list-occurrence-type",
+      () => {
+        api.typeCalls += 1;
+
+        return ndjson({ total: api.types.length }, [...api.types]);
+      },
+    ],
+  ]);
 });
 
 afterEach(() => {

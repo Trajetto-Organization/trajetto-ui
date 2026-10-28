@@ -21,10 +21,25 @@ async function resolvedConfig() {
 }
 
 describe("next.config.mjs", () => {
-  it("never reuses a dynamic server render from the router cache (decision 2.4)", async () => {
+  // Decision 2.4, revised: 0 re-rendered every revisit and repeated search
+  // on the server. Freshness comes from revalidation and router.refresh(),
+  // which drop the router cache whatever this window is; a longer one would
+  // start hiding other people's changes behind "Atualizar" for too long.
+  it("keeps a dynamic render in the router cache for 30 s, no longer (decision 2.4)", async () => {
     const config = await resolvedConfig();
 
-    expect(config.experimental?.staleTimes?.dynamic).toBe(0);
+    expect(config.experimental?.staleTimes?.dynamic).toBe(30);
+  });
+
+  // They named @swc/core binaries, which are not in yarn.lock at all (Next
+  // ships its own @next/swc-*): a list that excluded nothing.
+  it("traces no exclusion for a package the lockfile does not have", async () => {
+    const config = await resolvedConfig();
+    const excluded = Object.values(
+      config.experimental?.outputFileTracingExcludes ?? {},
+    ).flat();
+
+    expect(excluded.some((glob) => glob.includes("@swc/core"))).toBe(false);
   });
 
   it("sends X-Robots-Tag noindex on the tokenised pages", async () => {

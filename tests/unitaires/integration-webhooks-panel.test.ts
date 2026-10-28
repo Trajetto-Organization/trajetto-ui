@@ -67,12 +67,8 @@ const ENDPOINTS = [
 
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
+// The writes stay Server Actions; the list goes through the relay.
 vi.mock("@/actions/integration", () => ({
-  listWebhookEndpoints: async () => {
-    api.listed += 1;
-
-    return { success: true, message: "", data: ENDPOINTS };
-  },
   reactivateWebhookEndpoint: async (_businessId: string, id: string) => {
     api.reactivated.push(id);
 
@@ -92,6 +88,7 @@ vi.mock("@/actions/integration", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+import { stubRelay } from "./helpers/relay-fetch";
 import { useAuthStore } from "@/store/auth-store";
 import { WebhooksPanel } from "@/features/integrations/webhooks/panel";
 
@@ -104,6 +101,14 @@ let root: Root | null = null;
 beforeEach(() => {
   api.reactivated.length = 0;
   api.listed = 0;
+
+  stubRelay({
+    "/integrations/webhook-endpoints": () => {
+      api.listed += 1;
+
+      return { data: ENDPOINTS };
+    },
+  });
 
   useAuthStore.setState({
     role: "BUSINESS_ADMIN",

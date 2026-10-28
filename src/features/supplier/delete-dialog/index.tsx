@@ -50,7 +50,7 @@ const DeleteSupplierDialog = ({
 
       toast.success(result.successMessage ?? "Fornecedor excluído.");
 
-      void refreshAfterSupplierWrite("delete-supplier").catch(() =>
+      void refreshAfterSupplierWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

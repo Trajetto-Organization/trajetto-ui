@@ -49,15 +49,22 @@ afterEach(async () => {
 });
 
 async function exportWith(writePermission: boolean | undefined) {
-  const exportAction = vi.fn(async () => ({
-    success: false,
-    message: "falhou",
+  // The download itself fails: what is measured is whether it is asked.
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ message: "falhou" }, { status: 500 })),
+  );
+
+  const exportRequest = vi.fn(() => ({
+    url: "/api/relay/vehicle/export-vehicle?format=csv",
+    fallbackFilename: "veiculos.csv",
+    refusalFallback: "falhou",
   }));
 
   let handle: ((format: "csv" | "excel") => Promise<void>) | null = null;
 
   const Harness = () => {
-    handle = useExportButton({ exportAction, writePermission }).handleExport;
+    handle = useExportButton({ exportRequest, writePermission }).handleExport;
 
     return null;
   };
@@ -71,7 +78,7 @@ async function exportWith(writePermission: boolean | undefined) {
   await act(async () => root.render(createElement(Harness)));
   await act(async () => handle!("csv"));
 
-  return exportAction;
+  return exportRequest;
 }
 
 describe("the rule behind the button", () => {
@@ -104,16 +111,22 @@ describe("the rule behind the button", () => {
 });
 
 describe("the click handler", () => {
-  it("refuses a read-only profile before calling the server action", async () => {
-    const exportAction = await exportWith(false);
+  it("refuses a read-only profile before asking for the file", async () => {
+    const exportRequest = await exportWith(false);
 
-    expect(exportAction).not.toHaveBeenCalled();
+    expect(exportRequest).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalledWith(EXPORT_NEEDS_WRITE);
   });
 
-  it("calls the action for a writer, with the table's search", async () => {
-    const exportAction = await exportWith(true);
+  it("asks for the file for a writer, with the table's search", async () => {
+    const exportRequest = await exportWith(true);
 
-    expect(exportAction).toHaveBeenCalledWith("abc", "csv");
+    expect(exportRequest).toHaveBeenCalledWith("abc", "csv");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/relay/vehicle/export-vehicle?format=csv",
+      expect.anything(),
+    );
+    expect(toast.error).toHaveBeenCalledWith("falhou");
   });
 });

@@ -3,7 +3,15 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "react-query";
 
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   CATEGORY_LOCKED_HELP,
@@ -26,6 +34,8 @@ import { createUpdateOccurrenceTypeSchema } from "@/schemas/create-update-occurr
 
 import type { OccurrenceTypeData } from "@/actions/occurrence-type/list-occurrence-type";
 
+import { refusal, stubRelay } from "./helpers/relay-fetch";
+
 // The canary hooks Next ships; the test's React does not have them.
 vi.mock("react-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-dom")>()),
@@ -40,24 +50,27 @@ vi.mock("@/actions/occurrence-type/update-occurrence-type", () => ({
   handleUpdateOccurrenceType: vi.fn(async () => ({})),
 }));
 
-// The company's AI quota, as get-ai-usage answers it (design §7.2).
-const aiUsage = vi.hoisted(() => ({ limit: 10 as number | null }));
+// The company's AI quota, as GET /business/get-ai-usage/:id answers it
+// through the relay (design §7.2); null is a refusal.
+const aiUsage = { limit: 10 as number | null };
 
-vi.mock("@/actions/business/get-ai-usage", () => ({
-  getAIUsage: vi.fn(async () =>
-    aiUsage.limit === null
-      ? { success: false, message: "Sem acesso." }
-      : {
-          success: true,
-          message: "",
-          data: {
-            ai_analysis_limit: aiUsage.limit,
-            ai_analysis_used: 0,
-            ai_analysis_reset_at: null,
-          },
-        },
-  ),
-}));
+function serveAiUsage(): void {
+  stubRelay([
+    [
+      /^\/business\/get-ai-usage\/[^/]+$/,
+      () =>
+        aiUsage.limit === null
+          ? refusal(403, { code: "PERMISSION_DENIED", message: "Sem acesso." })
+          : {
+              data: {
+                ai_analysis_limit: aiUsage.limit,
+                ai_analysis_used: 0,
+                ai_analysis_reset_at: null,
+              },
+            },
+    ],
+  ]);
+}
 
 /**
  * The occurrence type dialog with categories (decisions 14.3 and 14.4;
@@ -264,6 +277,10 @@ describe("the dialog on screen", () => {
     vi.stubGlobal("React", React);
   });
 
+  beforeEach(() => {
+    serveAiUsage();
+  });
+
   afterEach(async () => {
     if (root) await act(async () => root!.unmount());
     host?.remove();
@@ -312,10 +329,15 @@ describe("the dialog on screen", () => {
     return document.body;
   }
 
-  const settle = () =>
-    act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
+  // A few ticks: the relay read answers (fetch, then its body) over more
+  // than one.
+  const settle = async () => {
+    for (let tick = 0; tick < 5; tick += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    }
+  };
 
   it("turns the receipt on when a new type becomes a delivery type", async () => {
     aiUsage.limit = 10;

@@ -9,11 +9,17 @@
  * `cache: "no-store"` on both. Whether a document still matches its hash, and
  * where a delivery is right now, are the two answers on this whole site that
  * must never come from a cache.
+ *
+ * Bounded: a recipient scanning a QR waits at most PUBLIC_READ_TIMEOUT_MS,
+ * then reads "try again" (status 0, never a denial) instead of a page that
+ * hangs while the API is slow.
  */
 import { headers } from "next/headers";
 
 import { apiForwardingHeaders } from "@/lib/api-forwarding";
 import { isPublicToken } from "@/lib/public-token";
+
+const PUBLIC_READ_TIMEOUT_MS = 10_000;
 
 interface PublicResult<T> {
   ok: boolean;
@@ -32,6 +38,7 @@ async function fetchPublic<T>(path: string): Promise<PublicResult<T>> {
         ...apiForwardingHeaders(headers()),
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(PUBLIC_READ_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -79,6 +86,12 @@ interface ProofVerification {
       signerName: string | null;
       certNotAfter: string | null;
       signedAt: string | null;
+
+      /**
+       * The certificate chains to an ICP-Brasil root (checked by the API).
+       * Null or absent: not known, so nothing is claimed.
+       */
+      icpBrasil?: boolean | null;
     };
   };
 
@@ -142,5 +155,11 @@ const trackDelivery = (token: string) =>
     ? fetchPublic<TrackingView>(`/public/track/${token}`)
     : malformedToken<TrackingView>();
 
-export { fetchPublic, isDenial, trackDelivery, verifyProof };
+export {
+  PUBLIC_READ_TIMEOUT_MS,
+  fetchPublic,
+  isDenial,
+  trackDelivery,
+  verifyProof,
+};
 export type { ProofVerification, PublicResult, TrackingView };

@@ -504,9 +504,7 @@ const AccountPayableFormDialog = ({
         toast.warning(warning, { duration: 10000 });
       }
 
-      void refreshAfterAccountPayableWrite(
-        isEdit ? "update-account-payable" : "create-account-payable",
-      ).catch(() =>
+      void refreshAfterAccountPayableWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

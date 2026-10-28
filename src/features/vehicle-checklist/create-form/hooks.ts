@@ -8,7 +8,6 @@ import type {
 import type { CreateVehicleChecklistFormState } from "./types";
 
 import { queryClientProps } from "@/lib/query-client-props";
-import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
 
@@ -192,7 +191,6 @@ function useCreateVehicleChecklistForm(
       const performRevalidation = async () => {
         try {
           await Promise.all([
-            revalidateTagName("create-vehicle-checklist"),
             queryClientProps.resetQueries({
               predicate: (query) => {
                 return (

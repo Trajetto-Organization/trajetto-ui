@@ -59,7 +59,7 @@ function ToggleBranchActiveCell({
 
       toast.success(result.successMessage);
 
-      await refreshAfterBranchWrite("toggle-branch-active").catch(() =>
+      await refreshAfterBranchWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
     });

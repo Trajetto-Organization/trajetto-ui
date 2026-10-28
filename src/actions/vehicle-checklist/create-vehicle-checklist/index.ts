@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateVehicleChecklistSchema } from "@/schemas/create-update-vehicle-checklist-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateVehicleChecklistProps {
   message: string;
@@ -157,6 +158,10 @@ const handleCreateVehicleChecklist = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-vehicle-checklist");
 
     return { successMessage: message };
   } catch (error) {

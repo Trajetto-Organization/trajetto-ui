@@ -17,6 +17,9 @@ interface ProofSignatureSummary {
   signerName?: string | null;
   certNotAfter?: string | null;
   signedAt?: string | null;
+
+  /** The API confirmed an ICP-Brasil chain; null or absent claims nothing. */
+  icpBrasil?: boolean | null;
 }
 
 interface SignatureCopy {
@@ -69,6 +72,22 @@ function signatureCopy(
   const signedAt = formatDate(signature.signedAt, timeZone);
   const notAfter = formatDate(signature.certNotAfter, timeZone);
   const signer = signature.signerName?.trim() || "a plataforma Trajetto";
+
+  // Signed, but the API didn't confirm an ICP-Brasil chain: the ITI
+  // validator would refuse it, so neither the claim nor the link is shown.
+  if (signature.icpBrasil !== true) {
+    return {
+      signed: true,
+      title: "Assinado digitalmente",
+      body:
+        `Assinado por ${signer}` +
+        (signedAt ? ` em ${signedAt}` : "") +
+        ", com certificado fora da cadeia ICP-Brasil. A integridade do arquivo pode ser conferida nesta página.",
+      validator: null,
+      footer:
+        "Este documento reúne informações registradas no momento da entrega e foi assinado digitalmente, sem certificado ICP-Brasil; não afirma validade jurídica própria.",
+    };
+  }
 
   return {
     signed: true,

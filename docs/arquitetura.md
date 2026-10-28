@@ -90,7 +90,7 @@ src/
     app-routes/index.ts     registro de acesso de TODAS as páginas
     api/health              health check (o Docker e o Swarm usam)
     api/csp-report          recebe as violações da CSP
-    api/relay/[...path]     relay de leitura same-origin (lista fechada, só GET)
+    api/relay/[...path]     relay same-origin (lista fechada: leituras e downloads em GET, as duas importações em POST)
     build-id.json/          commit do build que está servindo
     public-config.json/     configuração pública, para páginas pré-renderizadas
     docs/  blog/  legal/  acompanhar/  verificar/  sobre/  contato/  orcamento/ …
@@ -174,13 +174,62 @@ sidebar, a paleta ⌘K, as abas, os cartões de atalho, o bloqueio no
 - **Escrita:** uma Server Action em `src/actions/<domínio>/` lê o token do
   cookie `tkey`, valida com o esquema zod, chama a API (`src/lib/api-fetch.ts`)
   e revalida as tags afetadas. Uma recusa sempre volta com mensagem
-  (`src/lib/action-result.ts`, `src/lib/api-error.ts`).
+  (`src/lib/action-result.ts`, `src/lib/api-error.ts`). A revalidação fica
+  **dentro da própria action** de escrita: a resposta dela já traz a tela
+  re-renderizada, numa ida só. O diálogo não chama mais uma segunda action
+  (`revalidateTagName`) depois de salvar, o que custava outra ida e outro
+  render inteiro do layout (o cache de dados está desligado, então a tag em si
+  não limpa nada); ele só atualiza os seletores do react-query.
 - **Leitura no navegador:** o navegador não chama a API com token. Ele usa
   `/api/relay/...`, que lê o token do cookie HttpOnly no servidor e repassa só
-  os caminhos da lista fechada em `src/lib/api-relay-paths.ts` (só GET, sem
-  cache).
-- `experimental.staleTimes.dynamic = 0` no `next.config.mjs`: voltar a uma
-  aba não reaproveita um render antigo.
+  os caminhos da lista fechada em `src/lib/api-relay-paths.ts` (GET, sem
+  cache). O corpo passa em fluxo, pedaço por pedaço.
+- **Leituras das telas no react-query** (`queryFn`) também vão pelo relay
+  (`src/lib/relay-read.ts`), **nunca por Server Action**. O router do Next 14
+  roda Server Actions uma de cada vez (`router.refresh()` entra na mesma
+  fila), e uma navegação descarta as que estavam esperando, com promessas que
+  nunca terminam: as leituras que uma tela disparava "juntas" viravam uma
+  corrente, e uma query ficava presa em "carregando". Pelo relay elas saem em
+  paralelo, são canceladas pelo `signal` do react-query e falham com o status
+  HTTP de verdade. Server Action fica para escrita (e para o ticket do
+  Socket.IO, que é POST e tem prazo em `src/socket.ts`). O Sistema, por
+  exemplo, lê provedores e métricas lado a lado, e o "Atualizar" dessa aba
+  refaz só essas duas consultas (os provedores com `refresh=true`), sem
+  re-renderizar o `/admin` inteiro.
+- **Exportações** (os nove botões Exportar e o modelo da planilha) também vão
+  pelo relay, em GET: o navegador baixa o arquivo, monta o `Blob` e salva
+  (`src/lib/export-download.ts`, `src/lib/export-requests.ts`). Antes era uma
+  Server Action que lia o arquivo inteiro na memória do Next, devolvia em
+  base64 e o navegador decodificava byte a byte: ~4,5× o arquivo num heap de
+  512 MB. Dez exportações de 17 MB ao mesmo tempo derrubavam o contêiner, um
+  arquivo acima de ~400 MB nunca baixava, e fechar a aba não parava a API. O
+  relay repassa `content-disposition`, `x-total-records`, `retry-after` e o
+  `content-length` (quando o corpo não veio codificado), e cancela a chamada à
+  API quando a aba fecha. A recusa mostra a frase da API (429 `EXPORT_BUSY`
+  com o tempo do `Retry-After`).
+- **Importações** (planilha e XML de NF-e) vão pelo relay em **POST**, com o
+  mesmo JSON da API (arquivo em base64). Uma Server Action aceita no máximo
+  1 MB de corpo no Next 14, e a tela promete planilhas de 6 MB e 25 XMLs de
+  512 KB. O POST do relay só aceita os dois caminhos de `RELAY_UPLOAD_PATHS`,
+  JSON, mesma origem (`Sec-Fetch-Site` ou `Origin`), e o teto de corpo da
+  própria API. Quando a API responde **202** (a importação roda em segundo
+  plano), o diálogo acompanha `GET /import/get-import/:importId/business/:businessId`
+  até sair de `IN_PROGRESS`, mostrando quantas linhas já foram processadas; o
+  diálogo pode ser fechado nessa fase (a aba Importações acompanha). O `200`
+  síncrono antigo continua sendo lido, então a ordem de deploy da API e da web
+  não importa.
+- `experimental.staleTimes.dynamic = 30` no `next.config.mjs` (**decisão 2.4,
+  revista**): o router do navegador guarda o render de uma página dinâmica por
+  30 s, por aba e por URL — o padrão do Next, que a produção sempre usou. Com
+  `0`, cada volta a uma página, cada clique no menu e cada busca repetida era
+  um render novo no servidor. O frescor não depende dessa janela: toda
+  mutação revalida, e a resposta da action derruba o cache inteiro do router;
+  "Atualizar", os eventos de tempo real (`use-route-events`, a fila de
+  ocorrências) e uma mudança de acesso chamam `router.refresh()`, que também
+  o derruba. O que os 30 s podem mostrar é a mudança **de outra pessoa**, sem
+  evento de tempo real, numa página que esta aba viu há menos de 30 s — até o
+  "Atualizar", que a decisão 2.3 já define como o gesto garantido. Voltar e
+  avançar no navegador restauram do cache do router com qualquer valor.
 - **Logout** limpa o QueryClient e os stores (`src/lib/clear-session-state.ts`).
   Trocar de empresa no `/admin` reinicia a tela.
 
@@ -244,6 +293,21 @@ que o `clear()` no logout é obrigatório, e o motivo está explicado em
 às chaves. Seriam dezenas de lugares para errar, e a limpeza no logout
 resolve o problema inteiro num lugar só.
 
+### Padrões do QueryClient
+
+`src/lib/query-client-props.ts`:
+
+- **`retry`: uma tentativa a mais, e só para falha passageira** (nada
+  respondeu, ou 5xx; `isTransientQueryError`), depois de 1 s. Antes eram três,
+  com 1 + 2 + 4 s, para qualquer erro sem status 4xx, e a recusa de uma
+  Server Action nunca tem status: uma leitura que falhava segurava o spinner
+  ~7 s e, enquanto isso, a fila de actions do Next. A leitura pelo relay
+  falha com o status real (`RelayReadError`), então um 4xx nunca é repetido.
+- **`keepPreviousData: false`**: uma query com a empresa na chave não mostra,
+  nem por um instante, os dados da empresa anterior enquanto a nova carrega.
+  Lista paginada ou com busca que quer segurar as linhas liga a opção na
+  própria query, e a tela é remontada por empresa (`key={businessId}`).
+
 ### Ao adicionar uma query
 
 1. A chave contém tudo o que o `queryFn` lê. Se ele lê `search`, a chave leva
@@ -252,6 +316,11 @@ resolve o problema inteiro num lugar só.
    `resetQueries`. Escreva isso no lugar onde a mutação acontece.
 3. Dado sensível não precisa de tratamento especial na chave. Precisa que
    `clearSessionState` continue sendo chamado no logout, e isso tem teste.
+4. O `queryFn` lê pelo relay (`relayJson`/`relayNdjson` de
+   `src/lib/relay-read.ts`, com `relayUrl("/caminho/literal")` e o `signal`
+   do react-query), e o caminho entra em `src/lib/api-relay-paths.ts`. Nunca
+   uma Server Action: `tests/unitaires/api-relay.test.ts` confere que todo
+   `relayUrl` do código está na lista.
 
 ## Tempo real
 
@@ -261,7 +330,15 @@ resolve o problema inteiro num lugar só.
   todas as sessões abertas (`src/lib/catalog-sync.ts`).
 - Torre de controle, monitoramento, rotas, chat e alertas de ocorrência
   também escutam o socket (`src/hooks/use-route-events.ts`,
-  `use-operations-subscription.ts`, `use-presence-list.ts`).
+  `use-operations-subscription.ts`, `use-presence-list.ts`). Uma rajada de
+  eventos vira um refresh só, nunca dois em menos de 10 s
+  (`src/features/control-tower/lib/refetch-scheduler.ts`).
+- Desde a reunião de 14/10/2026, a Torre tem visões em `?view=` (Rotas, a
+  padrão; Painel; Ocorrências; Atendimentos; Auditoria), que saíram das abas
+  de Entregas. Os links antigos `?tab=monitoring|occurrences|chat|proof-audits`
+  de Entregas redirecionam para a visão certa com os demais parâmetros. A
+  torre relê a visão aberta a cada 1, 3 ou 5 min (escolha por navegador) e tem
+  tela cheia para TV (`src/features/control-tower/shell`).
 - O balão de alertas no canto inferior direito avisa de ocorrências, pedidos
   de autorização e mensagens de ticket. O som é configurável por usuário no
   perfil.
@@ -313,6 +390,32 @@ Nomes antigos que não existem mais (o erro de boot cita o substituto):
   `session-cookie-options.ts`).
 - O `middleware.ts` confere a sessão e o acesso por caminho antes de
   renderizar, renova um token vencido e monta a CSP.
+- A renovação (`POST /user/refresh-token`) só acontece onde a sessão é usada:
+  a área logada (páginas, navegações RSC e as Server Actions postadas nelas),
+  as páginas de login e o relay. **Nunca** numa página pública nem num
+  prefetch (`Next-Router-Prefetch`, `Sec-Purpose: prefetch`): um visitante com
+  cookies velhos navegando no site custava uma renovação por página, e uma
+  página cheia de links postava o mesmo refresh token várias vezes. O
+  prefetch de uma página logada com o token vencido recebe `204`, e o router
+  faz uma navegação completa no clique, que renova. A renovação espera no
+  máximo 3 s; passou disso, é "API ocupada": a sessão fica e a tela de
+  reconexão aparece, nunca um logout.
+- `?force_logout=true` (revoga a sessão na API e apaga os cookies) só vale
+  quando o navegador diz que a navegação é do próprio app
+  (`Sec-Fetch-Site: same-origin` ou `none`). Um link em outro site não
+  desloga ninguém; a página de login abre normalmente.
+- O portão da área logada (`ProtectedProvider`) lê `/user/me` uma vez por
+  requisição (`readSessionUser`, com o `cache()` do React, em
+  `src/lib/session-access.ts`): o dashboard, o perfil e as abas de Entregas
+  reaproveitam a mesma resposta. As 50 notificações do sino não seguram mais a
+  página: a busca começa junto com `/user/me` e chega depois, num `Suspense`
+  próprio (`streamed-notifications.tsx`).
+- Toda leitura da API feita pelo servidor tem prazo: 10 s nas leituras de
+  página e no `/user/me` (estourou, a tela de reconexão aparece, a sessão
+  fica), 10 s nas leituras e 60 s nas escritas do `apiFetch`. Um prazo
+  estourado no `apiFetch` vira uma resposta `504 API_TIMEOUT` com frase (na
+  escrita, avisando que a operação pode ter sido concluída), nunca uma
+  sentença sobre a sessão.
 - Login, 2FA, recuperação de senha, refresh e rastreio público chamam a API a
   partir do servidor da web. Essas chamadas levam
   `RATE_LIMIT_FORWARDER_SECRET` (`src/lib/api-forwarding.ts`) para a API
@@ -345,8 +448,15 @@ aplicada de verdade, não é Report-Only.
   hosts dos tiles (lidos de `MAP_TILE_URL` e `MAP_TILE_URL_DARK`), o Turnstile
   (`https://challenges.cloudflare.com`), `nominatim.openstreetmap.org` e
   `viacep.com.br`.
-- **`report-uri /api/csp-report`**: cada violação vira **uma** linha
-  `console.error` no log do contêiner. A rota corta query strings e segmentos
+- **Trusted Types, passo 1 (só observação):** o middleware envia também
+  `Content-Security-Policy-Report-Only: require-trusted-types-for 'script';
+trusted-types nextjs nextjs#bundler default` (as políticas que o próprio
+  Next cria). Não bloqueia nada e vale também nas páginas pré-renderizadas
+  (não precisa de nonce). As linhas no log trazem `disposition: "report"`;
+  servem para saber o que quebraria antes de exigir.
+- **`report-uri /api/csp-report`** e **`report-to csp-endpoint`** (com o
+  cabeçalho `Reporting-Endpoints`), nas duas políticas: cada violação vira
+  **uma** linha `console.error` no log do contêiner. A rota corta query strings e segmentos
   opacos do caminho (as páginas públicas levam o token no caminho), limita o
   corpo a 16 KB e registra no máximo 60 linhas por minuto por instância. Uma
   linha ali é um ataque bloqueado ou uma página que a política quebrou. Leia
@@ -450,6 +560,14 @@ author: "Equipe Trajetto"
   (o mesmo `max-age` que a API manda) e timeout de 8 s.
 - Se a API não responder, a página diz isso e mostra o link para o documento
   bruto, em vez de uma cópia velha.
+- **Aquecimento no boot:** `src/instrumentation.ts` dispara, sem esperar,
+  `src/app/docs/_lib/warm-up.ts`, que aguarda o `/api/health` responder e
+  visita cada página do portal uma vez pelo loopback. Isso compila os guias
+  MDX e põe o OpenAPI no cache antes do primeiro leitor depois de um deploy.
+  É uma visita de verdade, e não uma chamada direta, porque a instrumentação
+  é empacotada à parte das rotas e não compartilharia os caches delas. Só em
+  produção; uma falha vira uma linha `[docs-warm-up]` no log, nunca derruba o
+  boot.
 - Os links que o navegador segue (o JSON bruto, o console) usam o `servers`
   do próprio documento. `PUBLIC_API_URL` é só o fallback.
 - `/docs/console` redireciona (307) para o console interativo da API,
@@ -522,11 +640,33 @@ O que se mediu na build de produção e ficou travado por teste:
 
 - **Primeira carga de cada rota:** o que não é preciso na primeira pintura é
   chunk separado, carregado quando a tela precisa. Isso vale para os textos e
-  o motor dos tutoriais no layout logado, os painéis de cada aba de Entregas,
-  as zonas de upload de foto (react-dropzone), o recorte de avatar do perfil,
-  o detalhe da entrega e todo mapa Leaflet. `tests/unitaires/client-bundle-boundaries.test.ts`
-  lê o grafo de imports e falha se um import estático trouxer esse peso de
-  volta.
+  o motor dos tutoriais no layout logado, a tabela de cada aba de Entregas
+  (`features/deliveries/table`: um módulo por aba), os painéis das abas, os
+  diálogos da barra de ações de Entregas (abertos no primeiro clique), cada
+  visão da Torre (Painel, a fila de autorizações, a barra de Ocorrências e os
+  painéis vindos de Entregas), as zonas de upload de foto (react-dropzone), o
+  recorte de avatar do perfil, o detalhe da entrega e todo mapa Leaflet. As
+  visões renderizadas no servidor continuam com SSR; o esqueleto de cada uma
+  só aparece numa troca no navegador antes de o chunk chegar. A faixa de
+  visões e a cadência da Torre leem só as chaves do react-query
+  (`chat/lib/ticket-keys.ts`, `occurrence-authorizations/keys.ts`), sem o zod
+  das regras. `tests/unitaires/client-bundle-boundaries.test.ts` lê o grafo
+  de imports e falha se um import estático trouxer esse peso de volta.
+- **Prefetch das abas:** no Next 14 (sem PPR), o prefetch automático de um
+  link que só muda a query da página aberta (`?tab=`, `?view=`) renderiza a
+  página inteira no servidor, com os dados: o corte no `loading.tsx` vale
+  abaixo de um segmento, e esse render começa no próprio segmento da página.
+  Abrir Entregas custava 24 chamadas à API (a lista de cada aba, duas vezes a
+  de entregas). Por isso os links do `SegmentedNav` têm `prefetch={false}`, e
+  o link do menu lateral para a página já aberta também; os outros itens do
+  menu mantêm o prefetch automático, que para no `loading.tsx` deles e não lê
+  nada. O servidor de Entregas e o da Torre leem só a aba ou visão aberta
+  (`tests/unitaires/active-section-server-reads.test.ts`,
+  `section-links-prefetch.test.ts`).
+- **Torre aberta na última visão:** o menu lateral e o ⌘K levam
+  `?view=<última>` (guardada no localStorage, `towerEntryHref`), então o
+  servidor já renderiza a visão certa. Um link sem visão (aviso, favorito)
+  ainda cai na visão padrão e o shell troca para a última no navegador.
 - **Layout shift do captcha:** o widget do Turnstile monta meio segundo
   depois da página. O markup do servidor agora reserva a altura dele, e isso
   tirou o deslocamento de 0,10 medido no `/login`
@@ -538,6 +678,11 @@ O que se mediu na build de produção e ficou travado por teste:
   `NEXT_DIST_DIR` permite uma build de produção ao lado do `next dev` sem um
   sobrescrever o outro. Essa medição é feita pelo dono, porque builds não
   rodam nas sessões de agente.
+- **Fontes:** o layout raiz pré-carrega Inter e Inter Tight (o `<h1>` da
+  landing e o logo, o maior texto acima da dobra). A JetBrains Mono, que só
+  aparece em rótulos pequenos, tem `preload: false`: os preloads do layout
+  raiz saem em toda página, inclusive no app logado
+  (`tests/unitaires/font-preload.test.ts`).
 - Imagens: `images.formats` com AVIF e WebP. O otimizador usa o `sharp`
   (variante musl na imagem Alpine).
 

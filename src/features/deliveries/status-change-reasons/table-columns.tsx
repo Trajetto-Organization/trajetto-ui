@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
@@ -13,59 +12,18 @@ import { StatusChangeReasonRowActions } from "./row-actions";
 const buildStatusChangeReasonColumns =
   (): ColumnDef<StatusChangeReasonData>[] => [
     {
-      id: "select",
-      meta: { title: "Seleção" },
-      header: ({ table }) => (
-        <Checkbox
-          id="select-all-status-change-reasons"
-          name="select-all-status-change-reasons"
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-          className="translate-y-[2px]"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          id={`select-status-change-reason-${row.id}`}
-          name={`select-status-change-reason-${row.id}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "id",
-      meta: { title: "Identificador" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Identificador" />
-      ),
-      cell: ({ row }) => (
-        <p className="truncate font-medium w-80">
-          {displayValue(row.getValue("id"))}
-        </p>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
       accessorKey: "name",
-      meta: { title: "Motivo" },
+      meta: { title: "Nome" },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Motivo" />
+        <DataTableColumnHeader column={column} title="Nome" />
       ),
       cell: ({ row }) => (
         <p className="truncate font-medium w-64">
           {displayValue(row.getValue("name"))}
         </p>
       ),
+      // The name is the reason's identifier, what the driver picks.
+      enableHiding: false,
     },
     {
       accessorKey: "description",

@@ -15,6 +15,14 @@ import { useBusinessInfiniteScroll } from "../../searches/search-business/hooks/
  */
 const KEPT_ON_BUSINESS_SWITCH = ["tab", "view", "period", "pageSize"] as const;
 
+/**
+ * The days of a custom period (`period=custom&from=…&to=…`, Entregas). They
+ * are part of the period, not a filter of the old company: kept without
+ * them, `period=custom` fell back to today on the new company. Only with
+ * `period=custom` — anywhere else they would be a stray filter.
+ */
+const CUSTOM_PERIOD_DAYS = ["from", "to"] as const;
+
 function paramsForBusinessSwitch(
   current: URLSearchParams,
   businessId: string,
@@ -25,6 +33,14 @@ function paramsForBusinessSwitch(
     const value = current.get(name);
 
     if (value) next.set(name, value);
+  }
+
+  if (next.get("period") === "custom") {
+    for (const name of CUSTOM_PERIOD_DAYS) {
+      const value = current.get(name);
+
+      if (value) next.set(name, value);
+    }
   }
 
   return next;

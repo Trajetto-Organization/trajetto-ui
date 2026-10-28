@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePermissionSchema } from "@/schemas/create-update-permission-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface PermissionProps {
   message: string;
@@ -68,6 +69,10 @@ const handleUpdatePermission = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-permission");
 
     return { successMessage: message };
   } catch (error) {

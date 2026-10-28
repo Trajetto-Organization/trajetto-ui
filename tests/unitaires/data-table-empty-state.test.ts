@@ -118,12 +118,13 @@ describe("DataTable with nothing focusable in its rows", () => {
     expect(viewport.getAttribute("aria-label")).toBe("Tabela de resultados");
   });
 
-  it("with a selection or actions column, does not add another stop", async () => {
+  it("with a selection (bulk actions), does not add another stop", async () => {
     const withSelect = createElement(DataTable<Row, unknown>, {
-      columns: [{ id: "select", header: "" }, ...COLUMNS],
+      columns: COLUMNS,
       data: [{ id: "a", name: "Ana" }],
       meta: { total: 1, page: 1, pageSize: 10 },
       responseError: { error: false, errorMessage: "" },
+      bulkActions: { render: () => null },
     });
 
     const host = await mount(withSelect);
@@ -134,11 +135,48 @@ describe("DataTable with nothing focusable in its rows", () => {
         .hasAttribute("tabindex"),
     ).toBe(false);
   });
+
+  it("with a row-menu column, does not add another stop", async () => {
+    const withActions = createElement(DataTable<Row, unknown>, {
+      columns: [...COLUMNS, { id: "actions", header: "Ações" }],
+      data: [{ id: "a", name: "Ana" }],
+      meta: { total: 1, page: 1, pageSize: 10 },
+      responseError: { error: false, errorMessage: "" },
+    });
+
+    const host = await mount(withActions);
+
+    expect(
+      host
+        .querySelector("[data-radix-scroll-area-viewport]")!
+        .hasAttribute("tabindex"),
+    ).toBe(false);
+  });
+
+  it("a column merely named select is not a selection: the stop stays", async () => {
+    // The old check guessed selection from a column id; a column called
+    // "select" with no checkbox left the list without any Tab stop.
+    const host = await mount(
+      createElement(DataTable<Row, unknown>, {
+        columns: [{ id: "select", header: "Seleção" }, ...COLUMNS],
+        data: [{ id: "a", name: "Ana" }],
+        meta: { total: 1, page: 1, pageSize: 10 },
+        responseError: { error: false, errorMessage: "" },
+      }),
+    );
+
+    expect(
+      host
+        .querySelector("[data-radix-scroll-area-viewport]")!
+        .getAttribute("tabindex"),
+    ).toBe("0");
+  });
 });
 
 describe("DataTablePagination in the server HTML", () => {
   it("the rows-per-page selector already has its value before hydration", () => {
     const fakeTable = {
+      options: { enableRowSelection: false },
       getState: () => ({ pagination: { pageIndex: 0, pageSize: 20 } }),
       getAllColumns: () => [],
       getFilteredRowModel: () => ({ rows: [] }),

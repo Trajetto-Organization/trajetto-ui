@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { handleDeleteOccurrenceType } from "@/actions/occurrence-type/delete-occurrence-type";
 
 import { useQueryClient } from "react-query";
-import { revalidateTagName } from "@/actions/revalidate";
 import { guardFormAction } from "@/lib/action-result";
 
 interface DeleteOccurrenceTypeDialogProps {
@@ -130,8 +129,6 @@ const DeleteOccurrenceTypeDialog = ({
 
       const performRevalidation = async () => {
         try {
-          await revalidateTagName("update-occurrence-type");
-
           // The picker inside the delivery detail keeps its own react-query
           // cache; the server tag alone would leave a deleted type on offer.
           await queryClient.invalidateQueries(["occurrence-types-select"]);

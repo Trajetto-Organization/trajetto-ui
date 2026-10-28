@@ -1,167 +1,108 @@
 "use client";
 
-import { createElement } from "react";
+import dynamic from "next/dynamic";
 
-import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
-
-import type { DeliveryListItem } from "@/actions/delivery/get-delivery";
-import type { ShipperData } from "@/actions/shipper/list-shipper";
-
-import type { OccurrenceTypeData } from "@/actions/occurrence-type/list-occurrence-type";
 import type { DeliveryTab } from "../lib/tabs";
-
-import { buildDeliveryColumns } from "../deliveries/table-columns";
-import { buildShipperColumns } from "../shippers/table-columns";
-
-import { buildOccurrenceTypeColumns } from "../occurrence-types/table-columns";
-
-import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
-import type { ImportData } from "@/actions/import/list-imports";
-
-import { buildStatusChangeReasonColumns } from "../status-change-reasons/table-columns";
-import { buildImportColumns } from "../imports/table-columns";
-
 import type { OccurrenceRow } from "../lib/panels";
-import { DeliveriesTableToolbar } from "../table-toolbar";
-
-import { OccurrencesTable } from "../occurrences/table";
 import type { OccurrenceFeedSearchMeta } from "../occurrences/server-table";
-import {
-  DELIVERY_TABLE,
-  type DeliveryListSearchMeta,
-} from "../deliveries/server-table";
-import {
-  CATALOG_TABLES,
-  isCatalogTab,
-  type CatalogSearchMeta,
-} from "../lib/catalog-tables";
+import { DeliveriesTableSkeleton } from "../skeleton";
 
-interface DeliveriesTableProps {
+import type { SectionTableProps } from "./section-table";
+
+/**
+ * While a tab's table code is on its way: the table's own toolbar, rows and
+ * pagination, in DataTable's frame (`my-9 space-y-4`). The server renders
+ * the open tab's table (ssr stays on), so a full load and its hydration
+ * paint the real one; this shows only on a client-side change to a tab
+ * whose chunk has not been loaded yet.
+ */
+const TableLoading = (): JSX.Element => (
+  <div data-tutorial="loading" aria-busy="true" className="my-9 space-y-4">
+    <DeliveriesTableSkeleton />
+  </div>
+);
+
+/*
+  One chunk per tab. A single module with every tab's columns put the row
+  menus and dialogs of all of them — the occurrence types' form builder, the
+  occurrences' photo inspector and authorization queue, the deliveries'
+  route dialogs — in the first load of Entregas AND of the Torre, whichever
+  tab was open. Now only the open tab's table is downloaded.
+*/
+const DeliveryListTable = dynamic(
+  () => import("./deliveries").then((module) => module.DeliveryListTable),
+  { loading: TableLoading },
+);
+
+const ShippersTable = dynamic(
+  () => import("./shippers").then((module) => module.ShippersTable),
+  { loading: TableLoading },
+);
+
+const ImportsTable = dynamic(
+  () => import("./imports").then((module) => module.ImportsTable),
+  { loading: TableLoading },
+);
+
+const OccurrenceTypesTable = dynamic(
+  () =>
+    import("./occurrence-types").then((module) => module.OccurrenceTypesTable),
+  { loading: TableLoading },
+);
+
+const StatusChangeReasonsTable = dynamic(
+  () =>
+    import("./status-change-reasons").then(
+      (module) => module.StatusChangeReasonsTable,
+    ),
+  { loading: TableLoading },
+);
+
+// The Torre's Ocorrências (moved from Entregas on 14/10/2026).
+const OccurrencesTable = dynamic(
+  () =>
+    import("../occurrences/table").then((module) => module.OccurrencesTable),
+  { loading: TableLoading },
+);
+
+interface DeliveriesTableProps extends SectionTableProps {
   activeTab: DeliveryTab;
-  data: unknown[];
-  meta: { total: number; page: number; pageSize: number };
-  responseError: { error: boolean; errorMessage: string };
-  /**
-   * The NDJSON meta line's `searchMeta`: the filter options and counts. The
-   * page always forwards the URL's sort and filter params
-   * (`deliveriesListQuery` / `occurrencesListQuery`), so the deliveries and
-   * occurrences tables are always answered on the server (decision 8.8);
-   * without it (a failed read) the filters simply have no counts.
-   */
-  searchMeta?: Record<string, unknown>;
-  /**
-   * The page forwards the catalog tabs' sort and filter params
-   * (`deliveryTabListQuery`): Embarcadores, Tipos, Motivos and Importações
-   * are then answered on the server too. Without it they keep filtering the
-   * loaded page, because a filter the request does not carry would show a
-   * chip over an unfiltered table.
-   */
-  catalogServerMode?: boolean;
 }
 
 /**
- * Rows come from the server; each tab picks its column set. What the viewer
- * may do is decided inside the actions cell, which reads the session directly
- * so a permission change redraws the row without rebuilding the table.
+ * Rows come from the server; each tab picks its table. What the viewer may
+ * do is decided inside the actions cell, which reads the session directly so
+ * a permission change redraws the row without rebuilding the table.
+ *
+ * `searchMeta` and `catalogServerMode` go with the sort and facet params the
+ * page forwarded (decision 8.8): the deliveries and the occurrences are
+ * always answered on the server; the catalog tabs when the page says so.
  */
 const DeliveriesTable = ({
   activeTab,
-  data,
-  meta,
-  responseError,
-  searchMeta,
-  catalogServerMode = false,
+  ...props
 }: DeliveriesTableProps): JSX.Element => {
-  const catalogServer = catalogServerMode && isCatalogTab(activeTab);
-
-  const toolbar = createElement(DeliveriesTableToolbar, {
-    activeTab,
-    serverFacets:
-      activeTab === "deliveries"
-        ? ((searchMeta as DeliveryListSearchMeta | undefined)?.facets ?? {})
-        : undefined,
-    catalogFacets: catalogServer
-      ? ((searchMeta as CatalogSearchMeta | undefined)?.facets ?? {})
-      : undefined,
-  });
-
-  const catalogSpec = catalogServer
-    ? { server: CATALOG_TABLES[activeTab as keyof typeof CATALOG_TABLES] }
-    : {};
-
-  if (activeTab === "shippers") {
-    return (
-      <DataTable
-        data={data as ShipperData[]}
-        meta={meta}
-        columns={buildShipperColumns()}
-        responseError={responseError}
-        toolbar={toolbar}
-        {...catalogSpec}
-      />
-    );
+  switch (activeTab) {
+    case "shippers":
+      return <ShippersTable {...props} />;
+    case "imports":
+      return <ImportsTable {...props} />;
+    case "occurrence-types":
+      return <OccurrenceTypesTable {...props} />;
+    case "status-change-reasons":
+      return <StatusChangeReasonsTable {...props} />;
+    case "occurrences":
+      return (
+        <OccurrencesTable
+          data={props.data as OccurrenceRow[]}
+          meta={props.meta}
+          responseError={props.responseError}
+          searchMeta={props.searchMeta as OccurrenceFeedSearchMeta | undefined}
+        />
+      );
+    default:
+      return <DeliveryListTable {...props} />;
   }
-
-  if (activeTab === "occurrences") {
-    return (
-      <OccurrencesTable
-        data={data as OccurrenceRow[]}
-        meta={meta}
-        responseError={responseError}
-        searchMeta={searchMeta as OccurrenceFeedSearchMeta | undefined}
-      />
-    );
-  }
-
-  if (activeTab === "occurrence-types") {
-    return (
-      <DataTable
-        data={data as OccurrenceTypeData[]}
-        meta={meta}
-        columns={buildOccurrenceTypeColumns()}
-        responseError={responseError}
-        toolbar={toolbar}
-        {...catalogSpec}
-      />
-    );
-  }
-
-  if (activeTab === "status-change-reasons") {
-    return (
-      <DataTable
-        data={data as StatusChangeReasonData[]}
-        meta={meta}
-        columns={buildStatusChangeReasonColumns()}
-        responseError={responseError}
-        toolbar={toolbar}
-        {...catalogSpec}
-      />
-    );
-  }
-
-  if (activeTab === "imports") {
-    return (
-      <DataTable
-        data={data as ImportData[]}
-        meta={meta}
-        columns={buildImportColumns()}
-        responseError={responseError}
-        toolbar={toolbar}
-        {...catalogSpec}
-      />
-    );
-  }
-
-  return (
-    <DataTable
-      data={data as DeliveryListItem[]}
-      meta={meta}
-      columns={buildDeliveryColumns()}
-      responseError={responseError}
-      toolbar={toolbar}
-      server={DELIVERY_TABLE}
-    />
-  );
 };
 
 export { DeliveriesTable };

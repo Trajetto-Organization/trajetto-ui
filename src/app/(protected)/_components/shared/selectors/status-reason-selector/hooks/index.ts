@@ -3,9 +3,8 @@
 import { useMemo } from "react";
 import { useQuery } from "react-query";
 
-import { listStatusChangeReasons } from "@/actions/status-change-reason/list-status-change-reason";
 import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { fetchStatusChangeReasons } from "@/lib/delivery-reads";
 import { CATALOG_STALE_TIME_MS } from "@/lib/query-client-props";
 
 /**
@@ -36,19 +35,9 @@ const useStatusReasons = (
 ): UseStatusReasonsResult => {
   const { data, isLoading, isError, error, refetch } = useQuery(
     ["status_change_reason", businessId],
-    async () => {
-      const result = await listStatusChangeReasons(businessId, 1, PAGE_SIZE);
-
-      if (isStaleActionResult(result, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message);
-      }
-
-      return result.data;
-    },
+    // A relay GET (lib/delivery-reads), beside the delivery's own read.
+    ({ signal }) =>
+      fetchStatusChangeReasons(businessId, 1, PAGE_SIZE, { signal }),
     {
       enabled: enabled && Boolean(businessId),
 
@@ -56,7 +45,6 @@ const useStatusReasons = (
       // the /dashboard dialog opened next, and five minutes did not (Entregas
       // 4). The cached list still renders at once while it refetches.
       staleTime: CATALOG_STALE_TIME_MS,
-      retry: 1,
     },
   );
 

@@ -12,6 +12,7 @@ import {
   accessibleDeliveryTabs,
   parseDeliveryTab,
 } from "@/features/deliveries/lib/tabs";
+import { accessibleTowerViews } from "@/features/control-tower/lib/views";
 
 import { getRouteHierarchy } from "@/app/(protected)/_components/layout/protected-breadcrumbs/hooks";
 import { appRoutes } from "@/app/app-routes";
@@ -186,31 +187,26 @@ describe("the driver's vehicle pages (DRV-WEB-1)", () => {
 });
 
 describe("the tabs of Entregas (DLV-RO-2)", () => {
-  it("drop the two occurrence tabs for a profile without occurrence_manage", () => {
+  it("drop the occurrence types for a profile without occurrence_manage", () => {
     const tabs = accessibleDeliveryTabs(READ_ONLY_USER);
 
-    expect(tabs).not.toContain("occurrences");
     expect(tabs).not.toContain("occurrence-types");
 
     // Read-only still sees every tab its key reads.
-    expect(tabs).toEqual(
-      expect.arrayContaining([
-        "deliveries",
-        "monitoring",
-        "chat",
-        "shippers",
-        "status-change-reasons",
-        "imports",
-        "message-templates",
-        "proof-audits",
-      ]),
-    );
+    expect(tabs).toEqual([
+      "deliveries",
+      "shippers",
+      "imports",
+      "status-change-reasons",
+      "message-templates",
+    ]);
   });
 
-  it("keep all ten for the admin, the MASTER and the full profile", () => {
-    expect(accessibleDeliveryTabs(ADMIN)).toHaveLength(10);
-    expect(accessibleDeliveryTabs(MASTER)).toHaveLength(10);
-    expect(accessibleDeliveryTabs(FULL_USER)).toHaveLength(10);
+  it("keep all six for the admin, the MASTER and the full profile", () => {
+    // The operation's four moved to the Torre (meeting of 14/10/2026).
+    expect(accessibleDeliveryTabs(ADMIN)).toHaveLength(6);
+    expect(accessibleDeliveryTabs(MASTER)).toHaveLength(6);
+    expect(accessibleDeliveryTabs(FULL_USER)).toHaveLength(6);
   });
 
   it("open a forbidden tab from a link on the first one the profile may read", () => {
@@ -219,6 +215,19 @@ describe("the tabs of Entregas (DLV-RO-2)", () => {
     expect(parseDeliveryTab("occurrence-types", allowed)).toBe("deliveries");
     expect(parseDeliveryTab("imports", allowed)).toBe("imports");
     expect(parseDeliveryTab("nao-existe", allowed)).toBe("deliveries");
+  });
+});
+
+describe("the views of the Torre (meeting of 14/10/2026)", () => {
+  it("drop the occurrences for a profile without occurrence_manage, like their old tab", () => {
+    expect(accessibleTowerViews(READ_ONLY_USER)).toEqual([
+      "routes",
+      "panel",
+      "tickets",
+      "audit",
+    ]);
+    expect(accessibleTowerViews(ADMIN)).toHaveLength(5);
+    expect(accessibleTowerViews(MASTER)).toHaveLength(5);
   });
 });
 

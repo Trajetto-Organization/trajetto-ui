@@ -13,14 +13,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import {
-  getTicket,
-  listTicketEvents,
-  listTickets,
-} from "@/actions/chat/tickets";
-import { listChatMessages } from "@/actions/chat/list-chat-messages";
+import { relayAnswer } from "@/lib/relay-read";
 
 import type { OccurrenceRow } from "../../lib/panels";
+
+import {
+  fetchChatMessages,
+  fetchTicket,
+  fetchTicketEvents,
+  fetchTickets,
+} from "../lib/chat-reads";
 
 import { formatPreviewLine, formatThreadTime } from "../lib/format";
 import {
@@ -54,30 +56,54 @@ const OccurrenceHistoryDialog = ({
 }: OccurrenceHistoryDialogProps): JSX.Element => {
   const ticketQuery = useQuery(
     [TICKETS_QUERY_ROOT, "of-occurrence", occurrence.id],
-    async () => {
-      const found = await listTickets({
-        businessId: actionBusinessId,
-        status: "ALL",
-        occurrenceId: occurrence.id,
-        pageSize: 1,
-      });
+    // Relay GETs (lib/chat-reads): the three reads after the ticket's leave
+    // at once. As Server Actions, `Promise.all` still ran them in a line.
+    // Each part that fails is left out rather than failing the history.
+    async ({ signal }) => {
+      const found = await relayAnswer(
+        fetchTickets(
+          {
+            businessId: actionBusinessId,
+            status: "ALL",
+            occurrenceId: occurrence.id,
+            pageSize: 1,
+          },
+          { signal },
+        ),
+        "",
+      );
 
       const summary = found.success ? found.data?.data[0] : undefined;
 
       if (!summary) return null;
 
       const [detail, events, messages] = await Promise.all([
-        getTicket({ ticketId: summary.id, businessId: actionBusinessId }),
-        listTicketEvents({
-          ticketId: summary.id,
-          businessId: actionBusinessId,
-        }),
-        listChatMessages({
-          threadId: summary.threadId,
-          ticketId: summary.id,
-          limit: HISTORY_MESSAGES_LIMIT,
-          businessId: actionBusinessId,
-        }),
+        relayAnswer(
+          fetchTicket(
+            { ticketId: summary.id, businessId: actionBusinessId },
+            { signal },
+          ),
+          "",
+        ),
+        relayAnswer(
+          fetchTicketEvents(
+            { ticketId: summary.id, businessId: actionBusinessId },
+            { signal },
+          ),
+          "",
+        ),
+        relayAnswer(
+          fetchChatMessages(
+            {
+              threadId: summary.threadId,
+              ticketId: summary.id,
+              limit: HISTORY_MESSAGES_LIMIT,
+              businessId: actionBusinessId,
+            },
+            { signal },
+          ),
+          "",
+        ),
       ]);
 
       return {

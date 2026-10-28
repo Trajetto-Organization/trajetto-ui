@@ -28,7 +28,10 @@ const PAGES = [
   { path: "/dashboard", name: "dashboard" },
   { path: "/dashboard/deliveries", name: "deliveries" },
   { path: "/dashboard/routes", name: "routes" },
-  { path: "/dashboard/control-tower", name: "control tower" },
+  // The map panel, the screen the Torre was before it had views (meeting of
+  // 14/10/2026). Named: the bare Torre opens on Rotas, or on the view this
+  // browser chose last.
+  { path: "/dashboard/control-tower?view=panel", name: "control tower" },
   { path: "/dashboard/integrations", name: "integrations" },
   { path: "/dashboard/vehicle", name: "vehicles" },
 ];

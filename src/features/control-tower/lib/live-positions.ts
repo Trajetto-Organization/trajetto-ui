@@ -94,6 +94,46 @@ function applyLivePosition<T extends TowerPosition>(
 }
 
 /**
+ * The live dots that are still newer than a fresh read.
+ *
+ * A read used to wipe every socket dot: a point that arrived WHILE the read
+ * was in flight was replaced by the read's older snapshot, and the truck
+ * jumped back to where it was a few seconds earlier until its next ping. A
+ * dot survives the read when it was recorded strictly after the read's own
+ * point for that driver. A driver the read does not list goes: the read is
+ * the authority on who is on the map. The SAME object when nothing is
+ * dropped, so React skips the render.
+ */
+function pruneLivePositions<T extends { driverId: string; recordedAt: string }>(
+  live: Record<string, T>,
+  fetched: ReadonlyArray<{ driverId: string; recordedAt: string }>,
+): Record<string, T> {
+  const snapshotAt = new Map(
+    fetched.map((position) => [position.driverId, position.recordedAt]),
+  );
+
+  const kept: Record<string, T> = {};
+  let dropped = false;
+
+  for (const [driverId, point] of Object.entries(live)) {
+    const fetchedAt = Date.parse(snapshotAt.get(driverId) ?? "");
+    const liveAt = Date.parse(point.recordedAt);
+
+    if (
+      !Number.isNaN(fetchedAt) &&
+      !Number.isNaN(liveAt) &&
+      liveAt > fetchedAt
+    ) {
+      kept[driverId] = point;
+    } else {
+      dropped = true;
+    }
+  }
+
+  return dropped ? kept : live;
+}
+
+/**
  * Drivers the socket reported that the last read did not have: somebody
  * started a route since. Their name, plate and route only come with a read.
  */
@@ -113,5 +153,6 @@ export {
   isNewerPosition,
   isRecentlyRecorded,
   mergeLivePosition,
+  pruneLivePositions,
 };
 export type { LiveUpdate };

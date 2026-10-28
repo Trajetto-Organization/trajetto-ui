@@ -33,6 +33,7 @@ import {
   stopMarkerColour,
   stopMarkers,
 } from "../lib/route-map-points";
+import { routeTrailKey } from "../lib/route-query-keys";
 
 const BRAZIL_CENTRE: [number, number] = [-14.235, -51.9253];
 
@@ -141,8 +142,10 @@ const RouteMap = ({
     [stops, orderedIds],
   );
 
+  // Invalidated by the route's events (use-route-detail): the line follows
+  // the stops worked instead of staying as it was when the page opened.
   const trailQuery = useQuery(
-    ["route-trail", routeId, driverId],
+    routeTrailKey(routeId, driverId),
     async () => {
       const answer = await getRouteTrail(businessId, driverId, routeId);
 
@@ -285,25 +288,33 @@ const RouteMap = ({
 
       pin.addTo(group);
     }
+    // Not on the driver's position: it changes with every ping, and each one
+    // used to clear and recreate up to 200 pins and their lines.
+  }, [markers, visitedPoints, highlightedStopId, onHighlight]);
 
-    // Framed once, on what has a point; re-fitting on every change would yank
-    // the map away from a dispatcher who zoomed into a street.
-    if (!framed.current) {
-      const box = mapBounds([...markers, driverPosition, ...visitedPoints]);
+  // Framed once, on what has a point; re-fitting on every change would yank
+  // the map away from a dispatcher who zoomed into a street. Its own effect:
+  // the driver's dot may be the only point there is, and once framed every
+  // later ping returns here at once.
+  useEffect(() => {
+    const instance = map.current;
 
-      if (box) {
-        framed.current = true;
+    if (!instance || framed.current) return;
 
-        instance.fitBounds(
-          L.latLngBounds(
-            L.latLng(box.south, box.west),
-            L.latLng(box.north, box.east),
-          ),
-          { padding: [48, 48], maxZoom: 15, animate: false },
-        );
-      }
-    }
-  }, [markers, visitedPoints, highlightedStopId, onHighlight, driverPosition]);
+    const box = mapBounds([...markers, driverPosition, ...visitedPoints]);
+
+    if (!box) return;
+
+    framed.current = true;
+
+    instance.fitBounds(
+      L.latLngBounds(
+        L.latLng(box.south, box.west),
+        L.latLng(box.north, box.east),
+      ),
+      { padding: [48, 48], maxZoom: 15, animate: false },
+    );
+  }, [markers, visitedPoints, driverPosition]);
 
   // The driver's dot.
   useEffect(() => {

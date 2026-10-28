@@ -358,15 +358,16 @@ describe("first visit over a slow page keeps its optional steps (review: TUT-2/T
 
 describe("the alert balloon is explained even when no alert is pending (review: TUT-14)", () => {
   it("shows its step centered instead of dropping it", async () => {
-    nav.pathname = "/dashboard/deliveries";
-    nav.search = "tab=chat";
+    // The tickets are the Torre's Atendimentos (meeting of 14/10/2026).
+    nav.pathname = "/dashboard/control-tower";
+    nav.search = "view=tickets";
 
     await mount(
       <nav>
         <a
-          href="?tab=chat"
+          href="?view=tickets"
           aria-current="page"
-          data-tutorial="deliveries-tab-chat"
+          data-tutorial="control-tower-view-tickets"
         >
           Atendimentos
         </a>

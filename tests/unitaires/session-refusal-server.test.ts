@@ -26,6 +26,12 @@ vi.mock("next/navigation", () => ({
 import { handleUserResponseError } from "@/app/(protected)/_components/layout/protected-provider/security-checks";
 import middleware from "@/middleware";
 
+// A refresh token of its own per request: the middleware shares one renewal
+// among requests racing on the same refresh token and keeps its answer for
+// a few seconds, and each case here is a session of its own.
+let session = 0;
+const nextSession = () => (session += 1);
+
 function answer(status: number, body: unknown): Response {
   return new Response(body === undefined ? "" : JSON.stringify(body), {
     status,
@@ -126,7 +132,9 @@ function expiredSessionRequest(): NextRequest {
   });
 
   return new NextRequest("http://app.test/dashboard", {
-    headers: { cookie: `tkey=${expiredAccess}; rkey=refresh-token-value` },
+    headers: {
+      cookie: `tkey=${expiredAccess}; rkey=refresh-token-${nextSession()}`,
+    },
   });
 }
 

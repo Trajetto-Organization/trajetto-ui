@@ -329,8 +329,7 @@ test.describe("the Rotas table", () => {
     const titles = (await headers.allTextContents()).map((text) => text.trim());
 
     for (const expected of [
-      "Identificador",
-      "Rota",
+      "Código",
       "Conclusão",
       "Data de criação",
       "Data de atualização",
@@ -347,9 +346,9 @@ test.describe("the Rotas table", () => {
     page,
   }) => {
     /**
-     * A header named "Identificador" over an empty column is the same defect
-     * wearing a label. What the support call needs is the id itself, on
-     * screen, selectable.
+     * A header over an empty column is the same defect wearing a label. What
+     * the support call needs is the route's code ("Rota 42", sequential per
+     * company), on screen and readable; the raw UUID is in the row menu.
      */
     await open(page, "/dashboard/routes");
 
@@ -366,17 +365,15 @@ test.describe("the Rotas table", () => {
     expect(
       text,
       `a primeira célula não parece um identificador: "${text}"`,
-    ).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    ).toMatch(/^Rota \d+/);
 
     // And it is not painted into a box narrower than itself.
     const clipped = await firstCell.evaluate((cell) => {
-      const paragraph = cell.querySelector("p");
+      const link = cell.querySelector("a");
 
-      if (!paragraph) return true;
+      if (!link) return true;
 
-      return paragraph.scrollWidth > paragraph.clientWidth + 1;
+      return link.scrollWidth > link.clientWidth + 1;
     });
 
     expect(clipped, "o identificador está cortado na célula").toBe(false);

@@ -16,9 +16,7 @@ import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 
 import { useAuthStore } from "@/store/auth-store";
 
-import { searchChatMessages } from "@/actions/chat/search-chat-messages";
-import { getTicket, listTickets } from "@/actions/chat/tickets";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { RelayReadError, relayAnswer } from "@/lib/relay-read";
 
 import type { SentChatMessage, TicketSummary } from "@/actions/chat/chat.types";
 
@@ -34,6 +32,7 @@ import { TicketHeader } from "./tickets/ticket-header";
 import { NewTicketDialog } from "./tickets/new-ticket-dialog";
 
 import { useChatSubscription } from "./lib/use-chat-socket";
+import { fetchChatSearch, fetchTicket, fetchTickets } from "./lib/chat-reads";
 import {
   THREADS_REFRESH_COALESCE_MS,
   useTicketsSummary,
@@ -161,29 +160,35 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
       debouncedSearch,
       pages,
     ],
-    async () => {
-      const result = await listTickets({
-        businessId,
-        ...ticketFilterQuery(filter),
-        search: debouncedSearch,
-        page: 1,
-        pageSize: PAGE_SIZE * pages,
-      });
+    // Relay GETs (lib/chat-reads), so the list, the search and the badge's
+    // counts leave together instead of one after the other in Next's
+    // Server Action queue. The client's retry policy leaves a refusal alone
+    // (an access refusal included) and tries a transient failure once.
+    async ({ signal }) => {
+      try {
+        return await fetchTickets(
+          {
+            businessId,
+            ...ticketFilterQuery(filter),
+            search: debouncedSearch,
+            page: 1,
+            pageSize: PAGE_SIZE * pages,
+          },
+          { signal },
+        );
+      } catch (error) {
+        if (error instanceof RelayReadError && error.accessError) {
+          throw new ChatAccessRefusal(error.accessError);
+        }
 
-      if (isStaleActionResult(result, { background: true }))
-        throw new Error(STALE_ACTION_MESSAGE);
-
-      if (result.accessError) throw new ChatAccessRefusal(result.accessError);
-
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data;
+        throw error;
+      }
     },
     {
       refetchOnWindowFocus: true,
+      // Pages and filters of one company: the panel is remounted per
+      // company (key={businessId}), so the rows held are never another's.
       keepPreviousData: true,
-      retry: (failures, error) =>
-        !(error instanceof ChatAccessRefusal) && failures < 3,
     },
   );
 
@@ -211,16 +216,12 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
 
   const hitsQuery = useQuery(
     ["chat-search", businessId ?? "session", debouncedSearch],
-    async () => {
-      const result = await searchChatMessages({
-        businessId,
-        search: debouncedSearch,
-      });
-
-      if (isStaleActionResult(result, { background: true })) return [];
-
-      return result.success && result.data ? result.data.data : [];
-    },
+    // A failed search shows no hits rather than an error.
+    ({ signal }) =>
+      fetchChatSearch(
+        { businessId, search: debouncedSearch },
+        { signal },
+      ).catch(() => []),
     { enabled: isSearchingMessages, keepPreviousData: isSearchingMessages },
   );
 
@@ -240,11 +241,14 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
 
     void (async () => {
       if (ticketId) {
-        const result = await getTicket({ ticketId, businessId });
+        const result = await relayAnswer(
+          fetchTicket({ ticketId, businessId }),
+          "Houve um erro ao carregar o atendimento.",
+        );
 
         if (result.success && result.data) {
           openTicket(result.data);
-        } else if (!isStaleActionResult(result)) {
+        } else {
           toast.error(result.message);
         }
 
@@ -256,18 +260,22 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
       const contextFilter: ChatHistoryFilter | null = link.filter;
       setTicket(null);
 
-      const found = await listTickets({
-        businessId,
-        status: "OPEN",
-        driverId: link.driverId,
-        ...(contextFilter?.kind === "delivery" || (!contextFilter && link.chip)
-          ? { deliveryId: contextFilter?.id ?? link.chip?.id }
-          : {}),
-        ...(contextFilter?.kind === "route"
-          ? { routeId: contextFilter.id }
-          : {}),
-        pageSize: 1,
-      });
+      const found = await relayAnswer(
+        fetchTickets({
+          businessId,
+          status: "OPEN",
+          driverId: link.driverId,
+          ...(contextFilter?.kind === "delivery" ||
+          (!contextFilter && link.chip)
+            ? { deliveryId: contextFilter?.id ?? link.chip?.id }
+            : {}),
+          ...(contextFilter?.kind === "route"
+            ? { routeId: contextFilter.id }
+            : {}),
+          pageSize: 1,
+        }),
+        "Houve um erro ao carregar os atendimentos.",
+      );
 
       const first = found.success ? found.data?.data[0] : undefined;
 
@@ -418,7 +426,25 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
 
   return (
     <div
-      className="flex h-[calc(100dvh-270px)] min-h-[460px] overflow-hidden rounded-lg border bg-card"
+      className={cn(
+        "flex min-h-[460px] overflow-hidden rounded-lg border bg-card",
+        /*
+          The two panes fill what the Torre leaves under its header, so the
+          composer sits at the bottom of the screen instead of below the
+          fold. The 270px was Entregas' tab; the Torre adds its cadence row.
+          On a desk, from the top: the app header (56) + its padding (24) +
+          the page container (16) + the heading (56) + the shell's margin
+          (24) + the toolbar (selector or actions 40, gap 12, views 40) + 24
+          + the cadence row (32) + 24 = 348, and 40 under it (the shell's
+          margin and the container's padding).
+        */
+        "h-[calc(100dvh-388px)]",
+        /*
+          Full screen: only the Torre, pinned with 16px around it — 16 +
+          the toolbar (92) + 24 + the cadence row (32) + 24 above, 16 below.
+        */
+        "[[data-fullscreen]_&]:h-[calc(100dvh-204px)]",
+      )}
       data-tutorial="chat-panel"
     >
       <aside

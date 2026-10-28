@@ -12,13 +12,15 @@ import {
   vi,
 } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
 /**
- * The server side, as the two server actions answer it. Replaced because
- * they run on the Next server; the merge being proven is all client code.
+ * The server side, as the relay answers the two reads (lib/business-reads).
+ * The merge being proven is all client code.
  */
 const server = vi.hoisted(() => ({
   usage: {
@@ -27,14 +29,6 @@ const server = vi.hoisted(() => ({
     ai_analysis_in_progress: 0,
     ai_analysis_reset_at: null as string | null,
   },
-}));
-
-vi.mock("@/actions/business/get-ai-usage", () => ({
-  getAIUsage: async () => ({ success: true, data: { ...server.usage } }),
-}));
-
-vi.mock("@/actions/business/entitlements", () => ({
-  getBusinessEntitlements: async () => ({ success: true, data: null }),
 }));
 
 import { useLimitsContent } from "@/app/(protected)/_components/shared/limits/limits-content/hooks";
@@ -65,12 +59,21 @@ beforeEach(() => {
     ai_analysis_reset_at: null,
   };
   useAIVerificationStore.getState().clearAll();
+
+  stubRelay({
+    [`/business/get-ai-usage/${BUSINESS}`]: () => ({
+      data: { ...server.usage },
+    }),
+    [`/business/entitlements/${BUSINESS}`]: () => ({ data: null }),
+  });
 });
 
 const unmounts: Array<() => Promise<void>> = [];
 
 afterEach(async () => {
   while (unmounts.length) await unmounts.pop()!();
+  vi.unstubAllGlobals();
+  vi.stubGlobal("React", React);
 });
 
 let limits: ReturnType<typeof useLimitsContent>;

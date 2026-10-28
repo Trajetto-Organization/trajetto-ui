@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
-import { header, selectColumn } from "@/features/user/table/columns";
+import { header } from "@/features/user/table/columns";
 import type { AdminScope } from "@/features/user/lib/scope";
 
 import { resourceLabel } from "../lib/permission-rules";
@@ -46,15 +46,21 @@ function flagColumn(
  */
 function buildPermissionColumns(scope: AdminScope): ColumnDef<PermissionRow>[] {
   return [
-    selectColumn<PermissionRow>("permissions"),
     {
-      accessorKey: "id",
-      meta: { title: "Identificador" },
-      header: header<PermissionRow>("Identificador"),
+      // The key of the resource it grants identifies the permission in the
+      // code, the API and the logs; its label reads under it.
+      accessorKey: "permissionKey",
+      meta: { title: "Chave" },
+      header: header<PermissionRow>("Chave"),
       cell: ({ row }) => (
-        <p className="w-80 truncate font-medium">
-          {displayValue(row.original.id)}
-        </p>
+        <div className="w-48">
+          <p className="truncate font-mono text-sm font-medium">
+            {row.original.permissionKey}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {resourceLabel(row.original.permissionKey)}
+          </p>
+        </div>
       ),
       enableHiding: false,
     },
@@ -65,16 +71,6 @@ function buildPermissionColumns(scope: AdminScope): ColumnDef<PermissionRow>[] {
       cell: ({ row }) => (
         <p className="w-48 truncate font-medium">
           {displayValue(row.original.action)}
-        </p>
-      ),
-    },
-    {
-      accessorKey: "permissionKey",
-      meta: { title: "Recurso" },
-      header: header<PermissionRow>("Recurso"),
-      cell: ({ row }) => (
-        <p className="w-48 truncate font-medium">
-          {displayValue(resourceLabel(row.original.permissionKey))}
         </p>
       ),
     },

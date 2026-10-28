@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { stubRelay } from "./helpers/relay-fetch";
+
 /**
  * "Conversas" in a delivery's or a route's detail (decision 6.7): the one
  * driver thread, narrowed to what was said about it.
@@ -17,12 +19,6 @@ vi.hoisted(() => {
 
 (globalThis as { React?: typeof React }).React = React;
 
-const listChatMessages = vi.hoisted(() => vi.fn());
-
-vi.mock("@/actions/chat/list-chat-messages", () => ({
-  listChatMessages: (...args: unknown[]) => listChatMessages(...args),
-}));
-
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 
@@ -31,7 +27,7 @@ afterEach(async () => {
   host?.remove();
   root = null;
   host = null;
-  listChatMessages.mockReset();
+  vi.unstubAllGlobals();
 });
 
 const message = (id: string, body: string, minute: number) => ({
@@ -54,10 +50,9 @@ const message = (id: string, body: string, minute: number) => ({
 
 describe("ChatLinkedMessages", () => {
   it("asks for the route's messages of the driver's thread and reads them in order", async () => {
-    listChatMessages.mockResolvedValue({
-      success: true,
-      message: "",
-      data: {
+    // The history is a relay read of /chat/list-messages (lib/chat-reads).
+    const relay = stubRelay({
+      "/chat/list-messages": () => ({
         threadId: "t1",
         // Newest first, as the API answers.
         data: [message("m2", "Saindo do CD", 5), message("m1", "Bom dia", 1)],
@@ -67,7 +62,7 @@ describe("ChatLinkedMessages", () => {
         counterpartLastReadAt: null,
         counterpartDeliveredAt: null,
         driverUser: null,
-      },
+      }),
     });
 
     const { ChatLinkedMessages } =
@@ -101,9 +96,12 @@ describe("ChatLinkedMessages", () => {
       await new Promise((done) => setTimeout(done, 30));
     });
 
-    expect(listChatMessages).toHaveBeenCalledWith(
-      expect.objectContaining({ driverId: "d1", routeId: "r1", limit: 5 }),
-    );
+    const [asked] = relay.callsTo("/chat/list-messages");
+
+    expect(asked, "a conversa não foi pedida").toBeDefined();
+    expect(asked.query.get("driverId")).toBe("d1");
+    expect(asked.query.get("routeId")).toBe("r1");
+    expect(asked.query.get("limit")).toBe("5");
 
     const text = host.textContent ?? "";
 

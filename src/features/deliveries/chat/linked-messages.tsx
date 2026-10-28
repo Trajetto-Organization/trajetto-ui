@@ -6,9 +6,7 @@ import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { listChatMessages } from "@/actions/chat/list-chat-messages";
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
-
+import { fetchChatMessages } from "./lib/chat-reads";
 import { formatPreviewLine, formatThreadTime } from "./lib/format";
 import type { ChatHistoryFilter } from "./lib/types";
 
@@ -51,24 +49,19 @@ const ChatLinkedMessages = ({
       filter.kind,
       filter.id,
     ],
-    async () => {
-      const result = await listChatMessages({
-        driverId: driver.id,
-        businessId: actionBusinessId,
-        limit: LINKED_MESSAGES_LIMIT,
-        ...(filter.kind === "delivery"
-          ? { deliveryId: filter.id }
-          : { routeId: filter.id }),
-      });
-
-      if (isStaleActionResult(result, { background: true })) {
-        throw new Error(STALE_ACTION_MESSAGE);
-      }
-
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data;
-    },
+    // A relay GET (lib/chat-reads), beside the detail's own reads.
+    ({ signal }) =>
+      fetchChatMessages(
+        {
+          driverId: driver.id,
+          businessId: actionBusinessId,
+          limit: LINKED_MESSAGES_LIMIT,
+          ...(filter.kind === "delivery"
+            ? { deliveryId: filter.id }
+            : { routeId: filter.id }),
+        },
+        { signal },
+      ),
     { staleTime: 0, refetchOnWindowFocus: false },
   );
 

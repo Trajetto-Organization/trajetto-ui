@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import {
   ColumnDef,
   Row,
+  VisibilityState,
   flexRender,
   getCoreRowModel,
   getFacetedRowModel,
@@ -29,6 +30,9 @@ import {
 import type { ServerTableSpec } from "./server-table";
 import { useServerTableState } from "./use-server-table-state";
 
+import { ListQueryProvider, useListQueryState } from "@/lib/search-params";
+import { cn } from "@/lib/utils";
+
 import {
   Table as UITable,
   TableBody,
@@ -43,7 +47,24 @@ import { DataTablePagination } from "../data-table-pagination";
 import { useTable } from "../hooks";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-import { TableLoadingOverlay } from "../table-loading-overlay";
+import { selectColumn } from "../select-column";
+
+/** The checked rows a bulk action works on. */
+interface TableSelection<TData> {
+  rows: TData[];
+  clear: () => void;
+}
+
+/** What can be done to several rows at once (see `bulkActions`). */
+interface BulkActions<TData> {
+  /**
+   * The actions over the checked rows, drawn on every render (with none
+   * checked too, so a dialog they opened survives the selection clearing).
+   */
+  render: (selection: TableSelection<TData>) => React.ReactNode;
+  /** Guided-tour anchor of the "select all" checkbox. */
+  dataTutorial?: string;
+}
 
 interface UserDataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -72,6 +93,14 @@ interface UserDataTableProps<TData, TValue> {
    * explains the empty state above the table (one message for one fact).
    */
   emptyMessage?: React.ReactNode;
+  /**
+   * Passing it is what turns row selection on: a checkbox column first, and
+   * these actions over the checked rows. Without it there is no checkbox: a
+   * selection nothing acts on read as a broken feature.
+   */
+  bulkActions?: BulkActions<TData>;
+  /** Columns that start hidden; "Visualizar" can still show them. */
+  initialColumnVisibility?: VisibilityState;
 }
 
 /** Tells a screen reader which column orders the rows, and which way. */
@@ -111,10 +140,11 @@ function DataTable<TData, TValue>({
   toolbar,
   server,
   emptyMessage = "Nenhum resultado encontrado",
+  bulkActions,
+  initialColumnVisibility,
 }: UserDataTableProps<TData, TValue>) {
   const searchParams = useSearchParams();
 
-  const [isTableLoading, setIsTableLoading] = useState<boolean>(false);
   const [prevParams, setPrevParams] = useState(searchParams.toString());
 
   const [scrollKey, setScrollKey] = useState<number>(0);
@@ -129,7 +159,7 @@ function DataTable<TData, TValue>({
     setColumnFilters,
     setColumnVisibility,
     setRowSelection,
-  } = useTable({ responseError });
+  } = useTable({ responseError, initialColumnVisibility });
 
   // Rows are keyed by record id when the page has them (see row-identity):
   // Next keeps this component mounted across a sort, filter or page, so a
@@ -143,13 +173,11 @@ function DataTable<TData, TValue>({
     [keyedByRecord],
   );
 
-  // Detect when search params change to show loading state
+  // The URL moved: the rows of another query have arrived.
   useEffect(() => {
     const currentParams = searchParams.toString();
 
     if (currentParams !== prevParams) {
-      // Params changed, data has arrived
-      setIsTableLoading(false);
       setPrevParams(currentParams);
 
       // Another query is another result: a position means nothing in it.
@@ -185,10 +213,8 @@ function DataTable<TData, TValue>({
 
   // Force ScrollArea remount when pageSize changes
   useEffect(() => {
-    if (!isTableLoading) {
-      setScrollKey((prev) => prev + 1);
-    }
-  }, [meta.pageSize, isTableLoading]);
+    setScrollKey((prev) => prev + 1);
+  }, [meta.pageSize]);
 
   // Restore scroll position after remount
   useEffect(() => {
@@ -205,37 +231,49 @@ function DataTable<TData, TValue>({
     });
   }, [scrollKey]);
 
-  const showLoading = useCallback(() => setIsTableLoading(true), []);
-  const serverState = useServerTableState(server, showLoading);
+  // Search, filters and sort of this list, shared with its toolbar: what was
+  // asked shows at once and the old rows stay (dimmed) until the new arrive.
+  const listQuery = useListQueryState();
+  const serverState = useServerTableState(server, listQuery);
+  const isBusy = listQuery.isPending;
+
+  const isSelectable = bulkActions !== undefined;
+  const selectAllAnchor = bulkActions?.dataTutorial;
 
   // A column sorts only when the API orders by it; the spec is the whitelist.
-  const tableColumns = useMemo<ColumnDef<TData, TValue>[]>(
-    () =>
-      server
-        ? columns.map(
-            (column) =>
-              ({
-                ...column,
-                enableSorting: server.sortable.includes(
-                  columnIdOf(column) ?? "",
-                ),
-              }) as ColumnDef<TData, TValue>,
-          )
-        : columns,
-    [columns, server],
-  );
+  const tableColumns = useMemo<ColumnDef<TData, TValue>[]>(() => {
+    const listed = isSelectable
+      ? [
+          selectColumn<TData>({
+            dataTutorial: selectAllAnchor,
+          }) as ColumnDef<TData, TValue>,
+          ...columns,
+        ]
+      : columns;
+
+    return server
+      ? listed.map(
+          (column) =>
+            ({
+              ...column,
+              enableSorting: server.sortable.includes(columnIdOf(column) ?? ""),
+            }) as ColumnDef<TData, TValue>,
+        )
+      : listed;
+  }, [columns, server, isSelectable, selectAllAnchor]);
 
   // A list with nothing to focus (no checkbox, no row menu: the pauses
   // report) still scrolls; the viewport itself then takes the Tab stop, or a
   // keyboard could not scroll it (axe scrollable-region-focusable).
   const hasFocusableColumn = useMemo(
     () =>
+      isSelectable ||
       columns.some((column) => {
         const id = columnIdOf(column);
 
-        return id === "select" || (id !== undefined && isActionsColumn(id));
+        return id !== undefined && isActionsColumn(id);
       }),
-    [columns],
+    [columns, isSelectable],
   );
 
   const table = useReactTable<TData>({
@@ -259,7 +297,7 @@ function DataTable<TData, TValue>({
         pageSize: meta.pageSize,
       },
     },
-    enableRowSelection: true,
+    enableRowSelection: isSelectable,
     onRowSelectionChange: setRowSelection,
     onSortingChange: server ? serverState.onSortingChange : undefined,
     onColumnFiltersChange: server
@@ -275,35 +313,60 @@ function DataTable<TData, TValue>({
     getFacetedUniqueValues: server ? undefined : getFacetedUniqueValues(),
   });
 
+  // Hidden columns are not drawn, the checkbox column is: the empty row
+  // spans what is on screen, not what the page passed in.
+  const visibleColumnCount = table.getVisibleLeafColumns().length;
+
+  const selectedRows = isSelectable
+    ? table.getSelectedRowModel().rows.map((row) => row.original)
+    : [];
+
   // No role on the wrapper. The <table> inside already carries table
   // semantics; declaring role="table" here made the search box, the filter
   // buttons and the pager into "table children", which is invalid ARIA — a
   // screen reader entered table mode and read the toolbar as cells.
   return (
-    <div className="space-y-4 my-9">
-      {toolbar
-        ? React.cloneElement(toolbar, {
-            table,
-            error: responseError.error,
-            isLoading: isTableLoading,
-            setIsLoading: setIsTableLoading,
-          })
-        : null}
+    <ListQueryProvider value={listQuery}>
+      <div className="space-y-4 my-9">
+        {toolbar
+          ? React.cloneElement(toolbar, {
+              table,
+              error: responseError.error,
+              isLoading: isBusy,
+              setIsLoading: listQuery.setBusy,
+            })
+          : null}
 
-      <div className="relative">
-        <ScrollArea
-          key={scrollKey}
-          ref={scrollAreaRef}
-          className="rounded-md border"
-          data-tutorial="data-table"
-          viewportLabel={
-            hasFocusableColumn ? undefined : "Tabela de resultados"
-          }
-        >
-          <div className="max-h-[600px] relative">
-            {isTableLoading ? (
-              <TableLoadingOverlay columnCount={columns.length} rowCount={5} />
-            ) : (
+        <div className="relative" aria-busy={isBusy || undefined}>
+          {/* While another query is on its way the rows on screen stay,
+            dimmed, under a thin bar: swapping them for a skeleton on every
+            tick of a filter made the list jump and lose the reader's place. */}
+          {isBusy ? (
+            <div
+              aria-hidden="true"
+              data-table-busy
+              className="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden
+              rounded-t-md bg-primary animate-pulse motion-reduce:animate-none"
+            />
+          ) : null}
+
+          <span role="status" className="sr-only">
+            {isBusy ? "Atualizando resultados…" : ""}
+          </span>
+
+          <ScrollArea
+            key={scrollKey}
+            ref={scrollAreaRef}
+            className={cn(
+              "rounded-md border transition-opacity",
+              isBusy && "opacity-60",
+            )}
+            data-tutorial="data-table"
+            viewportLabel={
+              hasFocusableColumn ? undefined : "Tabela de resultados"
+            }
+          >
+            <div className="max-h-[600px] relative">
               <UITable>
                 <TableHeader>
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -360,7 +423,7 @@ function DataTable<TData, TValue>({
                   ) : emptyMessage === null ? null : (
                     <TableRow>
                       <TableCell
-                        colSpan={columns.length}
+                        colSpan={visibleColumnCount}
                         className="h-24 text-center"
                         data-tutorial="table-empty"
                       >
@@ -373,36 +436,39 @@ function DataTable<TData, TValue>({
                   )}
                 </TableBody>
               </UITable>
-            )}
-          </div>
+            </div>
 
-          <ScrollBar orientation="vertical" />
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+            <ScrollBar orientation="vertical" />
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
 
-        {/* Over the empty row (the last 96px of the box) and as wide as what
-          is visible, whatever the width of the columns behind it. */}
-        {!isTableLoading &&
-        !table.getRowModel().rows?.length &&
-        emptyMessage !== null ? (
-          <div
-            aria-hidden="true"
-            data-table-empty-message
-            className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24
-          items-center justify-center px-4 text-center text-sm"
-          >
-            {emptyMessage}
-          </div>
-        ) : null}
+          {/* Over the empty row (the last 96px of the box) and as wide as what
+            is visible, whatever the width of the columns behind it. */}
+          {!table.getRowModel().rows?.length && emptyMessage !== null ? (
+            <div
+              aria-hidden="true"
+              data-table-empty-message
+              className="pointer-events-none absolute inset-x-0 bottom-0 flex h-24
+            items-center justify-center px-4 text-center text-sm"
+            >
+              {emptyMessage}
+            </div>
+          ) : null}
+        </div>
+
+        <DataTablePagination
+          table={table}
+          error={responseError.error}
+          isLoading={isBusy}
+        />
+
+        {bulkActions?.render({
+          rows: selectedRows,
+          clear: () => table.resetRowSelection(),
+        })}
       </div>
-
-      <DataTablePagination
-        table={table}
-        error={responseError.error}
-        isLoading={isTableLoading}
-      />
-    </div>
+    </ListQueryProvider>
   );
 }
 
-export { DataTable };
+export { DataTable, type BulkActions, type TableSelection };

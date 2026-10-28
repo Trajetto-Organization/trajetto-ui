@@ -36,16 +36,17 @@ import type { DeliveryTab } from "../lib/tabs";
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 import type { ExportFormat } from "@/app/(protected)/_components/shared/custom/export-button/export-button.types";
 
-import { exportActionFor } from "../lib/export-action";
+import { exportRequestFor } from "../lib/export-action";
 
-import { DeliveryFormDialog } from "../deliveries/form-dialog";
-import { ImportXmlDialog } from "../deliveries/import-xml-dialog";
-
-import { ImportSpreadsheetDialog } from "../deliveries/import-spreadsheet-dialog";
-import { StatusChangeReasonFormDialog } from "../status-change-reasons/form-dialog";
-
-import { ShipperFormDialog } from "../shippers/form-dialog";
-import { OccurrenceTypeFormDialog } from "../occurrence-types/form-dialog";
+// Each dialog is its own chunk, loaded on the first click (dialogs.tsx).
+import {
+  DeliveryFormDialog,
+  ImportSpreadsheetDialog,
+  ImportXmlDialog,
+  OccurrenceTypeFormDialog,
+  ShipperFormDialog,
+  StatusChangeReasonFormDialog,
+} from "./dialogs";
 import { CreateButtonLabel } from "@/app/(protected)/_components/shared/create-button-label";
 
 interface DeliveriesPageActionsProps {
@@ -169,9 +170,12 @@ const DeliveriesPageActions = ({
   // The file follows the table on screen (decision 5.8): its search, its
   // facets and, on /admin, the company picked above — without which the API
   // cannot tell which company a MASTER means (DLV-EXP-1).
-  const exportAction = EXPORTABLE_TABS.has(activeTab)
+  const exportRequest = EXPORTABLE_TABS.has(activeTab)
     ? (search?: string, format?: ExportFormat) =>
-        exportActionFor(activeTab, { businessId, searchParams })(search, format)
+        exportRequestFor(activeTab, { businessId, searchParams })(
+          search,
+          format,
+        )
     : null;
 
   const entityName = activeTab === "occurrences" ? "ocorrências" : "entregas";
@@ -185,9 +189,9 @@ const DeliveriesPageActions = ({
     // on /admin, and on a phone every action stacked full width with its
     // label — Atualizar included. No overflow menu.
     <PageActions>
-      {exportAction && (
+      {exportRequest && (
         <ExportButton
-          exportAction={exportAction}
+          exportRequest={exportRequest}
           entityName={entityName}
           hasData={hasData}
           writePermission={canWrite}

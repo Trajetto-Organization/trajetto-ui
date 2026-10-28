@@ -6,7 +6,7 @@ import { PageActions } from "@/app/(protected)/_components/layout/protected-page
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 
-import { handleExportServiceOrder } from "@/actions/service-order/export-service-order";
+import { exportServiceOrderRequest } from "@/lib/export-requests";
 
 import { permissions } from "@/lib/permissions";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -43,8 +43,8 @@ const ServiceOrderPageActions = ({
         hasData={hasData}
         entityName="relatório de ordens de serviço"
         writePermission={canExport}
-        exportAction={(search, format) =>
-          handleExportServiceOrder(search, format, {
+        exportRequest={(search, format) =>
+          exportServiceOrderRequest(search, format, {
             businessId: scope === "admin" ? businessId : undefined,
             filters: serviceOrderListQuery(searchParams),
           })

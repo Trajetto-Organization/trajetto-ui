@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePartSchema } from "@/schemas/create-update-part-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface PartProps {
   message: string;
@@ -64,6 +65,10 @@ const handleUpdatePart = async (state: any, updatePartValues: FormData) => {
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-part");
 
     return { successMessage: message };
   } catch (error) {

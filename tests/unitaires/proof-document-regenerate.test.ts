@@ -158,6 +158,7 @@ describe("the receipt's signature (decision 14.8)", () => {
         cert_not_after: "2027-09-30T23:59:59.000Z",
         signed_at: "2026-10-06T13:00:00.000Z",
         unsigned_reason: null,
+        icp_brasil: true,
       },
     };
 

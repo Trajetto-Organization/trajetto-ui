@@ -8,6 +8,7 @@ import {
 } from "@/schemas/create-update-delivery-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateDeliveryProps {
   message: string;
@@ -139,6 +140,10 @@ const handleUpdateDelivery = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-delivery");
 
     return { successMessage: message };
   } catch (error) {

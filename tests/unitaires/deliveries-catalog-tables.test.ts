@@ -53,6 +53,7 @@ vi.mock("@/lib/check-multiple-permissions", () => ({
 }));
 
 import { DeliveriesTable } from "@/features/deliveries/table";
+import { LIST_QUERY_DEBOUNCE_MS } from "@/lib/search-params";
 import {
   catalogListQuery,
   CATALOG_TABLES,
@@ -72,12 +73,32 @@ async function mount(element: ReactElement): Promise<HTMLElement> {
     root!.render(element);
   });
 
+  // Each tab's table is its own chunk (table/index.tsx): wait for it to
+  // replace the placeholder.
+  const deadline = performance.now() + 5_000;
+
+  while (
+    host.querySelector('[data-tutorial="loading"]') &&
+    performance.now() < deadline
+  ) {
+    await act(async () => {
+      await new Promise((done) => setTimeout(done, 10));
+    });
+  }
+
   return host;
 }
 
 async function click(element: Element): Promise<void> {
   await act(async () => {
     (element as HTMLElement).click();
+  });
+}
+
+/** A filter tick waits this long for the next one before it goes out. */
+async function afterFilterPause(): Promise<void> {
+  await act(async () => {
+    await new Promise((done) => setTimeout(done, LIST_QUERY_DEBOUNCE_MS + 50));
   });
 }
 
@@ -160,6 +181,7 @@ describe("the shippers tab answered on the server", () => {
     expect(option("Inativo").textContent).toContain("12");
 
     await click(option("Inativo"));
+    await afterFilterPause();
 
     expect(navigation.push).toHaveBeenCalledWith(
       "?tab=shippers&status=inactive",

@@ -92,6 +92,60 @@ describe("the logged violation", () => {
     expect(logged()).not.toContain("AKIAEXAMPLE");
   });
 
+  // The Trusted Types policy is Report-Only: its lines must not read like a
+  // block, or an observation would be chased as a broken page.
+  it.each([
+    [
+      "report-uri",
+      {
+        "csp-report": {
+          "document-uri": "https://www.intrajetto.com/dashboard",
+          "effective-directive": "require-trusted-types-for",
+          "blocked-uri": "trusted-types-sink",
+          disposition: "report",
+        },
+      },
+    ],
+    [
+      "Reporting API",
+      [
+        {
+          type: "csp-violation",
+          body: {
+            documentURL: "https://www.intrajetto.com/dashboard",
+            effectiveDirective: "require-trusted-types-for",
+            blockedURL: "trusted-types-sink",
+            disposition: "report",
+          },
+        },
+      ],
+    ],
+  ])("says when a %s line only reports", async (_format, payload) => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await cspReport(report(JSON.stringify(payload)));
+
+    expect(logged()).toContain('"disposition":"report"');
+  });
+
+  it("calls a report without a disposition enforced", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await cspReport(
+      report(
+        JSON.stringify({
+          "csp-report": {
+            "document-uri": "https://www.intrajetto.com/admin",
+            "effective-directive": "script-src",
+            "blocked-uri": "inline",
+          },
+        }),
+      ),
+    );
+
+    expect(logged()).toContain('"disposition":"enforce"');
+  });
+
   it("keeps the keywords browsers report instead of a URL", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
 

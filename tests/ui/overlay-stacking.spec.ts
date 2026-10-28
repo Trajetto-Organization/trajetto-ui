@@ -134,9 +134,16 @@ async function differingFraction(
   return total === 0 ? 0 : differing / total;
 }
 
+/**
+ * The Torre's map panel. Named in the URL since the product meeting of
+ * 14/10/2026: the bare Torre opens on Rotas (no map), or on the view this
+ * browser chose last.
+ */
+const TOWER_MAP = "/dashboard/control-tower?view=panel";
+
 test.describe("the notifications menu over the control tower", () => {
   test("is painted above the map, not behind it", async ({ page }) => {
-    await open(page, "/dashboard/control-tower");
+    await open(page, TOWER_MAP);
 
     await expect(
       page.locator(".leaflet-container"),
@@ -224,7 +231,7 @@ test.describe("the notifications menu over the control tower", () => {
      * flattened its own children would be a worse bug than the one being
      * fixed, and it would look like a fix.
      */
-    await open(page, "/dashboard/control-tower");
+    await open(page, TOWER_MAP);
 
     const zoomIn = page.locator(".leaflet-control-zoom-in");
     await expect(zoomIn).toBeVisible({ timeout: 30_000 });
@@ -260,7 +267,7 @@ test.describe("the notifications menu over the control tower", () => {
      * the map is what makes `z-50` mean the same thing everywhere in the
      * product, so it is worth failing on its own terms.
      */
-    await open(page, "/dashboard/control-tower");
+    await open(page, TOWER_MAP);
 
     await expect(page.locator(".leaflet-container")).toBeVisible({
       timeout: 30_000,

@@ -62,7 +62,7 @@ function useIntegrationsAccess(businessId: string | undefined): {
 
   const { data, isLoading } = useQuery(
     apiKeysQueryKey(businessId ?? ""),
-    () => fetchApiKeys(businessId ?? ""),
+    ({ signal }) => fetchApiKeys(businessId ?? "", signal),
     {
       enabled: Boolean(businessId) && !sessionSaysNoModule,
       refetchOnWindowFocus: false,

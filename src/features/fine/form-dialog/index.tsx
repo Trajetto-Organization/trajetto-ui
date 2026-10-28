@@ -26,7 +26,6 @@ import { SelectViolationCodeStep } from "@/app/(protected)/_components/shared/st
 
 import { handleCreateFine } from "@/actions/fine/create-fine";
 import { handleUpdateFine } from "@/actions/fine/update-fine";
-import { revalidateTags } from "@/actions/revalidate";
 
 import {
   canSubmitForm,
@@ -250,8 +249,6 @@ const FineFormDialog = ({
 
     if (actionState.successMessage) {
       toast.success(actionState.successMessage);
-      // The list and the overview's fine count both read these tags.
-      void revalidateTags(["update-fine", "update-fine-count"]);
       onClose();
     }
   }, [actionState, onClose]);

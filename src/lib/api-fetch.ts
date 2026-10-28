@@ -106,11 +106,70 @@ async function withReadableValidation(response: Response): Promise<Response> {
   });
 }
 
+/**
+ * How long a call waits for the API when the caller set no signal of its
+ * own. A read past this is the API in trouble, and the page or action says so
+ * instead of holding the request (and its memory) until undici gives up at
+ * five minutes. A write gets longer — some do real work — and its timeout
+ * says the outcome is unknown, so nobody blindly repeats it.
+ */
+const READ_TIMEOUT_MS = 10_000;
+const WRITE_TIMEOUT_MS = 60_000;
+
+const API_TIMEOUT_CODE = "API_TIMEOUT";
+
+function isRead(init?: RequestInit): boolean {
+  const method = (init?.method ?? "GET").toUpperCase();
+
+  return method === "GET" || method === "HEAD";
+}
+
+/**
+ * The timeout as an answer, not an exception: the actions already turn a
+ * non-OK answer's `message` into what the screen says, so a slow API reads as
+ * a sentence a person can act on rather than "erro inesperado". 504, so
+ * nothing mistakes it for a verdict on the session.
+ */
+function timeoutAnswer(read: boolean): Response {
+  const message = read
+    ? "O servidor demorou para responder. Tente novamente em instantes."
+    : "O servidor demorou para responder e a operação pode ter sido concluída. Atualize a tela para conferir antes de tentar de novo.";
+
+  return new Response(JSON.stringify({ code: API_TIMEOUT_CODE, message }), {
+    status: 504,
+    headers: {
+      "content-type": "application/json",
+      "x-error-code": API_TIMEOUT_CODE,
+    },
+  });
+}
+
+async function boundedFetch(
+  input: string | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  // The caller's own signal (an upload's, a stream's) is left alone.
+  if (init?.signal) return fetch(input, init);
+
+  const read = isRead(init);
+  const signal = AbortSignal.timeout(read ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
+
+  try {
+    return await fetch(input, { ...init, signal });
+  } catch (error) {
+    if (signal.aborted) return timeoutAnswer(read);
+
+    throw error;
+  }
+}
+
 async function apiFetch(
   input: string | URL,
   init?: RequestInit,
 ): Promise<Response> {
-  const response = await withReadableValidation(await fetch(input, init));
+  const response = await withReadableValidation(
+    await boundedFetch(input, init),
+  );
 
   try {
     if (isAuthenticated(init) && (await endsSession(response))) {
@@ -125,4 +184,10 @@ async function apiFetch(
   return response;
 }
 
-export { apiFetch, endsSession };
+export {
+  API_TIMEOUT_CODE,
+  READ_TIMEOUT_MS,
+  WRITE_TIMEOUT_MS,
+  apiFetch,
+  endsSession,
+};

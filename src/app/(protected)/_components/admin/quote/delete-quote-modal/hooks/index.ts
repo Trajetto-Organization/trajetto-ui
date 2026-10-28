@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import type { DeleteQuoteFormState } from "../delete-quote-modal.types";
 
 import { toast } from "sonner";
-import { revalidateTagName } from "@/actions/revalidate";
 
 interface UseDeleteQuoteFormProps {
   state: DeleteQuoteFormState | null;
@@ -27,17 +26,7 @@ function useDeleteQuoteForm({ state, onClose }: UseDeleteQuoteFormProps) {
       // Show the toast first
       toast.success(state.successMessage);
 
-      // Start revalidation in background
-      const performRevalidation = async () => {
-        try {
-          await revalidateTagName("delete-quote");
-        } catch (error: any) {
-          toast.error(error.message);
-        }
-      };
-
-      // Start revalidation in background without waiting
-      performRevalidation();
+      // The action re-rendered the screen in its own response.
 
       // Close the modal immediately after showing toast
       onClose();

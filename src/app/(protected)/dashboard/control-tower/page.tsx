@@ -9,24 +9,32 @@ import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected
 import { getCookies } from "@/actions/cookies";
 import { appEnv } from "@/lib/site";
 
-import { ControlTowerContent } from "@/features/control-tower/content";
 import {
   readMapTileSettings,
   resolveMapTiles,
 } from "@/features/control-tower/lib/map-tiles";
 import { readBackgroundTracking } from "@/features/control-tower/lib/tracking-notice";
 import { ControlTowerContentSkeleton } from "@/features/control-tower/skeleton";
+import { parseTowerView } from "@/features/control-tower/lib/views";
+import { ControlTowerViews } from "@/features/control-tower/views";
 
 interface ControlTowerQueryParamsProps {
-  searchParams: { businessId?: string };
+  /**
+   * Every param of the URL: the view (meeting of 14/10/2026) and the open
+   * view's own — the occurrences' page, search and filters, a ticket link.
+   */
+  searchParams: { view?: string; businessId?: string } & Record<
+    string,
+    string | string[] | undefined
+  >;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Torre de Controle",
     description: `
-      Onde os veículos estão agora, o funil de documentos do dia, a
-      pontualidade das saídas e os últimos eventos da operação.`,
+      As rotas do dia com o andamento de cada uma, onde os veículos estão
+      agora, as ocorrências, os atendimentos e a auditoria dos comprovantes.`,
   };
 }
 
@@ -51,20 +59,26 @@ const DashboardControlTower = async ({
     <PageContainer>
       <ProtectedHeading
         title={"Torre de Controle"}
-        description="Onde os veículos estão agora e como o dia está andando."
+        description="Onde a operação está agora: as rotas do dia, o mapa, as ocorrências, os atendimentos e a auditoria dos comprovantes."
       />
 
+      {/* In the shape of the view the URL opens (Rotas when it names
+          none): Atendimentos used to wait behind Rotas' cards. */}
       <Suspense
         fallback={
           <ControlTowerContentSkeleton
             withSelector={false}
             withTrackingNote={!backgroundTracking}
+            view={parseTowerView(
+              typeof searchParams.view === "string" ? searchParams.view : null,
+            )}
           />
         }
       >
-        <ControlTowerContent
+        <ControlTowerViews
           mode="dashboard"
           searchParams={searchParams}
+          token={tokenAccess}
           tiles={tiles}
           backgroundTracking={backgroundTracking}
         />

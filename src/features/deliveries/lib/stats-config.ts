@@ -27,7 +27,8 @@ const deliveryStats: StatConfig[] = [
     key: "total-deliveries",
     title: "Total de Entregas",
     valueKey: "totalDeliveries",
-    description: "Todos os status, na busca e filtros atuais",
+    // The period frames every card (meeting of 14/10/2026): today by default.
+    description: "Todos os status, no período, na busca e filtros atuais",
     icon: Package,
     variant: "primary",
   },

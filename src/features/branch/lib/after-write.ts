@@ -1,23 +1,22 @@
 "use client";
 
-import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
 
-import type { BranchWriteTag } from "./list-tags";
-
 /**
- * After a branch is written: the list (the RSC fetch tagged with the
- * action's name) and this tab's branch pickers. Other tabs and sessions hear
- * the API's `catalogChanged` (branch), which invalidates the same key.
+ * After a branch is written: this tab's branch pickers. Other tabs and
+ * sessions hear the API's `catalogChanged` (branch), which invalidates the
+ * same key.
+ *
+ * The list itself is not refreshed from here: the write action revalidates
+ * and its own response carries the re-rendered screen. Asking for it again
+ * (the `revalidateTagName` action this used to call) was a second round trip
+ * per save, and a second full render of the layout.
  */
-async function refreshAfterBranchWrite(tag: BranchWriteTag): Promise<void> {
-  await Promise.all([
-    revalidateTagName(tag),
-    queryClientProps.invalidateQueries({
-      predicate: (query) =>
-        Array.isArray(query.queryKey) && query.queryKey[0] === "branch",
-    }),
-  ]);
+async function refreshAfterBranchWrite(): Promise<void> {
+  await queryClientProps.invalidateQueries({
+    predicate: (query) =>
+      Array.isArray(query.queryKey) && query.queryKey[0] === "branch",
+  });
 }
 
 export { refreshAfterBranchWrite };

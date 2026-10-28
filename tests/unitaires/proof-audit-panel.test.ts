@@ -22,9 +22,10 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
 /**
- * The two server actions, as the API answers them. Replaced because they run
- * on the Next server; the panel, its queries and the cache are the real ones.
- * Every call is recorded, since what the panel ASKS for is the point here.
+ * The API, as the panel reaches it: the listing through the relay (a GET the
+ * stubbed `fetch` answers) and the review through its server action, which
+ * runs on the Next server. The panel, its queries and the cache are the real
+ * ones. Every call is recorded, since what the panel ASKS for is the point.
  */
 const api = vi.hoisted(() => {
   type Status = "PENDING" | "APPROVED" | "REJECTED";
@@ -81,38 +82,6 @@ const api = vi.hoisted(() => {
 });
 
 vi.mock("@/actions/delivery/proof-audits", () => ({
-  listProofAudits: async (
-    businessId: string,
-    status: "PENDING" | "APPROVED" | "REJECTED",
-    page: number,
-    pageSize: number,
-  ) => {
-    api.listCalls.push({ businessId, status, page, pageSize });
-
-    if (api.failWith) return { success: false, message: api.failWith };
-
-    const mine = api.queue.filter((card) => card.status === status);
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        data: mine.slice((page - 1) * pageSize, page * pageSize),
-        total: mine.length,
-        currentPage: page,
-        pageSize,
-        meta: {
-          pending: api.queue.filter((card) => card.status === "PENDING").length,
-          approved: api.queue.filter((card) => card.status === "APPROVED")
-            .length,
-          rejected: api.queue.filter((card) => card.status === "REJECTED")
-            .length,
-          agreementRate: 0.75,
-          agreementWindowDays: 90,
-        },
-      },
-    };
-  },
   reviewProofAudit: async (
     businessId: string,
     auditId: string,
@@ -127,6 +96,8 @@ vi.mock("@/actions/delivery/proof-audits", () => ({
     return { success: true, message: "Comprovante revisado." };
   },
 }));
+
+import { ndjson, refusal, stubRelay } from "./helpers/relay-fetch";
 
 import { queryClientProps } from "@/lib/query-client-props";
 import { useAuthStore } from "@/store/auth-store";
@@ -145,11 +116,51 @@ beforeAll(() => {
   vi.stubGlobal("React", React);
 });
 
+/** GET /delivery/proof-audits: one status's page, NDJSON like the API. */
+function serveQueue(): void {
+  type Status = "PENDING" | "APPROVED" | "REJECTED";
+
+  stubRelay({
+    "/delivery/proof-audits": (url) => {
+      const businessId = url.searchParams.get("businessId") ?? "";
+      const status = url.searchParams.get("status") as Status;
+      const page = Number(url.searchParams.get("page"));
+      const pageSize = Number(url.searchParams.get("pageSize"));
+
+      api.listCalls.push({ businessId, status, page, pageSize });
+
+      if (api.failWith) return refusal(400, { message: api.failWith });
+
+      const mine = api.queue.filter((card) => card.status === status);
+      const count = (wanted: Status) =>
+        api.queue.filter((card) => card.status === wanted).length;
+
+      return ndjson(
+        {
+          total: mine.length,
+          page,
+          pageSize,
+          searchMeta: {
+            pending: count("PENDING"),
+            approved: count("APPROVED"),
+            rejected: count("REJECTED"),
+            agreementRate: 0.75,
+            agreementWindowDays: 90,
+          },
+        },
+        mine.slice((page - 1) * pageSize, page * pageSize),
+      );
+    },
+  });
+}
+
 beforeEach(() => {
   api.queue = [api.card("p1", "PENDING")];
   api.failWith = null;
   api.listCalls = [];
   api.reviewCalls = [];
+
+  serveQueue();
 
   useAuthStore.getState().setAuth({
     id: "reviewer",

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "react-query";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { refusal, stubRelay } from "./helpers/relay-fetch";
+
 /**
  * The web conversation pane under realtime pressure (CRIT-21) and with the
  * history narrowed to a route or delivery (decision 6.7).
@@ -16,7 +18,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * - That reload marked the thread read with the tab in the background.
  * - The delivery chip was consumed by the first message.
  *
- * The socket and the server actions are fakes; the pane is the real one.
+ * The socket, the relay reads and the server actions are fakes; the pane is
+ * the real one.
  */
 vi.hoisted(() => {
   (
@@ -86,9 +89,6 @@ vi.mock("@/actions/chat/tickets", () => ({
   markTicketRead: (...args: unknown[]) => actions.markTicketRead(...args),
 }));
 
-vi.mock("@/actions/chat/list-chat-messages", () => ({
-  listChatMessages: (...args: unknown[]) => actions.listChatMessages(...args),
-}));
 vi.mock("@/actions/chat/mark-chat-read", () => ({
   markChatRead: (...args: unknown[]) => actions.markChatRead(...args),
 }));
@@ -150,22 +150,19 @@ vi.mock("@/features/deliveries/chat/composer", () => ({
 
 const DRIVER_USER = "du1";
 
+/** One window of the conversation, as /chat/list-messages answers it. */
 const page = (
   threadId: string | null,
   data: Array<Record<string, unknown>>,
 ) => ({
-  success: true,
-  message: "",
-  data: {
-    threadId,
-    data,
-    nextCursor: null,
-    previousCursor: null,
-    hasNewer: false,
-    counterpartLastReadAt: null,
-    counterpartDeliveredAt: null,
-    driverUser: { id: DRIVER_USER, last_seen_at: null },
-  },
+  threadId,
+  data,
+  nextCursor: null,
+  previousCursor: null,
+  hasNewer: false,
+  counterpartLastReadAt: null,
+  counterpartDeliveredAt: null,
+  driverUser: { id: DRIVER_USER, last_seen_at: null },
 });
 
 let second = 0;
@@ -282,6 +279,15 @@ beforeEach(() => {
     message: "",
     data: { last_read_at: new Date().toISOString() },
   });
+
+  // The window loads are relay reads of /chat/list-messages (lib/chat-reads):
+  // `actions.listChatMessages` gets each one's query and answers its page.
+  // A read nobody prepared an answer for is a failure, not an empty chat.
+  stubRelay({
+    "/chat/list-messages": async (url) =>
+      (await actions.listChatMessages(Object.fromEntries(url.searchParams))) ??
+      refusal(500, { message: "Sem resposta preparada." }),
+  });
 });
 
 afterEach(async () => {
@@ -292,6 +298,7 @@ afterEach(async () => {
   host = null;
 
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("a burst of driver messages on an open pane", () => {

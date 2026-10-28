@@ -27,48 +27,18 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
-/** The API as the server actions answer it, counting requests per filter. */
+/** The API as the relay answers it, counting requests per filter. */
 const api = vi.hoisted(() => ({
   usage: {} as Record<string, number>,
   deliveries: {} as Record<string, number>,
 }));
 
+// The writes stay Server Actions; the panels' reads go through the relay.
 vi.mock("@/actions/integration", () => ({
-  listApiUsage: async (days: number) => {
-    api.usage[days] = (api.usage[days] ?? 0) + 1;
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        totals: { ok: 0, clientError: 0, serverError: 0 },
-        byRoute: [],
-        byDay: [],
-        keys: [],
-      },
-    };
-  },
-  listWebhookDeliveries: async (
-    _page: number,
-    _size: number,
-    filters: { status?: string },
-  ) => {
-    const key = filters.status ?? "ALL";
-    api.deliveries[key] = (api.deliveries[key] ?? 0) + 1;
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        data: [],
-        total: 0,
-        meta: { delivered: 0, failed: 0, pending: 0, p95LatencyMs: null },
-      },
-    };
-  },
   resendWebhookDelivery: async () => ({ success: true, message: "" }),
 }));
 
+import { ndjson, stubRelay } from "./helpers/relay-fetch";
 import { queryClientProps } from "@/lib/query-client-props";
 import { UsagePanel } from "@/features/integrations/usage/panel";
 import { MonitorPanel } from "@/features/integrations/monitor/panel";
@@ -93,6 +63,41 @@ beforeEach(() => {
   api.deliveries = {};
   router.refresh.mockClear();
   localStorage.clear();
+
+  stubRelay({
+    "/integrations/api-usage": (url) => {
+      const days = url.searchParams.get("days") ?? "";
+      api.usage[days] = (api.usage[days] ?? 0) + 1;
+
+      return {
+        data: {
+          totals: { ok: 0, clientError: 0, serverError: 0 },
+          byRoute: [],
+          byDay: [],
+          keys: [],
+        },
+      };
+    },
+    "/integrations/webhook-deliveries": (url) => {
+      const key = url.searchParams.get("status") ?? "ALL";
+      api.deliveries[key] = (api.deliveries[key] ?? 0) + 1;
+
+      return ndjson(
+        {
+          total: 0,
+          page: 1,
+          pageSize: 20,
+          searchMeta: {
+            delivered: 0,
+            failed: 0,
+            pending: 0,
+            p95LatencyMs: null,
+          },
+        },
+        [],
+      );
+    },
+  });
 });
 
 const unmounts: Array<() => Promise<void>> = [];

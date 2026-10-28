@@ -8,6 +8,7 @@ import {
   hasSpaceAtEdges,
   isEmptyOrWhitespace,
 } from "@/lib/format-values";
+import { WRITABLE_DELIVERY_KINDS } from "@/features/deliveries/lib/kind";
 
 // `required` is the whole sentence: the label's gender decides "obrigatório"
 // or "obrigatória", and empty or blank means missing, not short (16.702).
@@ -149,6 +150,16 @@ const deliveryItemsSchema = z
 
 /** Mirrors the API's create delivery schema (manual entry). */
 const createUpdateDeliverySchema = z.object({
+  // The meeting of 14/10/2026: Entrega or Ordem de serviço. The form always
+  // sends it ("Tipo *"); optional on the wire like the API's, so absent on
+  // the edit keeps the current type (a Coleta from the spreadsheet).
+  kind: z
+    .enum(WRITABLE_DELIVERY_KINDS, {
+      errorMap: () => ({
+        message: "Escolha o tipo: Entrega ou Ordem de serviço.",
+      }),
+    })
+    .optional(),
   shipperId: z.string().min(1, "O embarcador é obrigatório."),
   code: optionalTextField("O código do pedido", 60),
   invoice_key: z.preprocess(

@@ -22,11 +22,26 @@ README.md
 *.swp
 *.swo
 
-# Tests
+# Documentation: nothing the build reads. Patterns are anchored at the
+# context root, so `docs/` is the repository's docs/, NOT src/content/docs
+# (the MDX of the /docs pages, which the build prerenders). The site's
+# content is .mdx (next.config.mjs traces src/content/**/*.mdx), which
+# `*.md` does not match; a .md the build ever reads needs a `!` line here.
+docs/
+**/*.md
+
+# Tests and their tooling: nothing the build imports (tsconfig's **/*.ts
+# would only type-check them for nothing).
 tests
 playwright-report
 test-results
 playwright.config.*
+playwright.*.config.*
+vitest.config.*
+vitest.*.config.*
+stryker.config.*
+reports
+.stryker-tmp
 
 # Dev scripts
 scripts/optimize-images.js

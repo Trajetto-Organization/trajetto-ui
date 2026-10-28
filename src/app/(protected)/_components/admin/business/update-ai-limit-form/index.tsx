@@ -18,14 +18,15 @@ import { Progress } from "@/components/ui/progress";
 import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateAILimit } from "@/actions/business/update-ai-limit";
-import { getAIUsage, type AIUsageData } from "@/actions/business/get-ai-usage";
+import type { AIUsageData } from "@/actions/business/get-ai-usage";
+import { fetchAIUsage } from "@/lib/business-reads";
 
 import {
   freshestUsage,
   useAIVerificationStore,
 } from "@/store/ai-verification-store";
 import { periodStartSentence } from "@/app/(protected)/_components/shared/limits/limits-content/lib/ai-usage-copy";
-import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
+import { guardFormAction } from "@/lib/action-result";
 import { updateAILimitSchema } from "@/schemas/update-ai-limit-schema";
 import {
   IGNORE_BLUR_ATTRIBUTE,
@@ -252,14 +253,12 @@ const UpdateAILimitForm = ({
       setIsLoadingUsage(true);
       const askedAt = Date.now();
 
-      getAIUsage(businessId)
-        .then((response) => {
-          if (isStaleActionResult(response, { background: true })) return;
-
-          if (response.success && response.data) {
-            setServer({ usage: response.data, askedAt });
-          }
-        })
+      // A relay GET (lib/business-reads); a refusal leaves the card as is.
+      fetchAIUsage(businessId)
+        .then(
+          (usage) => setServer({ usage, askedAt }),
+          () => undefined,
+        )
         .finally(() => setIsLoadingUsage(false));
     }
   }, [isAILimitOpen, businessId]);

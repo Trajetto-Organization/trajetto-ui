@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateServiceOrderSchema } from "@/schemas/create-update-service-order-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface ServiceOrderProps {
   message: string;
@@ -71,6 +72,10 @@ const handleUpdateServiceOrder = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-service-order");
 
     return { successMessage: message };
   } catch (error) {

@@ -20,7 +20,13 @@ import { sessionRefusalReason } from "../shared/session-refusal";
  */
 async function handleUserResponseError(response: Response) {
   const body: unknown = await response.json().catch(() => null);
-  const reason = sessionRefusalReason(response.status, body);
+
+  handleUserRefusal(response.status, body);
+}
+
+/** The same decision on an answer already read (session-access.ts). */
+function handleUserRefusal(status: number, body: unknown) {
+  const reason = sessionRefusalReason(status, body);
 
   if (reason) {
     redirect(`/login?error=${reason}&force_logout=true`);
@@ -77,4 +83,4 @@ function validateUserAccess({
   }
 }
 
-export { handleUserResponseError, validateUserAccess };
+export { handleUserRefusal, handleUserResponseError, validateUserAccess };

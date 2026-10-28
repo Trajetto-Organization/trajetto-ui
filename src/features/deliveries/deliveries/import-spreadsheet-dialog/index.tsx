@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -34,14 +34,13 @@ import {
   importToastKind,
 } from "../../lib/import-outcome";
 
-import {
-  importSpreadsheet,
-  type ImportRowResult,
-  type ImportSpreadsheetResult,
+import type {
+  ImportRowResult,
+  ImportSpreadsheetResult,
 } from "@/actions/import/import-spreadsheet";
 
-import { downloadImportTemplate } from "@/actions/import/download-template";
-import { isStaleActionResult } from "@/lib/action-result";
+import { relayUrl } from "@/lib/api-relay-paths";
+import { downloadExport } from "@/lib/export-download";
 
 import { FileDropzone } from "@/components/shared/custom/file-dropzone";
 import {
@@ -51,6 +50,7 @@ import {
 
 import { ShipperSelector } from "../shipper-selector";
 import { useImportSpreadsheet } from "./hooks";
+import { STILL_RUNNING, submitSpreadsheetImport } from "./hooks/import-client";
 
 import { cn } from "@/lib/utils";
 
@@ -124,10 +124,19 @@ const ImportSpreadsheetDialog = ({
     validateOnSubmit: false,
   });
 
+  // Sending the file (the dialog holds), then — when the API runs the import
+  // in the background (202) — following it (the dialog may close: the upload
+  // is in, and the Importações tab shows how it ends).
   const [isImporting, setIsImporting] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [processedRows, setProcessedRows] = useState<number | null>(null);
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
   const [result, setResult] = useState<ImportSpreadsheetResult | null>(null);
+
+  const importRun = useRef<AbortController | null>(null);
+
+  useEffect(() => () => importRun.current?.abort(), []);
 
   useEffect(() => {
     if (isOpen) {
@@ -139,6 +148,13 @@ const ImportSpreadsheetDialog = ({
   }, [isOpen, clearFile]);
 
   const resetAndClose = () => {
+    if (isProcessing) {
+      // Stops following, not the import: it carries on in the API.
+      importRun.current?.abort();
+      toast.info(STILL_RUNNING);
+      void revalidateTags(importRevalidationTags(0));
+    }
+
     clearFile();
 
     setShipperId("");
@@ -151,33 +167,14 @@ const ImportSpreadsheetDialog = ({
     setIsDownloading(true);
 
     try {
-      const response = await downloadImportTemplate();
+      // Straight from the API through the relay, like the exports.
+      const download = await downloadExport({
+        url: relayUrl("/import/download-template"),
+        fallbackFilename: "modelo-importacao-trajetto.xlsx",
+        refusalFallback: "Não foi possível baixar o modelo de planilha.",
+      });
 
-      if (isStaleActionResult(response)) return;
-
-      if (!response.success || !response.base64Data) {
-        toast.error(response.message ?? "Não foi possível baixar o modelo.");
-        return;
-      }
-
-      const bytes = Uint8Array.from(atob(response.base64Data), (character) =>
-        character.charCodeAt(0),
-      );
-
-      const url = URL.createObjectURL(
-        new Blob([bytes], { type: response.mimeType }),
-      );
-
-      const anchor = document.createElement("a");
-
-      anchor.href = url;
-      anchor.download = response.filename ?? "modelo-importacao.xlsx";
-
-      document.body.appendChild(anchor);
-      anchor.click();
-
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      if (!download.ok) toast.error(download.message);
     } finally {
       setIsDownloading(false);
     }
@@ -187,25 +184,37 @@ const ImportSpreadsheetDialog = ({
     if (!live.validate() || !file || !shipperId) return;
 
     setIsImporting(true);
+    setProcessedRows(null);
+
+    const run = new AbortController();
+    importRun.current = run;
 
     try {
-      const response = await importSpreadsheet(
+      const answer = await submitSpreadsheetImport(
         businessId,
         { filename: file.filename, content: file.content },
         shipperId,
+        {
+          signal: run.signal,
+          onAccepted: () => {
+            setIsImporting(false);
+            setIsProcessing(true);
+          },
+          onProgress: (progress) => setProcessedRows(progress.processedRows),
+        },
       );
 
-      // Nothing was imported; the file stays picked for after the reload.
-      if (isStaleActionResult(response)) return;
+      // Closed while following: resetAndClose already said it carries on.
+      if (!answer.ok && answer.aborted) return;
 
-      if (response.success && response.data) {
-        setResult(response.data);
+      if (answer.ok) {
+        setResult(answer.result);
 
         // Nothing created is not a success. Saying "sucesso" over that is how
         // a screen teaches people to stop reading its messages.
-        toast[importToastKind(response.data.imported)](response.message);
+        toast[importToastKind(answer.result.imported)](answer.message);
 
-        // On every 200 (DLV-IMP-3): the upload is an Importações row even
+        // On every finished upload (DLV-IMP-3): it is an Importações row even
         // when every line was a duplicate, and the sheet may have built
         // routes — not only the deliveries table goes stale.
         await revalidateTags(importRevalidationTags(0));
@@ -213,9 +222,19 @@ const ImportSpreadsheetDialog = ({
         return;
       }
 
-      toast.error(response.message);
+      if (answer.stillRunning) {
+        toast.info(answer.message);
+        await revalidateTags(importRevalidationTags(0));
+
+        return;
+      }
+
+      toast.error(answer.message);
     } finally {
+      if (importRun.current === run) importRun.current = null;
+
       setIsImporting(false);
+      setIsProcessing(false);
     }
   };
 
@@ -411,7 +430,7 @@ const ImportSpreadsheetDialog = ({
               hint=".xlsx ou .csv, até 6 MB"
               isBusy={isReading}
               busyLabel="Lendo o arquivo..."
-              disabled={isImporting}
+              disabled={isImporting || isProcessing}
               id="import-spreadsheet-file"
               // A refusal is the answer to a pick: shown at once.
               error={rejection ?? live.messageOf("file")}
@@ -460,11 +479,17 @@ const ImportSpreadsheetDialog = ({
               <Button
                 type="button"
                 onClick={() => void handleImport()}
-                disabled={isImporting || isReading}
+                disabled={isImporting || isProcessing || isReading}
                 className="gap-2"
               >
-                {isImporting && <Loader className="h-4 w-4 animate-spin" />}
-                Importar
+                {(isImporting || isProcessing) && (
+                  <Loader className="h-4 w-4 animate-spin" />
+                )}
+                {isProcessing
+                  ? processedRows
+                    ? `Processando (${processedRows} linhas)...`
+                    : "Processando..."
+                  : "Importar"}
               </Button>
             </DialogFormFooter>
           </div>

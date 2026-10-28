@@ -101,9 +101,6 @@ vi.mock("@/actions/chat/tickets", () => ({
     return { success: false, message: "x" };
   },
 }));
-vi.mock("@/actions/chat/tickets/list-ticket-contexts", () => ({
-  listTicketContexts: async () => ({ success: true, data: [] }),
-}));
 vi.mock("@/actions/import/import-spreadsheet", () => ({
   importSpreadsheet: async () => {
     calls.imports += 1;

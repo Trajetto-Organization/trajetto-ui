@@ -37,6 +37,9 @@ const OrderPartTable = ({
       responseError={responseError}
       server={ORDER_PART_TABLE}
       toolbar={<OrderPartToolbar facets={searchMeta?.facets} />}
+      // The facet behind "Ver Peças da Ordem" needs the column; the reference
+      // itself is noise in the default view.
+      initialColumnVisibility={{ serviceOrderId: false }}
     />
   );
 };

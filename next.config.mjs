@@ -76,11 +76,19 @@ const nextConfig = {
     gzipSize: true,
     scrollRestoration: true,
 
-    // Decision 2.4: going back to a tab never reuses a stale server render
-    // (the default kept dynamic RSC for 30 s). Prerendered pages keep their
-    // own default.
+    // Decision 2.4 (revised): the client router keeps a dynamic page's
+    // render for 30 s, per tab and per URL — Next's default, what production
+    // ran on. With 0, every revisit, sidebar hop and repeated search was a
+    // fresh server render. Freshness does not rest on this window: every
+    // mutation revalidates (which drops the whole router cache in the same
+    // response), "Atualizar" and the realtime events call router.refresh()
+    // (which drops it too), and an access change re-renders the page. What
+    // 30 s can show is another person's change, without a realtime event,
+    // on a page this tab saw under 30 s ago — until "Atualizar", as decision
+    // 2.3 already promises. Back/forward restores from the router cache
+    // whatever this says. Prerendered pages keep their own default.
     staleTimes: {
-      dynamic: 0,
+      dynamic: 30,
     },
 
     // The blog, legal and developer portal pages read their MDX from disk.
@@ -121,13 +129,6 @@ const nextConfig = {
     optimizePackageImports: ["lucide-react"],
     outputFileTracingExcludes: {
       "*": [
-        // Excludes SWC binaries for systems that are NOT the server (Mac and Windows)
-        "node_modules/@swc/core-darwin-x64",
-        "node_modules/@swc/core-darwin-arm64",
-        "node_modules/@swc/core-win32-x64-msvc",
-        "node_modules/@swc/core-win32-ia32-msvc",
-        "node_modules/@swc/core-win32-arm64-msvc",
-
         // Playwright is huge (it includes browser binaries)
         // It's in devDependencies, but the tracer might get confused if there are any accidental imports
         "node_modules/@playwright/**",

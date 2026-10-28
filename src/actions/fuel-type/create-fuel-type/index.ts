@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateFuelTypeSchema } from "@/schemas/create-update-fuel-type-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateFuelTypeProps {
   message: string;
@@ -67,6 +68,10 @@ const handleCreateFuelType = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-fuel-type");
 
     return { successMessage: message };
   } catch (error) {

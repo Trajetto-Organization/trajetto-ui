@@ -270,8 +270,31 @@ describe("resolveTutorialKey (TUT-5)", () => {
       }),
     ).toBe("/dashboard/deliveries/shippers");
     expect(
-      resolveTutorialKey({ pathname: "/admin/deliveries", urlTab: "chat" }),
-    ).toBe("/admin/deliveries/chat");
+      resolveTutorialKey({
+        pathname: "/admin/deliveries",
+        urlTab: "message-templates",
+      }),
+    ).toBe("/admin/deliveries/message-templates");
+  });
+
+  it("reads the Torre's view from the URL, the default view on the base key", () => {
+    // Meeting of 14/10/2026: Rotas is the default, every other view its own tour.
+    expect(resolveTutorialKey({ pathname: "/dashboard/control-tower" })).toBe(
+      "/dashboard/control-tower",
+    );
+    expect(
+      resolveTutorialKey({
+        pathname: "/admin/control-tower",
+        urlView: "tickets",
+      }),
+    ).toBe("/admin/control-tower/tickets");
+    expect(
+      resolveTutorialKey({
+        pathname: "/dashboard/control-tower",
+        urlView: "occurrences",
+        allowedTowerViews: ["routes", "panel"],
+      }),
+    ).toBe("/dashboard/control-tower");
   });
 
   it("falls back like the page when the tab is unknown or forbidden", () => {
@@ -282,9 +305,9 @@ describe("resolveTutorialKey (TUT-5)", () => {
       resolveTutorialKey({
         pathname: "/dashboard/deliveries",
         urlTab: "deliveries",
-        allowedDeliveryTabs: ["occurrences", "occurrence-types"],
+        allowedDeliveryTabs: ["shippers", "occurrence-types"],
       }),
-    ).toBe("/dashboard/deliveries/occurrences");
+    ).toBe("/dashboard/deliveries/shippers");
   });
 
   it("gives every Integrações tab its own tour", () => {

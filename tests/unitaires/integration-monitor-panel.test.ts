@@ -51,75 +51,83 @@ const HOUR = 60 * 60 * 1000;
 
 vi.mock("@/actions/cookies", () => ({ getCookies: async () => "token" }));
 
+// The writes stay Server Actions; the list goes through the relay.
 vi.mock("@/actions/integration", () => ({
-  listWebhookDeliveries: async (
-    _page: number,
-    _size: number,
-    filters: { status?: string; window?: string },
-  ) => {
-    api.calls.push({ status: filters.status, window: filters.window });
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        data: [
-          {
-            id: "row-stalled",
-            topic: "delivery.created",
-            status: "PROCESSING",
-            attempts: 2,
-            response_status: null,
-            response_body: null,
-            lastError: null,
-            latency_ms: null,
-            availableAt: new Date(Date.now() - HOUR).toISOString(),
-            leaseExpiresAt: new Date(Date.now() - HOUR).toISOString(),
-            deliveredAt: null,
-            created_at: new Date(Date.now() - 2 * HOUR).toISOString(),
-            endpoint: {
-              id: "wh-1",
-              name: "ERP",
-              url: "https://erp.exemplo.com.br",
-            },
-          },
-          {
-            id: "row-sending",
-            topic: "delivery.delivered",
-            status: "PROCESSING",
-            attempts: 1,
-            response_status: null,
-            response_body: null,
-            lastError: null,
-            latency_ms: null,
-            availableAt: new Date(Date.now() + 60_000).toISOString(),
-            leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
-            deliveredAt: null,
-            created_at: new Date(Date.now() - 60_000).toISOString(),
-            endpoint: {
-              id: "wh-1",
-              name: "ERP",
-              url: "https://erp.exemplo.com.br",
-            },
-          },
-        ],
-        total: api.total,
-        meta: {
-          window: filters.window ?? "24h",
-          totalCapped: api.totalCapped,
-          delivered: 3,
-          failed: 1,
-          pending: 2,
-          p95LatencyMs: 120,
-        },
-      },
-    };
-  },
   resendWebhookDelivery: async () => ({ success: true, message: "" }),
 }));
 
+/** Two sends in flight: one whose attempt died an hour ago, one sending. */
+function deliveryRows() {
+  return [
+    {
+      id: "row-stalled",
+      topic: "delivery.created",
+      status: "PROCESSING",
+      attempts: 2,
+      response_status: null,
+      response_body: null,
+      lastError: null,
+      latency_ms: null,
+      availableAt: new Date(Date.now() - HOUR).toISOString(),
+      leaseExpiresAt: new Date(Date.now() - HOUR).toISOString(),
+      deliveredAt: null,
+      created_at: new Date(Date.now() - 2 * HOUR).toISOString(),
+      endpoint: {
+        id: "wh-1",
+        name: "ERP",
+        url: "https://erp.exemplo.com.br",
+      },
+    },
+    {
+      id: "row-sending",
+      topic: "delivery.delivered",
+      status: "PROCESSING",
+      attempts: 1,
+      response_status: null,
+      response_body: null,
+      lastError: null,
+      latency_ms: null,
+      availableAt: new Date(Date.now() + 60_000).toISOString(),
+      leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+      deliveredAt: null,
+      created_at: new Date(Date.now() - 60_000).toISOString(),
+      endpoint: {
+        id: "wh-1",
+        name: "ERP",
+        url: "https://erp.exemplo.com.br",
+      },
+    },
+  ];
+}
+
+/** The monitor's list as the relay streams it (NDJSON: meta, then rows). */
+function deliveriesReply(url: URL): Response {
+  const status = url.searchParams.get("status") ?? undefined;
+  const window = url.searchParams.get("window") ?? undefined;
+
+  api.calls.push({ status, window });
+
+  return ndjson(
+    {
+      total: api.total,
+      page: 1,
+      pageSize: 20,
+      searchMeta: {
+        window: window ?? "24h",
+        totalCapped: api.totalCapped,
+        delivered: 3,
+        failed: 1,
+        pending: 2,
+        p95LatencyMs: 120,
+      },
+    },
+    deliveryRows(),
+  );
+}
+
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+import { ndjson, stubRelay } from "./helpers/relay-fetch";
 import { useAuthStore } from "@/store/auth-store";
 import { MonitorPanel } from "@/features/integrations/monitor/panel";
 
@@ -134,6 +142,7 @@ beforeEach(() => {
   api.total = 2;
   api.totalCapped = undefined;
   localStorage.clear();
+  stubRelay({ "/integrations/webhook-deliveries": deliveriesReply });
   useAuthStore.setState({
     role: "BUSINESS_ADMIN",
     isLoaded: true,

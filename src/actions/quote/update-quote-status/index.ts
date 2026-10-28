@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { updateQuoteStatusSchema } from "@/schemas/update-quote-status-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateQuoteStatusResponse {
   message: string;
@@ -65,6 +66,10 @@ const handleUpdateQuoteStatus = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-quote-status");
 
     return { successMessage: message };
   } catch (error) {

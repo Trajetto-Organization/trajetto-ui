@@ -1,7 +1,6 @@
 "use client";
 
 import { ColumnDef, Row } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { Badge } from "@/components/ui/badge";
 import { getRecordOriginMeta } from "@/lib/record-origin";
@@ -93,50 +92,23 @@ function buildVehicleChecklistColumns({
 }: BuildVehicleChecklistColumnsOptions): ColumnDef<vehicleChecklistTableSchema>[] {
   return [
     {
-      id: "select",
+      // A checklist is told apart by the vehicle and the day (the column
+      // after this one); it has no number of its own.
+      accessorKey: "vehicle_license_plate",
+      accessorFn: (row) => row.vehicle?.license_plate,
       meta: {
-        title: "Seleção",
-      },
-      header: ({ table }) => (
-        <Checkbox
-          id="select-all-vehicle-checklists"
-          name="select-all-vehicle-checklists"
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Selecionar todas"
-          className="translate-y-[2px]"
-        />
-      ),
-      cell: ({ row }) => (
-        <Checkbox
-          id={`select-vehicle-checklist-${row.id}`}
-          name={`select-vehicle-checklist-${row.id}`}
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Selecionar linha"
-          className="translate-y-[2px]"
-        />
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "id",
-      meta: {
-        title: "Identificador",
+        title: "Placa",
       },
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Identificador" />
+        <DataTableColumnHeader column={column} title="Placa" />
       ),
-      cell: ({ row }) => (
-        <p className="truncate font-medium w-80">
-          {displayValue(row.getValue("id"))}
-        </p>
-      ),
-      enableSorting: false,
+      cell: ({ row }) => {
+        return (
+          <p className="truncate font-medium w-28">
+            {displayValue(row.original.vehicle?.license_plate)}
+          </p>
+        );
+      },
       enableHiding: false,
     },
     {
@@ -154,6 +126,7 @@ function buildVehicleChecklistColumns({
           </p>
         );
       },
+      enableHiding: false,
     },
     {
       accessorKey: "created_from",
@@ -186,42 +159,6 @@ function buildVehicleChecklistColumns({
         return (
           <p className="truncate font-medium w-28">
             {mileage ? `${mileage.toLocaleString("pt-BR")} km` : "N/A"}
-          </p>
-        );
-      },
-    },
-    {
-      accessorKey: "vehicle_license_plate",
-      accessorFn: (row) => row.vehicle?.license_plate,
-      meta: {
-        title: "Placa do veículo",
-      },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Placa do veículo" />
-      ),
-      cell: ({ row }) => {
-        return (
-          <p className="truncate font-medium w-28">
-            {displayValue(row.original.vehicle?.license_plate)}
-          </p>
-        );
-      },
-    },
-    {
-      accessorKey: "vehicleId",
-      meta: {
-        title: "Identificador do veículo",
-      },
-      header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Identificador do veículo"
-        />
-      ),
-      cell: ({ row }) => {
-        return (
-          <p className="truncate font-medium w-48">
-            {displayValue(row.getValue("vehicleId"))}
           </p>
         );
       },
@@ -278,25 +215,6 @@ function buildVehicleChecklistColumns({
       },
     },
     {
-      accessorKey: "driverId",
-      meta: {
-        title: "Identificador do motorista",
-      },
-      header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Identificador do motorista"
-        />
-      ),
-      cell: ({ row }) => {
-        return (
-          <p className="truncate font-medium w-48">
-            {displayValue(row.getValue("driverId"))}
-          </p>
-        );
-      },
-    },
-    {
       accessorKey: "driver_name",
       accessorFn: (row) => row.driver?.name,
       meta: {
@@ -326,25 +244,6 @@ function buildVehicleChecklistColumns({
         return (
           <p className="truncate font-medium w-32">
             {displayValue(row.original.driver?.cnh)}
-          </p>
-        );
-      },
-    },
-    {
-      accessorKey: "branchId",
-      meta: {
-        title: "Identificador da filial",
-      },
-      header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Identificador da filial"
-        />
-      ),
-      cell: ({ row }) => {
-        return (
-          <p className="truncate font-medium w-48">
-            {displayValue(row.getValue("branchId"))}
           </p>
         );
       },

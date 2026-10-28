@@ -21,6 +21,13 @@ import { handleExportOccurrence } from "@/actions/delivery/export-occurrence";
 import { handleExportDriver } from "@/actions/driver/export-driver";
 import { handleExportServiceOrder } from "@/actions/service-order/export-service-order";
 import { handleExportVehicleChecklist } from "@/actions/vehicle-checklist/export-vehicle-checklist";
+import {
+  exportDeliveryRequest,
+  exportDriverRequest,
+  exportOccurrenceRequest,
+  exportServiceOrderRequest,
+  exportVehicleChecklistRequest,
+} from "@/lib/export-requests";
 
 let disposition: string | null = null;
 
@@ -84,16 +91,34 @@ describe("an export the API named", () => {
 });
 
 describe("the browser's own fallback", () => {
-  it("dates the file by the viewer's calendar, not the UTC day", () => {
-    const source = readFileSync(
-      resolve(
-        __dirname,
-        "../../src/app/(protected)/_components/shared/custom/export-button/hooks/index.ts",
-      ),
-      "utf8",
-    );
+  // The file now comes through the relay and is named in the browser
+  // (src/lib/export-download.ts): the fallback is the request's undated
+  // name, never a day computed anywhere.
+  it("never dates the file by the UTC day", () => {
+    for (const file of [
+      "../../src/app/(protected)/_components/shared/custom/export-button/hooks/index.ts",
+      "../../src/lib/export-download.ts",
+      "../../src/lib/export-requests.ts",
+    ]) {
+      const source = readFileSync(resolve(__dirname, file), "utf8");
 
-    expect(source).not.toMatch(/toISOString\(\)\.(split|slice)/);
-    expect(source).toContain("localDateKey(");
+      expect(source, file).not.toMatch(/toISOString\(\)\.(split|slice)/);
+    }
+  });
+
+  it.each([
+    ["entregas", () => exportDeliveryRequest(undefined, "excel", {})],
+    ["ocorrencias", () => exportOccurrenceRequest(undefined, "excel", {})],
+    ["relatorio-motoristas", () => exportDriverRequest(undefined, "excel")],
+    [
+      "relatorio-ordens-de-servico",
+      () => exportServiceOrderRequest(undefined, "excel"),
+    ],
+    [
+      "relatorio-checklists",
+      () => exportVehicleChecklistRequest(undefined, "excel"),
+    ],
+  ] as const)("%s: falls back to an undated name", (name, request) => {
+    expect(request().fallbackFilename).toBe(`${name}.xlsx`);
   });
 });

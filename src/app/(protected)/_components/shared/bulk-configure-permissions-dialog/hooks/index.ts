@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { relayUrl } from "@/lib/api-relay-paths";
-import { revalidateTagName } from "@/actions/revalidate";
 
 import type { BulkConfigurePermissionsFormState } from "../bulk-configure-permissions-dialog.types";
 import { permissions as PERMISSIONS } from "@/lib/permissions";
@@ -118,17 +117,7 @@ function useBulkConfigurePermissionsDialog(
       toastShownRef.current = true;
       toast.success(state.successMessage);
 
-      const performRevalidation = async () => {
-        try {
-          await revalidateTagName("update-permission");
-        } catch (error: any) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("Erro na revalidação:", error);
-          }
-        }
-      };
-
-      performRevalidation();
+      // The action re-rendered the screen in its own response.
       handleClose();
     }
 

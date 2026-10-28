@@ -227,9 +227,7 @@ const UserFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterUserWrite(
-        isEdit ? "update-user-registration" : "create-user-registration",
-      ).catch(() =>
+      void refreshAfterUserWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

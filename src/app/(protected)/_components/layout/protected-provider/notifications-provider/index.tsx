@@ -16,6 +16,7 @@ import { fetchNotificationStream } from "@/lib/notification-stream";
 import { initializeSocket, getSocket, onRealtimeResync } from "@/socket";
 
 import { forceLogout } from "@/lib/force-logout";
+import { showBrowserNotification } from "@/lib/browser-notification";
 import { isSessionExiting, leaveSession } from "@/lib/clear-session-state";
 import {
   SESSION_LOGOUT_DESTINATION,
@@ -457,13 +458,7 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
       showToastSafely(notification);
 
-      // Browser notification
-      if (Notification.permission === "granted") {
-        new Notification(notification.title, {
-          body: notification.message,
-          icon: "/favicon.ico",
-        });
-      }
+      showBrowserNotification(notification.title, notification.message);
     };
 
     // Security event listener — handle access revocation, permission changes, etc.
@@ -609,13 +604,11 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // What a reconnection missed (security events included) is caught up
         // by the `onRealtimeResync` subscription further down.
-
-        if (
-          Notification.permission !== "denied" &&
-          Notification.permission !== "granted"
-        ) {
-          Notification.requestPermission();
-        }
+        //
+        // Notification permission is asked from the notification list's
+        // button, never here: a prompt with no user gesture is ignored or
+        // penalised by browsers, and on iOS Safari `Notification` doesn't
+        // exist, so this line used to throw into the catch below.
       } catch {
         toast.error("Não foi possível se conectar ao serviço de notificações", {
           duration: 5000,

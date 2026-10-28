@@ -126,10 +126,7 @@ const CreateServiceOrderDialog = ({
       toast.success(state.successMessage);
       close();
 
-      refreshMaintenanceData("update-service-order", [
-        "service_order",
-        "vehicleData",
-      ]).catch(() =>
+      refreshMaintenanceData(["service_order", "vehicleData"]).catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
     }

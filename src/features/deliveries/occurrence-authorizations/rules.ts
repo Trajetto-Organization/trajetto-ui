@@ -1,5 +1,7 @@
 import { optionalMultilineText } from "../lib/text-rules";
-import { buildTicketSearchParams } from "../chat/lib/chat-link";
+// The react-query root the queue lives under (invalidated after a decision).
+import { AUTHORIZATION_QUEUE_ROOT } from "./keys";
+import { buildTicketSearchParams, ticketsHref } from "../chat/lib/chat-link";
 
 import type {
   PendingAuthorization,
@@ -11,9 +13,6 @@ import type {
  * as pure rules: what each card says about time, the reason a denial needs,
  * and the sentence a lost race is answered with.
  */
-
-/** The react-query root the queue lives under (invalidated after a decision). */
-const AUTHORIZATION_QUEUE_ROOT = "occurrence-authorizations";
 
 const MINUTE = 60_000;
 
@@ -212,24 +211,17 @@ function queueConversationStep(
 }
 
 /**
- * Where the ticket opens: the Atendimentos tab of the deliveries page, in the
- * area the operator is in (/admin or /dashboard). The queue also lives on the
- * control tower, whose own params mean nothing there; only the MASTER's
- * company (`businessId`) travels along.
+ * Where the ticket opens: the Atendimentos view of the Torre (meeting of
+ * 14/10/2026), in the area the operator is in (/admin or /dashboard). The
+ * queue's own params mean nothing there; only the MASTER's company
+ * (`businessId`) travels along.
  */
 function queueTicketHref(
   pathname: string | null,
   search: string,
   ticketId: string,
 ): string {
-  const area = pathname?.startsWith("/admin") ? "/admin" : "/dashboard";
-
-  const kept = new URLSearchParams();
-  const businessId = new URLSearchParams(search).get("businessId");
-
-  if (businessId) kept.set("businessId", businessId);
-
-  return `${area}/deliveries?${buildTicketSearchParams(kept, ticketId).toString()}`;
+  return ticketsHref(pathname, buildTicketSearchParams(search, ticketId));
 }
 
 export {

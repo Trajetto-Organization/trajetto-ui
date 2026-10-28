@@ -5,6 +5,7 @@ import { MapPin, TriangleAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { formatNotificationDate, displayValue } from "@/lib/format-values";
 import { DELIVERY_STATUS_META } from "../lib/status";
@@ -28,16 +29,23 @@ import { authorizationBadge } from "../occurrence-authorizations/rules";
  */
 const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
   {
-    accessorKey: "id",
-    meta: { title: "Identificador" },
+    // An occurrence has no number of its own: it is named by the delivery it
+    // happened to, by the client's order code. A delivery typed without one
+    // falls back to its compact id.
+    id: "deliveryCode",
+    accessorFn: (row) => row.delivery.code ?? "",
+    meta: { title: "Código" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
+      <DataTableColumnHeader column={column} title="Código" />
     ),
-    cell: ({ row }) => (
-      <p className="w-80 truncate font-medium">
-        {displayValue(row.getValue("id"))}
-      </p>
-    ),
+    cell: ({ row }) =>
+      row.original.delivery.code ? (
+        <p className="w-36 truncate font-medium">
+          {row.original.delivery.code}
+        </p>
+      ) : (
+        <IdCell id={row.original.delivery.id} />
+      ),
     enableSorting: false,
     enableHiding: false,
   },
@@ -159,9 +167,7 @@ const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
           {row.original.delivery.recipient_name}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {row.original.delivery.code
-            ? `Pedido: ${row.original.delivery.code}`
-            : `${row.original.delivery.city}/${row.original.delivery.uf}`}
+          {row.original.delivery.city}/{row.original.delivery.uf}
         </p>
       </div>
     ),

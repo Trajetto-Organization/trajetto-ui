@@ -22,8 +22,10 @@ import { open } from "./support/operation";
  */
 const PANELS = [
   {
+    // The Torre's Auditoria view since the product meeting of 14/10/2026
+    // (it was a tab of Entregas, whose old link redirects here).
     name: "Auditoria de Comprovantes",
-    path: "/dashboard/deliveries?tab=proof-audits",
+    path: "/dashboard/control-tower?view=audit",
     group: "Situação dos comprovantes",
   },
   {
@@ -181,7 +183,7 @@ test.describe("the empty states", () => {
      * The queue is empty in the fixture, which is exactly the state worth
      * checking: it is the first thing a new customer sees on this screen.
      */
-    await open(page, "/dashboard/deliveries?tab=proof-audits");
+    await open(page, "/dashboard/control-tower?view=audit");
 
     const empty = page.getByText("Nenhum comprovante esperando revisão");
 
@@ -227,7 +229,7 @@ test.describe("the empty states", () => {
       });
     };
 
-    const proof = await boxesOn("/dashboard/deliveries?tab=proof-audits");
+    const proof = await boxesOn("/dashboard/control-tower?view=audit");
     const usage = await boxesOn("/dashboard/integrations?tab=usage");
 
     expect(

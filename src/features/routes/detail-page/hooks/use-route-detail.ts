@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MutableRefObject,
+} from "react";
 import { useQuery, useQueryClient } from "react-query";
 
 import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
@@ -16,6 +22,12 @@ import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 import { isNewerPosition } from "@/features/control-tower/lib/live-positions";
 
 import { routeEventDecision } from "../../lib/route-event-decision";
+import {
+  ROUTE_POSITION_CLOCK_MS,
+  isRouteOnTheRoad,
+  routeDriverPosition,
+} from "../../lib/live-route-position";
+import { routeTrailRoot } from "../../lib/route-query-keys";
 import {
   createOwnPlanWrites,
   type OwnPlanWrites,
@@ -74,7 +86,8 @@ function isPositionEvent(value: unknown): value is PositionEvent {
  * dispatcher holds an unsaved order, a plan change by somebody else is not
  * applied under their hands: `staleNotice` turns on and the page offers
  * "Recarregar". The driver's dot moves with `driverPosition`, only for this
- * route and only forward in time.
+ * route, only forward in time and only while the route is on the road; it
+ * ages on the Torre's clock (lib/live-route-position).
  */
 function useRouteDetail({
   businessId,
@@ -115,12 +128,33 @@ function useRouteDetail({
 
   const [staleNotice, setStaleNotice] = useState<boolean>(false);
 
+  // The clock that ages the dot between two reads (fresh -> sem reportar).
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(
+      () => setNow(Date.now()),
+      ROUTE_POSITION_CLOCK_MS,
+    );
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const onTheRoad = isRouteOnTheRoad(data.route.status);
+
   // Read inside the socket handler without re-binding it on every keystroke.
   const versionRef = useRef<number>(data.route.plan_version ?? 0);
   const driverRef = useRef<string>(data.route.driverId);
+  const onTheRoadRef = useRef<boolean>(onTheRoad);
 
   versionRef.current = data.route.plan_version ?? 0;
   driverRef.current = data.route.driverId;
+  onTheRoadRef.current = onTheRoad;
+
+  // A route that completed or was cancelled keeps no live dot of its own.
+  useEffect(() => {
+    if (!onTheRoad) setLivePosition(null);
+  }, [onTheRoad]);
 
   // What a routeEvent does, read fresh by the tracker below (it is created
   // once and outlives renders).
@@ -138,6 +172,9 @@ function useRouteDetail({
 
     if (decision === "refetch") {
       void queryClient.invalidateQueries(routeDetailKey(routeId));
+
+      // The trail grows with every stop worked; it was read once and kept.
+      void queryClient.invalidateQueries(routeTrailRoot(routeId));
     }
 
     if (decision === "hold") setStaleNotice(true);
@@ -161,6 +198,7 @@ function useRouteDetail({
 
     const refetch = () => {
       void queryClient.invalidateQueries(routeDetailKey(routeId));
+      void queryClient.invalidateQueries(routeTrailRoot(routeId));
     };
 
     const handleRoute = (incoming: unknown) => {
@@ -177,6 +215,11 @@ function useRouteDetail({
       if (incoming.driverId !== driverRef.current) return;
       if (incoming.routeId && incoming.routeId !== routeId) return;
 
+      // A finished route's phone may still report for the driver's next one.
+      if (!onTheRoadRef.current) return;
+
+      // `fresh` is decided where the dot is drawn, from when it was recorded:
+      // a backlog's newest point can be forty minutes old (UI-TWR-4).
       setLivePosition((current) =>
         current && !isNewerPosition(incoming.recordedAt, current.recordedAt)
           ? current
@@ -186,7 +229,7 @@ function useRouteDetail({
               speed: incoming.speed ?? null,
               heading: incoming.heading ?? null,
               recordedAt: incoming.recordedAt,
-              fresh: true,
+              fresh: false,
             },
       );
     };
@@ -222,15 +265,20 @@ function useRouteDetail({
     await query.refetch();
   };
 
-  // The read's dot, unless the socket brought a newer one.
+  // The read's dot, unless the socket brought a newer one, aged on the
+  // clock. Memoised on its inputs: the map redraws the truck when it changes.
   const fetchedPosition = data.route.driverPosition ?? null;
 
-  const driverPosition =
-    livePosition &&
-    (!fetchedPosition ||
-      isNewerPosition(livePosition.recordedAt, fetchedPosition.recordedAt))
-      ? livePosition
-      : fetchedPosition;
+  const driverPosition = useMemo(
+    () =>
+      routeDriverPosition({
+        fetched: fetchedPosition,
+        live: livePosition,
+        routeStatus: data.route.status,
+        now,
+      }),
+    [fetchedPosition, livePosition, data.route.status, now],
+  );
 
   return {
     data,

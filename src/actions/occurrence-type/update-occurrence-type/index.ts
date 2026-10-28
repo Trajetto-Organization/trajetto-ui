@@ -5,6 +5,7 @@ import { logActionError } from "@/lib/log-action-error";
 import { createUpdateOccurrenceTypeSchema } from "@/schemas/create-update-occurrence-type-schema";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UpdateOccurrenceTypeProps {
   message: string;
@@ -70,6 +71,10 @@ const handleUpdateOccurrenceType = async (
         },
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-occurrence-type");
 
     return { successMessage: message };
   } catch (error) {

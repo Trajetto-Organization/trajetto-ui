@@ -282,7 +282,7 @@ const CreateFuelDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterFuelWrite("create-fuel").catch(() =>
+      void refreshAfterFuelWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

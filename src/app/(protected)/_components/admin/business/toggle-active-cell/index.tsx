@@ -8,7 +8,6 @@ import { handleToggleBusinessActive } from "@/actions/business/toggle-business-a
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
 
-import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
 import { isStaleActionResult } from "@/lib/action-result";
 
@@ -46,13 +45,10 @@ export function ToggleBusinessActiveCell({
 
       toast.success(result.successMessage);
 
-      await Promise.all([
-        revalidateTagName("toggle-business-active"),
-        queryClientProps.resetQueries({
-          predicate: (query) =>
-            Array.isArray(query.queryKey) && query.queryKey[0] === "business",
-        }),
-      ]);
+      await queryClientProps.resetQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) && query.queryKey[0] === "business",
+      });
     });
   };
 

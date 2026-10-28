@@ -1,4 +1,4 @@
-import { useEffect, useState, useId } from "react";
+import { useState, useId } from "react";
 import {
   Command,
   CommandEmpty,
@@ -26,52 +26,27 @@ const SearchVehicle = ({
   isOptional,
 }: SearchVehicleProps): JSX.Element => {
   const fieldId = useId();
-  const [showSpinner, setShowSpinner] = useState<boolean>(false);
 
   // The typed term goes to the server (FLEET-SEARCH-1): a plate that is not
   // in the loaded pages used to "not exist" until the list was scrolled.
   const [search, setSearch] = useState<string>("");
 
+  // The rows already narrowed to what is typed: the server's answer, the
+  // whole list filtered here, or the previous rows while a term is on its
+  // way (useCursorSearch).
   const {
     vehicles,
     lastElementRef: lastVehicleRef,
     isLoading: isLoadingVehicle,
-    isFetching: isFetchingVehicles,
+    isFetchingNextPage,
     refetch: refetchVehicles,
     hasError,
     errorMessage,
     isSearchSettled,
   } = useVehicleInfiniteScroll(businessId, search);
 
-  // While the server's answer for the new term is on its way, the previous
-  // rows are narrowed here so the list does not show what no longer matches.
-  const term = search.trim().toLowerCase();
-  const shownVehicles =
-    isSearchSettled || !term
-      ? vehicles
-      : vehicles?.filter((vehicle) =>
-          [
-            vehicle.description,
-            vehicle.license_plate,
-            vehicle.brand,
-            vehicle.model,
-          ]
-            .filter(Boolean)
-            .some((value: string) => value.toLowerCase().includes(term)),
-        );
-
-  useEffect(() => {
-    if (hasError) {
-      setShowSpinner(false);
-      return;
-    }
-
-    if (isLoadingVehicle || isFetchingVehicles) {
-      setShowSpinner(true);
-    } else {
-      setShowSpinner(false);
-    }
-  }, [isLoadingVehicle, isFetchingVehicles, hasError]);
+  const isSearching = !isSearchSettled && !hasError;
+  const isEmpty = !hasError && vehicles.length === 0;
 
   return (
     /*
@@ -104,13 +79,36 @@ const SearchVehicle = ({
             value={search}
             onValueChange={setSearch}
             placeholder="Buscar por placa, descrição, marca ou modelo..."
-            className="h-9"
+            className="h-9 pr-6"
             aria-label="Buscar veículo"
           />
 
-          {!isLoadingVehicle && !hasError && (
+          {/* A term on its way: a spinner in the input, not a skeleton
+            under the last row that read as one more (highlighted) item. */}
+          {isSearching && (
+            <Loader
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-2.5 h-4 w-4
+              animate-spin text-muted-foreground"
+            />
+          )}
+          <span role="status" className="sr-only">
+            {isSearching
+              ? "Buscando veículos…"
+              : isFetchingNextPage
+                ? "Carregando mais veículos…"
+                : ""}
+          </span>
+
+          {/* Only once the rows answer what is typed: while a term was in
+            flight it flashed "nenhum" over rows about to arrive. */}
+          {isEmpty && !isLoadingVehicle && isSearchSettled && (
             <CommandEmpty>
-              <div className="py-6 text-center">Nenhum veículo disponível</div>
+              <div className="py-6 text-center">
+                {search.trim()
+                  ? "Nenhum veículo encontrado."
+                  : "Nenhum veículo disponível"}
+              </div>
             </CommandEmpty>
           )}
 
@@ -139,7 +137,7 @@ const SearchVehicle = ({
                 </div>
               )}
 
-              {shownVehicles?.map((vehicle) => (
+              {vehicles.map((vehicle) => (
                 <CommandItem
                   key={vehicle.id}
                   // The row's id, never its text: cmdk merges items with equal values, so
@@ -164,14 +162,17 @@ const SearchVehicle = ({
                   )}
                 </CommandItem>
               ))}
-
-              {isFetchingVehicles &&
-                vehicles &&
-                vehicles.length > 0 &&
-                !hasError && <Skeleton className="w-full h-7" />}
             </CommandGroup>
 
-            {showSpinner && !vehicles?.length && (
+            {/* The next page, set apart from the rows and in its own tone:
+              `bg-muted` is the colour of the highlighted item. */}
+            {isFetchingNextPage && !isEmpty && (
+              <div aria-hidden="true" className="px-2 pb-2 pt-1">
+                <Skeleton className="h-7 w-full bg-muted-foreground/15" />
+              </div>
+            )}
+
+            {isEmpty && isLoadingVehicle && (
               <div className="flex items-center justify-center py-8">
                 <div className="flex flex-col items-center gap-3">
                   <Loader className="animate-spin h-6 w-6 text-primary" />

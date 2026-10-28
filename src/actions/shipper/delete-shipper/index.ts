@@ -4,6 +4,7 @@ import { refusalMessage } from "@/lib/api-error";
 import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface DeleteShipperProps {
   businessId: string;
@@ -43,6 +44,10 @@ const handleDeleteShipper = async ({
     if (!response.ok) {
       return { deleteShipperError: message || refusalMessage(response.status) };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-shipper");
 
     return { successMessage: message };
   } catch (error) {

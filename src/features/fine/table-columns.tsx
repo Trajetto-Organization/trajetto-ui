@@ -34,15 +34,44 @@ const fullCode = (row: FineRow) =>
  * formatted in the viewer's zone could name the day before.
  */
 const buildFineColumns = (): ColumnDef<FineRow>[] => [
+  // A fine has no number of its own (the AIT is not stored): the vehicle,
+  // the violation and its day tell one from another.
   {
-    accessorKey: "id",
-    meta: { title: "Identificador" },
+    id: "vehicleLicensePlate",
+    accessorFn: (row) => row.vehicle.license_plate,
+    meta: { title: "Placa" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
+      <DataTableColumnHeader column={column} title="Placa" />
     ),
     cell: ({ row }) => (
-      <p className="w-80 truncate font-medium">
-        {displayValue(row.original.id)}
+      <p className="w-24 truncate font-medium">
+        {displayValue(row.original.vehicle.license_plate)}
+      </p>
+    ),
+    enableHiding: false,
+  },
+  {
+    id: "violationCode",
+    accessorFn: fullCode,
+    meta: { title: "Código da infração" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Código da infração" />
+    ),
+    cell: ({ row }) => (
+      <p className="w-28 truncate font-medium">{fullCode(row.original)}</p>
+    ),
+    enableHiding: false,
+  },
+  {
+    id: "violation_date",
+    accessorFn: (row) => row.violation_date,
+    meta: { title: "Data da infração" },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Data da infração" />
+    ),
+    cell: ({ row }) => (
+      <p className="w-32 truncate font-medium">
+        {formatDateOnly(row.original.violation_day)}
       </p>
     ),
     enableHiding: false,
@@ -65,19 +94,6 @@ const buildFineColumns = (): ColumnDef<FineRow>[] => [
         <span>N/A</span>
       );
     },
-  },
-  {
-    id: "violation_date",
-    accessorFn: (row) => row.violation_date,
-    meta: { title: "Data da infração" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Data da infração" />
-    ),
-    cell: ({ row }) => (
-      <p className="w-32 truncate font-medium">
-        {formatDateOnly(row.original.violation_day)}
-      </p>
-    ),
   },
   {
     id: "due_date",
@@ -132,17 +148,6 @@ const buildFineColumns = (): ColumnDef<FineRow>[] => [
     ),
   },
   {
-    id: "violationCode",
-    accessorFn: fullCode,
-    meta: { title: "Código da infração" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Código da infração" />
-    ),
-    cell: ({ row }) => (
-      <p className="w-28 truncate font-medium">{fullCode(row.original)}</p>
-    ),
-  },
-  {
     id: "violationDescription",
     accessorFn: (row) => row.trafficViolationCode.description,
     meta: { title: "Descrição da infração" },
@@ -181,19 +186,6 @@ const buildFineColumns = (): ColumnDef<FineRow>[] => [
     cell: ({ row }) => (
       <p className="w-32 truncate font-medium">
         {displayValue(formatCpf(row.original.driver.cpf ?? ""))}
-      </p>
-    ),
-  },
-  {
-    id: "vehicleLicensePlate",
-    accessorFn: (row) => row.vehicle.license_plate,
-    meta: { title: "Placa" },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Placa" />
-    ),
-    cell: ({ row }) => (
-      <p className="w-24 truncate font-medium">
-        {displayValue(row.original.vehicle.license_plate)}
       </p>
     ),
   },

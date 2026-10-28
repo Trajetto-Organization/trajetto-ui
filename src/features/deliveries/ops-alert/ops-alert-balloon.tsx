@@ -12,14 +12,18 @@ import { cn } from "@/lib/utils";
 import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 import { useAuthStore } from "@/store/auth-store";
 
-import { getOpsAlertSound, updateOpsAlertSound } from "@/actions/chat/tickets";
+import { updateOpsAlertSound } from "@/actions/chat/tickets";
 import type {
   SentChatMessage,
   SupportTicketRealtimeEvent,
 } from "@/actions/chat/chat.types";
 
 import { useChatAccess, useTicketsSummary } from "../chat/lib/use-chat-unread";
-import { buildTicketSearchParams } from "../chat/lib/chat-link";
+import {
+  TICKETS_VIEW,
+  buildTicketSearchParams,
+  ticketsHref,
+} from "../chat/lib/chat-link";
 
 import {
   acceptsVersion,
@@ -41,6 +45,7 @@ import {
   type SoundLeader,
 } from "./sound-leader";
 import { getOpenTicketId } from "./open-ticket";
+import { fetchOpsAlertSound } from "./sound-preference";
 
 /** Dismissals and closes travel between the tabs of this browser. */
 const ALERT_CHANNEL = "trajetto-ops-alert";
@@ -82,15 +87,11 @@ const OpsAlertBalloon = (): JSX.Element | null => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const channelRef = useRef<BroadcastChannel | null>(null);
 
+  // A relay GET (sound-preference): mounted on every protected page, it no
+  // longer takes a turn in the Server Action queue the page's reads share.
   const soundQuery = useQuery(
     OPS_ALERT_SOUND_KEY,
-    async () => {
-      const result = await getOpsAlertSound();
-
-      if (!result.success || !result.data) throw new Error(result.message);
-
-      return result.data.sound;
-    },
+    ({ signal }) => fetchOpsAlertSound({ signal }),
     { enabled: canUseChat, staleTime: 5 * 60_000, refetchOnWindowFocus: false },
   );
 
@@ -278,7 +279,7 @@ const OpsAlertBalloon = (): JSX.Element | null => {
   const openTicket = (ticketId: string) => {
     dismiss(ticketId);
     router.push(
-      `/dashboard/deliveries?${buildTicketSearchParams("", ticketId).toString()}`,
+      ticketsHref("/dashboard", buildTicketSearchParams("", ticketId)),
     );
   };
 
@@ -394,7 +395,14 @@ const OpsAlertBalloon = (): JSX.Element | null => {
             type="button"
             className="flex items-center gap-1.5 rounded-l-full px-3 py-1.5 text-xs font-medium
             focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            onClick={() => router.push("/dashboard/deliveries?tab=chat")}
+            onClick={() =>
+              router.push(
+                ticketsHref(
+                  "/dashboard",
+                  new URLSearchParams({ view: TICKETS_VIEW }),
+                ),
+              )
+            }
           >
             <BellRing
               className={cn(

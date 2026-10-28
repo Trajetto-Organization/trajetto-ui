@@ -21,10 +21,7 @@ import { Button } from "@/components/ui/button";
 
 import { getSocket, initializeSocket, onRealtimeResync } from "@/socket";
 
-import {
-  listChatMessages,
-  type ListChatMessagesData,
-} from "@/actions/chat/list-chat-messages";
+import type { ListChatMessagesData } from "@/actions/chat/list-chat-messages";
 import { sendChatMessage } from "@/actions/chat/send-chat-message";
 import { markChatRead } from "@/actions/chat/mark-chat-read";
 import { markTicketRead } from "@/actions/chat/tickets";
@@ -92,8 +89,10 @@ import {
 } from "./lib/message-window";
 
 import { settleWindowLoad, type WindowLoadOutcome } from "./lib/window-load";
+import { fetchChatMessages, type ChatMessagesQuery } from "./lib/chat-reads";
 
-import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
+import { isStaleActionResult } from "@/lib/action-result";
+import { relayAnswer } from "@/lib/relay-read";
 
 import { buildImageGallery, galleryKeyOf } from "./lib/image-gallery";
 
@@ -145,25 +144,18 @@ const WINDOW_LOAD_FALLBACK_MESSAGE =
   "Não foi possível carregar a conversa. Verifique a conexão e tente de novo.";
 
 /**
- * A window load from a tab older than the server's build.
+ * One window of the conversation, through the relay (lib/chat-reads), as the
+ * value the window loads read: never a rejection.
  *
- * The action answers `undefined` then (see lib/action-result), which
- * `settleWindowLoad` would show as the connection sentence above, and the
- * reader would check a connection that is fine. Said through the deploy
- * notice instead, and shown in the pane as what it is. Kept out of
- * `window-load`, which stays pure.
+ * It was a Server Action, and Next 14 runs those one at a time: walking the
+ * window queued behind the ticket list, the badge and the mark-reads, and a
+ * navigation could drop a load whose promise then never settled, holding
+ * the in-flight slot for good. A GET settles, whatever happens to the page.
  */
-const readWindowAnswer = async (
-  request: () => Promise<ActionResponse<ListChatMessagesData>>,
-): Promise<ActionResponse<ListChatMessagesData>> => {
-  const answer = await request();
-
-  if (isStaleActionResult(answer, { background: true })) {
-    return { success: false, message: STALE_ACTION_MESSAGE };
-  }
-
-  return answer;
-};
+const loadChatWindow = (
+  query: ChatMessagesQuery,
+): Promise<ActionResponse<ListChatMessagesData>> =>
+  relayAnswer(fetchChatMessages(query), WINDOW_LOAD_FALLBACK_MESSAGE);
 
 /**
  * A number that is different every time it is asked for.
@@ -562,7 +554,7 @@ const Conversation = ({
    * The in-flight counter IS the mutual exclusion between the three ways of
    * walking the window, and the spinner state is only its drawing. Both used
    * to be given back on the line after the await, in straight-line code —
-   * and `listChatMessages` could REJECT rather than answer, because it read
+   * and the read could REJECT rather than answer, because it read
    * its cookie outside its own try. One flaky fetch therefore left the
    * counter above zero for good and every button disabled with it, "Ir para
    * a última mensagem" included: the only way back to the arrivals the pane
@@ -580,10 +572,7 @@ const Conversation = ({
       setBusy(true);
 
       try {
-        return await settleWindowLoad(
-          () => readWindowAnswer(request),
-          WINDOW_LOAD_FALLBACK_MESSAGE,
-        );
+        return await settleWindowLoad(request, WINDOW_LOAD_FALLBACK_MESSAGE);
       } finally {
         inFlightLoadsRef.current -= 1;
         setBusy(false);
@@ -997,15 +986,13 @@ const Conversation = ({
     > => {
       const centred = await settleWindowLoad(
         () =>
-          readWindowAnswer(() =>
-            listChatMessages({
-              threadId: target.threadId ?? undefined,
-              driverId: target.driverId,
-              around: focusMessageId ?? undefined,
-              businessId: actionBusinessId,
-              ...filterQuery(),
-            }),
-          ),
+          loadChatWindow({
+            threadId: target.threadId ?? undefined,
+            driverId: target.driverId,
+            around: focusMessageId ?? undefined,
+            businessId: actionBusinessId,
+            ...filterQuery(),
+          }),
         WINDOW_LOAD_FALLBACK_MESSAGE,
       );
 
@@ -1023,14 +1010,12 @@ const Conversation = ({
        */
       return settleWindowLoad(
         () =>
-          readWindowAnswer(() =>
-            listChatMessages({
-              threadId: target.threadId ?? undefined,
-              driverId: target.driverId,
-              businessId: actionBusinessId,
-              ...filterQuery(),
-            }),
-          ),
+          loadChatWindow({
+            threadId: target.threadId ?? undefined,
+            driverId: target.driverId,
+            businessId: actionBusinessId,
+            ...filterQuery(),
+          }),
         WINDOW_LOAD_FALLBACK_MESSAGE,
       );
     };
@@ -1427,7 +1412,7 @@ const Conversation = ({
     // The slot and the spinner come back whatever the answer is worth, an
     // exception included — see `runWindowLoad`.
     const outcome = await runWindowLoad(setIsLoadingOlder, () =>
-      listChatMessages({
+      loadChatWindow({
         threadId,
         before: cursor,
         businessId: actionBusinessId,
@@ -1475,7 +1460,7 @@ const Conversation = ({
     const threadId = threadIdRef.current;
 
     const outcome = await runWindowLoad(setIsLoadingNewer, () =>
-      listChatMessages({
+      loadChatWindow({
         threadId,
         after: cursor,
         businessId: actionBusinessId,
@@ -1558,7 +1543,7 @@ const Conversation = ({
 
     try {
       outcome = await runWindowLoad(setIsJumpingToEnd, () =>
-        listChatMessages({
+        loadChatWindow({
           threadId,
           businessId: actionBusinessId,
           ...filterQuery(),

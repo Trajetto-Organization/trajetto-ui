@@ -34,11 +34,19 @@ const interTight = Inter_Tight({
   variable: "--font-inter-tight",
 });
 
+/*
+ * Not preloaded: this root layout's preloads go out on every page, the
+ * logged-in app included, and the mono face only sets small labels (the
+ * eyebrows, a figure in a mockup) that swap in unnoticed. Inter Tight stays
+ * preloaded: it is the landing hero's <h1> and the header's logo type, the
+ * largest text above the fold.
+ */
 const jetBrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   weight: ["500"],
   display: "swap",
   variable: "--font-jetbrains-mono",
+  preload: false,
 });
 
 /**

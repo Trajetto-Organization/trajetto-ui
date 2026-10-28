@@ -16,7 +16,24 @@ import {
  * that toast instead of a file. The API E2E proves the query; this proves the
  * click, from the company picked in the selector to the file the browser
  * saves.
+ *
+ * Ocorrências is a view of the Torre de controle since the product meeting
+ * of 14/10/2026 (`?view=occurrences`), with the same table and the same
+ * Exportar; the company travels in the Torre's URL the same way.
  */
+const SECTIONS = [
+  {
+    name: "deliveries",
+    path: () =>
+      `/admin/deliveries?businessId=${fixtureBusinessId()}&tab=deliveries`,
+  },
+  {
+    name: "occurrences",
+    path: () =>
+      `/admin/control-tower?businessId=${fixtureBusinessId()}&view=occurrences`,
+  },
+] as const;
+
 async function exportAs(page: Page, format: "CSV" | "Excel") {
   const button = page.getByRole("button", { name: "Exportar" });
 
@@ -31,18 +48,15 @@ async function exportAs(page: Page, format: "CSV" | "Excel") {
   return download;
 }
 
-for (const tab of ["deliveries", "occurrences"] as const) {
-  test.describe(`exports ${tab} as MASTER`, () => {
+for (const section of SECTIONS) {
+  test.describe(`exports ${section.name} as MASTER`, () => {
     test.beforeEach(async ({ page }) => {
       // Exportar is disabled on an empty list, and the seed files no
       // occurrence: make sure there is something to export.
-      if (tab === "occurrences")
+      if (section.name === "occurrences")
         await ownOccurrence(`Exportação E2E ${Date.now()}`);
 
-      await openAsMaster(
-        page,
-        `/admin/deliveries?businessId=${fixtureBusinessId()}&tab=${tab}`,
-      );
+      await openAsMaster(page, section.path());
     });
 
     test("downloads the CSV of the picked company", async ({ page }) => {

@@ -18,6 +18,7 @@ import {
   type RouteAccessContext,
 } from "@/lib/route-access";
 import { accessibleDeliveryTabs } from "@/features/deliveries/lib/tabs";
+import { accessibleTowerViews } from "@/features/control-tower/lib/views";
 import { useAuthStore } from "@/store/auth-store";
 
 import { resolveTutorialKey } from "../engine/tutorial-key";
@@ -115,6 +116,7 @@ const TutorialProvider = ({
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   const urlTab = searchParams?.get("tab") ?? null;
+  const urlView = searchParams?.get("view") ?? null;
 
   const [tour, setTour] = useState<ActiveTour | null>(null);
 
@@ -185,8 +187,12 @@ const TutorialProvider = ({
         allowedDeliveryTabs: accessContext
           ? accessibleDeliveryTabs(accessContext)
           : undefined,
+        urlView,
+        allowedTowerViews: accessContext
+          ? accessibleTowerViews(accessContext)
+          : undefined,
       }),
-    [pathname, urlTab, currentTab, accessContext],
+    [pathname, urlTab, urlView, currentTab, accessContext],
   );
 
   useEffect(() => {

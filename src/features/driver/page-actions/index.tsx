@@ -16,7 +16,7 @@ import { usePageActionClassName } from "@/app/(protected)/_components/layout/pro
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 import { ExportButton } from "@/app/(protected)/_components/shared/custom/export-button";
 
-import { handleExportDriver } from "@/actions/driver/export-driver";
+import { exportDriverRequest } from "@/lib/export-requests";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -65,7 +65,7 @@ const DriverPageActions = ({
   // The file follows the list on screen (decision 5.8): same search, filters
   // and order, and on /admin the company picked above.
   const exportDrivers = (search?: string, format?: "csv" | "excel") =>
-    handleExportDriver(search, format, {
+    exportDriverRequest(search, format, {
       ...driverListQuery(searchParams),
       ...(mode === "admin" && businessId && { businessId }),
     });
@@ -74,7 +74,7 @@ const DriverPageActions = ({
     <PageActions>
       <ExportButton
         hasData={hasData}
-        exportAction={exportDrivers}
+        exportRequest={exportDrivers}
         entityName="relatório de motoristas"
         writePermission={canWrite}
       />

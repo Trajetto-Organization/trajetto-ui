@@ -1,5 +1,10 @@
 "use server";
 
+// Deprecated: the dialog downloads the model through the relay, streamed,
+// like the exports (src/lib/export-download.ts). Kept for one
+// release only for the tabs opened before the deploy, which still call this
+// action (expand, then contract); remove it in the next release.
+
 import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";

@@ -3,7 +3,9 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "react-query";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { stubRelay } from "./helpers/relay-fetch";
 
 /**
  * "Módulos Contratados": the switch after the MASTER turns a module on.
@@ -15,9 +17,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * atualizado com sucesso!" while the switch stayed off for the whole 30 s
  * the test waited. The API's confirmation now moves the switch.
  *
- * The Server Actions are the network boundary here and are stubbed: the
- * reading of the module list answers once, and the refetch never comes back
- * (the queued case), so only the confirmation can move the switch.
+ * The network is stubbed: the reading of the module list (a relay GET)
+ * answers once, and the refetch never comes back (the slow case), so only
+ * the confirmation (a Server Action) can move the switch.
  */
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -38,25 +40,6 @@ const actions = vi.hoisted(() => ({
 }));
 
 vi.mock("@/actions/business/entitlements", () => ({
-  getBusinessEntitlements: vi.fn(async () => {
-    actions.reads += 1;
-
-    if (actions.reads > 1) return new Promise(() => undefined);
-
-    return {
-      success: true,
-      message: "",
-      data: {
-        modules: [
-          { module: "FLEET", enabled: true },
-          { module: "DELIVERIES", enabled: false },
-        ],
-        vehicle_limit: 10,
-        vehicle_count: 0,
-        vehicle_limit_enabled: false,
-      },
-    };
-  }),
   updateBusinessEntitlement: vi.fn(async () => actions.updateResult),
   getModuleImpact: vi.fn(async () => ({
     success: true,
@@ -73,11 +56,34 @@ import { ManageEntitlementsForm } from "@/features/business-entitlements/manage-
 
 let root: Root | null = null;
 
+beforeEach(() => {
+  stubRelay({
+    "/business/entitlements/018f0000-0000-7000-8000-00000000000a": () => {
+      actions.reads += 1;
+
+      if (actions.reads > 1) return new Promise(() => undefined);
+
+      return {
+        data: {
+          modules: [
+            { module: "FLEET", enabled: true },
+            { module: "DELIVERIES", enabled: false },
+          ],
+          vehicle_limit: 10,
+          vehicle_count: 0,
+          vehicle_limit_enabled: false,
+        },
+      };
+    },
+  });
+});
+
 afterEach(async () => {
   await act(async () => root?.unmount());
   root = null;
   document.body.innerHTML = "";
   actions.reads = 0;
+  vi.unstubAllGlobals();
 });
 
 async function mount(): Promise<void> {

@@ -4,6 +4,7 @@ import { refusalMessage } from "@/lib/api-error";
 import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface DeleteOccurrenceTypeProps {
   businessId: string;
@@ -46,6 +47,10 @@ const handleDeleteOccurrenceType = async ({
         deleteOccurrenceTypeError: message || refusalMessage(response.status),
       };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-occurrence-type");
 
     return { successMessage: message };
   } catch (error) {

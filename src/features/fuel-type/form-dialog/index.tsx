@@ -156,9 +156,7 @@ const FuelTypeFormDialog = ({
     if (state.successMessage) {
       toast.success(state.successMessage);
 
-      void refreshAfterFuelTypeWrite(
-        isEdit ? "update-fuel-type" : "create-fuel-type",
-      ).catch(() =>
+      void refreshAfterFuelTypeWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

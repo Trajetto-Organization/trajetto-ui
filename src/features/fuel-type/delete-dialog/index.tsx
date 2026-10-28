@@ -50,7 +50,7 @@ const DeleteFuelTypeDialog = ({
 
       toast.success(result.successMessage ?? "Tipo de combustível excluído.");
 
-      void refreshAfterFuelTypeWrite("delete-fuel-type").catch(() =>
+      void refreshAfterFuelTypeWrite().catch(() =>
         toast.error("Erro ao atualizar dados. Recarregue a página."),
       );
 

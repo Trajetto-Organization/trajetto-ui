@@ -37,6 +37,16 @@ interface Violation {
   directive: string;
   blocked: string;
   path: string;
+  /**
+   * "enforce" (something was blocked) or "report" (the Report-Only Trusted
+   * Types policy: nothing was blocked, it only says what enforcing would
+   * break). Read from the report; enforced when the browser leaves it out.
+   */
+  disposition: "enforce" | "report";
+}
+
+function dispositionOf(value: unknown): Violation["disposition"] {
+  return value === "report" ? "report" : "enforce";
 }
 
 /**
@@ -136,6 +146,7 @@ function violationsOf(payload: unknown): Violation[] {
         directive: text(body.effectiveDirective ?? body.violatedDirective),
         blocked: blockedOf(body.blockedURL),
         path: pathOf(body.documentURL),
+        disposition: dispositionOf(body.disposition),
       }));
   }
 
@@ -152,6 +163,7 @@ function violationsOf(payload: unknown): Violation[] {
       ),
       blocked: blockedOf(report["blocked-uri"]),
       path: pathOf(report["document-uri"]),
+      disposition: dispositionOf(report.disposition),
     },
   ];
 }

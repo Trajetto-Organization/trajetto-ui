@@ -50,8 +50,9 @@ function useChartArea({ activityTrends }: ChartAreaInteractiveProps) {
     switch (range) {
       case "7d":
         return "Últimos 7 dias";
+      // 30 civil days of the company, not the calendar month.
       case "30d":
-        return "Último mês";
+        return "Últimos 30 dias";
       case "3m":
         return "Últimos 3 meses";
       case "6m":

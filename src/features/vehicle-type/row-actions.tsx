@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -10,6 +9,7 @@ import {
   RowActions,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -59,14 +59,7 @@ const VehicleTypeRowActions = ({
         />
         <RowActionItem
           label="Copiar ID"
-          onSelect={() =>
-            navigator.clipboard
-              .writeText(vehicleType.id)
-              .then(() =>
-                toast.success("ID copiado para a área de transferência!"),
-              )
-              .catch((error) => toast.error("Erro ao copiar o ID: " + error))
-          }
+          onSelect={() => void copyWithFeedback(vehicleType.id, "ID")}
         />
         <RowActionSeparator />
         <RowActionItem

@@ -161,7 +161,7 @@ const shippersTab: TutorialStep[] = [
   ),
   tableStep(
     "Tabela de Embarcadores 📋",
-    "Identificador, nome, CNPJ, contato, cidade e as datas de criação e atualização.",
+    "ID, CNPJ, nome, contato, cidade e as datas de criação e atualização.",
   ),
   rowActionsStep(
     "Ações do Embarcador ⚙️",

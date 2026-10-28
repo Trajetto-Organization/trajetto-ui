@@ -108,6 +108,12 @@ const getDashboardData = async (token: string) => {
           name: "Manutenção Pendente",
           value: data.maintenanceStats.pending || 0,
           color: "#f97316",
+          // Inside `pending`: the ones with no revision recorded. Absent
+          // from an older API; the card then says nothing about them.
+          unrecorded:
+            typeof data.maintenanceStats.unrecorded === "number"
+              ? data.maintenanceStats.unrecorded
+              : undefined,
         },
         {
           name: "Recém Manutenido",

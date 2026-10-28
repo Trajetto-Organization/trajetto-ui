@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 import type { OccurrenceTypeData } from "@/actions/occurrence-type/list-occurrence-type";
@@ -16,6 +17,7 @@ const formQuestionCount = (stored: unknown): number =>
   readFormFields(stored)?.length ?? 0;
 
 const buildOccurrenceTypeColumns = (): ColumnDef<OccurrenceTypeData>[] => [
+  idColumn<OccurrenceTypeData>(),
   {
     accessorKey: "name",
     meta: { title: "Nome" },

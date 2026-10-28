@@ -5,7 +5,7 @@ import { TriangleAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
-import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -50,16 +50,9 @@ const text = (value: unknown, width: string) => (
 const buildServiceOrderColumns = (
   scope: FleetScope,
 ): ColumnDef<ServiceOrderRow>[] => [
-  {
-    // A service order has no number of its own: the compact record id, the
-    // same "OS #…" the pickers and Contas a pagar show.
-    accessorKey: "id",
-    meta: { title: "ID" },
-    header: header("ID"),
-    cell: ({ row }) => <IdCell id={row.original.id} />,
-    enableSorting: false,
-    enableHiding: false,
-  },
+  // A service order has no number of its own: the record id identifies it,
+  // the same tail as the "OS #…" the pickers and Contas a pagar show.
+  idColumn<ServiceOrderRow>(),
   {
     accessorKey: "date",
     meta: { title: "Data da ordem" },

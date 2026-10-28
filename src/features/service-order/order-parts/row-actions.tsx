@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -9,6 +8,7 @@ import {
   RowActionSeparator,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -22,14 +22,7 @@ import { OrderPartFormDialog } from "./form-dialog";
 import type { OrderPartRow } from "./lib/order-part-rules";
 
 function copy(value: string | null | undefined, what: string) {
-  if (!value) return;
-
-  navigator.clipboard
-    .writeText(value)
-    .then(() => toast.success(what + " copiado para a área de transferência!"))
-    .catch(() =>
-      toast.error("Não foi possível copiar o " + what.toLowerCase() + "."),
-    );
+  void copyWithFeedback(value, what);
 }
 
 /**

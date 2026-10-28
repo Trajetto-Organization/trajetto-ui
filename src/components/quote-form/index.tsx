@@ -35,7 +35,11 @@ import {
 } from "@/components/shared/live-validation";
 
 import { partner } from "@/components/about/team";
-import { CaptchaTurnstile } from "@/components/shared/custom/captcha-turnstile";
+import {
+  CaptchaTurnstile,
+  useCaptchaToken,
+} from "@/components/shared/custom/captcha-turnstile";
+import { quoteConsumedCaptcha } from "@/components/shared/custom/captcha-turnstile/token-consumed";
 import { MovingArrow, siteButtonClass } from "@/components/site/arrow-link";
 import { Eyebrow, SectionHeading } from "@/components/site/primitives";
 import { Reveal } from "@/components/site/reveal";
@@ -87,7 +91,6 @@ import {
 
 const QUOTE_PRIVACY_NOTICE_ID = "quote-privacy-notice";
 const QUOTE_FORM_TITLE_ID = "quote-form-title";
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 type Tone = "f" | "d" | "x";
 
@@ -256,16 +259,18 @@ const QuoteFields = ({
 }: QuoteFieldsProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
-  const [turnstileKey, setTurnstileKey] = useState<number>(0);
+  // The token lives with the widget, which only exists on step 3: leaving
+  // the step unmounts it and drops its token, so coming back waits for a
+  // new one instead of treating the loading box as valid.
+  const captcha = useCaptchaToken();
+  const resetCaptcha = captcha.reset;
+  const captchaMissing = step === 3 && captcha.missing;
 
-  // Reset Turnstile only when the token was consumed (server/turnstile errors, not Zod validation).
+  // A new widget whenever the API answered with a message (the token was
+  // sent and verified there); field errors leave it unused.
   useEffect(() => {
-    if (state?.createQuoteError?.createQuoteErrorMessage) {
-      setIsCaptchaValid(false);
-      setTurnstileKey((prev) => prev + 1);
-    }
-  }, [state]);
+    if (quoteConsumedCaptcha(state)) resetCaptcha();
+  }, [state, resetCaptcha]);
 
   const errorOf = (field: QuoteFieldName) => live.messageOf(field);
   const fleetError = errorOf("fleet_size");
@@ -505,25 +510,19 @@ const QuoteFields = ({
           </p>
         ) : null}
 
-        {IS_PRODUCTION && step === 3 ? (
+        {captcha.required && step === 3 ? (
           <>
             <CaptchaTurnstile
-              key={turnstileKey}
+              {...captcha.widget}
               className="!mt-0"
-              onSuccess={(token) => {
-                const input = document.getElementById(
-                  "quote-turnstile-token",
-                ) as HTMLInputElement | null;
-                if (input) input.value = token;
-                setIsCaptchaValid(true);
-              }}
-              theme="auto"
               size="flexible"
+              // Under 300 px of card (phones up to ~380 px wide).
+              fallbackSize="compact"
             />
             <input
-              id="quote-turnstile-token"
               type="hidden"
               name="turnstileToken"
+              value={captcha.token ?? ""}
             />
           </>
         ) : null}
@@ -546,9 +545,14 @@ const QuoteFields = ({
         ) : null}
         <button
           type="submit"
-          // Read with the button, right before sending.
-          aria-describedby={QUOTE_PRIVACY_NOTICE_ID}
-          disabled={pending || (IS_PRODUCTION && step === 3 && !isCaptchaValid)}
+          // Read with the button, right before sending (and, while the
+          // captcha holds it back, why).
+          aria-describedby={
+            captchaMissing && captcha.describedBy
+              ? `${QUOTE_PRIVACY_NOTICE_ID} ${captcha.describedBy}`
+              : QUOTE_PRIVACY_NOTICE_ID
+          }
+          disabled={pending || captchaMissing}
           className={siteButtonClass({
             className:
               "h-14 flex-1 rounded-[15px] text-base active:scale-[.985]",

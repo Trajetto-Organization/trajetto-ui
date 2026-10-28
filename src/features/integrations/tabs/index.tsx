@@ -45,10 +45,10 @@ const IntegrationsTabs = ({
       activeValue={activeTab}
       hrefFor={hrefFor}
       /*
-        Four sections, so the rail keeps its own width instead of spanning the
-        page. Entregas has ten and fills; stretching these four to match put
-        390px under each label on a wide screen. Same control, different
-        number of things in it.
+        Four short sections, so the rail keeps its own width instead of
+        spanning the page. Entregas (six) and the Torre (five views) fill;
+        stretching these four to match put 390px under each label on a wide
+        screen. Same control, different number of things in it.
       */
       fill={false}
       dataTutorial="integrations-tabs"

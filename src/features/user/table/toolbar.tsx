@@ -94,8 +94,8 @@ function UserToolbar<TData>({
         placeholder="Procurar..."
         aria-label={
           variant === "masters"
-            ? "Buscar masters por nome ou e-mail"
-            : "Buscar usuários por nome, e-mail, perfil, motorista ou nível de acesso"
+            ? "Buscar masters por nome, e-mail ou ID"
+            : "Buscar usuários por nome, e-mail, perfil, motorista, nível de acesso ou ID"
         }
         defaultValue={searchParams.get("search") || ""}
         onChange={handleSearchWithLoading}

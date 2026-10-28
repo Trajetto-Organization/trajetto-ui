@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { businessTableSchema } from "@/schemas/business-table-schema";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { DataTableBusinessRowActions } from "../data-table-row-actions";
 import { ToggleBusinessActiveCell } from "../toggle-active-cell";
@@ -25,8 +26,9 @@ import { timeZoneLabel } from "../timezone-field/timezones";
  * column filters the loaded page.
  */
 const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
+  idColumn<businessTableSchema>(),
   {
-    // The CNPJ is the company's identifier, unique on the platform.
+    // The CNPJ is the company's business identifier, unique on the platform.
     accessorKey: "cnpj",
     meta: {
       title: "CNPJ",

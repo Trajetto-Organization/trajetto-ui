@@ -355,6 +355,34 @@ describe("the proof audit, moved from Entregas", () => {
   });
 });
 
+/**
+ * One header for every view (decision of 28/10/2026): Auditoria opted out
+ * of the Torre's Atualizar and drew its own beside its counters — the same
+ * refresh of the whole tab, one line lower than on every other view, and
+ * the loading skeleton's header button jumped there when the queue arrived.
+ */
+describe("the header of every view", () => {
+  const header = (html: string) =>
+    /<header>([\s\S]*?)<nav /.exec(html)?.[1] ?? "";
+
+  it.each([
+    ["routes", [[/operation-summary/, summary]]],
+    ["panel", []],
+    ["tickets", [[/list-threads/, { status: 200, body: { data: [] } }]]],
+    ["audit", []],
+  ] as Array<[string, Array<[RegExp, Answer]>]>)(
+    "%s carries the Torre's Atualizar, above the views strip",
+    async (view, extra) => {
+      answers = [[/\/user\/me$/, adminMe], ...extra];
+
+      const html = await render("dashboard", { view });
+
+      expect(html).toContain(`data-view="${view}"`);
+      expect(header(html)).toContain('data-actions="tower"');
+    },
+  );
+});
+
 describe("the MASTER on /admin/control-tower", () => {
   it("asks for a company first, and fetches nothing else", async () => {
     answers = [[/\/user\/me$/, masterMe]];

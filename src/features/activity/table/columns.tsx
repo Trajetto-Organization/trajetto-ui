@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
-import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
@@ -68,18 +68,8 @@ function buildActivityColumns(
   scope: ActivityScope,
 ): ColumnDef<ActivityTableRow>[] {
   const columns: ColumnDef<ActivityTableRow>[] = [
-    {
-      // An activity has no number of its own: the compact record id.
-      id: "id",
-      accessorKey: "id",
-      meta: { title: "ID" },
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="ID" />
-      ),
-      cell: ({ row }) => <IdCell id={row.original.id} />,
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // An activity has no number of its own: the record id identifies it.
+    idColumn<ActivityTableRow>(),
     {
       id: "type",
       accessorKey: "type",

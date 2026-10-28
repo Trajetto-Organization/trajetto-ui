@@ -8,8 +8,9 @@ import type {
   WorkerMetrics,
 } from "@/actions/health/get-health-metrics";
 import type {
+  ProviderProbeFailureKind,
   ProviderReadiness,
-  ProviderReadinessStatus,
+  ProviderReadinessData,
 } from "@/actions/health/get-health-providers";
 
 /**
@@ -20,7 +21,8 @@ import type {
  * API — and treats a missing number as "unknown", never as "zero, all good".
  */
 
-type Tone = "green" | "yellow" | "red";
+/** gray: not known either way (a status this web does not know). */
+type Tone = "green" | "yellow" | "red" | "gray";
 
 interface Status {
   label: string;
@@ -246,28 +248,94 @@ function redisStatus(redis: RedisMetrics | undefined): Status | null {
   return { label: "Saudável", tone: "green" };
 }
 
-const READINESS_LABEL: Record<ProviderReadinessStatus, string> = {
-  ok: "Pronto",
-  warning: "Atenção",
-  error: "Com erro",
-  not_configured: "Não configurado",
-  disabled: "Desligado",
+/**
+ * What one provider's verdict means on the screen (§12). The API's status
+ * stays in its five values; `transient` (newer APIs) tells an unstable
+ * provider (it answered only on a second attempt, or slowly) from one with a
+ * standing caveat (a missing webhook secret). A status this web does not
+ * know is "not verified", never red and never green.
+ */
+type ProviderReadinessState =
+  | "operational"
+  | "unstable"
+  | "attention"
+  | "error"
+  | "not_configured"
+  | "disabled"
+  | "unverified";
+
+type ReadinessLike = Pick<ProviderReadiness, "transient"> & {
+  status: string;
+};
+
+function readinessState(provider: ReadinessLike): ProviderReadinessState {
+  switch (provider.status) {
+    case "ok":
+      return "operational";
+    case "warning":
+      return provider.transient === true ? "unstable" : "attention";
+    case "error":
+      return "error";
+    case "not_configured":
+      return "not_configured";
+    case "disabled":
+      return "disabled";
+    default:
+      return "unverified";
+  }
+}
+
+/**
+ * "Não configurado" is red: an unset provider fails every send of its
+ * channel. "Desligado" is deliberate (AI_PROVIDER=none, e-mail outside
+ * production) and stays neutral. "Com erro" is what the API confirmed:
+ * a refusal, or two failed attempts in a row.
+ */
+const READINESS_BADGE: Record<ProviderReadinessState, Status> = {
+  operational: { label: "Operacional", tone: "green" },
+  unstable: { label: "Instável", tone: "yellow" },
+  attention: { label: "Atenção", tone: "yellow" },
+  error: { label: "Com erro", tone: "red" },
+  not_configured: { label: "Não configurado", tone: "red" },
+  disabled: { label: "Desligado", tone: "green" },
+  unverified: { label: "Não verificado", tone: "gray" },
+};
+
+/** One provider's badge, from the provider (or a bare status). */
+function readinessBadge(provider: ReadinessLike | string): Status {
+  return READINESS_BADGE[
+    readinessState(
+      typeof provider === "string" ? { status: provider } : provider,
+    )
+  ];
+}
+
+const FAILURE_LABEL: Record<ProviderProbeFailureKind, string> = {
+  timeout: "tempo esgotado",
+  network: "falha de rede ou DNS",
+  http_5xx: "erro interno do provedor (5xx)",
+  throttled: "limite de chamadas (429)",
+  invalid_response: "resposta incompleta",
 };
 
 /**
- * One provider's badge. "Não configurado" is red: an unset provider fails
- * every send of its channel. "Desligado" is deliberate (AI_PROVIDER=none,
- * e-mail outside production) and stays neutral.
+ * How the verdict was reached, in words (the badge's color is not the only
+ * signal): "2 tentativas · última falha: tempo esgotado". Null for a clean
+ * first answer, for a provider nothing probed, and for an older API.
  */
-function readinessBadge(status: ProviderReadinessStatus): Status {
-  const tone: Tone =
-    status === "ok" || status === "disabled"
-      ? "green"
-      : status === "warning"
-        ? "yellow"
-        : "red";
+function probeNote(
+  provider: Pick<ProviderReadiness, "attempts" | "failure_kind">,
+): string | null {
+  const { attempts, failure_kind: kind } = provider;
 
-  return { label: READINESS_LABEL[status] ?? status, tone };
+  if (typeof attempts !== "number" || attempts <= 0) return null;
+  if (attempts === 1 && !kind) return null;
+
+  const tries = attempts === 1 ? "1 tentativa" : `${attempts} tentativas`;
+
+  return kind
+    ? `${tries} · última falha: ${FAILURE_LABEL[kind] ?? kind}`
+    : tries;
 }
 
 /** The card's badge: the worst provider wins. */
@@ -276,20 +344,50 @@ function readinessSummary(
 ): Status | null {
   if (!providers || providers.length === 0) return null;
 
-  const broken = providers.filter(
-    (provider) =>
-      provider.status === "error" || provider.status === "not_configured",
-  ).length;
+  const states = providers.map(readinessState);
+  const count = (state: ProviderReadinessState) =>
+    states.filter((each) => each === state).length;
+
+  const broken = count("error") + count("not_configured");
 
   if (broken > 0) {
     return { label: `${broken} com problema`, tone: "red" };
   }
 
-  if (providers.some((provider) => provider.status === "warning")) {
+  const unstable = count("unstable");
+
+  if (unstable > 0) {
+    return {
+      label: unstable === 1 ? "1 instável" : `${unstable} instáveis`,
+      tone: "yellow",
+    };
+  }
+
+  if (count("attention") > 0) {
     return { label: "Com ressalvas", tone: "yellow" };
   }
 
-  return { label: "Todos prontos", tone: "green" };
+  if (count("unverified") > 0) {
+    return { label: "Não verificado", tone: "gray" };
+  }
+
+  return { label: "Todos operacionais", tone: "green" };
+}
+
+/**
+ * After a result that rests on a passing condition, the card reads once
+ * more by itself, this long after: past the API's 5-second copy of such a
+ * report, so the read probes again. One read, not a loop (reads.ts).
+ */
+const PROVIDER_RECHECK_MS = 10_000;
+
+/** Some provider's verdict may change on the next probe. */
+function hasTransientProvider(
+  data: Pick<ProviderReadinessData, "providers"> | null | undefined,
+): boolean {
+  return (data?.providers ?? []).some(
+    (provider) => provider.transient === true,
+  );
 }
 
 /** "45s", "12 min", "3 h" — or "—" when there is nothing to measure. */
@@ -305,12 +403,17 @@ const TONE_BADGE_CLASS: Record<Tone, string> = {
   green: "bg-green-100 text-green-800 border-green-200",
   yellow: "bg-yellow-100 text-yellow-800 border-yellow-200",
   red: "bg-red-100 text-red-800 border-red-200",
+  gray: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 export {
+  PROVIDER_RECHECK_MS,
   TONE_BADGE_CLASS,
+  hasTransientProvider,
+  probeNote,
   providerChannelStatus,
   readinessBadge,
+  readinessState,
   readinessSummary,
   redisStatus,
   worstStatus,
@@ -322,4 +425,4 @@ export {
   stuckWorkers,
   whatsappAfterAcceptance,
 };
-export type { Status, Tone };
+export type { ProviderReadinessState, Status, Tone };

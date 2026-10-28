@@ -328,7 +328,11 @@ test.describe("the Rotas table", () => {
 
     const titles = (await headers.allTextContents()).map((text) => text.trim());
 
+    // The record id first, as in every table (spec §5), then the code.
+    expect(titles[0]).toBe("ID");
+
     for (const expected of [
+      "ID",
       "Código",
       "Conclusão",
       "Data de criação",
@@ -346,25 +350,33 @@ test.describe("the Rotas table", () => {
     page,
   }) => {
     /**
-     * A header over an empty column is the same defect wearing a label. What
-     * the support call needs is the route's code ("Rota 42", sequential per
-     * company), on screen and readable; the raw UUID is in the row menu.
+     * A header over an empty column is the same defect wearing a label. The
+     * first cell is the record id, compact (its last twelve characters, the
+     * full one in the tooltip); the support call's route code ("Rota 42",
+     * sequential per company) is the next one, on screen and readable.
      */
     await open(page, "/dashboard/routes");
 
-    const firstCell = page
-      .locator("table tbody tr")
-      .first()
-      .locator("td")
-      .first();
+    const cells = page.locator("table tbody tr").first().locator("td");
+    const idCell = cells.first();
 
-    await expect(firstCell).toBeVisible({ timeout: 30_000 });
+    await expect(idCell).toBeVisible({ timeout: 30_000 });
 
+    // What is painted (the screen-reader copy of the full id is in the
+    // cell's text too, visually hidden).
+    expect(
+      (await idCell.locator('[aria-hidden="true"]').innerText()).trim(),
+    ).toMatch(/^[0-9a-f]{12}$/);
+    expect(await idCell.locator("p[title]").getAttribute("title")).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+
+    const firstCell = cells.nth(1);
     const text = (await firstCell.innerText()).trim();
 
     expect(
       text,
-      `a primeira célula não parece um identificador: "${text}"`,
+      `a célula do código não parece um identificador: "${text}"`,
     ).toMatch(/^Rota \d+/);
 
     // And it is not painted into a box narrower than itself.
@@ -377,6 +389,39 @@ test.describe("the Rotas table", () => {
     });
 
     expect(clipped, "o identificador está cortado na célula").toBe(false);
+  });
+
+  test("and Copiar ID copies the whole id the first cell abbreviates", async ({
+    page,
+  }) => {
+    // The table shows twelve characters; the clipboard must get all 36.
+    await page
+      .context()
+      .grantPermissions(["clipboard-read", "clipboard-write"], {
+        origin: BASE,
+      });
+    await open(page, "/dashboard/routes");
+
+    const full = await page
+      .locator("table tbody tr")
+      .first()
+      .locator("td")
+      .first()
+      .locator("p[title]")
+      .getAttribute("title");
+
+    const menu = await openRowMenu(page);
+
+    expect(menu.labels).toContain("Copiar ID");
+
+    await page
+      .getByRole("menuitem", { name: "Copiar ID", exact: true })
+      .click();
+
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(full);
+    expect(full).toHaveLength(36);
   });
 });
 

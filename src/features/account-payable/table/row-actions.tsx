@@ -2,14 +2,15 @@
 
 import { useState } from "react";
 import type { Row } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
   RowActionSeparator,
   RowActions,
 } from "@/components/shared/custom/row-actions";
+import { shortId } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -67,12 +68,7 @@ const AccountPayableRowActions = ({
   ]);
 
   const copy = (value: string, label: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${label} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, label);
   };
 
   const deleteBlocked = !deletePermissions.hasAllPermissions
@@ -84,7 +80,7 @@ const AccountPayableRowActions = ({
   return (
     <>
       <RowActions
-        entity={`a conta a pagar ${bill.document_number ?? bill.id.slice(-8)}`}
+        entity={`a conta a pagar ${bill.document_number ?? shortId(bill.id)}`}
       >
         <RowActionItem
           label="Editar Conta a Pagar"

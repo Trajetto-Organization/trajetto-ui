@@ -1,30 +1,69 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 # ---------------------------------------------------------
-# STAGE 1: Base (Node, certs, dumb-init)
+# STAGE 1: Node (the official image: it builds the app and lends the
+# runtime its node binary)
 # ---------------------------------------------------------
-# Node 22 LTS on Alpine; version pinned for reproducible builds. Alpine keeps
-# the base around 100 MB smaller than Debian slim, which dominated this image:
-# the Next standalone output is only ~65 MB.
-#
-# Alpine uses musl instead of glibc. The one native dependency that matters here
-# is sharp, used by the Next image optimizer at runtime — yarn resolves the
-# musl variant automatically because the install runs inside this container.
+# Node 22 LTS on Alpine; version pinned for reproducible builds. Alpine uses
+# musl instead of glibc. The one native dependency that matters here is
+# sharp, used by the Next image optimizer at runtime — yarn resolves the musl
+# variant automatically because the install runs inside this container.
 #
 # Pinned by digest too (INFRA-16): a tag can be re-pushed, a digest cannot.
-# Dependabot (docker ecosystem) moves the tag and the digest together.
-FROM node:22.21.1-alpine@sha256:0340fa682d72068edf603c305bfbc10e23219fb0e40df58d9ea4d6f33a9798bf AS base
+# Dependabot (docker ecosystem) moves the tag and the digest together. The
+# tag names its Alpine minor: the runtime base below must be the same one,
+# because this binary is built against that minor's musl and libstdc++
+# (tests/unitaires/image-layers.test.ts holds the two together).
+FROM node:22.21.1-alpine3.23@sha256:0340fa682d72068edf603c305bfbc10e23219fb0e40df58d9ea4d6f33a9798bf AS node
 
-# The base image's OpenSSL lags Alpine's fixes (the scan flagged libcrypto3
-# 3.5.4 with 3.5.6 out); upgrading here takes them without waiting for a new
-# node image digest.
+# ---------------------------------------------------------
+# STAGE 2: The node binary, as a reproducible tree
+# ---------------------------------------------------------
+# Copied straight to /usr/local/bin, the layer gets /usr, /usr/local and
+# /usr/local/bin stamped with the build's time: every uncached build (a new
+# runner, an evicted GitHub cache) made a new ~46 MB blob of the same binary,
+# and the server pulled it again. Here the directories take the binary's own
+# mtime, so the layer is a function of the Node image digest alone — the same
+# blob in every build, and in the API image, whose Dockerfile has this exact
+# stage and base digests (keep the two in step): the VPS stores and pulls it
+# once for both (measured 28/10/2026: one blob, 46.1 MB compressed).
+FROM node AS node-binary
+
+RUN mkdir -p /out/usr/local/bin \
+    && cp -p /usr/local/bin/node /out/usr/local/bin/node \
+    && touch -h -r /usr/local/bin/node /out/usr/local/bin /out/usr/local /out/usr
+
+# ---------------------------------------------------------
+# STAGE 3: Runtime base (Alpine + the node binary, nothing else)
+# ---------------------------------------------------------
+# The runtime is `node server.js`: no package manager. The Node image's other
+# layers (npm, corepack, yarn, C headers: ~25 MB) used to come along, and a
+# later `rm -rf` only hid them — layers are additive, so every pull still
+# carried them. Starting from Alpine and copying the one binary leaves them
+# out for real (measured 28/10/2026, same sources: 256 → 216 MB unpacked,
+# 79 → 71 MB compressed).
+#
+# node and sharp's libvips link against musl, libstdc++ and libgcc only
+# (ldd). Node bundles its own OpenSSL, CA store and full ICU — pt-BR dates
+# and America/Sao_Paulo need no tzdata package (the Node image had none
+# either).
+FROM alpine:3.23.7@sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63 AS base
+
+# First, and `--link`: a layer of its own that does not depend on the
+# Alpine one below, so an Alpine patch bump leaves this ~46 MB (compressed)
+# layer's digest as it was and the server does not pull it again.
+COPY --link --from=node-binary /out/ /
+
+# The OpenSSL upgrade takes Alpine's fixes at build time without waiting for
+# a new base digest (the scan once flagged libcrypto3 3.5.4 with 3.5.6 out);
+# busybox (wget, the HEALTHCHECK) uses it, node does not.
 RUN apk upgrade --no-cache libcrypto3 libssl3 \
-    && apk add --no-cache ca-certificates dumb-init
+    && apk add --no-cache ca-certificates dumb-init libstdc++
 
 # ---------------------------------------------------------
-# STAGE 2: Builder (Install and Compile)
+# STAGE 4: Builder (Install and Compile)
 # ---------------------------------------------------------
-FROM base AS builder
+FROM node AS builder
 
 WORKDIR /app
 
@@ -75,14 +114,18 @@ RUN rm -rf \
     .next/standalone/node_modules/@img/sharp-libvips-linux-x64 \
     .next/standalone/node_modules/@img/sharp-linux-x64
 
+# The traced dependencies leave the standalone output so the runner can copy
+# them as a layer of their own (see there).
+RUN mv .next/standalone/node_modules /app/standalone-node_modules
+
 # ---------------------------------------------------------
-# STAGE 3: Runner (Production)
+# STAGE 5: Runner (Production)
 # ---------------------------------------------------------
 FROM base AS runner
 
 LABEL org.opencontainers.image.source="https://github.com/Trajetto-Organization/trajetto-ui"
 LABEL org.opencontainers.image.description="Trajetto UI (Next.js 14 standalone)"
-LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.licenses="LicenseRef-Trajetto-Proprietary"
 
 WORKDIR /app
 
@@ -98,13 +141,15 @@ RUN addgroup --gid 1001 --system nodejs \
     && mkdir .next \
     && chown nextjs:nodejs .next
 
-# The runtime is `node server.js`: no package manager. The Node image ships
-# npm, corepack and yarn, and the scan flagged npm's bundled `tar`; they are
-# also code nothing here needs, so they leave the image.
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
-    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
-    /opt/yarn-v* /usr/local/bin/yarn /usr/local/bin/yarnpkg
-
+# Most stable first. The standalone output mixes the traced node_modules
+# (~13.5 MB compressed: the same bytes until a dependency changes) with the
+# server code every commit rebuilds; one COPY made them one layer, so every
+# deploy re-sent the unchanged dependencies over the VPS's flaky route to
+# GHCR. Apart, the node_modules COPY is cached by its content and keeps its
+# digest from one commit to the next (measured: a source-only change re-ships
+# 6.2 MB compressed instead of 19.7). Same files, paths, modes and owners as
+# the single COPY (compared file by file on 28/10/2026).
+COPY --from=builder --chown=nextjs:nodejs /app/standalone-node_modules ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

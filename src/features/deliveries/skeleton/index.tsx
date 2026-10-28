@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
  *
  * Both places that wait on this page used a generic table skeleton: a search
  * box, a header row and ten rows. The page it was standing in for has a
- * company selector, an action bar, a strip of ten sections and four cards
+ * company selector, an action bar, a strip of six sections and four cards
  * ABOVE any of that — so every arrival jumped, and every tab change jumped
  * back. A fallback that does not match the thing it is covering is not a
  * loading state, it is a second layout the user has to watch collapse.
@@ -80,23 +80,35 @@ const DeliveriesSkeleton = ({
  */
 const DeliveriesTableSkeleton = (): JSX.Element => (
   <>
-    {/* The table's own toolbar: the period on its own line (meeting of
-          14/10/2026), then search, the filters, the view menu. */}
+    {/* The table's own toolbar: search, the filters, then the period and
+          the view menu as one group at the right (DataTableToolbarEnd),
+          moving to the next line together when they do not fit. */}
     <div className="flex w-full flex-wrap items-center gap-2">
-      <div data-skeleton-period className="flex w-full items-center gap-1">
-        <Skeleton className="h-4 w-4" />
-        {["w-14", "w-16", "w-[72px]", "w-[72px]", "w-28"].map((width) => (
-          <Skeleton key={width} className={`h-8 ${width}`} />
-        ))}
-      </div>
-
       <Skeleton className="h-8 w-full sm:w-[270px]" />
 
-      {Array.from({ length: 5 }).map((_, index) => (
+      {Array.from({ length: 4 }).map((_, index) => (
         <Skeleton key={index} className="h-8 w-28" />
       ))}
 
-      <Skeleton className="h-8 w-full sm:ml-auto sm:w-28" />
+      <div
+        data-skeleton-toolbar-end
+        className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto"
+      >
+        <div data-skeleton-period className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4" />
+          <div className="flex items-center gap-1">
+            {/* Hoje, 7, 14 and 30 dias, Personalizado. Keyed by position:
+                two presets share a width. */}
+            {["w-14", "w-16", "w-[72px]", "w-[72px]", "w-28"].map(
+              (width, index) => (
+                <Skeleton key={index} className={`h-8 ${width}`} />
+              ),
+            )}
+          </div>
+        </div>
+
+        <Skeleton className="h-8 w-full sm:w-28" />
+      </div>
     </div>
 
     <div className="rounded-md border">

@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { toast } from "sonner";
-
 import {
   RowActionItem,
   RowActionSeparator,
   RowActions,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -62,12 +61,7 @@ const VehicleRowActions = ({
   ]);
 
   const copy = (value: string, label: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${label} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, label);
   };
 
   return (
@@ -88,7 +82,11 @@ const VehicleRowActions = ({
         />
         <RowActionItem
           label="Copiar placa"
-          onSelect={() => copy(vehicle.license_plate, "Placa")}
+          onSelect={() =>
+            void copyWithFeedback(vehicle.license_plate, "Placa", {
+              feminine: true,
+            })
+          }
         />
         {vehicle.driverId && (
           <RowActionItem

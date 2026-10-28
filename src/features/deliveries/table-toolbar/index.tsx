@@ -19,7 +19,7 @@ import { SearchInputWithLoading } from "@/components/ui/search-input-with-loadin
 import { useSearch } from "@/lib/search-params";
 
 import { DataTableFacetedFilter } from "@/app/(protected)/_components/shared/tanstack-table/data-table-faceted-filter";
-import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
+import { DataTableToolbarEnd } from "@/app/(protected)/_components/shared/tanstack-table/data-table-toolbar-end";
 import { DataTableServerFilters } from "@/app/(protected)/_components/shared/tanstack-table/data-table-server-filters";
 import { facetOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table/server-table";
 
@@ -29,7 +29,10 @@ import {
   DELIVERY_STATUS_FILTER_LABELS,
   type DeliveryListSearchMeta,
 } from "../deliveries/server-table";
-import { DeliveriesPeriodFilter } from "./period-filter";
+import {
+  DeliveriesPeriodFilter,
+  DeliveriesPeriodSearchHint,
+} from "./period-filter";
 import {
   ACTIVE_LABELS,
   IMPORT_STATUS_LABELS,
@@ -112,9 +115,9 @@ const SEARCH_PLACEHOLDER: Record<DeliveryTab, string> = {
   occurrences: "",
   monitoring: "",
   chat: "",
-  shippers: "Nome, CNPJ ou e-mail...",
-  "occurrence-types": "Nome ou descrição...",
-  "status-change-reasons": "Nome ou descrição...",
+  shippers: "Nome, CNPJ, e-mail ou ID...",
+  "occurrence-types": "Nome, descrição ou ID...",
+  "status-change-reasons": "Nome, descrição ou ID...",
 
   // Empty hides the box: the listing endpoint takes no search term, and a
   // field that types into nothing is worse than no field.
@@ -215,16 +218,6 @@ export function DeliveriesTableToolbar<TData>({
 
   return (
     <div className="flex flex-wrap items-center gap-2 w-full">
-      {/* The list opens on today (meeting of 14/10/2026): the period comes
-          first, on its own line, because it frames every number below.
-          Never disabled by a failed read: a 30-day or a 92-day range is the
-          likeliest cause of one, and a shorter period is the way out. */}
-      {activeTab === "deliveries" && (
-        <div className="w-full">
-          <DeliveriesPeriodFilter periodMeta={periodMeta} />
-        </div>
-      )}
-
       {SEARCH_PLACEHOLDER[activeTab] !== "" && (
         <SearchInputWithLoading
           data-tutorial="deliveries-search"
@@ -314,10 +307,19 @@ export function DeliveriesTableToolbar<TData>({
         </Button>
       )}
 
-      {!error && table && (
-        <div className="w-full sm:w-auto sm:ml-auto">
-          <DataTableViewOptions table={table} />
-        </div>
+      {/* The period frames every number of the list (meeting of
+          14/10/2026), and sits on the filters' line at the right, beside
+          Visualizar, wrapping with it as one group. Never disabled by a
+          failed read: a 30-day or a 92-day range is the likeliest cause of
+          one, and a shorter period is the way out. */}
+      <DataTableToolbarEnd table={table} error={error}>
+        {activeTab === "deliveries" && (
+          <DeliveriesPeriodFilter periodMeta={periodMeta} />
+        )}
+      </DataTableToolbarEnd>
+
+      {activeTab === "deliveries" && (
+        <DeliveriesPeriodSearchHint periodMeta={periodMeta} />
       )}
     </div>
   );

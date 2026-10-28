@@ -5,7 +5,7 @@ import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 import {
   IdCell,
-  shortId,
+  idColumn,
 } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
@@ -45,15 +45,8 @@ const text = (value: unknown, width: string) => (
 const buildOrderPartColumns = (
   scope: FleetScope,
 ): ColumnDef<OrderPartRow>[] => [
-  {
-    // A part line has no number of its own: the compact record id.
-    accessorKey: "id",
-    meta: { title: "ID" },
-    header: header("ID"),
-    cell: ({ row }) => <IdCell id={row.original.id} />,
-    enableSorting: false,
-    enableHiding: false,
-  },
+  // A part line has no number of its own: the record id identifies it.
+  idColumn<OrderPartRow>(),
   {
     id: "partDescription",
     accessorFn: (row) => row.part.description,
@@ -128,12 +121,7 @@ const buildOrderPartColumns = (
     meta: { title: "Ordem de serviço" },
     header: header("Ordem de serviço"),
     cell: ({ row }) => (
-      <p
-        className="w-40 truncate font-mono text-sm font-medium"
-        title={row.original.serviceOrderId}
-      >
-        OS #{shortId(row.original.serviceOrderId)}
-      </p>
+      <IdCell id={row.original.serviceOrderId} prefix="OS #" className="w-40" />
     ),
   },
   {

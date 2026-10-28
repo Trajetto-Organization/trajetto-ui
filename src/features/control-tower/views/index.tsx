@@ -275,9 +275,11 @@ const ControlTowerViews = async ({
     );
   }
 
-  // The queue a person works through, with its own paging, counters and
-  // Atualizar beside its filters — a second one up in the header would be a
-  // button nobody connects to the counters it changes.
+  // The queue a person works through, with its own paging and counters. Its
+  // Atualizar is the Torre's, in the header like every other view's
+  // (decision of 28/10/2026): it drew its own beside the counters, the same
+  // refresh of the whole tab one line further down, and the header's
+  // placeholder jumped there when the queue arrived.
   if (view === "audit") {
     return frame(
       <div className="space-y-6" data-tutorial="welcome">
@@ -288,7 +290,6 @@ const ControlTowerViews = async ({
           businessId={panelBusinessId}
         />
       </div>,
-      "none",
     );
   }
 

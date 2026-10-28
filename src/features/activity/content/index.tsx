@@ -13,7 +13,6 @@ import { listActivitiesCursor } from "@/actions/activity/list-activities-cursor"
 import { ActivityStats } from "../stats";
 import { ActivityTimelineFeed } from "../timeline-feed";
 import { ActivityViewSwitch, type ActivityView } from "../view-switch";
-import { ActivityPeriodSwitch } from "../period-switch";
 
 import { ActivityPageActions } from "../page-actions";
 import { ActivityTable } from "../table";
@@ -155,12 +154,13 @@ const ActivityContent = async ({
 
   return (
     <div className="my-6 space-y-6">
-      <ProtectedPageToolbar actions={<ActivityPageActions />} />
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <ActivityViewSwitch activeView={activeView} />
-        <ActivityPeriodSwitch period={period} />
-      </div>
+      {/* One line: the reading (timeline or table) on the left, the period
+          and Atualizar on the right — wrapping as a whole only when they no
+          longer fit, and stacked on a phone. */}
+      <ProtectedPageToolbar
+        context={<ActivityViewSwitch activeView={activeView} />}
+        actions={<ActivityPageActions period={period} />}
+      />
 
       <ActivityStats summary={summary} />
 

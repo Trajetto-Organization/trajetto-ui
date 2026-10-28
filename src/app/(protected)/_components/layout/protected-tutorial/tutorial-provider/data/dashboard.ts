@@ -1,5 +1,9 @@
 import type { TutorialConfig, TutorialStep } from "../tutorial-provider.types";
 
+import { MAINTENANCE_DUE_SOON_DAYS } from "@/app/(protected)/_components/overview-dashboard/charts/maintenance-status/rules";
+import { AI_HIGH_USAGE_PERCENT } from "@/app/(protected)/_components/shared/limits/limits-content/lib/ai-usage-copy";
+import { VEHICLE_SLOT_HIGH_USAGE_PERCENT } from "@/lib/vehicle-slot-usage";
+
 import { welcomeStep } from "./factories";
 
 /**
@@ -24,8 +28,8 @@ const dashboardTour: TutorialStep[] = [
     anchor: "dashboard-tabs",
     title: "Abas do Painel 📑",
     content: `• Visão geral: cartões, operação de hoje, atividades recentes e atalhos
-    • Análise Gráfica: a evolução dos números da empresa ao longo do tempo
-    • Limites de Uso: o consumo da leitura automática de fotos
+    • Análise Gráfica: a evolução dos números ao longo do tempo
+    • Limites de Uso: as cotas e as vagas do plano (leitura automática de fotos e veículos)
     NOTA: Análise Gráfica e Limites de Uso aparecem para administradores. Cada aba tem o seu tutorial.`,
     placement: "bottom",
   },
@@ -105,16 +109,22 @@ const dashboardTour: TutorialStep[] = [
   },
 ];
 
+/**
+ * Each step says the metric as the API counts it: new records by creation
+ * date (not running totals), costs by the service order's creation date,
+ * and the maintenance rule of maintenance-standing.ts — the thresholds come
+ * from the same constants the cards read.
+ */
 const chartsTour: TutorialStep[] = [
   welcomeStep(
     "Análise Gráfica 📊",
-    "A evolução dos números da empresa ao longo do tempo, para enxergar padrões.",
+    "A evolução dos números ao longo do tempo, para enxergar padrões.",
   ),
   {
     anchor: "area-chart",
     title: "Gráfico de Tendências 📈",
-    content: `A evolução dos registros no período, uma linha para cada área que a sua empresa usa.
-    DICA: Cada cor é uma categoria; passe o mouse para ver os valores.`,
+    content: `Quantos registros novos foram cadastrados em cada dia ou em cada mês, pela data de cadastro: não é o total acumulado. Uma linha para cada área que o seu perfil pode ver e que a empresa contratou.
+    DICA: Cada cor é uma área; passe o mouse para ver os valores. O último ponto é o dia ou o mês em andamento.`,
     placement: "bottom",
     optional: true,
   },
@@ -122,21 +132,34 @@ const chartsTour: TutorialStep[] = [
     anchor: "area-chart-time-selector",
     title: "Período 📅",
     content:
-      "7 ou 30 dias (por dia) ou 3 e 6 meses (por mês). O gráfico se atualiza ao trocar.",
+      "Últimos 7 ou 30 dias (um ponto por dia) ou 3 e 6 meses (um ponto por mês). O gráfico se atualiza ao trocar.",
     placement: "left",
+    optional: true,
+  },
+  {
+    anchor: "maintenance-status",
+    title: "Manutenção da Frota 🔧",
+    content: `A situação de hoje da próxima revisão de cada veículo cadastrado, inclusive os inativos. A revisão vence pela data (última revisão + intervalo em meses) ou pela quilometragem (km da última revisão + intervalo em km), o que vier primeiro. Não muda com o período dos gráficos.
+    • Atrasada: a data prevista já passou (vencer hoje ainda não é atraso) ou a quilometragem atual chegou à da revisão
+    • A vencer: vence entre hoje e os próximos ${MAINTENANCE_DUE_SOON_DAYS} dias, ou o veículo está sem registro — sem a data da última revisão não há como calcular a próxima, mesmo que a quilometragem já tenha passado; o cartão mostra quantos estão sem registro
+    • Em dia: a próxima revisão é depois de ${MAINTENANCE_DUE_SOON_DAYS} dias e a quilometragem ainda não chegou à da revisão
+    DICA: A data e a quilometragem da última revisão ficam no cadastro do veículo; uma ordem de serviço concluída com a quilometragem após o serviço também as atualiza. Sem a quilometragem registrada, a conta parte de zero.`,
+    placement: "top",
     optional: true,
   },
   {
     anchor: "bar-chart",
     title: "Custos de Manutenção 💰",
-    content: `A divisão dos custos entre manutenção interna (oficina própria) e externa (terceiros), com o total de cada período.`,
+    content: `A soma do valor total das ordens de serviço, separada em manutenção interna (oficina própria) e externa (terceiros), pela data em que cada ordem foi cadastrada.
+    NOTA: O rodapé compara o período em andamento (o mês ou o dia de hoje, ainda incompleto) com o anterior e nomeia os dois; um aumento de custo aparece em amarelo e uma redução em verde.`,
     placement: "top",
     optional: true,
   },
   {
     anchor: "bar-chart-time-selector",
     title: "Período dos Custos 📅",
-    content: "Compare os gastos entre períodos e perceba sazonalidades.",
+    content:
+      "Últimos 7 ou 30 dias (um ponto por dia) ou 3 e 6 meses (um ponto por mês), para comparar os gastos entre períodos e perceber sazonalidades.",
     placement: "left",
     optional: true,
   },
@@ -146,16 +169,35 @@ const chartsTour: TutorialStep[] = [
 const limitsTour: TutorialStep[] = [
   welcomeStep(
     "Limites de Uso ⚡",
-    "O consumo dos serviços com cota da empresa no período atual e quanto ainda resta.",
+    "As cotas e as vagas contratadas pela empresa: quanto já foi usado e quanto ainda resta.",
   ),
   {
     anchor: "ai-usage-card",
     title: "Leitura Automática de Fotos 🤖",
     content: `As fotos enviadas pelo aplicativo são lidas na infraestrutura da Trajetto. Cada foto analisada conta uma vez, e o cartão mostra quantas cada tipo usou, conforme os módulos contratados.
-    O selo indica Ativo, Uso elevado, Limite atingido ou Desabilitado; abaixo, as fotos restantes e a data do próximo reinício.
-    NOTA: Com o limite atingido, novas análises esperam o próximo período.`,
+    O selo indica Ativo, Uso elevado (a partir de ${AI_HIGH_USAGE_PERCENT}%), Limite atingido ou Desabilitado; abaixo, as fotos restantes e a data do próximo reinício. Análises em andamento já reservam a sua parte da cota.
+    NOTA: Com o limite atingido, as fotos novas não são lidas e a análise do registro fica como não realizada; se restar só parte da cota, o registro é lido em parte. Nada é refeito sozinho: depois da renovação, use Verificar novamente com IA no registro.`,
     placement: "bottom",
     spotlightPadding: 8,
+  },
+  {
+    // Shared by both modules: no word of either (module-gating test).
+    anchor: "vehicle-limit-card",
+    title: "Veículos 🚚",
+    content: `Quantos veículos ocupam vaga do plano e quantos foram contratados. Ocupa vaga todo veículo que não está Inativo, por isso o número pode ser maior que o de Ativos da tela Veículos; inativar libera a vaga e mantém o histórico.
+    O selo indica Dentro do limite, Uso elevado (a partir de ${VEHICLE_SLOT_HIGH_USAGE_PERCENT}%), Limite atingido, Acima do limite ou Sem limite (nenhum limite configurado); abaixo, as vagas restantes, os veículos por situação e o total cadastrado.
+    NOTA: Com todas as vagas em uso, novos cadastros e reativações são recusados até um veículo ser inativado ou o plano ser ampliado.`,
+    placement: "bottom",
+    spotlightPadding: 8,
+  },
+  {
+    // Fines are Gestão de Frotas: the card, and so the step, only with it.
+    anchor: "fine-lookup-card",
+    title: "Consulta de Multas 📋",
+    content: `A consulta automática de multas não faz parte desta versão: não há cota nem consumo a acompanhar.
+    DICA: As multas recebidas são registradas na tela Multas, que o link do cartão abre.`,
+    placement: "top",
+    optional: true,
   },
   backToOverviewStep(),
 ];

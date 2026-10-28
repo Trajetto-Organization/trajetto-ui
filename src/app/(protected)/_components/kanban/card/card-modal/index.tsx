@@ -50,6 +50,7 @@ import { UserSelector } from "../../user-selector";
 
 import { toast } from "sonner";
 import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 import { useKanbanQueryClient } from "../../hooks/query-client";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -359,21 +360,15 @@ const CardModal = ({
   const { invalidateKanbanQueries } = useKanbanQueryClient();
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  const handleCopyID = (cardId: string) => {
-    navigator.clipboard
-      .writeText(cardId)
-      .then(() => {
-        setIsCopied(true);
-        toast.success("ID do card copiado para a área de transferência!");
+  const handleCopyID = async (cardId: string) => {
+    if (!(await copyWithFeedback(cardId, "ID do card"))) return;
 
-        // Reset after 2 seconds
-        setTimeout(() => {
-          setIsCopied(false);
-        }, 2000);
-      })
-      .catch((err) => {
-        toast.error("Erro ao copiar o ID: " + err);
-      });
+    setIsCopied(true);
+
+    // Reset after 2 seconds
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
   };
 
   const [state, dispatch] = useFormState(
@@ -441,7 +436,7 @@ const CardModal = ({
                 type="button"
                 variant={isCopied ? "default" : "outline"}
                 size="sm"
-                onClick={() => handleCopyID(card.id)}
+                onClick={() => void handleCopyID(card.id)}
                 className={cn(
                   "flex items-center gap-2 text-xs transition-all duration-300",
                   isCopied && "bg-green-500 hover:bg-green-600 text-white",

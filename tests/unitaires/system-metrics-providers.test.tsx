@@ -22,6 +22,9 @@ import { refreshSystemMetrics } from "@/features/system-metrics/reads";
 
 import { refusal, stubRelay } from "./helpers/relay-fetch";
 import {
+  PROVIDER_RECHECK_MS,
+  hasTransientProvider,
+  probeNote,
   providerChannelStatus,
   readinessBadge,
   readinessSummary,
@@ -177,6 +180,97 @@ describe("readiness badges", () => {
   });
 });
 
+/**
+ * §12: loading, not verified, operational, unstable and a confirmed error
+ * read differently, and none of them is shown as another.
+ */
+describe("readiness states", () => {
+  it("tells an unstable provider from a standing caveat", () => {
+    expect(readinessBadge(provider({ status: "ok" }))).toEqual({
+      label: "Operacional",
+      tone: "green",
+    });
+    expect(
+      readinessBadge(provider({ status: "warning", transient: true })),
+    ).toEqual({ label: "Instável", tone: "yellow" });
+    expect(readinessBadge(provider({ status: "warning" }))).toEqual({
+      label: "Atenção",
+      tone: "yellow",
+    });
+  });
+
+  it("never softens an error the API confirmed, transient or not", () => {
+    for (const transient of [true, false, undefined]) {
+      expect(readinessBadge(provider({ status: "error", transient }))).toEqual({
+        label: "Com erro",
+        tone: "red",
+      });
+    }
+  });
+
+  it("reads a status it does not know as not verified: neither red nor green", () => {
+    const unknown = provider({
+      status: "degraded" as unknown as ProviderReadiness["status"],
+    });
+
+    expect(readinessBadge(unknown)).toEqual({
+      label: "Não verificado",
+      tone: "gray",
+    });
+    expect(readinessSummary([provider({}), unknown])).toEqual({
+      label: "Não verificado",
+      tone: "gray",
+    });
+  });
+
+  it("does not count an unstable provider as a problem", () => {
+    expect(
+      readinessSummary([
+        provider({}),
+        provider({ key: "storage", status: "warning", transient: true }),
+      ]),
+    ).toEqual({ label: "1 instável", tone: "yellow" });
+    expect(
+      readinessSummary([
+        provider({ status: "warning", transient: true }),
+        provider({ key: "storage", status: "warning", transient: true }),
+      ]),
+    ).toEqual({ label: "2 instáveis", tone: "yellow" });
+    expect(
+      readinessSummary([
+        provider({ status: "warning", transient: true }),
+        provider({ key: "storage", status: "error", transient: true }),
+      ]),
+    ).toEqual({ label: "1 com problema", tone: "red" });
+    expect(readinessSummary([provider({}), provider({ key: "push" })])).toEqual(
+      { label: "Todos operacionais", tone: "green" },
+    );
+  });
+
+  it("says how the verdict was reached, in words", () => {
+    expect(probeNote(provider({ attempts: 2, failure_kind: "timeout" }))).toBe(
+      "2 tentativas · última falha: tempo esgotado",
+    );
+    expect(
+      probeNote(provider({ attempts: 1, failure_kind: "throttled" })),
+    ).toBe("1 tentativa · última falha: limite de chamadas (429)");
+    // A clean first answer, nothing probed, and an older API say nothing.
+    expect(probeNote(provider({ attempts: 1, failure_kind: null }))).toBeNull();
+    expect(probeNote(provider({ attempts: 0 }))).toBeNull();
+    expect(probeNote(provider({}))).toBeNull();
+  });
+
+  it("asks for a recheck only when some verdict may change", () => {
+    expect(hasTransientProvider(undefined)).toBe(false);
+    expect(hasTransientProvider({ providers: [provider({})] })).toBe(false);
+    expect(
+      hasTransientProvider({
+        providers: [provider({}), provider({ transient: true })],
+      }),
+    ).toBe(true);
+  });
+});
+
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
@@ -195,6 +289,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  vi.useRealTimers();
   await act(async () => root.unmount());
   host.remove();
   client.clear();
@@ -286,5 +381,364 @@ describe("ProviderReadinessCard", () => {
     await renderCard();
 
     expect(host.textContent).toContain("Acesso negado.");
+  });
+
+  it("says it is checking while the first read is out", async () => {
+    stubRelay({ "/health/providers": () => new Promise(() => {}) });
+
+    await renderCard();
+
+    expect(host.textContent).toContain("Verificando…");
+    expect(host.textContent).not.toContain("Com erro");
+  });
+});
+
+/** A report whose R2 answered only on the second attempt. */
+const UNSTABLE = {
+  checked_at: "2026-10-07T12:00:00.000Z",
+  cached: false,
+  providers: [
+    provider({}),
+    provider({
+      key: "storage",
+      label: "Armazenamento (R2)",
+      status: "warning",
+      transient: true,
+      attempts: 2,
+      failure_kind: "timeout",
+      message: "Bucket acessível com a credencial configurada.",
+      warnings: ["A 1ª tentativa falhou (tempo esgotado); a 2ª respondeu."],
+    }),
+  ],
+};
+
+const RECOVERED = {
+  checked_at: "2026-10-07T12:00:10.000Z",
+  cached: false,
+  providers: [
+    provider({}),
+    provider({
+      key: "storage",
+      label: "Armazenamento (R2)",
+      attempts: 1,
+      transient: false,
+      failure_kind: null,
+      message: "Bucket acessível com a credencial configurada.",
+    }),
+  ],
+};
+
+/** The R2 row's text. */
+function storageRow(): string {
+  const row = Array.from(host.querySelectorAll("li")).find((item) =>
+    item.textContent?.includes("Armazenamento (R2)"),
+  );
+
+  return row?.textContent ?? "";
+}
+
+describe("ProviderReadinessCard, unstable providers (§12)", () => {
+  /** Answers each read with the next reply; the last one repeats. */
+  function replies(...answers: unknown[]) {
+    let call = 0;
+
+    return () => answers[Math.min(call++, answers.length - 1)];
+  }
+
+  async function renderWithFakeTimers(): Promise<void> {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <ProviderReadinessCard />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10);
+    });
+  }
+
+  async function wait(ms: number): Promise<void> {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms);
+    });
+  }
+
+  it("shows an unstable provider as Instável, with its attempts in words", async () => {
+    stubRelay({ "/health/providers": () => UNSTABLE });
+
+    await renderCard();
+
+    expect(storageRow()).toContain("Instável");
+    expect(storageRow()).toContain(
+      "2 tentativas · última falha: tempo esgotado",
+    );
+    expect(storageRow()).not.toContain("Com erro");
+    expect(host.textContent).toContain("1 instável");
+  });
+
+  it("reads once more by itself after a transient result, then shows the recovery", async () => {
+    const relay = stubRelay({
+      "/health/providers": replies(UNSTABLE, RECOVERED),
+    });
+
+    await renderWithFakeTimers();
+
+    expect(relay.callsTo("/health/providers")).toHaveLength(1);
+    expect(host.textContent).toContain("nova verificação automática");
+
+    await wait(PROVIDER_RECHECK_MS - 20);
+    expect(relay.callsTo("/health/providers")).toHaveLength(1);
+
+    await wait(20);
+
+    const reads = relay.callsTo("/health/providers");
+
+    expect(reads).toHaveLength(2);
+    // A plain read: the API's short copy of a transient report has expired.
+    expect(reads[1].query.has("refresh")).toBe(false);
+    expect(storageRow()).toContain("Operacional");
+    expect(storageRow()).not.toContain("Instável");
+    expect(host.textContent).toContain("Todos operacionais");
+    expect(host.textContent).not.toContain("nova verificação automática");
+
+    // Nothing transient any more: no further read.
+    await wait(PROVIDER_RECHECK_MS * 5);
+    expect(relay.callsTo("/health/providers")).toHaveLength(2);
+  });
+
+  it("does not loop when the provider stays unstable", async () => {
+    const relay = stubRelay({ "/health/providers": () => UNSTABLE });
+
+    await renderWithFakeTimers();
+    await wait(PROVIDER_RECHECK_MS * 6);
+
+    expect(relay.callsTo("/health/providers")).toHaveLength(2);
+    expect(storageRow()).toContain("Instável");
+  });
+
+  it("keeps a confirmed error red through its one recheck", async () => {
+    const down = {
+      ...UNSTABLE,
+      providers: [
+        provider({
+          key: "storage",
+          label: "Armazenamento (R2)",
+          status: "error",
+          reachable: false,
+          latency_ms: null,
+          transient: true,
+          attempts: 2,
+          failure_kind: "timeout",
+          message: "O R2 não respondeu (2 tentativas de até 3,5 s).",
+        }),
+      ],
+    };
+    const relay = stubRelay({ "/health/providers": () => down });
+
+    await renderWithFakeTimers();
+    await wait(PROVIDER_RECHECK_MS);
+
+    expect(relay.callsTo("/health/providers")).toHaveLength(2);
+    expect(storageRow()).toContain("Com erro");
+    expect(host.textContent).toContain("1 com problema");
+  });
+
+  it("keeps the last verdict and says it may be stale when a read fails", async () => {
+    stubRelay({
+      "/health/providers": replies(
+        UNSTABLE,
+        refusal(503, {
+          code: "UPSTREAM_UNAVAILABLE",
+          message: "API indisponível.",
+        }),
+      ),
+    });
+
+    await renderWithFakeTimers();
+    await wait(PROVIDER_RECHECK_MS);
+
+    const text = host.textContent ?? "";
+
+    expect(storageRow()).toContain("Instável");
+    expect(text).toContain("Não foi possível atualizar agora");
+    expect(text).toContain("(API indisponível). Exibindo a verificação de");
+    expect(text).toContain("pode estar desatualizada");
+  });
+
+  it("Atualizar while the automatic re-read is out cancels it and probes past the cache", async () => {
+    /*
+      react-query hands a refetch the fetch already running: the press used
+      to join the automatic re-read, so no refresh=true went out and the
+      result was taken as the automatic one (no recheck after it).
+    */
+    let call = 0;
+    const relay = stubRelay({
+      "/health/providers": () => {
+        call += 1;
+
+        if (call === 1) return UNSTABLE;
+        // The automatic re-read, still out when the person presses.
+        if (call === 2) return new Promise(() => {});
+        if (call === 3) return UNSTABLE;
+
+        return RECOVERED;
+      },
+    });
+
+    await renderWithFakeTimers();
+    await wait(PROVIDER_RECHECK_MS);
+
+    expect(relay.callsTo("/health/providers")).toHaveLength(2);
+
+    await act(async () => {
+      await refreshSystemMetrics(client);
+    });
+    await wait(10);
+
+    const reads = relay.callsTo("/health/providers");
+
+    expect(reads).toHaveLength(3);
+    expect(reads[1].query.has("refresh")).toBe(false);
+    expect(reads[1].signal?.aborted).toBe(true);
+    expect(reads[2].query.get("refresh")).toBe("true");
+
+    // The person's result is judged on its own: still unstable, so it gets
+    // its one automatic re-read — and that one is the last.
+    expect(host.textContent).toContain("nova verificação automática");
+
+    await wait(PROVIDER_RECHECK_MS);
+
+    const after = relay.callsTo("/health/providers");
+
+    expect(after).toHaveLength(4);
+    expect(after[3].query.has("refresh")).toBe(false);
+    expect(storageRow()).toContain("Operacional");
+
+    await wait(PROVIDER_RECHECK_MS * 5);
+    expect(relay.callsTo("/health/providers")).toHaveLength(4);
+  });
+
+  it("skips the automatic re-read that falls due while Atualizar is out", async () => {
+    let release: (reply: unknown) => void = () => {};
+    let call = 0;
+    const relay = stubRelay({
+      "/health/providers": () => {
+        call += 1;
+
+        if (call === 1) return UNSTABLE;
+        if (call === 2)
+          return new Promise((done) => {
+            release = done;
+          });
+
+        return RECOVERED;
+      },
+    });
+
+    await renderWithFakeTimers();
+    await wait(PROVIDER_RECHECK_MS - 1_000);
+
+    let pressed: Promise<void> = Promise.resolve();
+
+    await act(async () => {
+      pressed = refreshSystemMetrics(client);
+    });
+
+    expect(relay.callsTo("/health/providers")[1].query.get("refresh")).toBe(
+      "true",
+    );
+
+    // The re-read's time comes while the person's probe is out.
+    await wait(1_010);
+    expect(relay.callsTo("/health/providers")).toHaveLength(2);
+
+    await act(async () => {
+      release(UNSTABLE);
+      await pressed;
+    });
+    await wait(10);
+
+    // Still unstable: the person's result gets its own automatic re-read.
+    expect(host.textContent).toContain("nova verificação automática");
+
+    await wait(PROVIDER_RECHECK_MS);
+
+    const reads = relay.callsTo("/health/providers");
+
+    expect(reads).toHaveLength(3);
+    expect(reads[2].query.has("refresh")).toBe(false);
+    expect(storageRow()).toContain("Operacional");
+
+    await wait(PROVIDER_RECHECK_MS * 5);
+    expect(relay.callsTo("/health/providers")).toHaveLength(3);
+  });
+
+  it("joins an Atualizar already out instead of probing twice", async () => {
+    let release: (reply: unknown) => void = () => {};
+    let call = 0;
+    const relay = stubRelay({
+      "/health/providers": () => {
+        call += 1;
+
+        if (call === 2)
+          return new Promise((done) => {
+            release = done;
+          });
+
+        return RECOVERED;
+      },
+    });
+
+    await renderCard();
+
+    let first: Promise<void> = Promise.resolve();
+    let second: Promise<void> = Promise.resolve();
+
+    await act(async () => {
+      first = refreshSystemMetrics(client);
+      second = refreshSystemMetrics(client);
+    });
+
+    expect(relay.callsTo("/health/providers")).toHaveLength(2);
+
+    await act(async () => {
+      release(RECOVERED);
+      await Promise.all([first, second]);
+    });
+
+    // A press after it landed is a new probe.
+    await act(async () => {
+      await refreshSystemMetrics(client);
+    });
+
+    const reads = relay.callsTo("/health/providers");
+
+    expect(reads).toHaveLength(3);
+    expect(reads[1].query.get("refresh")).toBe("true");
+    expect(reads[2].query.get("refresh")).toBe("true");
+  });
+
+  it("keeps the rows when Atualizar is refused after a good read", async () => {
+    stubRelay({
+      "/health/providers": replies(
+        RECOVERED,
+        refusal(429, { code: "RATE_LIMITED", message: "Muitas leituras." }),
+      ),
+    });
+
+    await renderCard();
+    await act(async () => {
+      await refreshSystemMetrics(client);
+    });
+
+    const text = host.textContent ?? "";
+
+    expect(storageRow()).toContain("Operacional");
+    expect(text).toContain(
+      "Não foi possível atualizar agora (Muitas leituras). Exibindo",
+    );
   });
 });

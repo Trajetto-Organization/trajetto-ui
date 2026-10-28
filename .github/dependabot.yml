@@ -55,5 +55,12 @@ updates:
     ignore:
       - dependency-name: node
         update-types: [version-update:semver-major]
+    # The runtime is Alpine plus the node binary of the Node image
+    # (Dockerfile): their bumps land in one PR. A new Alpine minor also needs
+    # the node tag's alpine<minor> suffix moved by hand —
+    # tests/unitaires/image-layers.test.ts fails until both agree.
+    groups:
+      base-images:
+        patterns: ["node", "alpine"]
     commit-message:
       prefix: chore(docker)

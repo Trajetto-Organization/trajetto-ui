@@ -2,7 +2,15 @@ import * as React from "react";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 /**
  * The pause report's table and toolbar, rendered (decision 6.1): each row
@@ -10,8 +18,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * period picked in the toolbar reaches the URL only when the API would
  * accept it, starting again on page 1.
  *
- * The date picker is a stand-in input: what is proven is the toolbar's rule,
- * not the calendar widget (tested with the shared fields).
+ * The period is the shared range picker (date-range-picker.test.ts covers
+ * the widget); what is proven here is the toolbar's rule and its place on
+ * the filters' line, beside Visualizar.
  */
 vi.hoisted(() => {
   (
@@ -32,44 +41,17 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-vi.mock(
-  "@/app/(protected)/_components/shared/custom/date-picker-field",
-  async () => {
-    const { createElement: h } = await import("react");
-
-    return {
-      DatePickerField: ({
-        label,
-        value,
-        onChange,
-        errorName,
-      }: {
-        label: string;
-        value?: string;
-        onChange?: (value: string) => void;
-        errorName?: string[];
-      }) =>
-        h(
-          "div",
-          null,
-          h("input", {
-            "data-field": label,
-            value: value ?? "",
-            onChange: (event: { target: { value: string } }) =>
-              onChange?.(event.target.value),
-          }),
-          errorName
-            ? h("span", { "data-field-error": label }, errorName[0])
-            : null,
-        ),
-    };
-  },
-);
-
 import { DriverPausesTable } from "@/features/driver-pauses/table";
 import type { DriverDayRow } from "@/features/driver-pauses/types";
+import { preloadCalendar } from "@/components/ui/lazy-calendar";
 
 (globalThis as { React?: typeof React }).React = React;
+
+// The range picker's calendar is its own chunk (ui/lazy-calendar); loaded
+// once here, the popover opens on the grid as it does after the hover.
+beforeAll(async () => {
+  await preloadCalendar();
+});
 
 let root: Root | null = null;
 
@@ -85,17 +67,39 @@ async function mount(element: ReactElement): Promise<HTMLElement> {
   return host;
 }
 
-async function type(input: HTMLInputElement, value: string): Promise<void> {
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  )!.set!;
-
+async function click(element: Element): Promise<void> {
   await act(async () => {
-    setter.call(input, value);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
+    (element as HTMLElement).click();
   });
 }
+
+const button = (label: string) =>
+  [...document.querySelectorAll("button")].find(
+    (element) => (element.textContent ?? "").trim() === label,
+  )!;
+
+/** A day of a month grid in the open popover ("setembro 2026", 15). */
+function calendarDay(caption: string, date: number): HTMLButtonElement {
+  const grid = [...document.querySelectorAll('[role="grid"]')].find(
+    (candidate) =>
+      document.getElementById(candidate.getAttribute("aria-labelledby") ?? "")
+        ?.textContent === caption,
+  );
+
+  const day = [
+    ...(grid?.querySelectorAll<HTMLButtonElement>('button[name="day"]') ?? []),
+  ].find((candidate) => candidate.textContent === String(date));
+
+  expect(
+    day,
+    `o dia ${date} de ${caption} não está no calendário`,
+  ).toBeTruthy();
+
+  return day!;
+}
+
+const periodTrigger = () =>
+  document.querySelector<HTMLButtonElement>("[data-pauses-period-trigger]")!;
 
 const ROW: DriverDayRow = {
   id: "018f0000-0000-7000-8000-0000000000a1:2026-09-28",
@@ -241,37 +245,54 @@ describe("an empty report", () => {
 });
 
 describe("the period in the toolbar", () => {
-  it("starts from the period the API answered", async () => {
-    const host = await mount(table());
-
-    const from = host.querySelector<HTMLInputElement>('[data-field="De"]')!;
-    const to = host.querySelector<HTMLInputElement>('[data-field="Até"]')!;
-
-    expect(from.value).toBe("2026-09-22");
-    expect(to.value).toBe("2026-09-28");
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("refuses an inverted period on the spot and never asks the API", async () => {
-    const host = await mount(table());
+  it("starts from the period the API answered", async () => {
+    await mount(table());
 
-    await type(
-      host.querySelector<HTMLInputElement>('[data-field="De"]')!,
-      "2026-09-30",
+    expect(periodTrigger().textContent).toBe("22/09/2026 a 28/09/2026");
+
+    await click(periodTrigger());
+
+    expect(
+      [...document.querySelectorAll("[data-date-range-summary] dd")].map(
+        (value) => value.textContent,
+      ),
+    ).toEqual(["22/09/2026", "28/09/2026"]);
+    expect(calendarDay("setembro 2026", 22).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+  });
+
+  it("refuses a period over 31 days on the spot and never asks the API", async () => {
+    await mount(table());
+
+    await click(periodTrigger());
+    await click(calendarDay("agosto 2026", 1));
+    await click(calendarDay("setembro 2026", 28));
+
+    expect(document.querySelector('[role="alert"]')?.textContent).toBe(
+      "O período pode ter no máximo 31 dias.",
     );
 
-    expect(host.querySelector('[data-field-error="De"]')?.textContent).toBe(
-      "A data inicial deve ser anterior ou igual à final.",
-    );
+    await click(button("Aplicar"));
+
     expect(navigation.push).not.toHaveBeenCalled();
   });
 
-  it("puts a valid period in the URL, keeps the filters and goes back to page 1", async () => {
-    const host = await mount(table());
+  it("puts a valid period in the URL in one go, keeps the filters and goes back to page 1", async () => {
+    await mount(table());
 
-    await type(
-      host.querySelector<HTMLInputElement>('[data-field="De"]')!,
-      "2026-09-01",
-    );
+    await click(periodTrigger());
+    await click(calendarDay("setembro 2026", 1));
+
+    // One end picked: nothing reloads yet (each field used to, on its own).
+    expect(navigation.push).not.toHaveBeenCalled();
+
+    await click(calendarDay("setembro 2026", 28));
+    await click(button("Aplicar"));
 
     expect(navigation.push).toHaveBeenCalledTimes(1);
 
@@ -283,5 +304,78 @@ describe("the period in the toolbar", () => {
       from: "2026-09-01",
       to: "2026-09-28",
     });
+  });
+
+  it("ends at the company's today, not the browser's", async () => {
+    // 02:30 UTC on the 29th: a browser in UTC is on the 29th, the company
+    // in São Paulo still on the 28th.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-29T02:30:00.000Z"));
+
+    await mount(
+      createElement(DriverPausesTable, {
+        data: [],
+        meta: { total: 0, page: 1, pageSize: 10 },
+        responseError: { error: false, errorMessage: "" },
+        timeZone: "America/Sao_Paulo",
+        period: { from: "2026-10-22", to: "2026-10-28" },
+      }),
+    );
+
+    await click(periodTrigger());
+
+    expect(calendarDay("outubro 2026", 28).disabled).toBe(false);
+    expect(calendarDay("outubro 2026", 29).disabled).toBe(true);
+  });
+
+  it("sits beside Visualizar at the end of the filters' line", async () => {
+    await mount(table());
+
+    const end = document.querySelector<HTMLElement>("[data-toolbar-end]")!;
+
+    expect(end, "o grupo do fim da barra não está na página").not.toBeNull();
+
+    const period = end.querySelector('[data-tutorial="pauses-period"]');
+    const view = end.querySelector('[data-tutorial="view-options"]');
+
+    expect(period).not.toBeNull();
+    expect(view).not.toBeNull();
+    expect(
+      period!.compareDocumentPosition(view!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // The filters come first, on the same toolbar line.
+    const filters = end.parentElement!.querySelector(
+      '[data-tutorial="pauses-filters"]',
+    );
+
+    expect(filters).not.toBeNull();
+    expect(
+      filters!.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // No single-day fields left with labels of their own.
+    expect(document.querySelector("#driver-pauses-from")).toBeNull();
+  });
+
+  it("stays usable when the report failed, so a refused period can be fixed", async () => {
+    navigation.params = new URLSearchParams("from=2026-09-01&to=2026-12-31");
+
+    await mount(
+      createElement(DriverPausesTable, {
+        data: [],
+        meta: { total: 0, page: 1, pageSize: 10 },
+        responseError: {
+          error: true,
+          errorMessage: "O período pode ter no máximo 31 dias.",
+        },
+      }),
+    );
+
+    // Visualizar has no columns to toggle; the period stays.
+    expect(document.querySelector('[data-tutorial="view-options"]')).toBeNull();
+    expect(periodTrigger().disabled).toBe(false);
+    // Read from the URL while the API has not answered one.
+    expect(periodTrigger().textContent).toBe("01/09/2026 a 31/12/2026");
   });
 });

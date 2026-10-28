@@ -45,7 +45,7 @@ function BranchToolbar<TData>({
     <div className="flex w-full flex-wrap items-center gap-2">
       <SearchInputWithLoading
         placeholder="Procurar..."
-        aria-label="Buscar filiais por razão social, nome fantasia, CNPJ, e-mail, cidade, código ERP ou responsável"
+        aria-label="Buscar filiais por razão social, nome fantasia, CNPJ, e-mail, cidade, código ERP, responsável ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setIsLoading?.(true);

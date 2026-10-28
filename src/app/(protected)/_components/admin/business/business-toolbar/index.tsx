@@ -46,7 +46,7 @@ export function BusinessToolbar<TData>({
     <div className="flex flex-wrap items-center gap-2 w-full">
       <SearchInputWithLoading
         placeholder="Procurar..."
-        aria-label="Buscar empresas por razão social, nome fantasia, CNPJ, e-mail, cidade, código ERP ou responsável"
+        aria-label="Buscar empresas por razão social, nome fantasia, CNPJ, e-mail, cidade, código ERP, responsável ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setIsLoading?.(true);

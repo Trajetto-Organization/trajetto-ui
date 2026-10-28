@@ -126,10 +126,10 @@ const TowerViewBodySkeleton = ({
   if (view === "audit") {
     return (
       <div className="space-y-4">
-        {/* The chips and the Atualizar row above the queue's cards. */}
+        {/* The chips above the queue's cards. Its Atualizar is the
+            header's, drawn by the frame below like every view's. */}
         <div className="flex flex-wrap items-center gap-3">
           <Skeleton className="h-9 min-w-0 flex-1 sm:w-80 sm:flex-initial" />
-          <Skeleton className="h-10 w-full sm:w-32" />
         </div>
 
         <div className="space-y-3">
@@ -190,10 +190,17 @@ const ControlTowerContentSkeleton = ({
       <Skeleton className="h-10 w-full rounded-md" />
     </div>
 
-    {/* Atualiza a cada N min · the interval · Tela cheia. */}
-    <div data-skeleton-live className="flex flex-wrap items-center gap-3">
+    {/* Atualiza a cada N min · "Atualizar a cada" and its select · Tela
+        cheia, with the live row's gaps. */}
+    <div
+      data-skeleton-live
+      className="flex flex-wrap items-center gap-x-3 gap-y-2"
+    >
       <Skeleton className="h-4 w-56" />
-      <Skeleton className="h-8 w-40 sm:ml-auto" />
+      <div className="flex items-center gap-2 sm:ml-auto">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-8 w-[88px]" />
+      </div>
       <Skeleton className="h-8 w-28" />
     </div>
 

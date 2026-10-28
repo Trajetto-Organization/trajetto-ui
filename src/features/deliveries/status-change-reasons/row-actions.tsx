@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { toast } from "sonner";
-
 import {
   RowActionItem,
   RowActions,
@@ -13,6 +11,7 @@ import {
 
 import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -50,10 +49,7 @@ const StatusChangeReasonRowActions = ({
   ]);
 
   const handleCopyID = () => {
-    navigator.clipboard
-      .writeText(reason.id)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(reason.id, "ID");
   };
 
   // A permission revoked over the socket disables both at once; the reason

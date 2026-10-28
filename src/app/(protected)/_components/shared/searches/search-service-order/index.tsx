@@ -16,7 +16,7 @@ import { useServiceOrderInfiniteScroll } from "./hooks/service-order-infinite-sc
 import { Button } from "@/components/ui/button";
 
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/format-values";
+import { formatServiceOrderDisplay } from "@/lib/format-values";
 
 import type { SearchServiceOrderProps } from "./search-service-order.types";
 
@@ -58,22 +58,6 @@ const SearchServiceOrder = ({
       setShowSpinner(false);
     }
   }, [isLoadingServiceOrders, isFetchingServiceOrders, hasError]);
-
-  // Function to format the display text for each service order
-  const formatServiceOrderDisplay = (serviceOrder: any) => {
-    // Format the date in a readable way
-    const formattedDate =
-      formatDate(serviceOrder.date, "pt-BR") || serviceOrder.date;
-
-    // Get vehicle info if available
-    const vehicleInfo = serviceOrder.vehicle?.license_plate
-      ? `(Veículo: ${serviceOrder.vehicle.description || ""} - Placa: ${serviceOrder.vehicle.license_plate})`
-      : "";
-
-    // Use the last 12 characters from UUID for maximum uniqueness and randomness
-    // This avoids UUIDv7 timestamp conflicts and ensures true randomization
-    return `OS#${serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
-  };
 
   // While the server's answer for the new term is on its way, the rows on
   // screen are the previous term's: narrow them locally meanwhile, over what

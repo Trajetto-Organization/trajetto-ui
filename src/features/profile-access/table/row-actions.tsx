@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -10,6 +9,7 @@ import {
 } from "@/components/shared/custom/row-actions";
 import { BulkConfigurePermissionsDialog } from "@/app/(protected)/_components/shared/bulk-configure-permissions-dialog";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -71,12 +71,7 @@ const ProfileAccessRowActions = ({
   );
 
   const copy = (value: string, what: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${what} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, what);
   };
 
   const close = () => setOpen(null);

@@ -63,6 +63,21 @@ vi.mock("@/features/deliveries/table", () => ({
     }),
 }));
 
+// Embarcadores, Tipos and Motivos render through the client section that
+// may answer them in the browser (spec §13); it hands the table the same
+// props, with the server mode on, as the real one does.
+vi.mock("@/features/deliveries/content/catalog-section", async () => {
+  const { DeliveriesTable } = await import("@/features/deliveries/table");
+
+  return {
+    DeliveriesCatalogSection: (props: Record<string, unknown>) =>
+      createElement(DeliveriesTable as never, {
+        ...props,
+        catalogServerMode: true,
+      }),
+  };
+});
+
 vi.mock("@/features/deliveries/page-actions", () => ({
   DeliveriesPageActions: () => null,
 }));

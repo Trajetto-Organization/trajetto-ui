@@ -2,8 +2,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * What Pausas dos motoristas looks like before it has anything to show: the
- * band (the selector on /admin, Atualizar), four cards, the period and the
- * two filters, the table, the pager and the note on how it is counted.
+ * band (the selector on /admin, Atualizar), four cards, the two filters with
+ * the period and Visualizar on their line, the table, the pager and the note
+ * on how it is counted.
  *
  * Hook-free and not a client component: `loading.tsx` renders it on the
  * server.
@@ -33,20 +34,19 @@ const DriverPausesSkeleton = ({
         ))}
       </div>
 
-      <div className="flex w-full flex-col gap-3">
-        <div className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-[minmax(0,200px)_minmax(0,200px)]">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <div key={index} className="space-y-2">
-              <Skeleton className="h-4 w-10" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ))}
-        </div>
+      {/* The toolbar: the two filters, then the period and Visualizar as
+          one group at the right (DataTableToolbarEnd). */}
+      <div className="flex w-full flex-wrap items-center gap-2">
+        <Skeleton className="h-8 w-28" />
+        <Skeleton className="h-8 w-24" />
 
-        <div className="flex w-full flex-wrap items-center gap-2">
-          <Skeleton className="h-8 w-28" />
-          <Skeleton className="h-8 w-24" />
-          <Skeleton className="h-8 w-full sm:ml-auto sm:w-28" />
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+          <div data-skeleton-period className="flex items-center gap-2">
+            <Skeleton className="h-4 w-4" />
+            {/* "22/10/2026 a 28/10/2026", measured at 205px. */}
+            <Skeleton className="h-8 w-[205px]" />
+          </div>
+          <Skeleton className="h-8 w-full sm:w-28" />
         </div>
       </div>
 

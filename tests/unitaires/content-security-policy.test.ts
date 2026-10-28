@@ -226,6 +226,24 @@ describe("buildContentSecurityPolicy", () => {
       "https://files.example.test",
     );
   });
+
+  // The captcha (README §10): api.js is injected by react-turnstile from a
+  // nonced chunk ('strict-dynamic'), the widget is an iframe, and it talks
+  // back to its host. No inline script or nonce of its own is needed.
+  it.each([
+    ["with a nonce (per-request pages: /login, /forgot)", { nonce: "abc" }],
+    ["without one (prerendered pages: /orcamento)", {}],
+  ])("lets the Turnstile widget load %s", (_case, options) => {
+    const policy = buildContentSecurityPolicy(options);
+    const host = "https://challenges.cloudflare.com";
+
+    expect(directive(policy, "script-src").split(" ")).toContain(host);
+    expect(directive(policy, "frame-src").split(" ")).toContain(host);
+    expect(directive(policy, "connect-src").split(" ")).toContain(host);
+    expect(directive(policy, "script-src").includes("'strict-dynamic'")).toBe(
+      "nonce" in options,
+    );
+  });
 });
 
 /**

@@ -461,12 +461,10 @@ const ChatPanel = ({ businessId }: ChatPanelProps): JSX.Element => {
           search={search}
           onSearchChange={setSearch}
           isLoading={ticketsQuery.isLoading}
-          isRefreshing={ticketsQuery.isFetching && !ticketsQuery.isLoading}
           errorMessage={
             ticketsQuery.isError ? (ticketsQuery.error as Error).message : ""
           }
           onRetry={() => ticketsQuery.refetch()}
-          onRefresh={() => queryClient.invalidateQueries([TICKETS_QUERY_ROOT])}
           hasMore={tickets.length < (ticketsQuery.data?.total ?? 0)}
           isLoadingMore={ticketsQuery.isFetching && pages > 1}
           onLoadMore={() => setPages((current) => current + 1)}

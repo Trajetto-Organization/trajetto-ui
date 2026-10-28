@@ -1,5 +1,25 @@
 # Trajetto — Web
 
+<p align="center">
+  <img alt="Next.js 14.2" src="https://img.shields.io/badge/Next.js-14.2-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" />
+  <img alt="React 18.3" src="https://img.shields.io/badge/React-18.3-087EA4?style=for-the-badge&logo=react&logoColor=white" />
+  <img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img alt="Node.js 22" src="https://img.shields.io/badge/Node.js-22-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white" />
+  <img alt="Tailwind CSS 3.4" src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" />
+  <img alt="shadcn/ui" src="https://img.shields.io/badge/shadcn%2Fui-000000?style=for-the-badge&logo=shadcnui&logoColor=white" />
+  <img alt="Radix UI" src="https://img.shields.io/badge/Radix_UI-161618?style=for-the-badge&logo=radixui&logoColor=white" />
+  <img alt="React Query 3.39" src="https://img.shields.io/badge/React_Query-3.39-FF4154?style=for-the-badge&logo=reactquery&logoColor=white" />
+  <img alt="Zod 3.25" src="https://img.shields.io/badge/Zod-3.25-3E67B1?style=for-the-badge&logo=zod&logoColor=white" />
+  <img alt="Socket.IO 4.8" src="https://img.shields.io/badge/Socket.IO-4.8-010101?style=for-the-badge&logo=socketdotio&logoColor=white" />
+  <img alt="Leaflet 1.9" src="https://img.shields.io/badge/Leaflet-1.9-199900?style=for-the-badge&logo=leaflet&logoColor=white" />
+  <img alt="MDX 3.1" src="https://img.shields.io/badge/MDX-3.1-1B1F24?style=for-the-badge&logo=mdx&logoColor=white" />
+  <img alt="Cloudflare Turnstile" src="https://img.shields.io/badge/Cloudflare_Turnstile-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" />
+  <img alt="Vitest 1.6" src="https://img.shields.io/badge/Vitest-1.6-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" />
+  <img alt="Playwright 1.56" src="https://img.shields.io/badge/Playwright-1.56-2EAD33?style=for-the-badge&logo=playwright&logoColor=white" />
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
+  <img alt="Alpine 3.23" src="https://img.shields.io/badge/Alpine-3.23-0D597F?style=for-the-badge&logo=alpinelinux&logoColor=white" />
+</p>
+
 Painel web e site público do Trajetto. Este repositório contém:
 
 - o painel das transportadoras (`/dashboard`);
@@ -28,6 +48,7 @@ Painel web e site público do Trajetto. Este repositório contém:
 - [Integrações](#integrações)
 - [Padrões para escrever código](#padrões-para-escrever-código)
 - [Testes](#testes)
+- [Depuração](#depuração)
 - [Build, imagem e deploy](#build-imagem-e-deploy)
 - [Desenvolvimento, staging e produção](#desenvolvimento-staging-e-produção)
 - [Solução de problemas](#solução-de-problemas)
@@ -48,6 +69,10 @@ Painel web e site público do Trajetto. Este repositório contém:
 O mapa navegável da plataforma inteira (web, app, API, Postgres, Redis, IA,
 R2, provedores e deploy) fica na API:
 [`trajetto-api/docs/arquitetura.md` → Visão de componentes](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/arquitetura.md#vis%C3%A3o-de-componentes).
+Para percorrer esse mapa em ordem, um assunto por vez (o caminho de uma
+requisição, sessão, tenant, arquivos, filas, tempo real, importações, deploy
+e saúde), use o
+[Tour pela arquitetura, passo a passo](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/arquitetura-tour.md).
 
 ## O Trajetto em 1 minuto
 
@@ -97,7 +122,9 @@ flowchart LR
 ```
 
 No GitHub, o diagrama tem os controles de zoom e de deslocamento, e cada caixa
-com link abre a seção que a explica.
+com link abre a seção que a explica. O que a web faz em cada passo do caminho
+(login, relay, ticket do socket, upload, importação) está no
+[tour da arquitetura](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/arquitetura-tour.md#índice).
 
 ## Stack e por que cada peça
 
@@ -107,7 +134,7 @@ Versões resolvidas no `yarn.lock`.
 | -------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Next.js (App Router, RSC)        | 14.2.35                                              | páginas renderizadas no servidor, Server Actions para escrever na API sem expor o token, saída `standalone` para a imagem |
 | React                            | 18.3.1                                               | base do Next 14                                                                                                           |
-| Node.js                          | 22 (imagem `node:22.21.1-alpine`, fixada por digest) | runtime do servidor                                                                                                       |
+| Node.js                          | 22 (no build, `node:22.21.1-alpine3.23`, por digest) | runtime do servidor; na imagem, só o binário do `node` sobre `alpine:3.23.7`                                              |
 | TypeScript                       | 5.9.2                                                | tipos; `yarn typecheck`                                                                                                   |
 | Tailwind CSS + shadcn/ui (Radix) | 3.4.17                                               | componentes acessíveis e tokens de tema (claro e escuro, `next-themes` 0.4.6)                                             |
 | `@tanstack/react-table`          | 8.21.3                                               | o `DataTable`: paginação por offset, ordenação e filtros com estado na URL                                                |
@@ -317,6 +344,7 @@ tudo isso fica atrás da API.
 | Acessibilidade (axe)           | `tests/a11y`       | `npx playwright test -c playwright.a11y.config.ts`       | idem                                        |
 | Responsivo (320 a 1920 px)     | `tests/responsive` | `npx playwright test -c playwright.responsive.config.ts` | idem                                        |
 | Mutação                        | regras críticas    | `yarn test:mutation`                                     | nada (lento)                                |
+| Links, âncoras e badges        | `tests/unitaires`  | `npx vitest run tests/unitaires/docs-links.test.ts`      | nada (lê os arquivos)                       |
 
 Um arquivo ou assunto: `npx vitest run --dir tests/unitaires <filtro>`. As
 suítes de navegador não sobem a stack sozinhas: o passo a passo (banco e Redis
@@ -324,6 +352,76 @@ descartáveis, seed da API, API em `:3334`, web em `:3100`) está em
 [`tests/ui/README.md`](tests/ui/README.md). Alguns testes leem os repositórios
 irmãos (`../trajetto-api`, `../trajetto-mobile`) e pulam quando eles não estão
 ao lado. Tudo em [`docs/testes.md`](docs/testes.md).
+
+## Depuração
+
+### Servidor de desenvolvimento
+
+- `yarn dev` (`next dev`) sobe em `http://localhost:3000` e compila cada rota
+  na primeira visita: a primeira abertura de uma página em dev é lenta e não
+  diz nada sobre produção.
+- Para conferir que a web está de pé: `GET /api/health`
+  (`{"status":"ok",…}`) e `GET /build-id.json` (o commit do build; `null` em
+  dev).
+- O `console.log` de Server Component, Server Action, route handler e
+  `src/middleware.ts` sai no terminal do `next dev`, não no console do
+  navegador. O do código de cliente sai no navegador.
+- **Depurador:** `NODE_OPTIONS=--inspect yarn dev` (no PowerShell,
+  `$env:NODE_OPTIONS="--inspect"; yarn dev`). O Next 14 roda o servidor que
+  renderiza páginas, Server Actions e route handlers num processo filho, na
+  porta seguinte à do `--inspect`: **9230**. O terminal avisa ("the Next.js
+  router server should be inspected at port 9230"). O aviso
+  "Starting inspector on 127.0.0.1:9229 failed: address already in use" vem
+  do processo do Yarn, que pegou a 9229 antes, e pode ser ignorado. No VS
+  Code, _Attach_ na porta 9230; no Chrome, `chrome://inspect` → _Configure_ →
+  `localhost:9230`. O código de cliente se depura no DevTools do navegador.
+
+### Fronteira entre servidor e cliente
+
+- `"use client"` marca a **entrada** do grafo do navegador: tudo o que esse
+  arquivo importa vira código de cliente. Um módulo sem diretiva pertence a
+  quem o importa. Hook do React no grafo do servidor quebra em runtime, e uma
+  prop função (um ícone do lucide, por exemplo) não atravessa de um Server
+  Component para um componente de cliente.
+  `npx vitest run --dir tests/unitaires server-client-boundary` confere isso
+  no grafo inteiro e aponta a aresta culpada antes de abrir o navegador.
+- Server Actions (`"use server"`, `src/actions/`) são para **escrita**. O
+  router do Next 14 roda uma de cada vez, e uma navegação descarta as que
+  esperavam, com promessas que nunca terminam: uma leitura feita por Server
+  Action deixa a tela presa em "carregando".
+- O código de cliente lê a configuração pública por `src/env/client.ts`,
+  nunca por `process.env`.
+- `tests/unitaires/client-bundle-boundaries.test.ts` falha se um import
+  estático trouxer de volta para a primeira carga o que foi separado (a
+  paleta ⌘K, os mapas, as tabelas de Entregas, os textos dos tutoriais).
+
+### Leituras pelo relay
+
+- Toda leitura do navegador vai por `GET /api/relay/<caminho da API>`
+  (`src/app/api/relay/[...path]/route.ts`), que lê o token do cookie
+  `httpOnly` no servidor. Na aba _Network_ do DevTools, filtre por `relay`: o
+  status é o da API, e o cabeçalho `x-request-id` é o id do pedido na API.
+  Procure esse valor nos logs da API (seção "Depuração" do README da
+  `trajetto-api`).
+- O relay responde por conta própria em três casos: `404 NOT_FOUND`, quando o
+  caminho não está na lista fechada de `src/lib/api-relay-paths.ts` (o teste
+  `api-relay.test.ts` confere todo `relayUrl` do código);
+  `401 AUTH_TOKEN_MISSING`, sem o cookie `tkey`; e `503 API_UNREACHABLE`,
+  quando a API não respondeu (`HTTP_REQUEST` errado ou API fora).
+- Uma query do react-query lê com `relayJson`/`relayNdjson`
+  (`src/lib/relay-read.ts`), com o `signal` da query: ela é cancelada quando a
+  tela sai e falha com o status HTTP real (só 5xx e falta de resposta são
+  repetidos, uma vez).
+
+### Falhas comuns
+
+| Sintoma                                                  | Causa provável                                                                 | O que fazer                                                |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| tela presa em "carregando"                               | a leitura foi feita por Server Action, que ficou na fila do router             | leia pelo relay (`src/lib/relay-read.ts`)                  |
+| `404 NOT_FOUND` em `/api/relay/...`                      | o caminho não está em `src/lib/api-relay-paths.ts`                             | acrescente o padrão na lista (e o teste passa a cobri-lo)  |
+| erro de hook ou "Functions cannot be passed" no servidor | um módulo de cliente entrou no grafo do servidor, ou uma função cruzou a borda | rode o teste `server-client-boundary`; ele mostra a aresta |
+| mudança feita por outra pessoa demora a aparecer         | o router guarda o render de uma página dinâmica por 30 s (`staleTimes`)        | "Atualizar" (ou um evento de tempo real) refaz na hora     |
+| o captcha não aparece em dev                             | o Turnstile só monta em build de produção                                      | normal; as suítes de navegador testam o widget no build    |
 
 ## Build, imagem e deploy
 
@@ -333,8 +431,15 @@ branch ─PR─▶ staging ─push─▶ validação completa + suítes de naveg
 staging ─PR─▶ main ─merge─▶ aprovação ─▶ mesma imagem, por digest ─▶ gate de rotas ─▶ tag `stable` ─▶ Dokploy (produção)
 ```
 
-- **Imagem**: `Dockerfile` multi-stage sobre `node:22.21.1-alpine` (fixada por
-  digest), saída `standalone`, porta 3000, `HEALTHCHECK` em `/api/health`.
+- **Imagem**: `Dockerfile` multi-stage. O build roda em
+  `node:22.21.1-alpine3.23`; o runtime é `alpine:3.23.7` com só o binário do
+  `node` (sem npm nem yarn), ambos fixados por digest. A camada do `node` é
+  reprodutível e é o mesmo blob da imagem da API (mesmo estágio
+  `node-binary`, mesmos digests): a VPS a baixa uma vez para as duas. Saída
+  `standalone`, com os `node_modules` numa camada própria, porta 3000,
+  `HEALTHCHECK` em
+  `/api/health`. Antes do push, o pipeline sobe a imagem sem rede e confere o
+  health check, o commit em `/build-id.json` e um AVIF do otimizador.
   Publicada em `ghcr.io/trajetto-organization/trajetto-ui`.
 - **Uma imagem só**, promovida de staging para produção. Tudo o que muda
   entre ambientes é lido em runtime do Environment da Application.

@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
-import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import {
   displayValue,
   formatDateOnly,
@@ -23,10 +23,11 @@ import { DeliveryRowActions } from "./row-actions";
  * change does not have to travel through the column definitions.
  */
 const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
+  idColumn<DeliveryListItem>(),
   {
     // The client's order number, with the NF-e under it: what a dispatcher
-    // reads off the paperwork. A delivery typed without either falls back to
-    // the compact record id, never the raw UUID.
+    // reads off the paperwork. A delivery typed without either reads "N/A"
+    // here; the record id is the column before.
     id: "code",
     accessorFn: (row) => row.code ?? row.invoice_number ?? "",
     meta: { title: "Código" },
@@ -56,7 +57,7 @@ const buildDeliveryColumns = (): ColumnDef<DeliveryListItem>[] => [
         return (
           <div className="flex w-36 flex-col">
             {kindBadge}
-            <IdCell id={row.original.id} />
+            <p className="truncate font-medium">{displayValue(null)}</p>
           </div>
         );
       }

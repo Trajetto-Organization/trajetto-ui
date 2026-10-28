@@ -61,6 +61,13 @@ function usageRows(
     .map((key) => ({ key, label: ROW_LABELS[key], count: byType[key] }));
 }
 
+/**
+ * From this share of the month's quota (in-progress reservations included)
+ * the card reads "Uso elevado". The vehicle slots warn at 80%
+ * (lib/vehicle-slot-usage): a different resource, a different decision.
+ */
+const AI_HIGH_USAGE_PERCENT = 70;
+
 /** "12 fotos restantes neste período", "1 foto restante neste período". */
 function remainingSentence(
   limit: number,
@@ -131,6 +138,7 @@ function periodStartSentence(
 }
 
 export {
+  AI_HIGH_USAGE_PERCENT,
   ROW_LABELS,
   companyClock,
   nextResetSentence,

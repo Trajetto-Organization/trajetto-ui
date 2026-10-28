@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 import type { StatusChangeReasonData } from "@/actions/status-change-reason/list-status-change-reason";
@@ -11,6 +12,7 @@ import { StatusChangeReasonRowActions } from "./row-actions";
 
 const buildStatusChangeReasonColumns =
   (): ColumnDef<StatusChangeReasonData>[] => [
+    idColumn<StatusChangeReasonData>(),
     {
       accessorKey: "name",
       meta: { title: "Nome" },

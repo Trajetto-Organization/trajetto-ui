@@ -50,8 +50,8 @@ const FIELDS: ReadonlyMap<string, Kind> = new Map<string, Kind>([
   ["features/fine/form-dialog/details.tsx:violation_date", "civil-day"],
   ["features/fine/form-dialog/details.tsx:due_date", "civil-day"],
   ["features/fine/form-dialog/details.tsx:payment_date", "civil-day"],
-  ["features/driver-pauses/toolbar/index.tsx:pause_report_from", "civil-day"], // the report's `from`, a company day
-  ["features/driver-pauses/toolbar/index.tsx:pause_report_to", "civil-day"], // the report's `to`
+  // Pausas' period is no DatePickerField since 28/10/2026: the shared range
+  // picker, which only speaks civil days (date-range-picker.test.ts).
   [
     "features/deliveries/occurrence-types/form-builder/answer-fields.tsx:occurrence_answer_date",
     "civil-day",

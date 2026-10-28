@@ -17,7 +17,7 @@ import { permissions } from "@/lib/permissions";
 import { formatPickedDay } from "@/features/vehicle/lib/picked-day";
 
 import { useFuelWritePermissions } from "../hooks/use-fuel-permissions";
-import { copyWithFeedback } from "../lib/copy";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { UpdateFuelDialog } from "../update-dialog";
 import { DeleteFuelDialog } from "../delete-dialog";
 

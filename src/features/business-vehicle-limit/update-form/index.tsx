@@ -22,6 +22,7 @@ import { handleUpdateVehicleLimit } from "@/actions/business/update-vehicle-limi
 import type { BusinessEntitlementsData } from "@/actions/business/entitlements";
 import { guardFormAction } from "@/lib/action-result";
 import { fetchBusinessEntitlements } from "@/lib/business-reads";
+import { VEHICLE_SLOT_HIGH_USAGE_PERCENT } from "@/lib/vehicle-slot-usage";
 import { updateVehicleLimitSchema } from "@/schemas/update-vehicle-limit-schema";
 import {
   IGNORE_BLUR_ATTRIBUTE,
@@ -111,12 +112,20 @@ const UpdateVehicleLimitFormSubmit = ({
       {entitlements && (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Frota ativa</span>
+            {/* Every status but Inativo — not the Vehicles page's "Ativos",
+                which is ACTIVE only. */}
+            <span className="text-muted-foreground">Ocupando vaga</span>
             <span className="font-medium">
-              {vehicleCount} {hasLimit ? `/ ${vehicleLimit}` : "veículo(s)"}
+              {vehicleCount}{" "}
+              {hasLimit
+                ? `/ ${vehicleLimit}`
+                : vehicleCount === 1
+                  ? "veículo"
+                  : "veículos"}
               {inactiveCount > 0 && (
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  +{inactiveCount} inativo(s)
+                  +{inactiveCount}{" "}
+                  {inactiveCount === 1 ? "inativo" : "inativos"}
                 </span>
               )}
             </span>
@@ -135,7 +144,7 @@ const UpdateVehicleLimitFormSubmit = ({
                 className={
                   usagePercentage >= 100
                     ? "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900"
-                    : usagePercentage >= 80
+                    : usagePercentage >= VEHICLE_SLOT_HIGH_USAGE_PERCENT
                       ? "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900"
                       : "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-900"
                 }
@@ -156,7 +165,9 @@ const UpdateVehicleLimitFormSubmit = ({
 
             {hasLimit && vehicleCount < vehicleLimit && (
               <span className="text-xs text-muted-foreground">
-                {vehicleLimit - vehicleCount} vaga(s) restante(s)
+                {vehicleLimit - vehicleCount === 1
+                  ? "1 vaga restante"
+                  : `${vehicleLimit - vehicleCount} vagas restantes`}
               </span>
             )}
           </div>
@@ -194,10 +205,10 @@ const UpdateVehicleLimitFormSubmit = ({
             p-3 text-xs text-yellow-800 dark:border-yellow-900
             dark:bg-yellow-950/30 dark:text-yellow-200"
           >
-            A frota ativa ({vehicleCount}) ficará acima do novo limite (
-            {currentValue}). Nenhum veículo será excluído ou bloqueado — mas
-            novos cadastros e reativações ficarão impedidos até a empresa
-            inativar veículos e a frota ativa caber no plano.
+            Os veículos que ocupam vaga ({vehicleCount}) ficarão acima do novo
+            limite ({currentValue}). Nenhum veículo será excluído ou bloqueado —
+            mas novos cadastros e reativações ficarão impedidos até a empresa
+            inativar veículos e a frota caber no plano.
           </div>
         )}
 

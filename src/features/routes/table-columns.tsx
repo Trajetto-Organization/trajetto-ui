@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -26,12 +27,14 @@ import { RouteCodeLink } from "./route-code-link";
  * (decision 8.8), so no column filters or orders the loaded page. The cell
  * of a sortable column shows the value the server orders by.
  *
- * The shape follows every other table in the product: the identifier first,
- * the audit dates last, the actions behind an `Ações` header. The identifier
- * is the route's code, sequential per company: what a support call quotes
- * ("a rota 42"). The raw UUID that used to lead the table is in the row menu.
+ * The shape follows every other table in the product: the record id first
+ * (compact, like every table's), the audit dates last, the actions behind an
+ * `Ações` header. The route's code, sequential per company, comes right
+ * after: what a support call quotes ("a rota 42"). It is a small integer and
+ * is shown whole, never through the id's abbreviation.
  */
 const buildRouteColumns = (): ColumnDef<RouteListItem>[] => [
+  idColumn<RouteListItem>(),
   {
     accessorKey: "code",
     meta: { title: "Código" },

@@ -5,6 +5,7 @@ import { ColumnDef, Table } from "@tanstack/react-table";
 
 import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
 
 import { SearchInputWithLoading } from "@/components/ui/search-input-with-loading";
@@ -22,6 +23,7 @@ function buildVehicleTypeColumns(
   businessId: string,
 ): ColumnDef<VehicleTypeRow>[] {
   return [
+    idColumn<VehicleTypeRow>(),
     {
       accessorKey: "description",
       meta: { title: "Nome" },

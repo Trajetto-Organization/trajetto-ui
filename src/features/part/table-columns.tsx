@@ -3,6 +3,7 @@
 import type { ColumnDef, HeaderContext } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -34,7 +35,8 @@ const text = (value: unknown, width: string) => (
 
 /** The parts catalog table; sortable/filterable ids are the API's keys (PART_TABLE). */
 const buildPartColumns = (scope: FleetScope): ColumnDef<PartRow>[] => [
-  // The description is the part's identifier in the catalog (it has no SKU).
+  idColumn<PartRow>(),
+  // The description names the part in the catalog (it has no SKU).
   {
     accessorKey: "description",
     meta: { title: "Descrição" },

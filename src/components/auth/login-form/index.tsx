@@ -15,7 +15,11 @@ import { Loader, LockIcon, MailIcon } from "lucide-react";
 import FormInput from "../../shared/custom/form-input";
 
 import { TwoFactorAuthenticationForm } from "../two-factor-authentication-form";
-import { CaptchaTurnstile } from "@/components/shared/custom/captcha-turnstile";
+import {
+  CaptchaTurnstile,
+  useCaptchaToken,
+} from "@/components/shared/custom/captcha-turnstile";
+import { loginConsumedCaptcha } from "@/components/shared/custom/captcha-turnstile/token-consumed";
 
 import type {
   LoginFormContainerProps,
@@ -33,8 +37,8 @@ const LoginFormContainer = ({
 }: LoginFormContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
-  const [turnstileKey, setTurnstileKey] = useState<number>(0);
+  const captcha = useCaptchaToken();
+  const resetCaptcha = captcha.reset;
 
   // Controlled so the action's schema can check each field as it is left
   // (decision 16.700); the action parses the same schema again.
@@ -45,13 +49,12 @@ const LoginFormContainer = ({
     serverErrors: state?.loginError,
   });
 
-  // Reset Turnstile only when the token was consumed (server/turnstile errors, not Zod validation)
+  // A new widget whenever the answer shows the token was verified (any
+  // answer but field errors, the "verify your e-mail" notice included):
+  // tokens are single-use.
   useEffect(() => {
-    if (state?.loginError?.loginErrorMessage) {
-      setIsCaptchaValid(false);
-      setTurnstileKey((prev) => prev + 1);
-    }
-  }, [state]);
+    if (loginConsumedCaptcha(state)) resetCaptcha();
+  }, [state, resetCaptcha]);
 
   return (
     <section ref={live.ref} className="animate-fade-in [animation-delay:400ms]">
@@ -109,10 +112,9 @@ const LoginFormContainer = ({
         <Button
           className="w-full h-10"
           type="submit"
-          disabled={
-            (process.env.NODE_ENV === "production" && !isCaptchaValid) ||
-            pending
-          }
+          // No fresh token, no submit: never the skeleton, never a spent one.
+          disabled={captcha.missing || pending}
+          aria-describedby={captcha.describedBy}
         >
           Entrar
           {pending && (
@@ -123,23 +125,15 @@ const LoginFormContainer = ({
         </Button>
       </div>
 
-      {process.env.NODE_ENV === "production" && (
+      {captcha.required && (
         <>
-          <CaptchaTurnstile
-            resetSignal={turnstileKey}
-            onSuccess={(token) => {
-              const input = document.getElementById(
-                "turnstile-token",
-              ) as HTMLInputElement;
+          <CaptchaTurnstile {...captcha.widget} size="flexible" />
 
-              if (input) input.value = token;
-              setIsCaptchaValid(true);
-            }}
-            size="flexible"
-            theme="auto"
+          <input
+            type="hidden"
+            name="turnstileToken"
+            value={captcha.token ?? ""}
           />
-
-          <input id="turnstile-token" type="hidden" name="turnstileToken" />
         </>
       )}
 

@@ -39,10 +39,30 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
     data: BusinessEntitlementsData | null;
   } | null>(null);
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
+
+  // Which load each request has answered (the company and the refresh it
+  // was sent for). The page waits for BOTH: it used to wait for the usage
+  // only, and while the plan was still on its way the vehicle card read
+  // "not yet answered" as "failed" and showed an error that then vanished.
+  // Derived in render, so the first render after a company switch is
+  // already "loading" instead of showing the previous answers' gaps.
+  const loadKey = businessId ? `${businessId}#${refreshTrigger}` : null;
+  // Numbered too: back to a company before the switch answered (A → B → A)
+  // must not match A's first, already settled load, or the page stopped
+  // loading with A's usage cleared and the AI card said it failed.
+  const [load, setLoad] = useState({ key: loadKey, seq: 0 });
+
+  if (load.key !== loadKey) setLoad({ key: loadKey, seq: load.seq + 1 });
+
+  const requestKey = loadKey === null ? null : `${loadKey}@${load.seq}`;
+  const [usageSettled, setUsageSettled] = useState<string | null>(null);
+  const [planSettled, setPlanSettled] = useState<string | null>(null);
+
+  const planLoading = requestKey !== null && planSettled !== requestKey;
+  const isLoading =
+    requestKey !== null && (usageSettled !== requestKey || planLoading);
 
   // Real-time usage from WebSocket events (reactive selector)
   const realtimeUsage = useAIVerificationStore((s) =>
@@ -60,6 +80,13 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
 
   const entitlements =
     plan && plan.businessId === businessId ? plan.data : null;
+
+  // "Not answered yet" and "failed" kept apart for the plan's cards.
+  const planStatus: "loading" | "ready" | "error" = planLoading
+    ? "loading"
+    : entitlements
+      ? "ready"
+      : "error";
 
   // Listen for revalidation button clicks to re-fetch data
   useEffect(() => {
@@ -111,15 +138,15 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
   }, [businessId]);
 
   useEffect(() => {
-    if (!businessId) return;
+    if (!businessId || !requestKey) return;
 
     // An answer that arrives after the company (or the refresh) changed is
     // dropped, and its request cancelled: a late one used to overwrite the
     // newer company's numbers.
     const abort = new AbortController();
     const { signal } = abort;
+    const key = requestKey;
 
-    setIsLoading(true);
     setServerUsage(null);
 
     setErrorMessage(null);
@@ -146,26 +173,37 @@ function useLimitsContent({ businessId: businessIdProp }: UseLimitsContent) {
         },
       )
       .finally(() => {
-        if (!signal.aborted) setIsLoading(false);
+        if (!signal.aborted) setUsageSettled(key);
       });
 
     // The company's plan (modules + contracted fleet) rides along: same
     // page, same refresh triggers.
-    fetchBusinessEntitlements(businessId, { signal }).then(
-      (data) => {
-        if (!signal.aborted) setPlan({ businessId, data });
-      },
-      () => {
-        if (!signal.aborted) setPlan({ businessId, data: null });
-      },
-    );
+    fetchBusinessEntitlements(businessId, { signal })
+      .then(
+        (data) => {
+          if (!signal.aborted) setPlan({ businessId, data });
+        },
+        () => {
+          if (!signal.aborted) setPlan({ businessId, data: null });
+        },
+      )
+      .finally(() => {
+        if (!signal.aborted) setPlanSettled(key);
+      });
 
     return () => {
       abort.abort();
     };
-  }, [businessId, refreshTrigger]);
+  }, [businessId, refreshTrigger, requestKey]);
 
-  return { isLoading, errorMessage, aiUsage, entitlements, businessId };
+  return {
+    isLoading,
+    errorMessage,
+    aiUsage,
+    entitlements,
+    planStatus,
+    businessId,
+  };
 }
 
 export { useLimitsContent };

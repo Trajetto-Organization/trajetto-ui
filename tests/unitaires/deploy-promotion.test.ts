@@ -248,22 +248,33 @@ describe("the single web image", () => {
   };
 
   it("is built once per commit, with nothing that belongs to one environment", () => {
-    const builds = workflow.match(/docker\/build-push-action@/g) ?? [];
+    // One image pushed per commit. The step before it is the smoke test's:
+    // the same build loaded into the runner, pushing nothing
+    // (tests/unitaires/image-smoke.test.ts).
+    const pushes = workflow
+      .split("uses: docker/build-push-action@")
+      .slice(1)
+      .map((step) => step.slice(0, step.search(/\n\s*- name:|\n {2}\w/)))
+      .map((step) => /\n {10}push: (true|false)\n/.exec(step)?.[1]);
 
-    expect(builds).toHaveLength(1);
+    expect(pushes).toEqual(["false", "true"]);
     expect(workflow).not.toMatch(
       /\n {2}build-staging:|\n {2}build-production:/,
     );
 
-    const args =
-      job("build").match(/build-args: \|\n((?: {12}.+\n)+)/)?.[1] ?? "";
-
-    expect(
-      args
+    const args = [
+      ...job("build").matchAll(/build-args: \|\n((?: {12}.+\n)+)/g),
+    ].map((match) =>
+      match[1]
         .trim()
         .split("\n")
         .map((line) => line.trim().split("=")[0]),
-    ).toEqual(["METADATA_BASE", "GIT_SHA"]);
+    );
+
+    expect(args).toEqual([
+      ["METADATA_BASE", "GIT_SHA"],
+      ["METADATA_BASE", "GIT_SHA"],
+    ]);
     expect(workflow).not.toMatch(/_STAGING \}\}\n[\s\S]*build-args/);
   });
 

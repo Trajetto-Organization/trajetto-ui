@@ -12,6 +12,7 @@ import {
 } from "@/components/shared/custom/row-actions";
 import { ConfirmDialog } from "@/components/shared/custom/confirm-dialog";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { newIdempotencyKey } from "@/lib/idempotency-key";
 import { isStaleActionResult } from "@/lib/action-result";
 import { permissions } from "@/lib/permissions";
@@ -79,12 +80,7 @@ const OccurrenceRowActions = ({
   const [isOpening, setIsOpening] = useState<boolean>(false);
 
   const copyId = (value: string, label: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${label} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, label);
   };
 
   const goToTicket = (ticketId: string) => {

@@ -12,11 +12,25 @@ interface BusinessEntitlementModule {
 interface BusinessEntitlementsData {
   modules: BusinessEntitlementModule[];
   vehicle_limit: number;
-  /** Active fleet — vehicles occupying a contracted slot (non-INACTIVE). */
+  /**
+   * Vehicles occupying a contracted slot: every status but INACTIVE (not
+   * the Vehicles page's "Ativos", which is ACTIVE only).
+   */
   vehicle_count: number;
   /** Inactive vehicles: history preserved, slot freed. */
   vehicle_inactive_count?: number;
   vehicle_limit_enabled: boolean;
+  /**
+   * The company's fleet by status, from the same count. Optional: an API
+   * older than the field (a rolling deploy) answers without it, and the
+   * card then shows the two numbers it always did.
+   */
+  vehicle_status_counts?: {
+    ACTIVE: number;
+    INACTIVE: number;
+    BLOCKED: number;
+    IN_ROUTE: number;
+  };
 }
 
 interface ModuleImpactData {

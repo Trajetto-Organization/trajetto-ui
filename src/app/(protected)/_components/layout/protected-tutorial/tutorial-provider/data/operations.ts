@@ -125,7 +125,7 @@ const pausesTour: TutorialStep[] = [
     anchor: "pauses-period",
     title: "Período 📅",
     content:
-      "Escolha o intervalo de dias (De e Até). Os dias seguem o fuso da empresa.",
+      "Clique no período para abrir o calendário: escolha o dia inicial e o dia final (até 31 dias) e clique em Aplicar. Os dias seguem o fuso da empresa.",
     placement: "bottom",
   },
   filtersStep("pauses-filters", "Filtre por motorista e por tipo de alerta."),

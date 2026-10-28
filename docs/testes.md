@@ -142,6 +142,13 @@ Nenhuma sobe a stack sozinha. O passo a passo local completo está em
    use `next dev -p 3100` com `NEXT_DEV_KEEP_PAGES=1` e
    `NODE_OPTIONS=--max-old-space-size=6144`. O CI usa o servidor
    `standalone` da build de produção, que é o que a imagem roda.
+   O captcha só monta na build de produção: no `next dev`,
+   `tests/ui/auth-captcha-states.spec.ts` se pula sozinho. Esse spec troca o
+   `api.js` da Cloudflare por um stub servido na mesma URL (a CSP o trata
+   como o original) para provocar erro, expiração e tempo esgotado, e bloqueia
+   `challenges.cloudflare.com` para o estado de script bloqueado. Os estados
+   e o token têm testes unitários com o `react-turnstile` simulado
+   (`captcha-turnstile-states`, `captcha-forms`, `captcha-machine`).
 5. O processo do Playwright precisa do mesmo `DATABASE_URL` do passo 1: o
    2FA e as contas criadas no meio de uma jornada passam pelos scripts
    `mint-*.ts` da API.

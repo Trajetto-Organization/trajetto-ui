@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -12,6 +11,7 @@ import {
 
 import { ChecklistDetailsDialog } from "@/app/(protected)/_components/shared/checklist-details-dialog";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -74,14 +74,7 @@ const VehicleChecklistRowActions = ({
   ]);
 
   const copy = (value: string | null | undefined, label: string) => {
-    if (!value) return;
-
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${label} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, label);
   };
 
   const plate = checklist.vehicle?.license_plate ?? "sem placa";

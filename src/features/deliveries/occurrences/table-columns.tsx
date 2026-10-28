@@ -5,7 +5,10 @@ import { MapPin, TriangleAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
-import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+import {
+  IdCell,
+  idColumn,
+} from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { formatNotificationDate, displayValue } from "@/lib/format-values";
 import { DELIVERY_STATUS_META } from "../lib/status";
@@ -28,15 +31,18 @@ import { authorizationBadge } from "../occurrence-authorizations/rules";
  * sends no searchMeta.
  */
 const buildOccurrenceColumns = (): ColumnDef<OccurrenceRow>[] => [
+  // The occurrence's OWN id: the one "Copiar ID" copies. It used to show the
+  // delivery's compact id under "Código", while the menu copied this one.
+  idColumn<OccurrenceRow>(),
   {
-    // An occurrence has no number of its own: it is named by the delivery it
-    // happened to, by the client's order code. A delivery typed without one
-    // falls back to its compact id.
+    // The delivery it happened to, by the client's order code. A delivery
+    // typed without one shows the delivery's compact id, under a title that
+    // says whose it is ("Copiar ID da Entrega" copies it whole).
     id: "deliveryCode",
     accessorFn: (row) => row.delivery.code ?? "",
-    meta: { title: "Código" },
+    meta: { title: "Código da entrega" },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Código" />
+      <DataTableColumnHeader column={column} title="Código da entrega" />
     ),
     cell: ({ row }) =>
       row.original.delivery.code ? (

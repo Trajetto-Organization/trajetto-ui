@@ -1,9 +1,10 @@
 "use client";
 
-import { useKBar } from "kbar";
 import { Compass, PanelsTopLeft, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
+import { useCommandPalette } from "../../layout/protected-command-bar-provider/command-palette-context";
 
 /**
  * What a collaborator sees when none of the dashboard shortcuts are theirs.
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
  * of looking restricted, which are very different messages.
  */
 const OverviewEmptyState = (): JSX.Element => {
-  const { query } = useKBar();
+  const { toggle } = useCommandPalette();
 
   return (
     <div className="flex flex-col items-center justify-center px-4 py-20">
@@ -61,11 +62,7 @@ const OverviewEmptyState = (): JSX.Element => {
         className="animate-fade-up [animation-delay:400ms]
         flex flex-col items-center gap-4 sm:flex-row"
       >
-        <Button
-          onClick={query.toggle}
-          variant="default"
-          className="rounded-full"
-        >
+        <Button onClick={toggle} variant="default" className="rounded-full">
           <Search className="mr-2 h-4 w-4" />
           Buscar uma página
         </Button>

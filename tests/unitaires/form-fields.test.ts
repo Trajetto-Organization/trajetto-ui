@@ -66,11 +66,19 @@ import {
   toIsoFromLocalParts,
 } from "@/app/(protected)/_components/shared/custom/date-time-picker-field/helpers";
 
+import { preloadCalendar } from "@/components/ui/lazy-calendar";
+
 import { inTimeZone } from "./helpers/in-time-zone";
 
 // This runner compiles JSX with the classic runtime; the app's components
 // (built for Next's automatic runtime) find `React` as a global at render.
 (globalThis as { React?: typeof React }).React = React;
+
+// The date fields' calendar is its own chunk (ui/lazy-calendar); loaded here
+// once, a picker opens on the grid as it does after the trigger's hover.
+beforeAll(async () => {
+  await preloadCalendar();
+});
 
 let root: Root | null = null;
 

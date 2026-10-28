@@ -57,8 +57,9 @@ const RoutesTableToolbar = ({
     <div className="flex flex-wrap items-center gap-2 w-full">
       <SearchInputWithLoading
         data-tutorial="routes-search"
-        placeholder="Nome, destino, motorista ou número..."
-        aria-label="Buscar rotas por nome, destino, motorista ou número"
+        // Fits the 270px box; the label names every field searched.
+        placeholder="Nome, motorista, número ou ID..."
+        aria-label="Buscar rotas por nome, destino, motorista, número ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={handleSearchWithLoading}
         disabled={error}

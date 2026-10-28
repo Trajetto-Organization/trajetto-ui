@@ -15,6 +15,7 @@ import type {
   DeliveryListItem,
 } from "@/actions/delivery/get-delivery";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import { fetchDelivery } from "@/lib/delivery-reads";
 import { relayAnswer } from "@/lib/relay-read";
@@ -72,10 +73,7 @@ const DeliveryRowActions = ({ row }: DeliveryRowActionsProps): JSX.Element => {
   const canCancel = DELIVERY_TRANSITIONS[delivery.status].includes("CANCELLED");
 
   const handleCopyID = () => {
-    navigator.clipboard
-      .writeText(delivery.id)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(delivery.id, "ID");
   };
 
   const handleOpenEdit = async () => {

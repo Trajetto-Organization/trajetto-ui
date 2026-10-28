@@ -7,6 +7,7 @@ import { SearchInputWithLoading } from "@/components/ui/search-input-with-loadin
 
 import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
 
 import { useSearch } from "@/lib/search-params";
@@ -25,6 +26,7 @@ import { FuelTypeRowActions } from "./row-actions";
  */
 function buildFuelTypeColumns(): ColumnDef<FuelTypeRow>[] {
   return [
+    idColumn<FuelTypeRow>(),
     {
       accessorKey: "description",
       meta: { title: "Descrição" },

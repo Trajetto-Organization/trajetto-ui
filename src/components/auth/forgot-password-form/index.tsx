@@ -3,7 +3,11 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useState } from "react";
 
-import { CaptchaTurnstile } from "@/components/shared/custom/captcha-turnstile";
+import {
+  CaptchaTurnstile,
+  useCaptchaToken,
+} from "@/components/shared/custom/captcha-turnstile";
+import { forgotConsumedCaptcha } from "@/components/shared/custom/captcha-turnstile/token-consumed";
 
 import { Button } from "@/components/ui/button";
 import { Loader, MailIcon } from "lucide-react";
@@ -28,8 +32,8 @@ const ForgotPasswordContainer = ({
 }: ForgotPasswordContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
-  const [turnstileKey, setTurnstileKey] = useState<number>(0);
+  const captcha = useCaptchaToken();
+  const resetCaptcha = captcha.reset;
 
   // Checked as it is left, by the action's own schema (decision 16.700).
   const [email, setEmail] = useState<string>("");
@@ -39,13 +43,11 @@ const ForgotPasswordContainer = ({
     serverErrors: state.forgotPasswordError,
   });
 
-  // Reset Turnstile only when the token was consumed (server/turnstile errors, not Zod validation)
+  // A new widget whenever the answer shows the token was verified (any
+  // answer but field errors, the success included): tokens are single-use.
   useEffect(() => {
-    if (state?.forgotPasswordError?.forgotPasswordErrorMessage) {
-      setIsCaptchaValid(false);
-      setTurnstileKey((prev) => prev + 1);
-    }
-  }, [state]);
+    if (forgotConsumedCaptcha(state)) resetCaptcha();
+  }, [state, resetCaptcha]);
 
   return (
     <section ref={live.ref} className="animate-fade-in [animation-delay:400ms]">
@@ -73,10 +75,9 @@ const ForgotPasswordContainer = ({
         <Button
           className="w-full h-10"
           type="submit"
-          disabled={
-            (process.env.NODE_ENV === "production" && !isCaptchaValid) ||
-            pending
-          }
+          // No fresh token, no submit: never the skeleton, never a spent one.
+          disabled={captcha.missing || pending}
+          aria-describedby={captcha.describedBy}
         >
           Recuperar minha senha
           {pending && (
@@ -87,23 +88,15 @@ const ForgotPasswordContainer = ({
         </Button>
       </div>
 
-      {process.env.NODE_ENV === "production" && (
+      {captcha.required && (
         <>
-          <CaptchaTurnstile
-            resetSignal={turnstileKey}
-            onSuccess={(token) => {
-              const input = document.getElementById(
-                "turnstile-token",
-              ) as HTMLInputElement;
+          <CaptchaTurnstile {...captcha.widget} size="flexible" />
 
-              if (input) input.value = token;
-              setIsCaptchaValid(true);
-            }}
-            size="flexible"
-            theme="auto"
+          <input
+            type="hidden"
+            name="turnstileToken"
+            value={captcha.token ?? ""}
           />
-
-          <input id="turnstile-token" type="hidden" name="turnstileToken" />
         </>
       )}
 

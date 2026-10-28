@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -9,6 +8,7 @@ import {
   RowActionSeparator,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -53,12 +53,7 @@ const DriverRowActions = ({
     : writePermission.tooltipMessage;
 
   const copy = (value: string, what: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${what} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, what);
   };
 
   return (

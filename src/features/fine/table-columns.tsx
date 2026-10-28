@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -34,8 +35,9 @@ const fullCode = (row: FineRow) =>
  * formatted in the viewer's zone could name the day before.
  */
 const buildFineColumns = (): ColumnDef<FineRow>[] => [
-  // A fine has no number of its own (the AIT is not stored): the vehicle,
-  // the violation and its day tell one from another.
+  // A fine has no number of its own (the AIT is not stored): the record id
+  // identifies it; the vehicle, the violation and its day read after it.
+  idColumn<FineRow>(),
   {
     id: "vehicleLicensePlate",
     accessorFn: (row) => row.vehicle.license_plate,

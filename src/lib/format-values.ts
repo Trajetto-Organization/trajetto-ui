@@ -362,6 +362,35 @@ const formatTelephone = (telephone: string | null | undefined): string => {
   return telephone.replace(/^(\d{2})(\d{5}|\d{4})(\d{4})$/, "+55 ($1) $2-$3");
 };
 
+/**
+ * How many characters of a record id the app shows.
+ *
+ * The TAIL, not the head: the API mints UUIDv7, whose first 12 hex digits are
+ * the creation time in milliseconds, so the first eight are the same for every
+ * record made within the same minute. The last twelve are random. Every table
+ * (IdCell), picker and label shows these same twelve, so the same record reads
+ * the same everywhere. The API's list searches read the same twelve characters
+ * back (trajetto-api shared/pagination/id-search).
+ */
+const SHORT_ID_LENGTH = 12;
+
+/** A canonical UUID (any version), the only shape the tail is taken of. */
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The compact form of a record id (see SHORT_ID_LENGTH).
+ *
+ * Only a UUID is cut. Any other id (a number, a composite key) is shown
+ * whole: its tail would not be unique, and cutting "12345" would show
+ * a different number. Presentation only: "Copiar ID" copies the full value.
+ */
+const shortId = (id: string): string =>
+  UUID_SHAPE.test(id) ? id.slice(-SHORT_ID_LENGTH) : id;
+
+/** A service order as the pickers, labels and tables name it: "OS #…". */
+const serviceOrderLabel = (id: string): string => `OS #${shortId(id)}`;
+
 // Helper function to format service order display
 const formatServiceOrderDisplay = (serviceOrder: any) => {
   const formattedDate =
@@ -371,7 +400,7 @@ const formatServiceOrderDisplay = (serviceOrder: any) => {
     ? `(Veículo: ${serviceOrder.vehicle.description || ""} - Placa: ${serviceOrder.vehicle.license_plate})`
     : "";
 
-  return `OS#${serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
+  return `${serviceOrderLabel(serviceOrder.id)} - ${formattedDate} ${vehicleInfo}`;
 };
 
 // Helper function to display value or N/A fallback
@@ -450,6 +479,9 @@ const stringToBoolean = (value: any) => {
 };
 
 export {
+  SHORT_ID_LENGTH,
+  shortId,
+  serviceOrderLabel,
   formatCurrencyToNumber,
   formatNotificationDate,
   formatDateOnly,

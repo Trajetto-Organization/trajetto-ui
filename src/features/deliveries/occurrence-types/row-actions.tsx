@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { toast } from "sonner";
-
 import {
   RowActionItem,
   RowActions,
@@ -13,6 +11,7 @@ import {
 
 import type { OccurrenceTypeData } from "@/actions/occurrence-type/list-occurrence-type";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -52,10 +51,7 @@ const OccurrenceTypeRowActions = ({
   ]);
 
   const handleCopyID = () => {
-    navigator.clipboard
-      .writeText(occurrenceType.id)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(occurrenceType.id, "ID");
   };
 
   // A permission revoked over the socket disables both at once; the reason

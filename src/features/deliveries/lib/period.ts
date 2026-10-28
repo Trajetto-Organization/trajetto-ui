@@ -19,6 +19,13 @@
  * toolbar all read this module.
  */
 
+import {
+  daysInclusive,
+  formatDateKey,
+  formatDateKeyRange,
+  isDateKey,
+} from "@/lib/date-key";
+
 const DELIVERY_PERIODS = ["today", "7d", "14d", "30d", "custom"] as const;
 
 type DeliveryPeriod = (typeof DELIVERY_PERIODS)[number];
@@ -37,9 +44,13 @@ const DELIVERY_PERIOD_LABELS: Record<DeliveryPeriod, string> = {
 /** The API's cap: a quarter (three consecutive months reach 92 days). */
 const MAX_CUSTOM_PERIOD_DAYS = 92;
 
-const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
+/** Each preset is the last N days of the company, today included. */
+const PRESET_DAYS: Record<Exclude<DeliveryPeriod, "custom">, number> = {
+  today: 1,
+  "7d": 7,
+  "14d": 14,
+  "30d": 30,
+};
 
 interface DeliveryPeriodSelection {
   period: DeliveryPeriod;
@@ -62,24 +73,8 @@ function readOne(source: ParamSource, name: string): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-/** A real calendar day as "YYYY-MM-DD" (not 2026-02-30). */
-function isDateKey(value: string | undefined): value is string {
-  if (!value || !DATE_KEY.test(value)) return false;
-
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-}
-
 /** Days from `from` to `to`, both included. */
-function periodLength(from: string, to: string): number {
-  return Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS) + 1;
-}
+const periodLength = daysInclusive;
 
 /**
  * Why a custom range cannot be asked for, in the API's own words, or null
@@ -174,19 +169,13 @@ function writeDeliveryPeriod(
   return params;
 }
 
-/** "28/10/2026" from "2026-10-28", without the browser's zone moving it. */
-function formatDateKey(key: string): string {
-  const [year, month, day] = key.split("-");
-
-  return `${day}/${month}/${year}`;
-}
-
-/** How the chosen period reads on screen: "Hoje", "7 dias", "01/10 a 28/10/2026". */
+/**
+ * How the chosen period reads on screen: "Hoje", "7 dias",
+ * "01/10/2026 a 28/10/2026" (one date when both ends are the same day).
+ */
 function deliveryPeriodLabel(selection: DeliveryPeriodSelection): string {
   if (selection.period === "custom" && selection.from && selection.to) {
-    return selection.from === selection.to
-      ? formatDateKey(selection.from)
-      : `${formatDateKey(selection.from)} a ${formatDateKey(selection.to)}`;
+    return formatDateKeyRange(selection.from, selection.to);
   }
 
   return DELIVERY_PERIOD_LABELS[selection.period];
@@ -203,12 +192,67 @@ interface DeliveryListPeriodMeta {
   applied: boolean;
 }
 
+/**
+ * The company's today, when the listing's answer says it: a preset is the
+ * last N days of the company, so its last day IS the company's today (the
+ * API resolves it in the company's zone; the browser's clock may be another
+ * day). Undefined for a custom range, whose last day can be any day, and for
+ * an answer that does not match the preset on screen — the URL already
+ * moved and the server has not answered yet.
+ *
+ * Known transient gap: the match is by length only, because the API's
+ * `period` meta is `{ from, to, applied }` and does not say which kind was
+ * asked for. So while the answer to a custom range of exactly 1, 7, 14 or
+ * 30 days ending in the past is still on screen, choosing the preset of the
+ * same length passes that old answer as the company's today: Personalizado,
+ * opened in that gap, starts on the old window and greys the days after it.
+ * It lasts until the preset's answer lands — `maxDate` is a live prop and
+ * reopening re-seeds the popover. Closing it needs the period kind in the
+ * meta (an API change), not a guess from the browser's clock.
+ */
+function companyTodayFrom(
+  selection: DeliveryPeriodSelection,
+  meta: DeliveryListPeriodMeta | null | undefined,
+): string | undefined {
+  if (selection.period === "custom" || !meta) return undefined;
+
+  if (!isDateKey(meta.from) || !isDateKey(meta.to)) return undefined;
+
+  return periodLength(meta.from, meta.to) === PRESET_DAYS[selection.period]
+    ? meta.to
+    : undefined;
+}
+
+/**
+ * The range the custom popover opens on: the custom range in effect; else
+ * the window of the preset in effect as the API answered it (in the
+ * company's days); else `fallbackDay` alone — today, by the browser's clock,
+ * when nothing better is known.
+ */
+function customRangeSeed(
+  selection: DeliveryPeriodSelection,
+  meta: DeliveryListPeriodMeta | null | undefined,
+  fallbackDay: string,
+): { from: string; to: string } {
+  if (selection.period === "custom" && selection.from && selection.to) {
+    return { from: selection.from, to: selection.to };
+  }
+
+  if (meta && companyTodayFrom(selection, meta)) {
+    return { from: meta.from, to: meta.to };
+  }
+
+  return { from: fallbackDay, to: fallbackDay };
+}
+
 export {
   DEFAULT_DELIVERY_PERIOD,
   DELIVERY_PERIODS,
   DELIVERY_PERIOD_LABELS,
   MAX_CUSTOM_PERIOD_DAYS,
+  companyTodayFrom,
   customRangeProblem,
+  customRangeSeed,
   deliveryPeriodLabel,
   deliveryPeriodQuery,
   formatDateKey,

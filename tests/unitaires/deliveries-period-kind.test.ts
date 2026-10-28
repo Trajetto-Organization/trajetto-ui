@@ -67,18 +67,25 @@ vi.mock("@/features/deliveries/deliveries/shipper-selector", () => ({
 
 import {
   MAX_CUSTOM_PERIOD_DAYS,
+  companyTodayFrom,
   customRangeProblem,
+  customRangeSeed,
+  deliveryPeriodLabel,
   deliveryPeriodQuery,
   readDeliveryPeriod,
   writeDeliveryPeriod,
 } from "@/features/deliveries/lib/period";
+import { preloadCalendar } from "@/components/ui/lazy-calendar";
 import {
   DELIVERY_TABLE,
   deliveriesListQuery,
 } from "@/features/deliveries/deliveries/server-table";
 import { deliveryTabListQuery } from "@/features/deliveries/lib/list-query";
 import { exportRequestFor } from "@/features/deliveries/lib/export-action";
-import { DeliveriesPeriodFilter } from "@/features/deliveries/table-toolbar/period-filter";
+import {
+  DeliveriesPeriodFilter,
+  DeliveriesPeriodSearchHint,
+} from "@/features/deliveries/table-toolbar/period-filter";
 import { DeliveriesTableToolbar } from "@/features/deliveries/table-toolbar";
 import { DeliveryFormDialog } from "@/features/deliveries/deliveries/form-dialog";
 import { buildDeliveryColumns } from "@/features/deliveries/deliveries/table-columns";
@@ -87,11 +94,15 @@ import { serverTableQuery } from "@/app/(protected)/_components/shared/tanstack-
 
 const BUSINESS = "018f0000-0000-7000-8000-00000000000b";
 
-beforeAll(() => {
+beforeAll(async () => {
   (
     globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
   ).IS_REACT_ACT_ENVIRONMENT = true;
   vi.stubGlobal("React", React);
+
+  // The custom range's calendar is its own chunk (ui/lazy-calendar); loaded
+  // once here, the popover opens on the grid as it does after the hover.
+  await preloadCalendar();
 });
 
 let root: Root | null = null;
@@ -132,17 +143,33 @@ async function click(element: Element) {
   });
 }
 
-async function type(element: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  )!.set!;
+/** A day of a month grid in the open popover ("junho 2026", 15). */
+function calendarDay(caption: string, date: number): HTMLButtonElement {
+  const grid = [...document.querySelectorAll('[role="grid"]')].find(
+    (candidate) =>
+      document.getElementById(candidate.getAttribute("aria-labelledby") ?? "")
+        ?.textContent === caption,
+  );
 
-  await act(async () => {
-    setter.call(element, value);
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-  });
+  const day = [
+    ...(grid?.querySelectorAll<HTMLButtonElement>('button[name="day"]') ?? []),
+  ].find((candidate) => candidate.textContent === String(date));
+
+  expect(
+    day,
+    `o dia ${date} de ${caption} não está no calendário`,
+  ).toBeTruthy();
+
+  return day!;
 }
+
+const nextMonth = () =>
+  document.querySelector<HTMLButtonElement>('[aria-label="Próximo mês"]')!;
+
+const pickedSummary = () =>
+  [...document.querySelectorAll("[data-date-range-summary] dd")].map(
+    (value) => value.textContent,
+  );
 
 const pushedQuery = () =>
   new URLSearchParams(
@@ -219,6 +246,70 @@ describe("the period in the URL", () => {
       "Informe a data inicial e a data final do período.",
     );
   });
+
+  it("reads the company's today from a preset's answer, and only from one that matches", () => {
+    const week = { from: "2026-10-22", to: "2026-10-28", applied: true };
+
+    // A preset ends on the company's today (the API resolves it in the
+    // company's zone; the browser may be on another day).
+    expect(companyTodayFrom({ period: "7d" }, week)).toBe("2026-10-28");
+    expect(
+      companyTodayFrom(
+        { period: "today" },
+        { from: "2026-10-28", to: "2026-10-28", applied: true },
+      ),
+    ).toBe("2026-10-28");
+
+    // The URL moved to 14 dias, the server still answers the week: unknown.
+    expect(companyTodayFrom({ period: "14d" }, week)).toBeUndefined();
+    // A custom range ends on any day.
+    expect(
+      companyTodayFrom(
+        { period: "custom", from: "2026-10-22", to: "2026-10-28" },
+        week,
+      ),
+    ).toBeUndefined();
+    expect(companyTodayFrom({ period: "7d" }, null)).toBeUndefined();
+  });
+
+  it("opens the custom range on the range in effect, else on the preset's window", () => {
+    const week = { from: "2026-10-22", to: "2026-10-28", applied: true };
+
+    expect(
+      customRangeSeed(
+        { period: "custom", from: "2026-09-01", to: "2026-09-30" },
+        week,
+        "2026-10-29",
+      ),
+    ).toEqual({ from: "2026-09-01", to: "2026-09-30" });
+    expect(customRangeSeed({ period: "7d" }, week, "2026-10-29")).toEqual({
+      from: "2026-10-22",
+      to: "2026-10-28",
+    });
+    // Nothing trustworthy: the fallback day alone.
+    expect(customRangeSeed({ period: "30d" }, week, "2026-10-29")).toEqual({
+      from: "2026-10-29",
+      to: "2026-10-29",
+    });
+  });
+
+  it("labels a custom range with both dates in full", () => {
+    expect(
+      deliveryPeriodLabel({
+        period: "custom",
+        from: "2026-10-01",
+        to: "2026-10-28",
+      }),
+    ).toBe("01/10/2026 a 28/10/2026");
+    expect(
+      deliveryPeriodLabel({
+        period: "custom",
+        from: "2026-10-28",
+        to: "2026-10-28",
+      }),
+    ).toBe("28/10/2026");
+    expect(deliveryPeriodLabel({ period: "14d" })).toBe("14 dias");
+  });
 });
 
 describe("what goes to the API", () => {
@@ -282,19 +373,23 @@ describe("the period presets in the toolbar", () => {
   });
 
   it("refuses a range over 92 days in the popover, and applies a valid one", async () => {
+    navigation.search = "period=custom&from=2026-06-01&to=2026-06-02";
+
     await mount(createElement(DeliveriesPeriodFilter));
 
-    await click(button("Personalizado"));
+    // The trigger reads the range in effect.
+    await click(button("01/06/2026 a 02/06/2026"));
 
-    const from = document.querySelector<HTMLInputElement>(
-      "#deliveries-period-from",
-    )!;
-    const to = document.querySelector<HTMLInputElement>(
-      "#deliveries-period-to",
-    )!;
+    // The product's calendar, not the browser's date inputs.
+    expect(document.querySelector('input[type="date"]')).toBeNull();
+    expect(pickedSummary()).toEqual(["01/06/2026", "02/06/2026"]);
 
-    await type(from, "2026-01-01");
-    await type(to, "2026-06-30");
+    await click(calendarDay("junho 2026", 1));
+
+    for (let step = 0; step < 3; step += 1) await click(nextMonth());
+
+    // 1 June to 15 September: 107 days.
+    await click(calendarDay("setembro 2026", 15));
     await click(button("Aplicar"));
 
     expect(document.querySelector("[role='alert']")?.textContent).toContain(
@@ -302,26 +397,116 @@ describe("the period presets in the toolbar", () => {
     );
     expect(navigation.push).not.toHaveBeenCalled();
 
-    await type(to, "2026-01-31");
+    await click(calendarDay("setembro 2026", 1));
+    await click(calendarDay("setembro 2026", 30));
 
     // Live: the message goes once the dates are right.
     expect(document.querySelector("[role='alert']")).toBeNull();
 
     await click(button("Aplicar"));
 
+    expect(navigation.push).toHaveBeenCalledTimes(1);
     expect(pushedQuery().toString()).toBe(
-      "period=custom&from=2026-01-01&to=2026-01-31",
+      "period=custom&from=2026-09-01&to=2026-09-30",
     );
+  });
+
+  it("opens the custom range on the window the API answered, up to the company's today", async () => {
+    // The browser's clock is not asked: the API resolved "7 dias" in the
+    // company's zone.
+    navigation.search = "period=7d";
+
+    await mount(
+      createElement(DeliveriesPeriodFilter, {
+        periodMeta: { from: "2026-10-22", to: "2026-10-28", applied: true },
+      }),
+    );
+
+    await click(button("Personalizado"));
+
+    expect(pickedSummary()).toEqual(["22/10/2026", "28/10/2026"]);
+    expect(calendarDay("outubro 2026", 22).getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(calendarDay("outubro 2026", 28).disabled).toBe(false);
+    expect(calendarDay("outubro 2026", 29).disabled).toBe(true);
+
+    // Cancelar leaves the period as it was.
+    await click(button("Cancelar"));
+
+    expect(navigation.push).not.toHaveBeenCalled();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it("says how a search treats the period", async () => {
     navigation.search = "search=ana&period=7d";
 
-    await mount(createElement(DeliveriesPeriodFilter));
+    await mount(createElement(DeliveriesPeriodSearchHint));
 
     expect(
       document.querySelector("[data-period-search-hint]")?.textContent,
     ).toContain("A busca procura no período escolhido");
+  });
+
+  it("says nothing about a search when there is none", async () => {
+    navigation.search = "period=7d";
+
+    await mount(createElement(DeliveriesPeriodSearchHint));
+
+    expect(document.querySelector("[data-period-search-hint]")).toBeNull();
+  });
+
+  it("puts the period at the right end of the filters' line, just before Visualizar", async () => {
+    navigation.search = "search=ana&period=7d";
+
+    // What the toolbar reads from the table: no columns, no local filter.
+    const table = {
+      getAllColumns: () => [],
+      getColumn: () => undefined,
+      getState: () => ({ columnFilters: [] }),
+    };
+
+    await mount(
+      createElement(DeliveriesTableToolbar, {
+        activeTab: "deliveries",
+        serverFacets: {},
+        table: table as never,
+      }),
+    );
+
+    const end = document.querySelector<HTMLElement>("[data-toolbar-end]")!;
+
+    expect(end, "o grupo do fim da barra não está na página").not.toBeNull();
+
+    // One group, pushed right from `sm`, wrapping as a whole.
+    expect(end.className).toContain("sm:ml-auto");
+    expect(end.className).toContain("flex-wrap");
+
+    const period = end.querySelector('[data-tutorial="deliveries-period"]');
+    const view = end.querySelector('[data-tutorial="view-options"]');
+
+    expect(period, "o período saiu do grupo").not.toBeNull();
+    expect(view, "Visualizar saiu do grupo").not.toBeNull();
+    // The period first, Visualizar at the very end.
+    expect(
+      period!.compareDocumentPosition(view!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // The group is the toolbar's last control: search and filters come first.
+    const toolbar = end.parentElement!;
+    const search = toolbar.querySelector('[data-tutorial="deliveries-search"]');
+
+    expect(search).not.toBeNull();
+    expect(
+      search!.compareDocumentPosition(end) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    // The search note is a line of its own, outside the group.
+    const hint = toolbar.querySelector("[data-period-search-hint]");
+
+    expect(hint).not.toBeNull();
+    expect(end.contains(hint)).toBe(false);
+    expect(hint!.className).toContain("w-full");
   });
 
   it("stays usable when the list failed to load, so a shorter period gets out", async () => {
@@ -356,7 +541,7 @@ describe("the period presets in the toolbar", () => {
     navigation.search = "search=018f0000&period=7d";
 
     await mount(
-      createElement(DeliveriesPeriodFilter, {
+      createElement(DeliveriesPeriodSearchHint, {
         periodMeta: { from: "2026-10-22", to: "2026-10-28", applied: false },
       }),
     );

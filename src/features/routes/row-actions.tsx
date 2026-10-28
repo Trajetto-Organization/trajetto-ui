@@ -20,6 +20,7 @@ import {
 import { releaseRoute } from "@/actions/route/route-operations";
 import { revalidateTagName } from "@/actions/revalidate";
 import { isStaleActionResult } from "@/lib/action-result";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 import { permissions } from "@/lib/permissions";
 import {
@@ -100,10 +101,7 @@ const RouteRowActions = ({ route }: RouteRowActionsProps): JSX.Element => {
     router.push(routeDetailHref(pathname, route.id, businessId));
 
   const handleCopyID = () => {
-    navigator.clipboard
-      .writeText(route.id)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(route.id, "ID");
   };
 
   const handleOpenEdit = async () => {

@@ -26,10 +26,12 @@ Documentos irmãos:
 - [Configuração pública em tempo de execução](#configuração-pública-em-tempo-de-execução)
 - [Sessão e segurança](#sessão-e-segurança)
 - [Content-Security-Policy](#content-security-policy)
+- [Next.js 14: versão e avisos de segurança](#nextjs-14-versão-e-avisos-de-segurança)
 - [Versão do build e abas abertas durante um deploy](#versão-do-build-e-abas-abertas-durante-um-deploy)
 - [Contrato com a API: expandir e depois contrair](#contrato-com-a-api-expandir-e-depois-contrair)
 - [Conteúdo em MDX e portal de documentação](#conteúdo-em-mdx-e-portal-de-documentação)
 - [Padrões de tela](#padrões-de-tela)
+- [Tabelas: filtros, requisições e modo local](#tabelas-filtros-requisições-e-modo-local)
 - [Tema claro e escuro](#tema-claro-e-escuro)
 - [Desempenho](#desempenho)
 - [A imagem Docker](#a-imagem-docker)
@@ -65,7 +67,7 @@ descartável.
 | Camada                   | Escolha                                                            | Observação                                                   |
 | ------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------ |
 | Framework                | Next.js 14.2 (App Router, React Server Components)                 | saída `standalone` (`next.config.mjs`)                       |
-| Runtime                  | Node.js 22                                                         | imagem `node:22.21.1-alpine` fixada por digest               |
+| Runtime                  | Node.js 22                                                         | binário da `node:22.21.1-alpine3.23` sobre `alpine:3.23.7`   |
 | UI                       | Tailwind CSS + shadcn/ui sobre Radix                               | `src/components/ui`                                          |
 | Tabelas                  | `@tanstack/react-table` (`DataTable`)                              | paginação, ordenação e filtros no servidor, guardados na URL |
 | Estado remoto no cliente | react-query **v3**                                                 | só onde a tela precisa de dado vivo                          |
@@ -422,7 +424,20 @@ Nomes antigos que não existem mais (o erro de boot cita o substituto):
   contar cada navegador pelo próprio endereço, e não todos pelo endereço do
   servidor da web. O valor precisa ser **o mesmo** da API.
 - O Turnstile (Cloudflare) protege login, recuperação de senha e orçamento.
-  Num servidor de produção, ele é obrigatório.
+  Num servidor de produção, ele é obrigatório. Um único wrapper
+  (`src/components/shared/custom/captcha-turnstile`) desenha o widget com
+  estados explícitos (`captcha-machine.ts`): carregando (skeleton do tamanho
+  do widget, atrás dele), pronto, verificado, expirado, erro, tempo esgotado
+  (15 s sem token nem desafio) e script bloqueado. Erro e tempo esgotado
+  oferecem "Tentar novamente", que desenha um widget novo. Script bloqueado
+  oferece "Recarregar página": o `react-turnstile` 1.1.4 guarda a falha do
+  `api.js` enquanto a página vive. O token fica no estado do formulário
+  (`useCaptchaToken`) e num input oculto controlado. Ele só existe enquanto o
+  widget que o emitiu está montado e válido. O formulário descarta o token
+  quando a resposta do servidor mostra que ele já foi verificado
+  (`token-consumed.ts`: qualquer resposta que não seja só erro de campo). O
+  tema do widget segue o do app e fica congelado enquanto há token, para não
+  pedir outro desafio.
 - Cabeçalhos fixos em `next.config.mjs`: HSTS com `preload`,
   `X-Robots-Tag: noindex` nas páginas com token (`/verificar`, `/acompanhar`),
   e nenhum `X-Powered-By`.
@@ -461,6 +476,134 @@ trusted-types nextjs nextjs#bundler default` (as políticas que o próprio
   corpo a 16 KB e registra no máximo 60 linhas por minuto por instância. Uma
   linha ali é um ataque bloqueado ou uma página que a política quebrou. Leia
   sempre depois de um deploy.
+
+## Next.js 14: versão e avisos de segurança
+
+Decisão de 28/10/2026. Revisão obrigatória até **31/12/2026**, a mesma data
+das exceções do `audit-ci.jsonc`.
+
+**A decisão.** A web continua no Next.js **14.2.35** nesta rodada, como o
+dono pediu. A linha 14 está como _Unsupported_ na
+[política de suporte](https://nextjs.org/support-policy). A 14.2.35
+(dezembro de 2025) é a última versão da linha. Ela fecha o desvio do
+middleware (CVE-2025-29927) e o DoS de RSC de dezembro de 2025
+(CVE-2025-55184, completado pelo CVE-2025-67779). Nenhum aviso publicado
+depois disso tem correção em 14.x.
+
+Ficar é defensável por dois motivos:
+
+- nenhum dos três avisos críticos alcança esta implantação (tabela abaixo);
+- a migração para 15 ou 16 é uma troca de major (React 19, APIs de requisição
+  assíncronas, novos padrões de cache) e precisa de uma rodada de regressão
+  própria.
+
+A decisão não é permanente: o plano de saída tem data.
+
+`yarn audit --groups dependencies` em 28/10/2026: 3 críticos (os três
+abaixo), 25 altos, 16 moderados e 2 baixos. O `audit-ci` falha em qualquer
+crítico novo.
+
+**Os três críticos (RCE).** Estão como exceção no `audit-ci.jsonc` pelos
+motivos abaixo:
+
+| Aviso                                      | Condição para explorar                                        | Por que não alcança esta web                                                                                                                                                                                                                                                                                                  | Teste que trava a condição (`next-security-floor.test.ts`) |
+| ------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| GHSA-p293-qw3h-jr36 (corrigido na 15.5.24) | servidor rodando em Windows                                   | a imagem roda em Linux Alpine                                                                                                                                                                                                                                                                                                 | "runs on Linux Alpine (musl)"                              |
+| GHSA-2xp9-vwfh-vxw4 (corrigido na 15.5.24) | o otimizador (`/_next/image`) decodificar um AVIF do atacante | não há `remotePatterns` em produção. Uma URL local é buscada pelo próprio servidor **sem cookies**, então o relay responde 401. Nenhuma rota da web devolve bytes enviados por alguém. As fotos enviadas (R2) são `unoptimized`. Na prática, o otimizador só decodifica as imagens estáticas do build (`/_next/static/media`) | "no external host in production"                           |
+| GHSA-2464-fhr4-w9xw (corrigido na 15.5.28) | SVG decodificado pelo sharp em Linux com glibc                | `dangerouslyAllowSVG` está desligado, então o SVG é recusado antes do sharp. O sharp é o 0.35.5, o paliativo do próprio aviso. O Alpine usa musl, não glibc                                                                                                                                                                   | "refuses SVG…", "decodes with sharp 0.35.5…", "Alpine"     |
+
+**Riscos residuais.** São avisos altos, sem correção em 14.x e sem paliativo
+no Next:
+
+| Aviso               | Corrigido em      | Efeito                                                       | Alcance aqui                                                                                                                                                                                                                                          |
+| ------------------- | ----------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GHSA-m99w-x7hq-7vfj | 15.5.21 e 16.2.11 | DoS por CPU no processamento de Server Actions               | sim. Há 160 arquivos `"use server"`, e o id de uma action aparece no JS público (o login, por exemplo). O middleware confere só a presença e as claims do `tkey`, sem a assinatura, então não segura a requisição antes de o Next decodificar o corpo |
+| GHSA-p3m5-59mp-jv5r | 15.5.28 e 16.4.1  | DoS por alocação sem limite em Server Actions (CPU)          | sim, pelo mesmo caminho                                                                                                                                                                                                                               |
+| GHSA-q4gf-8mx6-v5v3 | 15.5.15 e 16.2.3  | DoS na desserialização de RSC (endpoints de Server Function) | sim                                                                                                                                                                                                                                                   |
+| GHSA-8h8q-6873-q5fj | 15.5.16 e 16.2.5  | o mesmo                                                      | sim                                                                                                                                                                                                                                                   |
+| GHSA-h25m-26qc-wcjf | 15.0.8, 15.5.10…  | o mesmo (CPU, falta de memória ou queda do processo)         | sim                                                                                                                                                                                                                                                   |
+| GHSA-c4j6-fc7j-m34r | 15.5.16 e 16.2.5  | SSRF por pedido de upgrade para WebSocket no servidor Node   | possível. A web não usa WebSocket em produção (o Socket.IO conecta no host da API), mas o servidor do Next aceita o pedido                                                                                                                            |
+
+Os outros altos do `next` não se aplicam:
+
+- **GHSA-p9j2-gv94-2wf4** precisa de `rewrites`, e a web não tem nenhum
+  (teste "has no rewrites").
+- **GHSA-89xv-2m56-2m9x** precisa de servidor customizado. O `server.js` do
+  `standalone` é o do próprio Next.
+- **GHSA-36qx-fr4f-26g5** precisa de Pages Router com i18n. A web usa só o
+  App Router.
+
+Entre os moderados:
+
+- **GHSA-ffhc-5mcf-pf4q** (XSS com nonce de CSP): o paliativo do aviso está
+  aplicado. O `middleware.ts` substitui o `content-security-policy` que chega
+  na requisição.
+- **GHSA-wfc6-r584-vfw7, GHSA-3g8h-86w9-wvmq e GHSA-vfv6-92ff-j949**
+  (envenenamento de cache): só funcionam com um cache compartilhado guardando
+  HTML ou respostas RSC. As páginas dinâmicas saem com `no-store`, e a
+  Cloudflare não guarda HTML por padrão. **Não crie regra de cache para
+  HTML** enquanto a web estiver na 14.
+
+**Controles compensatórios.** São recomendações e **não foram aplicados**:
+ficam na configuração da Cloudflare e do Traefik, fora deste repositório.
+
+1. **Rate limiting de Server Actions na Cloudflare:** uma regra só para o
+   host da web, que conta por IP os `POST` com o cabeçalho `Next-Action`.
+   - Expressão:
+     `http.request.method eq "POST" and len(http.request.headers["next-action"]) > 0`.
+   - Comece só registrando e calibre pelo tráfego real antes de bloquear. Uma
+     pessoa dispara poucas actions por minuto, mas um escritório inteiro pode
+     sair pelo mesmo IP.
+   - O filtro por cabeçalho depende do plano. Sem ele, limite os caminhos
+     públicos com formulário: `/login`, `/forgot` e `/orcamento`.
+2. **Bloqueio de WebSocket no host da web**, para o GHSA-c4j6: uma regra de
+   WAF com `http.request.headers["upgrade"][0] eq "websocket"` → Block, **só
+   no host da web**. O host da API precisa do WebSocket para o Socket.IO.
+3. **Origem fechada para a Cloudflare:** o Traefik do Dokploy deve aceitar só
+   os IPs da Cloudflare, ou usar um túnel. Sem isso, as duas regras acima são
+   contornadas pelo IP da origem.
+4. **O que já vale hoje:**
+   - o healthcheck e o reinício do Swarm
+     ([deploy.md §6.4](deploy.md#64-advanced-swarm-recursos-e-saúde)), que
+     reiniciam um processo travado. Com 1 réplica, a web fica fora até o
+     reinício; mais réplicas reduzem esse efeito, mas não o eliminam;
+   - o corpo de Server Action limitado a 1 MB (padrão do Next 14);
+   - o `audit-ci`, que barra qualquer crítico novo.
+
+**Endurecimento pendente** (fora desta rodada, porque mexe no
+`next.config.mjs`): `images.localPatterns` com só `/_next/static/media/**`.
+Isso transforma em regra o que hoje é só convenção: apenas as imagens
+estáticas do build passam pelo otimizador. Valide `/sobre` e `/orcamento`, que
+usam as fotos da equipe pelo `/_next/image`.
+
+**Plano de saída.**
+
+- **Alvo: Next 16.x** (Active LTS). A 15.x só recebe correções de segurança
+  até 31/01/2027. Subir para a 15.5.28+ agora compraria três meses e pediria
+  outra migração logo em seguida. A 15.5.28+ fica como plano B, caso algo
+  bloqueie a 16. As duas exigem React 19 no App Router.
+- **Até 13/11/2026:** abrir a branch de migração com
+  `npx @next/codemod@latest upgrade`, que cuida do React 19 e de `cookies()`,
+  `headers()` e `params` assíncronos. Revisar à mão:
+  - `experimental.instrumentationHook`, `staleTimes` e
+    `outputFileTracing*` no `next.config.mjs`;
+  - o `middleware.ts`, que a 16 renomeia para `proxy.ts`;
+  - o react-query v3, cujo peer declara React até a 18;
+  - o kbar e as fontes.
+- **Até 04/12/2026:** suítes unitárias e de navegador verdes, build medido
+  contra a tabela de "Desempenho" e deploy em staging.
+- **Até 31/12/2026:** produção. Depois disso, saem as três exceções do
+  `audit-ci.jsonc`, e esta seção vira histórico.
+- Se a data escorregar, a revisão de 31/12/2026 decide entre duas saídas:
+  prorrogar com justificativa escrita aqui, ou passar a migração à frente das
+  outras tarefas.
+
+**Outras dependências do cliente.** Em 28/10/2026, o `socket.io-parser` foi de
+4.2.4 para **4.2.7**, a mesma versão da API e do mobile. A atualização fechou
+os avisos GHSA-677m-j7p3-52f9 e GHSA-2m8v-j782-fhvr, de DoS por anexos
+binários. O `socket.io-client` declara `~4.2.4`, então bastou renovar o
+lockfile, sem `resolutions`. Os avisos do `ws` (pelo `engine.io-client`) não
+alcançam o navegador, que usa o WebSocket nativo.
 
 ## Versão do build e abas abertas durante um deploy
 
@@ -623,6 +766,152 @@ Tutoriais: `src/app/(protected)/_components/layout/protected-tutorial`, com
 âncoras `data-tutorial`, rolagem até o alvo e, no celular, um painel embaixo
 da tela.
 
+## Tabelas: filtros, requisições e modo local
+
+### Por que a `main` antiga parecia instantânea
+
+A `main` antiga (último commit 37f34e9, agosto de 2026) filtrava e ordenava
+no navegador **só as 10 linhas da página carregada**
+(`getFilteredRowModel`/`getSortedRowModel` com `manualPagination`). O clique
+custava zero requisições, mas a resposta estava errada:
+
+- "Inativo" mostrava os inativos entre aquelas 10, enquanto o paginador
+  continuava dizendo "Página 1 de 4";
+- as opções e as contagens dos filtros vinham da página, não da empresa;
+- os cartões contavam a página (`vehicle.filter(...).length`);
+- no `/admin`, as listas misturavam todas as empresas.
+
+A decisão 8.8 corrigiu isso: ordenação e filtros moram na URL, o servidor
+repassa para a API, e a API responde pela empresa inteira, com contagens
+disjuntivas. O preço é uma ida ao servidor por clique. A busca sempre foi do
+servidor, com 400 ms de espera para juntar as teclas.
+
+### Quanto custa cada interação
+
+Medido na stack local (API 3334, banco `load_test`), com a imagem de produção
+do HEAD (antes) e o servidor de desenvolvimento (depois). Uma "RSC" é um
+render do servidor pedido pelo navegador; "API" são as chamadas que o
+servidor da web fez à API para responder, contadas no log da API pelo
+usuário da medição. O roteiro Playwright da medição ficou com o relatório da
+rodada; no repositório, `tests/ui/table-filter-requests.spec.ts` trava o
+essencial: zero requisições num filtro local e uma navegação num filtro de
+lista grande.
+
+| Tela                                 | Interação                    | Antes         | Depois        |
+| ------------------------------------ | ---------------------------- | ------------- | ------------- |
+| Tipos de ocorrência (`/dashboard`)   | marcar, limpar, próxima pág. | 1 RSC + 2 API | 0             |
+| Tipos de ocorrência                  | busca                        | 1 RSC + 2 API | 1 RSC + 2 API |
+| Filiais                              | marcar, limpar, próxima pág. | 1 RSC + 1 API | 0             |
+| Filiais                              | busca                        | 1 RSC + 1 API | 1 RSC + 1 API |
+| Veículos (lista grande, no servidor) | qualquer uma                 | 1 RSC + 1 API | 1 RSC + 1 API |
+
+As 2 chamadas de Tipos de ocorrência são a sessão (`/user/me`) e a lista, uma
+depois da outra (DLV-RO-2). Nas abas de Entregas com a chave
+`delivery_manage` a sessão sai junto com a lista; no `/admin` entra também a
+consulta de recusa da empresa (3 chamadas em paralelo).
+
+O orçamento por página que vale daqui para a frente:
+
+- **Lista no servidor** (padrão): 1 render e 1 leitura da lista por
+  interação, mais a sessão quando a aba depende de outra permissão. A busca e
+  a marcação de filtros esperam 400 ms para juntar cliques e teclas; fechar o
+  popover ou "Resetar" envia na hora. Ordenar e paginar saem na hora.
+- **Lista completa no navegador** (modo local, abaixo): marcar ou limpar um
+  filtro, paginar, mudar o tamanho da página e ordenar por data custam
+  **zero** requisições. Busca, ordenação por texto, outra empresa, outra aba
+  e "Atualizar" continuam indo ao servidor.
+- O paginador passa pela mesma fila (`ListQuery`) dos filtros: a tabela fica
+  "ocupada" enquanto a página chega, os botões esperam, e um clique duplo não
+  pede a mesma página duas vezes.
+- A caixa de busca é controlada: Voltar e Avançar mostram o termo da URL.
+
+### O modo local (lista completa)
+
+Arquivos: `data-table/local-table.ts` (regras puras, usadas pelo servidor e
+pelo navegador), `data-table/use-complete-list.ts` (o hook da tela),
+`features/deliveries/lib/catalog-local.ts` e
+`features/branch/lib/local-table.ts`.
+
+**Onde vale:** Embarcadores, Tipos de ocorrência, Motivos de status e
+Filiais. São catálogos pequenos, mantidos pela própria empresa, que não mudam
+a todo instante. Importações, Entregas, Ocorrências, Rotas, Veículos,
+Motoristas, Usuários (dados pessoais) e o resto continuam no servidor.
+
+**A regra:**
+
+1. O servidor faz **uma** leitura com página 1 e 100 linhas (o teto da API),
+   com a busca, a ordenação e a empresa da URL, e **sem** filtro. Se o total
+   cabe nessas linhas (`total <= linhas`), a lista é completa: o servidor
+   manda todas as linhas e uma chave (`complete`). Senão, manda a página
+   pedida, como sempre. Isso é decidido a cada render, nunca adivinhado a
+   partir de uma página.
+2. Com filtro na URL, o servidor primeiro faz a leitura que o modo servidor
+   faria. Se as contagens dela provam que o conjunto sem filtro passa de 100
+   (catálogo grande: todo clique), essa resposta vale e acabou, numa chamada.
+   Senão, ele tenta a leitura completa (duas chamadas). Sem filtro e com a
+   página dentro das 100 primeiras linhas, a leitura completa serve também
+   para catálogo grande: o servidor corta a página dela (uma chamada).
+3. No navegador, uma mudança só é respondida ali se a **chave** da URL nova
+   for a mesma da leitura. A chave é tudo o que o navegador não varia
+   sozinho: busca, empresa, aba, período e ordenação por texto. Ficam de fora
+   os filtros, a página, o tamanho da página e a ordenação por data.
+4. A URL continua sendo o estado. O navegador a muda com
+   `history.pushState`, que o Next 14.2 transforma numa restauração do router
+   sem nenhuma requisição (`app-router.js`). Recarregar, compartilhar o link
+   ou voltar dá a mesma resposta pelo servidor.
+
+**Paridade com a API** (a resposta local tem de ser igual à do servidor para
+os mesmos parâmetros):
+
+- Filtros: a mesma leitura de cada linha que a API usa no `GROUP BY`
+  (`activeStatusOf`, `yesNoOf`, o valor da coluna), E entre filtros e OU
+  dentro de um.
+- Contagens e cartões: cópia dos `summarize*` da API, com a regra disjuntiva.
+  Em Embarcadores e Motivos o único filtro é Status, e a API conta os cartões
+  sem ele, então os cartões não mudam; só o total do paginador muda.
+- Ordenação: só colunas que o Postgres e o navegador ordenam igual, sem
+  collation: datas (`TIMESTAMP(3)`, milissegundos) e booleanos, seguidas do
+  desempate da API (`created_at desc`, `id desc`, com ids UUID em minúsculas).
+  Se alguma linha tiver um id ou uma data fora desse formato, toda a
+  ordenação daquela leitura volta para o servidor. Nome, cidade e outros
+  textos dependem da collation do banco (`en_US.utf8`): ficam no servidor.
+- Busca: fica no servidor. A API decodifica o termo, compara com `ILIKE` no
+  locale do banco, escapa curingas e cada endpoint tem os seus campos (os
+  dígitos do CNPJ, o telefone, a regra do fim do ID). Não dá para provar
+  paridade no navegador.
+- Provas: `tests/unitaires/local-table-api-parity.test.ts` roda os
+  `summarize*` e o `resolveOrderBy` da própria API (lidos do repositório
+  irmão) contra a cópia da web, com catálogos aleatórios de semente fixa. Uma
+  conferência ao vivo contra a API local comparou 672 combinações de filtros,
+  ordenação e página, sem diferença.
+
+**Empresa, sessão e frescor:**
+
+- A tela é remontada por empresa (`key={businessId}`) e a empresa faz parte
+  da chave. Nada fica fora do React, então o logout (carga completa) não
+  deixa estado para trás.
+- Criar, editar e excluir revalidam como antes, e o novo render traz a nova
+  leitura completa.
+- Depois de "Atualizar", até as linhas novas chegarem, toda mudança vai ao
+  servidor: no Next 14.2 um `pushState` descarta o `router.refresh()`
+  pendente. Os eventos de tempo real de Entregas (`useRouteEvents`) não
+  avisam a tabela. Se um deles chegar no meio de um clique local, aquele
+  refresh se perde. Os catálogos não mudam com eventos de rota, e o próximo
+  evento ou o "Atualizar" traz o dado de volta.
+- Uma mudança que pega carona numa busca ainda a caminho vai ao servidor
+  junto com ela, nunca é respondida pelas linhas antigas.
+
+**Custos:**
+
+- Até 100 linhas de catálogo no payload do render, em vez de 10.
+- Num catálogo pequeno com filtro na URL, um render do servidor (recarregar,
+  "Atualizar", uma busca nova) faz duas leituras da lista: a do modo
+  servidor e a completa. Os cliques seguintes não fazem nenhuma.
+- Num catálogo acima de 100 com filtro na URL, é uma leitura, como antes,
+  salvo quando as contagens não provam o tamanho (filtros que se cruzam).
+- O `pushState` corrigido pelo Next precisa ser revisto em qualquer
+  atualização do Next.
+
 ## Tema claro e escuro
 
 - O site público (`src/components/site`) e o app logado têm tema claro e
@@ -670,9 +959,33 @@ O que se mediu na build de produção e ficou travado por teste:
 - **Layout shift do captcha:** o widget do Turnstile monta meio segundo
   depois da página. O markup do servidor agora reserva a altura dele, e isso
   tirou o deslocamento de 0,10 medido no `/login`
-  (`tests/unitaires/captcha-layout-shift.test.tsx`).
+  (`tests/unitaires/captcha-layout-shift.test.tsx`). O iframe do widget é
+  inline e a linha somava 6 px sob ele (71 px numa caixa de 65), o que ainda
+  movia o formulário; a caixa do widget tem `line-height: 0`. A caixa também
+  reserva a largura mínima do widget (300 px), e o `(auth)/loading.tsx`
+  reserva a mesma fatia na build de produção. Medido com a chave de teste:
+  65 → 65 px em 1440, 390 e 320 px.
 - **zod fora do bundle público:** `src/env/public-config.ts` não importa zod
   (só ele custava ~12,7 KB gzip em toda página).
+- **Paleta ⌘K (kbar) fora da primeira carga:** o kbar é CommonJS e não
+  passa por tree shaking. Um único `useKBar` (o botão "Procurar..." do
+  cabeçalho e o painel vazio) trazia a busca (fuse.js) e a lista virtual
+  (react-virtual) para toda página logada: o chunk tinha 18,3 KB gzip na build
+  de 28/10/2026.
+  - O layout carrega só a casca
+    (`protected-command-bar-provider/index.tsx`, ~0,8 KB gzip estimado). Ela
+    atende o ⌘K/Ctrl+K e os botões, que pedem a paleta pelo contexto dela
+    (`useCommandPalette`).
+  - A paleta (`palette.tsx`) é importada quando o navegador fica ocioso, ou
+    no primeiro ⌘K ou clique, o que vier antes. Um pedido feito antes de o
+    chunk chegar abre a paleta assim que ele chega.
+  - Os atalhos de duas teclas ("e n", "r t"…) começam a valer com a paleta,
+    depois da carga ociosa.
+  - Os bytes ainda descem em toda carga completa da página, só que fora do
+    caminho crítico da hidratação. Numa navegação entre páginas logadas, o
+    layout continua montado e nada é baixado de novo.
+  - `client-bundle-boundaries.test.ts` falha se um import estático trouxer o
+    kbar de volta, e `command-palette-lazy.test.tsx` cobre o comportamento.
 - **Treemaps:** `ANALYZE=true yarn build` grava os relatórios do
   `@next/bundle-analyzer` em `<distDir>/analyze/`, sem abrir o navegador.
   `NEXT_DIST_DIR` permite uma build de produção ao lado do `next dev` sem um
@@ -688,18 +1001,37 @@ O que se mediu na build de produção e ficou travado por teste:
 
 ## A imagem Docker
 
-`Dockerfile` em três estágios:
+`Dockerfile` em cinco estágios:
 
-1. **base:** `node:22.21.1-alpine` fixada por digest, com `ca-certificates`
-   e `dumb-init`.
-2. **builder:** `yarn install --frozen-lockfile` com cache, depois
-   `yarn build`. Os únicos build args são `METADATA_BASE` (a origem de
-   **produção**, impressa nos canonicals das páginas pré-renderizadas; staging
-   nunca é indexado) e `GIT_SHA`. O par glibc do `sharp` (~17 MB) é removido
+1. **node:** a imagem oficial `node:22.21.1-alpine3.23`, fixada por digest.
+   Ela compila a aplicação e empresta o binário do `node` ao runtime.
+2. **node-binary:** copia o binário com `cp -p` para `/out/usr/local/bin` e
+   dá a `usr/`, `usr/local/` e `usr/local/bin/` o mtime do próprio binário.
+   Copiado direto, o `COPY` gravava esses diretórios com a hora do build, e
+   cada build sem cache (runner novo, cache do GitHub expirado) gerava um
+   blob novo de ~46 MB do mesmo binário. Assim, a camada depende só do
+   digest da imagem Node. A API tem o mesmo estágio, com o mesmo texto e os
+   mesmos digests, e as duas imagens usam **o mesmo blob**: a VPS guarda e
+   baixa o `node` uma vez só (medido em 28/10/2026: blob `7c5bc1becf2b`,
+   46,1 MB comprimidos, igual na API e em dois builds sem cache da web; o
+   total distinto das duas imagens caiu de 154,8 para 108,7 MB). Ao subir a
+   versão do Node, suba nos dois repositórios.
+3. **base:** `alpine:3.23.7`, fixada por digest, com só o binário do `node`
+   do estágio anterior (`COPY --link`, a primeira camada depois do Alpine),
+   mais `libstdc++`, `ca-certificates` e `dumb-init`. Não tem npm, yarn nem
+   corepack. A minor do Alpine das duas imagens precisa ser a mesma
+   (`tests/unitaires/image-layers.test.ts`).
+4. **builder:** sobre o estágio `node`, `yarn install --frozen-lockfile` com
+   cache, depois `yarn build`. Os únicos build args são `METADATA_BASE` (a
+   origem de **produção**, impressa nos canonicals das páginas
+   pré-renderizadas; staging nunca é indexado) e `GIT_SHA`. O par glibc do `sharp` (~17 MB) é removido
    antes da cópia. **Se a base voltar a Debian, tire esse passo**, ou o
    otimizador de imagens quebra.
-3. **runner:** usuário `nextjs` (uid 1001), `PORT=3000`, `HOSTNAME=0.0.0.0`,
-   `NEXT_TELEMETRY_DISABLED=1`, saída `standalone` (`node server.js` sob
+   Os `node_modules` da saída `standalone` saem dela para virar uma camada
+   própria do runner, copiada primeiro: um commit sem mudança de dependência
+   não muda essa camada, e o servidor não a baixa de novo.
+5. **runner:** sobre a `base`, usuário `nextjs` (uid 1001), `PORT=3000`,
+   `HOSTNAME=0.0.0.0`, `NEXT_TELEMETRY_DISABLED=1`, saída `standalone` (`node server.js` sob
    `dumb-init`) e `HEALTHCHECK` com `wget` do busybox em
    `http://127.0.0.1:3000/api/health` (intervalo de 30 s, start de 60 s, 3
    tentativas). O `wget` gasta ~1 MB por sonda; um `node -e` gastaria ~52 MB.

@@ -3,8 +3,12 @@
 // Dependabot's job (security updates).
 //
 // Each allowlist entry says why the advisory does not reach production and
-// when to look again. Take it out as soon as the update lands. Both below are
-// fixed only in Next >= 15.5.24: a major migration, planned apart.
+// when to look again. Take it out as soon as the update lands. The three
+// below are fixed only in Next >= 15.5.24 (the SVG one in >= 15.5.28): a
+// major migration, planned apart. Decision, residual risk and the dated
+// upgrade plan: docs/arquitetura.md, "Next.js 14: versão e avisos de
+// segurança"; tests/unitaires/next-security-floor.test.ts pins the
+// conditions each entry relies on.
 {
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   // yarn.lock is the lockfile. Explicit: auto-detection picks npm when a

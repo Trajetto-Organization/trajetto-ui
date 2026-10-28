@@ -26,9 +26,6 @@ import { EmptyState } from "@/components/shared/custom/empty-state";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
 import { TextareaField } from "@/components/shared/custom/textarea-field";
 
-import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
-import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
-
 import {
   reviewProofAudit,
   type ProofAuditCard,
@@ -137,10 +134,10 @@ const ProofAuditsPanel = ({
     if (!sessionLoaded || sessionRole !== "MASTER") {
       return (
         <div className="space-y-4">
-          {/* The chips and the Atualizar row the queue draws above its cards. */}
+          {/* The chips the queue draws above its cards (its Atualizar is
+              the Torre's, up in the header). */}
           <div className="flex flex-wrap items-center gap-3">
             <Skeleton className="h-9 min-w-0 flex-1 sm:w-80 sm:flex-initial" />
-            <Skeleton className="h-10 w-full sm:w-32" />
           </div>
 
           <QueueSkeleton />
@@ -325,13 +322,10 @@ const ProofAuditQueue = ({
   return (
     <div className="space-y-4">
       {/*
-        The queue's own bar: the three counters on the left, the refresh on
-        the right, one line from `sm`; on a phone the refresh takes the full
-        width with its label, like every page action (decision 3.6).
-
-        This tab is the exception to the page's layout — every other section
-        keeps its actions up beside the company selector. Here the only action
-        is "Atualizar", and what it changes is these three numbers.
+        The queue's own bar: the three counters. Its Atualizar is the
+        Torre's, up in the header like every other view's (decision of
+        28/10/2026) — it was drawn here too, the same refresh of the whole
+        tab, which made Auditoria the one view with its button elsewhere.
       */}
       <div
         className="flex flex-wrap items-center gap-3"
@@ -354,17 +348,6 @@ const ProofAuditQueue = ({
           }}
           className="min-w-0 flex-1 sm:flex-initial"
         />
-
-        <PageActions className="sm:ml-auto">
-          <DataTableRevalidate
-            rateLimit={{
-              storageKey: "deliveries-proof-audits-panel",
-              maxClicks: 3,
-              timeWindowMs: 30000,
-              cooldownTimeMs: 15000,
-            }}
-          />
-        </PageActions>
       </div>
 
       {/*

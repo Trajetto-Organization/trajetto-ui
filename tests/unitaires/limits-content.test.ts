@@ -222,3 +222,171 @@ describe("switching company on /admin", () => {
     expect(last.entitlements?.vehicle_count).toBe(2);
   });
 });
+
+describe("the page waits for both reads (spec §9)", () => {
+  function mount() {
+    const seen: Array<ReturnType<typeof useLimitsContent>> = [];
+
+    const Probe = ({ businessId }: { businessId: string }) => {
+      seen.push(useLimitsContent({ businessId }));
+      return null;
+    };
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    unmounts.push(async () => {
+      await act(async () => root.unmount());
+    });
+
+    return { seen, root, Probe };
+  }
+
+  // Red before: the spinner followed the usage only, and with the plan still
+  // on its way the vehicle card said "Não foi possível carregar os dados da
+  // frota." until it arrived.
+  it("keeps loading while the plan is still on its way", async () => {
+    api.usage.set(A, deferred());
+    api.plans.set(A, deferred());
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(true);
+    expect(seen.at(-1)?.planStatus).toBe("loading");
+
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+    });
+
+    // The usage answered first: still loading, and never "error".
+    expect(seen.at(-1)?.aiUsage?.ai_analysis_used).toBe(3);
+    expect(seen.at(-1)?.isLoading).toBe(true);
+    expect(seen.map((state) => state.planStatus)).not.toContain("error");
+
+    await act(async () => {
+      api.plans.get(A)!.resolve(planOf(4));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+    expect(seen.at(-1)?.planStatus).toBe("ready");
+  });
+
+  it("says the plan failed only once it did", async () => {
+    api.usage.set(A, deferred());
+    api.plans.set(A, deferred());
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+      api.plans
+        .get(A)!
+        .resolve(
+          Response.json(
+            { code: "INTERNAL", message: "falhou" },
+            { status: 500 },
+          ),
+        );
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+    expect(seen.at(-1)?.planStatus).toBe("error");
+    expect(seen.at(-1)?.entitlements).toBeNull();
+  });
+
+  it("is loading at once after a company switch, before any request leaves", async () => {
+    for (const id of [A, B]) {
+      api.usage.set(id, deferred());
+      api.plans.set(id, deferred());
+    }
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+      api.plans.get(A)!.resolve(planOf(4));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+
+    const before = seen.length;
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: B }));
+    });
+
+    // Every render under B, the very first one included, is "loading":
+    // never A's answers shown as B's gaps.
+    const underB = seen.slice(before);
+
+    expect(underB.length).toBeGreaterThan(0);
+    expect(underB.every((state) => state.isLoading)).toBe(true);
+  });
+
+  // Red before: the settled marks were "company#refresh", so going back to A
+  // before B answered (a quick switch, Back in the browser) matched A's first,
+  // settled load. The page stopped loading with A's usage cleared, and the AI
+  // card said "Não foi possível carregar os dados de uso." until A answered.
+  it("is loading again when it comes back to a company before the switch answered", async () => {
+    for (const id of [A, B]) {
+      api.usage.set(id, deferred());
+      api.plans.set(id, deferred());
+    }
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+      api.plans.get(A)!.resolve(planOf(4));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: B }));
+    });
+
+    // Back to A while B is still on its way: A is asked again.
+    api.usage.set(A, deferred());
+    api.plans.set(A, deferred());
+
+    const before = seen.length;
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    const backOnA = seen.slice(before);
+
+    expect(backOnA.length).toBeGreaterThan(0);
+    expect(backOnA.every((state) => state.isLoading)).toBe(true);
+    expect(seen.at(-1)?.planStatus).toBe("loading");
+
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(5));
+      api.plans.get(A)!.resolve(planOf(6));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+    expect(seen.at(-1)?.aiUsage?.ai_analysis_used).toBe(5);
+    expect(seen.at(-1)?.entitlements?.vehicle_count).toBe(6);
+  });
+});

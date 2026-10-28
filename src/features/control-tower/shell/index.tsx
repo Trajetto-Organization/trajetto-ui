@@ -1,11 +1,18 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Maximize2, Minimize2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 import {
@@ -84,6 +91,9 @@ const ControlTowerShell = ({
   const searchParams = useSearchParams();
 
   const fullscreen = useFullscreen();
+
+  const refreshLabelId = useId();
+  const refreshTriggerId = useId();
 
   // The default on the server and on the first paint; the browser's own
   // choice right after, so both renders agree.
@@ -170,25 +180,40 @@ const ControlTowerShell = ({
           )}
 
           {live && (
-            <label className="flex items-center gap-2 sm:ml-auto">
-              <span>Atualizar a cada</span>
-              {/* Native: three options need no portal nor a Radix layer. */}
-              <select
-                value={minutes}
-                onChange={(event) => chooseMinutes(event.target.value)}
-                aria-label="Intervalo de atualização da torre"
-                data-tower-refresh-select
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs
-                text-foreground focus-visible:outline-none focus-visible:ring-2
-                focus-visible:ring-ring"
-              >
-                {TOWER_REFRESH_MINUTES.map((option) => (
-                  <option key={option} value={option}>
-                    {option} min
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <span id={refreshLabelId}>Atualizar a cada</span>
+              {/*
+                The product's select (decision of 28/10/2026), not the
+                browser's: the native one opened the operating system's menu,
+                in its own colours whatever the theme. Named by the words
+                beside it and its own value ("Atualizar a cada 1 min"); a
+                Radix trigger is a button, so no `<label>` around it. Its menu
+                is portalled at z-50, above the Torre pinned at z-40 in full
+                screen.
+              */}
+              <Select value={String(minutes)} onValueChange={chooseMinutes}>
+                <SelectTrigger
+                  id={refreshTriggerId}
+                  aria-labelledby={`${refreshLabelId} ${refreshTriggerId}`}
+                  data-tower-refresh-select
+                  className="h-8 w-[88px] gap-2 px-2.5 text-xs text-foreground"
+                >
+                  {/* The value as children: the server's HTML is not blank. */}
+                  <SelectValue>{minutes} min</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {TOWER_REFRESH_MINUTES.map((option) => (
+                    <SelectItem
+                      key={option}
+                      value={String(option)}
+                      className="text-xs"
+                    >
+                      {option} min
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
           {/*

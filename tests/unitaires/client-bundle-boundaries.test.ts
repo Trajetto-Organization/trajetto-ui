@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readdirSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -234,5 +234,49 @@ describe("Leaflet (~40 KB gzipped with its CSS)", () => {
     expect(
       all.filter((page) => clientStaticGraph(page).has("npm:leaflet")),
     ).toEqual([]);
+  });
+});
+
+// Measured on 28/10/2026: kbar is CommonJS (no tree shaking), so one
+// `useKBar` brought its search (fuse.js) and virtual list (react-virtual)
+// into every protected page — ~18 kB gzipped. The header button, the empty
+// overview and ⌘K now go through the palette's own context, and the palette
+// is imported when the browser is idle or on the first ask.
+describe("the ⌘K palette (kbar)", () => {
+  const COMMAND_BAR =
+    "src/app/(protected)/_components/layout/protected-command-bar-provider";
+
+  for (const entry of [
+    PROTECTED_LAYOUT,
+    "src/app/(protected)/dashboard/page.tsx",
+    "src/app/(protected)/admin/page.tsx",
+  ]) {
+    it(`${entry}: leaves kbar to the palette's own chunk`, () => {
+      const graph = clientStaticGraph(entry);
+
+      expect(graph.has("npm:kbar")).toBe(false);
+      expect(
+        inside(graph, "protected-command-bar-provider/palette.tsx"),
+      ).toEqual([]);
+    });
+  }
+
+  it("ships the shell that answers ⌘K and the header button", () => {
+    const graph = clientStaticGraph(PROTECTED_LAYOUT);
+
+    expect(
+      inside(graph, "protected-command-bar-provider/index.tsx"),
+    ).toHaveLength(1);
+    expect(inside(graph, "protected-search-input/index.tsx")).toHaveLength(1);
+  });
+
+  it("is reached through a lazy import of the palette module", () => {
+    // Non-vacuous: the palette module is where kbar lives now.
+    expect(
+      clientStaticGraph(`${COMMAND_BAR}/palette.tsx`).has("npm:kbar"),
+    ).toBe(true);
+    expect(readFileSync(`${COMMAND_BAR}/index.tsx`, "utf8")).toMatch(
+      /import\(\s*["']\.\/palette["']\s*\)/,
+    );
   });
 });

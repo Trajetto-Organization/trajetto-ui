@@ -50,7 +50,14 @@ vi.mock(
             vehicle_count: 4,
             vehicle_inactive_count: 0,
             vehicle_limit_enabled: true,
+            vehicle_status_counts: {
+              ACTIVE: 3,
+              BLOCKED: 1,
+              IN_ROUTE: 0,
+              INACTIVE: 0,
+            },
           },
+      planStatus: plan.failed ? "error" : "ready",
     }),
   }),
 );
@@ -161,7 +168,17 @@ describe("usage limits by module", () => {
 
     expect(text).toContain("Consulta de Multas");
     expect(text).toContain("Itens do checklist como combustível");
+    // The vehicle breakdown without "Em rota" (only a route writes it).
+    expect(text).toContain("Bloqueado");
     expect(text).not.toMatch(DELIVERY_WORDS);
+  });
+
+  it("lists the vehicles in route for a company with Entregas", async () => {
+    plan.modules = on("DELIVERIES");
+    const text = await renderLimits();
+
+    expect(text).toContain("Em rota");
+    expect(text).not.toMatch(FLEET_WORDS);
   });
 });
 
@@ -240,7 +257,14 @@ describe("notification preferences by module", () => {
 describe("dashboard tours by module", () => {
   // Steps tied to one module are filtered by the engine: `requiresPath`, or
   // an optional step whose anchor only renders with that module.
-  const MODULE_ANCHORS = new Set(["bar-chart", "bar-chart-time-selector"]);
+  // "vehicle-limit-card" is NOT here on purpose: vehicles serve both
+  // modules, so its step must stay neutral.
+  const MODULE_ANCHORS = new Set([
+    "bar-chart",
+    "bar-chart-time-selector",
+    "maintenance-status",
+    "fine-lookup-card",
+  ]);
 
   const sharedSteps = [...dashboardTour, ...chartsTour, ...limitsTour].filter(
     (step) =>

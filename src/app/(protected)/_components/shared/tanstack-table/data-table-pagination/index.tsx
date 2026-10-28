@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useListQuery } from "@/lib/search-params";
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
@@ -25,22 +25,35 @@ interface DataTablePaginationProps<TData> {
   isLoading?: boolean;
 }
 
+/** The page the list asked for last, as the URL and the API read it. */
+function requestedPageOf(params: URLSearchParams): number {
+  const page = Number(params.get("page"));
+
+  return Number.isInteger(page) && page >= 1 ? page : 1;
+}
+
 function DataTablePagination<TData>({
   table,
   error,
   isLoading = false,
 }: DataTablePaginationProps<TData>) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  /**
+   * The list query of the DataTable around it (search, filters, sort and
+   * page in one place). The pager used its own router: no busy state while
+   * the page loaded, and a quick second click on "próxima" pushed the same
+   * URL again, from the page still on screen. Now a turn is a change like
+   * any other: the table dims while the server answers, the buttons wait
+   * for it, the next turn builds on the page already asked for, and a
+   * complete list answered in the browser turns pages with no request.
+   */
+  const listQuery = useListQuery();
 
-  // Function to update URL parameters
-  const updateQueryParams = (newParams: Record<string, string>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(newParams).forEach(([key, value]) => {
-      params.set(key, value);
+  const goToPage = (page: number) => {
+    listQuery.change((params) => {
+      params.set("page", String(page));
+
+      return params;
     });
-
-    router.push(`?${params.toString()}`);
   };
 
   // Gets the current pagination state
@@ -110,8 +123,12 @@ function DataTablePagination<TData>({
             name="pageSize"
             value={`${paginationState.pageSize}`}
             onValueChange={(value) => {
-              table.setPageSize(Number(value));
-              updateQueryParams({ pageSize: value, page: "1" });
+              listQuery.change((params) => {
+                params.set("pageSize", value);
+                params.set("page", "1");
+
+                return params;
+              });
             }}
             disabled={error || isLoading}
           >
@@ -148,10 +165,7 @@ function DataTablePagination<TData>({
           <Button
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
-              table.setPageIndex(0);
-              updateQueryParams({ page: "1" });
-            }}
+            onClick={() => goToPage(1)}
             disabled={!table.getCanPreviousPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a primeira página</span>
@@ -162,11 +176,9 @@ function DataTablePagination<TData>({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => {
-              const currentIndex = table.getState().pagination.pageIndex;
-              if (currentIndex > 0) {
-                table.setPageIndex(currentIndex - 1);
-                updateQueryParams({ page: `${currentIndex}` });
-              }
+              const page = requestedPageOf(listQuery.params);
+
+              if (page > 1) goToPage(page - 1);
             }}
             disabled={!table.getCanPreviousPage() || error || isLoading}
           >
@@ -183,10 +195,9 @@ function DataTablePagination<TData>({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => {
-              const currentIndex = table.getState().pagination.pageIndex;
+              const page = requestedPageOf(listQuery.params);
 
-              table.setPageIndex(currentIndex + 1);
-              updateQueryParams({ page: `${currentIndex + 2}` });
+              if (page < table.getPageCount()) goToPage(page + 1);
             }}
             disabled={!table.getCanNextPage() || error || isLoading}
           >
@@ -197,11 +208,7 @@ function DataTablePagination<TData>({
           <Button
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
-              const pageCount = table.getPageCount();
-              table.setPageIndex(pageCount - 1);
-              updateQueryParams({ page: pageCount.toString() });
-            }}
+            onClick={() => goToPage(table.getPageCount())}
             disabled={!table.getCanNextPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a última página</span>

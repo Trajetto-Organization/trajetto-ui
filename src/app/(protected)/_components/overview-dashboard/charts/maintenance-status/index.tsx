@@ -8,10 +8,14 @@ import {
 
 import { cn } from "@/lib/utils";
 
+import { MAINTENANCE_DUE_SOON_DAYS, unrecordedSentence } from "./rules";
+
 interface MaintenanceStat {
   name: string;
   value: number;
   color: string;
+  /** "A vencer" only: how many of them have no revision recorded. */
+  unrecorded?: number;
 }
 
 interface MaintenanceStatusProps {
@@ -24,7 +28,10 @@ interface MaintenanceStatusProps {
  * date) and no screen showed.
  *
  * Keyed by the names the dashboard action gives the three numbers; an
- * unknown name still shows, under its own name.
+ * unknown name still shows, under its own name. The hints say the rule as
+ * the API applies it (maintenance-standing.ts): with no revision date there
+ * is no next revision to compare, so "sem registro" is "A vencer" whatever
+ * the mileage — and the card says how many of those it holds.
  */
 const STATUS_COPY: Record<
   string,
@@ -32,17 +39,17 @@ const STATUS_COPY: Record<
 > = {
   Atrasado: {
     label: "Atrasada",
-    hint: "Passou da data ou da quilometragem da revisão",
+    hint: "A data prevista já passou ou a quilometragem chegou à da revisão",
     order: 0,
   },
   "Manutenção Pendente": {
     label: "A vencer",
-    hint: "Vence em até 30 dias ou ainda sem registro",
+    hint: `Vence em até ${MAINTENANCE_DUE_SOON_DAYS} dias ou está sem registro de revisão`,
     order: 1,
   },
   "Recém Manutenido": {
     label: "Em dia",
-    hint: "Próxima revisão depois de 30 dias",
+    hint: `Próxima revisão depois de ${MAINTENANCE_DUE_SOON_DAYS} dias e quilometragem ainda não atingida`,
     order: 2,
   },
 };
@@ -56,6 +63,7 @@ function maintenanceStatusRows(stats: MaintenanceStat[]) {
         key: stat.name,
         label: copy?.label ?? stat.name,
         hint: copy?.hint ?? "",
+        detail: unrecordedSentence(stat.unrecorded),
         order: copy?.order ?? Number.MAX_SAFE_INTEGER,
         value: stat.value,
         attention: copy?.order === 0 && stat.value > 0,
@@ -72,12 +80,12 @@ const MaintenanceStatus = ({
   if (rows.length === 0) return null;
 
   return (
-    <Card data-maintenance-status>
+    <Card data-maintenance-status data-tutorial="maintenance-status">
       <CardHeader>
         <CardTitle>Manutenção da frota</CardTitle>
         <CardDescription>
-          Situação da próxima revisão de cada veículo, por data e por
-          quilometragem.
+          Situação de hoje da próxima revisão de cada veículo cadastrado
+          (inclusive os inativos), por data e por quilometragem.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -96,8 +104,16 @@ const MaintenanceStatus = ({
                 {row.label}
               </p>
               <p className="mt-2 text-2xl font-semibold tabular-nums">
-                {row.value}
+                {row.value.toLocaleString("pt-BR")}
               </p>
+              {row.detail && (
+                <p
+                  className="text-xs font-medium text-foreground"
+                  data-maintenance-unrecorded
+                >
+                  {row.detail}
+                </p>
+              )}
               {row.hint && (
                 <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
                   {row.hint}

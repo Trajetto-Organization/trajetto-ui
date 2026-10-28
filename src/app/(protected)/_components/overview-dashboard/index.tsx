@@ -54,6 +54,7 @@ import { quickLinks, statCards } from "./data";
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { comparisonDescription, comparisonLabel } from "@/lib/dashboard-counts";
 import { LimitsContent } from "../shared/limits/limits-content";
+import { IdCell } from "../shared/tanstack-table/id-cell";
 import { SystemMetrics } from "@/features/system-metrics";
 import { refreshSystemMetrics } from "@/features/system-metrics/reads";
 
@@ -360,6 +361,9 @@ const OverviewDashboard = ({
                 <Table>
                   <TableHeader>
                     <TableRow className="truncate">
+                      {/* The record id, as in every table (and in the
+                          activity log that "Ver todas" opens). */}
+                      <TableHead>ID</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead>Nome do usuário</TableHead>
@@ -374,6 +378,9 @@ const OverviewDashboard = ({
                   <TableBody>
                     {recentActivity.map((activity) => (
                       <TableRow key={activity.id}>
+                        <TableCell>
+                          <IdCell id={activity.id} />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {displayValue(activity.type)}
                         </TableCell>

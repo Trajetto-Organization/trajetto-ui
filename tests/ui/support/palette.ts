@@ -7,11 +7,13 @@ import { expect, type Page } from "@playwright/test";
 /**
  * Opens the command palette.
  *
- * The shortcut is pressed more than once on purpose. kbar binds its listener
- * during hydration, and against a dev server under three parallel workers the
- * page can be painted, answered and idle on the network while that listener is
- * still not there — so a single press lands in the gap and the palette never
- * opens. It failed about one run in six, which is the worst rate there is: too
+ * The shortcut is pressed more than once on purpose. The palette's shell binds
+ * its listener during hydration (kbar itself is imported later, when the
+ * browser is idle or on the first press, and a press made while it loads
+ * opens it once it lands), and against a dev server under three parallel
+ * workers the page can be painted, answered and idle on the network while that
+ * listener is still not there — so a single press lands in the gap and the
+ * palette never opens. It failed about one run in six, which is the worst rate there is: too
  * rare to chase, often enough to teach people to re-run the suite.
  *
  * Pressing again is also what a person does when a shortcut does nothing, and

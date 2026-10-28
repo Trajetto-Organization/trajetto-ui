@@ -1,10 +1,11 @@
-import { useKBar } from "kbar";
-
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useCommandPalette } from "../protected-command-bar-provider/command-palette-context";
+
 const SearchInput = (): JSX.Element => {
-  const { query } = useKBar();
+  // The palette's own context, not kbar's: kbar loads after the page.
+  const { toggle } = useCommandPalette();
 
   // Spacing belongs to the header that places this button — it sits next to
   // the notifications bell now, so padding here would push them apart.
@@ -14,7 +15,7 @@ const SearchInput = (): JSX.Element => {
         variant="outline"
         className="relative h-9 w-[87px] justify-start rounded-[0.5rem] bg-background 
         text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-64 lg:w-80"
-        onClick={query.toggle}
+        onClick={toggle}
         data-tutorial="search"
       >
         <div className="hidden md:flex items-center justify-center">

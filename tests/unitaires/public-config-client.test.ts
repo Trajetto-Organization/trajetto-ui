@@ -153,7 +153,7 @@ describe("the captcha", () => {
     await act(async () => {
       root!.render(
         createElement(CaptchaTurnstile, {
-          onSuccess: () => undefined,
+          onTokenChange: () => undefined,
           delayMs: 0,
         }),
       );

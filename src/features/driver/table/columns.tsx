@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -63,6 +64,7 @@ function textColumn(
  */
 function buildDriverColumns(mode: DriverScope): ColumnDef<DriverRow>[] {
   return [
+    idColumn<DriverRow>(),
     // The CPF identifies a driver across companies and documents; the CNH
     // column below tells homonyms apart too.
     textColumn(

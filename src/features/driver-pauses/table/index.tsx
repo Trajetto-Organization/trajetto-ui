@@ -55,7 +55,11 @@ const DriverPausesTable = ({
         server={PAUSE_TABLE}
         emptyMessage={emptyMessage}
         toolbar={
-          <DriverPausesToolbar facets={searchMeta?.facets} period={period} />
+          <DriverPausesToolbar
+            facets={searchMeta?.facets}
+            period={period}
+            timeZone={timeZone}
+          />
         }
       />
     </div>

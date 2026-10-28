@@ -456,21 +456,51 @@ describe("the refresh cadence", () => {
 
     const host = await mount(shell());
 
-    const select = host.querySelector<HTMLSelectElement>(
+    // The product's select (decision of 28/10/2026), not the browser's.
+    const trigger = host.querySelector<HTMLElement>(
       "[data-tower-refresh-select]",
     )!;
 
-    expect([...select.options].map((option) => option.value)).toEqual([
-      "1",
-      "3",
-      "5",
+    expect(host.querySelector("select:not([aria-hidden])")).toBeNull();
+    expect(trigger.getAttribute("role")).toBe("combobox");
+    expect(trigger.textContent).toContain("1 min");
+
+    // Named by the words beside it and its own value.
+    const name = (trigger.getAttribute("aria-labelledby") ?? "")
+      .split(" ")
+      .map((id) => document.getElementById(id)?.textContent ?? "")
+      .join(" ");
+
+    expect(name).toBe("Atualizar a cada 1 min");
+
+    // By keyboard, as a person would: Enter opens, Enter picks.
+    await act(async () => {
+      trigger.focus();
+      trigger.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    const options = [
+      ...document.querySelectorAll<HTMLElement>("[role='option']"),
+    ];
+
+    expect(options.map((option) => option.textContent)).toEqual([
+      "1 min",
+      "3 min",
+      "5 min",
     ]);
 
     await act(async () => {
-      select.value = "5";
-      select.dispatchEvent(new Event("change", { bubbles: true }));
+      const five = options.find((option) => option.textContent === "5 min")!;
+
+      five.focus();
+      five.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
     });
 
+    expect(trigger.textContent).toContain("5 min");
     expect(localStorage.getItem(TOWER_REFRESH_STORAGE_KEY)).toBe("5");
     expect(host.querySelector("[data-tower-cadence]")?.textContent).toContain(
       "Atualiza a cada 5 min",
@@ -494,9 +524,11 @@ describe("the refresh cadence", () => {
     const host = await mount(shell());
 
     expect(
-      host.querySelector<HTMLSelectElement>("[data-tower-refresh-select]")
-        ?.value,
-    ).toBe("3");
+      host.querySelector("[data-tower-refresh-select]")?.textContent,
+    ).toContain("3 min");
+    expect(host.querySelector("[data-tower-cadence]")?.textContent).toContain(
+      "Atualiza a cada 3 min",
+    );
   });
 });
 

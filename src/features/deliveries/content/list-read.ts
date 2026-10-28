@@ -1,8 +1,14 @@
 import { parseNDJSON } from "@/lib/parse-nd-json";
 import { readAccessError, type AccessError } from "@/lib/access-error";
+import {
+  completeReadQuery,
+  readCompleteList,
+} from "@/app/(protected)/_components/shared/tanstack-table/data-table/local-table";
 
 import type { DeliveryTab } from "../lib/tabs";
 import { deliveryTabListQuery } from "../lib/list-query";
+import { CATALOG_TABLES } from "../lib/catalog-tables";
+import { CATALOG_LOCAL, isLocalCatalogTab } from "../lib/catalog-local";
 
 /**
  * The server read of a list section of Entregas — and of the Torre's
@@ -67,6 +73,12 @@ interface DeliveryListRead {
   refusal: AccessError | null;
   /** 401: the session is gone; the caller sends the person to the login. */
   unauthorized: boolean;
+  /**
+   * The rows are the whole set for the URL's search and company (a catalog
+   * answered in the browser, data-table/local-table): its key. Absent, the
+   * rows are the server's page.
+   */
+  complete?: string;
 }
 
 /** The page's params a list read uses, as Next passes them. */
@@ -76,26 +88,64 @@ type ListSearchParams = {
   search?: string;
 } & Record<string, string | string[] | undefined>;
 
-/**
- * One list, as the API streams it (NDJSON: a meta line, then the rows),
- * with the page, the search, the company and the table's sort, facets and —
- * for the deliveries — period (deliveryTabListQuery).
- */
-async function readDeliveryList({
-  section,
-  token,
-  businessId,
-  searchParams,
-}: {
+interface ListReadInput {
   section: DeliveryListSection;
   token: string;
   businessId: string | undefined;
   searchParams: ListSearchParams;
-}): Promise<DeliveryListRead> {
+}
+
+/**
+ * One list, as the API streams it (NDJSON: a meta line, then the rows),
+ * with the page, the search, the company and the table's sort, facets and —
+ * for the deliveries — period (deliveryTabListQuery).
+ *
+ * Embarcadores, Tipos de ocorrência and Motivos may come back WHOLE instead
+ * (spec §13): when the search's set fits in one read, the browser answers
+ * their filters, date sorts and pages with no request (readCompleteList says
+ * how many reads that costs: one, or two with filters in the URL).
+ */
+async function readDeliveryList(
+  input: ListReadInput,
+): Promise<DeliveryListRead> {
+  const { section, searchParams } = input;
+
+  if (!isLocalCatalogTab(section)) return readListOnce(input, false);
+
+  return readCompleteList({
+    source: searchParams,
+    spec: CATALOG_TABLES[section],
+    local: CATALOG_LOCAL[section],
+    read: ({ complete }) => readListOnce(input, complete),
+    isOk: (read) =>
+      !read.unauthorized && !read.refusal && !read.responseError.error,
+  });
+}
+
+/** One request: the URL's page, or the complete read (page 1 of 100). */
+async function readListOnce(
+  { section, token, businessId, searchParams }: ListReadInput,
+  complete: boolean,
+): Promise<DeliveryListRead> {
   const source = LIST_SOURCES[section];
 
-  const page = Number(searchParams.page) || 1;
-  const pageSize = Number(searchParams.pageSize) || 10;
+  // The complete read: page 1 of 100, the URL's sort, no facet. Otherwise
+  // the URL's page with the table's sort and facets (decision 8.8) and the
+  // deliveries' period.
+  const {
+    page: pageParam,
+    pageSize: pageSizeParam,
+    ...listParams
+  } = complete && isLocalCatalogTab(section)
+    ? completeReadQuery(searchParams, CATALOG_TABLES[section])
+    : {
+        page: String(Number(searchParams.page) || 1),
+        pageSize: String(Number(searchParams.pageSize) || 10),
+        ...deliveryTabListQuery(section, searchParams),
+      };
+
+  const page = Number(pageParam);
+  const pageSize = Number(pageSizeParam);
 
   const read: DeliveryListRead = {
     rows: [],
@@ -110,8 +160,7 @@ async function readDeliveryList({
     pageSize: String(pageSize),
     search: searchParams.search || "",
     ...(businessId && { businessId }),
-    // The table's sort and facets (decision 8.8); the deliveries' period.
-    ...deliveryTabListQuery(section, searchParams),
+    ...listParams,
     // Four counters per upload are what the tab draws; each row's per-line
     // report (MBs on a big tenant) is read by the report dialog itself.
     ...(section === "imports" && { includeReport: "false" }),

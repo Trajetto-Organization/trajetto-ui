@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useDashboardData } from "../../hooks";
 
 import type { ChartBarDefaultProps } from "../bar-chart.types";
+import { costComparison } from "../cost-comparison";
 
 function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
   const [timeRange, setTimeRange] = useState<string>("6m");
@@ -50,8 +51,9 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
     switch (range) {
       case "7d":
         return "Últimos 7 dias";
+      // 30 civil days of the company, not the calendar month.
       case "30d":
-        return "Último mês";
+        return "Últimos 30 dias";
       case "3m":
         return "Últimos 3 meses";
       case "6m":
@@ -71,20 +73,12 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
     0,
   );
 
-  // Calculate growth percentage (compare last 2 periods if available)
-  const growthPercentage = useMemo(() => {
-    if (displayCosts.length < 2) return 0;
-
-    const currentPeriod = displayCosts[displayCosts.length - 1];
-    const previousPeriod = displayCosts[displayCosts.length - 2];
-
-    const currentTotal = currentPeriod.internal + currentPeriod.external;
-    const previousTotal = previousPeriod.internal + previousPeriod.external;
-
-    if (previousTotal === 0) return 0;
-
-    return Math.round(((currentTotal - previousTotal) / previousTotal) * 100);
-  }, [displayCosts]);
+  // The running point (this month, or today) against the one before it,
+  // both named (cost-comparison.ts).
+  const comparison = useMemo(
+    () => costComparison(displayCosts),
+    [displayCosts],
+  );
 
   // Prepare data for the chart
   const chartData = useMemo(() => {
@@ -102,7 +96,7 @@ function useBarChart({ maintenanceCosts }: ChartBarDefaultProps) {
     getTimeRangeLabel,
     totalInternal,
     totalExternal,
-    growthPercentage,
+    comparison,
     chartData,
     timeRange,
   };

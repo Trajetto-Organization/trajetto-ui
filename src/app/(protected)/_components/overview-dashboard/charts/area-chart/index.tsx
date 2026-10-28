@@ -72,8 +72,10 @@ const ChartArea = ({
       >
         <div className="grid flex-1 gap-1">
           <CardTitle>Tendências de Atividade</CardTitle>
+          {/* New records per day or month, by creation date — not a
+              running total (dashboard-repository countArm on the API). */}
           <CardDescription>
-            Evolução de registros no sistema - {getTimeRangeLabel(timeRange)}
+            Novos cadastros por período - {getTimeRangeLabel(timeRange)}
           </CardDescription>
         </div>
         <Select value={timeRange} onValueChange={handleTimeRangeChange}>
@@ -91,7 +93,7 @@ const ChartArea = ({
               Últimos 7 dias
             </SelectItem>
             <SelectItem value="30d" className="rounded-lg">
-              Último mês
+              Últimos 30 dias
             </SelectItem>
             <SelectItem value="3m" className="rounded-lg">
               Últimos 3 meses

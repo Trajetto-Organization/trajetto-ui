@@ -4,6 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 import { header } from "@/features/user/table/columns";
@@ -26,8 +28,9 @@ function buildProfileAccessColumns(
   scope: AdminScope,
 ): ColumnDef<ProfileAccessRow>[] {
   return [
+    idColumn<ProfileAccessRow>(),
     {
-      // The name is the profile's identifier, unique per company.
+      // The name is the profile's business identifier, unique per company.
       accessorKey: "name",
       meta: { title: "Nome" },
       header: header<ProfileAccessRow>("Nome"),

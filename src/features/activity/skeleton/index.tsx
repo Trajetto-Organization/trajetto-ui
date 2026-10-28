@@ -1,20 +1,28 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * The activity screen before the data lands: the action line, the view and
- * period switches, four cards and the timeline — the page's own shape, so
- * nothing jumps when it arrives. Hook-free: `loading.tsx` renders it on the
- * server.
+ * The activity screen before the data lands: one line with the view switch
+ * on the left and the period and Atualizar on the right (stacked on a
+ * phone), four cards and the timeline — the page's own shape, so nothing
+ * jumps when it arrives. Hook-free: `loading.tsx` renders it on the server.
  */
 const ActivitySkeleton = (): JSX.Element => (
   <div data-tutorial="loading" className="my-6 space-y-6">
-    <div className="flex w-full justify-end">
-      <Skeleton className="h-8 w-full sm:w-[140px]" />
-    </div>
-
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex w-full flex-wrap items-center gap-3">
       <Skeleton className="h-10 w-full sm:w-[240px]" />
-      <Skeleton className="h-8 w-[180px]" />
+
+      <div
+        data-skeleton-actions
+        className="flex w-full flex-col gap-2 sm:ml-auto sm:w-auto sm:flex-row sm:items-center"
+      >
+        {/* Widths measured on the live line (28/10/2026): the shortcuts
+            165px with their icon, Atualizar 109px. */}
+        <div data-skeleton-period className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-9 w-[141px]" />
+        </div>
+        <Skeleton className="h-9 w-full sm:w-[110px]" />
+      </div>
     </div>
 
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

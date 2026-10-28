@@ -30,7 +30,11 @@ import {
 import type { ServerTableSpec } from "./server-table";
 import { useServerTableState } from "./use-server-table-state";
 
-import { ListQueryProvider, useListQueryState } from "@/lib/search-params";
+import {
+  ListQueryProvider,
+  useListQueryState,
+  type ListQuery,
+} from "@/lib/search-params";
 import { cn } from "@/lib/utils";
 
 import {
@@ -101,6 +105,12 @@ interface UserDataTableProps<TData, TValue> {
   bulkActions?: BulkActions<TData>;
   /** Columns that start hidden; "Visualizar" can still show them. */
   initialColumnVisibility?: VisibilityState;
+  /**
+   * The list query of a screen that owns it (useCompleteList): its cards and
+   * this table then read the same requested params, and a change the rows on
+   * screen already answer moves only the URL. Without it the table owns one.
+   */
+  listQuery?: ListQuery;
 }
 
 /** Tells a screen reader which column orders the rows, and which way. */
@@ -142,6 +152,7 @@ function DataTable<TData, TValue>({
   emptyMessage = "Nenhum resultado encontrado",
   bulkActions,
   initialColumnVisibility,
+  listQuery: screenListQuery,
 }: UserDataTableProps<TData, TValue>) {
   const searchParams = useSearchParams();
 
@@ -233,7 +244,8 @@ function DataTable<TData, TValue>({
 
   // Search, filters and sort of this list, shared with its toolbar: what was
   // asked shows at once and the old rows stay (dimmed) until the new arrive.
-  const listQuery = useListQueryState();
+  const ownListQuery = useListQueryState();
+  const listQuery = screenListQuery ?? ownListQuery;
   const serverState = useServerTableState(server, listQuery);
   const isBusy = listQuery.isPending;
 

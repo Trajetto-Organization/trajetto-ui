@@ -1,4 +1,4 @@
-import { managerToken } from "../ui/support/operation";
+import { managerForThisSpec } from "../ui/support/operation";
 import { waitForHydration } from "../ui/support/ui";
 
 import { test, expect, type Page } from "@playwright/test";
@@ -36,7 +36,7 @@ async function open(page: Page, width: number): Promise<void> {
   await page.context().addCookies([
     {
       name: "tkey",
-      value: managerToken(),
+      value: managerForThisSpec(),
       domain: "localhost",
       path: "/",
     },
@@ -323,7 +323,7 @@ test.describe("the same sections on a computer screen", () => {
     await page.context().addCookies([
       {
         name: "tkey",
-        value: managerToken(),
+        value: managerForThisSpec(),
         domain: "localhost",
         path: "/",
       },
@@ -406,7 +406,7 @@ test.describe("the tab strips that are not Entregas", () => {
     await page.context().addCookies([
       {
         name: "tkey",
-        value: managerToken(),
+        value: managerForThisSpec(),
         domain: "localhost",
         path: "/",
       },

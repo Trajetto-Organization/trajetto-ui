@@ -5,7 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
-import { IdCell } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { DataTableQuoteRowActions } from "../data-table-row-actions";
 
 import type { QuoteProps } from "../quote.types";
@@ -30,19 +30,8 @@ const statusLabels = {
 };
 
 const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
-  {
-    // A quote request has no number of its own: the compact record id.
-    accessorKey: "id",
-    meta: {
-      title: "ID",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="ID" />
-    ),
-    cell: ({ row }) => <IdCell id={row.original.id} />,
-    enableSorting: false,
-    enableHiding: false,
-  },
+  // A quote request has no number of its own: the record id identifies it.
+  idColumn<QuoteProps>(),
   {
     accessorKey: "name",
     meta: {

@@ -117,6 +117,74 @@ jobs:
           tags: |
             type=sha,prefix=sha-
 
+      # The image runs BEFORE anything is pushed (§14/§19: smoke test of the
+      # final image). This builds it into the runner's Docker only — no push,
+      # no attestations (the classic image store cannot load them) — and the
+      # push step below gets the same build back from this builder's cache:
+      # same Dockerfile, context and build args, so every layer is CACHED and
+      # only the export, the SBOM and the upload remain.
+      - name: Build the image for the smoke test
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: trajetto-ui:smoke
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          build-args: |
+            METADATA_BASE=${{ secrets.METADATA_BASE }}
+            GIT_SHA=${{ github.sha }}
+
+      # Started with no network and throwaway values (Cloudflare's documented
+      # always-pass Turnstile test keys; API addresses nothing answers on):
+      # production mode still checks them at boot (src/instrumentation.ts).
+      # It must pass its OWN HEALTHCHECK — the command the Swarm settings run
+      # (docs/deploy.md, 6.4), with Docker's timings shortened — then answer
+      # this commit at /build-id.json and an AVIF from the image optimizer
+      # (sharp, the one native dependency). A failure stops the job here:
+      # nothing reaches GHCR, staging keeps the build it runs.
+      - name: Smoke test the image
+        env:
+          IMAGE: trajetto-ui:smoke
+        run: |
+          cid=$(docker run -d --network none \
+            --health-interval 2s --health-start-period 90s \
+            -e HTTP_REQUEST=http://127.0.0.1:9 \
+            -e PUBLIC_API_URL=http://127.0.0.1:9 \
+            -e METADATA_BASE=http://127.0.0.1:3000 \
+            -e TURNSTILE_SITE_KEY=1x00000000000000000000AA \
+            -e TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA \
+            "$IMAGE")
+          trap 'docker rm -f "$cid" > /dev/null 2>&1 || true' EXIT
+
+          fail() {
+            echo "::error::Smoke test da imagem: $1. Nada foi publicado no GHCR."
+            docker logs "$cid" 2>&1 | tail -n 100
+            exit 1
+          }
+
+          state=""
+          for _ in $(seq 1 60); do
+            state=$(docker inspect --format '{{.State.Status}}/{{if .State.Health}}{{.State.Health.Status}}{{else}}sem-healthcheck{{end}}' "$cid")
+            [ "$state" = "running/starting" ] || break
+            sleep 2
+          done
+          [ "$state" = "running/healthy" ] || fail "o container não ficou saudável (${state})"
+
+          sha=$(docker exec "$cid" node -e \
+            "fetch('http://127.0.0.1:3000/build-id.json', { signal: AbortSignal.timeout(15000) }).then((r) => r.json()).then((b) => console.log(b.sha))") \
+            || fail "/build-id.json não respondeu"
+          [ "$sha" = "$GITHUB_SHA" ] || fail "/build-id.json respondeu '${sha}', não o commit ${GITHUB_SHA}"
+
+          avif=$(docker exec "$cid" node -e \
+            "fetch('http://127.0.0.1:3000/_next/image?url=%2Ffavicon-192.png&w=64&q=75', { headers: { accept: 'image/avif' }, signal: AbortSignal.timeout(15000) }).then((r) => console.log(r.status, r.headers.get('content-type')))") \
+            || fail "o otimizador de imagens não respondeu"
+          [ "$avif" = "200 image/avif" ] || fail "o otimizador de imagens respondeu '${avif}' (sharp)"
+
+          echo "trajetto-ui: smoke test OK (healthy, build ${GITHUB_SHA::7}, AVIF)" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build and push Docker image
         id: build
         uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0

@@ -10,6 +10,7 @@ import { useVehicleInfiniteScroll } from "@/app/(protected)/_components/shared/s
 import { useServiceOrderInfiniteScroll } from "@/app/(protected)/_components/shared/searches/search-service-order/hooks/service-order-infinite-scroll";
 
 import { formatPickedDay } from "@/features/vehicle/lib/picked-day";
+import { serviceOrderLabel } from "@/lib/format-values";
 
 import { NO_ACCESS_HINTS } from "../lib/form-values";
 
@@ -220,7 +221,7 @@ const ServiceOrderPicker = ({
       search={search}
       onSearchChange={setSearch}
       list={{ ...list, items: serviceOrders as Row[] }}
-      itemLabel={(order) => `OS #${order.id.slice(-12)}`}
+      itemLabel={(order) => serviceOrderLabel(order.id)}
       itemDescription={(order) =>
         [formatPickedDay(order.date), order.vehicle?.license_plate]
           .filter(Boolean)

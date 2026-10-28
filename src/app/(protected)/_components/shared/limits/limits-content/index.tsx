@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   BrainCircuit,
   Loader,
@@ -7,7 +9,6 @@ import {
   Building2,
   NotepadText,
   Sparkles,
-  Truck,
   Zap,
 } from "lucide-react";
 import {
@@ -32,6 +33,9 @@ import type { LimitsContentProps } from "./limits-content.types";
 import { useLimitsContent } from "./hooks";
 import { useAuthStore } from "@/store/auth-store";
 
+import { LimitStatusBadge } from "./limit-status-badge";
+import { VehicleSlotsCard } from "./vehicle-slots-card";
+
 import {
   aiQuotaNote,
   aiQuotaScope,
@@ -39,6 +43,7 @@ import {
   showsFineLookupCard,
 } from "./lib/ai-quota-scope";
 import {
+  AI_HIGH_USAGE_PERCENT,
   nextResetSentence,
   periodStartSentence,
   remainingSentence,
@@ -50,10 +55,16 @@ const LimitsContent = ({
   mode,
   showBusinessSelector,
 }: LimitsContentProps): JSX.Element => {
-  const { aiUsage, entitlements, isLoading, errorMessage, businessId } =
-    useLimitsContent({
-      businessId: businessIdProp,
-    });
+  const {
+    aiUsage,
+    entitlements,
+    planStatus,
+    isLoading,
+    errorMessage,
+    businessId,
+  } = useLimitsContent({
+    businessId: businessIdProp,
+  });
 
   // The company's modules: the plan's answer, else (company users only) the
   // session's own list — a failed plan request must not bring the other
@@ -64,14 +75,6 @@ const LimitsContent = ({
     mode,
     sessionModules,
   );
-
-  const fleetPercentage =
-    entitlements && entitlements.vehicle_limit_enabled
-      ? Math.min(
-          (entitlements.vehicle_count / entitlements.vehicle_limit) * 100,
-          100,
-        )
-      : 0;
 
   // Reservations of running analyses count toward the bar/badge (they are
   // committed spend), but the "realizadas" number shows only what finished.
@@ -90,50 +93,27 @@ const LimitsContent = ({
   const getStatusBadge = () => {
     if (!aiUsage) return null;
     if (aiUsage.ai_analysis_limit === 0) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-gray-100 shrink-0 truncate text-gray-700 border-gray-200 dark:bg-muted dark:text-muted-foreground dark:border-border"
-        >
-          Desabilitado
-        </Badge>
-      );
+      return <LimitStatusBadge tone="neutral">Desabilitado</LimitStatusBadge>;
     }
 
     if (usagePercentage >= 100) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-red-100 shrink-0 truncate
-          text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900"
-        >
-          Limite atingido
-        </Badge>
-      );
+      return <LimitStatusBadge tone="danger">Limite atingido</LimitStatusBadge>;
     }
 
-    if (usagePercentage >= 70) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-yellow-100 shrink-0 truncate
-          text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-900"
-        >
-          Uso elevado
-        </Badge>
-      );
+    if (usagePercentage >= AI_HIGH_USAGE_PERCENT) {
+      return <LimitStatusBadge tone="warning">Uso elevado</LimitStatusBadge>;
     }
 
-    return (
-      <Badge
-        variant="outline"
-        className="bg-green-100 shrink-0 truncate
-        text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-900"
-      >
-        Ativo
-      </Badge>
-    );
+    return <LimitStatusBadge tone="success">Ativo</LimitStatusBadge>;
   };
+
+  // The fines screen of this company: the MASTER's /admin pages take the
+  // company from the URL. The card only exists with Gestão de Frotas, and
+  // this page only for the MASTER and the company's admin, who both open it.
+  const finesHref =
+    mode === "admin" && businessId
+      ? `/admin/fine?businessId=${encodeURIComponent(businessId)}`
+      : "/dashboard/fine";
 
   // MASTER with no business selected — show selector + placeholder
   if (mode === "admin" && !businessId) {
@@ -185,17 +165,19 @@ const LimitsContent = ({
         </div>
       ) : (
         <>
-          {/* Limit cards — 2 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Limit cards — 2 columns from lg: with the sidebar open, md
+              left two cards of ~190px each. Headers put the badge beside the
+              title from xl only, for the same reason. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* AI Verification Card */}
             <Card
               className="shadow-sm hover:shadow-md transition-shadow"
               data-tutorial="ai-usage-card"
             >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
+              <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0 space-y-1">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <BrainCircuit className="h-5 w-5 text-primary" />
+                    <BrainCircuit className="h-5 w-5 shrink-0 text-primary" />
                     Verificação IA
                   </CardTitle>
                   {/* One quota for the fleet readings and the proof
@@ -242,6 +224,7 @@ const LimitsContent = ({
                         value={usagePercentage}
                         className="h-2.5"
                         indicatorClassName="bg-blue-600"
+                        aria-label="Fotos da cota usadas no período"
                       />
 
                       <p className="text-xs text-muted-foreground">
@@ -325,140 +308,61 @@ const LimitsContent = ({
               </CardContent>
             </Card>
 
-            {/* Fleet size card — contracted vehicles vs registered */}
-            <Card className="shadow-sm hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <Truck className="h-5 w-5 text-primary" />
-                    {/* Vehicles serve both modules, not only Frotas. */}
-                    Veículos
-                  </CardTitle>
-                  <CardDescription>
-                    Veículos ativos × contratados no plano
-                  </CardDescription>
-                </div>
-                {entitlements &&
-                  (entitlements.vehicle_limit_enabled ? (
-                    fleetPercentage >= 100 ? (
-                      <Badge
-                        variant="outline"
-                        className="bg-red-100 shrink-0 truncate text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900"
-                      >
-                        Limite atingido
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="bg-green-100 shrink-0 truncate text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-900"
-                      >
-                        Ativo
-                      </Badge>
-                    )
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="bg-gray-100 shrink-0 truncate text-gray-700 border-gray-200 dark:bg-muted dark:text-muted-foreground dark:border-border"
-                    >
-                      Sem limite
-                    </Badge>
-                  ))}
-              </CardHeader>
-
-              <Separator />
-
-              <CardContent className="space-y-4 pt-4">
-                {entitlements ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">
-                        Veículos ativos
-                      </span>
-                      <span className="font-semibold text-lg">
-                        {entitlements.vehicle_count}
-                        {entitlements.vehicle_limit_enabled && (
-                          <span className="text-muted-foreground font-normal text-sm">
-                            {" "}
-                            / {entitlements.vehicle_limit}
-                          </span>
-                        )}
-                        {(entitlements.vehicle_inactive_count ?? 0) > 0 && (
-                          <span className="ml-2 text-muted-foreground font-normal text-xs">
-                            +{entitlements.vehicle_inactive_count} inativo(s)
-                          </span>
-                        )}
-                      </span>
-                    </div>
-
-                    {entitlements.vehicle_limit_enabled ? (
-                      <>
-                        <Progress
-                          value={fleetPercentage}
-                          className="h-2.5"
-                          indicatorClassName="bg-blue-600"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {entitlements.vehicle_limit -
-                            entitlements.vehicle_count >
-                          0
-                            ? `${entitlements.vehicle_limit - entitlements.vehicle_count} vaga(s) restante(s) no plano`
-                            : "Todas as vagas do plano estão em uso — novos cadastros e reativações estão bloqueados. Inativar um veículo libera a vaga."}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Sem limite de veículos configurado para esta empresa.
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Não foi possível carregar os dados da frota.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            {/* The plan's vehicle slots, with the AI card's hierarchy. */}
+            <VehicleSlotsCard
+              entitlements={entitlements}
+              planStatus={planStatus}
+              planModules={planModules}
+            />
 
             {/* Consulta de multas: not part of this version (the Celcoin
                 automation is out of scope), and the card says so instead of
-                promising it. Fines are Frotas: no card without the module. */}
+                promising it — no quota, no usage, no number. Fines are
+                Frotas: no card without the module. A full row, so the two
+                cards with numbers stay side by side above it. */}
             {showsFineLookupCard(planModules) && (
-              <Card className="shadow-sm border-dashed">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <div className="space-y-1">
-                    <CardTitle
-                      className="text-base font-semibold flex 
-                    items-center gap-2 text-muted-foreground"
-                    >
-                      <NotepadText className="h-5 w-5" />
+              <Card
+                className="shadow-sm border-dashed lg:col-span-2"
+                data-tutorial="fine-lookup-card"
+              >
+                <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <NotepadText className="h-5 w-5 shrink-0 text-muted-foreground" />
                       Consulta de Multas
                     </CardTitle>
                     <CardDescription>
                       Consultas automáticas de infrações
                     </CardDescription>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className="bg-primary/5 text-primary 
-                  border-primary/20 truncate block"
-                  >
+                  <LimitStatusBadge tone="notice">
                     Fora desta versão
-                  </Badge>
+                  </LimitStatusBadge>
                 </CardHeader>
 
                 <Separator />
 
-                <CardContent
-                  className="flex flex-col items-center 
-                justify-center py-10 text-center"
-                >
-                  <Sparkles className="h-8 w-8 text-muted-foreground/30 mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    A consulta automática de multas não faz parte desta versão.
-                  </p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">
-                    Registre as multas na tela Multas.
-                  </p>
+                <CardContent className="flex items-start gap-3 pt-4">
+                  <Sparkles
+                    className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      A consulta automática de multas não faz parte desta
+                      versão: não há cota nem consumo a acompanhar.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      As multas recebidas são registradas na tela{" "}
+                      <Link
+                        href={finesHref}
+                        className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+                      >
+                        Multas
+                      </Link>
+                      .
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}

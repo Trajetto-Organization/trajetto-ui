@@ -37,7 +37,10 @@ import {
   readScrollEdges,
   scrollStep,
 } from "@/components/ui/scrollable-tabs";
-import { SegmentedNav } from "@/components/ui/segmented-nav";
+import {
+  MIN_FILLING_SECTIONS,
+  SegmentedNav,
+} from "@/components/ui/segmented-nav";
 import { ScrollableTabsList, Tabs, TabsTrigger } from "@/components/ui/tabs";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
 
@@ -174,6 +177,143 @@ describe("SegmentedNav", () => {
         "overflow-y-hidden",
       ]),
     );
+  });
+
+  it("filling (Entregas, Torre) shares the whole rail: no ceiling per section, never below its label", async () => {
+    /*
+      A 256px ceiling per section left bare track after the last tab once
+      Entregas went from ten sections to six and the Torre had five: 216px
+      at 1920px with the sidebar collapsed, 264px on the Torre with it open.
+      The geometry itself is measured in tests/responsive/tab-strip-fill;
+      this pins the rule that produces it.
+    */
+    const host = await mount(
+      createElement(SegmentedNav, {
+        items: SECTIONS,
+        activeValue: "webhooks",
+        hrefFor: (value: string) => `?tab=${value}`,
+        label: "Seções de entregas",
+      }),
+    );
+
+    const navs = host.querySelectorAll("nav");
+    const desk = [...navs].find((nav) => nav.querySelector("ul"))!;
+
+    expect(desk.className.split(/\s+/)).toContain("w-full");
+
+    const items = [...desk.querySelectorAll("ul > li")];
+
+    expect(items).toHaveLength(SECTIONS.length);
+
+    for (const item of items) {
+      const classes = item.className.split(/\s+/);
+
+      // Same extra pixels for every section: the label-to-label spacing
+      // stays constant (not equal columns, which crowd the long labels).
+      expect(classes).toContain("flex-auto");
+      expect(classes).toContain("min-w-max");
+      expect(classes).not.toContain("flex-1");
+      expect(classes.filter((name) => name.startsWith("max-w-"))).toEqual([]);
+    }
+  });
+
+  it("filling with one or two sections hugs instead of stretching them across the rail", async () => {
+    /*
+      A profile with only `occurrence_manage` sees one section on Entregas and
+      one view on the Torre. Filling made that one section a ~1550px pill at
+      1920px (§4: no disproportionate stretching). The responsive suite
+      measures the geometry; this pins the rule.
+    */
+    expect(MIN_FILLING_SECTIONS).toBe(3);
+
+    for (const count of [1, 2]) {
+      const items = SECTIONS.slice(0, count);
+      const host = await mount(
+        createElement(SegmentedNav, {
+          items,
+          activeValue: items[0].value,
+          hrefFor: (value: string) => `?tab=${value}`,
+          label: "Seções de entregas",
+        }),
+      );
+
+      const desk = [...host.querySelectorAll("nav")].find((nav) =>
+        nav.querySelector("ul"),
+      )!;
+
+      expect(desk.className.split(/\s+/), `${count} seção(ões)`).toContain(
+        "w-fit",
+      );
+      expect(desk.className.split(/\s+/)).not.toContain("w-full");
+
+      const listItems = [...desk.querySelectorAll("ul > li")];
+
+      expect(listItems).toHaveLength(count);
+
+      for (const item of listItems) {
+        const classes = item.className.split(/\s+/);
+
+        expect(classes).toContain("min-w-max");
+        expect(classes).not.toContain("flex-auto");
+      }
+
+      // The rail itself is unchanged: one line, its own scroll and arrows.
+      expect(desk.querySelector("ul")!.className.split(/\s+/)).toEqual(
+        expect.arrayContaining(["h-10", "overflow-x-auto", "scrollbar-none"]),
+      );
+
+      await act(async () => root?.unmount());
+      root = null;
+      document.body.innerHTML = "";
+    }
+  });
+
+  it("filling from three sections up shares the rail, as with five or six", async () => {
+    const items = SECTIONS.slice(0, MIN_FILLING_SECTIONS);
+    const host = await mount(
+      createElement(SegmentedNav, {
+        items,
+        activeValue: items[0].value,
+        hrefFor: (value: string) => `?tab=${value}`,
+        label: "Seções de entregas",
+      }),
+    );
+
+    const desk = [...host.querySelectorAll("nav")].find((nav) =>
+      nav.querySelector("ul"),
+    )!;
+
+    expect(desk.className.split(/\s+/)).toContain("w-full");
+
+    for (const item of desk.querySelectorAll("ul > li")) {
+      expect(item.className.split(/\s+/)).toContain("flex-auto");
+    }
+  });
+
+  it("with fill={false} the sections keep their own width", async () => {
+    const host = await mount(
+      createElement(SegmentedNav, {
+        items: SECTIONS,
+        activeValue: "webhooks",
+        hrefFor: (value: string) => `?tab=${value}`,
+        label: "Seções de integrações",
+        fill: false,
+      }),
+    );
+
+    const desk = [...host.querySelectorAll("nav")].find((nav) =>
+      nav.querySelector("ul"),
+    )!;
+
+    expect(desk.className.split(/\s+/)).toContain("w-fit");
+
+    for (const item of desk.querySelectorAll("ul > li")) {
+      const classes = item.className.split(/\s+/);
+
+      expect(classes).toContain("min-w-max");
+      expect(classes).not.toContain("flex-auto");
+      expect(classes.filter((name) => name.startsWith("max-w-"))).toEqual([]);
+    }
   });
 
   it("shows the arrows when the sections do not fit, and only on the side that hides something", async () => {

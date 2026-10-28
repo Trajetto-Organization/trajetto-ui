@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 import { VEHICLE_STATUS_LABELS } from "@/lib/vehicle-status";
@@ -47,6 +48,7 @@ function buildVehicleColumns(
   options: { withMaintenance: boolean } = { withMaintenance: true },
 ): ColumnDef<VehicleRow>[] {
   const columns: ColumnDef<VehicleRow>[] = [
+    idColumn<VehicleRow>(),
     {
       accessorKey: "license_plate",
       meta: { title: "Placa" },

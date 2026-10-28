@@ -4,6 +4,7 @@ import { createElement } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
+import type { ListQuery } from "@/lib/search-params";
 
 import { CATALOG_TABLES, type CatalogSearchMeta } from "../lib/catalog-tables";
 import { DeliveriesTableToolbar } from "../table-toolbar";
@@ -20,6 +21,11 @@ interface SectionTableProps {
    * then answers on the server too (decision 8.8).
    */
   catalogServerMode?: boolean;
+  /**
+   * The list query of the section around the table (catalog-section), which
+   * answers a complete catalog in the browser and counts its cards.
+   */
+  listQuery?: ListQuery;
 }
 
 type CatalogTableTab = keyof typeof CATALOG_TABLES;
@@ -38,6 +44,7 @@ function CatalogTable<TData>({
   responseError,
   searchMeta,
   catalogServerMode = false,
+  listQuery,
 }: SectionTableProps & {
   tab: CatalogTableTab;
   columns: ColumnDef<TData, unknown>[];
@@ -58,6 +65,7 @@ function CatalogTable<TData>({
       columns={columns}
       responseError={responseError}
       toolbar={toolbar}
+      listQuery={listQuery}
       {...(catalogServerMode && { server: CATALOG_TABLES[tab] })}
     />
   );

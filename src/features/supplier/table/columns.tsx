@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -27,8 +28,9 @@ const text = (value: string | null | undefined, width: string) => (
  */
 function buildSupplierColumns(): ColumnDef<SupplierRow>[] {
   return [
+    idColumn<SupplierRow>(),
     {
-      // The CNPJ is the supplier's identifier, the one on its invoices.
+      // The CNPJ is the supplier's business identifier, on its invoices.
       id: "cnpj",
       accessorKey: "cnpj",
       meta: { title: "CNPJ" },

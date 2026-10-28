@@ -86,7 +86,15 @@ Os princípios que não mudam:
 
 Imagem: `ghcr.io/trajetto-organization/trajetto-ui`, Node 22 Alpine, saída
 `standalone` do Next, porta **3000**, health check em `/api/health`,
-usuário sem privilégio, só amd64.
+usuário sem privilégio, só amd64. O runtime é Alpine com só o binário do
+`node` copiado da imagem oficial (sem npm, yarn nem corepack), e os
+`node_modules` da saída `standalone` vão numa camada própria, que não muda
+entre commits sem mudança de dependência. A camada do `node` sai igual em
+todo build, com ou sem cache, e é o mesmo blob da imagem da API (estágio
+`node-binary` idêntico nos dois `Dockerfile`, mesmos digests de base): a VPS
+baixa esses ~46 MB uma vez para as duas imagens. Para manter isso, suba a
+versão do Node nos dois repositórios juntos (`docs/arquitetura.md`, "A
+imagem Docker").
 
 ## 2. Fluxo de branches
 
@@ -173,6 +181,12 @@ Detalhes na seção 16 e em `testes.md`.
 | `deploy-staging`     | depois do `build` (environment `staging`)                                | confere se o run ainda é o HEAD de `staging` (runs mais velhos param, verdes), move `staging` para o digest, faz o deploy pela API do Dokploy, espera o `/build-id.json` e, por último, grava `staged-<commit>` |
 | `promote-production` | push em `main`, ou **Run workflow** em `main` (environment `production`) | acha a imagem (seção 11), roda o gate de rotas, move `stable` para o digest, faz o deploy no Dokploy, espera o `/build-id.json`                                                                                 |
 | `release`            | push em `main`, depois do promote                                        | semantic-release: tag, `CHANGELOG.md` e GitHub Release                                                                                                                                                          |
+
+Antes do push, o `build` carrega a imagem no runner e roda um smoke test:
+o container sobe sem rede, com valores descartáveis, precisa passar no
+próprio HEALTHCHECK, responder o commit em `/build-id.json` e devolver um
+AVIF pelo otimizador de imagens (sharp). Se falhar, nada vai para o GHCR. O
+push seguinte publica o mesmo build, do cache do builder.
 
 Concorrência: um run por branch de cada vez (`deploy-<ref>`), e
 `deploy-staging` e `promote-production` com grupos próprios, nunca cancelados

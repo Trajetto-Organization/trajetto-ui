@@ -72,6 +72,45 @@ describe("the Torre's loading state", () => {
     expect(occurrences).toContain("divide-y");
   });
 
+  it("draws Atualizar once, in the header, for every view — Auditoria included", () => {
+    // Auditoria had a second Atualizar under the views strip, beside its
+    // counters, and its skeleton drew both: the header's placeholder, then
+    // the queue's. The button now lives in the header on every view.
+    const HEADER_BUTTON = "h-9 w-full sm:ml-auto sm:w-28";
+    const QUEUE_BUTTON = "h-10 w-full sm:w-32";
+
+    for (const view of [
+      "routes",
+      "panel",
+      "occurrences",
+      "tickets",
+      "audit",
+    ] as const) {
+      const html = renderHtml(
+        createElement(ControlTowerContentSkeleton, {
+          withSelector: true,
+          view,
+        }),
+      );
+
+      expect(html.split(HEADER_BUTTON).length - 1, view).toBe(1);
+      expect(html, view).not.toContain(QUEUE_BUTTON);
+    }
+  });
+
+  it("sizes the cadence row for the product's select, not the native one", () => {
+    const html = renderHtml(
+      createElement(ControlTowerContentSkeleton, { withSelector: false }),
+    );
+
+    const live = /data-skeleton-live[\s\S]*?(?=<div class="space-y-6"|$)/.exec(
+      html,
+    )?.[0];
+
+    expect(live).toContain("w-[88px]");
+    expect(live).not.toContain("h-8 w-40");
+  });
+
   it("loading.tsx reads the view from the URL it is opening", () => {
     navigation.search = "view=tickets";
 

@@ -2,7 +2,15 @@ import * as React from "react";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 /**
  * The Entregas catalog tabs on the server (decision 8.8): Embarcadores,
@@ -74,8 +82,10 @@ async function mount(element: ReactElement): Promise<HTMLElement> {
   });
 
   // Each tab's table is its own chunk (table/index.tsx): wait for it to
-  // replace the placeholder.
-  const deadline = performance.now() + 5_000;
+  // replace the placeholder. It is in the module cache already (beforeAll),
+  // so this is a few ticks; the deadline only bounds a broken load, and
+  // that fails here, by name, instead of later over a skeleton.
+  const deadline = performance.now() + MOUNT_DEADLINE_MS;
 
   while (
     host.querySelector('[data-tutorial="loading"]') &&
@@ -86,8 +96,30 @@ async function mount(element: ReactElement): Promise<HTMLElement> {
     });
   }
 
+  if (host.querySelector('[data-tutorial="loading"]')) {
+    throw new Error(
+      `a tabela da aba não substituiu o placeholder em ${MOUNT_DEADLINE_MS} ms`,
+    );
+  }
+
   return host;
 }
+
+/*
+  The shippers tab's chunk, loaded before any test mounts it. The mount used
+  to give the tab's dynamic import 5 s, which a parallel run spends on
+  transforming that module tree alone: the loop gave up silently and the
+  test failed on "sem o filtro Status" over the skeleton. Loaded here, with
+  a hook deadline sized for a loaded machine, the dynamic import inside the
+  component resolves from the module cache.
+*/
+const MOUNT_DEADLINE_MS = 20_000;
+const CHUNK_LOAD_TIMEOUT_MS = 120_000;
+const MOUNTED_TEST_TIMEOUT_MS = 30_000;
+
+beforeAll(async () => {
+  await import("@/features/deliveries/table/shippers");
+}, CHUNK_LOAD_TIMEOUT_MS);
 
 async function click(element: Element): Promise<void> {
   await act(async () => {
@@ -172,37 +204,45 @@ function option(label: string): Element {
 }
 
 describe("the shippers tab answered on the server", () => {
-  it("turns the Status filter into a new URL, with the server's counts", async () => {
-    const host = await mount(shippersTable(true));
+  it(
+    "turns the Status filter into a new URL, with the server's counts",
+    async () => {
+      const host = await mount(shippersTable(true));
 
-    await click(statusFilter(host));
+      await click(statusFilter(host));
 
-    // The options carry the company-wide counts, not the loaded page's.
-    expect(option("Inativo").textContent).toContain("12");
+      // The options carry the company-wide counts, not the loaded page's.
+      expect(option("Inativo").textContent).toContain("12");
 
-    await click(option("Inativo"));
-    await afterFilterPause();
+      await click(option("Inativo"));
+      await afterFilterPause();
 
-    expect(navigation.push).toHaveBeenCalledWith(
-      "?tab=shippers&status=inactive",
-      {
-        scroll: false,
-      },
-    );
-  });
+      expect(navigation.push).toHaveBeenCalledWith(
+        "?tab=shippers&status=inactive",
+        {
+          scroll: false,
+        },
+      );
+    },
+    MOUNTED_TEST_TIMEOUT_MS,
+  );
 
-  it("keeps the page filters while the page does not forward the params", async () => {
-    const host = await mount(shippersTable(false));
+  it(
+    "keeps the page filters while the page does not forward the params",
+    async () => {
+      const host = await mount(shippersTable(false));
 
-    await click(statusFilter(host));
+      await click(statusFilter(host));
 
-    // The loaded page's values, no server counts, and no new request.
-    expect(() => option("Inativo")).toThrow();
+      // The loaded page's values, no server counts, and no new request.
+      expect(() => option("Inativo")).toThrow();
 
-    await click(option("Ativo"));
+      await click(option("Ativo"));
 
-    expect(navigation.push).not.toHaveBeenCalled();
-  });
+      expect(navigation.push).not.toHaveBeenCalled();
+    },
+    MOUNTED_TEST_TIMEOUT_MS,
+  );
 });
 
 describe("the params each tab forwards", () => {

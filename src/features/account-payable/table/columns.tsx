@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
 import {
   IdCell,
-  shortId,
+  idColumn,
 } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { formatAccountPayableCategory } from "@/lib/account-payable-category";
@@ -46,21 +46,18 @@ const money = (value: number | null | undefined, width = "w-28") =>
  */
 function buildAccountPayableColumns(): ColumnDef<AccountPayableRow>[] {
   return [
+    idColumn<AccountPayableRow>(),
     {
       // The bill's own number (invoice, boleto): what the supplier quotes.
-      // A bill registered without one shows its compact record id.
+      // A bill registered without one reads "N/A" here; the record id is
+      // the column before.
       id: "document_number",
       accessorKey: "document_number",
       meta: { title: "Nº do documento" },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Nº do documento" />
       ),
-      cell: ({ row }) =>
-        row.original.document_number ? (
-          text(row.original.document_number, "w-32")
-        ) : (
-          <IdCell id={row.original.id} />
-        ),
+      cell: ({ row }) => text(row.original.document_number, "w-32"),
       enableHiding: false,
     },
     {
@@ -212,13 +209,15 @@ function buildAccountPayableColumns(): ColumnDef<AccountPayableRow>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Ordem de serviço" />
       ),
-      cell: ({ row }) =>
-        text(
-          row.original.serviceOrderId
-            ? `OS #${shortId(row.original.serviceOrderId)}`
-            : null,
-          "w-36",
-        ),
+      // The compact "OS #…" the pickers show; the full id in the tooltip and
+      // for screen readers ("Copiar ID da ordem de serviço" copies it).
+      cell: ({ row }) => (
+        <IdCell
+          id={row.original.serviceOrderId}
+          prefix="OS #"
+          className="w-36"
+        />
+      ),
     },
     {
       id: "issue_date",

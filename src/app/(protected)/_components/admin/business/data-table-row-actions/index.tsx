@@ -25,7 +25,7 @@ import { ManageEntitlementsForm } from "@/features/business-entitlements/manage-
 
 import { useUpdateBusinessForm } from "./hooks";
 
-import { toast } from "sonner";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;
@@ -48,17 +48,6 @@ export function DataTableBusinessRowActions<TData>({
     isDropdownOpen,
   } = useUpdateBusinessForm();
 
-  const handleCopyID = (collumn: string) => {
-    navigator.clipboard
-      .writeText(collumn)
-      .then(() => {
-        toast.success("ID copiado para a área de transferência!");
-      })
-      .catch((err) => {
-        toast.error("Erro ao copiar o ID: " + err);
-      });
-  };
-
   const menuActions = [
     {
       label: "Editar Empresa",
@@ -78,7 +67,7 @@ export function DataTableBusinessRowActions<TData>({
     },
     {
       label: "Copiar ID",
-      onClick: () => handleCopyID(collumnRowAction.id),
+      onClick: () => void copyWithFeedback(collumnRowAction.id, "ID"),
     },
   ];
 

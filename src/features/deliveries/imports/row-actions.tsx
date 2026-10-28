@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { Row } from "@tanstack/react-table";
 
-import { toast } from "sonner";
-
 import {
   RowActionItem,
   RowActions,
@@ -13,6 +11,7 @@ import {
 
 import type { ImportData } from "@/actions/import/list-imports";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -46,10 +45,7 @@ const ImportRowActions = ({ row }: ImportRowActionsProps): JSX.Element => {
   ]);
 
   const handleCopyID = () => {
-    navigator.clipboard
-      .writeText(record.id)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(record.id, "ID");
   };
 
   /**

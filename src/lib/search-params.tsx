@@ -18,6 +18,18 @@ interface ListQueryChangeOptions {
   debounce?: boolean;
 }
 
+interface ListQueryOptions {
+  /**
+   * Whether the rows on screen already answer these params (a complete list
+   * answered in the browser, data-table/local-table). Then the URL moves on
+   * its own — `history.pushState`, which Next 14.2 turns into a router
+   * restore with no request — at once, without the debounce and without the
+   * busy state. Anything else (a search, a server sort, another company) is
+   * a server render, as before.
+   */
+  answersLocally?: (next: URLSearchParams) => boolean;
+}
+
 /**
  * The query string of a server-side list, between what was asked and what
  * the server has answered.
@@ -53,8 +65,12 @@ interface ListQuery {
   setBusy: (busy: boolean) => void;
 }
 
-/** The state behind a list's URL; the DataTable owns one and shares it. */
-function useListQueryState(): ListQuery {
+/**
+ * The state behind a list's URL; the DataTable owns one and shares it (or a
+ * screen that answers a complete list in the browser owns it, and hands it
+ * to both its cards and its table).
+ */
+function useListQueryState(options: ListQueryOptions = {}): ListQuery {
   const router = useRouter();
   const searchParams = useSearchParams();
   const committed = searchParams.toString();
@@ -63,15 +79,27 @@ function useListQueryState(): ListQuery {
 
   const [requested, setRequested] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // The change on its way is answered on screen: no busy bar for it.
+  const [shallow, setShallow] = useState(false);
 
   // Read inside events and timers, where the rendered values may be behind.
   const requestedRef = useRef<string | null>(null);
   const committedRef = useRef(committed);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shallowRef = useRef(false);
+  const answersRef = useRef(options.answersLocally);
+
+  // The rows on screen, once committed: a render React threw away (a
+  // transition still waiting) must not answer a click for rows not shown.
+  useEffect(() => {
+    answersRef.current = options.answersLocally;
+  });
 
   const settle = useCallback(() => {
     requestedRef.current = null;
+    shallowRef.current = false;
     setRequested(null);
+    setShallow(false);
     setBusy(false);
   }, []);
 
@@ -89,25 +117,41 @@ function useListQueryState(): ListQuery {
       return;
     }
 
+    const local = shallowRef.current;
+
+    // In a transition either way, so `isNavigating` lasts until the router
+    // shows the new URL (the restore that pushState dispatches is one too).
     startTransition(() => {
-      router.push(`?${next}`, { scroll: false });
+      if (local) {
+        window.history.pushState(null, "", `?${next}`);
+      } else {
+        router.push(`?${next}`, { scroll: false });
+      }
     });
   }, [router, settle]);
 
   const change = useCallback<ListQuery["change"]>(
-    (next, options) => {
+    (next, changeOptions) => {
       const current = new URLSearchParams(
         requestedRef.current ?? committedRef.current,
       );
       const value = next(current).toString();
 
+      // Built on what is queued or in flight, so a change that rides with a
+      // search still on its way is never answered from the old rows.
+      const local = answersRef.current?.(new URLSearchParams(value)) ?? false;
+
       requestedRef.current = value;
+      shallowRef.current = local;
       setRequested(value);
+      setShallow(local);
 
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = null;
 
-      if (options?.debounce) {
+      // No pause for an answer already on screen: the pause only exists to
+      // batch several ticks into one request.
+      if (changeOptions?.debounce && !local) {
         timerRef.current = setTimeout(flush, LIST_QUERY_DEBOUNCE_MS);
       } else {
         flush();
@@ -142,7 +186,7 @@ function useListQueryState(): ListQuery {
     [],
   );
 
-  const isPending = requested !== null || isNavigating || busy;
+  const isPending = ((requested !== null || isNavigating) && !shallow) || busy;
 
   return useMemo(
     () => ({
@@ -222,4 +266,5 @@ export {
   useSearch,
   useSharedListQuery,
   type ListQuery,
+  type ListQueryOptions,
 };

@@ -51,7 +51,7 @@ function VehicleToolbar<TData>({
     <div className="flex w-full flex-wrap items-center gap-2">
       <SearchInputWithLoading
         placeholder="Procurar..."
-        aria-label="Buscar veículos por placa, descrição, marca, modelo, RENAVAM, motorista, tipo ou filial"
+        aria-label="Buscar veículos por placa, descrição, marca, modelo, RENAVAM, motorista, tipo, filial ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setIsLoading?.(true);

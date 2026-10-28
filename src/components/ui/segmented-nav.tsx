@@ -31,13 +31,13 @@ import { cn } from "@/lib/utils";
  * These are links. They change the URL, they open in a new tab on a middle
  * click, they can be copied from the context menu — and now they say so.
  *
- * **Two compositions, not one that stretches.** Entregas has ten sections,
- * which want 1431px; a phone offers 360. The strip used to keep the browser's
- * own scrollbar, which on Windows is a grey slab drawn INSIDE the 40px box —
- * eating enough of it that a vertical scrollbar appeared as well, complete
- * with little arrows, on a row of tabs. Below `md` the sections are a menu
- * naming the one you are on; from `md` up they are the strip, scrolled with
- * the product's own controls rather than the operating system's.
+ * **Two compositions, not one that stretches.** Entregas has six sections,
+ * which want about 900px; a phone offers 360. The strip used to keep the
+ * browser's own scrollbar, which on Windows is a grey slab drawn INSIDE the
+ * 40px box — eating enough of it that a vertical scrollbar appeared as well,
+ * complete with little arrows, on a row of tabs. Below `md` the sections are
+ * a menu naming the one you are on; from `md` up they are the strip, scrolled
+ * with the product's own controls rather than the operating system's.
  */
 interface SegmentedNavItem {
   value: string;
@@ -59,17 +59,22 @@ interface SegmentedNavProps {
   /**
    * Whether the rail spans the page or hugs its sections.
    *
-   * Ten sections and four sections are not the same control. Entregas fills
-   * the width because its sections nearly do anyway — left to hug, the rail
-   * stopped 120px short of a 1920px page with bare background beside it.
-   * Integrações has four, and filling stretched each one to 390px: a
-   * segmented control pulled until the labels float in the middle of nothing.
+   * Filling means the rail is the page's width and the sections divide all
+   * of it: the last one always ends where the rail does, with the sidebar
+   * open or collapsed. Entregas (six sections) and the Torre de controle
+   * (five views) fill — left to hug, the rail stopped short of a 1920px page
+   * with bare background beside it. Integrações has four short sections, and
+   * filling stretched each one to 390px: a segmented control pulled until the
+   * labels float in the middle of nothing.
    *
-   * So it is the caller's call, because only the caller knows how many
-   * sections it has. Filling is the default because that is what the screen
-   * with ten wanted; `false` keeps the rail at its content's width. Either way
-   * it scrolls on one line with the faded edges and arrows when the page is
-   * narrower than the sections — never a second line (decision 3.1).
+   * So it is the caller's call, because only the caller knows what it has.
+   * Filling is the default; `false` keeps the rail at its content's width.
+   * Either way it scrolls on one line with the faded edges and arrows when
+   * the page is narrower than the sections — never a second line (decision
+   * 3.1).
+   *
+   * A filling strip still hugs while it has fewer than
+   * `MIN_FILLING_SECTIONS` sections to show — see that constant.
    */
   fill?: boolean;
 
@@ -104,6 +109,25 @@ const mobileTutorialAnchor = (anchor?: string): string | undefined =>
  */
 const SECTION_PREFETCH = false;
 
+/**
+ * The fewest sections a filling strip divides its whole rail between.
+ *
+ * The caller passes the sections this session may open, and permissions can
+ * leave very few: a profile with only `occurrence_manage` sees one section
+ * on Entregas ("Tipos de Ocorrência") and one view on the Torre
+ * ("Ocorrências"), and a section dropped from the store while it is open
+ * stays drawn next to what is left. Filling a 1920px rail with one section
+ * made a single ~1550px pill — the disproportionate stretch §4 rules out,
+ * worse than the four Integrações sections that already hug for it.
+ *
+ * Below this count the strip hugs as `fill={false}` does; from it up it
+ * fills as before (Entregas has six sections, the Torre five, or four
+ * without `occurrence_manage`). It is decided from the count, not from a
+ * measurement, so the server renders the final layout and nothing shifts
+ * after hydration.
+ */
+const MIN_FILLING_SECTIONS = 3;
+
 const SegmentedNav = ({
   items,
   activeValue,
@@ -120,10 +144,12 @@ const SegmentedNav = ({
 
   const ActiveIcon = active?.icon;
 
+  const fills = fill && items.length >= MIN_FILLING_SECTIONS;
+
   return (
     <>
       {/*
-        Phones. A menu rather than a squeezed strip: ten sections cannot be
+        Phones. A menu rather than a squeezed strip: six sections cannot be
         shown at 360px by any arrangement, so the honest thing is to name the
         one you are on and open the rest on demand.
       */}
@@ -216,7 +242,7 @@ const SegmentedNav = ({
         /**
          * `min-w-0` + `max-w-full` is what makes the list's `overflow-x-auto`
          * work at all. With a `lg:w-auto` that used to be here, from 1024px up
-         * the strip sized itself to its content — 1431px inside a 768px area —
+         * the strip sized itself to its content — wider than a 768px area —
          * and the scroll container never had anything left to scroll, so the
          * trailing items sat off-screen and unreachable.
          *
@@ -234,7 +260,7 @@ const SegmentedNav = ({
             while the rail inside it hugged, which is also how an earlier
             version of this file survived a test that measured the wrong box.
           */
-          fill ? "w-full" : "w-fit",
+          fills ? "w-full" : "w-fit",
 
           className,
         )}
@@ -262,30 +288,36 @@ const SegmentedNav = ({
             return (
               /*
                 Grow into whatever the rail has spare — never below the label,
-                never past 256px.
+                and with no ceiling, so the last section ends where the rail
+                does.
 
                 `min-w-max` is the same guarantee the old `shrink-0` gave: an
-                item is never squeezed under its own text, so ten sections
-                still overflow a 1280px rail and still scroll. What changes is
-                the other direction — where the sections DO fit, the leftover
-                width is divided between them instead of being left as a gap
-                to the right of the last one. `flex-auto` rather than `flex-1`
-                so the share is added to each item's natural width, keeping a
-                long label longer than a short one.
+                item is never squeezed under its own text, so where the
+                sections do not fit (Entregas at 1280px with the sidebar open)
+                they still overflow and scroll. Where they DO fit, the
+                leftover width is divided between them instead of being left
+                as a gap to the right of the last one.
 
-                The 256px ceiling is what keeps that from becoming its own
-                defect. Entregas has ten sections and fills a 1920px rail
-                exactly; Integrações has four, and uncapped they came out
-                390px wide each — a segmented control stretched until the
-                labels float in the middle of nothing. Every label in this
-                product is comfortably under 256px, so the cap only ever bites
-                where there are few sections and a very wide screen, and there
-                what is left over reads as the rail continuing rather than as
-                a hole in the page.
+                `flex-auto` (basis = the label's own width), not equal columns
+                (`flex-1 basis-0`): every item gets the same extra pixels, so
+                the space from one label to the next is the same all along
+                the strip and a long label stays longer than a short one.
+                Equal columns, measured on Entregas at 1440px, left 75px
+                around "Entregas" and 28px between the last three labels — a
+                strip crowded at one end and loose at the other.
+
+                There used to be a 256px ceiling here, sized for when Entregas
+                had ten sections. With six, and five views on the Torre, the
+                items stopped growing before the rail ended and the rest
+                showed as bare muted track after the last tab — 216px on
+                Entregas at 1920px with the sidebar collapsed, 264px on the
+                Torre with it open. A strip whose few, short sections should
+                not stretch hugs instead: `fill={false}`, or fewer than
+                `MIN_FILLING_SECTIONS` sections left by the permissions.
               */
               <li
                 key={item.value}
-                className={cn("flex min-w-max", fill && "max-w-64 flex-auto")}
+                className={cn("flex min-w-max", fills && "flex-auto")}
               >
                 <Link
                   href={hrefFor(item.value)}
@@ -321,5 +353,5 @@ const SegmentedNav = ({
   );
 };
 
-export { SegmentedNav, mobileTutorialAnchor };
+export { MIN_FILLING_SECTIONS, SegmentedNav, mobileTutorialAnchor };
 export type { SegmentedNavItem };

@@ -19,25 +19,52 @@ const read = (file: string) =>
   readFileSync(resolve(root, file), "utf8").replace(/\r\n/g, "\n");
 
 const dockerfile = read("Dockerfile");
-const runner = dockerfile.slice(dockerfile.indexOf("FROM base AS runner"));
-const base = dockerfile.slice(
-  dockerfile.indexOf(" AS base"),
-  dockerfile.indexOf("FROM base AS builder"),
-);
+
+/** A stage's instructions, from its FROM to the next: comments dropped. */
+function stage(name: string): string {
+  const lines = dockerfile
+    .split("\n")
+    .filter((line) => !/^\s*#/.test(line))
+    .join("\n")
+    .replace(/\\\n\s*/g, " ")
+    .split("\n");
+  const start = lines.findIndex((line) =>
+    new RegExp(`^FROM \\S+ AS ${name}$`).test(line),
+  );
+
+  expect(start, `stage ${name}`).toBeGreaterThan(-1);
+
+  const end = lines.findIndex((line, at) => at > start && /^FROM /.test(line));
+
+  return lines.slice(start, end < 0 ? undefined : end).join("\n");
+}
+
+const base = stage("base");
+const runner = stage("runner");
 
 describe("the image the scanner reads", () => {
+  // The runner used to start from the Node image and `rm -rf` its npm,
+  // corepack and yarn: hidden from the scanner, still in every pull (layers
+  // are additive). Its base is now Alpine plus the node binary alone.
   it("ships no package manager in the runtime stage", () => {
-    for (const path of [
-      "/usr/local/lib/node_modules/npm",
-      "/usr/local/lib/node_modules/corepack",
-      "/opt/yarn-v",
-    ]) {
-      expect(runner, path).toContain(path);
-    }
-
-    expect(runner).toMatch(
-      /RUN rm -rf[^\n]*\/usr\/local\/lib\/node_modules\/npm/,
+    expect(base).toMatch(/^FROM alpine:[\d.]+@sha256:[0-9a-f]{64} AS base$/m);
+    expect(runner).toMatch(/^FROM base AS runner$/m);
+    expect(base.match(/^COPY .*$/gm)).toEqual([
+      "COPY --link --from=node-binary /out/ /",
+    ]);
+    // What that stage copies out of the Node image: the binary alone.
+    expect(stage("node-binary")).toMatch(
+      /^RUN mkdir -p \/out\/usr\/local\/bin\s+&&\s+cp -p \/usr\/local\/bin\/node \/out\/usr\/local\/bin\/node\s+&&\s+touch /m,
     );
+
+    for (const path of [
+      "/usr/local/lib/node_modules",
+      "/usr/local/bin/npm",
+      "corepack",
+      "/opt/yarn",
+    ]) {
+      expect(`${base}\n${runner}`, path).not.toContain(path);
+    }
   });
 
   it("takes the fixed OpenSSL from Alpine at build time", () => {

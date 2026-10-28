@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -9,6 +8,7 @@ import {
   RowActions,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -71,12 +71,7 @@ const FineRowActions = ({ fine }: FineRowActionsProps): JSX.Element => {
   ]);
 
   const copy = (value: string, label: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${label} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error("Erro ao copiar: " + error));
+    void copyWithFeedback(value, label);
   };
 
   const code = `${fine.trafficViolationCode.code}-${fine.trafficViolationCode.sub_code}`;

@@ -4,6 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
+
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 import { header } from "@/features/user/table/columns";
@@ -46,6 +48,7 @@ function flagColumn(
  */
 function buildPermissionColumns(scope: AdminScope): ColumnDef<PermissionRow>[] {
   return [
+    idColumn<PermissionRow>(),
     {
       // The key of the resource it grants identifies the permission in the
       // code, the API and the logs; its label reads under it.

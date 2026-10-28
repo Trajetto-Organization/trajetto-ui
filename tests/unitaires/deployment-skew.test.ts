@@ -148,9 +148,13 @@ describe("where it is wired", () => {
 
     const workflow = read(".github", "workflows", "deploy.yml");
     const buildArgs = workflow.match(/GIT_SHA=\$\{\{ github\.sha \}\}/g) ?? [];
+    const builds = workflow.match(/docker\/build-push-action@/g) ?? [];
 
-    // The one build, promoted from staging to production (decision 12.2).
-    expect(buildArgs.length).toBe(1);
+    // The one build, promoted from staging to production (decision 12.2),
+    // and before its push the smoke test's load of that same build
+    // (image-smoke.test.ts): both carry the commit.
+    expect(builds).toHaveLength(2);
+    expect(buildArgs.length).toBe(builds.length);
   });
 
   it("the build id is served outside the middleware", () => {

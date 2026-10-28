@@ -15,7 +15,7 @@ import { permissions } from "@/lib/permissions";
 import { FuelTypeFormDialog } from "../form-dialog";
 import { DeleteFuelTypeDialog } from "../delete-dialog";
 import type { FuelTypeRow } from "../lib/types";
-import { copyWithFeedback } from "@/features/fuel/lib/copy";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 const NO_WRITE = "Você não tem permissão para alterar tipos de combustível.";
 

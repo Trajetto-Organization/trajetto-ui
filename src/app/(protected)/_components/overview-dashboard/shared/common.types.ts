@@ -42,6 +42,8 @@ interface DashboardData {
     name: string;
     value: number;
     color: string;
+    /** "A vencer" only: how many have no revision recorded (inside value). */
+    unrecorded?: number;
   }[];
   /**
    * One point per month of the company's calendar. A series is absent when

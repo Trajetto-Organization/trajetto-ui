@@ -11,6 +11,10 @@ import { apiFetch } from "@/lib/api-fetch";
 type ProviderReadinessStatus =
   "ok" | "warning" | "error" | "not_configured" | "disabled";
 
+/** What the last failed probe attempt hit (the API's `failure_kind`). */
+type ProviderProbeFailureKind =
+  "timeout" | "network" | "http_5xx" | "throttled" | "invalid_response";
+
 interface ProviderReadiness {
   key:
     | "email"
@@ -29,6 +33,16 @@ interface ProviderReadiness {
   message: string;
   warnings: string[];
   details: Record<string, string | number | boolean | null>;
+
+  /**
+   * How the verdict was reached. Absent from an older API, which reads as
+   * "one attempt, nothing passing".
+   */
+  attempts?: number;
+
+  /** The verdict rests on a passing condition; the next probe may differ. */
+  transient?: boolean;
+  failure_kind?: ProviderProbeFailureKind | null;
 }
 
 interface ProviderReadinessData {
@@ -102,6 +116,7 @@ const getHealthProviders = async (
 
 export { getHealthProviders };
 export type {
+  ProviderProbeFailureKind,
   ProviderReadiness,
   ProviderReadinessData,
   ProviderReadinessStatus,

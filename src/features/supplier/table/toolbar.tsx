@@ -42,7 +42,7 @@ function SupplierToolbar<TData>({
         placeholder="Procurar..."
         // The API caps the term at 100 characters.
         maxLength={100}
-        aria-label="Buscar fornecedores por nome, CNPJ, e-mail, telefone, cidade ou endereço"
+        aria-label="Buscar fornecedores por nome, CNPJ, e-mail, telefone, cidade, endereço ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setIsLoading?.(true);

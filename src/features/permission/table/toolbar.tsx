@@ -63,7 +63,7 @@ function PermissionToolbar<TData>({
       {/* The placeholder is also the guided tour's anchor. */}
       <SearchInputWithLoading
         placeholder="Procurar..."
-        aria-label="Buscar permissões por nome, recurso ou perfil"
+        aria-label="Buscar permissões por nome, recurso, perfil ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={handleSearchWithLoading}
         disabled={error}

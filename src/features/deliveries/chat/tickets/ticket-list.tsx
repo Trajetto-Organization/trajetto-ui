@@ -5,7 +5,6 @@ import { LifeBuoy, Loader, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FilterChips } from "@/components/shared/custom/filter-chips";
-import { RefreshButton } from "@/components/shared/custom/refresh-button";
 
 import { cn } from "@/lib/utils";
 
@@ -43,10 +42,9 @@ interface TicketListProps {
   onSearchChange: (value: string) => void;
 
   isLoading: boolean;
-  isRefreshing: boolean;
   errorMessage: string;
+  /** Asks the list again after a failed read ("Tentar novamente"). */
   onRetry: () => void;
-  onRefresh: () => void;
 
   hasMore: boolean;
   isLoadingMore: boolean;
@@ -89,10 +87,8 @@ const TicketList = ({
   search,
   onSearchChange,
   isLoading,
-  isRefreshing,
   errorMessage,
   onRetry,
-  onRefresh,
   hasMore,
   isLoadingMore,
   onLoadMore,
@@ -128,13 +124,14 @@ const TicketList = ({
         </div>
 
         <div className="flex items-center gap-1">
-          <RefreshButton
-            storageKey="chat-tickets-refresh"
-            isRefreshing={isRefreshing}
-            hideLabelOnMobile
-            className="h-8"
-            onRefresh={onRefresh}
-          />
+          {/*
+            No Atualizar of its own (decision of 28/10/2026). It only marked
+            the ticket queries stale — a strict subset of the Torre's
+            Atualizar in the header, which also reloads the open
+            conversation, the message search and the server's part. The list
+            also follows the socket and the Torre's 1/3/5 min cadence, which
+            refetch this very query root.
+          */}
 
           {/* Opening a ticket and broadcasting are both writing: a read-only
           viewer gets neither button. */}

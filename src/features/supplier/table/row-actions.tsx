@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Row } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -10,6 +9,7 @@ import {
   RowActions,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
@@ -36,10 +36,7 @@ const SupplierRowActions = ({
   const canWrite = useHasPermission(permissions.SUPPLIER_MANAGE, "write");
 
   const copyId = () => {
-    navigator.clipboard
-      .writeText(supplier.id)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(supplier.id, "ID");
   };
 
   return (

@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
 
 import type { ImportData } from "@/actions/import/list-imports";
@@ -16,6 +17,8 @@ import { IMPORT_SOURCE_LABEL, IMPORT_STATUS_META } from "./lib/status";
  * column that selects rows nothing can act on is offering a dead end.
  */
 const buildImportColumns = (): ColumnDef<ImportData>[] => [
+  // An upload has no number of its own: the record id identifies it.
+  idColumn<ImportData>(),
   {
     accessorKey: "filename",
     meta: { title: "Arquivo" },

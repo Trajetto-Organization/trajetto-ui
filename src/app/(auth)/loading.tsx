@@ -1,5 +1,6 @@
 "use client";
 
+import { CaptchaSkeleton } from "@/components/shared/custom/captcha-turnstile/captcha-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Loading = (): JSX.Element => {
@@ -40,7 +41,15 @@ const Loading = (): JSX.Element => {
           <Skeleton className="h-10 w-full rounded-md" />
         </div>
 
-        <div className="mt-7">
+        {/* The captcha's box as the forms draw it (production builds only),
+            so the page replacing this fallback does not push the rest down. */}
+        {process.env.NODE_ENV === "production" ? (
+          <div className="mt-5">
+            <CaptchaSkeleton size="flexible" />
+          </div>
+        ) : null}
+
+        <div className="mt-5">
           <Skeleton className="h-px w-full" />
         </div>
 

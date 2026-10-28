@@ -38,7 +38,7 @@ const viewsStep = (): TutorialStep => ({
 const liveStep = (): TutorialStep => ({
   anchor: "control-tower-live",
   title: "Atualização e Tela Cheia 📺",
-  content: `A torre se atualiza sozinha a cada 1 minuto; troque para 3 ou 5 minutos no seletor ao lado (vale para este navegador). Ao lado fica a hora da última atualização.
+  content: `A torre se atualiza sozinha a cada 1 minuto; troque para 3 ou 5 minutos em "Atualizar a cada" (vale para este navegador). Ao lado fica a hora da última atualização.
   Os eventos das rotas e as posições continuam chegando na hora, pelo tempo real.
   DICA: Tela cheia expande a torre para uma TV ou um monitor da operação; Esc sai.`,
   placement: "bottom",
@@ -198,7 +198,7 @@ const ticketsView: TutorialStep[] = [
     anchor: "chat-threads",
     title: "Lista de Atendimentos 📋",
     content: `Filtre por Abertos, Meus, Sem atendente e Aguardando autorização, ou busque por assunto, motorista ou #número.
-    • Atualizar recarrega a lista
+    • A lista se atualiza sozinha, em tempo real e no intervalo da torre; o Atualizar no topo da torre busca de novo a lista, os contadores e a conversa aberta
     • Novo atendimento abre um assunto com qualquer motorista ativo
     • O megafone envia um aviso em massa, individual, para os motoristas com o aplicativo`,
     placement: "right",
@@ -242,7 +242,7 @@ const auditView: TutorialStep[] = [
     anchor: "proof-audits-filters",
     title: "Na Fila, Aprovados, Rejeitados 🎯",
     content: `Os contadores separam o que falta conferir do que já foi decidido; clique num deles para filtrar a fila.
-    O botão Atualizar, ao lado, busca esses números de novo.
+    O Atualizar no topo da torre busca esses números de novo, e a fila também se atualiza sozinha no intervalo escolhido.
     NOTA: Abaixo aparece com que frequência a leitura automática concordou com a pessoa nos últimos dias.`,
     placement: "bottom",
   },

@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import type { FuelProps } from "@/app/(protected)/_components/shared/common.types";
 
 import { getRecordOriginMeta } from "@/lib/record-origin";
@@ -61,9 +62,10 @@ const cellText = (
  */
 function buildFuelColumns(): ColumnDef<FuelProps>[] {
   return [
+    // A refueling has no number of its own: the record id identifies it;
+    // the vehicle and the day (the next two columns) read after it.
+    idColumn<FuelProps>(),
     {
-      // A refueling is told apart by the vehicle and the day (the column
-      // after this one); it has no number of its own.
       id: "vehicle_license_plate",
       accessorFn: (row) => row.vehicle?.license_plate,
       meta: { title: "Placa" },

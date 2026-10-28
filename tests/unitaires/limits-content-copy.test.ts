@@ -45,9 +45,16 @@ vi.mock(
         ],
         vehicle_limit: 10,
         vehicle_count: 4,
-        vehicle_inactive_count: 0,
+        vehicle_inactive_count: 2,
         vehicle_limit_enabled: true,
+        vehicle_status_counts: {
+          ACTIVE: 1,
+          BLOCKED: 2,
+          IN_ROUTE: 1,
+          INACTIVE: 2,
+        },
       },
+      planStatus: "ready",
     }),
   }),
 );
@@ -95,5 +102,60 @@ describe("the usage limits page", () => {
     expect(text).not.toContain("Em breve");
     expect(text).not.toContain("Analytics de Uso");
     expect(text).not.toContain("consultas de multas");
+
+    // The fines card promises no number: no quota, no usage.
+    expect(text).toContain("não há cota nem consumo a acompanhar");
+  });
+
+  // Red before: "Veículos ativos 4" on a fleet of 1 Ativo + 2 Bloqueados +
+  // 1 Em rota, while the Vehicles page reads "Veículos Ativos 1".
+  it("names the vehicle slots for what they count, with the fleet by status", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    unmounts.push(async () => {
+      await act(async () => root.unmount());
+    });
+
+    await act(async () => {
+      root.render(
+        createElement(LimitsContent, {
+          businessId: "018f0000-0000-7000-8000-00000000000a",
+          mode: "dashboard",
+          showBusinessSelector: false,
+        }),
+      );
+    });
+
+    const card = container.querySelector(
+      '[data-tutorial="vehicle-limit-card"]',
+    );
+    const text = card?.textContent ?? "";
+
+    expect(text).toContain("Ocupando vaga");
+    expect(text).not.toContain("Veículos ativos");
+    expect(text).toContain("6 vagas restantes no plano");
+    expect(text).not.toContain("vaga(s)");
+    expect(text).toContain("Ocupa vaga todo veículo que não está Inativo.");
+    expect(text).toContain("Total cadastrado: 6 veículos");
+
+    const rows = [
+      ...(card?.querySelectorAll('[aria-label="Veículos por situação"] li') ??
+        []),
+    ].map((row) => row.textContent);
+
+    expect(rows).toEqual([
+      "Ativo · ocupa vaga1",
+      "Bloqueado · ocupa vaga2",
+      "Em rota · ocupa vaga1",
+      "Inativo · não ocupa vaga2",
+    ]);
+
+    // The fines card has its own anchor and opens the fines screen.
+    const fines = container.querySelector('[data-tutorial="fine-lookup-card"]');
+
+    expect(fines?.querySelector("a")?.getAttribute("href")).toBe(
+      "/dashboard/fine",
+    );
   });
 });

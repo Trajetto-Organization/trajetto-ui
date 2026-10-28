@@ -29,6 +29,7 @@ import { ACCOUNT_PAYABLE_CATEGORY_OPTIONS } from "@/lib/account-payable-category
 import {
   formatCurrencyToNumber,
   formatToBrazilianCurrency,
+  serviceOrderLabel,
 } from "@/lib/format-values";
 import { guardFormAction } from "@/lib/action-result";
 import {
@@ -247,7 +248,7 @@ const BillFields = ({
           onChange={(id) => set("serviceOrderId", id)}
           fallbackLabel={
             bill?.serviceOrder
-              ? `OS #${bill.serviceOrder.id.slice(-12)}`
+              ? serviceOrderLabel(bill.serviceOrder.id)
               : undefined
           }
           errorName={errors.serviceOrderId}

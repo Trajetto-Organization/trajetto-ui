@@ -7,6 +7,7 @@ import { getRecordOriginMeta } from "@/lib/record-origin";
 
 import { vehicleChecklistTableSchema } from "@/schemas/vehicle-checklist-table-schema";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { formatNotificationDate, displayValue } from "@/lib/format-values";
 import { formatPickedDay } from "@/features/vehicle/lib/presentation";
@@ -91,9 +92,10 @@ function buildVehicleChecklistColumns({
   renderRowActions,
 }: BuildVehicleChecklistColumnsOptions): ColumnDef<vehicleChecklistTableSchema>[] {
   return [
+    // A checklist has no number of its own: the record id identifies it;
+    // the vehicle and the day (the next two columns) read after it.
+    idColumn<vehicleChecklistTableSchema>(),
     {
-      // A checklist is told apart by the vehicle and the day (the column
-      // after this one); it has no number of its own.
       accessorKey: "vehicle_license_plate",
       accessorFn: (row) => row.vehicle?.license_plate,
       meta: {

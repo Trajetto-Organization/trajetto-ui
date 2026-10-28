@@ -55,7 +55,7 @@ function DriverToolbar<TData>({
       {/* The placeholder is also the guided tour's anchor on /dashboard/driver. */}
       <SearchInputWithLoading
         placeholder="Procurar..."
-        aria-label="Buscar motoristas por nome, CNH, CPF, RG, CEP ou endereço"
+        aria-label="Buscar motoristas por nome, CNH, CPF, RG, CEP, endereço ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={handleSearchWithLoading}
         disabled={error}

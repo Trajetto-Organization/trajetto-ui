@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -10,6 +9,7 @@ import {
   RowActionSeparator,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { permissions } from "@/lib/permissions";
 import {
   getPermissionName,
@@ -30,14 +30,7 @@ interface ServiceOrderRowActionsProps {
 }
 
 function copy(value: string | null | undefined, what: string) {
-  if (!value) return;
-
-  navigator.clipboard
-    .writeText(value)
-    .then(() => toast.success(`${what} copiado para a área de transferência!`))
-    .catch(() =>
-      toast.error(`Não foi possível copiar o ${what.toLowerCase()}.`),
-    );
+  void copyWithFeedback(value, what);
 }
 
 /**

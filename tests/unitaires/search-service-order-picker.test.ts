@@ -41,7 +41,7 @@ import { seedPublicConfig } from "./helpers/public-config";
  * as a fake `fetch`.
  *
  * The typed term never left the browser: cmdk filtered the loaded pages by
- * the display text ("OS#… - data (Veículo … - Placa …)"), so an order past
+ * the display text ("OS #… - data (Veículo … - Placa …)"), so an order past
  * the first page could not be found, and neither could one whose
  * description matched, since the description is not in that text.
  */

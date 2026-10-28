@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -55,8 +56,9 @@ function textColumn(
 /** The columns every user table has: identity, verification, access, dates. */
 function accountColumns(): ColumnDef<UserRow>[] {
   return [
-    // The e-mail is the account's identifier: unique, what the person logs
-    // in with and what support asks for.
+    idColumn<UserRow>(),
+    // The e-mail is the account's business identifier: unique, what the
+    // person logs in with and what support asks for.
     {
       ...textColumn("email", "E-mail", "w-48", (row) => row.email),
       enableHiding: false,

@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import type { Row } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
   RowActionSeparator,
   RowActions,
 } from "@/components/shared/custom/row-actions";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 import type { QuoteProps } from "../quote.types";
 import { quoteStatusBlockedReason } from "../lib/row-actions";
@@ -35,12 +35,7 @@ export function DataTableQuoteRowActions<TData>({
   const [open, setOpen] = useState<"view" | "status" | "delete" | null>(null);
 
   const copy = (value: string, what: "ID" | "E-mail") => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() =>
-        toast.success(`${what} copiado para a área de transferência!`),
-      )
-      .catch((error) => toast.error(`Erro ao copiar o ${what}: ${error}`));
+    void copyWithFeedback(value, what);
   };
 
   return (

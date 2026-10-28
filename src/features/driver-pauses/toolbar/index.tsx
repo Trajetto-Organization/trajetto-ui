@@ -1,18 +1,28 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Table } from "@tanstack/react-table";
 import { AlertTriangle, UserRound } from "lucide-react";
 
-import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
+import { Button } from "@/components/ui/button";
+
+import { dayKeyIn, formatDateKeyRange } from "@/lib/date-key";
+
+import { PeriodSwitch } from "@/app/(protected)/_components/shared/period-switch";
+import { DateRangePicker } from "@/app/(protected)/_components/shared/custom/date-range-picker";
 import { DataTableServerFilters } from "@/app/(protected)/_components/shared/tanstack-table/data-table-server-filters";
-import { DataTableViewOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table-view-options";
+import { DataTableToolbarEnd } from "@/app/(protected)/_components/shared/tanstack-table/data-table-toolbar-end";
 import { facetOptions } from "@/app/(protected)/_components/shared/tanstack-table/data-table/server-table";
 
 import { PAUSE_FLAG_LABELS } from "../lib/pause-format";
-import { rangeIssue } from "../server-table";
+import {
+  PAUSE_REPORT_MAX_DAYS,
+  PAUSE_REPORT_YEARS,
+  rangeIssue,
+  readDayParam,
+} from "../server-table";
 
 import type { DriverDayRow, PauseReportSearchMeta } from "../types";
 
@@ -22,6 +32,12 @@ interface DriverPausesToolbarProps {
   /** The period the API answered (its default week when the URL has none). */
   period?: { from: string; to: string };
 
+  /**
+   * The company's zone, from the report: its today is the last day that can
+   * be picked. The browser's until the report answers.
+   */
+  timeZone?: string;
+
   /** Injected by DataTable via cloneElement — never passed by the caller. */
   table?: Table<DriverDayRow>;
   error?: boolean;
@@ -30,15 +46,22 @@ interface DriverPausesToolbarProps {
 }
 
 /**
- * The period and the filters. The period is two civil days in the URL
- * (`from`, `to`), checked here the way the API checks it, so a pick never
- * becomes a 400; a new period starts again on page 1. Driver and alert are
+ * The filters, then the period beside Visualizar — the same toolbar as
+ * Entregas (DataTableToolbarEnd, the shared range picker).
+ *
+ * The period is two civil days in the URL (`from`, `to`), checked in the
+ * popover the way the API checks them (31 days at most, both included), so
+ * a pick never becomes a 400; Aplicar sends both days at once and starts
+ * again on page 1. It used to be two single-day fields with a label each on
+ * a line of their own, and every pick of either reloaded the report. The
+ * days after the company's today cannot be picked. Driver and alert are
  * server facets with the API's counts (decision 8.8). The period stays
- * editable when the report failed: a period the API refused is fixed here.
+ * usable when the report failed: a period the API refused is fixed here.
  */
 const DriverPausesToolbar = ({
   facets,
   period,
+  timeZone,
   table,
   error,
   setIsLoading,
@@ -49,30 +72,15 @@ const DriverPausesToolbar = ({
 
   const [, startTransition] = useTransition();
 
-  const [from, setFrom] = useState<string>(period?.from ?? "");
-  const [to, setTo] = useState<string>(period?.to ?? "");
-  const [issue, setIssue] = useState<string | null>(null);
+  // The API's answer; the URL's days while there is none (a failed read).
+  const from = period?.from ?? readDayParam(searchParams.get("from"));
+  const to = period?.to ?? readDayParam(searchParams.get("to"));
 
-  // The API's answer wins after a navigation (a remount keeps the state).
-  useEffect(() => {
-    setFrom(period?.from ?? "");
-    setTo(period?.to ?? "");
-  }, [period?.from, period?.to]);
-
-  const applyPeriod = (nextFrom: string, nextTo: string) => {
-    setFrom(nextFrom);
-    setTo(nextTo);
-
-    const problem = rangeIssue(nextFrom || undefined, nextTo || undefined);
-
-    setIssue(problem);
-
-    if (problem || !nextFrom || !nextTo) return;
-
+  const applyPeriod = (next: { from: string; to: string }) => {
     const params = new URLSearchParams(searchParams.toString());
 
-    params.set("from", nextFrom);
-    params.set("to", nextTo);
+    params.set("from", next.from);
+    params.set("to", next.to);
     params.delete("page");
 
     setIsLoading?.(true);
@@ -80,56 +88,50 @@ const DriverPausesToolbar = ({
   };
 
   return (
-    <div className="flex w-full flex-col gap-3">
-      <div
-        className="grid w-full grid-cols-1 gap-3 sm:w-auto sm:grid-cols-[minmax(0,200px)_minmax(0,200px)]"
-        data-tutorial="pauses-period"
-      >
-        <DatePickerField
-          label="De"
-          htmlfor="driver-pauses-from"
-          name="pause_report_from"
-          dateOnly
-          value={from}
-          onChange={(value) => applyPeriod(value, to)}
-          errorName={issue ? [issue] : undefined}
-        />
-        <DatePickerField
-          label="Até"
-          htmlfor="driver-pauses-to"
-          name="pause_report_to"
-          dateOnly
-          value={to}
-          onChange={(value) => applyPeriod(from, value)}
-        />
-      </div>
+    <div className="flex w-full flex-wrap items-center gap-2">
+      <DataTableServerFilters
+        table={table}
+        dataTutorial="pauses-filters"
+        filters={[
+          {
+            columnId: "driverName",
+            title: "Motorista",
+            icon: UserRound,
+            options: facetOptions(facets?.driverId),
+          },
+          {
+            columnId: "flags",
+            title: "Alerta",
+            icon: AlertTriangle,
+            options: facetOptions(facets?.flag, PAUSE_FLAG_LABELS),
+          },
+        ]}
+      />
 
-      <div className="flex w-full flex-wrap items-center gap-2">
-        <DataTableServerFilters
-          table={table}
-          dataTutorial="pauses-filters"
-          filters={[
-            {
-              columnId: "driverName",
-              title: "Motorista",
-              icon: UserRound,
-              options: facetOptions(facets?.driverId),
-            },
-            {
-              columnId: "flags",
-              title: "Alerta",
-              icon: AlertTriangle,
-              options: facetOptions(facets?.flag, PAUSE_FLAG_LABELS),
-            },
-          ]}
-        />
-
-        {!error && table && (
-          <div className="w-full sm:ml-auto sm:w-auto">
-            <DataTableViewOptions table={table} />
-          </div>
-        )}
-      </div>
+      <DataTableToolbarEnd table={table} error={error}>
+        <PeriodSwitch label="Período das pausas" dataTutorial="pauses-period">
+          <DateRangePicker
+            label="Período das pausas"
+            title="Período"
+            initialRange={{ from, to }}
+            minDate={`${PAUSE_REPORT_YEARS.first}-01-01`}
+            maxDate={dayKeyIn(new Date(), timeZone)}
+            validate={rangeIssue}
+            hint={`Até ${PAUSE_REPORT_MAX_DAYS} dias, nos dias da empresa.`}
+            onApply={applyPeriod}
+          >
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-8 font-medium tabular-nums"
+              data-pauses-period-trigger
+            >
+              {from && to ? formatDateKeyRange(from, to) : "Escolher período"}
+            </Button>
+          </DateRangePicker>
+        </PeriodSwitch>
+      </DataTableToolbarEnd>
     </div>
   );
 };

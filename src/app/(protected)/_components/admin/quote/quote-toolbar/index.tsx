@@ -45,7 +45,7 @@ export function QuoteToolbar<TData>({
     <div className="flex flex-wrap items-center gap-2 w-full">
       <SearchInputWithLoading
         placeholder="Procurar..."
-        aria-label="Buscar orçamentos por nome, empresa, e-mail, telefone, mensagem ou anotações"
+        aria-label="Buscar orçamentos por nome, empresa, e-mail, telefone, mensagem, anotações ou ID"
         defaultValue={searchParams.get("search") || ""}
         onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
           setIsLoading?.(true);

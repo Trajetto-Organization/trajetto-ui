@@ -75,6 +75,10 @@ const Loading = (): JSX.Element => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {/* ID, the compact record id (IdCell, 112px). */}
+                  <TableHead>
+                    <Skeleton className="h-4 w-8" />
+                  </TableHead>
                   <TableHead>
                     <Skeleton className="h-4 w-16" />
                   </TableHead>
@@ -101,6 +105,9 @@ const Loading = (): JSX.Element => {
               <TableBody>
                 {Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={`row-${index}`}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                    </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-20" />
                     </TableCell>

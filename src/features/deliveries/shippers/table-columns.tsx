@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import {
   formatCnpj,
   formatTelephone,
@@ -15,6 +16,7 @@ import type { ShipperData } from "@/actions/shipper/list-shipper";
 import { ShipperRowActions } from "./row-actions";
 
 const buildShipperColumns = (): ColumnDef<ShipperData>[] => [
+  idColumn<ShipperData>(),
   {
     // The shipper's CNPJ is how the operation and the NF-e name it. Some
     // shippers are registered without one: the name then identifies the row.

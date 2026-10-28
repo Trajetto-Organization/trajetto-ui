@@ -2,10 +2,11 @@ import * as React from "react";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 
 import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { useDatePicker } from "@/app/(protected)/_components/shared/custom/date-picker-field/hooks";
+import { preloadCalendar } from "@/components/ui/lazy-calendar";
 
 /**
  * Clicking the day that is already selected.
@@ -26,6 +27,12 @@ import { useDatePicker } from "@/app/(protected)/_components/shared/custom/date-
 
 // This runner compiles JSX with the classic runtime.
 (globalThis as { React?: typeof React }).React = React;
+
+// The calendar is its own chunk (ui/lazy-calendar); loaded here once, the
+// popover opens on the grid as it does after the trigger's hover.
+beforeAll(async () => {
+  await preloadCalendar();
+});
 
 let root: Root | null = null;
 

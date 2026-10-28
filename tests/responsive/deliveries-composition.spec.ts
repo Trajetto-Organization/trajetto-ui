@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 import {
   fixtureBusinessId,
-  managerToken,
+  managerForThisSpec,
   openAsMaster,
 } from "../ui/support/operation";
 import { waitForHydration } from "../ui/support/ui";
@@ -23,11 +23,11 @@ import { waitForHydration } from "../ui/support/ui";
  *   navegação  — the sections, spanning the page
  *   conteúdo   — the section that is open
  *
- * With one deliberate exception, which is also here: Auditoria de
- * Comprovantes keeps its refresh next to its own Na fila / Aprovados /
- * Rejeitados counters, because that is what it changes. It is a view of the
- * Torre de controle since the product meeting of 14/10/2026 (`?view=audit`),
- * with the same frame — company, actions, views strip, content.
+ * Auditoria de Comprovantes, a view of the Torre de controle since the
+ * product meeting of 14/10/2026 (`?view=audit`), has the same frame —
+ * company, actions, views strip, content. It used to be the exception, with
+ * its own Atualizar beside its counters; since 28/10/2026 its Atualizar is
+ * the Torre's, in the header, like every other view's (checked here too).
  */
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
 
@@ -65,11 +65,14 @@ async function openAsManager(
   path: string,
   width: number,
 ): Promise<void> {
-  await page
-    .context()
-    .addCookies([
-      { name: "tkey", value: managerToken(), domain: "localhost", path: "/" },
-    ]);
+  await page.context().addCookies([
+    {
+      name: "tkey",
+      value: managerForThisSpec(),
+      domain: "localhost",
+      path: "/",
+    },
+  ]);
 
   await page.addInitScript(() => {
     const real = Storage.prototype.getItem;
@@ -249,10 +252,12 @@ test.describe("the composition of the Entregas page", () => {
    * Two rails, two rules, and the rule is the number of sections.
    *
    * Entregas had ten, which between them wanted more width than a 1440px page
-   * has, and keeps six since the meeting of 14/10/2026, which still nearly
-   * fill it — so the rail is the page's width and the sections divide it.
-   * Left to hug, it stopped 120px short of a 1920px screen with bare
-   * background beside it, which is where this whole round started.
+   * has, and keeps six since the meeting of 14/10/2026 — the rail is still
+   * the page's width and the sections divide all of it. Left to hug, it
+   * stopped 120px short of a 1920px screen with bare background beside it,
+   * which is where this whole round started. The rail's width is checked
+   * here; that the LAST section reaches its end (sidebar open, collapsed,
+   * Ctrl+B, the Torre too) is tab-strip-fill.spec.ts.
    *
    * Integrações has four, wanting about 526px. Filling stretched each one to
    * 390px: a segmented control pulled until the labels float in the middle of
@@ -454,79 +459,102 @@ test.describe("the composition of the Entregas page", () => {
     });
   }
 
-  test("Auditoria keeps Atualizar next to its own counters", async ({
+  test("Auditoria keeps Atualizar where every Torre view has it", async ({
     page,
   }) => {
     /**
-     * The exception, and it is an exception on purpose.
+     * It was the exception, and the exception was inverted on 28/10/2026.
      *
-     * Every other section keeps its actions up beside the company. This one's
-     * only action is the refresh, and what it refreshes is the three counters
-     * the panel draws — Na fila, Aprovados, Rejeitados. Up in the band it was
-     * a button on its own line, two elements away from the numbers it changes.
-     *
-     * The queue moved to the Torre de controle with the meeting of
-     * 14/10/2026 (`?view=audit`; the old `?tab=proof-audits` redirects
-     * there), and the rule moved with it: no action bar up beside the views.
+     * Auditoria drew its own Atualizar beside the Na fila / Aprovados /
+     * Rejeitados counters, under the views strip, while every other view of
+     * the Torre kept it up in the header. Both were the same refresh of the
+     * whole tab (useRevalidateScreen), so the only difference was where the
+     * button was — one line lower on one view out of five, and the loading
+     * skeleton's header button jumped down when the queue arrived. The
+     * header holds it on every view now; this checks the five share the
+     * place and that the queue's bar has no second one.
      */
-    await openAsManager(page, "/dashboard/control-tower?view=audit", 1440);
+    const placeOf = async (view: string): Promise<Box> => {
+      await openAsManager(page, `/dashboard/control-tower?view=${view}`, 1440);
 
-    /*
-      The queue is its own chunk now (next/dynamic), with a skeleton until it
-      arrives: wait for its bar, not for "main", before measuring anything.
-    */
+      const refresh = page
+        .locator("[data-toolbar-actions]")
+        .getByRole("button", { name: "Atualizar", exact: true });
+
+      await expect(refresh, `${view}: sem Atualizar no topo`).toBeVisible({
+        timeout: 60_000,
+      });
+
+      // One Atualizar on the screen: the header's.
+      await expect(
+        page.getByRole("button", { name: "Atualizar", exact: true }),
+        `${view}: mais de um Atualizar na tela`,
+      ).toHaveCount(1);
+
+      const strip = await boxOf(page, TOWER_STRIP);
+      const box = await refresh.boundingBox();
+
+      expect(strip, `${view}: a faixa de visões sumiu`).not.toBeNull();
+
+      const place: Box = {
+        top: Math.round(box!.y),
+        bottom: Math.round(box!.y + box!.height),
+        left: Math.round(box!.x),
+        right: Math.round(box!.x + box!.width),
+        width: Math.round(box!.width),
+      };
+
+      expect(
+        place.bottom,
+        `${view}: Atualizar desceu para baixo da faixa de visões`,
+      ).toBeLessThanOrEqual(strip!.top);
+
+      return place;
+    };
+
+    const routes = await placeOf("routes");
+
+    for (const view of ["tickets", "audit"]) {
+      const place = await placeOf(view);
+
+      expect(
+        Math.abs(place.top - routes.top) + Math.abs(place.right - routes.right),
+        `${view}: Atualizar não está no mesmo lugar que em Rotas`,
+      ).toBeLessThanOrEqual(2);
+    }
+
+    // The queue's bar keeps its counters and nothing else.
     const CHIPS = '[data-tutorial="proof-audits-filters"] [role="group"]';
 
     await expect(page.locator(CHIPS)).toBeVisible({ timeout: 60_000 });
+    await expect(
+      page.locator('[data-tutorial="proof-audits-filters"] form'),
+      "a Auditoria voltou a desenhar um Atualizar junto dos contadores",
+    ).toHaveCount(0);
+  });
 
-    const refreshForm = page
-      .locator('[data-tutorial="proof-audits-filters"] form')
-      .filter({ hasText: "Atualizar" })
-      .first();
+  test("and on /admin the Torre's Atualizar shares the selector's line in Auditoria too", async ({
+    page,
+  }) => {
+    await openAsMaster(
+      page,
+      `/admin/control-tower?view=audit&businessId=${fixtureBusinessId()}`,
+    );
 
-    await expect(refreshForm).toBeVisible({ timeout: 30_000 });
-
+    const context = await boxOf(page, "[data-toolbar-context]");
+    const actions = await boxOf(page, "[data-toolbar-actions]");
     const strip = await boxOf(page, TOWER_STRIP);
 
-    expect(
-      strip,
-      "a faixa de visões da torre não está na página",
-    ).not.toBeNull();
+    expect(context, "o seletor de empresa sumiu").not.toBeNull();
+    expect(actions, "Atualizar sumiu do topo da Auditoria").not.toBeNull();
 
     expect(
-      await boxOf(page, "[data-toolbar-actions]"),
-      "a Auditoria voltou a pôr Atualizar lá em cima, junto com as outras visões",
-    ).toBeNull();
-
-    const chips = await boxOf(page, CHIPS);
-
-    const refresh = await refreshForm.boundingBox();
-
-    expect(chips, "os contadores da fila não estão na página").not.toBeNull();
-    expect(refresh, "o botão Atualizar não está na página").not.toBeNull();
-
-    const refreshBox: Box = {
-      top: Math.round(refresh!.y),
-      bottom: Math.round(refresh!.y + refresh!.height),
-      left: Math.round(refresh!.x),
-      right: Math.round(refresh!.x + refresh!.width),
-      width: Math.round(refresh!.width),
-    };
-
-    expect(
-      refreshBox.top,
-      "Atualizar ficou acima da faixa de visões",
-    ).toBeGreaterThan(strip!.bottom);
-
-    expect(
-      Math.abs(centreOf(chips!) - centreOf(refreshBox)),
-      "Atualizar desgrudou da linha dos contadores",
+      Math.abs(centreOf(context!) - centreOf(actions!)),
+      "o seletor e Atualizar deixaram de dividir a linha",
     ).toBeLessThanOrEqual(8);
-
-    expect(
-      refreshBox.left,
-      "Atualizar deixou de ficar à direita dos contadores",
-    ).toBeGreaterThan(chips!.right);
+    expect(Math.max(context!.bottom, actions!.bottom)).toBeLessThanOrEqual(
+      strip!.top,
+    );
   });
 });
 

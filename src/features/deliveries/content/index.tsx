@@ -22,6 +22,9 @@ import { DeliveriesTabs } from "../tabs";
 import { DeliveriesPageActions } from "../page-actions";
 import { DeliveriesTable } from "../table";
 
+import { isLocalCatalogTab } from "../lib/catalog-local";
+
+import { DeliveriesCatalogSection } from "./catalog-section";
 import {
   isDeliveryListSection,
   readDeliveryList,
@@ -251,25 +254,42 @@ const DeliveriesContent = async ({
 
       {renderHeader(true, read.meta.total > 0)}
 
-      <DeliveriesStats
-        activeTab={activeTab}
-        total={read.meta.total}
-        searchMeta={read.searchMeta}
-      />
+      {/* Embarcadores, Tipos de ocorrência and Motivos: cards and table over
+          one list query, answered in the browser when the read is the whole
+          set (spec §13). Keyed by company: a switch starts it over. */}
+      {isLocalCatalogTab(activeTab) ? (
+        <DeliveriesCatalogSection
+          key={businessId ?? "session"}
+          activeTab={activeTab}
+          data={read.rows}
+          meta={read.meta}
+          responseError={read.responseError}
+          searchMeta={read.searchMeta}
+          complete={read.complete}
+        />
+      ) : (
+        <>
+          <DeliveriesStats
+            activeTab={activeTab}
+            total={read.meta.total}
+            searchMeta={read.searchMeta}
+          />
 
-      {/* searchMeta and catalogServerMode go WITH the sort and facet params
-          sent above: they switch the tables to answering on the server
-          (decision 8.8). One without the other would show filter chips over
-          an unfiltered list. */}
-      <DeliveriesTable
-        key={businessId ?? "session"}
-        activeTab={activeTab}
-        data={read.rows}
-        meta={read.meta}
-        responseError={read.responseError}
-        searchMeta={read.searchMeta}
-        catalogServerMode
-      />
+          {/* searchMeta and catalogServerMode go WITH the sort and facet
+              params sent above: they switch the tables to answering on the
+              server (decision 8.8). One without the other would show filter
+              chips over an unfiltered list. */}
+          <DeliveriesTable
+            key={businessId ?? "session"}
+            activeTab={activeTab}
+            data={read.rows}
+            meta={read.meta}
+            responseError={read.responseError}
+            searchMeta={read.searchMeta}
+            catalogServerMode
+          />
+        </>
+      )}
     </div>
   );
 };

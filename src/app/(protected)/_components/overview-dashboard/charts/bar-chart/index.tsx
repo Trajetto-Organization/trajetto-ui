@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, TrendingUp, Loader2 } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp, Loader2 } from "lucide-react";
 
 import {
   Card,
@@ -26,8 +26,8 @@ import type { ChartBarDefaultProps } from "./bar-chart.types";
 const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
   const {
     chartData,
+    comparison,
     getTimeRangeLabel,
-    growthPercentage,
     handleTimeRangeChange,
     isLoadingTrends,
     totalExternal,
@@ -63,7 +63,7 @@ const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
               Últimos 7 dias
             </SelectItem>
             <SelectItem value="30d" className="rounded-lg">
-              Último mês
+              Últimos 30 dias
             </SelectItem>
             <SelectItem value="3m" className="rounded-lg">
               Últimos 3 meses
@@ -127,23 +127,26 @@ const ChartBar = ({ maintenanceCosts }: ChartBarDefaultProps): JSX.Element => {
         className="flex-col items-start 
         gap-2 text-sm pt-0"
       >
-        <div className="flex gap-2 leading-none font-medium">
-          {growthPercentage > 0 ? (
-            <>
-              Aumento de {growthPercentage}% no período
-              <TrendingUp className="h-4 w-4 text-green-400" />
-            </>
-          ) : growthPercentage < 0 ? (
-            <>
-              Redução de {Math.abs(growthPercentage)}% no período
-              <TrendingUp className="h-4 w-4 rotate-180 text-red-600 dark:text-red-400" />
-            </>
-          ) : (
-            <>
-              Sem variação no período
-              <Minus className="h-4 w-4" />
-            </>
-          )}
+        {/* A rise in cost is a warning, a fall is good news — the arrow
+            used to be green for a rise (cost-comparison.ts). */}
+        <div
+          className="flex items-center gap-2 leading-snug font-medium"
+          data-cost-trend={comparison.trend}
+        >
+          <span>{comparison.text}</span>
+          {comparison.trend === "up" ? (
+            <TrendingUp
+              className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+              aria-hidden="true"
+            />
+          ) : comparison.trend === "down" ? (
+            <TrendingDown
+              className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400"
+              aria-hidden="true"
+            />
+          ) : comparison.trend === "flat" ? (
+            <Minus className="h-4 w-4 shrink-0" aria-hidden="true" />
+          ) : null}
         </div>
         <div
           className="text-muted-foreground 

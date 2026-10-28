@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Row } from "@tanstack/react-table";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
@@ -10,6 +9,7 @@ import {
   RowActions,
 } from "@/components/shared/custom/row-actions";
 
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
 
@@ -38,11 +38,8 @@ const BranchRowActions = ({
   const [open, setOpen] = useState<"update" | "delete" | null>(null);
   const canWrite = useHasPermission(permissions.BRANCH_MANAGE, "write");
 
-  const copy = (value: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+  const copy = (value: string, what: string) => {
+    void copyWithFeedback(value, what);
   };
 
   return (
@@ -53,11 +50,14 @@ const BranchRowActions = ({
           blockedReason={canWrite ? null : NO_WRITE}
           onSelect={() => setOpen("update")}
         />
-        <RowActionItem label="Copiar ID" onSelect={() => copy(branch.id)} />
+        <RowActionItem
+          label="Copiar ID"
+          onSelect={() => copy(branch.id, "ID")}
+        />
         {scope === "admin" && (
           <RowActionItem
             label="Copiar ID da empresa"
-            onSelect={() => copy(branch.businessId)}
+            onSelect={() => copy(branch.businessId, "ID da empresa")}
           />
         )}
 

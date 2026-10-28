@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { LazyCalendar, warmCalendar } from "@/components/ui/lazy-calendar";
 
 import { cn } from "@/lib/utils";
 
@@ -205,6 +205,9 @@ const DateTimePickerField = ({
                   control["aria-invalid"] &&
                     "border-red-600 dark:border-red-500",
                 )}
+                // The calendar is its own chunk (ui/lazy-calendar).
+                onPointerEnter={warmCalendar}
+                onFocus={warmCalendar}
               >
                 <span className="min-w-0 truncate">
                   {formatted || "Selecione data e hora"}
@@ -220,7 +223,8 @@ const DateTimePickerField = ({
               align="start"
               className="w-[var(--radix-popover-trigger-width)] min-w-[300px] p-3"
             >
-              <Calendar
+              <LazyCalendar
+                loadingClassName="h-[19rem]"
                 className="w-full p-0"
                 classNames={{
                   months: "w-full",

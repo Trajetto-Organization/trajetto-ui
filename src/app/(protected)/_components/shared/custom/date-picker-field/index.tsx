@@ -4,20 +4,13 @@ import { ptBR } from "date-fns/locale";
 import { CalendarIcon } from "lucide-react";
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { LazyCalendar, warmCalendar } from "@/components/ui/lazy-calendar";
 
 import { cn } from "@/lib/utils";
 
@@ -28,6 +21,7 @@ import {
 
 import { serializeDate } from "./helpers";
 import { useDatePicker } from "./hooks";
+import { MonthYearSelects } from "./month-year-selects";
 
 import type { FormFieldProps } from "../shared/common.types";
 
@@ -47,7 +41,6 @@ const DatePickerField: React.FC<FormFieldProps> = ({
   const {
     formatted,
     years,
-    months,
     displayMonth,
     displayYear,
     handleYearChange,
@@ -121,6 +114,10 @@ const DatePickerField: React.FC<FormFieldProps> = ({
                     "border-red-600 dark:border-red-500",
                 )}
                 disabled={disabled}
+                // The calendar is its own chunk (ui/lazy-calendar): asked
+                // for on the way to the click, so it is usually there by it.
+                onPointerEnter={warmCalendar}
+                onFocus={warmCalendar}
               >
                 <span className="min-w-0 truncate">
                   {formatted || "Selecione uma data"}
@@ -145,41 +142,19 @@ const DatePickerField: React.FC<FormFieldProps> = ({
               align="start"
               className="w-[var(--radix-popover-trigger-width)] min-w-[300px]"
             >
-              <div className="flex w-full items-center gap-2 mb-2">
-                <Select
-                  value={displayYear.toString()}
-                  onValueChange={handleYearChange}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Ano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map((y) => (
-                      <SelectItem key={y} value={y.toString()}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <MonthYearSelects
+                className="mb-2"
+                year={displayYear}
+                month={displayMonth}
+                years={years}
+                onYearChange={handleYearChange}
+                onMonthChange={handleMonthChange}
+              />
 
-                <Select
-                  value={displayMonth.toString()}
-                  onValueChange={handleMonthChange}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Mês" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((m, i) => (
-                      <SelectItem key={i} value={i.toString()}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Calendar
+              <LazyCalendar
+                // One month of six weeks at most: 6 rows of 44px, the head
+                // and the caption.
+                loadingClassName="h-[19rem]"
                 className="w-full p-0"
                 // The base calendar sizes each day to a fixed 36px, which leaves
                 // dead space once the popover follows a wide field. Flexing the

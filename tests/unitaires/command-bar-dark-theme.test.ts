@@ -45,9 +45,10 @@ vi.mock(
   }),
 );
 
-import { useKBar } from "kbar";
-
-import { ProtectedCommandBar } from "@/app/(protected)/_components/layout/protected-command-bar-provider";
+import {
+  ProtectedCommandBar,
+  useCommandPalette,
+} from "@/app/(protected)/_components/layout/protected-command-bar-provider";
 
 (globalThis as { React?: typeof React }).React = React;
 
@@ -59,12 +60,13 @@ afterEach(async () => {
   document.body.innerHTML = "";
 });
 
+// Asks the way the header button does: before the palette's chunk is in.
 const Opener = (): null => {
-  const { query } = useKBar();
+  const { toggle } = useCommandPalette();
 
   useEffect(() => {
-    query.toggle();
-  }, [query]);
+    toggle();
+  }, [toggle]);
 
   return null;
 };
@@ -84,8 +86,13 @@ async function openPalette(): Promise<void> {
     );
   });
 
-  // kbar animates in and renders results on the next frames.
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  // The palette is imported on that ask, then kbar animates in and renders
+  // its results on the next frames.
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 25)));
+
+    if (document.querySelector('[role="option"]')) break;
+  }
 }
 
 const FIXED_LIGHT = /\b(bg-white|text-black|bg-slate-100)\b|bg-\[#eeeeee\]/;

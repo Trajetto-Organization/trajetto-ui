@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 import {
   RowActionItem,
   RowActions,
   RowActionSeparator,
 } from "@/components/shared/custom/row-actions";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 import type { UserRow } from "../types";
 
@@ -32,10 +32,7 @@ const MasterUserRowActions = ({
   const [open, setOpen] = useState<"edit" | "delete" | "revoke" | null>(null);
 
   const copy = (value: string) => {
-    navigator.clipboard
-      .writeText(value)
-      .then(() => toast.success("ID copiado para a área de transferência!"))
-      .catch((error) => toast.error("Erro ao copiar o ID: " + error));
+    void copyWithFeedback(value, "ID");
   };
 
   const close = () => setOpen(null);

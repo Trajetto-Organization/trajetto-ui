@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import {
   displayValue,
@@ -29,8 +30,9 @@ const text = (value: string | null | undefined, width: string) => (
  */
 function buildBranchColumns(scope: BranchScope): ColumnDef<BranchRow>[] {
   return [
+    idColumn<BranchRow>(),
     {
-      // The CNPJ is the branch's identifier: each branch has its own.
+      // The CNPJ is the branch's business identifier: each has its own.
       id: "cnpj",
       accessorKey: "cnpj",
       meta: { title: "CNPJ" },

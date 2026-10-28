@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
+import type { ListQuery } from "@/lib/search-params";
 
 import type { BranchScope } from "../lib/scope";
 import {
@@ -19,6 +20,8 @@ interface BranchTableProps {
   meta: { total: number; page: number; pageSize: number };
   responseError: { error: boolean; errorMessage: string };
   searchMeta?: BranchSearchMeta;
+  /** The screen's list query (content/list-section), shared with the cards. */
+  listQuery?: ListQuery;
 }
 
 /**
@@ -31,6 +34,7 @@ const BranchTable = ({
   meta,
   responseError,
   searchMeta,
+  listQuery,
 }: BranchTableProps): JSX.Element => {
   const columns = useMemo(() => buildBranchColumns(mode), [mode]);
 
@@ -41,6 +45,7 @@ const BranchTable = ({
       columns={columns}
       responseError={responseError}
       server={BRANCH_TABLE}
+      listQuery={listQuery}
       toolbar={<BranchToolbar facets={searchMeta?.facets} />}
     />
   );

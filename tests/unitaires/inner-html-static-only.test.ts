@@ -79,6 +79,9 @@ describe("the HTML the dialogs hand to React", () => {
       // A constant script, allowed by its hash in the enforced CSP
       // (tests/unitaires/theme-init-script.test.ts).
       "app/layout.tsx: __html: THEME_INIT_SCRIPT",
+      // The same, for the Trusted Types default policy
+      // (tests/unitaires/trusted-types-default-policy.test.ts).
+      "app/layout.tsx: __html: TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT",
     ]);
 
     const offenders = sourceFiles(SRC)

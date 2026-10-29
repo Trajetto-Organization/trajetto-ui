@@ -1,4 +1,5 @@
 import { THEME_INIT_SCRIPT_HASH } from "./theme-init-script";
+import { TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT_HASH } from "./trusted-types-default-policy";
 
 /**
  * The page's Content-Security-Policy: which scripts may run, and where a
@@ -110,15 +111,17 @@ export function buildContentSecurityPolicy({
   // attacker gets into the page does not. The host entries are the fallback
   // for browsers without CSP3.
   //
-  // The theme script's hash rides only with the nonce: a hash or a nonce in
-  // the list makes browsers ignore 'unsafe-inline', which the prerendered
-  // variant depends on.
+  // The hashes of the root layout's constant scripts (the theme, the Trusted
+  // Types default policy) ride only with the nonce: a hash or a nonce in the
+  // list makes browsers ignore 'unsafe-inline', which the prerendered variant
+  // depends on.
   const scripts = nonce
     ? list(
         "'self'",
         `'nonce-${nonce}'`,
         "'strict-dynamic'",
         THEME_INIT_SCRIPT_HASH,
+        TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT_HASH,
         TURNSTILE,
         CLOUDFLARE_WEB_ANALYTICS,
       )
@@ -203,9 +206,10 @@ function reportingEndpoints(): string {
  * nonce, so it rides on prerendered pages too. The names are the ones Next
  * creates: `nextjs#bundler` is webpack's chunk loader
  * (next/dist/build/webpack-config.js) and `nextjs` its client helper
- * (next/dist/client/trusted-types.js); `default` is the slot a future
- * enforcement step may fill. Nothing is blocked: the reports say what would
- * break before anything is enforced.
+ * (next/dist/client/trusted-types.js); `default` is the root layout's narrow
+ * policy for third-party sinks (step 2, src/lib/trusted-types-default-policy.ts:
+ * Turnstile's api.js and nothing else). Nothing is blocked: the reports say
+ * what would break before anything is enforced.
  */
 const TRUSTED_TYPES_REPORT_ONLY_POLICY = [
   ["require-trusted-types-for", "'script'"],

@@ -456,7 +456,10 @@ aplicada de verdade, não é Report-Only.
   `script-src`. O HTML delas é fixo no build e não tem nada da requisição nem
   de um tenant. O resto continua valendo: sem eval, sem plugins, sem `<base>`,
   sem frames, sem scripts de hosts fora da lista.
-- O script de tema (`src/lib/theme-init-script.ts`) entra pelo **hash**.
+- O script de tema (`src/lib/theme-init-script.ts`) e o da política `default`
+  de Trusted Types (`src/lib/trusted-types-default-policy.ts`) entram pelo
+  **hash**, só na variante com nonce (um hash na lista faria o navegador
+  ignorar o `'unsafe-inline'` das páginas pré-renderizadas, que já os cobre).
 - **Origens liberadas:** a API (`PUBLIC_API_URL`) e o `ws(s)://` da mesma
   origem para o socket, o storage das URLs pré-assinadas
   (`CSP_STORAGE_ORIGINS`, por padrão `https://*.r2.cloudflarestorage.com`), os
@@ -469,6 +472,25 @@ trusted-types nextjs nextjs#bundler default` (as políticas que o próprio
   Next cria). Não bloqueia nada e vale também nas páginas pré-renderizadas
   (não precisa de nonce). As linhas no log trazem `disposition: "report"`;
   servem para saber o que quebraria antes de exigir.
+- **Trusted Types, passo 2 (política `default` estreita):** o
+  `react-turnstile` 1.1.4 injeta o `api.js` do Turnstile com `script.src`
+  recebendo uma string crua, e cada abertura de `/login` registrava uma
+  violação de `TrustedScriptURL` (aparecia em DevTools → Issues e derrubava o
+  item "inspector-issues" do Lighthouse). A biblioteca não pode ser mudada, e
+  a ferramenta certa para um sink de terceiro é a política `default`, cujo
+  nome a lista `trusted-types` já reservava. O layout raiz roda, no começo do
+  `<body>` e antes da hidratação, um script constante
+  (`src/lib/trusted-types-default-policy.ts`) que cria essa política só com
+  `createScriptURL`: ela devolve a URL apenas quando é exatamente o `api.js`
+  do Turnstile (origem `https://challenges.cloudflare.com`, caminho
+  `/turnstile/v0/api.js` e só os dois parâmetros que a biblioteca monta,
+  `onload=cf__reactTurnstileOnLoad` e `render=explicit`, porque o `api.js`
+  chama a função global que o `onload` nomeia) e devolve `null` para todo o
+  resto, que continua sendo reportado. Não há `createHTML` nem
+  `createScript`, então esses sinks também continuam reportando. O script não
+  faz nada num navegador sem Trusted Types nem quando já existe uma política
+  `default`. Mudou o texto do script? Recalcule o hash
+  (`trusted-types-default-policy.test.ts` confere).
 - **`report-uri /api/csp-report`** e **`report-to csp-endpoint`** (com o
   cabeçalho `Reporting-Endpoints`), nas duas políticas: cada violação vira
   **uma** linha `console.error` no log do contêiner. A rota corta query strings e segmentos

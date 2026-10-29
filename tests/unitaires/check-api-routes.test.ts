@@ -73,6 +73,48 @@ describe("clientPathShapes", () => {
     expect([...shapes.keys()].sort()).toEqual(["/kanban/list/SEG", "/user/me"]);
   });
 
+  // The first production promote of the web (29/10/2026) stopped on three
+  // "paths" the API does not serve: `/literal/path`, `/path` and `/…`, the
+  // examples the doc comments of relay-read.ts, env/client.ts and
+  // export-requests.ts give of the shape this gate reads. A comment is not a
+  // call, so it must not block a promote.
+  it("does not read the paths a comment gives as examples", () => {
+    const shapes = clientPathShapes([
+      {
+        path: "src/lib/z.ts",
+        source: [
+          "/**",
+          ' * Call sites pass `relayUrl("/literal/path", query)`, and keep',
+          " * `${await publicApiUrl()}/path` as written.",
+          " */",
+          '// relayUrl("/from/a/line/comment")',
+          '  /* relayUrl("/from/a/one-line/block") */',
+          'fetch(relayUrl("/user/me"));',
+        ].join("\n"),
+      },
+    ]);
+
+    expect([...shapes.entries()]).toEqual([["/user/me", "src/lib/z.ts:7"]]);
+  });
+
+  it("takes no comment of this repository's source for a call", () => {
+    const sources = [
+      "src/lib/relay-read.ts",
+      "src/env/client.ts",
+      "src/lib/export-requests.ts",
+    ].map((path) => ({
+      path,
+      source: readFileSync(resolve(process.cwd(), path), "utf8"),
+    }));
+    const shapes = [...clientPathShapes(sources).keys()];
+
+    expect(shapes).not.toContain("/literal/path");
+    expect(shapes).not.toContain("/path");
+    expect(shapes).not.toContain("/…");
+    // The real calls of export-requests.ts are still read.
+    expect(shapes.length).toBeGreaterThan(0);
+  });
+
   it("finds every browser call in this repository's source", () => {
     const sources = [
       "src/app/(protected)/_components/kanban/board-provider/hooks/kanban-infinite-scroll.ts",

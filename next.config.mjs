@@ -193,7 +193,6 @@ const nextConfig = {
           "accelerometer=()",
           "autoplay=()",
           "bluetooth=()",
-          "browsing-topics=()",
           "camera=()",
           "display-capture=()",
           "geolocation=(self)",

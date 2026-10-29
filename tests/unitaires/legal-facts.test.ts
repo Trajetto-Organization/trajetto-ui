@@ -2390,6 +2390,10 @@ describe("the third parties a browser reaches", () => {
       provider: "Cloudflare",
       names: "Turnstile",
     },
+    "https://static.cloudflareinsights.com": {
+      provider: "Cloudflare",
+      names: "Web Analytics",
+    },
     "https://*.r2.cloudflarestorage.com": {
       provider: "Cloudflare",
       names: "(R2)",

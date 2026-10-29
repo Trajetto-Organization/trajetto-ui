@@ -50,6 +50,15 @@ const DEFAULT_STORAGE_ORIGINS = ["https://*.r2.cloudflarestorage.com"];
 
 const TURNSTILE = "https://challenges.cloudflare.com";
 
+/**
+ * Cloudflare Web Analytics: the edge in front of the site injects its script
+ * (stamping the page's nonce when there is one). The prerendered pages have
+ * no nonce, so the host must be listed for them; the beacon reports to
+ * /cdn-cgi/rum on this origin ('self'). Cookieless, disclosed in
+ * /legal/privacidade.
+ */
+const CLOUDFLARE_WEB_ANALYTICS = "https://static.cloudflareinsights.com";
+
 /** Origin of a URL, or nothing when it is not one. */
 function originOf(value: string | undefined): string | undefined {
   if (!value) return undefined;
@@ -111,8 +120,9 @@ export function buildContentSecurityPolicy({
         "'strict-dynamic'",
         THEME_INIT_SCRIPT_HASH,
         TURNSTILE,
+        CLOUDFLARE_WEB_ANALYTICS,
       )
-    : list("'self'", "'unsafe-inline'", TURNSTILE);
+    : list("'self'", "'unsafe-inline'", TURNSTILE, CLOUDFLARE_WEB_ANALYTICS);
 
   const directives: Array<[string, string]> = [
     ["default-src", "'self'"],

@@ -55,7 +55,29 @@ describe("shortId", () => {
   });
 });
 
+/** An id cut by hand: the tail taken in place, or an "OS#" glued to it. */
+const HAND_CUT_ID = /slice\(-12\)|OS#\$\{/;
+
 describe("serviceOrderLabel", () => {
+  it("knows a hand-cut id when it sees one", () => {
+    // The scan below is only as good as this pattern: it once lost its
+    // escapes and matched nothing, so the scan passed whatever src held.
+    // These are the four labels it replaced, as they were written.
+    expect(
+      HAND_CUT_ID.test("return `OS#${serviceOrder.id.slice(-12)} - `;"),
+    ).toBe(true);
+    expect(HAND_CUT_ID.test("? `OS #${bill.serviceOrder.id.slice(-12)}`")).toBe(
+      true,
+    );
+    expect(
+      HAND_CUT_ID.test("itemLabel={(order) => `OS #${order.id.slice(-12)}`}"),
+    ).toBe(true);
+    expect(HAND_CUT_ID.test("`OS#${id}`")).toBe(true);
+    // The shared helper's own cut is not one.
+    expect(HAND_CUT_ID.test("id.slice(-SHORT_ID_LENGTH)")).toBe(false);
+    expect(HAND_CUT_ID.test("serviceOrderLabel(order.id)")).toBe(false);
+  });
+
   it("names a service order the way its table cell does", () => {
     expect(serviceOrderLabel(UUID)).toBe(`OS #${TAIL}`);
     expect(
@@ -71,10 +93,10 @@ describe("serviceOrderLabel", () => {
       readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
         const path = join(dir, entry.name);
         if (entry.isDirectory()) return walk(path);
-        return /.(tsx|ts)$/.test(entry.name) ? [path] : [];
+        return /\.(tsx|ts)$/.test(entry.name) ? [path] : [];
       });
     const offenders = walk(resolve(root, "src"))
-      .filter((path) => /slice(-12)|OS#${/.test(readFileSync(path, "utf8")))
+      .filter((path) => HAND_CUT_ID.test(readFileSync(path, "utf8")))
       .map((path) => relative(root, path).split("\\").join("/"));
 
     expect(offenders).toEqual([]);

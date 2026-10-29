@@ -22,7 +22,35 @@ export const siteConfig = {
   blogAuthor: "Equipe Trajetto",
   /** Brand pink, the same one the buttons and links use. */
   themeColor: "#d81b60",
+  /**
+   * The brand's official profiles. The footer links them, the home page's
+   * Organization JSON-LD lists them as `sameAs` and the X cards name the
+   * handle: one list, so a crawler sees the same accounts everywhere.
+   */
+  socialProfiles: [
+    {
+      network: "linkedin",
+      label: "Trajetto no LinkedIn",
+      href: "https://www.linkedin.com/company/trajetto-official",
+    },
+    {
+      network: "instagram",
+      label: "Trajetto no Instagram",
+      href: "https://www.instagram.com/trajetto_official",
+    },
+    {
+      network: "x",
+      label: "Trajetto no X",
+      href: "https://x.com/Trajetto",
+      handle: "@Trajetto",
+    },
+  ],
 } as const;
+
+/** The X account the page cards attribute to. */
+export const X_HANDLE = siteConfig.socialProfiles.find(
+  (profile) => profile.network === "x",
+)?.handle;
 
 /** What the root layout's title template appends to every page title. */
 export const TITLE_SUFFIX = ` | ${siteConfig.name}`;

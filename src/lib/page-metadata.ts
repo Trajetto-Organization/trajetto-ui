@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { siteConfig } from "@/lib/site";
+import { X_HANDLE, siteConfig } from "@/lib/site";
 
 /**
  * Metadata of a public page, built one way everywhere.
@@ -88,8 +88,12 @@ export function buildPageMetadata({
     // directives (large image preview, full snippets) from the layout.
     ...(noindex ? { robots: { index: false, follow: true } } : {}),
     openGraph,
+    // The page's block replaces the layout's whole, so the handle rides here
+    // too.
     twitter: {
       card: "summary_large_image",
+      site: X_HANDLE,
+      creator: X_HANDLE,
       title: cardTitle,
       description,
       ...(defaultImage ? { images: [DEFAULT_IMAGE.url] } : {}),

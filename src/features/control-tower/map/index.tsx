@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+// The app's map theme, after Leaflet's own sheet.
+import "../lib/leaflet-theme.css";
 
 import { boundsOf } from "../lib/cluster";
 import type { MapTiles } from "../lib/map-tiles";

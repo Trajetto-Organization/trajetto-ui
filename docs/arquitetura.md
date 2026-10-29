@@ -969,6 +969,19 @@ O que se mediu na build de produção e ficou travado por teste:
   65 → 65 px em 1440, 390 e 320 px.
 - **zod fora do bundle público:** `src/env/public-config.ts` não importa zod
   (só ele custava ~12,7 KB gzip em toda página).
+- **CSS do app logado fora do `globals.css`:** o `globals.css` bloqueia a
+  renderização de toda página, inclusive do site público, e levava ~13,8 KB
+  minificados (2,5 KB com gzip, medidos reconstruindo o CSS com a
+  configuração e o minificador da build) de regras que só o app logado usa. Cada bloco agora fica num
+  CSS importado pelo componente que o desenha e desce no chunk dele: o cartão
+  do tutorial (`tutorial-component.css`), a barra de rolagem do ⌘K
+  (`palette.css`) e o tema dos mapas
+  (`features/control-tower/lib/leaflet-theme.css`, importado logo depois do
+  `leaflet/dist/leaflet.css` em cada mapa). As regras que nenhum elemento
+  usava (kanban, `card-badge`, `scrollbar-hide`, `md-editor-custom`,
+  `glass-morphism`) foram apagadas. `app-only-stylesheets.test.ts` falha se
+  um desses seletores voltar ao `globals.css` ou se um componente deixar de
+  importar o seu CSS.
 - **Paleta ⌘K (kbar) fora da primeira carga:** o kbar é CommonJS e não
   passa por tree shaking. Um único `useKBar` (o botão "Procurar..." do
   cabeçalho e o painel vazio) trazia a busca (fuse.js) e a lista virtual

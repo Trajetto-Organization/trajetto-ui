@@ -5,6 +5,8 @@ import { useQuery } from "react-query";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+// The app's map theme, after Leaflet's own sheet.
+import "@/features/control-tower/lib/leaflet-theme.css";
 
 import { Button } from "@/components/ui/button";
 

@@ -18,6 +18,8 @@ import type { ProtectedCommandBarProps } from "./protected-command-bar-provider.
 
 import { useCommandBarActions } from "./hooks";
 import { useAuthStore } from "@/store/auth-store";
+// The list's scrollbar, loaded with this chunk rather than on every page.
+import "./palette.css";
 
 /**
  * The ⌘K palette: kbar, its actions, its search and its list.

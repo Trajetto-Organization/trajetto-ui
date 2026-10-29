@@ -17,7 +17,7 @@
  * Dark theme (decision 16.123): `MAP_TILE_URL_DARK` (+ `MAP_TILE_ATTRIBUTION_DARK`)
  * names a provider's dark style, used while the theme is dark and swapped
  * live (themed-tile-layer.ts). Without it the light tiles are recolored by a
- * CSS filter (globals.css, "Maps in the dark theme").
+ * CSS filter (leaflet-theme.css, "Maps in the dark theme").
  */
 
 import { OSM_ATTRIBUTION } from "@/lib/leaflet-pt-br";

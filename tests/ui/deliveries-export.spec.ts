@@ -34,6 +34,15 @@ const SECTIONS = [
   },
 ] as const;
 
+/*
+  One file at a time: the API runs one export per company at a time and
+  answers the second 429 EXPORT_BUSY (export-slots.ts), and every test here
+  exports the same company. In parallel, the CSV and the Excel landed in the
+  same second and one download never came (seen locally on Prisma 6 and 7,
+  with the API logging EXPORT_BUSY; run with --workers=1 the file passes 4/4).
+*/
+test.describe.configure({ mode: "serial" });
+
 async function exportAs(page: Page, format: "CSV" | "Excel") {
   const button = page.getByRole("button", { name: "Exportar" });
 

@@ -2,12 +2,24 @@ import { z } from "zod";
 import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
 
 const updateMasterUserSchema = z.object({
+  // Trimmed, as the user dialog's: the action sends the parsed (trimmed) value.
   email: z
     .string()
+    .trim()
     .min(1, "O e-mail é obrigatório.")
     .email("O e-mail informado não é válido.")
     .max(100, "O e-mail deve ter no máximo 100 caracteres."),
   name: z.string().superRefine((value, ctx) => {
+    // Missing is said as missing (decision 16.702).
+    if (value.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "O nome é obrigatório.",
+      });
+
+      return;
+    }
+
     if (value.length > 100) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -54,15 +66,11 @@ const updateMasterUserSchema = z.object({
       });
     }
   }),
-  password: z
-    .string()
-    .min(7, "A senha deve ter pelo menos 7 caracteres.")
-    .max(100, "A senha deve ter no máximo 100 caracteres.")
-    .refine((value) => !/\s/.test(value), {
-      message: "A senha não deve conter espaços.",
-    })
-    .optional()
-    .or(z.literal("")),
+  // Decision 4.9: a single-use link, never a typed password.
+  sendPasswordSetupLink: z.preprocess(
+    (value) => value === "on" || value === "true" || value === true,
+    z.boolean(),
+  ),
 });
 
 export { updateMasterUserSchema };

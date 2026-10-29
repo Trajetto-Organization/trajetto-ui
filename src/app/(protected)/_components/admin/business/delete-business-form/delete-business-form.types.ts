@@ -1,6 +1,9 @@
 interface DeleteBusinessFormState {
   deleteBusinessError?: string;
   successMessage?: string;
+  errorCode?: string;
+  /** The code can no longer work (nothing requested, or expired). */
+  requestNewCode?: boolean;
 }
 
 interface RequestDeletionFormState {

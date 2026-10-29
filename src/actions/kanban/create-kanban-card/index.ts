@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createKanbanCardSchema } from "@/schemas/create-kanban-card-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreateKanbanCardProps {
   message: string;
@@ -42,7 +45,7 @@ const handleCreateKanbanCard = async (
   const cardData = createCardValidation.data;
 
   try {
-    const response = await fetch(createCard, {
+    const response = await apiFetch(createCard, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -54,14 +57,17 @@ const handleCreateKanbanCard = async (
 
     const { message } = (await response.json()) as CreateKanbanCardProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createCardError: { createCardErrorMessage: message },
+        createCardError: {
+          createCardErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/create-kanban-card", error);
     return {
       createCardError: {
         createCardErrorMessage:

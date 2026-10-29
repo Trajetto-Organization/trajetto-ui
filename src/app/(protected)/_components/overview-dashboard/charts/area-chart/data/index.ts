@@ -50,6 +50,22 @@ const METRICS = [
     color: "#dc2626",
     roles: ["MASTER", "BUSINESS_ADMIN"],
   },
+
+  // The deliveries module. Drawn only when the data carries them — see
+  // `availableMetrics`, which is what keeps a company that never hired the
+  // module from getting two flat lines at zero.
+  {
+    key: "deliveries" as const,
+    label: "Entregas",
+    color: "#0ea5e9",
+    roles: ["ALL"],
+  },
+  {
+    key: "routes" as const,
+    label: "Rotas",
+    color: "#a855f7",
+    roles: ["ALL"],
+  },
 ] satisfies readonly {
   key: keyof ActivityTrend;
   label: string;

@@ -1,11 +1,16 @@
 Dockerfile
 .dockerignore
 node_modules
+**/node_modules
 npm-debug.log
 README.md
+# TypeScript's incremental state from a local `tsc` (tsconfig has
+# `incremental`): the builder type-checks from scratch.
+*.tsbuildinfo
+# All of it: the builder compiles its own. Re-including a local
+# .next/static and .next/standalone only shipped ~42 MB of a laptop's last
+# build into every local build context.
 .next
-!.next/static
-!.next/standalone
 .git
 .gitignore
 .github
@@ -21,11 +26,26 @@ README.md
 *.swp
 *.swo
 
-# Tests
+# Documentation: nothing the build reads. Patterns are anchored at the
+# context root, so `docs/` is the repository's docs/, NOT src/content/docs
+# (the MDX of the /docs pages, which the build prerenders). The site's
+# content is .mdx (next.config.mjs traces src/content/**/*.mdx), which
+# `*.md` does not match; a .md the build ever reads needs a `!` line here.
+docs/
+**/*.md
+
+# Tests and their tooling: nothing the build imports (tsconfig's **/*.ts
+# would only type-check them for nothing).
 tests
 playwright-report
 test-results
 playwright.config.*
+playwright.*.config.*
+vitest.config.*
+vitest.*.config.*
+stryker.config.*
+reports
+.stryker-tmp
 
 # Dev scripts
 scripts/optimize-images.js
@@ -34,6 +54,19 @@ scripts/optimize-images.js
 .DS_Store
 Thumbs.db
 
+# Configuration of CI and editor tools that `next build` never reads (it
+# reads package.json, next/tsconfig/tailwind/postcss configs and
+# .eslintrc.json). Out of the context, an edit to them no longer changes
+# `COPY . .` and rebuilds the whole app for identical output.
+.trivyignore
+.gitleaks.toml
+audit-ci.jsonc
+.releaserc
+.prettierrc
+.prettierignore
+.editorconfig
+.gitattributes
+
 # Misc
 coverage
-*.log
+**/*.log

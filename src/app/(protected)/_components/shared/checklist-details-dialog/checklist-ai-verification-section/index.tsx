@@ -3,9 +3,24 @@ import { BrainCircuit, AlertTriangle, Loader } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { formatNotificationDate } from "@/lib/format-values";
+import { confidencePercent, readingLabel } from "@/lib/ai-confidence";
+
+import {
+  AIAnalysisProgressFallback,
+  RequestAIVerificationButton,
+} from "@/app/(protected)/_components/shared/ai-verification";
 
 import type { ChecklistDetailsDialogProps } from "../shared/common.types";
-import { aiStatusConfig, fieldLabels, fieldStatusConfig } from "../data";
+import {
+  NOT_COVERED_NOTE,
+  aiStatusConfig,
+  checklistDisplayStatus,
+  fieldLabels,
+  fieldStatusConfig,
+} from "../data";
+
+/** Server statuses where offering a (re-)verification makes sense. */
+const REQUESTABLE_STATUSES = ["pending", "skipped", "error"];
 
 // AI Verification Section
 const ChecklistAIVerificationSection = ({
@@ -33,18 +48,37 @@ const ChecklistAIVerificationSection = ({
   const isAnalyzing = realtimeEvent && !isTerminalStep;
   const isRealtimeCompleted = realtimeEvent && isTerminalStep;
 
-  const effectiveStatus = realtimeEvent
+  // Server says analyzing but the websocket history died with a refresh:
+  // the durable-progress fallback polls the analysis request instead.
+  const isAnalyzingWithoutRealtime = !realtimeEvent && aiStatus === "analyzing";
+
+  const serverStatus = realtimeEvent
     ? isRealtimeCompleted
       ? realtimeEvent.overallStatus || aiStatus
       : "analyzing"
     : aiStatus;
 
+  // Design P6.2: "Km confere" for a km read without a fraud check, and "Sem
+  // leitura automática" when no photo is of a kind the reader covers. The
+  // live result decides when the analysis just finished.
+  const liveResult = isRealtimeCompleted
+    ? realtimeEvent.currentResult
+    : undefined;
+  const displayStatus = checklistDisplayStatus(serverStatus, {
+    details: liveResult ? undefined : aiDetails,
+    liveFraudUnassessed: liveResult?.fraudAssessed === false,
+    photosByField: checklistData.photos_by_field,
+  });
+
+  // The words change; the behaviour stays the server's status.
+  const effectiveStatus = serverStatus;
+
   const aiAnalyzedAt = isRealtimeCompleted
     ? realtimeEvent.timestamp || serverAnalyzedAt
     : serverAnalyzedAt;
 
-  const config = effectiveStatus
-    ? aiStatusConfig[effectiveStatus] || aiStatusConfig.pending
+  const config = displayStatus
+    ? aiStatusConfig[displayStatus] || aiStatusConfig.pending
     : null;
 
   // Parse server details
@@ -101,6 +135,10 @@ const ChecklistAIVerificationSection = ({
             )}
           </div>
 
+          {displayStatus === "not_covered" && (
+            <p className="text-sm text-muted-foreground">{NOT_COVERED_NOTE}</p>
+          )}
+
           {/* Real-time analyzing progress */}
           {isAnalyzing && realtimeEvent && (
             <div
@@ -125,6 +163,28 @@ const ChecklistAIVerificationSection = ({
               </div>
             </div>
           )}
+
+          {/* Durable progress after a refresh killed the websocket history */}
+          {isAnalyzingWithoutRealtime && (
+            <AIAnalysisProgressFallback
+              recordType="checklist"
+              recordId={checklistData.id}
+            />
+          )}
+
+          {/* Manual (re-)verification for records the pipeline never ran or failed */}
+          {!isAnalyzing &&
+            !isAnalyzingWithoutRealtime &&
+            effectiveStatus &&
+            REQUESTABLE_STATUSES.includes(effectiveStatus) &&
+            // Nothing the reader covers: the API would answer AI_NOT_COVERED.
+            displayStatus !== "not_covered" && (
+              <RequestAIVerificationButton
+                recordType="checklist"
+                recordId={checklistData.id}
+                isRetry={effectiveStatus !== "pending"}
+              />
+            )}
 
           {/* Issues found alert */}
           {effectiveStatus === "issues_found" && (
@@ -167,6 +227,15 @@ const ChecklistAIVerificationSection = ({
                     fieldStatusConfig.inconclusive;
                   const StatusIcon = statusCfg.Icon;
 
+                  // 0–1 now, 0–100 on results from before (AI-3).
+                  const percent = confidencePercent(result.confidence);
+
+                  // What was compared, in code, since the model reads blind.
+                  const unit =
+                    fieldName === "current_mileage" ? "km" : undefined;
+                  const informed = readingLabel(result.informed, unit);
+                  const observed = readingLabel(result.observed, unit);
+
                   return (
                     <div
                       key={fieldName}
@@ -177,17 +246,11 @@ const ChecklistAIVerificationSection = ({
                           {fieldLabels[fieldName] || fieldName}
                         </span>
                         <div className="flex items-center gap-2">
-                          {result.confidence !== undefined &&
-                            result.confidence > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {Math.round(
-                                  result.confidence > 1
-                                    ? result.confidence
-                                    : result.confidence * 100,
-                                )}
-                                %
-                              </Badge>
-                            )}
+                          {percent !== null && percent > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {percent}%
+                            </Badge>
+                          )}
                           <Badge
                             variant="outline"
                             className={`text-xs ${statusCfg.color}`}
@@ -197,6 +260,13 @@ const ChecklistAIVerificationSection = ({
                           </Badge>
                         </div>
                       </div>
+                      {(informed || observed) && (
+                        <p className="text-xs text-muted-foreground">
+                          {informed && <>Informado: {informed}</>}
+                          {informed && observed && " · "}
+                          {observed && <>IA viu: {observed}</>}
+                        </p>
+                      )}
                       {result.observation && (
                         <p className="text-xs text-muted-foreground">
                           {result.observation}

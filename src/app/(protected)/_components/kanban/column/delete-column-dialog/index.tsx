@@ -21,6 +21,7 @@ import { Loader } from "lucide-react";
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+import { guardFormAction } from "@/lib/action-result";
 
 const DeleteColumnDialogForm = (): JSX.Element => {
   const { pending } = useFormStatus();
@@ -44,9 +45,7 @@ const DeleteColumnDialogForm = (): JSX.Element => {
         <Button
           type="submit"
           disabled={pending || !hasUserPermission}
-          variant={"secondary"}
-          className="bg-red-600/10 dark:bg-red-500/10 
-          dark:text-red-500 text-red-600"
+          variant="destructive"
         >
           <span>Excluir</span>
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
@@ -62,11 +61,12 @@ const DeleteColumnDialog = ({
   column,
 }: DeleteColumnDialogProps): JSX.Element => {
   const [state, dispatch] = useFormState(
-    () =>
+    guardFormAction(() =>
       handleDeleteKanbanColumn({
         businessId: column.businessId,
         columnId: column.id,
       }),
+    ),
     null,
   );
 

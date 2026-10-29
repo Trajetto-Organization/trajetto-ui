@@ -1,0 +1,377 @@
+"use client";
+
+import { useState } from "react";
+
+import Link from "next/link";
+
+import { Bell, BellOff, CheckCheck } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { safeNotificationHref } from "@/lib/safe-href";
+import { isStaleActionResult } from "@/lib/action-result";
+import {
+  readablePermissionKeys,
+  type RouteAccessContext,
+} from "@/lib/route-access";
+import { useAuthStore } from "@/store/auth-store";
+
+import { canOpenNotificationLink } from "./link-access";
+
+import {
+  getNotificationVisual,
+  NOTIFICATION_ACCENT_CLASS as ACCENT_CLASS,
+} from "../../shared/notification-visuals";
+
+import {
+  handleMarkAllNotificationsAsRead,
+  handleMarkNotificationAsRead,
+} from "@/actions/notifications";
+import {
+  useNotificationsContext,
+  type Notification,
+} from "../protected-provider/notifications-provider";
+
+/**
+ * The bell next to the command bar: at-a-glance unread count and the latest
+ * few notifications, one click from anywhere. The full history stays on
+ * /notifications — this menu is the shortcut, not the archive.
+ */
+
+const PREVIEW_LIMIT = 6;
+
+/** The bell's accessible name, with the unread count in correct Portuguese. */
+function bellLabel(unreadCount: number): string {
+  if (!unreadCount) return "Notificações";
+
+  return `Notificações: ${unreadCount} não ${unreadCount === 1 ? "lida" : "lidas"}`;
+}
+
+function relativeDate(value: Notification["created_at"]): string {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "";
+
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (minutes < 1) return "agora";
+  if (minutes < 60) return `${minutes}min`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+
+  return new Date(value).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+const NotificationPreview = ({
+  item,
+  access,
+}: {
+  item: Notification;
+  /** The reader's access now; `null` while the session is not known. */
+  access: RouteAccessContext | null;
+}) => {
+  const { markNotificationAsRead } = useNotificationsContext();
+  const [isMarking, setIsMarking] = useState(false);
+
+  const { icon: Icon, chip } = getNotificationVisual(item.type);
+  const unread = !item.read;
+
+  // Reading by clicking must not depend on the navigation: mark first (server
+  // then local state), then let the link do its job.
+  const markRead = async () => {
+    if (!unread || isMarking) return;
+    setIsMarking(true);
+
+    try {
+      const result = await handleMarkNotificationAsRead(item.id);
+      if (isStaleActionResult(result)) return;
+      if (result.successMessage) markNotificationAsRead(item.id);
+    } finally {
+      setIsMarking(false);
+    }
+  };
+
+  const content = (
+    <>
+      <span
+        className={cn(
+          "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
+          chip,
+        )}
+      >
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline gap-2">
+          <span
+            className={cn(
+              "min-w-0 flex-1 truncate text-sm",
+              unread && "font-semibold",
+            )}
+          >
+            {item.title}
+          </span>
+          <span
+            className="shrink-0 text-[10px] tabular-nums
+            text-muted-foreground"
+          >
+            {relativeDate(item.created_at)}
+          </span>
+        </span>
+        <span
+          className="mt-0.5 block line-clamp-2 text-xs
+          leading-relaxed text-muted-foreground"
+        >
+          {item.message}
+        </span>
+      </span>
+
+      {unread && (
+        <span
+          className={cn("mt-2 size-2 shrink-0 rounded-full", ACCENT_CLASS)}
+          aria-label="Não lida"
+        />
+      )}
+    </>
+  );
+
+  // The API's string is not rendered as-is: a `javascript:` link would run on
+  // click. A link that fails the check leaves the item as a plain button.
+  const safeHref = safeNotificationHref(item.link);
+
+  // And a page the reader can no longer open (profile or plan changed since
+  // it was sent, NOTIF-ROLE-1) is not offered either: the item stays, inert.
+  const href =
+    safeHref && canOpenNotificationLink(safeHref, access) ? safeHref : null;
+
+  return (
+    <DropdownMenuItem asChild className="p-0 focus:bg-accent">
+      {href ? (
+        <a
+          href={href}
+          className="flex w-full cursor-pointer items-start gap-3 px-3 py-3"
+          onClick={() => void markRead()}
+        >
+          {content}
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="flex w-full cursor-pointer items-start gap-3
+          px-3 py-3 text-left"
+          title={
+            safeHref ? "Seu acesso não inclui mais esta página." : undefined
+          }
+          onClick={() => void markRead()}
+        >
+          {content}
+        </button>
+      )}
+    </DropdownMenuItem>
+  );
+};
+
+interface ProtectedNotificationsMenuProps {
+  /** The driver's layout: a driver's surface is judged as a driver's. */
+  isDriver?: boolean;
+}
+
+const ProtectedNotificationsMenu = ({
+  isDriver = false,
+}: ProtectedNotificationsMenuProps): JSX.Element => {
+  const { notifications, unreadCount, connected, markAllNotificationsAsRead } =
+    useNotificationsContext();
+
+  // The same access the sidebar reads, kept fresh by the security check.
+  const {
+    role,
+    permissions: storePermissions,
+    enabledModules,
+  } = useAuthStore();
+
+  const access: RouteAccessContext | null = role
+    ? {
+        role,
+        permissions: readablePermissionKeys(storePermissions),
+        enabledModules: enabledModules ?? null,
+        isDriver,
+      }
+    : null;
+
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
+
+  const markAll = async () => {
+    if (isMarkingAll || unreadCount === 0) return;
+    setIsMarkingAll(true);
+
+    try {
+      const result = await handleMarkAllNotificationsAsRead();
+      if (isStaleActionResult(result)) return;
+      if (result.successMessage) markAllNotificationsAsRead();
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
+
+  const preview = [...notifications]
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, PREVIEW_LIMIT);
+
+  return (
+    <DropdownMenu>
+      {/*
+        No tooltip (decision 3.8): the user asked for the bell without the
+        "Abrir notificações" bubble on hover. The button's accessible name
+        still carries the unread count for a screen reader.
+      */}
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="relative size-9 shrink-0 rounded-lg shadow-none"
+          aria-label={bellLabel(unreadCount)}
+        >
+          <Bell className="size-4" aria-hidden="true" />
+          {unreadCount > 0 && (
+            <span
+              className={cn(
+                `absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center
+                justify-center rounded-full px-1 text-[10px] font-bold
+                text-white ring-2 ring-background`,
+                ACCENT_CLASS,
+              )}
+              aria-hidden="true"
+            >
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[min(22rem,calc(100vw-1rem))] p-0"
+      >
+        <DropdownMenuLabel
+          className="flex items-center justify-between
+          gap-3 px-4 py-3"
+        >
+          <span>
+            <span className="block text-sm font-semibold">Notificações</span>
+            <span
+              className="block text-xs font-normal
+              text-muted-foreground"
+            >
+              {unreadCount === 0
+                ? "Tudo em dia"
+                : `${unreadCount} não ${unreadCount === 1 ? "lida" : "lidas"}`}
+            </span>
+          </span>
+
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-[10px] font-normal",
+              connected
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-muted-foreground",
+            )}
+          >
+            <span
+              className={cn(
+                "size-1.5 rounded-full",
+                connected ? "bg-emerald-500" : "bg-muted-foreground",
+              )}
+            />
+            {connected ? "Tempo real" : "Reconectando"}
+          </span>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="m-0" />
+
+        {preview.length ? (
+          // The app's scrollbar, not the browser's. Radix sizes the viewport
+          // from the root, so the max height must land on both.
+          <ScrollArea
+            className="max-h-96
+            [&>[data-radix-scroll-area-viewport]]:max-h-96"
+          >
+            <div className="py-1">
+              {preview.map((item) => (
+                <NotificationPreview
+                  key={item.id}
+                  item={item}
+                  access={access}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <div className="flex flex-col items-center px-4 py-10 text-center">
+            <BellOff className="mb-3 size-6 text-muted-foreground" />
+            <p className="text-sm font-medium">Nenhuma notificação</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Novos avisos aparecerão aqui.
+            </p>
+          </div>
+        )}
+
+        <DropdownMenuSeparator className="m-0" />
+        <div className="flex items-center justify-between gap-2 p-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={unreadCount === 0 || isMarkingAll}
+            onClick={() => void markAll()}
+            className="h-8 px-2 text-xs"
+          >
+            <CheckCheck className="mr-1.5 size-3.5" />
+            Marcar todas
+          </Button>
+
+          <DropdownMenuItem asChild className="p-0">
+            {/*
+              `Link`, not `<a>`: a plain anchor inside the app is a full page
+              load, so "Ver todas" threw away the session's client state and
+              re-fetched the whole shell to move one screen. It is also the
+              one lint error that fails `next build` in this repository.
+
+              The deliberate `<a>` in `error-surface` is the exception and
+              stays one — leaving an active error boundary by client
+              navigation does not reliably work.
+            */}
+            <Link
+              href="/notifications"
+              className="cursor-pointer rounded-md px-3 py-2
+              text-xs font-semibold text-primary"
+            >
+              Ver todas
+            </Link>
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export { ProtectedNotificationsMenu };

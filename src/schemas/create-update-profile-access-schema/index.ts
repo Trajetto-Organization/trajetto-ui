@@ -4,13 +4,14 @@ import { hasConsecutiveSpaces, hasSpaceAtEdges } from "@/lib/format-values";
 const createUpdateProfileAccessSchema = z.object({
   name: z
     .string()
+    // Empty or blank is a missing name, not a short one (decision 16.702).
+    .regex(/\S/, "O nome do perfil é obrigatório.")
     .min(3, "O nome do perfil deve ter no mínimo 3 caracteres.")
     .superRefine((value, ctx) => {
       if (value.trim().length === 0) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            "O nome do perfil de acesso não pode ser vazio ou conter apenas espaços.",
+          message: "O nome do perfil é obrigatório.",
         });
 
         return;
@@ -55,7 +56,7 @@ const createUpdateProfileAccessSchema = z.object({
         });
       }
     }),
-  businessId: z.string().min(1, "A empresa é obrigatória!"),
+  businessId: z.string().min(1, "Selecione a empresa."),
 });
 
 export { createUpdateProfileAccessSchema };

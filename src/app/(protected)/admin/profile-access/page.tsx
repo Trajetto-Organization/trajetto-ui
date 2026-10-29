@@ -6,27 +6,33 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedTableContentLoading } from "@/app/(protected)/_components/loading-page/protected-table-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { ProfileAccessContent } from "./profile-access-content";
+import { ProfileAccessContent } from "@/features/profile-access/content";
+import { CatalogListSkeleton } from "@/components/shared/custom/catalog-list-skeleton";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 
-interface ProfileAccessQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface ProfileAccessPageProps {
+  // Every param the URL carries: page, search, sort, order and the
+  // company picked at the top.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Perfil de Acesso",
-    description: `
-      Página para gerenciamento dos perfis de acesso: visualize, edite e
-      crie funções para usuários, garantindo segurança e eficiência.`,
+    description:
+      "Gerencie os perfis de acesso: crie, renomeie, configure as permissões e veja quantas pessoas usam cada perfil.",
   };
 }
 
-const ProfileAccess = async ({
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+const AdminProfileAccess = async ({
   searchParams,
-}: ProfileAccessQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: ProfileAccessPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -37,14 +43,30 @@ const ProfileAccess = async ({
     <PageContainer>
       <ProtectedHeading
         title="Perfil de acesso"
-        description="Gerencie os perfis de acesso do sistema, definindo funções e permissões de forma prática e segura."
+        description="Selecione uma empresa para gerenciar os perfis de acesso dela: quem usa cada perfil e quais permissões ele concede."
       />
 
-      <Suspense fallback={<ProtectedTableContentLoading />}>
-        <ProfileAccessContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. */}
+      <Suspense
+        fallback={
+          <CatalogListSkeleton
+            mode="admin"
+            columns={7}
+            hasCompany={Boolean(
+              readBusinessIdParam(firstParam(searchParams.businessId)),
+            )}
+          />
+        }
+      >
+        <ProfileAccessContent
+          scope="admin"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default ProfileAccess;
+export default AdminProfileAccess;

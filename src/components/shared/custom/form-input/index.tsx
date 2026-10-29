@@ -1,15 +1,11 @@
+import type { ReactNode } from "react";
+
 import { Input, InputProps } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 import InputMask from "react-input-mask";
 import { cn } from "@/lib/utils";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 interface FormInputProps extends Omit<InputProps, "mask"> {
   label: string;
@@ -19,6 +15,9 @@ interface FormInputProps extends Omit<InputProps, "mask"> {
   mask?: string;
   beforeMaskedValueChange?: any;
   maskChar?: any;
+
+  /** Help text under the field, included in its `aria-describedby`. */
+  hint?: ReactNode;
 }
 
 const FormInput = ({
@@ -30,80 +29,69 @@ const FormInput = ({
   className,
   beforeMaskedValueChange,
   maskChar,
+  hint,
   ...props
 }: FormInputProps): JSX.Element => {
+  // No `focus-visible:border-none`: it removed the red error border exactly
+  // while the person was focused on fixing the field.
   const inputClassName = cn(
-    "h-10 focus-visible:border-none",
+    "h-10",
     icon && "pl-10",
     props.disabled && "opacity-50 cursor-not-allowed",
     className,
   );
 
   return (
-    <div className="grid gap-3 relative">
-      {errorName ? (
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Label
-                className={cn("h-4 truncate text-red-500")}
-                htmlFor={htmlfor}
-              >
-                {errorName[0]}
-              </Label>
-            </TooltipTrigger>
-            <TooltipContent
-              align="start"
-              className="max-w-[300px] 
-              whitespace-normal break-words p-2"
-            >
-              {errorName[0]}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      ) : (
-        <Label className="h-4 truncate" htmlFor={htmlfor}>
-          {label.includes("*") ? (
-            <>
-              {label.replace("*", "")}
-              <span className="text-red-500 ml-0.5">*</span>
-            </>
-          ) : (
-            label
-          )}
-        </Label>
-      )}
-
-      <div className="relative">
-        {icon && (
-          <div
-            className="absolute inset-y-0 left-0 pl-3 
+    <FieldShell
+      label={label}
+      htmlFor={htmlfor}
+      error={errorName}
+      hint={hint}
+      required={props.required}
+    >
+      {(control) => (
+        <div className="relative">
+          {icon && (
+            <div
+              className="absolute inset-y-0 left-0 pl-3
             flex items-center pointer-events-none"
-          >
-            {icon}
-          </div>
-        )}
-        {mask ? (
-          <InputMask
-            mask={mask}
-            maskChar={null}
-            beforeMaskedValueChange={beforeMaskedValueChange}
-            {...props}
-          >
-            {(inputProps: any) => (
-              <Input
-                id={htmlfor}
-                className={inputClassName}
-                {...inputProps}
-                disabled={props.disabled}
-              />
-            )}
-          </InputMask>
-        ) : (
-          <Input id={htmlfor} className={inputClassName} {...props} />
-        )}
-      </div>
-    </div>
+            >
+              {icon}
+            </div>
+          )}
+          {mask ? (
+            <InputMask
+              mask={mask}
+              maskChar={null}
+              beforeMaskedValueChange={beforeMaskedValueChange}
+              {...props}
+            >
+              {(inputProps: any) => (
+                <Input
+                  className={cn(
+                    inputClassName,
+                    control["aria-invalid"] &&
+                      "border-red-600 dark:border-red-500",
+                  )}
+                  {...inputProps}
+                  {...control}
+                  disabled={props.disabled}
+                />
+              )}
+            </InputMask>
+          ) : (
+            <Input
+              className={cn(
+                inputClassName,
+                control["aria-invalid"] && "border-red-600 dark:border-red-500",
+              )}
+              {...props}
+              {...control}
+            />
+          )}
+        </div>
+      )}
+    </FieldShell>
   );
 };
 

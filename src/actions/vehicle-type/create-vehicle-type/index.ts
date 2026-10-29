@@ -1,14 +1,17 @@
 "use server";
 
-import { createUpdateVehicleTypeSchema } from "@/schemas/create-update-vehicle-type-schema";
+import { logActionError } from "@/lib/log-action-error";
+import { createVehicleTypeSchema } from "@/schemas/create-update-vehicle-type-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
-interface CreateVehicleTypeProps {
+interface VehicleTypeResponse {
+  code?: string;
   message: string;
 }
 
 const handleCreateVehicleType = async (
-  state: any,
+  state: unknown,
   createVehicleTypeValues: FormData,
 ) => {
   const tokenAccess = await getCookies("tkey");
@@ -22,53 +25,48 @@ const handleCreateVehicleType = async (
     };
   }
 
-  if (createVehicleTypeValues.type === "RESET") {
-    return {};
-  }
-
   const businessId = createVehicleTypeValues.get("businessId");
-  const createVehicleType = `${process.env.HTTP_REQUEST}/vehicle-type/create-vehicle-type/${businessId}`;
+  const url = `${process.env.HTTP_REQUEST}/vehicle-type/create-vehicle-type/${businessId}`;
 
-  const vehicleTypeValues = Object.fromEntries(
+  const { businessId: _business, ...fields } = Object.fromEntries(
     createVehicleTypeValues.entries(),
   );
-  const createVehicleTypeValidation =
-    createUpdateVehicleTypeSchema.safeParse(vehicleTypeValues);
 
-  if (createVehicleTypeValidation.error) {
-    const formatError = createVehicleTypeValidation.error.flatten();
-    return {
-      createVehicleTypeError: formatError.fieldErrors,
-    };
+  const validation = createVehicleTypeSchema.safeParse(fields);
+
+  if (!validation.success) {
+    return { createVehicleTypeError: validation.error.flatten().fieldErrors };
   }
 
-  const vehicleTypeData = createVehicleTypeValidation.data;
-
   try {
-    const response = await fetch(createVehicleType, {
+    const response = await apiFetch(url, {
       credentials: "include",
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(vehicleTypeData),
+      body: JSON.stringify(validation.data),
     });
 
-    const { message } = (await response.json()) as CreateVehicleTypeProps;
+    const { message } = (await response.json()) as VehicleTypeResponse;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createVehicleTypeError: { createVehicleTypeErrorMessage: message },
+        createVehicleTypeError: {
+          createVehicleTypeErrorMessage:
+            message || "Não foi possível criar o tipo de veículo.",
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("vehicle-type/create-vehicle-type", error);
     return {
       createVehicleTypeError: {
         createVehicleTypeErrorMessage:
-          "Ocorreu um erro inesperado ao tentar criar um tipo de veículo.",
+          "Ocorreu um erro inesperado ao tentar criar o tipo de veículo.",
       },
     };
   }

@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { revalidateTagName } from "@/actions/revalidate";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ToggleBranchActiveResponse {
   message: string;
@@ -23,7 +26,7 @@ const handleToggleBranchActive = async (
   const toggleUrl = `${process.env.HTTP_REQUEST}/branch/toggle-branch-active/${branchId}/business/${businessId}`;
 
   try {
-    const response = await fetch(toggleUrl, {
+    const response = await apiFetch(toggleUrl, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -33,8 +36,8 @@ const handleToggleBranchActive = async (
 
     const data = (await response.json()) as ToggleBranchActiveResponse;
 
-    if (!response.ok && data.message) {
-      return { toggleError: data.message };
+    if (!response.ok) {
+      return { toggleError: data.message || refusalMessage(response.status) };
     }
 
     revalidateTagName("toggle-branch-active")
@@ -54,6 +57,7 @@ const handleToggleBranchActive = async (
       is_active: data.is_active,
     };
   } catch (error) {
+    logActionError("branch/toggle-branch-active", error);
     return {
       toggleError:
         "Ocorreu um erro inesperado ao tentar alterar o status da filial.",

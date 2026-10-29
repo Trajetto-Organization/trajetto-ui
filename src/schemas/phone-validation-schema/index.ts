@@ -20,7 +20,8 @@ const updateWhatsAppSettingsSchema = z
           return cleaned.length === 10 || cleaned.length === 11;
         },
         {
-          message: "Número de telefone deve conter 10 ou 11 dígitos",
+          message:
+            "Número incompleto: são 10 dígitos para fixo ou 11 para celular, com o DDD.",
         },
       )
       .transform((phone) => {
@@ -41,8 +42,8 @@ const updateWhatsAppSettingsSchema = z
       return true;
     },
     {
-      message:
-        "Número de telefone é obrigatório para habilitar as notificações WhatsApp",
+      // Also the profile card's live message (decision 16.700): one wording.
+      message: "Informe o número com DDD para receber pelo WhatsApp.",
       path: ["whatsapp_phone"],
     },
   );

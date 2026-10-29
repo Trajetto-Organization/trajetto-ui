@@ -8,6 +8,7 @@ import {
 
 import type { FuelInfoAlertProps } from "./fuel-info-alert.types";
 import { formatToBrazilianCurrency } from "@/lib/format-values";
+import { formatPricePerLiter } from "@/features/fuel/lib/price";
 
 const FuelInfoAlert = ({
   liters,
@@ -90,8 +91,9 @@ const FuelInfoAlert = ({
           {/* Calculated values */}
           {liters && <span>• Litros: {formatLiters(liters)} L</span>}
 
+          {/* The pump price has three decimals: as money, 5.899 read "R$ 5,90". */}
           {pricePerLiter && (
-            <span>• Preço/L: {formatToBrazilianCurrency(pricePerLiter)}</span>
+            <span>• Preço: {formatPricePerLiter(pricePerLiter)}/L</span>
           )}
 
           {totalAmount && (
@@ -108,7 +110,9 @@ const FuelInfoAlert = ({
               <strong>⚡ Análise de Eficiência:</strong>
             </div>
 
-            <main className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* A <main> inside a dialog, inside the page's own main: this
+                is not the document's primary content. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Expected Consumption */}
               <section
                 className="p-2 rounded-md bg-white
@@ -175,7 +179,7 @@ const FuelInfoAlert = ({
                   </div>
                 </section>
               )}
-            </main>
+            </div>
           </>
         )}
 

@@ -16,6 +16,10 @@ import {
 import { Loader } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { FieldShell } from "@/components/shared/custom/field-shell";
+import { useLiveValidation } from "@/components/shared/live-validation";
+import { cn } from "@/lib/utils";
+import { validateTwoFactorUserFormSchema } from "@/schemas/two-factor-schema";
 
 import { handleTwoFactorAuthenticationUser } from "@/actions/user/two-factor-authentication-user";
 import { ErrorForm } from "../error-form";
@@ -31,45 +35,76 @@ const TwoFactorAuthenticationFormContainer = ({
   state,
   email,
 }: TwoFactorAuthenticationFormContainerProps): JSX.Element => {
-  const {
-    handleOTPChange,
-    isOTPComplete,
-    otpCode,
-    handleResendCode,
-    resendTimer,
-  } = useTwoFactorForm(email);
+  const { handleOTPChange, otpCode, handleResendCode, resendTimer } =
+    useTwoFactorForm(email);
 
   const { pending } = useFormStatus();
 
+  // The code is checked once the field is left, then as it is typed; the
+  // button stays enabled and a short code says so under the field
+  // (decisions 16.700 and 16.701).
+  const live = useLiveValidation({
+    schema: validateTwoFactorUserFormSchema,
+    values: { code: otpCode },
+    serverErrors: state.twoFactorError,
+    controlIds: { code: "two-factor-code" },
+  });
+
+  const codeError = live.errorOf("code");
+
   return (
-    <section className="animate-fade-in [animation-delay:400ms]">
-      <InputOTP
-        maxLength={6}
-        name="code"
-        value={otpCode}
-        disabled={pending}
-        onChange={(value) => handleOTPChange(value)}
-        containerClassName="w-full justify-center"
+    <section ref={live.ref} className="animate-fade-in [animation-delay:400ms]">
+      <FieldShell
+        label="Código de verificação *"
+        htmlFor="two-factor-code"
+        error={codeError}
       >
-        <div className="flex w-full justify-between items-center">
-          {/* First group */}
-          <InputOTPGroup className="flex-1">
-            {Array.from({ length: 3 }, (_, i) => (
-              <InputOTPSlot key={i} index={i} className="w-full" />
-            ))}
-          </InputOTPGroup>
+        {(control) => (
+          <InputOTP
+            {...control}
+            maxLength={6}
+            name="code"
+            value={otpCode}
+            disabled={pending}
+            autoComplete="one-time-code"
+            onChange={(value) => handleOTPChange(value)}
+            containerClassName="w-full justify-center"
+          >
+            <div className="flex w-full justify-between items-center">
+              {/* First group */}
+              <InputOTPGroup className="flex-1">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <InputOTPSlot
+                    key={i}
+                    index={i}
+                    className={cn(
+                      "w-full",
+                      codeError && "border-red-600 dark:border-red-500",
+                    )}
+                  />
+                ))}
+              </InputOTPGroup>
 
-          {/* Separator in the middle (outside groups) */}
-          <InputOTPSeparator className="mx-2" />
+              {/* Separator in the middle (outside groups) */}
+              <InputOTPSeparator className="mx-2" />
 
-          {/* Second group */}
-          <InputOTPGroup className="flex-1">
-            {Array.from({ length: 3 }, (_, i) => (
-              <InputOTPSlot key={i + 3} index={i + 3} className="w-full" />
-            ))}
-          </InputOTPGroup>
-        </div>
-      </InputOTP>
+              {/* Second group */}
+              <InputOTPGroup className="flex-1">
+                {Array.from({ length: 3 }, (_, i) => (
+                  <InputOTPSlot
+                    key={i + 3}
+                    index={i + 3}
+                    className={cn(
+                      "w-full",
+                      codeError && "border-red-600 dark:border-red-500",
+                    )}
+                  />
+                ))}
+              </InputOTPGroup>
+            </div>
+          </InputOTP>
+        )}
+      </FieldShell>
 
       <div className="mt-3">
         <Button
@@ -87,22 +122,15 @@ const TwoFactorAuthenticationFormContainer = ({
         </Button>
       </div>
 
-      <ErrorForm
-        message={
-          state.twoFactorError?.twoFactorErrorMessage ||
-          (state.twoFactorError?.code &&
-          Array.isArray(state.twoFactorError.code)
-            ? state.twoFactorError.code[0]
-            : state.twoFactorError?.code?.toString())
-        }
-      />
+      {/* The code's own message sits under the field; this is the rest. */}
+      <ErrorForm message={state.twoFactorError?.twoFactorErrorMessage} />
 
       <div className="mt-6">
         <Button
           data-test="two-factor"
           type="submit"
           aria-label={"Autenticação de dois fatores"}
-          disabled={pending || !isOTPComplete}
+          disabled={pending}
           className="w-full"
         >
           <p>Confirme Seu Código</p>
@@ -133,6 +161,7 @@ const TwoFactorAuthenticationForm = ({
 
   return (
     <form
+      noValidate
       action={(formData: FormData) => {
         formData.append("email", email);
         return dispatch(formData);

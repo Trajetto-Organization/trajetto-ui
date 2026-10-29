@@ -1,56 +1,28 @@
-"use server";
+// Helper of the Server Actions and Server Components, not an action itself:
+// never bundled for the browser (a client import is a build error).
+import "server-only";
 
 import { cookies } from "next/headers";
 
-interface SetCookiesProps {
-  cookieName: string;
-  value: string;
-  expirationTime?: number;
-  sameSite: "lax" | "strict";
-}
+// Writing and clearing the session cookies lives in `@/lib/session-cookies`.
 
-async function setCookies({
-  cookieName,
-  expirationTime,
-  value,
-  sameSite,
-}: SetCookiesProps) {
-  try {
-    const setCookie = cookies();
-
-    const nowInSeconds = Math.floor(Date.now() / 1000);
-    const expiresIn = (expirationTime as number) - nowInSeconds;
-
-    setCookie.set(cookieName, value, {
-      httpOnly: true,
-      secure: true,
-      maxAge: expiresIn,
-      sameSite: sameSite,
-      path: "/",
-    });
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function deleteCookies(cookieName: string) {
-  try {
-    const deleteCookie = cookies();
-    deleteCookie.delete(cookieName);
-  } catch (error) {
-    throw error;
-  }
-}
+/**
+ * The cookies server code may read through this helper.
+ *
+ * This module used to be a Server Action, which made it an endpoint any
+ * script on the origin could call: it handed the access token (`tkey`) to
+ * page JavaScript for the browser's Socket.IO handshake and for ~a dozen
+ * hooks that called the API straight from the browser. The socket now gets a
+ * one-use ticket (`actions/session` → POST /user/socket-ticket) and those
+ * reads go through the same-origin relay (`app/api/relay`), so no token
+ * leaves the server. The refresh token is not readable even here.
+ */
+const READABLE_COOKIES = new Set(["tkey"]);
 
 async function getCookies(cookieName: string) {
-  try {
-    const getUserCookie = cookies();
-    const userCookie = getUserCookie.get(cookieName)?.value;
+  if (!READABLE_COOKIES.has(cookieName)) return undefined;
 
-    return userCookie;
-  } catch (error) {
-    throw error;
-  }
+  return cookies().get(cookieName)?.value;
 }
 
-export { setCookies, deleteCookies, getCookies };
+export { getCookies };

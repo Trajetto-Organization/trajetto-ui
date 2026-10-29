@@ -5,9 +5,20 @@ import type {
   LocationPickerProps,
   NominatimSearchResult,
 } from "../location-picker.types";
+import { locationPopupHtml } from "../popup-html";
+import {
+  LEAFLET_ATTRIBUTION_PREFIX,
+  ZOOM_CONTROL_TITLES,
+} from "@/lib/leaflet-pt-br";
+import { loadPublicConfig } from "@/env/client";
 
 import L from "leaflet";
+
+import { addThemedTileLayer } from "@/features/control-tower/lib/themed-tile-layer";
 import "leaflet/dist/leaflet.css";
+
+const BRAZIL_CENTER: [number, number] = [-14.235, -51.925];
+const BRAZIL_ZOOM = 4;
 
 function useLocationPicker({
   onLocationChange,
@@ -28,6 +39,10 @@ function useLocationPicker({
   );
 
   const [isLoadingGPS, setIsLoadingGPS] = useState<boolean>(false);
+
+  // No tile provider in this environment (decision 7.4): the map still takes
+  // clicks and shows the pin, and the screen says why it is blank.
+  const [tilesUnavailable, setTilesUnavailable] = useState<boolean>(false);
   const [geoError, setGeoError] = useState<string | null>(null);
 
   // 🔄 Sync internal state with props (handles external resets)
@@ -51,20 +66,39 @@ function useLocationPicker({
 
   // 🔍 Address search states
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>("");
 
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("");
 
   const [openSearch, setOpenSearch] = useState<boolean>(false);
 
+  // The place picked from the search list. Its own label stays: reverse
+  // geocoding a town's centre named a random street there ("Toledo - PR"
+  // became "Rua Raimundo Leonardi"), and it cost a second request.
+  const [searchPick, setSearchPick] = useState<{
+    lat: number;
+    lng: number;
+    label: string;
+  } | null>(null);
+  const isSearchPick =
+    searchPick !== null &&
+    searchPick.lat === currentLat &&
+    searchPick.lng === currentLng;
+
   // 🎯 React Query Hooks
-  const { data: searchResults = [], isLoading: isSearching } =
-    useAddressSearch(debouncedSearchQuery);
+  const {
+    results: searchResults,
+    isPending: isSearching,
+    error: searchError,
+    retry: retrySearch,
+  } = useAddressSearch(searchQuery);
   const {
     data: reverseGeoData,
     isFetching: isFetchingAddress, // Use isFetching to show skeleton EVERY time data is being fetched
-  } = useReverseGeocoding(currentLat, currentLng);
+  } = useReverseGeocoding(
+    isSearchPick ? null : currentLat,
+    isSearchPick ? null : currentLng,
+  );
 
   // Always show skeleton when fetching (even if data exists in cache)
   const shouldShowSkeleton = isFetchingAddress;
@@ -75,15 +109,6 @@ function useLocationPicker({
       onLoadingChange(shouldShowSkeleton);
     }
   }, [shouldShowSkeleton, onLoadingChange]);
-
-  // ⏱️ Debounce search query (300ms) - Faster for precise search.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
 
   // Helper function to format address from Nominatim data
   const formatAddressFromNominatim = useCallback((addr: any): string => {
@@ -142,15 +167,17 @@ function useLocationPicker({
   }, []);
 
   // 📍 Update address when reverse geocoding data is available
-  const address = reverseGeoData
-    ? formatAddressFromNominatim(reverseGeoData.address)
-    : shouldShowSkeleton
-      ? "Carregando endereço..."
-      : "Endereço não disponível";
+  const address = isSearchPick
+    ? searchPick.label
+    : reverseGeoData
+      ? formatAddressFromNominatim(reverseGeoData.address)
+      : shouldShowSkeleton
+        ? "Carregando endereço..."
+        : "Endereço não disponível";
 
   // 🔄 Auto-update selectedAddress when reverse geocoding completes (for GPS and map clicks)
   useEffect(() => {
-    if (reverseGeoData && !isFetchingAddress) {
+    if (reverseGeoData && !isFetchingAddress && !isSearchPick) {
       const formattedAddress = formatAddressFromNominatim(
         reverseGeoData.address,
       );
@@ -158,7 +185,12 @@ function useLocationPicker({
       setSelectedAddress(formattedAddress);
       setSelectedPlaceId(reverseGeoData.place_id?.toString() || "");
     }
-  }, [reverseGeoData, isFetchingAddress, formatAddressFromNominatim]);
+  }, [
+    reverseGeoData,
+    isFetchingAddress,
+    isSearchPick,
+    formatAddressFromNominatim,
+  ]);
 
   // Function to generate popup content
   const getPopupContent = useCallback(
@@ -182,13 +214,8 @@ function useLocationPicker({
       `;
       }
 
-      return `
-      <div style="text-align: center; padding: 8px; min-width: 150px;">
-        <strong style="color: #d81b60; display: block; margin-bottom: 5px; font-size: 15px;">Localização</strong>
-        <span style="display: block; font-size: 13px; line-height: 1.4;">${displayAddress}</span>
-        <span style="display: block; font-size: 12px; color: #666; margin-top: 4px;">Clique para alterar</span>
-      </div>
-    `;
+      // Escaped there: Leaflet writes popup content with innerHTML.
+      return locationPopupHtml(displayAddress);
     },
     [],
   );
@@ -255,30 +282,50 @@ function useLocationPicker({
       return;
     }
 
-    // Default center (World center)
-    const defaultCenter: [number, number] = [0, 0];
+    // Brazil-only product: an empty picker opens on Brazil, not on the
+    // Gulf of Guinea at lat/lng 0,0.
+    const defaultCenter: [number, number] = BRAZIL_CENTER;
     const center: [number, number] =
       currentLat && currentLng ? [currentLat, currentLng] : defaultCenter;
 
-    // Create the map without geographical restrictions
     const map = L.map(mapRef.current, {
       center: center,
-      zoom: currentLat && currentLng ? 15 : 2,
+      zoom: currentLat && currentLng ? 15 : BRAZIL_ZOOM,
       minZoom: 2,
       maxZoom: 19,
-      zoomControl: true,
-      attributionControl: false,
+      // Added below with Portuguese names; the default says "Zoom in".
+      zoomControl: false,
+      // Every tile provider's terms require a visible credit.
+      attributionControl: true,
       scrollWheelZoom: true,
       dragging: !disabled,
     });
 
+    L.control.zoom(ZOOM_CONTROL_TITLES).addTo(map);
+    map.attributionControl.setPrefix(LEAFLET_ATTRIBUTION_PREFIX);
+
     mapInstanceRef.current = map;
 
-    // Add tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(map);
+    // The same provider as the tower and the route page, read at run time
+    // (MAP_TILE_URL; public OSM in development only), never hard-coded here.
+    let disposed = false;
+    let stopTiles: (() => void) | null = null;
+
+    loadPublicConfig()
+      .then(({ mapTiles }) => {
+        if (disposed || mapInstanceRef.current !== map) return;
+
+        if (!mapTiles) {
+          setTilesUnavailable(true);
+          return;
+        }
+
+        // Follows the theme live (dark style or the CSS filter).
+        stopTiles = addThemedTileLayer(L, map, mapTiles);
+      })
+      .catch(() => {
+        if (!disposed) setTilesUnavailable(true);
+      });
 
     // Add marker if position exists
     if (currentLat && currentLng) {
@@ -299,6 +346,9 @@ function useLocationPicker({
 
     // Cleanup
     return () => {
+      disposed = true;
+      stopTiles?.();
+
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -358,6 +408,7 @@ function useLocationPicker({
       // Format and set selected address and place_id
       const formattedAddress = formatAddressFromNominatim(result.address);
 
+      setSearchPick({ lat, lng, label: formattedAddress });
       setSelectedAddress(formattedAddress);
       setSelectedPlaceId(result.place_id.toString());
 
@@ -429,6 +480,7 @@ function useLocationPicker({
     // Clear everything: address, place_id, coordinates, and map markers
     setSelectedAddress("");
     setSelectedPlaceId("");
+    setSearchPick(null);
 
     setSearchQuery("");
 
@@ -457,6 +509,8 @@ function useLocationPicker({
     selectedAddress,
     searchResults,
     isSearching,
+    searchError,
+    retrySearch,
     openSearch,
     handleSelectSearchResult,
     handleOpenSearchChange,
@@ -468,10 +522,11 @@ function useLocationPicker({
     currentLng,
     mapInstanceRef,
     mapRef,
+    tilesUnavailable,
     isLoadingAddress: shouldShowSkeleton, // Smart loading: only show when loading NEW data
     address,
     formatAddressFromNominatim,
   };
 }
 
-export { useLocationPicker };
+export { BRAZIL_CENTER, BRAZIL_ZOOM, useLocationPicker };

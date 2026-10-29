@@ -8,12 +8,11 @@ import { DriverFuelsList } from "@/app/(protected)/_components/driver/fuels";
 import { BackButton } from "@/app/(protected)/_components/driver/back-button";
 
 import { getCookies } from "@/actions/cookies";
-import { parseJwt } from "@/lib/decode-jwt";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Abastecimentos do Veículo",
-    description: "Visualize o histórico de abastecimentos do veículo",
+    title: "Meus abastecimentos deste veículo",
+    description: "Os abastecimentos que você registrou neste veículo",
   };
 }
 
@@ -32,21 +31,19 @@ const DriverFuels = async ({
     redirect("/login");
   }
 
-  const decodeJwt = parseJwt(tokenAccess);
-  const driverId = decodeJwt?.driverId || null;
-
   const { vehicleId } = params;
 
   return (
     <PageContainer>
       <BackButton title="Voltar" />
 
+      {/* The API returns only the driver's own refuelings (DRV-SCOPE-1). */}
       <ProtectedHeading
-        title="Abastecimentos do Veículo"
-        description="Visualize o histórico completo de abastecimentos deste veículo"
+        title="Meus abastecimentos deste veículo"
+        description="Os abastecimentos que você registrou neste veículo, do mais recente ao mais antigo"
       />
 
-      <DriverFuelsList vehicleId={vehicleId} driverId={driverId} />
+      <DriverFuelsList vehicleId={vehicleId} />
     </PageContainer>
   );
 };

@@ -9,21 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Loader } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/utils";
 import FormInput from "@/components/shared/custom/form-input";
 
 import { handleCreateKanbanColumn } from "@/actions/kanban/create-kanban-column";
@@ -36,8 +29,11 @@ import type {
 } from "./create-column-modal.types";
 import { Input } from "@/components/ui/input";
 
+import { ColorSwatches } from "../color-swatches";
+
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+import { guardFormAction } from "@/lib/action-result";
 
 const CreateColumnForm = ({
   onClose,
@@ -52,17 +48,6 @@ const CreateColumnForm = ({
 
   const [title, setTitle] = useState<string>("");
   const [color, setColor] = useState<string>("#64748b");
-
-  const predefinedColors = [
-    "#64748b", // Slate
-    "#3b82f6", // Blue
-    "#f59e0b", // Amber
-    "#8b5cf6", // Violet
-    "#22c55e", // Green
-    "#ef4444", // Red
-    "#ec4899", // Pink
-    "#06b6d4", // Cyan
-  ];
 
   return (
     <>
@@ -81,62 +66,35 @@ const CreateColumnForm = ({
         />
 
         {/* Cor */}
-        <div className="space-y-2">
-          {state.createColumnError?.color ? (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label
-                    className={cn("h-4 truncate text-red-500")}
-                    htmlFor="color"
-                  >
-                    {state.createColumnError.color[0]}
-                  </Label>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="max-w-[300px]
-                  whitespace-normal break-words p-2"
-                >
-                  {state.createColumnError.color[0]}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <Label className="h-4 truncate" htmlFor="color">
-              Cor da Coluna
-              <span className="text-red-500 ml-0.5">*</span>
-            </Label>
-          )}
-          <div className="flex gap-2">
-            {predefinedColors.map((presetColor) => (
-              <button
-                key={presetColor}
-                type="button"
-                className="w-8 h-8 rounded-md border-2 transition-all"
-                style={{
-                  backgroundColor: presetColor,
-                  borderColor: color === presetColor ? "#000" : "transparent",
-                }}
-                onClick={() => setColor(presetColor)}
+        <FieldShell
+          label="Cor da Coluna*"
+          htmlFor="color"
+          error={state.createColumnError?.color}
+        >
+          {(control) => (
+            <>
+              <ColorSwatches
+                value={color}
+                onChange={setColor}
                 disabled={pending}
               />
-            ))}
-          </div>
 
-          <Input
-            id="color"
-            type="color"
-            name="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="h-10 w-full cursor-pointer rounded-md"
-            disabled={pending}
-          />
-        </div>
+              <Input
+                {...control}
+                type="color"
+                name="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="h-10 w-full cursor-pointer rounded-md"
+                disabled={pending}
+              />
+            </>
+          )}
+        </FieldShell>
       </div>
 
-      <DialogFooter className="mt-6 gap-1">
+      {/* Cancelar first; the layout follows the dialog's width (decision 3.2). */}
+      <DialogFormFooter className="mt-6">
         <Button
           type="button"
           variant="outline"
@@ -152,7 +110,7 @@ const CreateColumnForm = ({
           Criar Coluna
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
-      </DialogFooter>
+      </DialogFormFooter>
     </>
   );
 };
@@ -163,7 +121,10 @@ const CreateColumnModal = ({
   boardId,
 }: CreateColumnModalProps): JSX.Element => {
   const defaultState: CreateColumnModalFormState = {};
-  const [state, dispatch] = useFormState(handleCreateKanbanColumn, null);
+  const [state, dispatch] = useFormState(
+    guardFormAction(handleCreateKanbanColumn),
+    null,
+  );
 
   const { formRef } = useCreateColumnModal({
     state,
@@ -173,7 +134,7 @@ const CreateColumnModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent onInteractOutside={(e) => e.preventDefault()}>
+      <DialogScrollContent>
         <DialogHeader>
           <DialogTitle>Nova Coluna</DialogTitle>
           <DialogDescription>

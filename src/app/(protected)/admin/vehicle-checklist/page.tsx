@@ -6,42 +6,45 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { VehicleChecklistContent } from "./vehicle-checklist-content";
+import { VehicleChecklistContent } from "@/features/vehicle-checklist/content";
+import { FleetListSkeleton } from "@/features/vehicle/skeleton";
 
-interface VehicleChecklistQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface PageProps {
+  // Every param Next hands over: the list forwards sort and filters too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Checklist Veicular",
-    description: `
-      Gerencie facilmente os checklists veiculares cadastrados. Consulte, edite e
-      remova informações essenciais de inspeções veiculares de maneira rápida e segura.`,
+    title: "Checklists Veiculares",
+    description:
+      "As inspeções dos veículos: condição geral, itens verificados, fotos e quem fez.",
   };
 }
 
-const VehicleChecklist = async ({
+const AdminVehicleChecklist = async ({
   searchParams,
-}: VehicleChecklistQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: PageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
-  if (!tokenAccess) {
-    redirect("/login");
-  }
+  if (!tokenAccess) redirect("/login");
 
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Checklist Veicular"}
-        description="Gerencie os checklists veiculares cadastrados, delete, edite e mantenha os dados sempre atualizados."
+        title="Checklists Veiculares"
+        description="Selecione uma empresa para ver os checklists veiculares dela."
       />
 
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the list, so the heading paints at once. */}
+      <Suspense
+        fallback={<FleetListSkeleton mode="admin" actions={3} withStats />}
+      >
         <VehicleChecklistContent
+          mode="admin"
           searchParams={searchParams}
           token={tokenAccess}
         />
@@ -50,4 +53,4 @@ const VehicleChecklist = async ({
   );
 };
 
-export default VehicleChecklist;
+export default AdminVehicleChecklist;

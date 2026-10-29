@@ -8,6 +8,8 @@ interface User {
   profileAccess?: {
     permissions?: { permissionKey: PermissionKey }[];
   } | null;
+  /** Server-rendered fallback while the auth store has not confirmed yet. */
+  enabledModules?: string[];
 }
 
 interface ProtectedNavItemsProps {

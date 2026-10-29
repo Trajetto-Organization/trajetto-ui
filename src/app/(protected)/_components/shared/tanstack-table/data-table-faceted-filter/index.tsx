@@ -5,6 +5,7 @@ import { Check, PlusCircle } from "lucide-react";
 
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useSharedListQuery } from "@/lib/search-params";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { commandKeywordFilter } from "@/lib/command-keyword-filter";
 
 import {
   Popover,
@@ -30,13 +32,45 @@ import { Separator } from "@/components/ui/separator";
 interface DataTableFacetedFilterProps<TData, TValue> {
   column?: Column<TData, TValue>;
   title?: string;
+  /**
+   * The choices. A server-side table (DataTable `server`) must pass them,
+   * with the API's counts: it has no page facets to fall back on, on
+   * purpose — options and counts read off ten loaded rows are what this
+   * replaced (decision 8.8).
+   */
   options?: {
     label: string;
     value: string | boolean;
     icon?: React.ComponentType<{ className?: string }>;
+    /** How many rows the option brings, from the server. */
+    count?: number;
   }[];
   dynamicOptionIcon?: React.ComponentType<{ className?: string }>;
   Icon?: React.ComponentType<{ className?: string }>;
+}
+
+type FilterValue = string | boolean;
+
+/**
+ * The column's values with `value` ticked or unticked; none left clears the
+ * filter. Applied to the latest value, not to the one this render read, so
+ * two quick ticks both count.
+ */
+function toggleFilterValue(
+  current: unknown,
+  value: FilterValue,
+): FilterValue[] | undefined {
+  const selected = new Set<FilterValue>(
+    Array.isArray(current) ? (current as FilterValue[]) : [],
+  );
+
+  if (selected.has(value)) {
+    selected.delete(value);
+  } else {
+    selected.add(value);
+  }
+
+  return selected.size > 0 ? Array.from(selected) : undefined;
 }
 
 function DataTableFacetedFilter<TData, TValue>({
@@ -46,6 +80,10 @@ function DataTableFacetedFilter<TData, TValue>({
   Icon,
   dynamicOptionIcon,
 }: DataTableFacetedFilterProps<TData, TValue>) {
+  // Closing the popover means "done": what was ticked goes out now instead
+  // of after the pause a server table waits for more ticks.
+  const listQuery = useSharedListQuery();
+
   const facets = column?.getFacetedUniqueValues();
   const selectedValues = new Set(
     column?.getFilterValue() as (string | boolean)[],
@@ -62,10 +100,20 @@ function DataTableFacetedFilter<TData, TValue>({
   }, [facets, dynamicOptionIcon]);
 
   const finalOptions = options || dynamicOptions;
+
+  // The server's count when it sent one (0 included: it explains an empty
+  // table); a legacy client table shows what its page holds, or nothing.
+  const countOf = (option: { value: string | boolean; count?: number }) =>
+    option.count ?? (facets?.get(option.value) || undefined);
+
   if (finalOptions.length === 0) return null;
 
   return (
-    <Popover>
+    <Popover
+      onOpenChange={(open) => {
+        if (!open) listQuery?.flush();
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -117,7 +165,7 @@ function DataTableFacetedFilter<TData, TValue>({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0" align="start">
-        <Command>
+        <Command filter={commandKeywordFilter}>
           <CommandInput
             id={
               title
@@ -145,18 +193,16 @@ function DataTableFacetedFilter<TData, TValue>({
                 return (
                   <CommandItem
                     key={String(option.value)}
-                    onSelect={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value);
-                      } else {
-                        selectedValues.add(option.value);
-                      }
-
-                      const filterValues = Array.from(selectedValues);
-                      column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined,
-                      );
-                    }}
+                    // The option's value, never its label: two options with
+                    // the same label shared one highlight and Enter toggled
+                    // the first. The label stays searchable as a keyword.
+                    value={String(option.value)}
+                    keywords={[option.label]}
+                    onSelect={() =>
+                      column?.setFilterValue((current: unknown) =>
+                        toggleFilterValue(current, option.value),
+                      )
+                    }
                     className="cursor-pointer"
                   >
                     <div
@@ -177,12 +223,12 @@ function DataTableFacetedFilter<TData, TValue>({
 
                     <span className="truncate">{option.label}</span>
 
-                    {facets?.get(option.value) && (
+                    {countOf(option) !== undefined && (
                       <span
-                        className="ml-auto flex h-4 w-4 text-xs
-                        items-center justify-center font-mono font-bold"
+                        className="ml-auto flex h-4 min-w-4 pl-1 text-xs
+                        items-center justify-end font-mono font-bold tabular-nums"
                       >
-                        {facets.get(option.value)}
+                        {countOf(option)}
                       </span>
                     )}
                   </CommandItem>
@@ -194,6 +240,8 @@ function DataTableFacetedFilter<TData, TValue>({
                 <CommandSeparator />
                 <CommandGroup>
                   <CommandItem
+                    value="__clear-filters__"
+                    keywords={["Limpar Filtros"]}
                     onSelect={() => column?.setFilterValue(undefined)}
                     className="justify-center text-center cursor-pointer"
                   >
@@ -209,4 +257,4 @@ function DataTableFacetedFilter<TData, TValue>({
   );
 }
 
-export { DataTableFacetedFilter };
+export { DataTableFacetedFilter, toggleFilterValue };

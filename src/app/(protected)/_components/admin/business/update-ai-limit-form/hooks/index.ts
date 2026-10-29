@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { revalidateTagName } from "@/actions/revalidate";
 
 import { toast } from "sonner";
 
@@ -33,19 +32,7 @@ function useUpdateAILimitForm({
       toastShownRef.current = true;
       toast.success(state.successMessage);
 
-      const performRevalidation = async () => {
-        try {
-          await revalidateTagName("update-ai-usage");
-        } catch (error: any) {
-          if (process.env.NODE_ENV === "development") {
-            console.error("Erro na revalidação:", error);
-          }
-
-          toast.error("Erro ao atualizar dados. Recarregue a página.");
-        }
-      };
-
-      performRevalidation();
+      // The action re-rendered the screen in its own response.
       handleCloseAILimit();
     }
 

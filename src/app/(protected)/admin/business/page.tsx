@@ -4,17 +4,16 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
-
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
+import { BusinessListSkeleton } from "@/app/(protected)/_components/admin/business/skeleton";
 
 import { getCookies } from "@/actions/cookies";
 
-import { BusinessActions } from "./page-actions";
 import { BusinessContent } from "./business-content";
 
-interface BusinessQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface BusinessPageProps {
+  // Every param the URL carries: sort, order and the facets too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const Business = async ({
   searchParams,
-}: BusinessQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: BusinessPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -42,8 +41,7 @@ const Business = async ({
         description="Gerencie empresas cadastradas, delete, edite e mantenha os dados sempre atualizados."
       />
 
-      <BusinessActions />
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
+      <Suspense fallback={<BusinessListSkeleton />}>
         <BusinessContent searchParams={searchParams} token={tokenAccess} />
       </Suspense>
     </PageContainer>

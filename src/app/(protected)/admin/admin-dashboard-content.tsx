@@ -2,8 +2,12 @@ import { redirect } from "next/navigation";
 
 import { OverviewDashboard } from "../_components/overview-dashboard";
 import { getDashboardData } from "@/actions/dashboard";
+import { readSessionUser } from "@/lib/session-access";
 
-import type { DashboardData } from "../_components/overview-dashboard/shared/common.types";
+import type {
+  DashboardData,
+  OverviewDashboardProps,
+} from "../_components/overview-dashboard/shared/common.types";
 
 interface AdminDashboardContentProps {
   token: string;
@@ -22,7 +26,7 @@ const AdminDashboardContent = async ({
     errorMessage: "",
   };
 
-  let userLogged = null;
+  let userLogged: OverviewDashboardProps["userLogged"];
   let dashboardData: DashboardData = {
     counts: {
       vehicles: { value: 0, change: 0 },
@@ -35,6 +39,7 @@ const AdminDashboardContent = async ({
       users: { value: 0, change: 0 },
       fines: { value: 0, change: 0 },
     },
+    deliveryOperation: null,
     vehicleStatus: [],
     maintenanceStats: [],
     activityTrends: [],
@@ -43,44 +48,37 @@ const AdminDashboardContent = async ({
     maintenanceCosts: [],
   };
 
-  let userResponse: Response | undefined;
+  // Independent reads, started together: the session (already read by the
+  // protected layout in this request — readSessionUser reuses that answer)
+  // and the overview. They used to run one after the other.
+  const [session, dashboard] = await Promise.all([
+    readSessionUser(token),
+    getDashboardData(token).then(
+      (data) => ({ ok: true as const, data: data as DashboardData }),
+      () => ({ ok: false as const }),
+    ),
+  ]);
 
-  try {
-    userResponse = await fetch(`${process.env.HTTP_REQUEST}/user/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      next: { tags: ["update-username", "update-2fa"] },
-    });
-  } catch (error) {
+  if (session.kind === "ok") {
+    userLogged = {
+      ...session.user,
+      profileAccess: session.user.profileAccess ?? undefined,
+    };
+  } else if (session.kind === "refused" && session.status === 401) {
+    redirect("/login");
+  } else {
     userResponseError = {
       error: true,
       errorMessage:
-        "Ocorreu um erro inesperado ao tentar obter os dados do usuário",
+        session.kind === "unreachable"
+          ? "Ocorreu um erro inesperado ao tentar obter os dados do usuário"
+          : "Houve um erro ao tentar obter os dados do usuário",
     };
   }
 
-  if (userResponse) {
-    if (!userResponse.ok) {
-      if (userResponse.status === 401) {
-        redirect("/login");
-      }
-
-      userResponseError = {
-        error: true,
-        errorMessage: "Houve um erro ao tentar obter os dados do usuário",
-      };
-    } else {
-      const userData = await userResponse.json();
-      userLogged = userData.user;
-    }
-  }
-
-  try {
-    dashboardData = (await getDashboardData(token)) as DashboardData;
-  } catch (error) {
+  if (dashboard.ok) {
+    dashboardData = dashboard.data;
+  } else {
     dashboardResponseError = {
       error: true,
       errorMessage:

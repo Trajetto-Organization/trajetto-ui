@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   ColumnFiltersState,
-  SortingState,
+  RowSelectionState,
   VisibilityState,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
@@ -12,14 +12,21 @@ interface UseTableProps {
     error: boolean;
     errorMessage: string;
   };
+  /** Columns that start hidden (still listed under "Visualizar"). */
+  initialColumnVisibility?: VisibilityState;
 }
 
-function useTable({ responseError }: UseTableProps) {
-  const [rowSelection, setRowSelection] = useState({});
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+/**
+ * The table's local UI state. Sorting is not here: a list sorts on the
+ * server (DataTable's `server` spec, state in the URL) or not at all.
+ */
+function useTable({ responseError, initialColumnVisibility }: UseTableProps) {
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    initialColumnVisibility ?? {},
+  );
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [sorting, setSorting] = useState<SortingState>([]);
 
   const toastDisplayed = useRef(false);
 
@@ -37,8 +44,6 @@ function useTable({ responseError }: UseTableProps) {
     setColumnVisibility,
     columnFilters,
     setColumnFilters,
-    sorting,
-    setSorting,
   };
 }
 

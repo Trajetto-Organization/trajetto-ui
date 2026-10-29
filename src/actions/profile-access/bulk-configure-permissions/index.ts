@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { bulkConfigurePermissionsSchema } from "@/schemas/bulk-configure-permissions-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface BulkConfigurePermissionsResponse {
   message: string;
@@ -34,7 +38,11 @@ const handleBulkConfigurePermissions = async (
   let parsedPermissions: unknown[];
   try {
     parsedPermissions = JSON.parse(permissionsRaw);
-  } catch {
+  } catch (error) {
+    logActionError(
+      "profile-access/bulk-configure-permissions (permissions)",
+      error,
+    );
     return {
       bulkConfigurePermissionsError: {
         bulkConfigurePermissionsErrorMessage: "Dados de permissões inválidos.",
@@ -56,7 +64,7 @@ const handleBulkConfigurePermissions = async (
   }
 
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/permission/bulk-configure-permissions`,
       {
         credentials: "include",
@@ -72,16 +80,22 @@ const handleBulkConfigurePermissions = async (
     const { message } =
       (await response.json()) as BulkConfigurePermissionsResponse;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         bulkConfigurePermissionsError: {
-          bulkConfigurePermissionsErrorMessage: message,
+          bulkConfigurePermissionsErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-permission");
+
     return { successMessage: message };
-  } catch {
+  } catch (error) {
+    logActionError("profile-access/bulk-configure-permissions", error);
     return {
       bulkConfigurePermissionsError: {
         bulkConfigurePermissionsErrorMessage:

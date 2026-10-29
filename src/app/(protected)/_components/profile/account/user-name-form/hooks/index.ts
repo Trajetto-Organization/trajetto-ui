@@ -15,7 +15,9 @@ function useUserNameForm({ state, initialUserName, error }: UseUserNameForm) {
   };
 
   useEffect(() => {
-    if (state?.userNameError) {
+    // A refusal of the name itself (the schema's list) sits under the
+    // field; only a sentence about the request (session, network) toasts.
+    if (typeof state?.userNameError === "string") {
       toast.error(state.userNameError);
     } else if (state?.successMessage) {
       toast.success(state.successMessage);

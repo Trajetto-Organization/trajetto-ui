@@ -2,9 +2,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 
-import { WhatsAppConnection } from "../whatsapp-connection";
-import { WhatsAppStatus } from "../whatsapp-status";
-
 import type { WhatsAppNotificationsProps } from "../shared/common.types";
 import { WhatsAppSettings } from "../whatsapp-settings";
 
@@ -12,6 +9,7 @@ const WhatsAppNotifications = ({
   error,
   userRole,
   driverId,
+  initialSettings,
 }: WhatsAppNotificationsProps): JSX.Element => {
   if (error) {
     return (
@@ -28,16 +26,11 @@ const WhatsAppNotifications = ({
   return (
     <Card>
       <CardContent className="p-6">
-        <div className="space-y-6">
-          {/* Basic Settings (Enable/Disable + Phone) */}
-          <WhatsAppSettings userRole={userRole} driverId={driverId} />
-
-          {/* Connection buttons (QR Code + Pairing Code) */}
-          <WhatsAppConnection />
-
-          {/* Connection Status + Progress */}
-          <WhatsAppStatus userRole={userRole} driverId={driverId} />
-        </div>
+        <WhatsAppSettings
+          userRole={userRole}
+          driverId={driverId}
+          initialSettings={initialSettings}
+        />
       </CardContent>
     </Card>
   );

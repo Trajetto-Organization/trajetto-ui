@@ -30,6 +30,7 @@ interface NominatimSearchResult {
     region?: string;
     postcode?: string;
     country?: string;
+    country_code?: string;
     city_district?: string;
     state_district?: string;
   };
@@ -59,6 +60,7 @@ interface ReverseGeocodingResult {
     region?: string;
     postcode?: string;
     country?: string;
+    country_code?: string;
     city_district?: string;
     state_district?: string;
   };

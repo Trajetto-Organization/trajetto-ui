@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import type {
-  RevalidateDataState,
-  RateLimitConfig,
-} from "../data-table-revalidate.types";
+import type { RateLimitConfig } from "../data-table-revalidate.types";
 
-import { queryClientProps } from "@/lib/query-client-props";
-import {
-  revalidateDataToQueryKeyMap,
-  RevalidateDataProps,
-} from "@/lib/query-keys-mapping";
+/** Three presses in thirty seconds, then fifteen seconds of countdown. */
+const DEFAULT_RATE_LIMIT = {
+  maxClicks: 3,
+  timeWindowMs: 30000,
+  cooldownTimeMs: 15000,
+} as const;
 
 const getStorageKey = (key?: string) => key || "revalidate-rate-limit";
 const loadStorageData = (storageKey?: string) => {
@@ -45,15 +43,26 @@ const saveStorageData = (data: any, storageKey?: string) => {
   localStorage.setItem(key, JSON.stringify(data));
 };
 
-export function useDataTableRevalidate(
-  state: RevalidateDataState | null | undefined,
-  config: RateLimitConfig = {
-    maxClicks: 3, // 3 clicks
-    timeWindowMs: 30000, // in 30 seconds
-    cooldownTimeMs: 15000, // 15 second cooldown
-  },
-  revalidateDataKey?: RevalidateDataProps | RevalidateDataProps[],
-) {
+/**
+ * The rate limit every refresh button of the product shares (tables, the
+ * overview, Kanban, the client panels' "Atualizar").
+ *
+ * It does not refresh anything itself: the click handler of each button
+ * does (see useRevalidateScreen). Refreshing from an effect keyed on the
+ * page's tag list re-ran on every render of pages that pass a literal array.
+ */
+export function useRefreshRateLimit(rateLimit: RateLimitConfig = {}) {
+  // Merged with the defaults, so a caller can pass only what it changes: a
+  // partial config replacing them would leave `maxClicks` undefined, and
+  // `n > undefined` never limits.
+  const config = {
+    maxClicks: rateLimit.maxClicks ?? DEFAULT_RATE_LIMIT.maxClicks,
+    timeWindowMs: rateLimit.timeWindowMs ?? DEFAULT_RATE_LIMIT.timeWindowMs,
+    cooldownTimeMs:
+      rateLimit.cooldownTimeMs ?? DEFAULT_RATE_LIMIT.cooldownTimeMs,
+    storageKey: rateLimit.storageKey,
+  };
+
   // Initial states without accessing localStorage, avoiding hydration error
   const [isClient, setIsClient] = useState<boolean>(false);
   const [clickData, setClickData] = useState({
@@ -102,32 +111,6 @@ export function useDataTableRevalidate(
     }
   }, [config.storageKey]);
 
-  useEffect(() => {
-    if (state?.revalidateDataError) {
-      toast.error(state?.revalidateDataError);
-      return;
-    }
-
-    if (state && !state.revalidateDataError && revalidateDataKey) {
-      const keys = Array.isArray(revalidateDataKey)
-        ? revalidateDataKey
-        : [revalidateDataKey];
-
-      const queryKeys = Array.from(
-        new Set(keys.flatMap((key) => revalidateDataToQueryKeyMap[key] ?? [])),
-      );
-
-      if (queryKeys.length > 0) {
-        // Invalidate all matching queries
-        Promise.all(
-          queryKeys.map((queryKey) =>
-            queryClientProps.invalidateQueries([queryKey]),
-          ),
-        );
-      }
-    }
-  }, [state, revalidateDataKey]);
-
   // Check the current rate limiting state when mounting the component
   useEffect(() => {
     if (!isClient) return;
@@ -174,23 +157,47 @@ export function useDataTableRevalidate(
       return () => clearInterval(intervalId);
     }
 
+    // Not limited any more: either the cooldown elapsed or this is a key we
+    // have never been limited under. Both halves have to come down together —
+    // the flag AND the data behind it. Leaving `clickData.isLimited` set with
+    // an elapsed cooldown would re-enable the button while `registerClick`
+    // still refused every click, since it returns early on that same flag.
+    const cooldownElapsed = clickData.isLimited;
+
     // Clear old clicks outside the time window
     const validClicks = clickData.clicks.filter(
-      (timestamp: number) => now - timestamp < (config.timeWindowMs as number),
+      (timestamp: number) => now - timestamp < config.timeWindowMs,
     );
 
-    if (validClicks.length !== clickData.clicks.length) {
+    if (cooldownElapsed || validClicks.length !== clickData.clicks.length) {
       const updatedData = {
         ...clickData,
         clicks: validClicks,
+        isLimited: false,
+        cooldownEndTime: 0,
       };
       setClickData(updatedData);
       // Saves updated clicks to localStorage
       saveStorageData(updatedData, config.storageKey);
     }
 
+    // Without this there is no path back to false other than the interval
+    // above, so a clickData that arrives already unlimited — exactly what
+    // switching tabs produces — used to leave the button stuck on "Aguarde".
+    setIsRateLimited(false);
+    setCooldownRemaining(0);
+
     return () => {};
-  }, [isClient, clickData, config.timeWindowMs, config.storageKey]);
+    // `config.storageKey` is deliberately NOT a dependency here. Reloading on
+    // a key change belongs to the first effect, which is the one that swaps
+    // `clickData`. Listing the key here as well made this effect re-run in the
+    // SAME commit as the change, still closing over the PREVIOUS key's
+    // clickData, and re-assert the cooldown on top of the reset the other
+    // effect had just done — that is how a cooldown started on the Entregas
+    // tab showed up on Ocorrências. Loading always hands back a fresh object,
+    // so the clickData dependency already re-runs this effect with the right
+    // data on the very next render.
+  }, [isClient, clickData, config.timeWindowMs]);
 
   // Function to register a click and check the rate limit
   const registerClick = () => {
@@ -208,16 +215,16 @@ export function useDataTableRevalidate(
 
     // Remove clicks outside the time window
     const validClicks = newClicks.filter(
-      (timestamp: number) => now - timestamp < (config.timeWindowMs as number),
+      (timestamp: number) => now - timestamp < config.timeWindowMs,
     );
 
     // Check if the limit has been exceeded
-    if (validClicks.length > (config.maxClicks as number)) {
+    if (validClicks.length > config.maxClicks) {
       // Activates cooldown
       const updatedData = {
         clicks: validClicks,
         isLimited: true,
-        cooldownEndTime: now + (config.cooldownTimeMs as number),
+        cooldownEndTime: now + config.cooldownTimeMs,
       };
 
       setClickData(updatedData);
@@ -226,42 +233,19 @@ export function useDataTableRevalidate(
       saveStorageData(updatedData, config.storageKey);
 
       setIsRateLimited(true);
-      setCooldownRemaining(Math.ceil((config.cooldownTimeMs as number) / 1000));
+      setCooldownRemaining(Math.ceil(config.cooldownTimeMs / 1000));
 
       // Notifies the user
       toast.warning(
-        `Muitas solicitações! Aguarde ${Math.ceil((config.cooldownTimeMs as number) / 1000)} segundos.`,
+        `Muitas solicitações! Aguarde ${Math.ceil(config.cooldownTimeMs / 1000)} segundos.`,
       );
 
-      // Start the countdown timer
-      const intervalId = setInterval(() => {
-        const currentTime = Date.now();
-
-        if (currentTime >= updatedData.cooldownEndTime) {
-          clearInterval(intervalId);
-
-          const resetData = {
-            ...updatedData,
-            isLimited: false,
-            cooldownEndTime: 0,
-          };
-
-          setClickData(resetData);
-          saveStorageData(resetData, config.storageKey);
-
-          setIsRateLimited(false);
-          setCooldownRemaining(0);
-        } else {
-          // We never let the counter reach zero while it is limited
-          const remaining = Math.max(
-            1,
-            Math.ceil((updatedData.cooldownEndTime - currentTime) / 1000),
-          );
-
-          setCooldownRemaining(remaining);
-        }
-      }, 1000);
-
+      // No timer here, on purpose. Setting clickData above re-runs the
+      // cooldown effect, which owns the ticking interval and — unlike this
+      // place — clears it when the component goes away. The timer that used to
+      // live here was a second one counting the same cooldown, never cleared,
+      // still holding the storage key captured at click time. It outlived the
+      // tab it belonged to and drove the counter of whatever tab came next.
       return false;
     } else {
       // If you haven't exceeded the limit, just update the clicks

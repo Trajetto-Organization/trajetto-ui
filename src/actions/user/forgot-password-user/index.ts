@@ -1,7 +1,13 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { headers } from "next/headers";
+
+import { apiForwardingHeaders } from "@/lib/api-forwarding";
 import { validateForgotFormSchema } from "@/schemas/forgot-password-schema";
 import { validateTurnstile } from "../../validate-turnstile";
+import { apiFetch } from "@/lib/api-fetch";
 
 const handleForgotPassword = async (
   state: any,
@@ -35,25 +41,31 @@ const handleForgotPassword = async (
   const { email } = forgotPasswordValidation.data;
 
   try {
-    const response = await fetch(forgotPassword, {
+    const response = await apiFetch(forgotPassword, {
       credentials: "include",
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Anonymous route limited per address: say which browser this is for.
+        ...apiForwardingHeaders(headers()),
       },
       body: JSON.stringify({ email }),
     });
 
     const { message } = await response.json();
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        forgotPasswordError: { forgotPasswordErrorMessage: message },
+        forgotPasswordError: {
+          forgotPasswordErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/forgot-password-user", error);
     return {
       forgotPasswordError: {
         forgotPasswordErrorMessage:

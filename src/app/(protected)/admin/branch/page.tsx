@@ -6,31 +6,27 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { BranchActions } from "./page-actions";
-import { BranchContent } from "./branch-content";
+import { BranchContent } from "@/features/branch/content";
+import { BranchListSkeleton } from "@/features/branch/skeleton";
 
-interface BranchQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface BranchPageProps {
+  // Every param the URL carries: sort, order and the facets too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Filiais",
-    description: `
-      Centralize o controle de todas as suas filiais em um só lugar.
-      Visualize, cadastre e organize unidades regionais com precisão,
-      monitore desempenho por localidade e otimize operações descentralizadas
-      com nossa plataforma integrada de gestão de filiais.
-      Expanda seu negócio com governança e visibilidade total.`,
+    description:
+      "Cadastre e acompanhe as unidades regionais da empresa: endereço, contato, código ERP e situação.",
   };
 }
 
-const Branch = async ({
+const AdminBranch = async ({
   searchParams,
-}: BranchQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: BranchPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -40,17 +36,19 @@ const Branch = async ({
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Filiais"}
-        description="Controle centralizado de unidades regionais. Cadastre, monitore e gerencie suas filiais com precisão e eficiência."
+        title="Filiais"
+        description="Selecione uma empresa para cadastrar e acompanhar as filiais dela."
       />
 
-      <BranchActions />
-
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <BranchContent searchParams={searchParams} token={tokenAccess} />
+      <Suspense fallback={<BranchListSkeleton mode="admin" />}>
+        <BranchContent
+          mode="admin"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default Branch;
+export default AdminBranch;

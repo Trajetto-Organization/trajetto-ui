@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { legalPath } from "@/lib/content/legal-documents";
+
 const Terms = (): JSX.Element => {
   return (
     <div
@@ -9,17 +11,17 @@ const Terms = (): JSX.Element => {
       <span>Ao clicar em continuar, você concorda com nossos</span> <br />
       <Link
         data-test="redirect-terms-of-service"
-        href="/legal/terms"
+        href={legalPath("termos")}
         className="text-[#d81b60] dark:text-[#ff4081]
         dark:hover:opacity-70 hover:text-muted-foreground 
         transition duration-200"
       >
-        Termos de Serviço
+        Termos de Uso
       </Link>
       <span>e</span>
       <Link
         data-test="redirect-privacy-policy"
-        href="/legal/privacy"
+        href={legalPath("privacidade")}
         className="text-[#d81b60] dark:text-[#ff4081]
         dark:hover:opacity-70 hover:text-muted-foreground 
         transition duration-200"

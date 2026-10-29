@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useListQuery } from "@/lib/search-params";
 
 interface DataTablePaginationProps<TData> {
   table: Table<TData>;
@@ -25,46 +25,92 @@ interface DataTablePaginationProps<TData> {
   isLoading?: boolean;
 }
 
+/** The page the list asked for last, as the URL and the API read it. */
+function requestedPageOf(params: URLSearchParams): number {
+  const page = Number(params.get("page"));
+
+  return Number.isInteger(page) && page >= 1 ? page : 1;
+}
+
 function DataTablePagination<TData>({
   table,
   error,
   isLoading = false,
 }: DataTablePaginationProps<TData>) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  /**
+   * The list query of the DataTable around it (search, filters, sort and
+   * page in one place). The pager used its own router: no busy state while
+   * the page loaded, and a quick second click on "próxima" pushed the same
+   * URL again, from the page still on screen. Now a turn is a change like
+   * any other: the table dims while the server answers, the buttons wait
+   * for it, the next turn builds on the page already asked for, and a
+   * complete list answered in the browser turns pages with no request.
+   */
+  const listQuery = useListQuery();
 
-  // Function to update URL parameters
-  const updateQueryParams = (newParams: Record<string, string>) => {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(newParams).forEach(([key, value]) => {
-      params.set(key, value);
+  const goToPage = (page: number) => {
+    listQuery.change((params) => {
+      params.set("page", String(page));
+
+      return params;
     });
-
-    router.push(`?${params.toString()}`);
   };
 
   // Gets the current pagination state
   const paginationState = table.getState().pagination;
+
+  /**
+   * Whether the user can select rows at all.
+   *
+   * Tables without a checkbox column were still announcing "0 de 1 linha(s)
+   * selecionadas." — a counter for a control that is not on screen, which
+   * reads like something is broken. Where there is nothing to select, the
+   * useful number is how many rows this page is showing. The table says
+   * whether it selects (DataTable turns it on with `bulkActions`), rather
+   * than this guessing from a column id.
+   */
+  const isSelectable = Boolean(table.options.enableRowSelection);
+
+  const rowsOnPage = table.getFilteredRowModel().rows.length;
 
   // pageIndex is zero-indexed; for the URL we use page = pageIndex + 1
   const currentPage = paginationState.pageIndex + 1;
 
   return (
     <div
-      className="flex flex-col items-center gap-4 
-      justify-between px-2 sm:flex-row sm:gap-0"
+      /**
+       * `flex-wrap` is load-bearing: without it the row overflows and is lost.
+       *
+       * From `sm` up the two groups become one `justify-between` row, and
+       * neither can shrink — the selection text, the "Linhas por página"
+       * label and the four buttons are all `whitespace-nowrap`, and a flex
+       * item has `min-width: auto`. Together they need 428px where an iPad in
+       * portrait offers 400, and because the shell's `<main>` clips, the
+       * pager buttons sat off-screen with no scrollbar: the table was there
+       * and turning the page was impossible. Wrapping stacks the groups.
+       */
+      className="flex flex-col flex-wrap items-center gap-4 
+      justify-between px-2 sm:flex-row sm:gap-x-4 sm:gap-y-3"
     >
       <div
-        className="text-sm text-muted-foreground 
+        className="text-sm text-muted-foreground min-w-0 
         w-full sm:w-auto text-center sm:text-left"
       >
-        {table.getFilteredSelectedRowModel().rows.length} de{" "}
-        {table.getFilteredRowModel().rows.length} linha(s) selecionadas.
+        {isSelectable
+          ? `${table.getFilteredSelectedRowModel().rows.length} de ${rowsOnPage} linha(s) selecionadas.`
+          : `${rowsOnPage} linha(s) nesta página.`}
       </div>
 
+      {/*
+        Wraps from `sm` up too. "Página 12 de 50" is one unbreakable line, so
+        the size picker plus the buttons need ~540px; at 768px with the
+        sidebar open <main> offers 512 and clips, and the last-page button was
+        cut off. Wrapping puts the buttons under the size picker instead.
+      */}
       <div
-        className="flex flex-col w-full items-center 
-        gap-4 sm:w-auto sm:flex-row sm:gap-6 lg:gap-8"
+        className="flex flex-col w-full min-w-0 items-center 
+        gap-4 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center
+        sm:gap-x-6 sm:gap-y-3 lg:gap-x-8"
       >
         <div
           className="flex items-center w-full 
@@ -77,8 +123,12 @@ function DataTablePagination<TData>({
             name="pageSize"
             value={`${paginationState.pageSize}`}
             onValueChange={(value) => {
-              table.setPageSize(Number(value));
-              updateQueryParams({ pageSize: value, page: "1" });
+              listQuery.change((params) => {
+                params.set("pageSize", value);
+                params.set("page", "1");
+
+                return params;
+              });
             }}
             disabled={error || isLoading}
           >
@@ -87,7 +137,12 @@ function DataTablePagination<TData>({
               aria-label="Paginação"
               className="h-8 w-full sm:w-[80px] text-sm"
             >
-              <SelectValue placeholder={`${paginationState.pageSize}`} />
+              {/* Children, not only the placeholder: Radix fills the value
+                  from the item text after mount, so the server HTML showed an
+                  empty select until hydration. */}
+              <SelectValue placeholder={`${paginationState.pageSize}`}>
+                {paginationState.pageSize}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent side="top">
               {[10, 20, 30, 40, 50].map((pageSize) => (
@@ -110,10 +165,7 @@ function DataTablePagination<TData>({
           <Button
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
-              table.setPageIndex(0);
-              updateQueryParams({ page: "1" });
-            }}
+            onClick={() => goToPage(1)}
             disabled={!table.getCanPreviousPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a primeira página</span>
@@ -124,11 +176,9 @@ function DataTablePagination<TData>({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => {
-              const currentIndex = table.getState().pagination.pageIndex;
-              if (currentIndex > 0) {
-                table.setPageIndex(currentIndex - 1);
-                updateQueryParams({ page: `${currentIndex}` });
-              }
+              const page = requestedPageOf(listQuery.params);
+
+              if (page > 1) goToPage(page - 1);
             }}
             disabled={!table.getCanPreviousPage() || error || isLoading}
           >
@@ -136,7 +186,8 @@ function DataTablePagination<TData>({
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="hidden text-sm font-medium sm:block">
+          {/* One line: at 768px with the sidebar open it broke into "Página 1" / "de 1". */}
+          <div className="hidden whitespace-nowrap text-sm font-medium sm:block">
             Página {currentPage} de {table.getPageCount()}
           </div>
 
@@ -144,10 +195,9 @@ function DataTablePagination<TData>({
             variant="outline"
             className="h-8 w-8 p-0"
             onClick={() => {
-              const currentIndex = table.getState().pagination.pageIndex;
+              const page = requestedPageOf(listQuery.params);
 
-              table.setPageIndex(currentIndex + 1);
-              updateQueryParams({ page: `${currentIndex + 2}` });
+              if (page < table.getPageCount()) goToPage(page + 1);
             }}
             disabled={!table.getCanNextPage() || error || isLoading}
           >
@@ -158,11 +208,7 @@ function DataTablePagination<TData>({
           <Button
             variant="outline"
             className="h-8 w-8 p-0"
-            onClick={() => {
-              const pageCount = table.getPageCount();
-              table.setPageIndex(pageCount - 1);
-              updateQueryParams({ page: pageCount.toString() });
-            }}
+            onClick={() => goToPage(table.getPageCount())}
             disabled={!table.getCanNextPage() || error || isLoading}
           >
             <span className="sr-only">Ir para a última página</span>

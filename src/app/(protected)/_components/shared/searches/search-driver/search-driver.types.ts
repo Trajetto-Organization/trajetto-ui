@@ -10,16 +10,10 @@ interface SearchDriverProps {
   isOptional?: boolean;
 }
 
-interface FetchDriverProps {
-  cursor?: string;
-  businessId?: string;
-  signal?: AbortSignal;
-}
-
 interface FetchDriverResult {
   data: any[];
   nextCursor: string | null;
   hasMore: boolean;
 }
 
-export type { SearchDriverProps, FetchDriverProps, FetchDriverResult };
+export type { SearchDriverProps, FetchDriverResult };

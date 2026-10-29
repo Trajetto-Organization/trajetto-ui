@@ -1,23 +1,20 @@
 import { useState, useEffect } from "react";
-import { parseISO, isValid, format } from "date-fns";
+import { isValid, format } from "date-fns";
 
 import { ptBR } from "date-fns/locale";
 import type { DatePickerProps } from "../date-picker.types";
 
-function useDatePicker({ value, onChange }: DatePickerProps) {
-  // Try to parse the date, but add validation
-  const parseDate = (dateValue: string | undefined) => {
-    if (!dateValue) return null;
+import { parseDateValue, pickerYears, serializeDate } from "../helpers";
 
-    try {
-      const parsed = parseISO(dateValue);
-
-      // Check if the parsed date is valid
-      return isValid(parsed) ? parsed : null;
-    } catch (error) {
-      return null;
-    }
-  };
+function useDatePicker({
+  value,
+  onChange,
+  dateOnly = false,
+  allowFutureDates = false,
+  required = false,
+}: DatePickerProps) {
+  const parseDate = (dateValue: string | undefined) =>
+    parseDateValue(dateValue, dateOnly);
 
   // Use the safe parse function
   const parsed = parseDate(value);
@@ -41,20 +38,24 @@ function useDatePicker({ value, onChange }: DatePickerProps) {
     } else {
       setSelectedDate(null);
     }
-  }, [value]);
+  }, [value, dateOnly]);
 
   const handleYearChange = (yearStr: string) => setDisplayYear(Number(yearStr));
   const handleMonthChange = (monthStr: string) =>
     setDisplayMonth(Number(monthStr));
 
   const handleSelect = (date: Date | undefined) => {
+    // The calendar reports a click on the selected day as `undefined`; on a
+    // required field that is the person confirming the day, not clearing it.
+    if (!date && required) return;
+
     setSelectedDate(date || null);
 
     if (date) {
       setDisplayMonth(date.getMonth());
       setDisplayYear(date.getFullYear());
 
-      if (onChange) onChange(date.toISOString());
+      if (onChange) onChange(serializeDate(date, dateOnly));
     } else {
       if (onChange) onChange("");
     }
@@ -66,9 +67,10 @@ function useDatePicker({ value, onChange }: DatePickerProps) {
       ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR })
       : "";
 
-  const years = Array.from(
-    { length: 101 },
-    (_, i) => new Date().getFullYear() - i,
+  const years = pickerYears(
+    new Date().getFullYear(),
+    allowFutureDates,
+    displayYear,
   );
 
   const months = [

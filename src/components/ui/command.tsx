@@ -54,12 +54,18 @@ const CommandInput = React.forwardRef<
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
+// cmdk names every listbox "Suggestions" when no label is given, and no caller
+// gives one: every combobox announced its options in English. The Command
+// root's label is left empty on purpose: the input then takes its name from
+// its own placeholder ("Buscar motorista…"), which says more than a generic
+// default would.
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, ...props }, ref) => (
+>(({ className, label = "Sugestões", ...props }, ref) => (
   <CommandPrimitive.List
     ref={ref}
+    label={label}
     className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)}
     {...props}
   />

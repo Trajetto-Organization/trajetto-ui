@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { reorderKanbanCardsSchema } from "@/schemas/reorder-kanban-cards-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ReorderKanbanCardsProps {
   message: string;
@@ -33,7 +36,7 @@ const handleReorderKanbanCards = async (reorderData: {
   }
 
   try {
-    const response = await fetch(reorderCards, {
+    const response = await apiFetch(reorderCards, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -45,14 +48,17 @@ const handleReorderKanbanCards = async (reorderData: {
 
     const { message } = (await response.json()) as ReorderKanbanCardsProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        reorderCardsError: { reorderCardsErrorMessage: message },
+        reorderCardsError: {
+          reorderCardsErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/reorder-kanban-cards", error);
     return {
       reorderCardsError: {
         reorderCardsErrorMessage:

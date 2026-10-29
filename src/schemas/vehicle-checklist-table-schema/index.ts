@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const vehicleChecklistTableSchema = z.object({
   id: z.string(),
+  created_from: z.string().nullable().optional(),
   current_mileage: z.number(),
   checklist_date: z.union([z.date(), z.string()]),
   tires_condition: z.string(),

@@ -1,11 +1,11 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { Badge } from "@/components/ui/badge";
 
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 import { DataTableQuoteRowActions } from "../data-table-row-actions";
 
 import type { QuoteProps } from "../quote.types";
@@ -16,10 +16,10 @@ import {
 } from "@/lib/format-values";
 
 const statusColors = {
-  PENDING: "bg-yellow-500/10 text-yellow-600",
-  CONTACTED: "bg-blue-500/10 text-blue-600",
-  CLOSED: "bg-gray-500/10 text-gray-600",
-  CONVERTED: "bg-green-500/10 text-green-600",
+  PENDING: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+  CONTACTED: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  CLOSED: "bg-gray-500/10 text-gray-600 dark:text-gray-300",
+  CONVERTED: "bg-green-500/10 text-green-600 dark:text-green-400",
 };
 
 const statusLabels = {
@@ -30,53 +30,8 @@ const statusLabels = {
 };
 
 const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
-  {
-    id: "select",
-    meta: {
-      title: "Seleção",
-    },
-    header: ({ table }) => (
-      <Checkbox
-        id="select-all-quotes"
-        name="select-all-quotes"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-quote-${row.id}`}
-        name={`select-quote-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "id",
-    meta: {
-      title: "Identificador",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
-    ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-72">
-        {displayValue(row.getValue("id"))}
-      </p>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
+  // A quote request has no number of its own: the record id identifies it.
+  idColumn<QuoteProps>(),
   {
     accessorKey: "name",
     meta: {
@@ -104,9 +59,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
         {displayValue(row.getValue("company"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "email",
@@ -160,9 +112,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
         </p>
       );
     },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "contacted_at",
@@ -197,9 +146,6 @@ const tableQuoteColumns: ColumnDef<QuoteProps>[] = [
           {statusLabels[status]}
         </Badge>
       );
-    },
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
     },
   },
   {

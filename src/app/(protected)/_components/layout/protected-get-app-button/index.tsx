@@ -33,8 +33,8 @@ const ProtectedGetAppButton = (): JSX.Element => {
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {/* Sem QR code enquanto o app não estiver publicado: um código que
-              aponta para lugar nenhum frustra mais do que ajuda. */}
+          {/* No QR code until the app is published: a code that leads
+              nowhere frustrates more than it helps. */}
           <div className="flex flex-col items-center w-44 py-1">
             <span
               className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px]

@@ -1,10 +1,10 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import { businessTableSchema } from "@/schemas/business-table-schema";
 import { DataTableColumnHeader } from "@/app/(protected)/_components/shared/tanstack-table/data-table-collumn-header";
+import { idColumn } from "@/app/(protected)/_components/shared/tanstack-table/id-cell";
 
 import { DataTableBusinessRowActions } from "../data-table-row-actions";
 import { ToggleBusinessActiveCell } from "../toggle-active-cell";
@@ -17,52 +17,30 @@ import {
   displayValue,
 } from "@/lib/format-values";
 
+import { timeZoneLabel } from "../timezone-field/timezones";
+
+/**
+ * The companies table. It runs in the server mode of the DataTable
+ * (decision 8.8): the column ids are the API's sort keys and facets
+ * (lib/server-table.ts), so which headers sort is the spec's call, and no
+ * column filters the loaded page.
+ */
 const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
+  idColumn<businessTableSchema>(),
   {
-    id: "select",
+    // The CNPJ is the company's business identifier, unique on the platform.
+    accessorKey: "cnpj",
     meta: {
-      title: "Seleção",
-    },
-    header: ({ table }) => (
-      <Checkbox
-        id="select-all-business"
-        name="select-all-business"
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-        className="translate-y-[2px]"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        id={`select-business-${row.id}`}
-        name={`select-business-${row.id}`}
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-        className="translate-y-[2px]"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "id",
-    meta: {
-      title: "Identificador",
+      title: "CNPJ",
     },
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Identificador" />
+      <DataTableColumnHeader column={column} title="CNPJ" />
     ),
     cell: ({ row }) => (
-      <p className="truncate font-medium w-72">
-        {displayValue(row.getValue("id"))}
+      <p className="truncate font-medium w-36">
+        {displayValue(formatCnpj(row.getValue("cnpj")))}
       </p>
     ),
-    enableSorting: false,
     enableHiding: false,
   },
   {
@@ -75,14 +53,11 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
     ),
     cell: ({ row }) => (
       <ToggleBusinessActiveCell
-        businessId={row.getValue("id")}
+        businessId={row.original.id}
         isActive={row.getValue("is_active") ?? true}
         corporateReason={row.getValue("corporate_reason")}
       />
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
     enableSorting: false,
   },
   {
@@ -98,9 +73,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("corporate_reason"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "fantasy_name",
@@ -145,9 +117,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("city"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "uf",
@@ -162,9 +131,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("uf"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
   },
   {
     accessorKey: "street",
@@ -193,25 +159,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("address_number"))}
       </p>
     ),
-  },
-  {
-    accessorKey: "cnpj",
-    meta: {
-      title: "CNPJ",
-    },
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="CNPJ" />
-    ),
-    cell: ({ row }) => (
-      <p className="truncate font-medium w-36">
-        {displayValue(formatCnpj(row.getValue("cnpj")))}
-      </p>
-    ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
-    enableSorting: false,
-    enableHiding: false,
   },
   {
     accessorKey: "complement",
@@ -258,9 +205,6 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("erp_code"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
-    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -307,9 +251,44 @@ const tableBusinessCollumns: ColumnDef<businessTableSchema>[] = [
         {displayValue(row.getValue("email"))}
       </p>
     ),
-    filterFn: (row, id, value) => {
-      return value.includes(row.getValue(id));
+  },
+  {
+    accessorKey: "vehicle_limit",
+    meta: {
+      title: "Veículos",
     },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Veículos" />
+    ),
+    cell: ({ row }) => {
+      const limit = (row.getValue("vehicle_limit") as number | undefined) ?? 0;
+      const count = row.original.vehicle_count ?? 0;
+
+      return (
+        <p className="truncate font-medium w-24">
+          {limit > 0 ? `${count} / ${limit}` : `${count} / —`}
+        </p>
+      );
+    },
+    enableSorting: false,
+  },
+  {
+    accessorKey: "timezone",
+    meta: {
+      title: "Fuso horário",
+    },
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Fuso horário" />
+    ),
+    cell: ({ row }) => (
+      <p
+        className="truncate font-medium w-56"
+        title={timeZoneLabel(row.original.timezone)}
+      >
+        {timeZoneLabel(row.original.timezone)}
+      </p>
+    ),
+    enableSorting: false,
   },
   {
     accessorKey: "created_at",

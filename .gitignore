@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# Mutation testing (yarn test:mutation): Stryker sandbox and reports
+/.stryker-tmp
+/reports/mutation
+
 # next.js
 /.next/
 /out/
@@ -29,11 +33,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# env files (can opt-in for committing if needed)
-.env
-.env.production
-.env.development
-.env.local
+# env files: every one but the example. Listing them by name left
+# `.env.test` and `.env.production.local` — both read by Next — committable.
+.env*
+!.env.example
+
+# Service-account keys (the Firebase admin SDK key lives next to the repos,
+# in google-firebase-services/). The web uses none; a copy here is a mistake.
+*firebase-adminsdk*.json
+*service-account*.json
 
 # vercel
 .vercel

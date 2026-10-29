@@ -3,7 +3,11 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useState } from "react";
 
-import { CaptchaTurnstile } from "@/components/shared/custom/captcha-turnstile";
+import {
+  CaptchaTurnstile,
+  useCaptchaToken,
+} from "@/components/shared/custom/captcha-turnstile";
+import { forgotConsumedCaptcha } from "@/components/shared/custom/captcha-turnstile/token-consumed";
 
 import { Button } from "@/components/ui/button";
 import { Loader, MailIcon } from "lucide-react";
@@ -14,7 +18,9 @@ import type {
 } from "./forgot-password-form.types";
 
 import FormInput from "../../shared/custom/form-input";
+import { useLiveValidation } from "@/components/shared/live-validation";
 import { handleForgotPassword } from "@/actions/user/forgot-password-user";
+import { validateForgotFormSchema } from "@/schemas/forgot-password-schema";
 
 import { ErrorForm } from "../error-form";
 import { SuccessForm } from "../success-form";
@@ -26,26 +32,34 @@ const ForgotPasswordContainer = ({
 }: ForgotPasswordContainerProps): JSX.Element => {
   const { pending } = useFormStatus();
 
-  const [isCaptchaValid, setIsCaptchaValid] = useState<boolean>(false);
-  const [turnstileKey, setTurnstileKey] = useState<number>(0);
+  const captcha = useCaptchaToken();
+  const resetCaptcha = captcha.reset;
 
-  // Reset Turnstile only when the token was consumed (server/turnstile errors, not Zod validation)
+  // Checked as it is left, by the action's own schema (decision 16.700).
+  const [email, setEmail] = useState<string>("");
+  const live = useLiveValidation({
+    schema: validateForgotFormSchema,
+    values: { email },
+    serverErrors: state.forgotPasswordError,
+  });
+
+  // A new widget whenever the answer shows the token was verified (any
+  // answer but field errors, the success included): tokens are single-use.
   useEffect(() => {
-    if (state?.forgotPasswordError?.forgotPasswordErrorMessage) {
-      setIsCaptchaValid(false);
-      setTurnstileKey((prev) => prev + 1);
-    }
-  }, [state]);
+    if (forgotConsumedCaptcha(state)) resetCaptcha();
+  }, [state, resetCaptcha]);
 
   return (
-    <section className="animate-fade-in [animation-delay:400ms]">
+    <section ref={live.ref} className="animate-fade-in [animation-delay:400ms]">
       <FormInput
         label={"Email"}
         htmlfor={"email"}
         name="email"
         type="email"
         autoFocus={true}
-        errorName={state.forgotPasswordError?.email}
+        errorName={live.errorOf("email")}
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
         placeholder={"E-mail"}
         icon={<MailIcon className="h-4 w-4 text-gray-500" />}
         disabled={pending}
@@ -61,10 +75,9 @@ const ForgotPasswordContainer = ({
         <Button
           className="w-full h-10"
           type="submit"
-          disabled={
-            (process.env.NODE_ENV === "production" && !isCaptchaValid) ||
-            pending
-          }
+          // No fresh token, no submit: never the skeleton, never a spent one.
+          disabled={captcha.missing || pending}
+          aria-describedby={captcha.describedBy}
         >
           Recuperar minha senha
           {pending && (
@@ -75,24 +88,15 @@ const ForgotPasswordContainer = ({
         </Button>
       </div>
 
-      {process.env.NODE_ENV === "production" && (
+      {captcha.required && (
         <>
-          <CaptchaTurnstile
-            resetSignal={turnstileKey}
-            sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-            onSuccess={(token) => {
-              const input = document.getElementById(
-                "turnstile-token",
-              ) as HTMLInputElement;
+          <CaptchaTurnstile {...captcha.widget} size="flexible" />
 
-              if (input) input.value = token;
-              setIsCaptchaValid(true);
-            }}
-            size="flexible"
-            theme="auto"
+          <input
+            type="hidden"
+            name="turnstileToken"
+            value={captcha.token ?? ""}
           />
-
-          <input id="turnstile-token" type="hidden" name="turnstileToken" />
         </>
       )}
 
@@ -125,7 +129,8 @@ const ForgotPasswordForm = (): JSX.Element => {
         </p>
       </div>
 
-      <form action={dispatch}>
+      {/* noValidate: the schema's message under the field, not the browser's bubble. */}
+      <form action={dispatch} noValidate>
         <ForgotPasswordContainer state={state ?? defaultState} />
       </form>
     </>

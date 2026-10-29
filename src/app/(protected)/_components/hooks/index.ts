@@ -85,6 +85,10 @@ function useCepValidation({
   const toastIdRef = useRef<string | number | null>(null);
   const lastSuccessfulCepRef = useRef<string>("");
 
+  // The CEP the form was seeded with (digits only). Its lookup only confirms
+  // the CEP still resolves; the seeded address is never overwritten by it.
+  const prefilledCepRef = useRef<string>("");
+
   // Track CEPs that have already shown success toast
   const hasShownToastForCepRef = useRef<Set<string>>(new Set());
   // Track CEPs that have already shown loading toast (to prevent duplicate loading toasts)
@@ -122,6 +126,8 @@ function useCepValidation({
     // But DON'T add to loading toast tracking - we want to show "Procurando CEP..."
     // when opening edit dialog so user understands why fields are disabled
     const initialCep = newValues.cep?.replace(/\D/g, "") || "";
+    prefilledCepRef.current = initialCep;
+
     if (initialCep.length === 8) {
       hasShownToastForCepRef.current.add(initialCep);
       // Note: NOT adding to hasShownLoadingToastForCepRef so loading toast shows on dialog open
@@ -174,12 +180,31 @@ function useCepValidation({
       // Track the CEP that was successfully fetched
       lastFetchedCepRef.current = numericCep;
 
-      setFormValues((prev) => ({
-        ...prev,
-        city: cepData.city,
-        uf: cepData.uf,
-        street: cepData.street,
-      }));
+      const initial = initialFormValuesRef.current;
+      const initialCepDigits = (initial.cep || "").replace(/\D/g, "");
+
+      if (numericCep === initialCepDigits) {
+        // Typing the record's own CEP back restores the address it was
+        // saved with (on open this is a no-op), so an untouched form
+        // compares clean again and the update button disables itself.
+        setFormValues((prev) => ({
+          ...prev,
+          city: initial.city ?? prev.city,
+          uf: initial.uf ?? prev.uf,
+          street: initial.street ?? prev.street,
+        }));
+      } else if (numericCep !== prefilledCepRef.current) {
+        // Only a CEP the user actually changed to is filled from the
+        // lookup. Overwriting on open would replace an address the record
+        // was saved with -- hand-corrected, or declared by the NF-e --
+        // with ViaCEP's version and mark the form dirty before any edit.
+        setFormValues((prev) => ({
+          ...prev,
+          city: cepData.city,
+          uf: cepData.uf,
+          street: cepData.street,
+        }));
+      }
 
       // Only show toast if we haven't shown it for this CEP before
       if (!hasShownToastForCepRef.current.has(numericCep)) {

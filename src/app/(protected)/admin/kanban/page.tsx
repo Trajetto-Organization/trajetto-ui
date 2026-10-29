@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { getCookies } from "@/actions/cookies";
+import { readBusinessIdParam } from "@/lib/business-id-param";
 
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
@@ -40,8 +41,11 @@ const Kanban = async ({ searchParams }: KanbanProps) => {
           description="Monitore e gerencie os boards Kanban de todas as empresas do sistema."
         />
 
+        {/* Keyed by company (decision 2.6): a switch restarts the board's
+            local state — an open "Adicionar Coluna" dialog, the search box. */}
         <KanbanBoardProvider
-          businessId={searchParams.businessId}
+          key={readBusinessIdParam(searchParams.businessId) ?? "none"}
+          businessId={readBusinessIdParam(searchParams.businessId)}
           initialSearch={searchParams.search}
           mode="admin"
           showBusinessSelector={true}

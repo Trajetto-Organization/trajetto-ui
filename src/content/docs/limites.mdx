@@ -1,0 +1,43 @@
+---
+title: Limites de uso
+description: Os tetos de requisições por chave e por empresa, os cabeçalhos que dizem quanto ainda resta e como reagir a um 429 ou a um 503.
+slug: limites
+updatedAt: 2026-09-29
+---
+
+A API protege a operação de todas as empresas com tetos de requisições por minuto. Um sistema bem escrito quase nunca os encontra; quando encontra, a resposta diz exatamente quanto esperar.
+
+## Os tetos
+
+<RateLimits />
+
+O teto de cada chave é definido na criação dela, no painel, e vale para todas as rotas somadas: uma chave de 120 por minuto faz 120 chamadas por minuto no total, não 120 em cada endpoint. O teto da empresa soma todas as chaves dela, qualquer que seja o teto de cada uma. O catálogo, que é aberto, tem um limite próprio por endereço.
+
+## Quanto ainda resta
+
+As respostas das rotas com chave trazem o estado do teto da chave:
+
+| Cabeçalho               | O que traz                                     |
+| ----------------------- | ---------------------------------------------- |
+| `x-ratelimit-limit`     | O teto por minuto da chave.                    |
+| `x-ratelimit-remaining` | Quantas chamadas ainda restam na janela atual. |
+| `x-ratelimit-reset`     | Segundos até a janela recomeçar.               |
+
+Use `x-ratelimit-remaining` para desacelerar antes de ser recusado, por exemplo numa [sincronização completa](/docs/paginacao).
+
+## Quando o teto acaba: 429
+
+Passar de um teto responde **429** com `code` `RATE_LIMITED` e o cabeçalho `retry-after`, em segundos. Espere pelo menos esse tempo antes de repetir. A recusa pelo teto da empresa traz só o `retry-after`, sem os cabeçalhos `x-ratelimit-*`, porque não é o teto de nenhuma chave em particular.
+
+Um endereço que apresenta chaves inválidas demais em um minuto também recebe 429 até a janela virar. Se isso acontecer, o problema é a chave, não o volume: confira o que está sendo enviado em `Authorization`.
+
+## Indisponibilidade momentânea: 503
+
+Se o banco de dados ficar indisponível por instantes, a API responde **503** com `code` `SERVICE_UNAVAILABLE` e um `retry-after` curto. É transitório: espere e repita. Numa escrita, repita com a mesma `Idempotency-Key`, porque um 503 não garante que nada foi gravado.
+
+## Boas práticas
+
+- Espere o `retry-after` e, sem ele, aumente a espera a cada tentativa (1 s, 2 s, 4 s...). Nunca repita em laço sem espera.
+- Prefira os [webhooks](/docs/webhooks) a consultar a API de minuto em minuto: eles chegam na hora e não gastam o seu teto.
+- Numa varredura grande, use o maior `limit` por página e continue do mesmo cursor depois de um 429.
+- Use uma chave por sistema: assim, um sistema com problema não consome o teto dos outros.

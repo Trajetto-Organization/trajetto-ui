@@ -1,0 +1,589 @@
+---
+title: "Política de Privacidade"
+description: "Quais dados pessoais o Trajetto trata na plataforma de frotas e de entregas, no app do motorista e no site: para quê, com que base legal, com quem compartilha e por quanto tempo guarda."
+slug: "privacidade"
+updatedAt: "2026-10-26"
+effectiveAt: "2026-09-28"
+---
+
+## 1. Em resumo
+
+O Trajetto é uma plataforma para transportadoras e frotistas: gestão de frotas,
+gestão de entregas, torre de controle e um app Android para o motorista. Quem
+contrata é uma empresa, que aqui chamamos de **empresa cliente**. É ela quem
+cadastra os usuários, os motoristas e as entregas.
+
+- **Na maior parte dos dados, o Trajetto trabalha em nome da empresa cliente.**
+  Os dados de usuários, motoristas e destinatários fazem parte da operação
+  dela, e é ela quem decide para que servem. O Trajetto guarda e processa esses
+  dados seguindo as instruções da empresa cliente (seção 2).
+- **Não vendemos dados** e não usamos dado de ninguém para publicidade.
+- **Não usamos ferramentas de medição de audiência nem de publicidade:**
+  nenhum Google Analytics, Google Tag Manager, Meta Pixel, Hotjar, Clarity ou
+  equivalente, no site, no painel ou no app.
+- **O rastreamento contínuo do motorista só acontece enquanto uma rota dele
+  está em andamento.** Antes de a rota começar e depois que ela termina, o app
+  não envia a posição de tempo em tempo. Fora da rota, o local só é gravado
+  junto de um registro, no momento em que o motorista o faz: uma chegada, um
+  comprovante, uma ocorrência, um abastecimento ou o início e o fim de uma
+  pausa (seção 5).
+- **As pausas que o motorista registra no app** (refeição, descanso ou outra)
+  servem para a empresa cliente acompanhar a jornada. O relatório de pausas só
+  aponta alertas: não bloqueia nada nem aplica consequência ao motorista
+  (seção 4).
+- **O comprovante de entrega tem verificação pública:** quem tiver o código QR
+  do comprovante consegue conferir o documento e abrir o PDF (seção 6).
+- O responsável pelos dados e o canal de contato estão em
+  [Identificação do responsável](#identificacao), no topo desta página.
+
+## 2. Quem decide sobre os seus dados
+
+A Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018) separa quem decide
+sobre o tratamento (o **controlador**) de quem trata os dados em nome dele (o
+**operador**). No Trajetto, os dois papéis aparecem:
+
+| Situação                                                                                                                                                                 | Papel do Trajetto | Quem decide       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ----------------- |
+| Dados que a empresa cliente registra na plataforma: usuários, motoristas, veículos, entregas, destinatários, fotos, assinaturas, localização, ocorrências, pausas e chat | Operador          | A empresa cliente |
+| Visitantes do site, pedidos de orçamento e mensagens enviadas ao Trajetto                                                                                                | Controlador       | O Trajetto        |
+| Dados cadastrais e de contato da empresa cliente e dos seus representantes, para gerir o contrato                                                                        | Controlador       | O Trajetto        |
+| Segurança da plataforma: registros de acesso, bloqueio de tentativas de senha e prevenção de abuso                                                                       | Controlador       | O Trajetto        |
+
+Se você é usuário, motorista ou destinatário de uma entrega, a empresa que usa
+o Trajetto responde pelo tratamento dos seus dados e define a base legal
+perante você. Os pedidos sobre esses dados devem ser feitos a ela. Se um pedido
+desses chegar ao Trajetto, nós o encaminhamos à empresa responsável (seção 11).
+
+## 3. Site e pedidos de orçamento
+
+| Dado                                                                                                                                              | Para quê                                                                                                                                                         | Base legal                                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Nome, empresa, e-mail, telefone, tamanho da frota e mensagem do formulário de orçamento                                                           | Responder ao pedido, enviar a confirmação por e-mail e conduzir a negociação                                                                                     | Procedimentos preliminares a um contrato, a pedido do titular (LGPD, art. 7º, V)         |
+| Mensagem do formulário de contato                                                                                                                 | O formulário só abre o seu programa de e-mail com a mensagem preenchida; nada é gravado nos nossos servidores. Recebemos apenas o e-mail que você decidir enviar | Procedimentos preliminares (art. 7º, V) ou legítimo interesse em responder (art. 7º, IX) |
+| Endereço IP e sinais técnicos do navegador, na verificação contra robôs (Cloudflare Turnstile) do orçamento, da entrada e da recuperação de senha | Impedir envios automatizados e ataques de senha                                                                                                                  | Legítimo interesse na segurança (art. 7º, IX)                                            |
+| Registros técnicos das requisições: endereço IP, data e hora, rota acessada e versão do app                                                       | Segurança, investigação de abuso e diagnóstico de falhas                                                                                                         | Legítimo interesse (art. 7º, IX)                                                         |
+
+As páginas públicas não gravam cookie para quem não tem conta e não carregam
+mapas. Os detalhes estão na [Política de Cookies](/legal/cookies).
+
+## 4. Dados tratados na plataforma
+
+Nesta seção o Trajetto atua, quase sempre, como operador da empresa cliente, e
+a base legal de cada tratamento é definida por ela. Em geral são: a execução do
+contrato de trabalho ou de transporte (art. 7º, V); o cumprimento de obrigação
+legal, como as regras de jornada do motorista profissional (Lei nº
+13.103/2015) e a guarda de documentos fiscais (art. 7º, II); o exercício
+regular de direitos, como provar uma entrega numa disputa (art. 7º, VI); e o
+legítimo interesse, como a segurança da carga e da operação (art. 7º, IX).
+
+### Empresa cliente e seus representantes
+
+Razão social, nome fantasia, CNPJ, CNAE, endereço, nome do responsável,
+telefone e e-mail, além dos módulos contratados e dos limites de uso. O
+Trajetto usa esses dados como controlador, para prestar o serviço e gerir o
+contrato (art. 7º, V).
+
+### Usuários do painel e do app
+
+- Nome, e-mail, foto de perfil (opcional), papel e perfil de acesso.
+- Senha, guardada apenas como resumo criptográfico (bcrypt). Ninguém da equipe do
+  Trajetto consegue ler a sua senha; ela só pode ser trocada.
+- Verificação em duas etapas, quando ligada: o código é enviado ao seu e-mail.
+- Tentativas de entrada malsucedidas e o bloqueio temporário da conta depois
+  de erros repetidos.
+- Preferências de notificação (sino, e-mail e WhatsApp) e, se você ligar o
+  WhatsApp, o número de telefone. O canal de WhatsApp vem desligado.
+- O registro dos avisos enviados a você por e-mail, WhatsApp e push, com a
+  situação que o provedor informa sobre cada um: enviado, entregue, lido (no
+  WhatsApp), recusado ou marcado como spam. O prazo está na seção 10.
+- O horário da sua última conexão, que a central vê no chat ("visto por
+  último").
+- No app, o identificador de notificações do celular, que é apagado quando a
+  sessão termina.
+
+### Motoristas
+
+- Cadastro: nome, data de nascimento, CPF, RG, número, categoria e validade
+  da CNH, endereço, situação, tipo de contrato e filial.
+- Trabalho registrado no app ou no painel: rotas, avisos de que está a
+  caminho de um endereço, chegadas ao endereço, comprovantes, ocorrências
+  (tipo, descrição, fotos, local, horário e quem relatou), pausas,
+  abastecimentos (foto do odômetro, leitura, litros, valores e local),
+  checklists do veículo (fotos por item), multas vinculadas ao motorista e
+  mensagens do chat.
+
+### Pausas do motorista
+
+O motorista registra pelo app o início e o fim de cada pausa da jornada,
+inclusive sem sinal. Uma pausa só pode começar quando o motorista tem uma rota
+liberada ou em andamento no dia. Cada pausa guarda o tipo (refeição, descanso
+ou outra), o tipo de pausa que a empresa cadastrou e o motorista escolheu
+(como almoço, lanche ou café), o horário de início e de fim, o local do início
+e do fim (quando o aparelho consegue obter a posição), a observação que o
+motorista escrever e a rota que estava em andamento ou liberada para ele.
+
+- **Para quê:** acompanhar a jornada do motorista profissional (Lei nº
+  13.103/2015). A tela Pausas dos motoristas monta um relatório por motorista
+  e por dia e aponta refeição ausente ou curta, direção longa sem descanso,
+  intervalo curto entre duas jornadas e pausas esquecidas (abertas por mais de
+  12 horas, ou encerradas só depois disso), que ficam fora dos cálculos. O
+  tempo de direção é estimado pelo tempo em que as rotas ficaram em
+  andamento, descontadas as pausas registradas; por isso ele inclui o tempo
+  parado nos clientes.
+- **Só sinaliza:** os alertas não bloqueiam o motorista nem geram nenhuma
+  consequência automática. Cabe à empresa cliente avaliá-los.
+- **Quem vê:** a empresa cliente, na tela Pausas dos motoristas, que mostra o
+  tipo, o nome do tipo de pausa, os horários, a duração, a observação e a rota
+  de cada pausa. O local
+  não aparece nessa tela nem em nenhuma outra da empresa cliente: hoje ele só
+  volta ao app do próprio motorista.
+- **Por quanto tempo:** as pausas são o registro da jornada, e hoje a
+  plataforma não tem como excluí-las. Um motorista com pausas registradas não
+  pode ser excluído, só inativado, e a empresa cliente só pode ser excluída
+  quando não tem mais nenhum motorista cadastrado. Por isso as pausas ficam
+  guardadas enquanto a empresa cliente mantiver a conta e só saem quando a
+  equipe do Trajetto excluir a empresa, ao fim do contrato ou a pedido dela
+  (seção 10 e Termos de Uso, seção 15).
+
+{/* REVISAR: (1) nenhum caminho do produto apaga uma pausa: delete-driver recusa motorista com pausas (driver-history-refusal) e delete-business recusa empresa com motoristas (countBusinessDependencies). Removê-las exige uma ação da equipe do Trajetto fora da plataforma; o dono precisa definir o procedimento e o prazo (PUB-28). (2) O local do início e do fim da pausa é coletado, mas nenhuma tela nem endpoint da empresa cliente o lê (o relatório, ReportPauseEntry, não tem coordenadas; só as rotas do próprio motorista devolvem o local). Pelo princípio da necessidade (LGPD, art. 6º, III), decidir entre mostrar o local no relatório com uma finalidade declarada aqui ou parar de coletá-lo. O legal-facts.test.ts cobra as duas frases contra o código. */}
+
+### Ocorrências: formulário e autorização da torre
+
+- **Categorias:** cada tipo de ocorrência é de entrega, de não entrega ou de
+  pausa. Comprovar uma entrega no app é registrar uma ocorrência de entrega,
+  que guarda, além do tipo, a foto do canhoto, a assinatura na tela e o nome
+  de quem recebeu, quando o tipo os pede ou o motorista os envia: os mesmos
+  dados do comprovante de entrega, que continua sendo o registro da entrega.
+  Um tipo de não entrega também pode pedir a foto do canhoto e a assinatura.
+- **Formulário de ocorrência:** a empresa cliente pode definir campos para
+  cada tipo de ocorrência (texto, número, sim ou não, lista de opções e data),
+  que quem relata a ocorrência preenche. As respostas ficam guardadas com a
+  ocorrência, junto com a versão do formulário que valia no relato. As
+  perguntas são escritas pela empresa cliente, que decide o que pedir.
+- **Autorização da torre:** quando o tipo de ocorrência exige autorização, o
+  relato do motorista fica pendente, sem efeito na entrega, até alguém com
+  permissão aprovar ou negar: os administradores e os perfis da empresa
+  cliente que gerenciam entregas ou, no suporte, a equipe do Trajetto. O
+  mesmo vale para quem registra pelo painel sem poder decidir; quando quem
+  registra pelo painel pode decidir, o registro já sai autorizado em nome
+  dele. Ficam registrados a decisão, quem decidiu, o horário da decisão e o
+  motivo, obrigatório ao negar. O motorista recebe o resultado no celular,
+  por notificação, com o motivo quando houver. Sem resposta em 10 minutos, o
+  pedido é escalado aos administradores da empresa cliente, e o horário do
+  escalonamento fica registrado. Se a tentativa de entrega terminar antes da
+  decisão, por exemplo com a entrega comprovada, o pedido é encerrado sem
+  decisão.
+- **Atendimento:** todo pedido que espera a torre e todo problema relatado
+  pelo motorista abrem um atendimento ligado à ocorrência, com a conversa
+  entre a central e o motorista sobre ela (veja "Chat, fotos e arquivos").
+  Encerrar o atendimento de um pedido pendente é aprovar ou negar o pedido. A
+  comprovação de uma entrega e o registro de uma pausa não abrem atendimento.
+- **Quem vê:** a empresa cliente, no histórico da entrega, na tela de
+  ocorrências e na fila de autorização da torre de controle. O aviso do
+  pedido leva a quem acompanha as entregas o nome de quem relatou, o tipo, o
+  destinatário e as respostas, no sino, no push do app para quem o tem
+  instalado e por e-mail para quem ligou esse canal; a mensagem de WhatsApp,
+  para quem ligou o canal, leva também o relato.
+- **Fora da empresa cliente:** o tipo de cada ocorrência de não entrega, menos
+  as geradas pela própria plataforma, aparece também no histórico da página de
+  acompanhamento do destinatário. O PDF do comprovante, que abre pela
+  verificação pública (seção 6), mostra o tipo da ocorrência de entrega usada
+  na comprovação ou, numa entrega não realizada, o tipo da última ocorrência
+  de não entrega que impediu a entrega, com a primeira foto e o local dela. O
+  relato escrito não aparece no PDF. Um pedido de autorização só aparece nos
+  dois depois de aprovado pela torre: pendentes, negados ou encerrados sem
+  decisão ficam de fora. As respostas do formulário e a decisão da torre não
+  aparecem em nenhum dos dois.
+- Se o usuário que decidiu for excluído, a decisão, o horário e o motivo
+  continuam no registro, sem o nome dele.
+
+### Aviso de "a caminho"
+
+Durante uma rota em andamento, o motorista pode avisar pelo app que está indo
+a um endereço que ainda não atendeu. A plataforma grava na parada o horário do
+aviso e registra no histórico da entrega um evento com esse horário, a rota, o
+motorista que avisou e, quando o aparelho consegue obter a posição, o local. O
+monitoramento e a tela de rotas mostram a parada como "a caminho", e a torre de
+controle mostra o evento. A página de acompanhamento do destinatário não mostra
+esse evento; a mensagem que o destinatário pode receber está descrita logo
+abaixo.
+
+### Destinatários das entregas
+
+- Nome, CPF ou CNPJ, e-mail, telefone e endereço de entrega, que chegam pela
+  nota fiscal eletrônica (XML), por planilha, por cadastro manual ou pela
+  integração da empresa cliente.
+- Dados da nota fiscal: chave de acesso, número, itens e valores.
+- Na entrega: nome de quem recebeu, foto do canhoto tirada na hora pela câmera
+  do app, assinatura desenhada na tela, local, data e hora, e o modelo do
+  aparelho do motorista.
+
+**Mensagens ao destinatário.** Quando a empresa cliente ativa modelos de
+mensagem, o destinatário recebe avisos por e-mail (se houver e-mail) e por
+WhatsApp (se houver telefone): saiu para entrega, a caminho, entregue ou não
+entregue. Sem modelo ativo, nada é enviado. O aviso de "a caminho" sai só na
+primeira vez que o motorista marca aquela parada, e só quando a marcação chega
+à plataforma em até 1 hora depois do toque. O texto é escrito pela empresa
+cliente; os dados que a plataforma preenche nele não incluem o nome do
+motorista, a placa do veículo nem a localização. Cada mensagem traz o link de
+acompanhamento e um link para parar de receber avisos;
+depois dele, nenhum e-mail ou WhatsApp daquela entrega é enviado. Os
+provedores informam se cada mensagem foi enviada, entregue, lida (no
+WhatsApp), recusada ou marcada como spam, e essa situação fica junto do
+registro do envio, pelo mesmo prazo (seção 10). A plataforma não recebe
+respostas por WhatsApp.
+
+### Chat, fotos e arquivos
+
+- O chat entre a central e o motorista guarda textos, fotos e mensagens de voz
+  (com a duração), que podem citar uma entrega e, quando houver, ficam ligadas
+  a uma rota (a da entrega citada ou a que o motorista está fazendo), além dos
+  envios em massa feitos pela central e de quando cada mensagem foi entregue e
+  lida.
+- As conversas são organizadas em atendimentos. Cada atendimento tem número,
+  assunto, situação (aberto ou encerrado), a ocorrência, a entrega ou a rota a
+  que se refere, quem abriu, quem atendeu, quem encerrou, com que resultado e
+  a observação do encerramento, além de um histórico de cada passo (abertura,
+  atribuição, encerramento, reabertura e decisão de autorização) com o nome de
+  quem agiu e o horário. Se o usuário for excluído, o histórico guarda o nome
+  registrado na hora.
+- Fotos, assinaturas, áudios, anexos e PDFs ficam em armazenamento privado.
+  Cada acesso usa um link assinado que expira em poucos minutos (seção 10).
+
+### Integrações
+
+A empresa cliente pode ligar o Trajetto aos sistemas dela por chaves de API e
+webhooks. Da chave, guardamos só o resumo criptográfico da parte secreta. O
+segredo de assinatura dos webhooks é guardado cifrado. Os dados que a empresa
+cliente envia aos próprios sistemas por esses canais passam a ser tratados por
+ela.
+
+### Trilha de auditoria
+
+A plataforma registra quem fez cada alteração, o quê e quando. A descrição
+pode citar o nome e o e-mail do registro afetado, por exemplo quando um usuário
+é excluído. Pessoas autorizadas da equipe do Trajetto acessam os dados das
+empresas clientes para suporte, configuração e investigação de falhas, e as
+alterações que fazem também entram na trilha. Essa trilha serve à segurança e
+à prestação de contas (legítimo interesse, art. 7º, IX).
+
+## 5. Localização do motorista
+
+- **Quando:** só enquanto uma rota do motorista está **em andamento**. Estar
+  conectado ao app, ter entregas atribuídas ou ter uma rota liberada que ainda
+  não começou não dispara coleta. Quando nenhuma rota do motorista está mais em
+  andamento, o servidor manda o app parar.
+- **Com que frequência:** uma posição a cada 15 segundos, enviada em lotes.
+- **O que é registrado:** latitude, longitude, precisão, velocidade, direção e
+  horário.
+- **Com o app aberto:** na versão atual, a posição é coletada enquanto o app
+  está em uso. A coleta com a tela desligada (em segundo plano) depende de uma
+  permissão própria do Android, "Permitir o tempo todo", que só é pedida por
+  versões do app que a declarem. Quando essa coleta está ativa, o Android
+  mostra o tempo todo a notificação "Rota em andamento". Recusar a permissão
+  não impede o uso do app.
+- **Pontos avulsos:** com ou sem rota em andamento, o local também é gravado
+  junto de um registro, no momento em que o motorista confirma uma chegada, um
+  comprovante, uma ocorrência, um abastecimento, o início ou o fim de uma
+  pausa ou o aviso de que está a caminho.
+- **Quem vê:** a empresa cliente, na torre de controle, no mapa da página da
+  rota e nos históricos da rota e da entrega. O local do início e do fim das pausas é a exceção: hoje
+  ele não aparece em nenhuma tela da empresa cliente (seção 4). A página de
+  acompanhamento que o destinatário abre não mostra a posição, o nome do
+  motorista nem a placa do veículo.
+- **Por quanto tempo:** a trilha de posições é apagada depois de 90 dias. A
+  última posição conhecida de cada motorista é substituída a cada nova posição
+  e não tem prazo: ela fica enquanto existir o cadastro do motorista, e um
+  motorista com rotas não pode ser excluído, só inativado (seção 10).
+
+## 6. Comprovante de entrega, verificação pública e acompanhamento
+
+Quando uma entrega é comprovada, a plataforma gera um PDF com: número da nota
+fiscal (ou o código da entrega) e número da rota; razão social e CNPJ do
+embarcador e da transportadora; nome e CPF ou CNPJ do destinatário; data e
+hora da comprovação, endereço declarado da entrega, o tipo da ocorrência e o
+nome de quem recebeu; as coordenadas capturadas e, quando a plataforma tem um
+serviço de mapas configurado, o endereço correspondente a elas e um mapa do
+local; nome do motorista, com o CPF mascarado (só os seis dígitos do meio
+aparecem), e o identificador do celular usado, quando registrado; a foto do
+canhoto, com um carimbo com a data e a hora da foto, as coordenadas, o nome do
+motorista e o número da nota; e a assinatura desenhada na tela. Numa entrega
+não realizada, o PDF registra a ocorrência no lugar da comprovação. O PDF traz
+um código QR, e a plataforma guarda um resumo criptográfico (SHA-256) do
+arquivo.
+
+{/* REVISAR: o endereço e o mapa do PDF dependem de PROOF_MAP_TILE_URL e REVERSE_GEOCODER_URL (a API recusa os servidores públicos do OpenStreetMap em produção). Quando o dono escolher um provedor externo, ele recebe as coordenadas da entrega: acrescentar a linha dele na seção 9 e o país na seção 13 (desenho do comprovante, §5.1). */}
+
+- O código QR leva a uma página pública de verificação, sem login. Quem tiver o
+  QR ou o link vê o nome do destinatário, a cidade, o número da nota, a
+  transportadora, a data e quem recebeu, confere se o arquivo foi alterado e
+  **pode abrir o PDF completo**, com todos os dados acima.
+- O link de verificação para de funcionar 5 anos depois da geração do PDF e
+  passa a responder como um link inexistente. O PDF continua na plataforma,
+  junto com a entrega, enquanto a empresa cliente mantiver o registro.
+- Quando o certificado digital da Trajetto está instalado, o PDF sai
+  assinado digitalmente com o certificado ICP-Brasil da Trajetto (e-CNPJ), e a
+  assinatura pode ser conferida no validador do ITI. Sem o certificado, o PDF
+  sai sem assinatura digital e diz isso no próprio documento. Nos dois casos,
+  ele registra os fatos capturados na entrega e permite conferir a
+  integridade do arquivo.
+
+**Link de acompanhamento.** A página que o destinatário abre pelo link das
+mensagens mostra o nome dele, a cidade, a situação da entrega, os números da
+nota e do pedido, as datas, quem recebeu, a transportadora, o histórico da
+entrega (sem as observações internas) e, quando existe, o link de verificação
+do comprovante. Não mostra motorista, placa, rota, outras paradas nem
+localização. O link não expira sozinho; ele deixa de funcionar quando os dados
+da entrega são excluídos da plataforma.
+
+## 7. Inteligência artificial
+
+- A leitura automática de fotos só acontece para empresas clientes que
+  contratam uma cota mensal de análises.
+- O que é lido: a foto do odômetro nos abastecimentos, a foto do campo de km
+  do checklist e a foto do canhoto. Os demais itens do checklist (combustível,
+  pneus, condição) não são lidos automaticamente.
+- Quem lê: a própria Trajetto, num serviço de leitura de imagem que roda na
+  infraestrutura da própria Trajetto (seção 9). A foto não é enviada a nenhum
+  provedor externo de inteligência artificial. O serviço de leitura recebe só
+  a foto; a conferência com os dados da entrega (número da nota e data) e com
+  a km digitada é feita pela própria plataforma, a partir do texto lido.
+- O resultado é uma sugestão: a km lida no odômetro, com um parecer (confere,
+  divergente ou ilegível), e, no canhoto, se a foto parece ser de um canhoto,
+  se está legível e se o número da nota e a data de recebimento lidos
+  conferem. A leitura não avalia a assinatura nem identifica foto de tela ou
+  montagem: isso fica para a conferência de uma pessoa. No comprovante, quem
+  aprova ou rejeita é uma pessoa da empresa cliente, na fila de auditoria. A
+  plataforma não aplica nenhuma consequência ao motorista por conta de uma
+  sugestão.
+- **Pré-checagem no próprio celular:** quando a empresa cliente contrata a
+  leitura, o app também faz uma pré-checagem no próprio celular, sem internet,
+  com o ML Kit do Google embutido no app: lê o texto da foto do canhoto e do
+  odômetro e confere se o número da nota e a km digitada aparecem nela e se a
+  data de recebimento é a do dia, para avisar o motorista na hora, mas o texto
+  lido não sai do celular: só o resultado (encontrado ou não, se o motorista
+  enviou mesmo com o aviso, o horário e a versão da conferência) segue com o
+  envio. A pré-checagem não consome a cota e não decide nada: quem confirma é
+  a leitura do servidor.
+- Quando a leitura do canhoto aponta um possível problema, o motorista que
+  enviou o comprovante recebe um aviso no app (push e notificação), para
+  conferir enquanto ainda está no local. O aviso não muda nada na entrega.
+- Você pode pedir a revisão de uma decisão tomada unicamente com base em
+  tratamento automatizado (LGPD, art. 20). Como a decisão é da empresa
+  cliente, o pedido vai a ela.
+
+## 8. App do motorista
+
+O app pede estas permissões do Android, cada uma só quando o recurso é usado:
+
+- **Câmera:** fotos de comprovante, ocorrência, abastecimento, checklist e
+  chat. A foto do comprovante só pode ser tirada na hora, pela câmera. Nos
+  demais casos também é possível escolher uma foto da galeria.
+- **Localização:** a coleta durante a rota (seção 5) e o local de cada
+  registro.
+- **Microfone:** mensagens de voz no chat, somente enquanto você grava.
+- **Notificações:** avisos da central e das entregas.
+
+No aparelho ficam:
+
+- no armazenamento seguro do Android, os tokens da sessão e, quando o Android
+  não fornece o identificador do aparelho, um código de instalação do app, que
+  identifica o celular no PDF do comprovante. São os únicos itens guardados
+  ali;
+- no armazenamento comum do app: uma cópia do seu perfil (nome, e-mail, papel,
+  empresa e permissões) e, durante a verificação em duas etapas, o e-mail da
+  conta e o horário do último reenvio do código;
+- uma cópia das listas de trabalho, para uso sem sinal;
+- os formulários começados e ainda não enviados (checklist, abastecimento,
+  comprovante e ocorrência), com as fotos, a assinatura, o nome de quem
+  recebeu e as respostas do formulário da ocorrência;
+- a fila de registros confirmados sem sinal, com as fotos, até o envio;
+- as posições da rota ainda não enviadas ao servidor e a última posição
+  guardada, com a identificação do motorista a quem pertencem;
+- a pausa em andamento (tipo, início, observação e local) e o toque de início
+  ou de fim ainda não enviado nem posto na fila, que, se o app for fechado no
+  meio, vai para a fila quando o mesmo motorista voltar a abri-lo;
+- as marcações de "a caminho" já confirmadas (parada, rota e horário);
+- os avisos da leitura automática do comprovante (a entrega e o texto do
+  aviso, com o nome do destinatário e o problema apontado) e as marcações dos
+  comprovantes enviados deste aparelho, na hora ou pela fila (a entrega, o
+  horário do toque em "Comprovar" e, quando havia, uma referência ao aviso que
+  o novo comprovante substitui: o horário e o identificador desse aviso, sem
+  o texto). A marcação é gravada no toque em "Comprovar" e desfeita se o
+  comprovante for recusado sem ir para a fila;
+- no cache do app, que o Android pode esvaziar quando precisa de espaço: as
+  mensagens de voz do chat já baixadas ou gravadas neste aparelho (até 50
+  arquivos ou 100 MB; as mais antigas saem primeiro), as imagens já exibidas
+  no app (fotos do chat, fotos do checklist e fotos de perfil) e cópias
+  temporárias das fotos e da assinatura feitas no app;
+- a preferência de tema do app (claro, escuro ou o do sistema), que é do
+  aparelho e não da conta;
+- marcações técnicas sem dado pessoal: a de que a permissão de localização em
+  segundo plano já foi pedida, a de que a animação de abertura já foi exibida
+  e a de que a sessão foi encerrada neste aparelho.
+
+Sair da conta apaga do aparelho a sessão, o perfil, o e-mail da verificação,
+a cópia das listas, os formulários não enviados, as marcações de "a caminho" e
+os avisos da leitura automática do comprovante, junto com as marcações dos
+comprovantes enviados. Continua no aparelho depois de sair da conta, separada
+por motorista, a pausa em andamento: ela volta quando o mesmo motorista entra
+de novo, e outro motorista no mesmo celular não a vê. Os arquivos do
+cache do app também continuam, sem separação por motorista, assim como o código
+de instalação do app, que identifica o celular e não o motorista. Ao sair da conta,
+o app tenta enviar antes as posições pendentes da rota; as que não saírem
+ficam no aparelho, vão ao servidor quando o mesmo motorista entrar de novo e
+são descartadas quando outro motorista entra no app neste aparelho. A fila
+também não se perde quando o motorista sai da conta: ela é enviada depois, só
+em nome de quem a registrou. O app não participa do backup automático do
+Android.
+
+## 9. Com quem compartilhamos
+
+Não vendemos nem alugamos dados. Os serviços abaixo tratam dados em nome do
+Trajetto, apenas para a finalidade indicada:
+
+| Serviço                                                                 | Para quê                                                                                                                                                | Dados                                                                                                                                                            | Onde                                        |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Provedor de hospedagem: <Placeholder>provedor do servidor</Placeholder> | Servidores da aplicação, do banco de dados e do serviço de leitura de fotos (seção 7)                                                                   | Todos os dados da plataforma                                                                                                                                     | <Placeholder>país do servidor</Placeholder> |
+| Cloudflare                                                              | Proteção e entrega do tráfego do site, verificação contra robôs (Turnstile), armazenamento de arquivos e das cópias de segurança do banco de dados (R2) | Endereço IP e sinais do navegador; fotos, assinaturas, áudios, anexos e PDFs                                                                                     | Estados Unidos e rede global                |
+| Resend                                                                  | E-mails: códigos de verificação, recuperação de senha, notificações, avisos ao destinatário e confirmação de orçamento                                  | Nome, e-mail e conteúdo da mensagem                                                                                                                              | Estados Unidos                              |
+| Meta (WhatsApp Business Cloud API)                                      | Notificações por WhatsApp a quem ligou o canal e avisos ao destinatário                                                                                 | Telefone e conteúdo da mensagem                                                                                                                                  | Estados Unidos                              |
+| Expo e Google (Firebase Cloud Messaging)                                | Notificações push no app e atualizações do app                                                                                                          | Identificador de notificações do aparelho, título e texto da notificação; versão do app                                                                          | Estados Unidos                              |
+| Google (ML Kit, embutido no app)                                        | Pré-checagem das fotos no próprio celular (seção 7)                                                                                                     | Dados técnicos de uso e desempenho da biblioteca (modelo do aparelho, versão do app e do sistema, tempos de execução); a foto e o texto lido não saem do celular | Estados Unidos                              |
+| OpenStreetMap Foundation (tile.openstreetmap.org e Nominatim)           | Imagens do mapa na torre de controle, na página da rota e no seletor de local do painel; busca de endereço no seletor de local                          | Endereço IP e área do mapa exibida; texto do endereço buscado ou coordenadas do ponto marcado                                                                    | Reino Unido                                 |
+| ViaCEP                                                                  | Preencher o endereço a partir do CEP                                                                                                                    | CEP digitado                                                                                                                                                     | Brasil                                      |
+| Cloudinary                                                              | Hospedar o logotipo exibido nos e-mails                                                                                                                 | Endereço IP de quem abre o e-mail, quando o programa de e-mail carrega a imagem                                                                                  | Estados Unidos                              |
+| jsDelivr                                                                | Entregar o programa do console interativo da API de integração                                                                                          | Endereço IP de quem abre o console                                                                                                                               | Rede global                                 |
+
+Quando o motorista toca em "navegar", o endereço de destino é aberto no
+aplicativo de navegação que ele escolher (Google Maps ou Waze), sob as regras
+desse aplicativo. No painel, o link "Ver no mapa" do histórico da entrega e
+da tela de ocorrências abre as coordenadas do registro no Google Maps, numa
+nova aba, sob as regras desse serviço; nada é enviado a ele sem esse clique.
+O serviço de monitoramento do servidor não recebe dados pessoais.
+
+Também compartilhamos dados com autoridades quando houver obrigação legal ou
+ordem judicial, e somente na medida exigida.
+
+{/* REVISAR: (1) confirmar com o dono o provedor e o país da VPS. (2) A linha do OpenStreetMap descreve os tiles de hoje, fixos no código da web; quando a decisão 7.4 (MAP_TILE_URL) levar a produção a outro provedor, trocar o provedor, o país e a seção 13. O legal-facts.test.ts confere cada host da CSP contra esta tabela. (3) A leitura de fotos roda no serviço trajetto-ai, no mesmo servidor (decisão 14.1, ADR 0010); a linha da Anthropic saiu. (4) A linha do ML Kit segue a página de divulgação de dados do Google (developers.google.com/ml-kit/android-data-disclosure): conferir com ela e com o formulário de segurança de dados do Play antes de publicar o app com a pré-checagem. */}
+
+## 10. Por quanto tempo guardamos
+
+| Dado                                                                                                                                                                                                                               | Prazo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trilha de posições do motorista                                                                                                                                                                                                    | 90 dias                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Última posição conhecida do motorista                                                                                                                                                                                              | Substituída a cada nova posição; fica enquanto existir o cadastro do motorista, e um motorista com rotas não pode ser excluído, só inativado                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Notificações do sino                                                                                                                                                                                                               | Lidas, 90 dias; não lidas, 180 dias                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Registros de envio de notificações (e-mail, WhatsApp e push), com a situação informada pelo provedor                                                                                                                               | 30 dias depois do envio; envios que falharam, 90 dias                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Eventos enviados às integrações (webhooks)                                                                                                                                                                                         | 31 dias, para permitir o reenvio                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Pedidos de análise por IA (registro técnico)                                                                                                                                                                                       | 180 dias depois de concluídos; o resultado fica no registro analisado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Link público de verificação do comprovante                                                                                                                                                                                         | 5 anos depois da geração do PDF                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Links de acesso a arquivos                                                                                                                                                                                                         | Expiram em 15 minutos                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Sessão no painel web                                                                                                                                                                                                               | Até 24 horas sem uso; cada uso renova o prazo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Sessão no app do motorista                                                                                                                                                                                                         | Até 7 dias sem uso e no máximo 30 dias desde a entrada                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Cópia das listas no celular, para uso sem sinal                                                                                                                                                                                    | Até 7 dias, ou até sair da conta                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Formulários começados no celular                                                                                                                                                                                                   | Até o envio, ou até sair da conta                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Fila de registros no celular                                                                                                                                                                                                       | Até o envio ao servidor                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Posições da rota no celular                                                                                                                                                                                                        | As ainda não enviadas, até o envio ao servidor; se o motorista sair da conta antes, até ele entrar de novo. A última posição guardada fica até ser substituída pela seguinte. Tudo isso é descartado quando outro motorista entra no app neste aparelho; se ninguém mais entrar nele, fica até o app ser desinstalado ou ter os dados limpos                                                                                                                                                                                                             |
+| Pausa em andamento, no celular                                                                                                                                                                                                     | Até o app registrar o fim dela neste aparelho ou saber do fim pelo servidor quando o mesmo motorista voltar a usá-lo, inclusive depois de sair da conta; se o motorista não voltar a usar o aparelho, fica até o app ser desinstalado ou ter os dados limpos. O toque ainda não enviado nem posto na fila vai para a fila quando o mesmo motorista voltar a abrir o app; se ele não voltar, fica até o app ser desinstalado ou ter os dados limpos                                                                                                       |
+| Marcações de "a caminho" confirmadas, no celular                                                                                                                                                                                   | As de mais de 7 dias são apagadas quando o app grava a próxima marcação do mesmo motorista, e todas saem quando o motorista sai da conta; se ele não marcar de novo nem sair da conta no aparelho, ficam até o app ser desinstalado ou ter os dados limpos                                                                                                                                                                                                                                                                                               |
+| Avisos da leitura automática do comprovante, no celular                                                                                                                                                                            | Os de mais de 7 dias são apagados quando o app grava o próximo aviso do mesmo motorista, e todos saem quando o motorista sai da conta; se ele não receber outro aviso nem sair da conta no aparelho, ficam até o app ser desinstalado ou ter os dados limpos. As marcações dos comprovantes enviados com mais de 7 dias saem quando o app grava um aviso ou uma nova marcação, de qualquer motorista, e todas saem quando alguém sai da conta no aparelho; se nada mais for gravado no aparelho, ficam até o app ser desinstalado ou ter os dados limpos |
+| Arquivos do cache do app, no celular (mensagens de voz, imagens já exibidas e cópias temporárias de fotos e da assinatura)                                                                                                         | O Android pode apagá-los quando precisa de espaço, e as mensagens de voz mais antigas saem quando o cache delas passa de 50 arquivos ou 100 MB. Continuam depois de sair da conta; se nada disso acontecer, ficam até o app ser desinstalado ou ter os dados limpos                                                                                                                                                                                                                                                                                      |
+| Trilha de auditoria                                                                                                                                                                                                                | Sem exclusão automática, inclusive depois da exclusão da empresa cliente; quando o Trajetto configura um prazo, ele é de no mínimo 1 ano                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Cadastros e registros da operação (motoristas, veículos, entregas, rotas, avisos de "a caminho", comprovantes, ocorrências com as respostas de formulário e as decisões de autorização, pausas, abastecimentos, checklists e chat) | Enquanto a empresa cliente mantiver a conta. A exclusão da empresa apaga esses registros do banco de dados, mas a plataforma só a permite sem usuários, filiais e motoristas cadastrados, e um motorista com histórico na operação não pode ser excluído, só inativado; por isso, na prática, essa exclusão é feita pela equipe do Trajetto (Termos de Uso, seção 15)                                                                                                                                                                                    |
+| Fotos, assinaturas, áudios, anexos e PDFs                                                                                                                                                                                          | Enquanto existir o registro a que pertencem. Excluir um abastecimento, um checklist ou a foto de perfil apaga o arquivo junto. Nos demais casos, inclusive na exclusão de um usuário ou da empresa cliente, o arquivo continua no armazenamento privado, sem acesso pela plataforma, até ser removido pelo Trajetto: essa remoção ainda não é automática e não tem prazo definido                                                                                                                                                                        |
+| Pedidos de orçamento                                                                                                                                                                                                               | Sem exclusão automática; excluímos a pedido do titular                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Registros técnicos do servidor (logs)                                                                                                                                                                                              | Substituídos por rotação conforme o volume, sem prazo fixo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Cópias de segurança do banco de dados                                                                                                                                                                                              | Diárias, guardadas por 30 dias (as 30 mais recentes), no armazenamento da Cloudflare (R2), cifradas em repouso pelo provedor                                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+Além dos prazos acima, dados podem ser guardados por mais tempo quando a lei
+exigir ou para o exercício de direitos em processo.
+
+{/* REVISAR: (1) o art. 15 do Marco Civil da Internet exige guardar registros de acesso a aplicações por 6 meses; a rotação atual dos logs não garante esse prazo. (2) Prazo de retenção de orçamentos, chat e dados após o fim do contrato é decisão do dono (PUB-28). (3) A exclusão da empresa (delete-business-usecase) apaga só linhas do banco; o coletor de órfãos (UPLOAD_ORPHAN_GC) só olha objetos de 30 a 33 dias que nenhuma linha citou e não alcança esses arquivos. Quando a exclusão passar a apagar os arquivos da empresa, reescrever a linha de arquivos e os Termos §15; o legal-facts.test.ts cobra. (4) A exclusão pelo produto não alcança uma empresa que operou: delete-business recusa enquanto houver usuários, filiais ou motoristas (countBusinessDependencies), e delete-driver recusa motorista com histórico (driver-history-refusal: conta no app, multas, abastecimentos, checklists, entregas, rotas e pausas). A remoção fica com a equipe do Trajetto, fora da plataforma; definir o procedimento e o prazo com o dono (PUB-28). O legal-facts.test.ts cobra esta linha, a da última posição e a de §4 Pausas contra as duas recusas. (5) O logout do app apaga os avisos da leitura do comprovante e as marcações de "a caminho" (decisão 2.6), mas não o cache de arquivos (mensagens de voz em trajetto-chat-audio, imagens do expo-image e da foto de perfil, cópias temporárias da câmera). Se o app passar a limpá-lo, mover esses itens para a frase "Sair da conta apaga…" (§8 e Cookies §5) e reescrever as linhas acima; o legal-facts.test.ts cobra. */}
+
+## 11. Seus direitos
+
+A LGPD (art. 18) garante a você:
+
+- confirmar se tratamos dados seus e acessá-los;
+- corrigir dados incompletos, inexatos ou desatualizados;
+- pedir a anonimização, o bloqueio ou a eliminação de dados desnecessários,
+  excessivos ou tratados em desconformidade com a lei;
+- pedir a portabilidade dos dados a outro fornecedor;
+- saber com quem compartilhamos os seus dados;
+- ser informado sobre a possibilidade de não dar consentimento e sobre o que
+  acontece se você não der;
+- revogar um consentimento, quando o tratamento se basear nele, e pedir a
+  eliminação dos dados tratados com base nele;
+- opor-se a um tratamento feito com base em outra hipótese legal, que não o
+  consentimento, quando ele descumprir a LGPD (art. 18, § 2º);
+- pedir a revisão de decisões tomadas unicamente com base em tratamento
+  automatizado (art. 20);
+- apresentar reclamação à Autoridade Nacional de Proteção de Dados (ANPD).
+
+**Como pedir.** Para dados que a empresa cliente registrou (usuários,
+motoristas e destinatários), fale com a empresa: ela é a controladora e decide
+sobre o pedido. Se você nos procurar, encaminhamos o pedido a ela e ajudamos no
+que couber ao Trajetto. Para dados de que o Trajetto é controlador (site,
+orçamento e contrato), use o canal em
+[Identificação do responsável](#identificacao). Podemos pedir uma confirmação
+de identidade antes de responder. A confirmação completa de existência ou o
+acesso aos dados é respondida em até 15 dias (art. 19, II).
+
+## 12. Segurança
+
+- As conexões do navegador e do app com a plataforma são cifradas (HTTPS).
+- Senhas guardadas como resumo bcrypt, verificação em duas etapas opcional,
+  bloqueio temporário depois de tentativas erradas, limite de requisições e
+  verificação contra robôs nas telas de entrada.
+- Cookies de sessão inacessíveis a scripts da página (HttpOnly), só enviados
+  por HTTPS (Secure) e restritos ao próprio site (SameSite).
+- Isolamento por empresa: cada registro pertence a uma empresa cliente, e cada
+  acesso é conferido pela empresa e pelas permissões do perfil do usuário.
+- Arquivos em armazenamento privado, acessíveis só por links assinados de curta
+  duração.
+- Segredos de integração cifrados com AES-256-GCM; chaves de API guardadas só
+  como resumo; webhooks assinados.
+- No app, os tokens da sessão ficam no armazenamento seguro do Android.
+- Cópias de segurança diárias do banco de dados, guardadas por 30 dias no
+  armazenamento da Cloudflare (R2), que as mantém cifradas em repouso.
+- Trilha de auditoria das alterações.
+
+Se ocorrer um incidente de segurança que possa acarretar risco ou dano
+relevante, comunicaremos a ANPD e os titulares afetados nos casos em que o
+Trajetto é controlador (LGPD, art. 48). Quando os dados forem de uma empresa
+cliente, avisaremos a empresa sem demora e daremos o apoio necessário para que
+ela, como controladora, faça essas comunicações.
+
+## 13. Transferência internacional
+
+Parte dos serviços da seção 9 fica fora do Brasil, principalmente nos Estados
+Unidos (Cloudflare, Cloudinary, Expo, Google, Meta e Resend) e no
+Reino Unido (OpenStreetMap Foundation, que recebe o endereço IP de quem vê um
+mapa do Trajetto). A jsDelivr, que entrega o programa do console da API de
+integração, é uma rede global. O país do provedor de hospedagem está na seção 9. A maior parte dessas transferências
+acontece para executar o contrato com a empresa cliente e os procedimentos
+pedidos pelo titular (LGPD, art. 33, IX, combinado com o art. 7º, V). Cada
+serviço recebe só os dados necessários à sua função.
+
+{/* REVISAR: avaliar a adoção das cláusulas-padrão contratuais da ANPD (Resolução CD/ANPD nº 19/2024) com cada provedor e, se adotadas, citá-las aqui. Atenção: o IP de visitantes sem contrato (Cloudflare e Turnstile no site; jsDelivr no console da API de integração, em /integration/docs) vai ao exterior com base no legítimo interesse, que o art. 33, IX não cobre. Servir o script do console pela própria API tiraria a jsDelivr da lista. O mapa da página de contato já não chama o OpenStreetMap (é desenhado no servidor). Resolver com as cláusulas-padrão e então nomear o mecanismo aqui. */}
+
+## 14. Crianças e adolescentes
+
+O Trajetto é um serviço para empresas e não se destina a menores de 18 anos.
+Motoristas precisam de CNH, e os demais usuários são cadastrados pela empresa
+cliente para uso profissional.
+
+## 15. Mudanças nesta política
+
+Esta política muda quando o produto muda. A data da última revisão fica no topo
+da página. Mudanças relevantes são avisadas aos administradores das empresas
+clientes antes de valerem.
+
+## 16. Contato
+
+O responsável pelo tratamento, o canal de contato e o encarregado pelo
+tratamento de dados pessoais estão em
+[Identificação do responsável](#identificacao). A
+[Política de Cookies](/legal/cookies) e os
+[Termos de Uso](/legal/termos) completam este documento.

@@ -1,11 +1,5 @@
 import type { CommandVehicleTypeInputValue } from "../../common.types";
 
-interface FetchVehicleTypeProps {
-  cursor?: string;
-  businessId: string;
-  signal?: AbortSignal;
-}
-
 interface FetchVehicleTypeResult {
   data: any[];
   nextCursor: string | null;
@@ -22,8 +16,4 @@ interface SearchVehicleTypeProps {
   isOptional?: boolean;
 }
 
-export type {
-  FetchVehicleTypeProps,
-  FetchVehicleTypeResult,
-  SearchVehicleTypeProps,
-};
+export type { FetchVehicleTypeResult, SearchVehicleTypeProps };

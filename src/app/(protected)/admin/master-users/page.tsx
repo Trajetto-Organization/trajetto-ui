@@ -6,28 +6,27 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { MasterUsersActions } from "./page-actions";
-import { MasterUsersContent } from "./master-users-content";
+import { MasterUserContent } from "@/features/user/master-content";
+import { ListSkeleton } from "@/features/user/skeleton";
 
-interface MasterUsersQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface MasterUsersPageProps {
+  // Every param the URL carries: page, search, sort, order and the filters.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Usuários Masters",
-    description: `
-      Gerencie os usuários Master do sistema. Adicione, edite e
-      visualize usuários Master com controle total sobre a plataforma.`,
+    description:
+      "Gerencie os usuários Master da plataforma: crie, edite, revogue o acesso e envie o link de definição de senha.",
   };
 }
 
 const MasterUsers = async ({
   searchParams,
-}: MasterUsersQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: MasterUsersPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -37,14 +36,19 @@ const MasterUsers = async ({
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Usuários Masters"}
+        title="Usuários Masters"
         description="Gerencie os usuários Masters da plataforma"
       />
 
-      <MasterUsersActions />
-
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <MasterUsersContent searchParams={searchParams} token={tokenAccess} />
+      {/* loading.tsx covers the segment while Next navigates; this covers
+          only the async content, so the heading paints at once. No company
+          selector: masters belong to the platform, not to a company. */}
+      <Suspense
+        fallback={
+          <ListSkeleton scope="admin" selector={false} cards={4} filters={2} />
+        }
+      >
+        <MasterUserContent searchParams={searchParams} token={tokenAccess} />
       </Suspense>
     </PageContainer>
   );

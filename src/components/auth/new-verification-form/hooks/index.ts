@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { newVerification } from "@/actions/user/new-verification";
+import { STALE_ACTION_MESSAGE, isStaleActionResult } from "@/lib/action-result";
 
 function useNewVerificationValidationToken() {
   const router = useRouter();
@@ -31,6 +32,13 @@ function useNewVerificationValidationToken() {
 
     try {
       const result = await newVerification(token);
+
+      // The verification did not run. No countdown to /login: the reload
+      // the notice offers runs it again with the same token.
+      if (isStaleActionResult(result)) {
+        setError(STALE_ACTION_MESSAGE);
+        return;
+      }
 
       if (result.successMessage) {
         setSuccess(result.successMessage);

@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteVehicleTypeProps {
   businessId: string;
@@ -27,7 +30,7 @@ const handleDeleteVehicleType = async ({
   const deleteVehicleType = `${process.env.HTTP_REQUEST}/vehicle-type/delete-vehicle-type/${vehicleTypeId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteVehicleType, {
+    const response = await apiFetch(deleteVehicleType, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -38,12 +41,15 @@ const handleDeleteVehicleType = async ({
     const { message } =
       (await response.json()) as DeleteVehicleTypeResponseProps;
 
-    if (!response.ok && message) {
-      return { deleteVehicleTypeError: message };
+    if (!response.ok) {
+      return {
+        deleteVehicleTypeError: message || refusalMessage(response.status),
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("vehicle-type/delete-vehicle-type", error);
     return {
       deleteVehicleTypeError:
         "Ocorreu um erro inesperado ao tentar deletar o tipo do veículo.",

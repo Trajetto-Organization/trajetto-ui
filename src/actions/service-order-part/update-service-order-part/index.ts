@@ -1,10 +1,29 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateServiceOrderPartSchema } from "@/schemas/create-update-service-order-part-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface ServiceOrderPartProps {
   message: string;
+  /** The order's typed total and its parts' sum after this change (FLEET-SO-2). */
+  totals?: { totalAmount: number; partsTotal: number };
+  partsExceedTotal?: boolean;
+}
+
+const brl = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+/** A warning, never a refusal: the order's total is typed and stays so. */
+function partsWarningOf(answer: ServiceOrderPartProps): string | undefined {
+  if (!answer.partsExceedTotal || !answer.totals) return undefined;
+
+  return `As peças desta ordem somam ${brl.format(answer.totals.partsTotal)}, mais que o valor total dela (${brl.format(answer.totals.totalAmount)}). Revise o valor total da ordem de serviço.`;
 }
 
 const handleUpdateServiceOrderPart = async (
@@ -50,7 +69,7 @@ const handleUpdateServiceOrderPart = async (
   const serviceOrderPartData = updateServiceOrderPartValidation.data;
 
   try {
-    const response = await fetch(updateServiceOrderPart, {
+    const response = await apiFetch(updateServiceOrderPart, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -60,18 +79,25 @@ const handleUpdateServiceOrderPart = async (
       body: JSON.stringify(serviceOrderPartData),
     });
 
-    const { message } = (await response.json()) as ServiceOrderPartProps;
+    const answer = (await response.json()) as ServiceOrderPartProps;
+    const { message } = answer;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
         updateServiceOrderPartError: {
-          updateServiceOrderPartErrorMessage: message,
+          updateServiceOrderPartErrorMessage:
+            message || refusalMessage(response.status),
         },
       };
     }
 
-    return { successMessage: message };
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-service-order-part");
+
+    return { successMessage: message, warningMessage: partsWarningOf(answer) };
   } catch (error) {
+    logActionError("service-order-part/update-service-order-part", error);
     return {
       updateServiceOrderPartError: {
         updateServiceOrderPartErrorMessage:

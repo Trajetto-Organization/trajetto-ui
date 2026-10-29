@@ -1,0 +1,130 @@
+---
+title: Começo rápido
+description: Crie uma chave de API no painel, faça a primeira chamada ao catálogo e liste as entregas da sua empresa em poucos minutos.
+slug: comeco-rapido
+updatedAt: 2026-09-29
+---
+
+Este guia leva da chave à primeira lista de entregas. Nos exemplos, `TRAJETTO_API_URL` é o endereço da API (<BaseUrl />) e `TRAJETTO_API_KEY` é a chave que você vai criar no passo 1.
+
+## 1. Crie uma chave
+
+No painel do Trajetto, abra **Integrações** e, na aba **Chaves de API**, clique em **Nova chave**. Dê um nome que diga qual sistema vai usá-la (por exemplo, "ERP Protheus") e marque só os escopos de que ele precisa: um sistema que só lê entregas não precisa de escrita.
+
+A chave aparece **uma única vez**, na hora da criação, no formato `tjk_live_<prefixo>.<segredo>`. Copie-a para o cofre de segredos do seu sistema. Se ela se perder, revogue-a e crie outra.
+
+<Callout type="atencao" title="Uma chave por sistema">
+  Cada sistema integrado deve ter a sua chave. Assim, revogar a de um não
+  derruba os outros, e o monitor de uso mostra quem fez cada chamada.
+</Callout>
+
+## 2. Consulte o catálogo
+
+O catálogo lista os tópicos de webhook e os escopos desta versão. É aberto, sem chave: um bom teste de que o endereço está certo.
+
+<CodeTabs>
+
+```bash
+curl "$TRAJETTO_API_URL/integration/v1/catalogue"
+```
+
+```js
+const response = await fetch(
+  `${process.env.TRAJETTO_API_URL}/integration/v1/catalogue`,
+);
+const catalogue = await response.json();
+
+console.log(catalogue.version, catalogue.topics.length, "tópicos");
+```
+
+```python
+import json, os, urllib.request
+
+url = os.environ["TRAJETTO_API_URL"] + "/integration/v1/catalogue"
+
+with urllib.request.urlopen(url) as response:
+    catalogue = json.load(response)
+
+print(catalogue["version"], len(catalogue["topics"]), "tópicos")
+```
+
+```php
+<?php
+$url = getenv('TRAJETTO_API_URL') . '/integration/v1/catalogue';
+$catalogue = json_decode(file_get_contents($url), true);
+
+echo $catalogue['version'] . ' ' . count($catalogue['topics']) . " tópicos\n";
+```
+
+</CodeTabs>
+
+## 3. Liste as entregas
+
+Com a chave no cabeçalho `Authorization`, peça a primeira página de entregas. A chave precisa do escopo `deliveries:read`.
+
+<CodeTabs>
+
+```bash
+curl "$TRAJETTO_API_URL/integration/v1/deliveries?limit=50" \
+  -H "Authorization: Bearer $TRAJETTO_API_KEY"
+```
+
+```js
+const response = await fetch(
+  `${process.env.TRAJETTO_API_URL}/integration/v1/deliveries?limit=50`,
+  { headers: { Authorization: `Bearer ${process.env.TRAJETTO_API_KEY}` } },
+);
+
+if (!response.ok) {
+  const error = await response.json();
+  throw new Error(`${response.status} ${error.code}: ${error.message}`);
+}
+
+const page = await response.json();
+
+console.log(page.data.length, "entregas; próxima página:", page.next_cursor);
+```
+
+```python
+import json, os, urllib.request
+
+request = urllib.request.Request(
+    os.environ["TRAJETTO_API_URL"] + "/integration/v1/deliveries?limit=50",
+    headers={"Authorization": "Bearer " + os.environ["TRAJETTO_API_KEY"]},
+)
+
+with urllib.request.urlopen(request) as response:
+    page = json.load(response)
+
+print(len(page["data"]), "entregas; próxima página:", page["next_cursor"])
+```
+
+```php
+<?php
+$context = stream_context_create([
+    'http' => ['header' => 'Authorization: Bearer ' . getenv('TRAJETTO_API_KEY')],
+]);
+$url = getenv('TRAJETTO_API_URL') . '/integration/v1/deliveries?limit=50';
+$page = json_decode(file_get_contents($url, false, $context), true);
+
+echo count($page['data']) . " entregas\n";
+```
+
+</CodeTabs>
+
+A resposta traz as entregas em `data` e, em `next_cursor`, o cursor da próxima página. Quando `next_cursor` vier `null`, a lista acabou. O guia de [paginação e sincronização](/docs/paginacao) mostra como percorrer tudo e, depois, buscar só o que mudou.
+
+## 4. Receba os eventos
+
+Em vez de consultar a API de tempos em tempos, cadastre um endpoint em **Integrações → Webhooks** e receba um POST a cada evento. Comece pelo guia de [webhooks](/docs/webhooks) e, antes de confiar no corpo, [verifique a assinatura](/docs/assinatura).
+
+## Se algo der errado
+
+| Resposta                 | O que significa                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| 401 `INVALID_API_KEY`    | A chave está ausente, incompleta, errada ou foi revogada. Confira se enviou a chave inteira, com o prefixo `tjk_live_`. |
+| 403 `MISSING_API_SCOPE`  | A chave existe, mas não tem o escopo desta rota.                                                                        |
+| 403 `MODULE_NOT_ENABLED` | A empresa da chave não tem o módulo Entregas.                                                                           |
+| 429 `RATE_LIMITED`       | Passou do limite por minuto. Espere o tempo do cabeçalho `retry-after`.                                                 |
+
+Todos os códigos estão no guia de [erros](/docs/erros).

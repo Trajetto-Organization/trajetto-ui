@@ -7,81 +7,135 @@ import {
   FileText,
   Container,
   Receipt,
+  PackageCheck,
+  Route as RouteIcon,
 } from "lucide-react";
 import type { DashboardCountData } from "../overview-dashboard.types";
 
+/**
+ * `path` is the access key: the route registry decides whether the card is
+ * shown, so a card can never outlive the permission or the module its page
+ * needs.
+ */
 const statCards = (counts: DashboardCountData) => [
   {
     type: "vehicles",
+    path: "vehicle",
     title: "Veículos",
     value: counts?.vehicles?.value || 0,
     change: counts?.vehicles?.change || 0,
+    basis: counts?.vehicles?.basis,
     icon: <Car className="h-4 w-4 text-white" />,
     color: "#3b82f6",
   },
   {
     type: "drivers",
+    path: "driver",
     title: "Motoristas",
     value: counts?.drivers?.value || 0,
     change: counts?.drivers?.change || 0,
+    basis: counts?.drivers?.basis,
     icon: <Users className="h-4 w-4 text-white" />,
     color: "#10b981",
   },
   {
     type: "businesses",
+    path: "business",
     title: "Empresas",
     value: counts?.businesses?.value || 0,
     change: counts?.businesses?.change || 0,
+    basis: counts?.businesses?.basis,
     icon: <Briefcase className="h-4 w-4 text-white" />,
     color: "#8b5cf6",
   },
   {
     type: "branches",
+    path: "branch",
     title: "Filiais",
     value: counts?.branches?.value || 0,
     change: counts?.branches?.change || 0,
+    basis: counts?.branches?.basis,
     icon: <Building2 className="h-4 w-4 text-white" />,
     color: "#f97316",
   },
   {
     type: "parts",
+    path: "part",
     title: "Peças",
     value: counts?.parts?.value || 0,
     change: counts?.parts?.change || 0,
+    basis: counts?.parts?.basis,
     icon: <Container className="h-4 w-4 text-white" />,
     color: "#ec4899",
   },
   {
     type: "suppliers",
+    path: "supplier",
     title: "Fornecedores",
     value: counts?.suppliers?.value || 0,
     change: counts?.suppliers?.change || 0,
+    basis: counts?.suppliers?.basis,
     icon: <Package className="h-4 w-4 text-white" />,
     color: "#6366f1",
   },
   {
     type: "serviceOrders",
+    path: "service-order",
     title: "Ordens de Serviço",
     value: counts?.serviceOrders?.value || 0,
     change: counts?.serviceOrders?.change || 0,
+    basis: counts?.serviceOrders?.basis,
     icon: <FileText className="h-4 w-4 text-white" />,
     color: "#14b8a6",
   },
   {
     type: "users",
+    path: "user-registration",
     title: "Usuários",
     value: counts?.users?.value || 0,
     change: counts?.users?.change || 0,
+    basis: counts?.users?.basis,
     icon: <Users className="h-4 w-4 text-white" />,
     color: "#f43f5e",
   },
   {
     type: "fines",
+    path: "fine",
     title: "Multas",
     value: counts?.fines?.value || 0,
     change: counts?.fines?.change || 0,
+    basis: counts?.fines?.basis,
     icon: <Receipt className="h-4 w-4 text-white" />,
     color: "#dc2626",
+  },
+
+  /*
+    The deliveries module. `path` is the access key, exactly like the cards
+    above: the route registry already knows whether this company hired the
+    module and whether this profile may open the page, so a card cannot
+    outlive either. The API leaves the counts out in the same cases, which is
+    why these two read `undefined` rather than zero when they are not for
+    this user.
+  */
+  {
+    type: "deliveries",
+    path: "deliveries",
+    title: "Entregas",
+    value: counts?.deliveries?.value || 0,
+    change: counts?.deliveries?.change || 0,
+    basis: counts?.deliveries?.basis,
+    icon: <PackageCheck className="h-4 w-4 text-white" />,
+    color: "#0ea5e9",
+  },
+  {
+    type: "routes",
+    path: "routes",
+    title: "Rotas",
+    value: counts?.routes?.value || 0,
+    change: counts?.routes?.change || 0,
+    basis: counts?.routes?.basis,
+    icon: <RouteIcon className="h-4 w-4 text-white" />,
+    color: "#a855f7",
   },
 ];
 

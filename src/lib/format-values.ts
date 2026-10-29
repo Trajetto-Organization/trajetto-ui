@@ -1,5 +1,14 @@
-import { FormEvent } from "react";
+// Type-only, so this module has no runtime import and can be loaded by a
+// plain Node process in another time zone (tests/unitaires/helpers/in-time-zone).
+import type { FormEvent } from "react";
 
+/**
+ * Formats an INSTANT's day in the browser's zone.
+ *
+ * Not for a date-only value (a delivery's expected date, a route's day, a
+ * CNH expiry): those are stored as UTC midnight, and read here in São Paulo
+ * they show the previous day. Use `formatDateOnly` for them.
+ */
 const formatDate = (
   date: string | Date | null | undefined,
   locale: string,
@@ -34,6 +43,64 @@ const formatRg = (rg: string): string => {
   return rg;
 };
 
+const DATE_ONLY_KEY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * Formats a DATE-ONLY value (decision 1.3): "17/09/2026", no time.
+ *
+ * The API stores a civil day as UTC midnight (`2026-09-17T00:00:00.000Z`) or
+ * sends it as `2026-09-17`. It is a day, not an instant, so it is read in UTC:
+ * formatted in the browser's zone it became "16/09/2026 às 21:00" in São
+ * Paulo — the route of the 17th shown on the 16th, with an hour nobody set.
+ * A value written as local midnight by older forms (`03:00Z` in Brazil) is
+ * still the same UTC day, so both storage styles show the right day.
+ *
+ * Defaults differ from the app's `formatDateOnly` on purpose: tables and
+ * dialogs here show the year and fill empty cells with "N/A", like
+ * `formatDate`; the app's cards show "17/09" and hide the line on `null`.
+ * The day read is the same.
+ */
+const formatDateOnly = (
+  value: string | Date | null | undefined,
+  options: { withYear?: boolean; fallback?: string } = {},
+): string => {
+  const { withYear = true, fallback = "N/A" } = options;
+
+  if (value === null || value === undefined || value === "") return fallback;
+
+  const key =
+    typeof value === "string" ? DATE_ONLY_KEY.exec(value.trim()) : null;
+
+  const date = key
+    ? new Date(Date.UTC(Number(key[1]), Number(key[2]) - 1, Number(key[3])))
+    : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return fallback;
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    ...(withYear && { year: "numeric" }),
+    timeZone: "UTC",
+  }).format(date);
+};
+
+/**
+ * Today's (or `date`'s) civil day on the viewer's own calendar, as
+ * "YYYY-MM-DD" — the default for a date-only field. `toISOString().slice(0,
+ * 10)` is the UTC day: after 21:00 in São Paulo it already says tomorrow.
+ */
+const localDateKey = (date: Date = new Date()): string =>
+  [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+
+/**
+ * Formats an INSTANT with its time in the browser's zone ("17/09/2026 às
+ * 14:30"). Not for date-only values: see `formatDateOnly`.
+ */
 const formatNotificationDate = (
   date: Date | string,
   locale: string = "pt-BR",
@@ -295,6 +362,35 @@ const formatTelephone = (telephone: string | null | undefined): string => {
   return telephone.replace(/^(\d{2})(\d{5}|\d{4})(\d{4})$/, "+55 ($1) $2-$3");
 };
 
+/**
+ * How many characters of a record id the app shows.
+ *
+ * The TAIL, not the head: the API mints UUIDv7, whose first 12 hex digits are
+ * the creation time in milliseconds, so the first eight are the same for every
+ * record made within the same minute. The last twelve are random. Every table
+ * (IdCell), picker and label shows these same twelve, so the same record reads
+ * the same everywhere. The API's list searches read the same twelve characters
+ * back (trajetto-api shared/pagination/id-search).
+ */
+const SHORT_ID_LENGTH = 12;
+
+/** A canonical UUID (any version), the only shape the tail is taken of. */
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The compact form of a record id (see SHORT_ID_LENGTH).
+ *
+ * Only a UUID is cut. Any other id (a number, a composite key) is shown
+ * whole: its tail would not be unique, and cutting "12345" would show
+ * a different number. Presentation only: "Copiar ID" copies the full value.
+ */
+const shortId = (id: string): string =>
+  UUID_SHAPE.test(id) ? id.slice(-SHORT_ID_LENGTH) : id;
+
+/** A service order as the pickers, labels and tables name it: "OS #…". */
+const serviceOrderLabel = (id: string): string => `OS #${shortId(id)}`;
+
 // Helper function to format service order display
 const formatServiceOrderDisplay = (serviceOrder: any) => {
   const formattedDate =
@@ -304,7 +400,7 @@ const formatServiceOrderDisplay = (serviceOrder: any) => {
     ? `(Veículo: ${serviceOrder.vehicle.description || ""} - Placa: ${serviceOrder.vehicle.license_plate})`
     : "";
 
-  return `OS#${serviceOrder.id.slice(-12)} - ${formattedDate} ${vehicleInfo}`;
+  return `${serviceOrderLabel(serviceOrder.id)} - ${formattedDate} ${vehicleInfo}`;
 };
 
 // Helper function to display value or N/A fallback
@@ -330,9 +426,21 @@ const applyMask = (value: string, mask: string): string => {
   const cleanedValue = value.replace(/\D/g, "");
 
   for (let i = 0; i < mask.length; i++) {
+    /**
+     * Stop when the digits run out, instead of trailing the punctuation.
+     *
+     * Without this, a value shorter than the mask kept collecting the literal
+     * characters after it: an eight-digit RG — which is a normal length, the
+     * issuing state decides — rendered as `12.345.678-` in the edit form, and
+     * a half-typed CPF as `123..-`. The person then deletes a dash they never
+     * typed, or saves a field that looks malformed.
+     */
+    if (valueIndex >= cleanedValue.length) break;
+
     const maskChar = mask[i];
+
     if (maskChar === "9") {
-      masked += cleanedValue[valueIndex] || "";
+      masked += cleanedValue[valueIndex];
       valueIndex++;
     } else {
       masked += maskChar;
@@ -371,8 +479,13 @@ const stringToBoolean = (value: any) => {
 };
 
 export {
+  SHORT_ID_LENGTH,
+  shortId,
+  serviceOrderLabel,
   formatCurrencyToNumber,
   formatNotificationDate,
+  formatDateOnly,
+  localDateKey,
   formatToBrazilianCurrency,
   formatServiceOrderDisplay,
   formatNumericInput,

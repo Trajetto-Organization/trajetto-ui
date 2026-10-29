@@ -30,7 +30,7 @@ const Dashboard = async (): Promise<JSX.Element> => {
     <PageContainer>
       <ProtectedHeading
         title={"Dashboard"}
-        description="Central de controle e análise para monitoramento completo do sistema de gestão de frotas."
+        description="Central de controle e análise da operação da sua empresa, conforme os módulos contratados."
       />
 
       <Suspense fallback={<ProtectedStatsContentLoading />}>

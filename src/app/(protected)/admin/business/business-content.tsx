@@ -1,50 +1,70 @@
-import { createElement } from "react";
 import { redirect } from "next/navigation";
 
-import { DataTable } from "@/app/(protected)/_components/shared/tanstack-table/data-table";
-import { tableBusinessCollumns } from "@/app/(protected)/_components/admin/business/table-business-collumns";
-
+import { ProtectedPageToolbar } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import type { BusinessProps } from "@/app/(protected)/_components/shared/common.types";
-import { BusinessToolbar } from "@/app/(protected)/_components/admin/business/business-toolbar";
 
-import { PageStats } from "@/app/(protected)/_components/shared/stats/page-stats";
+import { BusinessStats } from "@/app/(protected)/_components/admin/business/stats";
+import { BusinessTable } from "@/app/(protected)/_components/admin/business/table";
+import {
+  businessListQuery,
+  type BusinessSearchMeta,
+  type PageSearchParams,
+} from "@/app/(protected)/_components/admin/business/lib/server-table";
+
+import { AccessErrorState } from "@/components/shared/custom/access-error-state";
+
 import { parseNDJSON } from "@/lib/parse-nd-json";
+import { readAccessError } from "@/lib/access-error";
 
-import { businessStats } from "./stats-config";
-
-interface MetaInfo {
-  total: number;
-  page: number;
-  pageSize: number;
-}
+import { BusinessActions } from "./page-actions";
 
 interface BusinessContentProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+  searchParams: PageSearchParams;
   token: string;
 }
 
+/** The RSC tags the list is fetched with; the write actions revalidate them. */
+const BUSINESS_LIST_TAGS = [
+  "create-business",
+  "delete-business",
+  "update-business",
+  "toggle-business-active",
+];
+
+const firstParam = (
+  value: string | string[] | undefined,
+): string | undefined => (Array.isArray(value) ? value[0] : value);
+
+/**
+ * Empresas (/admin). The cards, the status and UF filters and the order are
+ * the API's over every company (decision 8.8): the old screen counted "Com
+ * código ERP", "Por Estado" and "Por Cidade" on the ten rows of the page.
+ */
 const BusinessContent = async ({
   searchParams,
   token,
 }: BusinessContentProps): Promise<JSX.Element> => {
-  const page = Number(searchParams.page) || 1;
-  const pageSize = Number(searchParams.pageSize) || 10;
+  const page = Number(firstParam(searchParams.page)) || 1;
+  const pageSize = Number(firstParam(searchParams.pageSize)) || 10;
+  const search = firstParam(searchParams.search) || "";
 
-  const search = searchParams.search || "";
-
-  let businessResponseError = {
-    error: false,
-    errorMessage: "",
-  };
-
+  let responseError = { error: false, errorMessage: "" };
   let business: BusinessProps[] = [];
-  let meta: MetaInfo = { total: 0, page: 1, pageSize: 10 };
+  let meta = { total: 0, page, pageSize };
+  let searchMeta: BusinessSearchMeta | undefined;
+
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+    search,
+    ...businessListQuery(searchParams),
+  });
 
   let response: Response | undefined;
 
   try {
     response = await fetch(
-      `${process.env.HTTP_REQUEST}/business/list-business?page=${page}&pageSize=${pageSize}&search=${search}`,
+      `${process.env.HTTP_REQUEST}/business/list-business?${query.toString()}`,
       {
         credentials: "include",
         method: "GET",
@@ -53,97 +73,64 @@ const BusinessContent = async ({
           "Accept-Encoding": "gzip",
           Authorization: `Bearer ${token}`,
         },
-        next: {
-          tags: [
-            "create-business",
-            "delete-business",
-            "update-business",
-            "toggle-business-active",
-          ],
-        },
+        next: { tags: BUSINESS_LIST_TAGS },
       },
     );
-  } catch (error) {
-    businessResponseError = {
+  } catch {
+    responseError = {
       error: true,
       errorMessage:
         "Ocorreu um erro inesperado ao tentar recuperar a lista de empresas",
     };
-
-    business = [];
-    meta = { total: 0, page: 1, pageSize: pageSize };
   }
 
   if (response) {
-    if (!response.ok) {
-      if (response.status === 401) {
-        redirect("/login");
-      }
+    if (response.status === 401) redirect("/login");
 
-      businessResponseError = {
+    // A 403 says which refusal it is (decision 4.1), never a generic error.
+    const refusal = await readAccessError(response);
+
+    if (refusal) {
+      return (
+        <div className="my-6 space-y-6">
+          <ProtectedPageToolbar />
+
+          <AccessErrorState
+            kind={refusal.kind}
+            audience="master"
+            message={refusal.message}
+          />
+        </div>
+      );
+    }
+
+    if (!response.ok) {
+      responseError = {
         error: true,
         errorMessage: "Houve um erro ao tentar recuperar a lista de empresas",
       };
-
-      business = [];
-      meta = { total: 0, page: 1, pageSize: pageSize };
     } else {
-      const { meta: metaParsed, data } = await parseNDJSON(response);
+      const { meta: parsedMeta, data } = await parseNDJSON(response);
 
       business = data;
-      meta = metaParsed;
+      meta = parsedMeta ?? { total: data.length, page, pageSize };
+      searchMeta = parsedMeta?.searchMeta;
     }
   }
 
-  // Calculates stats directly from the returned data
-  const statsData = {
-    totalBusiness: meta.total,
-    withErpCode: business.filter((b) => b.erp_code && b.erp_code !== null)
-      .length,
-    topStates: (() => {
-      const stateCount: Record<string, number> = {};
-      business.forEach((b) => {
-        if (b.uf && b.uf !== null) {
-          stateCount[b.uf] = (stateCount[b.uf] || 0) + 1;
-        }
-      });
-
-      const sorted = Object.entries(stateCount)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3);
-
-      return sorted.length > 0
-        ? sorted.map(([uf, count]) => `${uf} (${count})`).join(", ")
-        : "N/A";
-    })(),
-    topCities: (() => {
-      const cityCount: Record<string, number> = {};
-      business.forEach((b) => {
-        if (b.city && b.city !== null) {
-          cityCount[b.city] = (cityCount[b.city] || 0) + 1;
-        }
-      });
-
-      const sorted = Object.entries(cityCount)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3);
-      return sorted.length > 0
-        ? sorted.map(([city, count]) => `${city} (${count})`).join(", ")
-        : "N/A";
-    })(),
-  };
-
   return (
-    <>
-      <PageStats stats={businessStats} data={statsData} columns={4} />
-      <DataTable
+    <div className="my-6 space-y-6">
+      <ProtectedPageToolbar actions={<BusinessActions />} />
+
+      <BusinessStats searchMeta={searchMeta} />
+
+      <BusinessTable
         data={business}
         meta={meta}
-        columns={tableBusinessCollumns}
-        responseError={businessResponseError}
-        toolbar={createElement(BusinessToolbar)}
+        responseError={responseError}
+        searchMeta={searchMeta}
       />
-    </>
+    </div>
   );
 };
 

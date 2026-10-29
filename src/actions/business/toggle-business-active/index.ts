@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { revalidateTagName } from "@/actions/revalidate";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface ToggleBusinessActiveResponse {
   message: string;
@@ -20,7 +23,7 @@ const handleToggleBusinessActive = async (businessId: string) => {
   const toggleUrl = `${process.env.HTTP_REQUEST}/business/toggle-business-active/${businessId}`;
 
   try {
-    const response = await fetch(toggleUrl, {
+    const response = await apiFetch(toggleUrl, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -30,8 +33,8 @@ const handleToggleBusinessActive = async (businessId: string) => {
 
     const data = (await response.json()) as ToggleBusinessActiveResponse;
 
-    if (!response.ok && data.message) {
-      return { toggleError: data.message };
+    if (!response.ok) {
+      return { toggleError: data.message || refusalMessage(response.status) };
     }
 
     revalidateTagName("toggle-business-active")
@@ -51,6 +54,7 @@ const handleToggleBusinessActive = async (businessId: string) => {
       is_active: data.is_active,
     };
   } catch (error) {
+    logActionError("business/toggle-business-active", error);
     return {
       toggleError:
         "Ocorreu um erro inesperado ao tentar alterar o status da empresa.",

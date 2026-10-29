@@ -1,0 +1,18 @@
+/* Keyframes only the landing uses (the shared tp* set lives in globals.css). */
+
+/* The AI demo's scan line sweeping the photo. Without motion it rests at the top. */
+@media (prefers-reduced-motion: no-preference) {
+  .scan {
+    animation: tpScanBig 2.6s ease-in-out infinite;
+  }
+}
+
+@keyframes tpScanBig {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(220px);
+  }
+}

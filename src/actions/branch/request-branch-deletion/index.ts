@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface RequestBranchDeletionProps {
   businessId: string;
@@ -27,7 +30,7 @@ const handleRequestBranchDeletion = async ({
   const requestBranchDeletion = `${process.env.HTTP_REQUEST}/branch/request-branch-deletion/${branchId}/business/${businessId}`;
 
   try {
-    const response = await fetch(requestBranchDeletion, {
+    const response = await apiFetch(requestBranchDeletion, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -38,12 +41,15 @@ const handleRequestBranchDeletion = async ({
     const { message } =
       (await response.json()) as RequestBranchDeletionResponseProps;
 
-    if (!response.ok && message) {
-      return { requestBranchDeletionError: message };
+    if (!response.ok) {
+      return {
+        requestBranchDeletionError: message || refusalMessage(response.status),
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("branch/request-branch-deletion", error);
     return {
       requestBranchDeletionError:
         "Ocorreu um erro inesperado ao tentar solicitar a exclusão da filial.",

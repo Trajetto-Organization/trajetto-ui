@@ -20,7 +20,7 @@ const createUpdateServiceOrderPartSchema = z.object({
         invalid_type_error:
           "O preço unitário deve ser um valor numérico válido.",
       })
-      .positive("O preço unitário deve ser um valor positivo.")
+      .positive("O preço unitário deve ser maior que zero.")
       .max(999999.99, "O preço unitário não pode exceder 999.999,99."),
   ),
   quantity: z.preprocess(
@@ -31,7 +31,7 @@ const createUpdateServiceOrderPartSchema = z.object({
         invalid_type_error: "A quantidade deve ser um número inteiro válido.",
       })
       .int("A quantidade deve ser um número inteiro.")
-      .positive("A quantidade deve ser um valor positivo.")
+      .positive("A quantidade deve ser maior que zero.")
       .max(9999, "A quantidade não pode exceder 9.999."),
   ),
   discount_percentage: z.preprocess(

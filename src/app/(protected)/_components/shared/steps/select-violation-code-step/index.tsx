@@ -35,8 +35,10 @@ const SelectViolationCodeStep = ({
               </span>
             </div>
             <Button
+              type="button"
               className="h-8 w-4"
               variant="ghost"
+              aria-label="Remover o código de infração escolhido"
               onClick={() =>
                 handleUpdateSearchTrafficViolationCodeInputValue({
                   trafficViolationCodeId: "",

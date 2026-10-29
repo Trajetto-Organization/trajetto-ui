@@ -1,10 +1,12 @@
 "use server";
 
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import type {
   PresignedUpload,
   PresignedUploadFile,
 } from "../create-presigned-uploads";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface CreatePresignedAvatarUploadProps {
   file: PresignedUploadFile;
@@ -36,7 +38,7 @@ const handleCreatePresignedAvatarUpload = async ({
   const presignUrl = `${process.env.HTTP_REQUEST}/uploads/avatar/presign`;
 
   try {
-    const response = await fetch(presignUrl, {
+    const response = await apiFetch(presignUrl, {
       method: "POST",
       credentials: "include",
       headers: {
@@ -59,7 +61,8 @@ const handleCreatePresignedAvatarUpload = async ({
     }
 
     return { upload: data.uploads[0] };
-  } catch {
+  } catch (error) {
+    logActionError("upload/create-presigned-avatar-upload", error);
     return { errorMessage: "Não foi possível autorizar o envio da imagem." };
   }
 };

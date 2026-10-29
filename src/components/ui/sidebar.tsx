@@ -9,11 +9,14 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import * as SheetPrimitive from "@radix-ui/react-dialog";
 import {
   Sheet,
-  SheetContent,
   SheetDescription,
+  SheetOverlay,
+  SheetPortal,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,12 +27,47 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const SIDEBAR_COOKIE_NAME = "sidebar:state";
+// The name lives with its server-side reader (the protected layout).
+import { SIDEBAR_COOKIE_NAME } from "@/lib/sidebar-state";
+
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
+/** An outside event that comes from the guided tour's own overlay. */
+function isTutorialOverlayEvent(event: {
+  target: EventTarget | null;
+}): boolean {
+  const target = event.target;
+
+  return (
+    target instanceof Element &&
+    target.closest("[data-tutorial-overlay]") !== null
+  );
+}
+
+const keepOpenForTutorial = (event: Event): void => {
+  if (isTutorialOverlayEvent(event)) event.preventDefault();
+};
+
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+
+/*
+ * The phone drawer's overlay must outlive its panel on every close.
+ *
+ * Radix portals the overlay and the panel separately, each appended to
+ * <body> when it mounts, and both sit at z-50, so whichever is later in the
+ * DOM paints on top. The overlay used to fade out in 150ms while the panel
+ * slid out in 300ms: reopening inside that gap mounted a fresh overlay
+ * portal AFTER the still-mounted panel, and the overlay covered the menu
+ * until a tap on it closed the drawer. With the overlay leaving last, a
+ * reopen either reuses both nodes or remounts only the panel, which then
+ * lands after the overlay. Keep closed overlay >= closed panel duration.
+ */
+const SIDEBAR_SHEET_OVERLAY_CLASS =
+  "data-[state=open]:duration-300 data-[state=closed]:duration-300";
+const SIDEBAR_SHEET_CONTENT_CLASS =
+  "fixed inset-y-0 z-50 h-full w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground shadow-lg outline-none transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:duration-300 data-[state=closed]:duration-200";
 
 type SidebarContext = {
   state: "expanded" | "collapsed";
@@ -208,23 +246,54 @@ const Sidebar = React.forwardRef<
     if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            side={side}
-          >
-            <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
-            <SheetDescription className="sr-only">
-              Navegue pelo menu da aplicação
-            </SheetDescription>
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SheetContent>
+          {/* Composed here rather than through SheetContent so both exit
+              durations live side by side (SIDEBAR_SHEET_OVERLAY_CLASS). */}
+          <SheetPortal>
+            <SheetOverlay
+              data-sidebar-overlay=""
+              className={SIDEBAR_SHEET_OVERLAY_CLASS}
+            />
+            <SheetPrimitive.Content
+              // The guided tour opens this drawer for its "Menu" step and
+              // keeps its own card on top. The card's focus and taps land
+              // outside the drawer, and stopPropagation in the card cannot stop
+              // Radix: both listen on the document, where React's root is in
+              // the App Router. So the drawer closed itself as it opened, now
+              // and then, and the step pointed at nothing.
+              onFocusOutside={keepOpenForTutorial}
+              onPointerDownOutside={keepOpenForTutorial}
+              onInteractOutside={keepOpenForTutorial}
+              // Focus the drawer itself on open (still trapped, the title is
+              // announced). Radix's default picks the first tabbable control,
+              // which on short menus was "Ver Tutorial": its tooltip popped
+              // over the theme switch every time the menu opened.
+              onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                (event.currentTarget as HTMLElement | null)?.focus({
+                  preventScroll: true,
+                });
+              }}
+              data-sidebar="sidebar"
+              data-mobile="true"
+              className={cn(
+                SIDEBAR_SHEET_CONTENT_CLASS,
+                side === "left"
+                  ? "left-0 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
+                  : "right-0 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+              )}
+              style={
+                {
+                  "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                } as React.CSSProperties
+              }
+            >
+              <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+              <SheetDescription className="sr-only">
+                Navegue pelo menu da aplicação
+              </SheetDescription>
+              <div className="flex h-full w-full flex-col">{children}</div>
+            </SheetPrimitive.Content>
+          </SheetPortal>
         </Sheet>
       );
     }
@@ -296,7 +365,7 @@ const SidebarTrigger = React.forwardRef<
       {...props}
     >
       <PanelLeft />
-      <span className="sr-only">Toggle Sidebar</span>
+      <span className="sr-only">Recolher ou expandir o menu lateral</span>
     </Button>
   );
 });
@@ -312,12 +381,15 @@ const SidebarRail = React.forwardRef<
     <button
       ref={ref}
       data-sidebar="rail"
-      aria-label="Toggle Sidebar"
+      aria-label="Recolher ou expandir o menu lateral"
       tabIndex={-1}
       onClick={toggleSidebar}
-      title="Toggle Sidebar"
+      title="Recolher ou expandir o menu lateral"
       className={cn(
-        "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 transition-all ease-linear after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:flex",
+        // Just outside the panel's edge, never over it: centred on the edge it
+        // covered the last 8px of the menu, where the scrollbar's thumb is,
+        // and grabbing the thumb collapsed the sidebar instead.
+        "absolute inset-y-0 z-20 hidden w-2.5 transition-all ease-linear after:absolute after:inset-y-0 after:left-0 after:w-[2px] hover:after:bg-sidebar-border group-data-[side=left]:-right-2.5 group-data-[side=right]:-left-2.5 group-data-[side=right]:after:left-auto group-data-[side=right]:after:right-0 sm:flex",
         "[[data-side=left]_&]:cursor-w-resize [[data-side=right]_&]:cursor-e-resize",
         "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar",
@@ -430,6 +502,44 @@ const SidebarContent = React.forwardRef<
 });
 SidebarContent.displayName = "SidebarContent";
 
+/*
+ * The menu's scroll area. Radix draws its scrollbar over the viewport's right
+ * edge, so a thin bar sat on top of the items' hover targets (and the rail sat
+ * on top of the bar). Here the bar is a 14px hit area whose thumb is drawn
+ * 4px at rest and 8px under the pointer or while dragged; it shows whenever
+ * the menu overflows ("auto"), and the content keeps a matching gutter so no
+ * item lies under it. Collapsed to icons the bar shrinks to the 8px the
+ * column already leaves free on the right, so the icons do not move.
+ */
+const SIDEBAR_SCROLL_AREA_CLASS = [
+  "h-full",
+  "[&>[data-orientation=vertical]]:w-3.5 [&>[data-orientation=vertical]]:border-l-0 [&>[data-orientation=vertical]]:p-[5px] [&>[data-orientation=vertical]]:transition-[padding] [&>[data-orientation=vertical]]:duration-150",
+  "[&>[data-orientation=vertical]:hover]:p-[3px] [&>[data-orientation=vertical]:active]:p-[3px]",
+  "[&>[data-orientation=vertical]>div]:bg-sidebar-foreground/25 [&>[data-orientation=vertical]>div]:transition-colors",
+  "[&>[data-orientation=vertical]:hover>div]:bg-sidebar-foreground/45 [&>[data-orientation=vertical]:active>div]:bg-sidebar-foreground/55",
+  "[&:has(>[data-orientation=vertical])_[data-sidebar=content]]:pr-1.5",
+  // Radix wraps the content in display:table, which grows to the widest item
+  // instead of truncating it, and pushed labels under the bar regardless of
+  // the gutter. A block wrapper keeps the content at the viewport's width.
+  "[&>[data-radix-scroll-area-viewport]>div]:!block",
+  "group-data-[collapsible=icon]:[&>[data-orientation=vertical]]:w-2 group-data-[collapsible=icon]:[&>[data-orientation=vertical]]:p-[2px] group-data-[collapsible=icon]:[&>[data-orientation=vertical]:hover]:p-px group-data-[collapsible=icon]:[&>[data-orientation=vertical]:active]:p-px",
+  "group-data-[collapsible=icon]:[&:has(>[data-orientation=vertical])_[data-sidebar=content]]:pr-0",
+].join(" ");
+
+const SidebarScrollArea = React.forwardRef<
+  React.ElementRef<typeof ScrollArea>,
+  React.ComponentPropsWithoutRef<typeof ScrollArea>
+>(({ className, type = "auto", ...props }, ref) => (
+  <ScrollArea
+    ref={ref}
+    type={type}
+    data-sidebar="scroll-area"
+    className={cn(SIDEBAR_SCROLL_AREA_CLASS, className)}
+    {...props}
+  />
+));
+SidebarScrollArea.displayName = "SidebarScrollArea";
+
 const SidebarGroup = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
@@ -456,7 +566,7 @@ const SidebarGroupLabel = React.forwardRef<
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        "duration-200 flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/85 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
         "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
         className,
       )}
@@ -753,6 +863,7 @@ const SidebarMenuSubButton = React.forwardRef<
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton";
 
 export {
+  isTutorialOverlayEvent,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -774,6 +885,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarScrollArea,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,

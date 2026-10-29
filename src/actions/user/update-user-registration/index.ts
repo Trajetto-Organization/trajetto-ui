@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { updateUserSchema } from "@/schemas/update-user-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface UserRegistrationProps {
   message: string;
@@ -42,7 +46,7 @@ const handleUpdateUserRegistration = async (
   const userData = updateUserValidation.data;
 
   try {
-    const response = await fetch(updateUser, {
+    const response = await apiFetch(updateUser, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -54,14 +58,21 @@ const handleUpdateUserRegistration = async (
 
     const { message } = (await response.json()) as UserRegistrationProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateUserError: { updateUserErrorMessage: message },
+        updateUserError: {
+          updateUserErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-user-registration");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/update-user-registration", error);
     return {
       updateUserError: {
         updateUserErrorMessage:

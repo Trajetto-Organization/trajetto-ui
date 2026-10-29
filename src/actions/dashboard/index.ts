@@ -1,15 +1,17 @@
-"use server";
+// Not "use server": only Server Components call this, and each exported
+// function of a "use server" module is an endpoint any browser can call with
+// any arguments (here, any token), proxied through this server.
+// server-only: a client import would fail the build instead of shipping it.
+import "server-only";
 
-// Calculate percentage change
-const calculateChange = (current: number, previous: number): number => {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return Math.round(((current - previous) / previous) * 100);
-};
+import { logActionError } from "@/lib/log-action-error";
+import { apiFetch } from "@/lib/api-fetch";
+import { countCard } from "@/lib/dashboard-counts";
 
 // Main function to get all dashboard data - Simplified version with single request
 const getDashboardData = async (token: string) => {
   try {
-    const response = await fetch(
+    const response = await apiFetch(
       `${process.env.HTTP_REQUEST}/dashboard/overview`,
       {
         method: "GET",
@@ -35,6 +37,8 @@ const getDashboardData = async (token: string) => {
             "update-service-order-count",
             "update-user-count",
             "update-fine-count",
+            "update-delivery-count",
+            "update-route-count",
           ],
         },
       },
@@ -46,14 +50,8 @@ const getDashboardData = async (token: string) => {
 
     const data = await response.json();
 
-    // Calculate the change percentage for each entity count
-    const calculateCountsWithChange = (counts: {
-      currentMonth: number;
-      lastMonth: number;
-    }) => ({
-      value: counts.currentMonth,
-      change: calculateChange(counts.currentMonth, counts.lastMonth),
-    });
+    // What each card shows and its comparison (lib/dashboard-counts).
+    const calculateCountsWithChange = countCard;
 
     // Transform the data to match the expected format
     return {
@@ -67,6 +65,16 @@ const getDashboardData = async (token: string) => {
         serviceOrders: calculateCountsWithChange(data.counts.serviceOrders),
         users: calculateCountsWithChange(data.counts.users),
         fines: calculateCountsWithChange(data.counts.fines),
+
+        // Absent rather than zero when the company did not hire the module
+        // or the profile may not read them — the API leaves the keys out,
+        // and a zeroed card would claim an operation that stands still.
+        deliveries: data.counts.deliveries
+          ? calculateCountsWithChange(data.counts.deliveries)
+          : undefined,
+        routes: data.counts.routes
+          ? calculateCountsWithChange(data.counts.routes)
+          : undefined,
       },
       vehicleStatus: [
         {
@@ -100,6 +108,12 @@ const getDashboardData = async (token: string) => {
           name: "Manutenção Pendente",
           value: data.maintenanceStats.pending || 0,
           color: "#f97316",
+          // Inside `pending`: the ones with no revision recorded. Absent
+          // from an older API; the card then says nothing about them.
+          unrecorded:
+            typeof data.maintenanceStats.unrecorded === "number"
+              ? data.maintenanceStats.unrecorded
+              : undefined,
         },
         {
           name: "Recém Manutenido",
@@ -112,6 +126,15 @@ const getDashboardData = async (token: string) => {
           color: "#ef4444",
         },
       ],
+      /**
+       * What the operation is doing right now.
+       *
+       * Null on purpose in three cases the API distinguishes — a MASTER with
+       * no single company, a company without the deliveries module, and a
+       * profile that may not read deliveries — and the panel simply does not
+       * draw the block. Zeroes would read as a quiet day.
+       */
+      deliveryOperation: data.deliveryOperation ?? null,
       recentActivity: data.recentActivity,
       vehiclesByType: data.vehiclesByType.map((item: any, index: number) => ({
         name: item.name,
@@ -121,6 +144,7 @@ const getDashboardData = async (token: string) => {
       maintenanceCosts: data.maintenanceCosts,
     };
   } catch (error) {
+    logActionError("dashboard", error);
     // Return empty data structure on error
     return {
       counts: {
@@ -134,6 +158,7 @@ const getDashboardData = async (token: string) => {
         users: { value: 0, change: 0 },
         fines: { value: 0, change: 0 },
       },
+      deliveryOperation: null,
       vehicleStatus: [],
       activityTrends: [],
       maintenanceStats: [],

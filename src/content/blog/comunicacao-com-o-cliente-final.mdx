@@ -1,0 +1,156 @@
+---
+title: "Comunicação com o cliente final: avisos de entrega, LGPD e WhatsApp"
+description: "Quando avisar o destinatário, o que escrever em cada mensagem, o que a página de acompanhamento deve mostrar e os cuidados de LGPD e de opt-in para usar e-mail e WhatsApp sem virar incômodo."
+slug: "comunicacao-com-o-cliente-final"
+date: "2026-09-28"
+updated: "2026-09-29"
+category: "conformidade"
+tags: ["cliente final", "LGPD", "WhatsApp", "rastreamento"]
+author: "Equipe Trajetto"
+seo:
+  title: "Avisos ao cliente final, LGPD e WhatsApp"
+  description: "Saiu para entrega, a caminho, entregue e não entregue: o que dizer em cada aviso, o link de acompanhamento e os cuidados de LGPD e opt-in no WhatsApp."
+  keywords:
+    [
+      "aviso de entrega",
+      "rastreio de entrega",
+      "LGPD transportadora",
+      "WhatsApp opt-in",
+      "notificação ao destinatário",
+      "link de rastreamento",
+    ]
+---
+
+Boa parte das ligações ao SAC de uma transportadora é a mesma pergunta: "cadê a minha entrega?". Quase sempre, uma mensagem na hora certa teria evitado a ligação. O oposto também dá errado: avisar tudo, o tempo todo, ensina o destinatário a ignorar as mensagens e, no WhatsApp, rende denúncias e bloqueios.
+
+Este artigo trata de três decisões: quando avisar, o que dizer e como fazer isso respeitando a LGPD e as regras do WhatsApp. Os exemplos usam os recursos de mensagens ao cliente do Trajetto.
+
+## Quatro momentos que valem uma mensagem
+
+A pergunta a fazer antes de criar um aviso é: o destinatário pode fazer alguma coisa com essa informação? Se não pode, a mensagem é ruído. Por esse critério, quatro momentos se destacam:
+
+1. **Saiu para entrega.** O destinatário pode se organizar para estar em casa, avisar a portaria ou deixar alguém para receber.
+2. **A caminho.** O motorista está indo para aquele endereço agora. É o aviso que ajuda quem precisa descer, abrir o portão ou avisar a portaria na hora certa. É opcional: muitas operações ficam bem só com o "saiu para entrega".
+3. **Entregue.** Encerra a expectativa e diz quando e com quem a encomenda ficou, caso a pessoa não tenha recebido pessoalmente.
+4. **Não entregue.** A informação mais valiosa de todas, porque é a chance de o destinatário resolver o problema antes da próxima tentativa.
+
+Cada um desses momentos tem um modelo de mensagem próprio no Trajetto. Trocar de motorista, reordenar paradas ou liberar uma rota são decisões internas: nenhuma delas muda o que o destinatário pode fazer, e nenhuma dispara aviso.
+
+O "saiu para entrega" vai quando a rota com a entrega sai; o "a caminho", quando o motorista toca em **Estou a caminho** no app, com a rota em andamento e a parada ainda por atender; o "entregue", quando a entrega é concluída; o "não entregue", quando ela termina em insucesso. Os quatro só são enviados se a empresa tiver um **modelo de mensagem ativo** para aquele momento e aquele canal. Sem modelo, nada é enviado: a plataforma não manda texto padrão em nome da transportadora.
+
+O "a caminho" tem duas travas a mais. Ele sai uma vez por parada: se o motorista tocar de novo no mesmo endereço, o destinatário não recebe uma segunda mensagem. E ele só sai se o toque chegar à plataforma em até uma hora. Um aviso que ficou guardado no celular sem sinal por mais tempo que isso já não diz nada útil, e fica só no histórico da entrega.
+
+## O que escrever em cada mensagem
+
+A mensagem precisa ser curta, identificar quem está escrevendo e dizer o que fazer em seguida. Os modelos do Trajetto aceitam variáveis entre chaves duplas, preenchidas no momento do envio: `{{destinatario}}`, `{{transportadora}}`, `{{nota}}`, `{{pedido}}`, `{{cidade}}`, `{{uf}}`, `{{previsao}}`, `{{data_entrega}}`, `{{recebido_por}}`, `{{link}}` e `{{link_descadastro}}`. Uma variável que não existe é recusada ao salvar o modelo, antes de chegar a qualquer cliente.
+
+| Momento           | O que dizer                                                                 | O que evitar                                                  |
+| ----------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Saiu para entrega | Quem é a transportadora, qual é a nota ou o pedido e o link para acompanhar | Prometer horário que a operação não controla                  |
+| A caminho         | Que a entrega da transportadora está chegando e o link para acompanhar      | Prometer um horário de chegada ou citar o motorista pelo nome |
+| Entregue          | Data da entrega, quem recebeu e o link de acompanhamento                    | Repetir dados pessoais que a pessoa não precisa ver           |
+| Não entregue      | O que aconteceu e como falar com a transportadora                           | Tom de culpa ou texto que exponha o destinatário              |
+
+Um exemplo de modelo para o aviso de insucesso, ilustrativo:
+
+```text
+Olá, {{destinatario}}. Aqui é a {{transportadora}}. Tentamos entregar
+a nota {{nota}} hoje, mas não foi possível. Veja o que aconteceu e
+acompanhe a próxima tentativa: {{link}}. Para não receber mais
+mensagens sobre esta entrega: {{link_descadastro}}
+```
+
+Alguns cuidados de redação:
+
+- **Identifique a transportadora logo no começo.** Mensagem de remetente desconhecido com link parece golpe, e muita gente não clica.
+- **Não prometa hora quando a operação só tem o dia.** A data prevista é um dia; "entre 14h e 16h" sem janela planejada é expectativa que vai ser quebrada.
+- **Prefira o link a colar informação.** A página de acompanhamento está sempre atualizada; a mensagem, não.
+- **Cuidado com o campo de quem recebeu.** Escreva a frase de modo que ela funcione mesmo com a variável vazia.
+
+## O link de acompanhamento
+
+Todo aviso leva um link para a página de acompanhamento da entrega. Ela não pede login e costuma ser encaminhada em grupos de família, então o que ela **não** mostra importa tanto quanto o que mostra.
+
+A página do Trajetto mostra o status, a previsão, a cidade, a nota ou o pedido e os principais momentos da entrega. Quando há uma ocorrência, aparece o **tipo** (por exemplo, "Destinatário ausente"), mas não o relato livre do motorista, que é escrito para o escritório e às vezes é direto demais. A página em si também não mostra nome ou telefone do motorista, placa, rota, outras paradas, embarcador nem anotações internas. E ela não é indexada por mecanismos de busca, para que a entrega de ninguém apareça numa pesquisa.
+
+### A ressalva do comprovante
+
+Depois que a entrega termina e o PDF do comprovante já foi gerado no painel, a página ganha o link "Ver o comprovante de entrega". Ele leva à página pública de verificação, de onde o PDF pode ser baixado. E o PDF é a evidência completa: documento e endereço do destinatário, coordenadas, foto do canhoto e assinatura, nome do motorista com o CPF mascarado e o aparelho usado, rota, embarcador com o CNPJ e as ocorrências com as descrições.
+
+Quem tem o link de uma entrega encerrada pode chegar, portanto, a dados que a página esconde. Daí três cuidados:
+
+- confira o contato do destinatário: um telefone ou e-mail errado entrega o link, e com ele o comprovante, a um desconhecido;
+- conte no aviso de privacidade o que o comprovante reúne e que ele fica acessível pelo link e pelo QR impresso;
+- oriente motoristas e auditores a escrever descrições de ocorrência e motivos de rejeição como se o destinatário fosse lê-los.
+
+O artigo sobre o [comprovante de entrega digital](/blog/comprovante-de-entrega-digital) detalha o que o PDF contém e por quanto tempo o link responde.
+
+## Mensagem atrasada é pior que nenhuma
+
+Mensagens podem atrasar quando o provedor fica instável e o envio entra em nova tentativa. O risco é o destinatário receber "saiu para entrega" depois de já ter a encomenda em mãos. No Trajetto, antes de cada tentativa, a plataforma confere se a mensagem ainda descreve a situação da entrega: um "saiu para entrega" ou um "a caminho" retido não sai se a entrega já foi concluída ou se a carga voltou para a base, e um "entregue" deixa de valer se a entrega mudou de situação depois. Mensagem que deixou de ser verdadeira não deve ser enviada.
+
+## LGPD: quem responde pelo quê
+
+O destinatário é uma pessoa com dados pessoais: nome, endereço, telefone, e-mail e, às vezes, CPF. A Lei Geral de Proteção de Dados (Lei nº 13.709/2018) se aplica a eles, e três conceitos ajudam a organizar a conversa.
+
+- **Controlador e operador.** O controlador decide para que e como os dados são usados; o operador trata os dados em nome do controlador (art. 5º, incisos VI e VII). Quem decide avisar o destinatário é a empresa que faz a entrega, muitas vezes em acordo com o embarcador; a plataforma que envia as mensagens, como o Trajetto, atua em nome dela.
+- **Base legal.** Todo tratamento precisa de uma das hipóteses do art. 7º, como o consentimento, a execução de contrato ou o legítimo interesse. Qual delas sustenta os avisos é decisão da transportadora, com orientação jurídica e, de preferência, combinada com o embarcador, que teve contato com o comprador.
+- **Princípios.** Os do art. 6º viram escolhas práticas: finalidade (o telefone serve para avisar da entrega, não para vender), necessidade (só o que é preciso) e transparência (a pessoa sabe quem escreve e por quê).
+
+<Callout type="info" title="Este artigo não é parecer jurídico">
+  As referências à LGPD servem para orientar a conversa com o seu jurídico e com
+  os embarcadores. A definição da base legal e dos textos de privacidade é de
+  quem controla os dados.
+</Callout>
+
+## WhatsApp: opt-in, modelo aprovado e saída fácil
+
+O WhatsApp é o canal com maior chance de ser lido e também o mais sensível. A política de mensagens do WhatsApp Business, da Meta, pede três cuidados:
+
+1. **Opt-in.** A pessoa precisa ter aceitado receber mensagens daquela empresa pelo WhatsApp antes do primeiro envio. Ter o número não basta.
+2. **Modelo aprovado.** Mensagens iniciadas pela empresa fora de uma conversa recente precisam usar modelos aprovados pela Meta. Modelos que geram muitas denúncias podem ser pausados.
+3. **Pedido para parar respeitado.** Quem pede para não receber mais deve parar de receber.
+
+No Trajetto, as mensagens de WhatsApp saem do número da plataforma, com o texto da transportadora dentro de um modelo aprovado pela Meta. O modelo da empresa só é salvo com a variável `{{link_descadastro}}`, que leva a uma página em que o destinatário para de receber as mensagens daquela entrega com um clique. Se o texto passar do limite de tamanho, corta-se o texto da empresa, nunca esse link. Como as quebras de linha viram espaços, escreva um único parágrafo curto.
+
+### O que ativar o WhatsApp significa no Trajetto
+
+Três fatos sobre como a plataforma funciona hoje pesam nessa decisão:
+
+1. **A ativação vale para a empresa inteira.** O modelo é definido por momento e por canal, para toda a transportadora. Com um modelo de WhatsApp ativo para "saiu para entrega", toda entrega com telefone recebe essa mensagem, de qualquer embarcador; não há como ligar o canal para um embarcador e desligá-lo para outro.
+2. **A plataforma não registra opt-in.** Não existe, no Trajetto, um campo que diga se o destinatário aceitou receber mensagens. O que existe é a saída: o descadastro por entrega, pelo link.
+3. **O telefone é usado como chegou.** Na importação do XML, o telefone do destinatário que consta na NF-e é gravado automaticamente na entrega; o mesmo vale para a coluna de telefone da planilha e para o cadastro manual. Um telefone informado para a emissão da nota não é, por si, um aceite para receber mensagens.
+
+Por isso, ativar o WhatsApp só é seguro quando **todos** os telefones que entram na operação vêm com opt-in. Se parte dos embarcadores não coleta esse aceite, há dois caminhos: ficar só com o e-mail, ou fazer as entregas desses embarcadores entrarem sem telefone. Como o XML traz o telefone da nota, isso significa usar a planilha sem a coluna de telefone ou apagar o telefone no painel enquanto a entrega está pendente.
+
+### Como obter o opt-in na prática
+
+Quem fala com o comprador é o embarcador, na compra, e é lá que o opt-in costuma nascer: uma caixa de seleção desmarcada por padrão no checkout, o registro de quando e como a pessoa aceitou e o repasse do telefone só de quem aceitou. Telefones comprados ou reaproveitados de outras finalidades não são opt-in. Como o Trajetto não guarda o registro do aceite, combine por escrito com cada embarcador que ele guarda essa prova.
+
+## E-mail: o canal de base
+
+O e-mail é menos lido que o WhatsApp, mas é mais simples de operar e pode vir no próprio XML da NF-e, quando o emitente informa o e-mail do destinatário. Os modelos de e-mail aceitam um assunto próprio, e a página de acompanhamento também oferece a opção de parar de receber. Muitas operações começam pelo e-mail e só ativam o WhatsApp quando todos os embarcadores repassam apenas telefones com opt-in.
+
+Sem e-mail e sem telefone na entrega, nenhuma mensagem é enviada. O artigo sobre [importação de NF-e e planilha](/blog/importar-nf-e-xml-e-planilha) mostra onde esses contatos entram.
+
+## Erros comuns
+
+| Erro                                  | Consequência                                       | Como evitar                                                       |
+| ------------------------------------- | -------------------------------------------------- | ----------------------------------------------------------------- |
+| Avisar a cada mudança interna         | O destinatário para de ler                         | Só momentos em que o destinatário pode agir                       |
+| Mensagem sem identificação            | Parece golpe; o link não é clicado                 | Nome da transportadora na primeira frase                          |
+| Prometer horário                      | Reclamação quando o horário não é cumprido         | Falar em dia, e mandar o link                                     |
+| Tratar o telefone da NF-e como aceite | Denúncias, modelo pausado, risco jurídico          | Ativar o WhatsApp só quando todo telefone recebido vem com opt-in |
+| Esconder a opção de parar             | Irritação e denúncia                               | Link de descadastro em toda mensagem                              |
+| Texto de insucesso acusatório         | Destinatário constrangido, atrito com o embarcador | Tom neutro e o nome do tipo de ocorrência                         |
+
+## Checklist
+
+- Modelos escritos para cada momento, em cada canal usado.
+- Transportadora na primeira frase e link de acompanhamento em toda mensagem.
+- WhatsApp só com opt-in garantido para todos os telefones, combinado por escrito com os embarcadores.
+- Aviso de privacidade que diga o que o comprovante reúne e como ele é acessado.
+- Base legal definida com o jurídico.
+- Tipos e descrições de ocorrência revisados, já que chegam ao destinatário (veja [ocorrências de entrega](/blog/ocorrencias-de-entrega-e-reentrega)).
+
+Comunicação bem feita reduz ligações e insucessos na segunda tentativa. E depende de uma operação que registra os fatos na hora, como no [comprovante de entrega digital](/blog/comprovante-de-entrega-digital).

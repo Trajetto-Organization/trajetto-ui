@@ -1,11 +1,5 @@
 import type { CommandPartInputValue } from "../../common.types";
 
-interface FetchPartProps {
-  cursor?: string;
-  businessId?: string;
-  signal?: AbortSignal;
-}
-
 interface FetchPartResult {
   data: any[];
   nextCursor: string | null;
@@ -20,4 +14,4 @@ interface SearchPartProps {
   isOptional?: boolean;
 }
 
-export type { FetchPartProps, FetchPartResult, SearchPartProps };
+export type { FetchPartResult, SearchPartProps };

@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePermissionSchema } from "@/schemas/create-update-permission-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreatePermissionProps {
   message: string;
@@ -43,7 +47,7 @@ const handleCreatePermission = async (
   const permissionData = createPermissionValidation.data;
 
   try {
-    const response = await fetch(createPermission, {
+    const response = await apiFetch(createPermission, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -55,14 +59,22 @@ const handleCreatePermission = async (
 
     const { message } = (await response.json()) as CreatePermissionProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createPermissionError: { createPermissionErrorMessage: message },
+        createPermissionError: {
+          createPermissionErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-permission");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("permission/create-permission", error);
     return {
       createPermissionError: {
         createPermissionErrorMessage:

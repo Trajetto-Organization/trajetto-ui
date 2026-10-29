@@ -1,7 +1,12 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
+import { idempotencyHeaderOf } from "@/lib/idempotency-key";
 import { createUpdateServiceOrderSchema } from "@/schemas/create-update-service-order-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateServiceOrderProps {
   message: string;
@@ -53,26 +58,36 @@ const handleCreateServiceOrder = async (
   };
 
   try {
-    const response = await fetch(createServiceOrder, {
+    const response = await apiFetch(createServiceOrder, {
       credentials: "include",
       method: "POST",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
+        // The same form saved twice is one order (IDEMP-14).
+        ...idempotencyHeaderOf(createServiceOrderValues.get("idempotency_key")),
       },
       body: JSON.stringify(serviceOrderDataWithOrigin),
     });
 
     const { message } = (await response.json()) as CreateServiceOrderProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createServiceOrderError: { createServiceOrderErrorMessage: message },
+        createServiceOrderError: {
+          createServiceOrderErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-service-order");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("service-order/create-service-order", error);
     return {
       createServiceOrderError: {
         createServiceOrderErrorMessage:

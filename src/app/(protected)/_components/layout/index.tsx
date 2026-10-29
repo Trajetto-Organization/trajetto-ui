@@ -14,11 +14,10 @@ import { ConnectionRetry } from "@/components/shared/connection-lost-screen/conn
 const ProtectedLayout = ({
   children,
   userLogged,
-  notificationError = false,
 }: ProtectedLayoutLayoutProps): JSX.Element => {
   const isDriver = userLogged.role === "BUSINESS_USER" && !!userLogged.driverId;
 
-  useProtectedLayout(userLogged, notificationError);
+  useProtectedLayout(userLogged);
   useNavigationSecurityCheck();
 
   // Rendered alongside both layouts rather than inside them: a forced logout

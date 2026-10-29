@@ -11,9 +11,12 @@ interface ServerNotification {
 }
 
 interface SyncNotificationsProviderProps {
-  children: ReactNode;
+  /** Optional: the layout renders it beside the page, not around it. */
+  children?: ReactNode;
   serverNotifications: ServerNotification[];
   serverNotificationIds: string[];
+  /** The server could not read the list: said once, the app carries on. */
+  error?: boolean;
 }
 
 export type { SyncNotificationsProviderProps };

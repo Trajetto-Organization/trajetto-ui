@@ -8,10 +8,21 @@ import {
 
 const createUpdateSupplierSchema = z.object({
   name: z
-    .string()
+    .string({ required_error: "O nome do fornecedor é obrigatório." })
+    // Empty is a missing name, not a short one (decision 16.702).
+    .min(1, "O nome do fornecedor é obrigatório.")
     .min(2, "O nome do fornecedor deve ter no mínimo 2 caracteres.")
     .max(100, "O nome do fornecedor deve ter no máximo 100 caracteres.")
     .superRefine((value, ctx) => {
+      if (value.length > 0 && isEmptyOrWhitespace(value)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "O nome do fornecedor é obrigatório.",
+        });
+
+        return;
+      }
+
       if (value.length > 100) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -65,7 +76,8 @@ const createUpdateSupplierSchema = z.object({
       return val;
     },
     z
-      .string()
+      .string({ required_error: "O CNPJ é obrigatório." })
+      .min(1, "O CNPJ é obrigatório.")
       .length(14, "O CNPJ deve ter exatamente 14 dígitos.")
       .regex(/^\d{14}$/, "O CNPJ deve conter apenas números."),
   ),

@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
   LineChart as LineChartIcon,
   Info,
   ChartArea,
+  ServerCog,
   Zap,
 } from "lucide-react";
 
@@ -28,22 +30,39 @@ import {
 import { Button } from "@/components/ui/button";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Tabs,
+  ScrollableTabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
 
 import type { OverviewDashboardProps } from "./shared/common.types";
+import type { PermissionKey, UserRole } from "../shared/common.types";
+
+import { useAuthStore } from "@/store/auth-store";
+import { canAccessPath, readablePermissionKeys } from "@/lib/route-access";
 import { ButtonRevalidation } from "./revalidation-button";
 
 import { Charts } from "./charts";
+import { showsFleetCharts } from "./charts/visibility";
 import { useTabTutorial } from "./hooks/tab-tutorial";
 
 import { getStatusBadge } from "./status-badge";
 import { quickLinks, statCards } from "./data";
 
 import { displayValue, formatNotificationDate } from "@/lib/format-values";
+import { comparisonDescription, comparisonLabel } from "@/lib/dashboard-counts";
 import { LimitsContent } from "../shared/limits/limits-content";
+import { IdCell } from "../shared/tanstack-table/id-cell";
+import { SystemMetrics } from "@/features/system-metrics";
+import { refreshSystemMetrics } from "@/features/system-metrics/reads";
 
 import { QuickLinkCard } from "./quick-link-card";
-import { StatCard } from "./stat-card";
+import { StatCard, StatCardGrid } from "./stat-card";
+
+import { OverviewEmptyState } from "./empty-state";
+import { OperationPanel } from "./operation-panel";
 
 const OverviewDashboard = ({
   initialData,
@@ -52,57 +71,59 @@ const OverviewDashboard = ({
   userError,
   basePath,
 }: OverviewDashboardProps): JSX.Element => {
-  const { counts, recentActivity } = initialData;
+  const { counts, recentActivity, deliveryOperation } = initialData;
 
-  // Hook for monitoring tab changes
-  useTabTutorial();
+  // The open tab picks the tour (Visão geral, Análise Gráfica, Limites…),
+  // and what "Atualizar" refreshes: Sistema reads only its own two queries.
+  const setTutorialTab = useTabTutorial();
+  const [activeTab, setActiveTab] = useState<string>("overview");
 
-  // Helper function to check if a user has permission
-  const hasPermission = (permissionKey: string): boolean => {
-    if (
-      !userLogged ||
-      !userLogged.profileAccess ||
-      !userLogged.profileAccess.permissions
-    ) {
-      return false;
-    }
-
-    return userLogged.profileAccess.permissions.some(
-      (perm) =>
-        perm.permissionKey === permissionKey && (perm.canRead || perm.canWrite),
-    );
+  const onTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setTutorialTab(tab);
   };
 
-  // Decide whether or not to display each card, based on role and permissions
-  const shouldDisplayCard = (cardType: string): boolean => {
+  // Both gates read the auth store, which the security check refreshes on
+  // every socket event — that is what makes a granted or revoked permission
+  // redraw these cards without a reload. The server-rendered props are only
+  // the first-paint fallback, and they go stale the moment anything changes.
+  const storeModules = useAuthStore((state) => state.enabledModules);
+  const storePermissions = useAuthStore((state) => state.permissions);
+
+  const enabledModules = storeModules ?? userLogged?.enabledModules ?? null;
+
+  // Readable keys only: a row saved with canRead false opens no page, so it
+  // must not draw a shortcut to one (ROUTE-KEY-1).
+  const permissionKeys = readablePermissionKeys(
+    storePermissions.length > 0
+      ? storePermissions
+      : (userLogged?.profileAccess?.permissions ?? []).map((permission) => ({
+          permissionKey: permission.permissionKey as PermissionKey,
+          canRead: permission.canRead,
+        })),
+  );
+
+  /**
+   * A shortcut is worth showing exactly when its page would open, so the
+   * verdict comes from the route registry — permissions and hired modules
+   * included. Unregistered paths are denied on purpose: that is what keeps
+   * "Empresas" off a company dashboard, since /dashboard/business does not
+   * exist.
+   */
+  const canReachCard = (path: string): boolean => {
+    // No user data (the /me call failed) is not a verdict — the dashboard
+    // still renders and the API remains the enforcement point.
     if (!userLogged) return true;
 
-    // MASTER sees everything
-    if (userLogged.role === "MASTER") return true;
-
-    // BUSINESS_ADMIN sees everything except "businesses"
-    if (userLogged.role === "BUSINESS_ADMIN") {
-      return cardType !== "businesses";
-    }
-
-    if (userLogged.role === "BUSINESS_USER") {
-      const permissionMap: Record<string, string> = {
-        vehicles: "vehicle_manage",
-        drivers: "driver_manage",
-        businesses: "business_manage",
-        branches: "branch_manage",
-        parts: "part_manage",
-        suppliers: "supplier_manage",
-        serviceOrders: "service_order_manage",
-        users: "user_registration_manage",
-        fines: "fine_manage",
-      };
-
-      const requiredPermission = permissionMap[cardType];
-      return requiredPermission ? hasPermission(requiredPermission) : false;
-    }
-
-    return true;
+    return canAccessPath(
+      `${basePath}/${path}`,
+      {
+        role: userLogged.role as UserRole,
+        permissions: permissionKeys,
+        enabledModules,
+      },
+      { unregistered: "deny" },
+    );
   };
 
   // Check if the user can see the charts tab
@@ -111,31 +132,57 @@ const OverviewDashboard = ({
     return userLogged.role === "MASTER" || userLogged.role === "BUSINESS_ADMIN";
   };
 
+  // Infrastructure posture is the platform team's business, not a tenant's.
+  const isMaster = userLogged?.role === "MASTER";
+
   const hasUserError = userError?.error || !userLogged;
+
+  const visibleStatCards = statCards(counts).filter((card) =>
+    canReachCard(card.path),
+  );
+
+  const visibleQuickLinks = quickLinks.filter((link) =>
+    canReachCard(link.path),
+  );
+
+  // Both grids answer to the same permissions, so they empty together. When
+  // they do, the screen says why instead of just dropping its content.
+  const hasNoShortcuts =
+    visibleStatCards.length === 0 && visibleQuickLinks.length === 0;
 
   return (
     <div data-tutorial="welcome">
-      <Tabs defaultValue="overview" className="space-y-6 my-9">
+      <Tabs
+        defaultValue="overview"
+        className="space-y-6 my-9"
+        onValueChange={onTabChange}
+      >
         <div
           className="flex flex-col gap-4 lg:flex-row
           lg:items-center"
         >
-          <TabsList data-tutorial="dashboard-tabs" className="w-full lg:w-auto">
+          {/* The product's one overflowing strip: one line, faded edges and
+          arrows, no native scrollbar. A bare `overflow-x-auto` here drew a
+          horizontal and a vertical bar inside the 40px box on Windows. */}
+          <ScrollableTabsList
+            data-tutorial="dashboard-tabs"
+            wrapperClassName="w-full lg:w-fit"
+          >
             <TabsTrigger
               value="overview"
               className="flex items-center space-x-1
-              flex-1 lg:flex-initial"
+              flex-1 px-2 sm:px-3 lg:flex-initial"
               data-tutorial="overview-tab"
             >
               <LineChartIcon className="h-4 w-4" />
-              <span>Overview</span>
+              <span>Visão geral</span>
             </TabsTrigger>
 
             {canView() && (
               <TabsTrigger
                 value="charts"
                 className="flex items-center space-x-1
-                flex-1 lg:flex-initial"
+                flex-1 px-2 sm:px-3 lg:flex-initial"
                 data-tutorial="charts-tab"
               >
                 <ChartArea className="h-4 w-4" />
@@ -147,35 +194,34 @@ const OverviewDashboard = ({
               <TabsTrigger
                 value="limits"
                 className="flex items-center space-x-1
-                flex-1 lg:flex-initial"
+                flex-1 px-2 sm:px-3 lg:flex-initial"
                 data-tutorial="limits-tab"
               >
                 <Zap className="h-4 w-4" />
                 <span>Limites de Uso</span>
               </TabsTrigger>
             )}
-          </TabsList>
+
+            {isMaster && (
+              <TabsTrigger
+                value="system"
+                className="flex items-center space-x-1
+                flex-1 px-2 sm:px-3 lg:flex-initial"
+                data-tutorial="system-tab"
+              >
+                <ServerCog className="h-4 w-4" />
+                <span>Sistema</span>
+              </TabsTrigger>
+            )}
+          </ScrollableTabsList>
           <ButtonRevalidation
             className="lg:w-auto lg:ml-auto"
             buttonClassName="w-full lg:w-auto"
-            revalidateData={[
-              "update-entity-count",
-              "update-vehicle-status",
-              "update-maintenance-stats",
-              "update-recent-activity",
-              "update-vehicle-by-type",
-              "update-maintenance-costs",
-              "update-vehicle-count",
-              "update-driver-count",
-              "update-business-count",
-              "update-branch-count",
-              "update-part-count",
-              "update-supplier-count",
-              "update-service-order-count",
-              "update-user-count",
-              "update-fine-count",
-              "update-ai-usage",
-            ]}
+            onRevalidate={
+              isMaster && activeTab === "system"
+                ? refreshSystemMetrics
+                : undefined
+            }
             rateLimit={{
               storageKey: "admin-dashboard",
               maxClicks: 3,
@@ -187,7 +233,14 @@ const OverviewDashboard = ({
 
         {canView() && (
           <TabsContent value="charts" data-tutorial="charts-content">
-            <Charts dashboardData={initialData} userRole={userLogged?.role} />
+            <Charts
+              dashboardData={initialData}
+              userRole={userLogged?.role}
+              showFleetCharts={showsFleetCharts(
+                userLogged?.role,
+                enabledModules,
+              )}
+            />
           </TabsContent>
         )}
 
@@ -197,6 +250,12 @@ const OverviewDashboard = ({
               mode={basePath === "/admin" ? "admin" : "dashboard"}
               showBusinessSelector={basePath === "/admin"}
             />
+          </TabsContent>
+        )}
+
+        {isMaster && (
+          <TabsContent value="system" data-tutorial="system-content">
+            <SystemMetrics />
           </TabsContent>
         )}
 
@@ -225,28 +284,45 @@ const OverviewDashboard = ({
           )}
 
           {/* Count cards (statistics) */}
-          <div
-            className="grid grid-cols-1 gap-4 
-            sm:grid-cols-2 lg:grid-cols-4"
-            data-cards
-          >
-            {statCards(counts).map(
-              (card) =>
-                shouldDisplayCard(card.type) && (
+          {hasNoShortcuts ? (
+            <OverviewEmptyState />
+          ) : (
+            visibleStatCards.length > 0 && (
+              <StatCardGrid>
+                {visibleStatCards.map((card) => (
                   <StatCard
                     key={card.type}
                     title={card.title}
                     value={card.value}
                     change={card.change}
+                    comparison={comparisonLabel(card.basis)}
+                    comparisonTitle={comparisonDescription(card.basis)}
                     icon={card.icon}
                     color={card.color}
                   />
-                ),
-            )}
-          </div>
+                ))}
+              </StatCardGrid>
+            )
+          )}
+
+          {/*
+            The operation block, between the counts and the activity feed.
+
+            Two gates, and they answer different questions. The API decides
+            whether there is anything to say at all (module hired, permission
+            held, a single company to summarise) and sends null when there is
+            not. `canReachCard` decides whether THIS tab may show it, and it
+            reads the auth store, which the socket refreshes — so a permission
+            revoked while the page is open makes the block disappear without a
+            reload, exactly like the cards above.
+          */}
+          {deliveryOperation && canReachCard("deliveries") && (
+            <OperationPanel operation={deliveryOperation} basePath={basePath} />
+          )}
 
           {/* Recent Activity Table */}
-          <Card className="shadow-md mt-6" role="table">
+          {/* A Card is not a table — the table it contains is. */}
+          <Card className="shadow-md mt-6" data-tutorial="recent-activity">
             <CardHeader>
               <div
                 className="flex flex-col gap-3 
@@ -285,6 +361,9 @@ const OverviewDashboard = ({
                 <Table>
                   <TableHeader>
                     <TableRow className="truncate">
+                      {/* The record id, as in every table (and in the
+                          activity log that "Ver todas" opens). */}
+                      <TableHead>ID</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Descrição</TableHead>
                       <TableHead>Nome do usuário</TableHead>
@@ -299,6 +378,9 @@ const OverviewDashboard = ({
                   <TableBody>
                     {recentActivity.map((activity) => (
                       <TableRow key={activity.id}>
+                        <TableCell>
+                          <IdCell id={activity.id} />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {displayValue(activity.type)}
                         </TableCell>
@@ -346,24 +428,24 @@ const OverviewDashboard = ({
           </Card>
 
           {/* Quick access links (shortcuts)*/}
-          <div
-            className="grid grid-cols-2 gap-3 
-            sm:gap-4 md:grid-cols-4 mt-6"
-            data-quick-links
-          >
-            {quickLinks.map(
-              (link) =>
-                shouldDisplayCard(link.type) && (
-                  <QuickLinkCard
-                    key={link.type}
-                    title={link.title}
-                    icon={link.icon}
-                    href={`${basePath}/${link.path}`}
-                    color={link.color}
-                  />
-                ),
-            )}
-          </div>
+          {visibleQuickLinks.length > 0 && (
+            <div
+              className="grid grid-cols-2 gap-3
+              sm:gap-4 md:grid-cols-4 mt-6"
+              data-quick-links
+              data-tutorial="quick-links"
+            >
+              {visibleQuickLinks.map((link) => (
+                <QuickLinkCard
+                  key={link.type}
+                  title={link.title}
+                  icon={link.icon}
+                  href={`${basePath}/${link.path}`}
+                  color={link.color}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -33,8 +33,9 @@ function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
     completed: boolean;
   }) => {
     if (!isEditing || !card) {
-      // For creation, check if you have the minimum necessary data
-      setIsDirty(!!newValues.title.trim() && !!newValues.dueDate);
+      // Creation never waits for a change (decision 16.701): what is
+      // missing is explained by the live validation on submit.
+      setIsDirty(true);
       return;
     }
 
@@ -114,7 +115,6 @@ function useCardModalForm({ card, isEditing, state }: UseCardModalFormProps) {
     });
   };
 
-  // ✅ Handler para o checkbox completed
   const handleCompletedChange = (value: boolean) => {
     setCompleted(value);
     checkIfDirty({

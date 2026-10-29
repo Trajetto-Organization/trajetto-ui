@@ -4,7 +4,7 @@ import type {
   DeletionStep,
 } from "../delete-business-form.types";
 
-import { revalidateTagName } from "@/actions/revalidate";
+import { resendCooldownAfterRefusal } from "@/lib/api-error";
 import { queryClientProps } from "@/lib/query-client-props";
 
 import { toast } from "sonner";
@@ -56,6 +56,7 @@ function useDeleteBusinessForm(state: DeleteBusinessFormState | null) {
     if (state?.deleteBusinessError) {
       toast.error(state.deleteBusinessError);
       setOtpCode("");
+      setResendTimer((current) => resendCooldownAfterRefusal(state, current));
       return;
     }
 
@@ -65,18 +66,15 @@ function useDeleteBusinessForm(state: DeleteBusinessFormState | null) {
 
       const performRevalidation = async () => {
         try {
-          await Promise.all([
-            revalidateTagName("delete-business"),
-            queryClientProps.resetQueries({
-              predicate: (query) => {
-                const isMatch =
-                  Array.isArray(query.queryKey) &&
-                  query.queryKey[0] === "business";
+          await queryClientProps.resetQueries({
+            predicate: (query) => {
+              const isMatch =
+                Array.isArray(query.queryKey) &&
+                query.queryKey[0] === "business";
 
-                return isMatch;
-              },
-            }),
-          ]);
+              return isMatch;
+            },
+          });
         } catch (error: any) {
           if (process.env.NODE_ENV === "development") {
             console.error("Erro na revalidação:", error);

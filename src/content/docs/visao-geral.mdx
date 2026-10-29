@@ -1,0 +1,48 @@
+---
+title: Documentação da API
+description: Integre o seu ERP, TMS ou WMS ao Trajetto pela API de Integração, com guias passo a passo, webhooks assinados e a referência completa.
+slug: visao-geral
+updatedAt: 2026-09-29
+---
+
+A API de Integração do Trajetto conecta o sistema da sua empresa à operação de entregas: você lê documentos, rotas e o histórico de eventos, cria entregas a partir do seu ERP e recebe, em tempo real, um webhook a cada mudança que importa.
+
+É uma API REST em JSON sobre HTTPS, versionada no caminho: tudo o que está descrito aqui vive em `/integration/v1`, no endereço <BaseUrl />.
+
+## O que dá para fazer
+
+- **Ler entregas e rotas** da empresa dona da chave, com os três identificadores de cada documento: o id do Trajetto, o código do seu ERP e a chave da NF-e.
+- **Criar entregas** a partir do seu sistema, com as mesmas regras do cadastro manual do painel.
+- **Receber webhooks** quando uma rota é liberada, uma entrega é concluída, um canhoto é enviado e em outros momentos do catálogo de tópicos.
+- **Consultar eventos** por polling, para quem está atrás de um firewall e não pode receber chamadas.
+
+## Antes de começar
+
+A API faz parte do módulo **Entregas**. As chaves e os webhooks são criados no painel, em **Integrações**, por quem tem acesso a essa tela. A chave identifica a empresa: nenhuma rota recebe o id da empresa como parâmetro, e uma chave nunca enxerga os dados de outra empresa.
+
+<Callout type="dica" title="Primeira vez aqui?">
+  Siga o [começo rápido](/docs/comeco-rapido): em poucos minutos você cria uma
+  chave e faz a primeira chamada.
+</Callout>
+
+## Os guias
+
+| Guia                                         | Para quê                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------- |
+| [Começo rápido](/docs/comeco-rapido)         | Criar a chave e fazer as primeiras chamadas                         |
+| [Autenticação e escopos](/docs/autenticacao) | Como enviar a chave, o que cada escopo permite, rotação e revogação |
+| [Paginação e sincronização](/docs/paginacao) | Percorrer listas por cursor e buscar só o que mudou                 |
+| [Idempotência](/docs/idempotencia)           | Repetir uma chamada sem duplicar nada                               |
+| [Erros](/docs/erros)                         | O corpo de erro, cada código e quando repetir                       |
+| [Limites de uso](/docs/limites)              | Tetos por chave e por empresa, 429 e 503                            |
+| [Receber webhooks](/docs/webhooks)           | Tópicos, envelope, entrega, ordem e reenvio                         |
+| [Verificar a assinatura](/docs/assinatura)   | HMAC com exemplos em Node.js, Python e PHP                          |
+| [Changelog](/docs/changelog)                 | O que mudou e como a API evolui                                     |
+
+## Referência e console
+
+A [referência da API](/docs/referencia) é gerada a partir do documento OpenAPI que a própria API publica, então descreve exatamente o que ela responde: endpoints, parâmetros, corpos, respostas e erros, além de cada webhook. Para testar uma chamada com a sua chave, use o [console interativo](/docs/console).
+
+## Suporte
+
+Toda resposta traz o cabeçalho `x-request-id`. Quando algo não sair como esperado, envie esse valor ao suporte junto com o horário da chamada: é com ele que a chamada é encontrada nos registros.

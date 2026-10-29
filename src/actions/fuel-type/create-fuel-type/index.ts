@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateFuelTypeSchema } from "@/schemas/create-update-fuel-type-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateFuelTypeProps {
   message: string;
@@ -44,7 +48,7 @@ const handleCreateFuelType = async (
   const fuelTypeData = createFuelTypeValidation.data;
 
   try {
-    const response = await fetch(createFuelType, {
+    const response = await apiFetch(createFuelType, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -56,14 +60,22 @@ const handleCreateFuelType = async (
 
     const { message } = (await response.json()) as CreateFuelTypeProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createFuelTypeError: { createFuelTypeErrorMessage: message },
+        createFuelTypeError: {
+          createFuelTypeErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-fuel-type");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("fuel-type/create-fuel-type", error);
     return {
       createFuelTypeError: {
         createFuelTypeErrorMessage:

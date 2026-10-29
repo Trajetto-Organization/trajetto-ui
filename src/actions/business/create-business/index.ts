@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateBusinessFormSchema } from "@/schemas/create-update-business-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateBusinessProps {
   message: string;
@@ -43,7 +47,7 @@ const handleCreateBusiness = async (
   const businessData = createBusinessValidation.data;
 
   try {
-    const response = await fetch(createBusiness, {
+    const response = await apiFetch(createBusiness, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -55,14 +59,22 @@ const handleCreateBusiness = async (
 
     const { message } = (await response.json()) as CreateBusinessProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createBusinessError: { createBusinessErrorMessage: message },
+        createBusinessError: {
+          createBusinessErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-business");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("business/create-business", error);
     return {
       createBusinessError: {
         createBusinessErrorMessage:

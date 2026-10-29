@@ -1,0 +1,392 @@
+import * as React from "react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+
+import { stubRelay } from "./helpers/relay-fetch";
+
+/**
+ * Limites de Uso (DASH-MOD-1, decision 2.6).
+ *
+ * The AI card said "abastecimentos e checklists" to every company, while the
+ * same quota also pays for the proof analysis of Entregas (decision 6.9): a
+ * deliveries-only carrier read a quota that seemed not to be theirs. And on
+ * /admin, a company switch kept the previous company's plan on screen until
+ * the next answer, and an answer that came back late overwrote the new one.
+ * The usage and the plan were also Server Actions, run one after the other
+ * by Next; they are relay GETs now, sent together and cancelled on a switch.
+ */
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(""),
+}));
+
+type Pending<T> = { resolve: (value: T) => void; promise: Promise<T> };
+
+function deferred<T>(): Pending<T> {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+
+  return { resolve, promise };
+}
+
+const api = vi.hoisted(() => ({
+  usage: new Map<string, Pending<unknown>>(),
+  plans: new Map<string, Pending<unknown>>(),
+}));
+
+import {
+  AI_QUOTA_NOTE,
+  aiQuotaScope,
+} from "@/app/(protected)/_components/shared/limits/limits-content/lib/ai-quota-scope";
+import { useLimitsContent } from "@/app/(protected)/_components/shared/limits/limits-content/hooks";
+
+beforeAll(() => {
+  (
+    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+  ).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.stubGlobal("React", React);
+});
+
+const unmounts: Array<() => Promise<void>> = [];
+
+afterEach(async () => {
+  while (unmounts.length) await unmounts.pop()!();
+  api.usage.clear();
+  api.plans.clear();
+  vi.unstubAllGlobals();
+  vi.stubGlobal("React", React);
+});
+
+/** The relay answers each company's reads with the deferred bodies above. */
+function stubCompanyReads() {
+  return stubRelay([
+    [
+      /^\/business\/get-ai-usage\/[^/]+$/,
+      (url) => api.usage.get(url.pathname.split("/").pop()!)!.promise,
+    ],
+    [
+      /^\/business\/entitlements\/[^/]+$/,
+      (url) => api.plans.get(url.pathname.split("/").pop()!)!.promise,
+    ],
+  ]);
+}
+
+const on = (...modules: string[]) =>
+  ["FLEET", "DELIVERIES"].map((module) => ({
+    module,
+    enabled: modules.includes(module),
+  }));
+
+const FLEET_TEXT =
+  "Leitura automática do odômetro nos abastecimentos e no checklist, feita na infraestrutura da Trajetto.";
+const DELIVERIES_TEXT =
+  "Leitura automática do canhoto (número da NF e data de recebimento), feita na infraestrutura da Trajetto. A assinatura segue para conferência da sua equipe.";
+
+describe("what the AI quota says it pays for (ADR 0010)", () => {
+  // Red before: "Leitura inteligente de abastecimentos e checklists" promised
+  // a reading of every checklist photo, and said nothing of where it ran.
+  it.each([
+    [on("FLEET"), FLEET_TEXT],
+    [on("DELIVERIES"), DELIVERIES_TEXT],
+    [on("FLEET", "DELIVERIES"), `${FLEET_TEXT} ${DELIVERIES_TEXT}`],
+  ])("follows the company's modules", (modules, text) => {
+    expect(aiQuotaScope(modules)).toBe(text);
+  });
+
+  it("does not claim a module before the plan is known", () => {
+    const unknown =
+      "Leitura automática das fotos enviadas pelo aplicativo, feita na infraestrutura da Trajetto.";
+
+    expect(aiQuotaScope(null)).toBe(unknown);
+    expect(aiQuotaScope(on())).toBe(unknown);
+  });
+
+  it("never names an external provider, and says the signature is the team's", () => {
+    for (const modules of [
+      on("FLEET"),
+      on("DELIVERIES"),
+      on("FLEET", "DELIVERIES"),
+      null,
+    ]) {
+      expect(aiQuotaScope(modules)).not.toMatch(
+        /claude|anthropic|haiku|gpt|gemini/i,
+      );
+    }
+
+    expect(aiQuotaScope(on("DELIVERIES"))).toContain(
+      "A assinatura segue para conferência da sua equipe.",
+    );
+  });
+
+  it("says, under the bar, what counts once and what never counts", () => {
+    expect(AI_QUOTA_NOTE).toBe(
+      "Cada foto lida conta uma vez. Itens do checklist como combustível, pneus e condição não são lidos automaticamente e não contam.",
+    );
+  });
+
+  // Red before: the note promised a device pre-check that is not shipped.
+  it("does not mention the device pre-check before it exists", () => {
+    expect(AI_QUOTA_NOTE).not.toMatch(/pré-checagem|celular/i);
+  });
+});
+
+const A = "018f0000-0000-7000-8000-00000000000a";
+const B = "018f0000-0000-7000-8000-00000000000b";
+
+const usageOf = (used: number) => ({
+  data: {
+    ai_analysis_used: used,
+    ai_analysis_limit: 100,
+    ai_analysis_in_progress: 0,
+  },
+});
+
+const planOf = (vehicles: number) => ({
+  data: {
+    modules: on("FLEET"),
+    vehicle_limit: 10,
+    vehicle_count: vehicles,
+    vehicle_limit_enabled: true,
+  },
+});
+
+describe("switching company on /admin", () => {
+  it("never shows the previous company's numbers under the new one", async () => {
+    for (const id of [A, B]) {
+      api.usage.set(id, deferred());
+      api.plans.set(id, deferred());
+    }
+
+    const relay = stubCompanyReads();
+
+    const seen: Array<ReturnType<typeof useLimitsContent>> = [];
+
+    const Probe = ({ businessId }: { businessId: string }) => {
+      seen.push(useLimitsContent({ businessId }));
+      return null;
+    };
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    unmounts.push(async () => {
+      await act(async () => root.unmount());
+    });
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    // Both of A's reads are out before either answers: a relay GET does not
+    // wait for the other the way two Server Actions did.
+    expect(relay.calls.map((call) => call.path)).toEqual([
+      `/business/get-ai-usage/${A}`,
+      `/business/entitlements/${A}`,
+    ]);
+
+    // A's plan arrives; A's usage is still on its way when the master
+    // switches to B.
+    await act(async () => {
+      api.plans.get(A)!.resolve(planOf(7));
+    });
+
+    expect(seen.at(-1)?.entitlements?.vehicle_count).toBe(7);
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: B }));
+    });
+
+    // Under B, A's plan is gone at once rather than shown until B answers,
+    // and A's usage, still on its way, is cancelled.
+    expect(seen.at(-1)?.businessId).toBe(B);
+    expect(seen.at(-1)?.entitlements).toBeNull();
+    expect(relay.calls[0].signal?.aborted).toBe(true);
+
+    await act(async () => {
+      api.usage.get(B)!.resolve(usageOf(3));
+      api.plans.get(B)!.resolve(planOf(2));
+    });
+
+    // A's usage answers last. It must not land on B's screen.
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(99));
+    });
+
+    const last = seen.at(-1)!;
+
+    expect(last.businessId).toBe(B);
+    expect(last.aiUsage?.ai_analysis_used).toBe(3);
+    expect(last.entitlements?.vehicle_count).toBe(2);
+  });
+});
+
+describe("the page waits for both reads (spec §9)", () => {
+  function mount() {
+    const seen: Array<ReturnType<typeof useLimitsContent>> = [];
+
+    const Probe = ({ businessId }: { businessId: string }) => {
+      seen.push(useLimitsContent({ businessId }));
+      return null;
+    };
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    unmounts.push(async () => {
+      await act(async () => root.unmount());
+    });
+
+    return { seen, root, Probe };
+  }
+
+  // Red before: the spinner followed the usage only, and with the plan still
+  // on its way the vehicle card said "Não foi possível carregar os dados da
+  // frota." until it arrived.
+  it("keeps loading while the plan is still on its way", async () => {
+    api.usage.set(A, deferred());
+    api.plans.set(A, deferred());
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(true);
+    expect(seen.at(-1)?.planStatus).toBe("loading");
+
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+    });
+
+    // The usage answered first: still loading, and never "error".
+    expect(seen.at(-1)?.aiUsage?.ai_analysis_used).toBe(3);
+    expect(seen.at(-1)?.isLoading).toBe(true);
+    expect(seen.map((state) => state.planStatus)).not.toContain("error");
+
+    await act(async () => {
+      api.plans.get(A)!.resolve(planOf(4));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+    expect(seen.at(-1)?.planStatus).toBe("ready");
+  });
+
+  it("says the plan failed only once it did", async () => {
+    api.usage.set(A, deferred());
+    api.plans.set(A, deferred());
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+      api.plans
+        .get(A)!
+        .resolve(
+          Response.json(
+            { code: "INTERNAL", message: "falhou" },
+            { status: 500 },
+          ),
+        );
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+    expect(seen.at(-1)?.planStatus).toBe("error");
+    expect(seen.at(-1)?.entitlements).toBeNull();
+  });
+
+  it("is loading at once after a company switch, before any request leaves", async () => {
+    for (const id of [A, B]) {
+      api.usage.set(id, deferred());
+      api.plans.set(id, deferred());
+    }
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+      api.plans.get(A)!.resolve(planOf(4));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+
+    const before = seen.length;
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: B }));
+    });
+
+    // Every render under B, the very first one included, is "loading":
+    // never A's answers shown as B's gaps.
+    const underB = seen.slice(before);
+
+    expect(underB.length).toBeGreaterThan(0);
+    expect(underB.every((state) => state.isLoading)).toBe(true);
+  });
+
+  // Red before: the settled marks were "company#refresh", so going back to A
+  // before B answered (a quick switch, Back in the browser) matched A's first,
+  // settled load. The page stopped loading with A's usage cleared, and the AI
+  // card said "Não foi possível carregar os dados de uso." until A answered.
+  it("is loading again when it comes back to a company before the switch answered", async () => {
+    for (const id of [A, B]) {
+      api.usage.set(id, deferred());
+      api.plans.set(id, deferred());
+    }
+    stubCompanyReads();
+
+    const { seen, root, Probe } = mount();
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(3));
+      api.plans.get(A)!.resolve(planOf(4));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: B }));
+    });
+
+    // Back to A while B is still on its way: A is asked again.
+    api.usage.set(A, deferred());
+    api.plans.set(A, deferred());
+
+    const before = seen.length;
+
+    await act(async () => {
+      root.render(createElement(Probe, { businessId: A }));
+    });
+
+    const backOnA = seen.slice(before);
+
+    expect(backOnA.length).toBeGreaterThan(0);
+    expect(backOnA.every((state) => state.isLoading)).toBe(true);
+    expect(seen.at(-1)?.planStatus).toBe("loading");
+
+    await act(async () => {
+      api.usage.get(A)!.resolve(usageOf(5));
+      api.plans.get(A)!.resolve(planOf(6));
+    });
+
+    expect(seen.at(-1)?.isLoading).toBe(false);
+    expect(seen.at(-1)?.aiUsage?.ai_analysis_used).toBe(5);
+    expect(seen.at(-1)?.entitlements?.vehicle_count).toBe(6);
+  });
+});

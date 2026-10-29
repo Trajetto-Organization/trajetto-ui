@@ -58,8 +58,9 @@ function usePhotoUpload(): UsePhotoUpload {
       businessId,
       maxTotalBytes,
     }: UploadPhotosProps): Promise<UploadedPhoto[] | null> => {
-      // Kept from the multipart days so both clients produce recognisably
-      // similar names: fieldName_timestamp_index.extension.
+      // fieldName_timestamp_index.extension — the API rewrites this into the
+      // stored key, but it keeps the original readable in support tickets and
+      // matches what the mobile app sends.
       const entries = Object.entries(files).flatMap(([fieldName, fieldFiles]) =>
         fieldFiles.map((file, index) => {
           const extension = file.name.split(".").pop() || "jpg";

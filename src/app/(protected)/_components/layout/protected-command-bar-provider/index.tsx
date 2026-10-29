@@ -1,117 +1,136 @@
 "use client";
 
 import {
-  KBarAnimator,
-  KBarPortal,
-  KBarPositioner,
-  KBarProvider,
-  KBarResults,
-  KBarSearch,
-  useMatches,
-  useRegisterActions,
-} from "kbar";
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from "react";
+
 import type { ProtectedCommandBarProps } from "./protected-command-bar-provider.types";
+import type { CommandPaletteProps } from "./palette";
 
-import { useCommandBarActions } from "./hooks";
-import { useAuthStore } from "@/store/auth-store";
+import {
+  CommandPaletteContext,
+  isPaletteShortcut,
+  useCommandPalette,
+} from "./command-palette-context";
 
-// Registers actions dynamically — re-registers when store permissions change
-const CommandBarDynamicActions = ({
-  user,
-}: Pick<ProtectedCommandBarProps, "user">): null => {
-  const { permissions: storePermissions } = useAuthStore();
+/** Longest the palette waits for an idle main thread before loading. */
+const IDLE_LOAD_TIMEOUT_MS = 2000;
 
-  // Use store permissions (updated by Socket.IO) when available
-  const dynamicUser = {
-    ...user,
-    permissions:
-      storePermissions.length > 0 ? storePermissions : user.permissions,
-  };
+let paletteRequest: Promise<ComponentType<CommandPaletteProps>> | null = null;
 
-  const { actions } = useCommandBarActions({ user: dynamicUser });
-  useRegisterActions(actions, [storePermissions]);
+/** The palette's chunk (kbar with its search and list), one request per page load. */
+const loadPalette = (): Promise<ComponentType<CommandPaletteProps>> => {
+  paletteRequest ??= import("./palette")
+    .then((module) => module.CommandPalette)
+    .catch((error: unknown) => {
+      // A failed fetch (a deploy, a dropped connection) is asked again on
+      // the next ⌘K instead of breaking the page.
+      paletteRequest = null;
+      throw error;
+    });
 
-  return null;
+  return paletteRequest;
 };
 
+/**
+ * The ⌘K palette's shell, in the first load of every protected page.
+ *
+ * kbar is CommonJS, so any import of it brought its fuzzy search and virtual
+ * list (~18 kB gzipped) into every protected page. This shell holds only
+ * what must work from the first paint — ⌘K/Ctrl+K and the buttons that open
+ * the palette (`useCommandPalette`) — and imports the palette itself when the
+ * browser is idle, or at once when someone asks for it first. An ask made
+ * before the chunk arrives opens the palette as soon as it lands.
+ *
+ * Once the palette is mounted, kbar's own listeners take over: ⌘K, Escape,
+ * the arrows and the two-key page shortcuts ("e n", "r t"...), which are
+ * registered with the palette — that is, after the idle load.
+ */
 const ProtectedCommandBar = ({
   children,
   user,
 }: ProtectedCommandBarProps): JSX.Element => {
+  const [Palette, setPalette] =
+    useState<ComponentType<CommandPaletteProps> | null>(null);
+
+  // ⌘K or a button pressed before the palette was mounted.
+  const [openPending, setOpenPending] = useState(false);
+
+  // kbar's toggle once the palette is mounted; null until then.
+  const kbarToggleRef = useRef<(() => void) | null>(null);
+
+  const load = useCallback(() => {
+    loadPalette()
+      .then((component) => setPalette(() => component))
+      .catch(() => undefined);
+  }, []);
+
+  const toggle = useCallback(() => {
+    if (kbarToggleRef.current) {
+      kbarToggleRef.current();
+      return;
+    }
+
+    setOpenPending(true);
+    load();
+  }, [load]);
+
+  // After hydration and the page's own work, when the main thread is idle.
+  useEffect(() => {
+    const idle = typeof window.requestIdleCallback === "function";
+    const handle = idle
+      ? window.requestIdleCallback(load, { timeout: IDLE_LOAD_TIMEOUT_MS })
+      : window.setTimeout(load, 0);
+
+    return () => {
+      if (idle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
+  }, [load]);
+
+  // ⌘K before the palette is mounted. Afterwards kbar answers it (and calls
+  // preventDefault), so this one stands aside and never toggles twice.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (kbarToggleRef.current || event.defaultPrevented) return;
+      if (!isPaletteShortcut(event)) return;
+
+      event.preventDefault();
+      setOpenPending(true);
+      load();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [load]);
+
+  const onReady = useCallback((kbarToggle: (() => void) | null) => {
+    kbarToggleRef.current = kbarToggle;
+  }, []);
+
+  const onOpened = useCallback(() => setOpenPending(false), []);
+
+  const controls = useMemo(() => ({ toggle }), [toggle]);
+
   return (
-    <KBarProvider actions={[]}>
-      <CommandBarDynamicActions user={user} />
-      <KBarPortal>
-        <KBarPositioner
-          className="bg-black/50
-          backdrop-blur-sm z-[99999]"
-          data-kbar-portal
-        >
-          <KBarAnimator
-            className="bg-white rounded-xl shadow-xl
-            flex flex-col gap-4 w-[35rem] overflow-hidden"
-            data-kbar-animator
-          >
-            <KBarSearch
-              className="w-full outline-none
-              px-6 py-4 text-black bg-white"
-              defaultPlaceholder="Digite um comando ou pesquise..."
-            />
-            <SearchResults />
-          </KBarAnimator>
-        </KBarPositioner>
-      </KBarPortal>
+    <CommandPaletteContext.Provider value={controls}>
       {children}
-    </KBarProvider>
+      {Palette ? (
+        <Palette
+          user={user}
+          openOnMount={openPending}
+          onReady={onReady}
+          onOpened={onOpened}
+        />
+      ) : null}
+    </CommandPaletteContext.Provider>
   );
 };
 
-const SearchResults = (): JSX.Element => {
-  const { results } = useMatches();
-
-  return (
-    <div data-kbar-results>
-      <KBarResults
-        maxHeight={407}
-        items={results}
-        onRender={({ item, active }) =>
-          typeof item === "string" ? (
-            <div
-              className="text-sm uppercase px-4 pt-3
-              pb-1 text-neutral-500 font-bold"
-            >
-              {item}
-            </div>
-          ) : (
-            <div
-              className={`flex items-center px-4 py-3 cursor-pointer ${
-                active ? "bg-[#eeeeee]" : "bg-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                {item.icon && <span>{item.icon}</span>}
-                <span>{item.name}</span>
-              </div>
-
-              <div className="flex gap-1 ml-auto">
-                {item.shortcut &&
-                  item.shortcut.map((shortcut, index) => (
-                    <div
-                      key={index}
-                      className="text-gray-400 uppercase
-                      bg-slate-100 rounded-sm py-[2px] px-3
-                      min-w-8 w-8 text-center font-mono"
-                    >
-                      {shortcut}
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )
-        }
-      />
-    </div>
-  );
-};
-
-export { ProtectedCommandBar };
+export { ProtectedCommandBar, useCommandPalette };

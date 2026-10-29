@@ -1,0 +1,193 @@
+import { revalidatePath } from "next/cache";
+
+import { isSessionRefusalCode } from "@/app/(protected)/_components/layout/shared/session-refusal";
+import { readableValidationMessage } from "@/lib/api-error";
+
+/**
+ * `fetch` for the Server Actions' calls to the API.
+ *
+ * A Server Action only handed the API's message back to the screen, so a
+ * session that ended mid-page (401 AUTH_SESSION_INVALID: revoked, or the user
+ * deleted; 404 USER_NOT_FOUND; a session-level 403 such as TENANT_INACTIVE)
+ * showed a toast and left the person on a dashboard where nothing worked.
+ *
+ * On such an answer to an authenticated call this re-renders the layout in
+ * the same action response. That runs the protected area's own gate
+ * (`/user/me` in ProtectedProvider), which is the one place that decides how
+ * a session ends: a verdict signs the person out with the reason; an API that
+ * is only busy (or a renewal still pending) keeps the session. Clearing the
+ * cookies here instead would log out on a 401 the gate knows to forgive.
+ *
+ * The response is returned untouched (the code is read from a clone), so
+ * the action still answers with its message.
+ *
+ * Scoped to the protected route group, never "/": any revalidatePath makes
+ * the action answer with the re-rendered current page (pathWasRevalidated),
+ * so the scope changes nothing for the gate. What "/" changed was every
+ * prerendered page of the site — they all carry the root layout's implicit
+ * tag. Their cache entries were dropped, and a page with
+ * `dynamicParams = false` (/legal/[policy], /blog/[slug]) then answered 404
+ * to every visitor until the next deploy (Next's no-fallback path on a cache
+ * miss): one session ending mid-action took the legal pages down, and the
+ * public pages that prefetch those links stopped settling.
+ */
+const PROTECTED_LAYOUT = "/(protected)";
+
+function isAuthenticated(init?: RequestInit): boolean {
+  const headers = new Headers(init?.headers);
+
+  return /^Bearer\s+\S+/i.test(headers.get("authorization") ?? "");
+}
+
+async function errorCodeOf(response: Response): Promise<string | null> {
+  const header = response.headers.get("x-error-code");
+
+  if (header) return header;
+
+  try {
+    const body: unknown = await response.clone().json();
+
+    if (
+      body &&
+      typeof body === "object" &&
+      typeof (body as { code?: unknown }).code === "string"
+    ) {
+      return (body as { code: string }).code;
+    }
+  } catch {
+    // Not JSON (a proxy page): no code to read.
+  }
+
+  return null;
+}
+
+/** Whether an answer to an authenticated call says the session is over. */
+async function endsSession(response: Response): Promise<boolean> {
+  if (response.status === 401) return true;
+  if (response.status !== 403 && response.status !== 404) return false;
+
+  const code = await errorCodeOf(response);
+
+  if (response.status === 404) return code === "USER_NOT_FOUND";
+
+  return isSessionRefusalCode(code);
+}
+
+/**
+ * The API's 400 VALIDATION_ERROR with its English "Validation Error" message,
+ * rewritten so `message` is the sentence a person can act on (see
+ * readableValidationMessage). Everything else in the body — `code`, `issues`
+ * — and the status and headers are kept; any other answer is returned as is.
+ */
+async function withReadableValidation(response: Response): Promise<Response> {
+  if (response.status !== 400) return response;
+
+  let body: unknown;
+
+  try {
+    body = await response.clone().json();
+  } catch {
+    return response;
+  }
+
+  const message = readableValidationMessage(body);
+
+  if (message === null) return response;
+
+  const headers = new Headers(response.headers);
+
+  headers.delete("content-length");
+  headers.delete("content-encoding");
+
+  return new Response(JSON.stringify({ ...(body as object), message }), {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+/**
+ * How long a call waits for the API when the caller set no signal of its
+ * own. A read past this is the API in trouble, and the page or action says so
+ * instead of holding the request (and its memory) until undici gives up at
+ * five minutes. A write gets longer — some do real work — and its timeout
+ * says the outcome is unknown, so nobody blindly repeats it.
+ */
+const READ_TIMEOUT_MS = 10_000;
+const WRITE_TIMEOUT_MS = 60_000;
+
+const API_TIMEOUT_CODE = "API_TIMEOUT";
+
+function isRead(init?: RequestInit): boolean {
+  const method = (init?.method ?? "GET").toUpperCase();
+
+  return method === "GET" || method === "HEAD";
+}
+
+/**
+ * The timeout as an answer, not an exception: the actions already turn a
+ * non-OK answer's `message` into what the screen says, so a slow API reads as
+ * a sentence a person can act on rather than "erro inesperado". 504, so
+ * nothing mistakes it for a verdict on the session.
+ */
+function timeoutAnswer(read: boolean): Response {
+  const message = read
+    ? "O servidor demorou para responder. Tente novamente em instantes."
+    : "O servidor demorou para responder e a operação pode ter sido concluída. Atualize a tela para conferir antes de tentar de novo.";
+
+  return new Response(JSON.stringify({ code: API_TIMEOUT_CODE, message }), {
+    status: 504,
+    headers: {
+      "content-type": "application/json",
+      "x-error-code": API_TIMEOUT_CODE,
+    },
+  });
+}
+
+async function boundedFetch(
+  input: string | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  // The caller's own signal (an upload's, a stream's) is left alone.
+  if (init?.signal) return fetch(input, init);
+
+  const read = isRead(init);
+  const signal = AbortSignal.timeout(read ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS);
+
+  try {
+    return await fetch(input, { ...init, signal });
+  } catch (error) {
+    if (signal.aborted) return timeoutAnswer(read);
+
+    throw error;
+  }
+}
+
+async function apiFetch(
+  input: string | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const response = await withReadableValidation(
+    await boundedFetch(input, init),
+  );
+
+  try {
+    if (isAuthenticated(init) && (await endsSession(response))) {
+      revalidatePath(PROTECTED_LAYOUT, "layout");
+    }
+  } catch {
+    // Reading the answer must never break the action that asked for it; and
+    // outside a Server Action (a page reading through one) there is nothing
+    // to re-render: that page's own gate already ran.
+  }
+
+  return response;
+}
+
+export {
+  API_TIMEOUT_CODE,
+  READ_TIMEOUT_MS,
+  WRITE_TIMEOUT_MS,
+  apiFetch,
+  endsSession,
+};

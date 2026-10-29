@@ -8,8 +8,8 @@ import { handleToggleBusinessActive } from "@/actions/business/toggle-business-a
 import { toast } from "sonner";
 import { Loader } from "lucide-react";
 
-import { revalidateTagName } from "@/actions/revalidate";
 import { queryClientProps } from "@/lib/query-client-props";
+import { isStaleActionResult } from "@/lib/action-result";
 
 interface ToggleActiveCellProps {
   businessId: string;
@@ -32,6 +32,11 @@ export function ToggleBusinessActiveCell({
     startTransition(async () => {
       const result = await handleToggleBusinessActive(businessId);
 
+      if (isStaleActionResult(result)) {
+        setOptimisticActive(previousState);
+        return;
+      }
+
       if (result.toggleError) {
         setOptimisticActive(previousState);
         toast.error(result.toggleError);
@@ -40,13 +45,10 @@ export function ToggleBusinessActiveCell({
 
       toast.success(result.successMessage);
 
-      await Promise.all([
-        revalidateTagName("toggle-business-active"),
-        queryClientProps.resetQueries({
-          predicate: (query) =>
-            Array.isArray(query.queryKey) && query.queryKey[0] === "business",
-        }),
-      ]);
+      await queryClientProps.resetQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) && query.queryKey[0] === "business",
+      });
     });
   };
 
@@ -57,6 +59,9 @@ export function ToggleBusinessActiveCell({
           checked={optimisticActive}
           onCheckedChange={handleToggle}
           disabled={isPending}
+          // Without a name a screen reader heard only "switch, on" — and this
+          // one logs a whole company out (axe button-name, critical).
+          aria-label={`${optimisticActive ? "Inativar" : "Ativar"} a empresa ${corporateReason}`}
           className={`${
             optimisticActive
               ? "data-[state=checked]:bg-emerald-500 dark:data-[state=checked]:bg-emerald-600"

@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import type { QuoteProps, QuoteStatus } from "../../quote.types";
 import type { UpdateQuoteFormState } from "../update-quote-status-modal.types";
 
-import { revalidateTagName } from "@/actions/revalidate";
 import { toast } from "sonner";
 
 interface UseQuoteFormStatusProps {
@@ -85,17 +84,7 @@ function useQuoteFormStatus({
       // Show the toast first
       toast.success(state.successMessage);
 
-      // Start revalidation in background
-      const performRevalidation = async () => {
-        try {
-          await revalidateTagName("update-quote-status");
-        } catch (error: any) {
-          toast.error(error.message);
-        }
-      };
-
-      // Start revalidation in background without waiting
-      performRevalidation();
+      // The action re-rendered the screen in its own response.
 
       // Close the modal immediately after showing toast
       onClose();

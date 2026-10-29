@@ -6,30 +6,28 @@ import { redirect } from "next/navigation";
 import PageContainer from "@/app/(protected)/_components/layout/protected-page-container";
 import { ProtectedHeading } from "@/app/(protected)/_components/layout/protected-heading";
 
-import { ProtectedStatsContentLoading } from "@/app/(protected)/_components/loading-page/protected-stats-content-loading";
 import { getCookies } from "@/actions/cookies";
 
-import { SupplierActions } from "./page-actions";
-import { SupplierContent } from "./supplier-content";
+import { SupplierContent } from "@/features/supplier/content";
+import { SupplierSkeleton } from "@/features/supplier/skeleton";
+import { firstParam, hasSelectedBusiness } from "@/features/supplier/lib/scope";
 
-interface SupplierQueryParamsProps {
-  searchParams: { page?: string; pageSize?: string; search?: string };
+interface SupplierPageProps {
+  // Every param the URL carries: sort, order and the UF filter too.
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: "Fornecedores",
-    description: `
-      Gerencie de forma integrada todos os seus fornecedores e parceiros comerciais.
-      Cadastre, visualize e controle informações detalhadas de cada fornecedor,
-      acompanhe históricos de fornecimento, mantenha dados de contato atualizados e
-      otimize seus processos de compra e gerenciamneto com a nossa plataforma.`,
+    description:
+      "Cadastre e acompanhe as oficinas, lojas e prestadores que atendem a frota.",
   };
 }
 
-const Supplier = async ({
+const AdminSupplier = async ({
   searchParams,
-}: SupplierQueryParamsProps): Promise<JSX.Element | undefined> => {
+}: SupplierPageProps): Promise<JSX.Element | undefined> => {
   const tokenAccess = await getCookies("tkey");
 
   if (!tokenAccess) {
@@ -39,17 +37,28 @@ const Supplier = async ({
   return (
     <PageContainer>
       <ProtectedHeading
-        title={"Fornecedores"}
-        description="Controle centralizado de parceiros comerciais. Cadastre, monitore e gerencie seus fornecedores."
+        title="Fornecedores"
+        description="Selecione uma empresa para cadastrar e acompanhar os fornecedores dela."
       />
 
-      <SupplierActions />
-
-      <Suspense fallback={<ProtectedStatsContentLoading />}>
-        <SupplierContent searchParams={searchParams} token={tokenAccess} />
+      <Suspense
+        fallback={
+          <SupplierSkeleton
+            mode="admin"
+            hasBusiness={hasSelectedBusiness(
+              firstParam(searchParams.businessId),
+            )}
+          />
+        }
+      >
+        <SupplierContent
+          mode="admin"
+          searchParams={searchParams}
+          token={tokenAccess}
+        />
       </Suspense>
     </PageContainer>
   );
 };
 
-export default Supplier;
+export default AdminSupplier;

@@ -1,70 +1,53 @@
 import { Metadata } from "next";
-import Link from "next/link";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowLink } from "@/components/site/arrow-link";
+import { Eyebrow, Lead, SectionHeading } from "@/components/site/primitives";
+import { SiteShell } from "@/components/site/site-shell";
 
-import { Footer } from "@/components/layouts/footer";
-import { Navbar } from "@/components/layouts/navbar";
+// Next adds its own noindex to a 404 response, but the layout's
+// "index, follow" (and googleBot's) went out beside it; this page states
+// one directive only.
+export const metadata: Metadata = {
+  title: "Página não encontrada",
+  description:
+    "A página que você procura não existe ou mudou de endereço. Volte para a página inicial para continuar navegando.",
+  robots: { index: false, follow: true },
+};
 
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: "Página não encontrada",
-    description: `
-      Desculpe, a página que você está procurando não foi encontrada.
-      Verifique a URL ou volte para a página inicial para continuar navegando
-      em nosso site.
-    `,
-  };
-}
-
-const NotFound = (): JSX.Element => {
-  return (
-    <>
-      <Navbar />
+// Built from the site primitives so the 404 shares the header offset, type
+// scale, buttons and backdrop of every other public page.
+const NotFound = (): JSX.Element => (
+  <SiteShell>
+    <main className="relative flex min-h-[min(100svh,860px)] w-full flex-col items-center justify-center overflow-hidden px-[clamp(20px,4vw,40px)] pb-[clamp(56px,8vw,96px)] pt-[clamp(120px,14vw,160px)] text-center">
+      {/* The soft glow the heroes use; decorative. */}
       <div
-        className="flex min-h-screen w-full 
-        flex-col items-center justify-center 
-        px-4 sm:px-6 lg:px-8 text-center"
-      >
-        <h1
-          className="font-display text-4xl font-bold 
-          tracking-normal sm:text-5xl"
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-[18%] h-[420px] w-[min(900px,120vw)] -translate-x-1/2 bg-[radial-gradient(closest-side,rgb(var(--site-violet)/.10),rgb(var(--site-violet)/0))]"
+      />
+      <div className="relative mx-auto flex max-w-[760px] flex-col items-center">
+        <Eyebrow className="mb-5 animate-tp-up">ERRO 404</Eyebrow>
+        <SectionHeading
+          as="h1"
+          size="xl"
+          className="animate-tp-up [animation-delay:80ms]"
         >
-          Não foi possível encontrar a página
-        </h1>
-
-        <p className="text-center mt-7">
-          A página que você está procurando não existe ou foi movida | Página
-          404
-        </p>
-
-        <div className="mt-10">
-          <Link
-            aria-label="Back to home page"
-            href={"/"}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              `flex items-center justify-center h-10 
-              px-4 w-full transition-colors group`,
-            )}
-          >
-            Voltar para a página inicial
-            <div className="ml-2">
-              <ArrowRight
-                size={20}
-                className="group-hover:translate-x-1 
-                transition-all duration-300"
-              />
-            </div>
-          </Link>
+          Não foi possível encontrar a página.
+        </SectionHeading>
+        <Lead
+          size="lg"
+          className="mx-auto mt-5 max-w-[520px] animate-tp-up [animation-delay:160ms]"
+        >
+          A página que você procura não existe ou mudou de endereço.
+        </Lead>
+        <div className="mt-9 flex flex-wrap justify-center gap-3 animate-tp-up [animation-delay:240ms]">
+          <ArrowLink href="/">Voltar para a página inicial</ArrowLink>
+          <ArrowLink href="/blog" variant="secondary" arrow={false}>
+            Ler o blog
+          </ArrowLink>
         </div>
       </div>
-      <Footer />
-    </>
-  );
-};
+    </main>
+  </SiteShell>
+);
 
 export default NotFound;

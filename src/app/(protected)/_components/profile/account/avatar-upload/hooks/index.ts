@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, TransitionStartFunction } from "react";
 
 import { handleUploadAvatar } from "@/actions/user/upload-avatar";
 import { handleCreatePresignedAvatarUpload } from "@/actions/upload/create-presigned-avatar-upload";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import { toast } from "sonner";
 
@@ -94,13 +95,17 @@ function useAvatarUpload({
 
       // The image goes straight from here to storage; the Server Action only
       // receives its key.
-      const { upload, errorMessage } = await handleCreatePresignedAvatarUpload({
+      const presigned = await handleCreatePresignedAvatarUpload({
         file: {
           originalFilename: file.name,
           contentType: file.type,
           size: file.size,
         },
       });
+
+      if (isStaleActionResult(presigned)) return;
+
+      const { upload, errorMessage } = presigned;
 
       if (errorMessage || !upload) {
         setUploadResult({
@@ -133,6 +138,8 @@ function useAvatarUpload({
       formData.append("photoKey", upload.key);
 
       const result = await handleUploadAvatar(null, formData);
+      if (isStaleActionResult(result)) return;
+
       setUploadResult(result);
     });
   };

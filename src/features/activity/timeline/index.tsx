@@ -1,0 +1,156 @@
+"use client";
+
+import { useMemo } from "react";
+import {
+  FilePlus2,
+  FileX2,
+  History,
+  PencilLine,
+  TriangleAlert,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { displayValue } from "@/lib/format-values";
+
+import { groupActivitiesByDay } from "../lib/grouping";
+import {
+  activityStatusClass,
+  activityStatusLabel,
+} from "../lib/activity-catalog";
+import type { ActivityRow } from "../lib/grouping";
+
+interface ActivityTimelineProps {
+  activities: ActivityRow[];
+  /** Master sees which company each action belongs to. */
+  showBusiness: boolean;
+  responseError: { error: boolean; errorMessage: string };
+}
+
+const ACTION_META: Record<
+  string,
+  { label: string; icon: typeof FilePlus2; className: string }
+> = {
+  create: {
+    label: "Criou",
+    icon: FilePlus2,
+    className: "bg-green-100 text-green-700 border-green-200",
+  },
+  update: {
+    label: "Atualizou",
+    icon: PencilLine,
+    className: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  },
+  delete: {
+    label: "Excluiu",
+    icon: FileX2,
+    className: "bg-red-100 text-red-700 border-red-200",
+  },
+};
+
+const ActivityTimeline = ({
+  activities,
+  showBusiness,
+  responseError,
+}: ActivityTimelineProps): JSX.Element => {
+  const groups = useMemo(() => groupActivitiesByDay(activities), [activities]);
+
+  if (responseError.error) {
+    return (
+      <EmptyState
+        icon={TriangleAlert}
+        title="Não foi possível carregar as atividades"
+        description={responseError.errorMessage}
+      />
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <EmptyState
+        icon={History}
+        title="Nenhuma atividade com estes filtros"
+        description="Ampliar o período ou limpar os filtros costuma ser o caminho."
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {groups.map((group) => (
+        <section key={group.key} className="space-y-3">
+          <div className="flex items-center gap-3">
+            <h3 className="text-sm font-semibold">{group.label}</h3>
+            <span className="text-xs text-muted-foreground">
+              {group.items.length} ação(ões)
+            </span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <ol className="space-y-3">
+            {group.items.map((activity) => {
+              const action =
+                ACTION_META[activity.action] ?? ACTION_META["update"];
+
+              const Icon = action.icon;
+
+              const businessName =
+                activity.business?.corporate_reason ?? activity.tenantName;
+
+              return (
+                <li
+                  key={activity.id}
+                  className="flex gap-3 rounded-lg border p-3
+                  transition-colors hover:bg-muted/40"
+                >
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center
+                    justify-center rounded-full border ${action.className}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </div>
+
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {displayValue(activity.user?.name)}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {action.label.toLowerCase()}
+                      </span>
+                      <Badge variant="outline" className="text-[11px]">
+                        {displayValue(activity.type)}
+                      </Badge>
+
+                      {activity.status && (
+                        <Badge
+                          variant="outline"
+                          className={activityStatusClass(activity.status)}
+                        >
+                          {activityStatusLabel(activity.status)}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <p className="break-words text-sm text-muted-foreground">
+                      {displayValue(activity.description)}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground">
+                      {group.formatTime(activity.created_at)}
+                      {showBusiness && businessName ? ` · ${businessName}` : ""}
+                      {activity.user?.email ? ` · ${activity.user.email}` : ""}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ))}
+    </div>
+  );
+};
+
+export { ActivityTimeline };

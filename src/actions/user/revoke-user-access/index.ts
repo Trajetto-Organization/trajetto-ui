@@ -1,6 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface RevokeUserAccessProps {
   message: string;
@@ -19,7 +23,7 @@ const handleRevokeUserAccess = async (userId: string) => {
   const revokeUserAccess = `${process.env.HTTP_REQUEST}/user/revoke-access/${userId}`;
 
   try {
-    const response = await fetch(revokeUserAccess, {
+    const response = await apiFetch(revokeUserAccess, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -29,12 +33,19 @@ const handleRevokeUserAccess = async (userId: string) => {
 
     const { message } = (await response.json()) as RevokeUserAccessProps;
 
-    if (!response.ok && message) {
-      return { revokeAccessUserError: message };
+    if (!response.ok) {
+      return {
+        revokeAccessUserError: message || refusalMessage(response.status),
+      };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("revoke-user-registration");
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/revoke-user-access", error);
     return {
       revokeAccessUserError:
         "Ocorreu um erro inesperado ao tentar revogar o acesso do usuário.",

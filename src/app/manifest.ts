@@ -1,15 +1,16 @@
 import { MetadataRoute } from "next";
 
+import { siteConfig } from "@/lib/site";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Trajetto - Sistema de Gestão de Frotas",
-    short_name: "Trajetto",
-    description:
-      "Sistema avançado de gestão de frotas para empresas que buscam eficiência e controle total de suas operações logísticas.",
+    name: `${siteConfig.name} | ${siteConfig.tagline}`,
+    short_name: siteConfig.name,
+    description: siteConfig.description,
     start_url: "/",
     display: "browser", // No PWA, just browser
     background_color: "#f8fafc",
-    theme_color: "#7c3aed",
+    theme_color: siteConfig.themeColor,
     orientation: "portrait-primary",
     scope: "/",
     lang: "pt-BR",
@@ -36,14 +37,6 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
 
-    // Categories for SEO
-    categories: [
-      "negócios",
-      "produtividade",
-      "logística",
-      "gestão de frota",
-      "empresas",
-      "sistema empresarial",
-    ],
+    categories: ["business", "productivity", "navigation"],
   };
 }

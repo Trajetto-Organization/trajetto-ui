@@ -1,38 +1,35 @@
 import { redirect } from "next/navigation";
 
-import type { Permission, PermissionKey } from "../../shared/common.types";
 import type { ValidateUserAccessParams } from "./protected-provider.types";
+import {
+  accessDeniedRedirect,
+  canAccessPath,
+  readablePermissionKeys,
+} from "@/lib/route-access";
 
-import { appRoutes } from "@/app/app-routes";
+import { sessionRefusalReason } from "../shared/session-refusal";
 
-// Build page permissions map once at module level
-const PAGE_PERMISSIONS: Record<string, PermissionKey> = {};
-appRoutes.forEach((route) => {
-  if (route.requiredPermission) {
-    PAGE_PERMISSIONS[route.path] = route.requiredPermission;
-  }
-});
-
+/**
+ * Turns the API's refusal of `/user/me` into a logout, by the error `code`.
+ *
+ * Matching on the message let every session-level 403 other than "revoked"
+ * and "driver inactive" fall through to the connection screen — a deactivated
+ * company or a removed profile looked like a lost connection that refreshed
+ * forever. Returning now only means the API did not judge the session (5xx,
+ * 429): the caller shows the connection screen.
+ */
 async function handleUserResponseError(response: Response) {
-  if (response.status === 401) {
-    redirect("/login?error=session_expired&force_logout=true");
-  }
+  const body: unknown = await response.json().catch(() => null);
 
-  if (response.status === 403) {
-    const errorData = await response.json();
-    const errorMessage = errorData.message || "";
+  handleUserRefusal(response.status, body);
+}
 
-    if (errorMessage.includes("acesso foi revogado")) {
-      redirect("/login?error=user_revoked&force_logout=true");
-    }
+/** The same decision on an answer already read (session-access.ts). */
+function handleUserRefusal(status: number, body: unknown) {
+  const reason = sessionRefusalReason(status, body);
 
-    if (errorMessage.includes("motorista está inativo")) {
-      redirect("/login?error=driver_inactive&force_logout=true");
-    }
-  }
-
-  if (response.status === 404) {
-    redirect("/login?error=access_denied&force_logout=true");
+  if (reason) {
+    redirect(`/login?error=${reason}&force_logout=true`);
   }
 }
 
@@ -41,6 +38,7 @@ function validateUserAccess({
   jwtRole,
   jwtDriverId,
   pathname,
+  enabledModules,
 }: ValidateUserAccessParams) {
   // Critical changes that require re-authentication:
   // Role changed or driver status changed
@@ -63,22 +61,26 @@ function validateUserAccess({
     redirect("/login?error=no_user_permission&force_logout=true");
   }
 
-  // Page-level permission check for BUSINESS_USER employees
-  if (pathname && user.role === "BUSINESS_USER" && !user.driverId) {
-    const requiredPermission = Object.entries(PAGE_PERMISSIONS).find(
-      ([path]) => pathname === path || pathname.startsWith(`${path}/`),
-    )?.[1];
+  // Page-level gate, run before anything renders: missing permission or a
+  // module the company does not have both end the same way, as a redirect.
+  //
+  // Letting the page render and having the API answer 403 was the older
+  // behaviour, and it read as a broken screen rather than as a boundary —
+  // the same reason an employee never sees a page outside their profile.
+  if (!pathname) return;
 
-    if (requiredPermission) {
-      const hasPermission = user.profileAccess?.permissions?.some(
-        (perm: Permission) => perm.permissionKey === requiredPermission,
-      );
+  const isDriver = Boolean(user.driverId);
 
-      if (!hasPermission) {
-        redirect("/dashboard");
-      }
-    }
+  const allowed = canAccessPath(pathname, {
+    role: user.role,
+    permissions: readablePermissionKeys(user.profileAccess?.permissions),
+    enabledModules,
+    isDriver,
+  });
+
+  if (!allowed) {
+    redirect(accessDeniedRedirect(user.role, isDriver));
   }
 }
 
-export { handleUserResponseError, validateUserAccess };
+export { handleUserRefusal, handleUserResponseError, validateUserAccess };

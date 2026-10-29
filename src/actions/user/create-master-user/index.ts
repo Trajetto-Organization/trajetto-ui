@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createMasterUserSchema } from "@/schemas/create-master-user-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreateMasterUserProps {
   message: string;
@@ -43,7 +47,7 @@ const handleCreateMasterUser = async (
   const masterUserData = createMasterUserValidation.data;
 
   try {
-    const response = await fetch(createMasterUser, {
+    const response = await apiFetch(createMasterUser, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -55,14 +59,22 @@ const handleCreateMasterUser = async (
 
     const { message } = (await response.json()) as CreateMasterUserProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createMasterUserError: { createMasterUserErrorMessage: message },
+        createMasterUserError: {
+          createMasterUserErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("create-master-user");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/create-master-user", error);
     return {
       createMasterUserError: {
         createMasterUserErrorMessage:

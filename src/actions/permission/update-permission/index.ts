@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePermissionSchema } from "@/schemas/create-update-permission-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface PermissionProps {
   message: string;
@@ -45,7 +49,7 @@ const handleUpdatePermission = async (
   const permissionData = updatePermissionValidation.data;
 
   try {
-    const response = await fetch(updatePermission, {
+    const response = await apiFetch(updatePermission, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -57,14 +61,22 @@ const handleUpdatePermission = async (
 
     const { message } = (await response.json()) as PermissionProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updatePermissionError: { updatePermissionErrorMessage: message },
+        updatePermissionError: {
+          updatePermissionErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-permission");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("permission/update-permission", error);
     return {
       updatePermissionError: {
         updatePermissionErrorMessage:

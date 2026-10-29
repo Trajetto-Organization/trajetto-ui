@@ -1,0 +1,40 @@
+/* Product pages (Trajetto Produto.dc.html): the bits Tailwind cannot say. */
+
+/* The odometer scan line of the fleet AI demo (design keyframe tpScanBig). */
+@keyframes scan {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(160px);
+  }
+}
+
+/* Declared for visitors who did not ask for less motion, like every landing
+   module (public-landing.test.ts reads them). */
+@media (prefers-reduced-motion: no-preference) {
+  .scanLine {
+    animation: scan 2.6s ease-in-out infinite;
+  }
+}
+
+/* The faint grid of the dark band, faded out towards the edges. */
+.gridBackdrop {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+  mask-image: radial-gradient(70% 70% at 50% 40%, #000, transparent);
+}
+
+/* The light that follows the pointer over a feature card (--mx/--my set on
+   mousemove; off-card until then). */
+.spotlight {
+  background: radial-gradient(
+    260px circle at var(--mx, -300px) var(--my, -300px),
+    var(--acc-soft),
+    transparent 65%
+  );
+}

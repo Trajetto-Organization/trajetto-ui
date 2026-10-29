@@ -1,0 +1,194 @@
+---
+title: "Integração com ERP e TMS por API e webhooks: idempotência e assinatura"
+description: "Como integrar ERP e TMS a uma plataforma de entregas sem perder nem duplicar eventos: API ou webhooks, chaves e escopos, deduplicação, ordem, assinatura HMAC e retentativas."
+slug: "integracao-erp-tms-api-webhooks"
+date: "2026-09-28"
+updated: "2026-09-29"
+category: "integracoes"
+tags: ["API", "webhooks", "integração", "ERP"]
+author: "Equipe Trajetto"
+seo:
+  title: "API e webhooks: idempotência e assinatura"
+  description: "Webhooks entregues pelo menos uma vez, deduplicação pelo id, ordem pela sequência e assinatura HMAC: o que uma integração de entregas precisa."
+  keywords:
+    [
+      "webhook",
+      "API de entregas",
+      "integração ERP",
+      "integração TMS",
+      "idempotência",
+      "HMAC SHA-256",
+      "assinatura de webhook",
+    ]
+---
+
+Integrações raramente quebram no caminho feliz. Elas quebram nas bordas: o servidor do ERP reiniciou no meio de uma chamada, a mesma notificação chegou duas vezes, o evento de "entregue" chegou antes do de "saiu para entrega", alguém descobriu a URL do webhook e mandou uma requisição falsa. Uma integração robusta é a que foi pensada para essas bordas desde o começo.
+
+Este artigo é para quem vai integrar um ERP, um TMS ou o sistema de um embarcador a uma plataforma de entregas. Os exemplos usam a API e os webhooks do Trajetto, mas os princípios valem para qualquer integração orientada a eventos.
+
+## Puxar ou ser avisado: API e webhooks juntos
+
+Há duas formas de um sistema saber o que aconteceu na operação:
+
+| Forma                      | Como funciona                                                      | Quando é a melhor escolha                                                          |
+| -------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Webhooks                   | A plataforma faz uma chamada HTTP para o seu sistema a cada evento | Quando o seu sistema pode receber chamadas da internet e precisa reagir rápido     |
+| API com consulta periódica | O seu sistema pergunta, de tempos em tempos, o que mudou           | Quando o sistema fica atrás de firewall, ou para conferir e recuperar o que faltou |
+
+As duas não competem. No Trajetto, além dos webhooks, a API oferece um **feed de eventos** para quem não pode expor um endpoint, lido do histórico permanente das entregas: consultar uma semana para trás não encontra buracos. Um desenho comum é usar os webhooks para reagir na hora e a API para conferir, uma vez por dia, que nada se perdeu.
+
+## Chaves e escopos
+
+O acesso à API é feito com uma chave enviada no cabeçalho `Authorization`, no formato `Bearer tjk_live_` seguido do prefixo e do segredo. Alguns cuidados que valem para qualquer plataforma, e como eles aparecem no Trajetto:
+
+- **Uma chave por sistema integrado.** Se o ERP e o sistema do embarcador usam a mesma chave, revogar uma é derrubar os dois. No Trajetto, uma empresa pode ter até 10 chaves ativas.
+- **O segredo aparece uma vez.** A chave completa é exibida só na criação e guardada pela plataforma apenas como hash. Quem perdeu a chave emite outra e revoga a antiga. O prefixo, que não é segredo, identifica nos registros qual chave fez cada chamada.
+- **Escopo mínimo.** Cada escopo cobre um recurso e uma ação, e um nunca implica o outro: não há curinga. Na versão 1 da API, uma chave pode receber quatro escopos: `routes:read`, `deliveries:read`, `events:read` e `deliveries:write`, que permite criar entregas. Um sistema que só consulta rotas não precisa de acesso às entregas, e uma chave que só cria entregas não consegue ler nenhuma: escrita não dá leitura.
+- **Limite por minuto.** Cada chave tem um limite de chamadas por minuto, e todas as chaves da empresa dividem um teto comum. Uma integração que consulta em laço sem pausa encontra o limite antes de atrapalhar a operação.
+
+O catálogo da API, em `/integration/v1/catalogue`, lista os escopos e os tópicos de webhook disponíveis na versão. As listagens de entregas e rotas usam **paginação por cursor**: cada página devolve um `next_cursor` para buscar a próxima. Diferente da paginação por número de página, o cursor não pula registros quando novos documentos entram no meio da varredura.
+
+## O contrato do webhook
+
+Cada evento é um POST com corpo JSON no formato `{ id, sequence, topic, created_at, data }` e quatro cabeçalhos:
+
+- `X-Trajetto-Event-Id`: o id do evento, igual ao `id` do corpo. É o mesmo em toda retentativa e em todo reenvio manual.
+- `X-Trajetto-Delivery`: a tentativa. Muda a cada reenvio e serve para falar com o suporte, não para deduplicar.
+- `X-Trajetto-Topic`: o tópico, igual ao `topic` do corpo.
+- `X-Trajetto-Signature`: a assinatura, explicada mais abaixo.
+
+O catálogo da API é a lista oficial dos tópicos de cada versão. Quando este artigo foi escrito, eram estes, divididos em duas famílias:
+
+| Família    | Tópicos                                                                                                                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Rotas      | `route.released`, `route.unreleased`, `route.started`, `route.completed`, `route.cancelled`                                                                                                                  |
+| Documentos | `delivery.created`, `delivery.assigned`, `delivery.in_transit`, `delivery.delivered`, `delivery.failed`, `delivery.cancelled`, `occurrence.reported`, `proof.registered`, `proof.approved`, `proof.rejected` |
+
+Um endpoint pode assinar tópicos individuais ou um prefixo inteiro, como `delivery.*`. Assine só o que o seu sistema usa: um ERP que só precisa saber quando a entrega foi concluída pode assinar apenas `delivery.delivered`, ou `proof.approved`, se o faturamento depender da auditoria do comprovante.
+
+## Idempotência: o mesmo evento vai chegar duas vezes
+
+A entrega de webhooks é **pelo menos uma vez**. Não é descuido: é a única garantia honesta que um sistema distribuído pode dar. O mesmo evento pode chegar de novo quando o seu servidor responde depois do limite de espera, quando o processo da plataforma cai entre a sua resposta e o registro dela, ou quando alguém reenvia o evento pelo painel.
+
+A consequência é simples: **o receptor precisa ser idempotente**. Processar o mesmo evento duas vezes tem de produzir o mesmo resultado que processar uma. A forma mais direta é registrar o id de cada evento processado, na mesma transação que aplica o efeito:
+
+```sql
+CREATE TABLE evento_trajetto_processado (
+  event_id     text PRIMARY KEY,
+  processado_em timestamptz NOT NULL DEFAULT now()
+);
+
+-- Na mesma transação que baixa a entrega no ERP:
+INSERT INTO evento_trajetto_processado (event_id)
+VALUES ($1)
+ON CONFLICT (event_id) DO NOTHING;
+-- Nenhuma linha inserida: o evento já foi processado.
+-- Responda 2xx e não aplique o efeito de novo.
+```
+
+O importante é que o registro do id e o efeito aconteçam juntos. Se o id for gravado antes e o processamento falhar, o evento é perdido. Se for gravado depois e o processo cair no meio, o evento é aplicado duas vezes.
+
+### Ordem: use a sequência, não a hora de chegada
+
+Os eventos não chegam em ordem. Eles são enviados em paralelo, e uma retentativa chega depois de eventos mais novos. Um `delivery.in_transit` atrasado pode chegar depois do `delivery.delivered` da mesma entrega. Se o seu sistema aplicar cada evento ao chegar, a entrega volta a aparecer como "em trânsito".
+
+Para isso existe o campo `sequence`: ele cresce, com lacunas, na ordem em que os eventos foram gerados, e não muda entre retentativas. A regra é aplicar um evento só se a sequência dele for maior que a do último evento aplicado àquele mesmo documento ou rota. Guarde a última sequência junto com o documento.
+
+### Hora do fato não é hora do evento
+
+O `created_at` do envelope é quando o evento foi gerado na plataforma. Como o aplicativo do motorista funciona sem sinal e envia depois, às vezes horas depois, a hora em que a entrega aconteceu pode ser bem anterior. Por isso, os eventos que vêm do campo (`proof.registered`, o `delivery.delivered` gerado pelo comprovante e `occurrence.reported`) trazem em `data.occurred_at` a hora do fato. Use esse campo para datar a entrega ou a ocorrência no seu sistema.
+
+### Idempotência no sentido contrário
+
+Quando é o seu sistema que envia dados para outra API, a responsabilidade se inverte: é você quem vai repetir chamadas depois de um tempo esgotado sem resposta. A prática consagrada é gerar um identificador único por operação, antes da primeira tentativa, e enviá-lo em todas as repetições, normalmente num cabeçalho `Idempotency-Key`. O servidor que recebe reconhece a repetição e devolve o mesmo resultado, em vez de criar um segundo registro.
+
+É o mesmo mecanismo que o Trajetto usa entre o app e a plataforma: cada comprovante e cada ocorrência leva um identificador gerado no aparelho, e um reenvio depois de uma falha de rede não comprova a entrega duas vezes.
+
+A criação de entregas pela API do Trajetto segue a mesma prática. O `POST /integration/v1/deliveries`, com o escopo `deliveries:write`, cria uma entrega por chamada, com as mesmas regras do cadastro manual, e exige o cabeçalho `Idempotency-Key`: de 8 a 128 caracteres entre letras, números, ponto, sublinhado, dois-pontos e hífen, o que inclui um UUID. Na prática:
+
+- a primeira chamada responde 201 com a entrega criada;
+- repetir a mesma chave com o mesmo corpo responde 200, com a mesma entrega e o cabeçalho `idempotent-replayed: true`, sem criar outra;
+- a mesma chave com um corpo diferente é recusada com 409 `IDEMPOTENCY_KEY_REUSED`, que traz o `delivery_id` da entrega criada pela primeira chamada;
+- uma NF-e já cadastrada na empresa é recusada com 409 `DELIVERY_INVOICE_KEY_EXISTS`, também com o `delivery_id` da entrega existente.
+
+A entrega criada pela API gera o evento `delivery.created` nos webhooks, inclusive para o sistema que a criou: trate esse evento pelo id, como qualquer outro. O [guia de idempotência](/docs/idempotencia) do portal de desenvolvedores detalha cada caso.
+
+## Assinatura: provar que a chamada veio da plataforma
+
+A URL de um webhook não é segredo: ela aparece em logs, em configurações e em prints de tela. Sem assinatura, qualquer pessoa que a conheça pode mandar um "entregue" falso para o seu ERP.
+
+O cabeçalho `X-Trajetto-Signature` traz `t=` seguido de um timestamp e `v1=` seguido da assinatura em hexadecimal. A assinatura é um HMAC SHA-256 calculado sobre o timestamp, um ponto e o corpo exato da requisição, usando o segredo do endpoint. Quatro detalhes fazem diferença:
+
+1. **Use o corpo cru.** Calcule sobre os bytes exatamente como chegaram. Se o seu framework transformar o JSON em objeto e você serializar de novo, espaços e ordem de campos mudam, e a assinatura não confere.
+2. **Use o segredo inteiro**, como foi exibido no painel, incluindo o prefixo `whsec_`.
+3. **Confira o timestamp.** Recuse chamadas com mais de cinco minutos de diferença. É isso que impede alguém de gravar uma chamada válida e repeti-la depois.
+4. **Compare em tempo constante.** Uma comparação comum de strings revela, pelo tempo de resposta, quanto de uma tentativa estava certo.
+
+Um exemplo de verificação em Node.js:
+
+```js
+import { createHmac, timingSafeEqual } from "node:crypto";
+
+const TOLERANCE_SECONDS = 300;
+
+export function isSignatureValid(rawBody, header, secret) {
+  // Cabeçalho ausente ou malformado devolve false, nunca uma exceção.
+  if (typeof header !== "string") return false;
+
+  let timestamp = Number.NaN;
+  const signatures = [];
+
+  for (const part of header.split(",")) {
+    const [key, value] = part.split("=");
+    if (key === "t") timestamp = Number(value);
+    if (key === "v1") signatures.push(value);
+  }
+
+  if (!Number.isFinite(timestamp) || signatures.length === 0) return false;
+
+  const age = Math.abs(Date.now() / 1000 - timestamp);
+  if (age > TOLERANCE_SECONDS) return false;
+
+  const expected = createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest();
+
+  return signatures.some((signature) => {
+    const provided = Buffer.from(signature, "hex");
+    return (
+      provided.length === expected.length && timingSafeEqual(provided, expected)
+    );
+  });
+}
+```
+
+O código aceita mais de um `v1` de propósito. Quando o segredo é trocado no painel, durante as 24 horas seguintes a plataforma assina com o segredo novo e com o anterior, e o cabeçalho traz os dois. Assim, dá para trocar o segredo do seu lado sem perder eventos. Depois desse prazo, só o novo assina.
+
+## Responder rápido e processar depois
+
+A plataforma espera a resposta por até 10 segundos, e qualquer resposta 2xx é sucesso. Um receptor que faz todo o trabalho antes de responder (grava no ERP, gera nota, envia e-mail) corre o risco de passar desse limite, e o evento é considerado falho e reenviado. O padrão recomendado é: verificar a assinatura, gravar o evento numa fila ou tabela própria, responder 2xx e processar em seguida.
+
+Quando a entrega falha, o Trajetto tenta de novo com intervalos crescentes: 30 segundos, 2 minutos, 10 minutos, 1 hora e 6 horas, num total de até seis tentativas ao longo de cerca de sete horas. Depois disso, o evento pode ser reenviado pelo painel dentro de uma janela de 30 dias. Algumas respostas têm significado especial:
+
+| Situação                   | O que acontece                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------- |
+| Resposta 2xx               | Sucesso. Para recusar um evento isolado, responda 2xx e ignore-o                                  |
+| Resposta 410 Gone          | Desliga o endpoint inteiro, não só aquele evento                                                  |
+| Redirecionamento (3xx)     | Não é seguido: conta como falha e também desliga o endpoint                                       |
+| 20 falhas seguidas         | O endpoint é desligado até alguém religá-lo no painel; os eventos ficam guardados por até 30 dias |
+| Endpoint pausado no painel | Equivale a cancelar a inscrição: eventos gerados durante a pausa não são guardados                |
+
+A diferença entre as duas últimas linhas costuma pegar as pessoas de surpresa. Desligamento por falha guarda os eventos para quando o endpoint voltar. Pausa manual, não.
+
+## Checklist de homologação
+
+- Endpoint em **HTTPS**. O Trajetto não aceita URL sem TLS, porque um webhook em texto claro entrega o conteúdo a quem estiver no caminho. Para testar na máquina local, use um túnel HTTPS.
+- Verificação de assinatura com o corpo cru e o segredo inteiro.
+- Deduplicação pelo id do evento, na mesma transação do efeito.
+- Aplicação condicionada à sequência, por documento.
+- Datas de entrega e ocorrência lidas de `data.occurred_at`.
+- Resposta 2xx rápida, com processamento assíncrono.
+- Teste de reenvio: reenvie um evento pelo painel e confirme que nada foi duplicado.
+- Acompanhamento das falhas no **monitor de envios** e do volume de chamadas no **uso da API**, no próprio painel de Integrações.
+
+Integração bem feita é invisível: a entrega é comprovada no campo e, segundos depois, o faturamento está liberado no ERP, sem ninguém redigitar nada. Para ver o que acontece antes desses eventos, os artigos sobre [importação de NF-e e planilha](/blog/importar-nf-e-xml-e-planilha) e sobre [comprovante de entrega digital](/blog/comprovante-de-entrega-digital) mostram de onde vêm os documentos e as provas que a integração transporta.

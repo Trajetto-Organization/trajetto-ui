@@ -19,9 +19,13 @@ import { DeleteBusinessForm } from "../delete-business-form";
 import { UpdateBusinessForm } from "../update-business-form";
 
 import { UpdateAILimitForm } from "../update-ai-limit-form";
+import { UpdateVehicleLimitForm } from "@/features/business-vehicle-limit/update-form";
+
+import { ManageEntitlementsForm } from "@/features/business-entitlements/manage-form";
+
 import { useUpdateBusinessForm } from "./hooks";
 
-import { toast } from "sonner";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 interface DataTableRowActionsProps<TData> {
   row: Row<TData>;
@@ -36,20 +40,13 @@ export function DataTableBusinessRowActions<TData>({
     handleCloseUpdateBusiness,
     isAILimitOpen,
     handleCloseAILimit,
+    isVehicleLimitOpen,
+    handleToggleVehicleLimit,
+    isEntitlementsOpen,
+    handleToggleEntitlements,
     handleOpenDropdown,
     isDropdownOpen,
   } = useUpdateBusinessForm();
-
-  const handleCopyID = (collumn: string) => {
-    navigator.clipboard
-      .writeText(collumn)
-      .then(() => {
-        toast.success("ID copiado para a área de transferência!");
-      })
-      .catch((err) => {
-        toast.error("Erro ao copiar o ID: " + err);
-      });
-  };
 
   const menuActions = [
     {
@@ -61,8 +58,16 @@ export function DataTableBusinessRowActions<TData>({
       onClick: handleCloseAILimit,
     },
     {
+      label: "Limite de Veículos",
+      onClick: handleToggleVehicleLimit,
+    },
+    {
+      label: "Módulos Contratados",
+      onClick: handleToggleEntitlements,
+    },
+    {
       label: "Copiar ID",
-      onClick: () => handleCopyID(collumnRowAction.id),
+      onClick: () => void copyWithFeedback(collumnRowAction.id, "ID"),
     },
   ];
 
@@ -73,6 +78,7 @@ export function DataTableBusinessRowActions<TData>({
           <Button
             variant="ghost"
             className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            data-tutorial="row-actions"
           >
             <MoreHorizontal />
             <span className="sr-only">Abrir Menu</span>
@@ -82,8 +88,8 @@ export function DataTableBusinessRowActions<TData>({
           {menuActions.map((action) => (
             <DropdownMenuItem
               key={action.label}
-              className="flex cursor-pointer 
-              justify-between"
+              className="cursor-pointer 
+              truncate block"
               onClick={action.onClick}
             >
               {action.label}
@@ -111,6 +117,24 @@ export function DataTableBusinessRowActions<TData>({
           businessName={collumnRowAction.corporate_reason}
           isAILimitOpen={isAILimitOpen}
           handleCloseAILimit={handleCloseAILimit}
+        />
+      )}
+
+      {isVehicleLimitOpen && (
+        <UpdateVehicleLimitForm
+          businessId={collumnRowAction.id}
+          businessName={collumnRowAction.corporate_reason}
+          isOpen={isVehicleLimitOpen}
+          handleClose={handleToggleVehicleLimit}
+        />
+      )}
+
+      {isEntitlementsOpen && (
+        <ManageEntitlementsForm
+          businessId={collumnRowAction.id}
+          businessName={collumnRowAction.corporate_reason}
+          isOpen={isEntitlementsOpen}
+          onClose={handleToggleEntitlements}
         />
       )}
     </>

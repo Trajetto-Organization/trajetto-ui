@@ -17,7 +17,7 @@ const Loading = (): JSX.Element => {
   return (
     <PageContainer>
       {/* Header skeleton */}
-      <div className="mb-8">
+      <div data-tutorial="loading" className="mb-8">
         <Skeleton className="h-8 w-48 mb-2" /> {/* Title */}
         <Skeleton className="h-4 w-96" /> {/* Description */}
       </div>
@@ -26,35 +26,39 @@ const Loading = (): JSX.Element => {
         {/* Alert skeleton - opcional */}
         <Skeleton className="h-16 w-full rounded-md" />
 
-        {/* Tabs skeleton */}
-        <div
-          className="flex items-center 
-          justify-between mb-4"
-        >
-          <Tabs>
-            <TabsList className="w-auto">
-              <TabsTrigger value="overview" className="flex items-center gap-2">
+        {/* Tabs skeleton — same composition as the strip it stands in for:
+        tabs and refresh stacked full width below `lg`, one row from there. */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+          <Tabs className="w-full lg:w-auto">
+            <TabsList className="w-full justify-start lg:w-auto">
+              <TabsTrigger
+                value="overview"
+                className="flex flex-1 items-center gap-2 lg:flex-initial"
+              >
                 <Skeleton className="h-4 w-4 rounded-full" /> {/* Icon */}
                 <Skeleton className="h-4 w-20" /> {/* Tab text */}
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <Skeleton className="h-9 w-28" /> {/* Refresh button */}
+          {/* Refresh button */}
+          <Skeleton className="h-9 w-full lg:ml-auto lg:w-36" />
         </div>
 
-        {/* Stat cards skeleton */}
+        {/* Stat cards skeleton: the live StatCardGrid's columns and the
+            card's fixed band and two-line caption, so nothing jumps. */}
         <div
-          className="grid grid-cols-1 gap-4 
-          sm:grid-cols-2 lg:grid-cols-4"
+          className="grid auto-rows-fr grid-cols-1 gap-4
+          sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {Array.from({ length: 8 }).map((_, index) => (
             <Card key={`stat-${index}`} className="overflow-hidden shadow-md">
-              <div className="flex">
-                <Skeleton className="w-1/4 h-[90px]" /> {/* Icon area */}
-                <div className="w-3/4 py-4 px-6">
-                  <Skeleton className="h-4 w-20 mb-2" /> {/* Title */}
-                  <Skeleton className="h-8 w-16 mb-2" /> {/* Value */}
-                  <Skeleton className="h-3 w-[80%]" /> {/* Change percentage */}
+              <div className="flex h-full">
+                <Skeleton className="w-11 shrink-0 rounded-none" />{" "}
+                {/* Icon band */}
+                <div className="min-w-0 flex-1 px-3 pb-4 pt-4">
+                  <Skeleton className="mb-3 h-5 w-20" /> {/* Title */}
+                  <Skeleton className="mb-1 h-8 w-16" /> {/* Value */}
+                  <Skeleton className="h-8 w-[85%]" /> {/* Two-line caption */}
                 </div>
               </div>
             </Card>
@@ -71,6 +75,10 @@ const Loading = (): JSX.Element => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {/* ID, the compact record id (IdCell, 112px). */}
+                  <TableHead>
+                    <Skeleton className="h-4 w-8" />
+                  </TableHead>
                   <TableHead>
                     <Skeleton className="h-4 w-16" />
                   </TableHead>
@@ -97,6 +105,9 @@ const Loading = (): JSX.Element => {
               <TableBody>
                 {Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={`row-${index}`}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-28" />
+                    </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-20" />
                     </TableCell>

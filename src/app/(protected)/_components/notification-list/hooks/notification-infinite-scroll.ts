@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "react-query";
 
-import { getCookies } from "@/actions/cookies";
-import { parseNDJSON } from "@/lib/parse-nd-json";
+import { fetchNotificationStream } from "@/lib/notification-stream";
+import { onRealtimeResync } from "@/socket";
 
 import { formatNotificationDate } from "@/lib/format-values";
 import type { Notification } from "../shared/common.types";
@@ -21,42 +21,13 @@ const fetchNotifications = async ({
   includeRead = true,
   signal,
 }: FetchNotificationsProps): Promise<FetchNotificationsResult> => {
-  const tokenAccess = await getCookies("tkey");
-  const params = new URLSearchParams();
-
-  params.append("limit", String(NOTIFICATIONS_PAGE_SIZE));
-  params.append("includeRead", String(includeRead));
-
-  if (cursor) {
-    params.append("cursor", cursor);
-  }
-
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/notification/stream?${params.toString()}`,
-      {
-        credentials: "include",
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept-Encoding": "gzip",
-          Authorization: `Bearer ${tokenAccess}`,
-        },
-        signal,
-      },
-    );
-
-    if (!response.ok) {
-      const errorClone = response.clone();
-      const errorData = await errorClone.json();
-
-      throw new Error(
-        errorData.message ||
-          `Erro HTTP: ${response.status} - ${response.statusText}`,
-      );
-    }
-
-    const { data, meta } = await parseNDJSON(response);
+    const { data, meta } = await fetchNotificationStream({
+      limit: NOTIFICATIONS_PAGE_SIZE,
+      includeRead,
+      cursor,
+      signal,
+    });
 
     // Format notification dates
     const formattedData = data.map((notification: Notification) => ({
@@ -123,6 +94,17 @@ function useNotificationInfiniteScroll(includeRead: boolean = true) {
   }, []);
 
   const queryKey = ["notifications", includeRead];
+
+  // Neither focus nor mount refetches this list, and the API does not replay
+  // what it emitted while the socket was down: a notification created during
+  // a reconnection would stay missing from the page until the next visit.
+  useEffect(
+    () =>
+      onRealtimeResync(() => {
+        void queryClient.invalidateQueries(["notifications", includeRead]);
+      }),
+    [queryClient, includeRead],
+  );
 
   const {
     data,

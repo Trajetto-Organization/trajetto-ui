@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { validateUserPasswordFormSchema } from "@/schemas/update-user-password";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UpdateUserNameProps {
   message: string;
@@ -44,7 +47,7 @@ const handleUpdateUserPassword = async (
   };
 
   try {
-    const response = await fetch(updatePassword, {
+    const response = await apiFetch(updatePassword, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -56,12 +59,17 @@ const handleUpdateUserPassword = async (
 
     const { message } = (await response.json()) as UpdateUserNameProps;
 
-    if (!response.ok && message) {
-      return { userPasswordError: { userPasswordErrorMessage: message } };
+    if (!response.ok) {
+      return {
+        userPasswordError: {
+          userPasswordErrorMessage: message || refusalMessage(response.status),
+        },
+      };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/update-user-password", error);
     return {
       userPasswordError: {
         userPasswordErrorMessage:

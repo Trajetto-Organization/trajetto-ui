@@ -1,31 +1,27 @@
 "use client";
 
+import { PageActions } from "@/app/(protected)/_components/layout/protected-page-toolbar";
 import { DataTableRevalidate } from "@/app/(protected)/_components/shared/tanstack-table/data-table-revalidate";
 import { CreateBusinessForm } from "@/app/(protected)/_components/admin/business/create-business-form";
 
-const BusinessActions = (): JSX.Element => {
-  return (
-    <div
-      className="flex flex-col sm:flex-row sm:flex-wrap
-      items-stretch sm:items-center gap-3
-      sm:gap-2 justify-end mt-6 mb-6"
-    >
-      <div className="w-full sm:w-auto">
-        <DataTableRevalidate
-          revalidateData={["update-business", "toggle-business-active"]}
-          rateLimit={{
-            storageKey: "business",
-            maxClicks: 3,
-            timeWindowMs: 30000,
-            cooldownTimeMs: 15000,
-          }}
-        />
-      </div>
-      <div className="w-full sm:w-auto">
-        <CreateBusinessForm />
-      </div>
-    </div>
-  );
-};
+/**
+ * Atualizar and Criar Empresa on the page's action line (decision 3.6):
+ * full width with the label on a phone. Atualizar refreshes the whole tab
+ * (decision 2.1).
+ */
+const BusinessActions = (): JSX.Element => (
+  <PageActions>
+    <DataTableRevalidate
+      rateLimit={{
+        storageKey: "business",
+        maxClicks: 3,
+        timeWindowMs: 30000,
+        cooldownTimeMs: 15000,
+      }}
+    />
+
+    <CreateBusinessForm />
+  </PageActions>
+);
 
 export { BusinessActions };

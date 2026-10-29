@@ -30,10 +30,11 @@ import type { InfoItem } from "./fuel-details-dialog.types";
 
 import { AIVerificationSection } from "./ai-verification-section";
 import {
-  formatDate,
   formatToBrazilianCurrency,
   formatNotificationDate,
 } from "@/lib/format-values";
+import { formatPricePerLiter } from "@/features/fuel/lib/price";
+import { formatPickedDay } from "@/features/vehicle/lib/picked-day";
 
 const FuelDetailsDialog = ({
   fuelData,
@@ -66,7 +67,9 @@ const FuelDetailsDialog = ({
       label: "Data",
       content: (
         <Badge variant="outline">
-          {formatDate(fuelData.refueling_date, "pt-BR") || "N/A"}
+          {/* A picked day: an API client's "YYYY-MM-DD" is 00:00 UTC, which the
+              browser's zone read as the day before (API: pickedDayKey). */}
+          {formatPickedDay(fuelData.refueling_date)}
         </Badge>
       ),
     },
@@ -81,10 +84,12 @@ const FuelDetailsDialog = ({
     },
     {
       icon: DollarSign,
-      label: "Preço/L",
+      label: "Preço por litro",
       content: (
+        // Decimal(10,3), as the pump shows it: money formatting read 5.899
+        // as "R$ 5,90". The unit keeps it apart from the Total beside it.
         <Badge variant="secondary">
-          {formatToBrazilianCurrency(fuelData.price_per_liter)}
+          {formatPricePerLiter(fuelData.price_per_liter)}/L
         </Badge>
       ),
     },
@@ -106,7 +111,7 @@ const FuelDetailsDialog = ({
       label: "Quilometragem",
       content: (
         <Badge variant="outline">
-          {fuelData.current_mileage.toLocaleString()} km
+          {fuelData.current_mileage.toLocaleString("pt-BR")} km
         </Badge>
       ),
     },

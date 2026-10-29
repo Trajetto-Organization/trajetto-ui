@@ -1,24 +1,17 @@
-type ExportFormat = "csv" | "excel";
+import type { ExportRequest } from "@/lib/export-download";
 
-interface ExportActionResponse {
-  success?: boolean;
-  message?: string;
-  base64Data?: string;
-  filename?: string;
-  totalRecords?: number;
-  mimeType?: string;
-  fileSize?: number;
-}
+type ExportFormat = "csv" | "excel";
 
 interface ExportButtonProps {
   className?: string;
   hasData?: boolean;
-  exportAction: (
-    search?: string,
-    format?: ExportFormat,
-  ) => Promise<ExportActionResponse>;
+  /**
+   * The export for the table's search and a format, as a relay request
+   * (src/lib/export-requests.ts). The page binds the rest: facets, company.
+   */
+  exportRequest: (search?: string, format?: ExportFormat) => ExportRequest;
   entityName?: string;
   writePermission?: boolean;
 }
 
-export type { ExportButtonProps, ExportFormat, ExportActionResponse };
+export type { ExportButtonProps, ExportFormat };

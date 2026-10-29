@@ -12,10 +12,24 @@ import {
 import { toast } from "sonner";
 
 import { formatNotificationDate } from "@/lib/format-values";
-import { initializeSocket, getSocket } from "@/socket";
+import { fetchNotificationStream } from "@/lib/notification-stream";
+import { initializeSocket, getSocket, onRealtimeResync } from "@/socket";
 
-import { forceLogout, type ForceLogoutReason } from "@/lib/force-logout";
+import { forceLogout } from "@/lib/force-logout";
+import { showBrowserNotification } from "@/lib/browser-notification";
+import { isSessionExiting, leaveSession } from "@/lib/clear-session-state";
+import {
+  SESSION_LOGOUT_DESTINATION,
+  isSessionLogoutEvent,
+  socketLogoutReason,
+} from "./socket-logout-reason";
 import { useAIVerificationStore } from "@/store/ai-verification-store";
+import { queryClientProps } from "@/lib/query-client-props";
+import {
+  AI_ANALYSIS_CHANGED_EVENT,
+  applyAIAnalysisChange,
+  isAIAnalysisChangedEvent,
+} from "@/lib/ai-analysis-sync";
 
 // ============================================================================
 // TYPES
@@ -48,6 +62,7 @@ type NotificationAction =
   | { type: "ADD_BATCH"; payload: Notification[] }
   | { type: "DELETE"; payload: string }
   | { type: "MARK_READ"; payload: string }
+  | { type: "MARK_ALL_READ" }
   | { type: "REPLACE_ALL"; payload: Notification[] }
   | {
       type: "SYNC_WITH_SERVER";
@@ -68,18 +83,13 @@ interface NotificationsContextType {
   addNotification: (notification: Notification) => void;
   removeNotification: (notificationId: string) => void;
   markNotificationAsRead: (notificationId: string) => void;
+  markAllNotificationsAsRead: () => void;
   clearNotifications: () => void;
   syncWithServerData: (
     serverNotifications: Notification[],
     serverIds: string[],
   ) => void;
   replaceAllNotifications: (notifications: Notification[]) => void;
-
-  // WhatsApp support
-  subscribeToWhatsAppEvents: (
-    eventType: string,
-    callback: (data: any) => void,
-  ) => () => void;
 }
 
 // ============================================================================
@@ -139,6 +149,18 @@ function notificationReducer(
       if (notification && !notification.read) {
         newMap.set(action.payload, { ...notification, read: true });
       }
+
+      return { ...state, notifications: newMap };
+    }
+
+    case "MARK_ALL_READ": {
+      const newMap = new Map(state.notifications);
+
+      newMap.forEach((notification, id) => {
+        if (!notification.read) {
+          newMap.set(id, { ...notification, read: true });
+        }
+      });
 
       return { ...state, notifications: newMap };
     }
@@ -244,19 +266,8 @@ const NotificationsContext = createContext<NotificationsContextType>(
 // ============================================================================
 // PROVIDER
 // ============================================================================
-/**
- * The API's socket vocabulary, translated to ours.
- *
- * They are not the same list on purpose: `user_updated` covers a handful of
- * profile changes on the backend but only ever means "your token is stale" to
- * us. Anything not mapped here is not a kick — it falls through to the
- * `/user/me` re-check below, which decides with full information.
- */
-const SOCKET_REASON_TO_LOGOUT: Record<string, ForceLogoutReason | undefined> = {
-  access_revoked: "user_revoked",
-  access_denied: "access_denied",
-  user_updated: "session_expired",
-};
+/** The size the layout loads (fetch-notifications.ts), so a resync matches it. */
+const RESYNC_NOTIFICATIONS_LIMIT = 50;
 
 const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -272,11 +283,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const pendingToasts = useRef(new Set<string>());
   const toastTimeouts = useRef(new Map<string, NodeJS.Timeout>());
-
-  // WhatsApp event dispatcher (unchanged)
-  const whatsAppEventDispatcher = useRef<{
-    [key: string]: ((data: any) => void)[];
-  }>({});
 
   // ============================================================================
   // DERIVED STATE (computed from Map)
@@ -349,74 +355,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // ============================================================================
-  // WHATSAPP HANDLING
-  // ============================================================================
-  const handleWhatsAppNotification = useCallback((notification: any) => {
-    const eventType = notification.type;
-    if (whatsAppEventDispatcher.current[eventType]) {
-      whatsAppEventDispatcher.current[eventType].forEach((callback) => {
-        callback(notification);
-      });
-    }
-
-    const getToastMessage = (type: string, data: any) => {
-      switch (type) {
-        case "whatsapp_connection":
-          return data?.connected
-            ? { message: "WhatsApp conectado com sucesso!", type: "success" }
-            : { message: "WhatsApp foi desconectado", type: "warning" };
-        case "whatsapp_disabled":
-          return {
-            message: "WhatsApp foi desabilitado automaticamente",
-            type: "warning",
-          };
-        case "whatsapp_instance_cleanup":
-          return {
-            message:
-              notification.message ||
-              "Seu WhatsApp foi desconectado porque outro usuário se conectou com este número",
-            type: "warning",
-          };
-        default:
-          return {
-            message: notification.message || "Atualização WhatsApp",
-            type: "info",
-          };
-      }
-    };
-
-    const toastData = getToastMessage(eventType, notification.data);
-
-    if (toastData.type === "success") {
-      toast.success(toastData.message, { id: `whatsapp-${eventType}` });
-    } else if (toastData.type === "warning") {
-      toast.warning(toastData.message, { id: `whatsapp-${eventType}` });
-    } else {
-      toast.info(toastData.message, { id: `whatsapp-${eventType}` });
-    }
-  }, []);
-
-  const subscribeToWhatsAppEvents = useCallback(
-    (eventType: string, callback: (data: any) => void) => {
-      if (!whatsAppEventDispatcher.current[eventType]) {
-        whatsAppEventDispatcher.current[eventType] = [];
-      }
-
-      whatsAppEventDispatcher.current[eventType].push(callback);
-
-      return () => {
-        if (whatsAppEventDispatcher.current[eventType]) {
-          whatsAppEventDispatcher.current[eventType] =
-            whatsAppEventDispatcher.current[eventType].filter(
-              (cb) => cb !== callback,
-            );
-        }
-      };
-    },
-    [],
-  );
-
-  // ============================================================================
   // FORMAT NOTIFICATION DATE
   // ============================================================================
   const formatNotificationForDisplay = useCallback(
@@ -467,6 +405,170 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (socketInitialized.current) return;
 
+    // What the `.catch` below used to show when initializeSocket rejected on
+    // a first failed handshake. The socket is now handed over before it
+    // connects, so that failure arrives as an event: said once, while the
+    // retry keeps going behind it, and never for a drop after a connection
+    // (the reconnection's business, silent as it always was).
+    const handleFirstConnectError = () => {
+      toast.error("Não foi possível se conectar ao serviço de notificações", {
+        duration: 5000,
+        id: "socket-init-error",
+      });
+    };
+
+    // Named, so the cleanup removes these two and nothing else. A bare
+    // `off("connect")` also took the socket module's own status listener and
+    // the room rejoin of every operations and chat subscription with it.
+    const handleConnect = () => {
+      dispatch({ type: "SET_CONNECTED", payload: true });
+
+      getSocket()?.off("connect_error", handleFirstConnectError);
+    };
+
+    const handleDisconnect = () => {
+      dispatch({ type: "SET_CONNECTED", payload: false });
+    };
+
+    // Named for the same reason: the socket is shared by the whole app, and
+    // the cleanup below must remove these handlers and nobody else's.
+    const handlePush = (notification: Notification) => {
+      // IDEMPOTENCY: Skip if already processed
+      if (processedIds.current.has(notification.id)) {
+        return;
+      }
+
+      // CRITICAL: Use stateRef to get current state (avoid stale closure)
+      if (stateRef.current.notifications.has(notification.id)) {
+        return;
+      }
+
+      processedIds.current.add(notification.id);
+
+      const formattedNotification = formatNotificationForDisplay({
+        ...notification,
+        _source: "realtime",
+        _receivedAt: Date.now(),
+      });
+
+      dispatch({
+        type: "ADD_OR_UPDATE",
+        payload: formattedNotification,
+      });
+
+      showToastSafely(notification);
+
+      showBrowserNotification(notification.title, notification.message);
+    };
+
+    // Security event listener — handle access revocation, permission changes, etc.
+    const handleSecurityAction = (event: { reason: string }) => {
+      // `forceLogout` raises the blocking overlay, closes the socket and
+      // does the hard navigate — the three used to be spelled out at every
+      // one of these branches.
+      // The vocabulary lives in socket-logout-reason.ts.
+      // This tab already ends the session ("Sair"): nothing left to act on.
+      if (isSessionExiting()) return;
+
+      // "Sair" in another tab of this same session (the API emits it to the
+      // session's room): leave like that tab did, to the same "você saiu".
+      if (isSessionLogoutEvent(event)) {
+        sessionStorage.setItem("pending_login_toast", "true");
+        leaveSession(SESSION_LOGOUT_DESTINATION);
+        return;
+      }
+
+      const reason = socketLogoutReason(event?.reason);
+
+      if (reason) {
+        forceLogout(reason);
+        return;
+      }
+
+      // For all other security events, dispatch a DOM event
+      // so useNavigationSecurityCheck can run the /user/me check
+      window.dispatchEvent(new CustomEvent("security-check-required"));
+    };
+
+    // AI Verification event listener — real-time verification progress
+    const handleAiVerification = (event: any) => {
+      const store = useAIVerificationStore.getState();
+      store.updateVerification(event);
+
+      // Update business usage when the backend sends it
+      if (event.usage && event.businessId) {
+        store.updateBusinessUsage(event.businessId, event.usage);
+      }
+
+      // A receipt's reading is the driver's (the app shows it); the web's
+      // queue refreshes from the company hint instead of toasting (AI-7).
+      if (event.recordType === "proof") return;
+
+      if (event.step === "completed") {
+        const status = event.overallStatus;
+
+        if (status === "error") {
+          toast.error("Erro na verificação IA", {
+            id: `ai-${event.recordId}`,
+          });
+        } else if (status === "skipped") {
+          toast.warning("Verificação IA não realizada (limite atingido)", {
+            id: `ai-${event.recordId}`,
+          });
+        } else if (status === "mismatch" || status === "issues_found") {
+          toast.warning("Verificação IA concluída com divergências", {
+            id: `ai-${event.recordId}`,
+          });
+        } else if (status === "fraud") {
+          toast.error("Verificação IA: suspeita de fraude detectada", {
+            id: `ai-${event.recordId}`,
+          });
+        } else {
+          toast.success("Verificação IA concluída", {
+            id: `ai-${event.recordId}`,
+          });
+        }
+      } else if (event.step === "skipped") {
+        toast.warning(event.message || "Verificação IA não realizada", {
+          id: `ai-${event.recordId}`,
+        });
+      } else if (event.step === "queued") {
+        toast("Verificação IA iniciada...", {
+          id: `ai-${event.recordId}`,
+        });
+      }
+    };
+
+    // An analysis of the company ended (AI-6): refetch what shows it.
+    const handleAiAnalysisChanged = (payload: unknown) => {
+      if (!isAIAnalysisChangedEvent(payload)) return;
+
+      void applyAIAnalysisChange(queryClientProps, payload);
+    };
+
+    // Hired modules changed — the session stays valid (the API is the
+    // enforcement point); the UI just refreshes what it may show.
+    const handleEntitlements = (event: {
+      module: string;
+      enabled: boolean;
+    }) => {
+      window.dispatchEvent(
+        new CustomEvent("entitlements-changed", { detail: event }),
+      );
+
+      // Same path a revoked permission takes: re-read /user/me, refresh
+      // the menus from the answer and walk the user out of the page if
+      // it just stopped being theirs.
+      window.dispatchEvent(new CustomEvent("security-check-required"));
+
+      toast.info(
+        event.enabled
+          ? "Um novo módulo foi habilitado para a sua empresa."
+          : "Um módulo foi desabilitado para a sua empresa.",
+        { id: `entitlement-${event.module}` },
+      );
+    };
+
     const setupSocketListeners = async () => {
       try {
         await initializeSocket();
@@ -484,129 +586,29 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
         socketInitialized.current = true;
         dispatch({ type: "SET_CONNECTED", payload: socket.connected });
 
-        socket.on("connect", () => {
-          dispatch({ type: "SET_CONNECTED", payload: true });
-        });
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
 
-        socket.on("disconnect", () => {
-          dispatch({ type: "SET_CONNECTED", payload: false });
-        });
-
-        socket.on("pushNotification", (notification: Notification) => {
-          // WhatsApp handling
-          if (notification.type?.startsWith("whatsapp_")) {
-            handleWhatsAppNotification(notification);
-            return;
-          }
-
-          // IDEMPOTENCY: Skip if already processed
-          if (processedIds.current.has(notification.id)) {
-            return;
-          }
-
-          // CRITICAL: Use stateRef to get current state (avoid stale closure)
-          if (stateRef.current.notifications.has(notification.id)) {
-            return;
-          }
-
-          processedIds.current.add(notification.id);
-
-          const formattedNotification = formatNotificationForDisplay({
-            ...notification,
-            _source: "realtime",
-            _receivedAt: Date.now(),
-          });
-
-          dispatch({
-            type: "ADD_OR_UPDATE",
-            payload: formattedNotification,
-          });
-
-          showToastSafely(notification);
-
-          // Browser notification
-          if (Notification.permission === "granted") {
-            new Notification(notification.title, {
-              body: notification.message,
-              icon: "/favicon.ico",
-            });
-          }
-        });
-
-        // Security event listener — handle access revocation, permission changes, etc.
-        socket.on("securityAction", (event: { reason: string }) => {
-          // `forceLogout` raises the blocking overlay, closes the socket and
-          // does the hard navigate — the three used to be spelled out at every
-          // one of these branches.
-          const reason = SOCKET_REASON_TO_LOGOUT[event.reason];
-
-          if (reason) {
-            forceLogout(reason);
-            return;
-          }
-
-          // For all other security events, dispatch a DOM event
-          // so useNavigationSecurityCheck can run the /user/me check
-          window.dispatchEvent(new CustomEvent("security-check-required"));
-        });
-
-        // AI Verification event listener — real-time verification progress
-        socket.on("aiVerification", (event: any) => {
-          const store = useAIVerificationStore.getState();
-          store.updateVerification(event);
-
-          // Update business usage when the backend sends it
-          if (event.usage && event.businessId) {
-            store.updateBusinessUsage(event.businessId, event.usage);
-          }
-
-          if (event.step === "completed") {
-            const status = event.overallStatus;
-
-            if (status === "error") {
-              toast.error("Erro na verificação IA", {
-                id: `ai-${event.recordId}`,
-              });
-            } else if (status === "skipped") {
-              toast.warning("Verificação IA não realizada (limite atingido)", {
-                id: `ai-${event.recordId}`,
-              });
-            } else if (status === "mismatch" || status === "issues_found") {
-              toast.warning("Verificação IA concluída com divergências", {
-                id: `ai-${event.recordId}`,
-              });
-            } else if (status === "fraud") {
-              toast.error("Verificação IA: suspeita de fraude detectada", {
-                id: `ai-${event.recordId}`,
-              });
-            } else {
-              toast.success("Verificação IA concluída", {
-                id: `ai-${event.recordId}`,
-              });
-            }
-          } else if (event.step === "skipped") {
-            toast.warning(event.message || "Verificação IA não realizada", {
-              id: `ai-${event.recordId}`,
-            });
-          } else if (event.step === "queued") {
-            toast("Verificação IA iniciada...", {
-              id: `ai-${event.recordId}`,
-            });
-          }
-        });
-
-        // On reconnect, trigger a security check to catch events missed during disconnection
-        socket.io.on("reconnect", () => {
-          dispatch({ type: "SET_CONNECTED", payload: true });
-          window.dispatchEvent(new CustomEvent("security-check-required"));
-        });
-
-        if (
-          Notification.permission !== "denied" &&
-          Notification.permission !== "granted"
-        ) {
-          Notification.requestPermission();
+        if (!socket.connected) {
+          socket.once("connect_error", handleFirstConnectError);
         }
+
+        // Bound whether or not the socket is connected yet: they simply wait
+        // for it, and a refused first handshake is retried by the socket
+        // module. `securityAction` is the forced logout of a blocked user.
+        socket.on("pushNotification", handlePush);
+        socket.on("securityAction", handleSecurityAction);
+        socket.on("aiVerification", handleAiVerification);
+        socket.on(AI_ANALYSIS_CHANGED_EVENT, handleAiAnalysisChanged);
+        socket.on("entitlementsChanged", handleEntitlements);
+
+        // What a reconnection missed (security events included) is caught up
+        // by the `onRealtimeResync` subscription further down.
+        //
+        // Notification permission is asked from the notification list's
+        // button, never here: a prompt with no user gesture is ignored or
+        // penalised by browsers, and on iOS Safari `Notification` doesn't
+        // exist, so this line used to throw into the catch below.
       } catch {
         toast.error("Não foi possível se conectar ao serviço de notificações", {
           duration: 5000,
@@ -620,25 +622,23 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       const socket = getSocket();
       if (socket) {
-        socket.off("pushNotification");
-        socket.off("securityAction");
+        socket.off("pushNotification", handlePush);
+        socket.off("securityAction", handleSecurityAction);
 
-        socket.off("aiVerification");
+        socket.off("aiVerification", handleAiVerification);
+        socket.off(AI_ANALYSIS_CHANGED_EVENT, handleAiAnalysisChanged);
+        socket.off("entitlementsChanged", handleEntitlements);
 
-        socket.off("connect");
-        socket.off("disconnect");
+        socket.off("connect", handleConnect);
+        socket.off("disconnect", handleDisconnect);
+        socket.off("connect_error", handleFirstConnectError);
 
-        socket.io.off("reconnect");
         socketInitialized.current = false;
       }
     };
     // CRITICAL: Only run once on mount - no dependencies that change
     // We use stateRef to access current state without creating new closures
-  }, [
-    formatNotificationForDisplay,
-    handleWhatsAppNotification,
-    showToastSafely,
-  ]);
+  }, [formatNotificationForDisplay, showToastSafely]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -675,6 +675,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "MARK_READ", payload: notificationId });
   }, []);
 
+  const markAllNotificationsAsRead = useCallback(() => {
+    dispatch({ type: "MARK_ALL_READ" });
+  }, []);
+
   const clearNotifications = useCallback(() => {
     dispatch({ type: "CLEAR_ALL" });
     processedIds.current.clear();
@@ -701,6 +705,46 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
       });
     },
     [cancelPendingToast, formatNotificationForDisplay],
+  );
+
+  // ============================================================================
+  // RECONCILIATION AFTER A RECONNECTION
+  // ============================================================================
+  /**
+   * The API does not replay what it emitted while this tab was reconnecting,
+   * and the bell is only fed by the layout — which a client-side navigation
+   * does not re-render. A notification pushed during a deploy stayed missing
+   * until a reload.
+   *
+   * So the same list the layout loads is asked again and merged: server rows
+   * win (read or deleted elsewhere shows as such), realtime ones the server
+   * does not have yet are kept, and the ids go into `processedIds`, so nothing
+   * fetched here toasts a second time when its push arrives late.
+   *
+   * The `/user/me` re-check that used to hang off the manager's `reconnect`
+   * lives here too: a revocation emitted while offline is just as lost.
+   */
+  useEffect(
+    () =>
+      onRealtimeResync(() => {
+        window.dispatchEvent(new CustomEvent("security-check-required"));
+
+        fetchNotificationStream({
+          limit: RESYNC_NOTIFICATIONS_LIMIT,
+          includeRead: true,
+        })
+          .then(({ data }: { data: Notification[] }) =>
+            syncWithServerData(
+              data,
+              data.map((notification) => notification.id),
+            ),
+          )
+          .catch(() => {
+            // The next navigation or reconnection tries again; a bell one
+            // blink behind is not worth an error on screen.
+          });
+      }),
+    [syncWithServerData],
   );
 
   const replaceAllNotifications = useCallback(
@@ -731,12 +775,10 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
     addNotification,
     removeNotification,
     markNotificationAsRead,
+    markAllNotificationsAsRead,
     clearNotifications,
     syncWithServerData,
     replaceAllNotifications,
-
-    // WhatsApp
-    subscribeToWhatsAppEvents,
   };
 
   return (
@@ -747,4 +789,6 @@ const NotificationsProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 const useNotificationsContext = () => useContext(NotificationsContext);
+
 export { NotificationsProvider, useNotificationsContext };
+export type { Notification };

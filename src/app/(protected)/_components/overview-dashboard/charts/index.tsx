@@ -2,13 +2,18 @@
 
 import { ChartArea } from "./area-chart";
 import { ChartBar } from "./bar-chart";
+import { MaintenanceStatus } from "./maintenance-status";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
 import type { ChartsProps } from "../shared/common.types";
 
-const Charts = ({ dashboardData, userRole }: ChartsProps): JSX.Element => {
+const Charts = ({
+  dashboardData,
+  userRole,
+  showFleetCharts = true,
+}: ChartsProps): JSX.Element => {
   if (userRole === "BUSINESS_USER") {
     return (
       <Alert className="my-8">
@@ -33,9 +38,16 @@ const Charts = ({ dashboardData, userRole }: ChartsProps): JSX.Element => {
         userRole={userRole}
       />
 
-      <div className="grid grid-cols-1">
-        <ChartBar maintenanceCosts={dashboardData.maintenanceCosts} />
-      </div>
+      {/* Maintenance is Frotas: no fleet charts without the module. */}
+      {showFleetCharts && (
+        <>
+          <MaintenanceStatus stats={dashboardData.maintenanceStats} />
+
+          <div className="grid grid-cols-1">
+            <ChartBar maintenanceCosts={dashboardData.maintenanceCosts} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

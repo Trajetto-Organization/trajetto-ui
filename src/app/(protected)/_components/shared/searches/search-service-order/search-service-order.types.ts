@@ -1,11 +1,5 @@
 import type { CommandServiceOrderInputValue } from "../../common.types";
 
-interface FetchServiceOrderProps {
-  cursor?: string;
-  businessId?: string;
-  signal?: AbortSignal;
-}
-
 interface FetchServiceOrderResult {
   data: any[];
   nextCursor: string | null;
@@ -22,8 +16,4 @@ interface SearchServiceOrderProps {
   isOptional?: boolean;
 }
 
-export type {
-  FetchServiceOrderProps,
-  FetchServiceOrderResult,
-  SearchServiceOrderProps,
-};
+export type { FetchServiceOrderResult, SearchServiceOrderProps };

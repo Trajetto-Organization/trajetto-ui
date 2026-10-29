@@ -3,7 +3,17 @@
 import Link from "next/link";
 
 import { usePathname } from "next/navigation";
+
 import { ChevronRight } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+import { useAuthStore } from "@/store/auth-store";
+import { canAccessPath } from "@/lib/route-access";
+
+import { useChatUnreadCount } from "@/features/deliveries/chat/lib/use-chat-unread";
+import { towerEntryHref } from "@/features/control-tower/lib/views";
+import { useRememberedTowerView } from "@/features/control-tower/lib/use-remembered-view";
 
 import {
   Collapsible,
@@ -12,6 +22,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -19,7 +30,8 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 
-import type { PermissionKey } from "../../shared/common.types";
+import { NOTIFICATION_ACCENT_CLASS } from "../../shared/notification-visuals";
+
 import type { ProtectedNavItem } from "../shared/common.types";
 
 import type {
@@ -28,55 +40,76 @@ import type {
   User,
 } from "./protected-sidebar-menu.types";
 import {
+  navigationSurface,
   protectedNavIcons,
-  protectedNavItemsByRole,
+  sidebarItems,
 } from "../protected-navbar-items";
 
 /**
- * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
+ * A driver is a BUSINESS_USER linked to a driver record. Same rule as the
+ * layout that picks the driver shell and as the API's permission gate: the
+ * driver link decides, whatever profile rows the account may still carry.
  */
-function isDriver(user: User): boolean {
-  if (user.role !== "BUSINESS_USER") return false;
-
-  const hasDriverId = !!user.driverId;
-  const hasProfileAccess =
-    user.profileAccess &&
-    user.profileAccess.permissions &&
-    user.profileAccess.permissions.length > 0;
-
-  return hasDriverId && !hasProfileAccess;
+function isDriver(user: Pick<User, "role" | "driverId">): boolean {
+  return user.role === "BUSINESS_USER" && Boolean(user.driverId);
 }
 
-const filterNavItems = (
-  items: ProtectedNavItem[],
-  userPermissions: PermissionKey[],
-): ProtectedNavItem[] => {
-  return items.reduce<ProtectedNavItem[]>((acc, item) => {
-    if (
-      item.requiredPermission &&
-      !userPermissions.includes(item.requiredPermission)
-    ) {
-      return acc;
-    }
+/**
+ * What this session's sidebar shows. The entries come from the one
+ * navigation list the command palette also reads, and the verdict from the
+ * route registry (app-routes) — two hand-written lists is how the palette
+ * offered an employee Torre de Controle and Integrações that the sidebar did
+ * not (NAV-DRIFT-1).
+ */
+function visibleSidebarItems(
+  user: User,
+  enabledModules: string[] | null,
+): ProtectedNavItem[] {
+  const driver = isDriver(user);
 
-    const newItem = { ...item };
+  // An employee without a profile has nothing to open; the session check
+  // signs them out.
+  if (user.role === "BUSINESS_USER" && !driver && !user.permissions) {
+    return [];
+  }
 
-    if (newItem.items?.length) {
-      newItem.items = filterNavItems(newItem.items, userPermissions);
-    }
+  const context = {
+    role: user.role,
+    permissions: user.permissions ?? [],
+    enabledModules,
+    isDriver: driver,
+  };
 
-    const isGroup = newItem.url === "#" || !newItem.url;
-    if (isGroup && (!newItem.items || newItem.items.length === 0)) {
-      return acc;
-    }
-
-    acc.push(newItem);
-    return acc;
-  }, []);
-};
+  return sidebarItems(navigationSurface(user.role, driver), (path) =>
+    canAccessPath(path, context),
+  );
+}
 
 const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
   const pathname = usePathname();
+
+  // The chat is a tab inside Entregas, so its unread count rides on that
+  // entry: the dispatcher sees it from the Kanban, from Multas, from
+  // anywhere. Zero for anyone without the module, the permission, or a read
+  // cursor of their own — support included.
+  const chatUnread = useChatUnreadCount();
+
+  // The Torre opens on the view this browser chose last, rendered by the
+  // server at once (lib/views, towerEntryHref).
+  const rememberedTowerView = useRememberedTowerView();
+
+  /**
+   * A menu link's target and prefetch. The page already on screen is not
+   * prefetched: its URL differs from the one shown only by the query (none),
+   * and in Next 14 such a prefetch renders the whole page again on the
+   * server — every list of Entregas read a second time just because the
+   * menu was drawn. Other pages keep the automatic prefetch, which stops at
+   * their loading.tsx and reads nothing.
+   */
+  const linkProps = (url: string) => ({
+    href: towerEntryHref(url, rememberedTowerView),
+    ...(pathname === url && { prefetch: false }),
+  });
 
   return (
     <SidebarMenu>
@@ -114,7 +147,7 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
                           asChild
                           isActive={pathname === subItem.url}
                         >
-                          <Link href={subItem.url}>
+                          <Link {...linkProps(subItem.url)}>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>
@@ -133,11 +166,37 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
                 tooltip={item.title}
                 isActive={pathname === item.url}
               >
-                <Link href={item.url}>
+                <Link {...linkProps(item.url)}>
                   {item.icon && <Icon />}
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>
+
+              {/* The bell's badge, to the class: same accent constant, same
+              ring lifting it off its surface — here the sidebar's own, since
+              that is what sits behind it. The hover and active overrides
+              `SidebarMenuBadge` carries for text colour have to be answered
+              at the same variant, or the number turns grey under the
+              pointer. On the Torre since the tickets moved there (meeting
+              of 14/10/2026). */}
+              {item.url.endsWith("/control-tower") && chatUnread > 0 && (
+                <SidebarMenuBadge
+                  className={cn(
+                    `h-5 min-w-5 rounded-full px-1 text-[10px] font-bold
+                    text-white ring-2 ring-sidebar
+                    peer-hover/menu-button:text-white
+                    peer-data-[active=true]/menu-button:text-white`,
+                    NOTIFICATION_ACCENT_CLASS,
+                  )}
+                  aria-label={`${chatUnread} ${
+                    chatUnread === 1
+                      ? "atendimento não lido"
+                      : "atendimentos não lidos"
+                  }`}
+                >
+                  {chatUnread > 99 ? "99+" : chatUnread}
+                </SidebarMenuBadge>
+              )}
             </SidebarMenuItem>
           );
         }
@@ -149,23 +208,16 @@ const ProtectedNavItems = ({ items }: ProtectedNavItemsProps): JSX.Element => {
 const ProtectedSidebarMenuItems = ({
   user,
 }: ProtectedSidebarMenuItemsProps): JSX.Element => {
-  const items =
-    protectedNavItemsByRole[user.role] ||
-    protectedNavItemsByRole["BUSINESS_USER"];
+  // Modules arrive with the server render and are kept fresh by the security
+  // check, which re-reads /user/me on every socket event. No fetch of its own:
+  // the endpoint that manages plans is back-office only, and asking it from
+  // here is what used to erase every gated item from an employee's menu.
+  const storeModules = useAuthStore((state) => state.enabledModules);
+  const enabledModules = storeModules ?? user.enabledModules ?? null;
 
-  // If you are a driver, it does not display any sidebar items (you will only have access via direct routes)
-  if (isDriver(user)) {
-    return <ProtectedNavItems items={[]} />;
-  }
-
-  // If you are an employee but do not have permissions, it also returns empty.
-  if (user.role === "BUSINESS_USER" && !user.permissions) {
-    return <ProtectedNavItems items={[]} />;
-  }
-
-  // Filter items by employee permissions
-  const filteredItems = filterNavItems(items, user.permissions || []);
-  return <ProtectedNavItems items={filteredItems} />;
+  return (
+    <ProtectedNavItems items={visibleSidebarItems(user, enabledModules)} />
+  );
 };
 
-export { ProtectedSidebarMenuItems };
+export { ProtectedSidebarMenuItems, visibleSidebarItems };

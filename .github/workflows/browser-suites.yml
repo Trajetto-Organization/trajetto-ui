@@ -1,0 +1,300 @@
+name: Browser suites
+
+# The Playwright suites that drive a real browser against a running stack:
+# tests/ui (does the screen show what the API sent), tests/a11y (can it be
+# operated) and tests/responsive (does it fit). They need the API on 3334,
+# this app on 3100 and the seeded load-context.json of the API repository,
+# so this job stands the whole stack up from scratch (Postgres and Redis as
+# service containers, the API from its own checkout, the web from the
+# standalone build the image runs).
+#
+# When it runs:
+#   - every push to staging, called by deploy.yml (workflow_call): the image
+#     is only built after these suites pass;
+#   - every pull request to main, the same validation before production;
+#   - every night and on demand, against the default branch.
+#
+# The pure rules (tests/E2E) run in ci.yml instead, as `yarn test:rules`.
+#
+# Needs the secret API_REPO_READ_TOKEN: a read-only token for
+# Trajetto-Organization/trajetto-api, for the checkout of the API next to
+# this repository (the specs read ../trajetto-api/tests/load/fixtures).
+# Without it the suites are skipped with a warning instead of failing, so a
+# repository that has not created the token yet still deploys.
+on:
+  schedule:
+    # 03:00 in São Paulo, when nobody is merging.
+    - cron: "0 6 * * *"
+  pull_request:
+    branches: [main]
+  workflow_call:
+    secrets:
+      API_REPO_READ_TOKEN:
+        required: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Called from deploy.yml, github.workflow is the caller's name: a nightly
+# run never cancels the suites a staging deploy is waiting on.
+concurrency:
+  group: browser-suites-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # `secrets` cannot be read in a job-level `if`, so a tiny job turns the
+  # token's presence into an output the suites job can test.
+  gate:
+    name: Is the API checkout configured?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      enabled: ${{ steps.token.outputs.enabled }}
+    steps:
+      - name: Check the read-only API token
+        id: token
+        env:
+          TOKEN: ${{ secrets.API_REPO_READ_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::API_REPO_READ_TOKEN ausente: as suítes de navegador (ui, a11y, responsive) foram puladas."
+            echo "Suítes de navegador PULADAS: falta o secret API_REPO_READ_TOKEN (docs/deploy.md)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  browser-suites:
+    name: UI, a11y and responsive against a running stack
+    needs: gate
+    if: needs.gate.outputs.enabled == 'true'
+    # Pinned, not ubuntu-latest: Playwright installs Chromium's system deps
+    # only on the Ubuntu releases it supports, and 1.56 refused 26.04.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: trajetto
+          POSTGRES_PASSWORD: trajetto-password
+          POSTGRES_DB: load_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # The seed refuses any database that is not on 54321, the port of
+          # the throwaway container, so it can never touch a real one.
+          - 54321:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    # The API's test configuration, as in its own CI. Nothing here is a real
+    # secret: the database and the tokens exist only inside this job.
+    env:
+      DATABASE_URL: postgresql://trajetto:trajetto-password@localhost:54321/load_test?schema=public
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: test-jwt-secret-key-for-github-actions-only
+      JWT_SECRET_REFRESH_TOKEN: test-jwt-refresh-secret-key-for-github-actions-only
+      META_WHATSAPP_TEMPLATE_NAME: trajetto_notification
+      META_WHATSAPP_API_VERSION: v23.0
+      UPLOAD_STORAGE_TYPE: local
+      UPLOAD_LOCAL_PATH: ./tmp
+      MASTER_USER_EMAIL: test-master@example.com
+      MASTER_USER_INITIAL_PASSWORD: test-master-password-ci-only
+      LOAD_BASE_URL: http://localhost:3334
+      # Job-wide, not only on the server step: the seed and mint scripts load
+      # the API's env schema too, and it refuses to load without HTTP_REQUEST.
+      HTTP_REQUEST: http://localhost:3100
+      API_HTTP_REQUEST: http://localhost:3334
+
+    steps:
+      - name: Checkout the web app
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          path: trajetto-ui
+
+      # The same branch in the sibling repository first: a change that spans
+      # the repositories (routes, socket events) is tested against its own
+      # counterpart, not against their default branch. Falls back to the
+      # default branch when there is no branch of that name.
+      - name: Pick the sibling branches
+        id: refs
+        env:
+          TOKEN: ${{ secrets.API_REPO_READ_TOKEN }}
+          BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          # The empty extraheader first: this repository's own checkout persisted
+          # one, and two Authorization headers get a 400 (read as "no branch").
+          auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          for pair in api:trajetto-api; do
+            key=${pair%%:*}
+            repo=${pair#*:}
+            if git -c "http.https://github.com/.extraheader=" -c "http.https://github.com/.extraheader=$auth" ls-remote --exit-code --heads \
+              "https://github.com/Trajetto-Organization/${repo}.git" "refs/heads/${BRANCH}" > /dev/null; then
+              echo "${key}=${BRANCH}" >> "$GITHUB_OUTPUT"
+              echo "${repo}: branch ${BRANCH}"
+            else
+              echo "${repo}: sem a branch ${BRANCH}; usando a padrão"
+            fi
+          done
+
+      - name: Checkout the API next to it
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          repository: Trajetto-Organization/trajetto-api
+          ref: ${{ steps.refs.outputs.api }}
+          token: ${{ secrets.API_REPO_READ_TOKEN }}
+          path: trajetto-api
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: "yarn"
+          cache-dependency-path: |
+            trajetto-ui/yarn.lock
+            trajetto-api/yarn.lock
+
+      # seed.ts writes load-context.json (the fifty admins and the drivers);
+      # mint-master.ts writes browser-sessions.json (the MASTER and long-lived
+      # sessions the /admin specs open with). Without the second one every
+      # spec that needs a master threw before opening a page.
+      # mint-browser-users.ts creates the accounts that sign in through the
+      # form (browser-users.json; password WEB_E2E_PASSWORD or the test
+      # default). 2FA and create-user send through Ethereal: outbound network.
+      - name: API — install, migrate, seed and mint the browser sessions
+        working-directory: trajetto-api
+        env:
+          NODE_ENV: test
+        run: |
+          yarn install --frozen-lockfile
+          yarn prisma:generate
+          npx prisma migrate deploy
+          mkdir -p src/tmp
+          npx tsx tests/load/seed.ts
+          npx tsx tests/load/mint-master.ts
+          npx tsx tests/load/mint-browser-users.ts
+
+      - name: API — start on 3334
+        working-directory: trajetto-api
+        env:
+          NODE_ENV: test
+          PORT: 3334
+        run: |
+          nohup npx tsx src/server.ts > ../api.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf http://localhost:3334/health/liveness > /dev/null && exit 0
+            sleep 2
+          done
+          echo "API did not come up" >&2
+          tail -n 100 ../api.log
+          exit 1
+
+      - name: Web — install and build against the local API
+        working-directory: trajetto-ui
+        env:
+          NODE_ENV: production
+          # Build values only: the API URL, captcha key and map tiles are read
+          # by the server at run time (src/env), like the image does.
+          METADATA_BASE: http://localhost:3100
+        # --production=false: yarn 1 drops devDependencies under
+        # NODE_ENV=production, and the build needs them (typescript,
+        # tailwindcss, the analyzer next.config.mjs imports), as do the suites.
+        run: |
+          yarn install --frozen-lockfile --production=false
+          yarn build
+
+      # The standalone server, as the image runs it (Dockerfile): `next start`
+      # on an `output: "standalone"` build is not the production artifact and
+      # Next warns that it does not support it. The image copies public/ and
+      # .next/static next to server.js; so does this step.
+      #
+      # E2E_PROBES=1 opens dashboard/boundary-probe, the page that throws on
+      # purpose for tests/ui/error-boundary.spec.ts, which a production build
+      # otherwise answers with 404.
+      - name: Web — start on 3100
+        working-directory: trajetto-ui
+        env:
+          NODE_ENV: production
+          PORT: 3100
+          HOSTNAME: 0.0.0.0
+          E2E_PROBES: "1"
+          METADATA_BASE: http://localhost:3100
+          HTTP_REQUEST: http://localhost:3334
+          # The browser's copy of the API URL, read at run time (src/env).
+          PUBLIC_API_URL: http://localhost:3334
+          # Cloudflare's documented always-pass test keys.
+          TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          # A production server draws no public OSM by itself (decision 7.4);
+          # the nightly names it so the map specs see loaded tiles. A few
+          # tiles a night is within OSM's tile policy.
+          MAP_TILE_URL: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          MAP_TILE_ATTRIBUTION: "© colaboradores do OpenStreetMap"
+        run: |
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+          nohup node .next/standalone/server.js > ../ui.log 2>&1 &
+          for _ in $(seq 1 60); do
+            curl -sf http://localhost:3100/api/health > /dev/null && exit 0
+            sleep 2
+          done
+          echo "Web did not come up" >&2
+          tail -n 100 ../ui.log
+          exit 1
+
+      - name: Install Chromium
+        working-directory: trajetto-ui
+        run: npx playwright install --with-deps chromium
+
+      # Each suite runs even when the one before failed: three independent
+      # answers are worth more than the first failure.
+      #
+      # TZ for the specs' own Node side, the browser's zone being set in the
+      # configs (timezoneId): the runner is UTC, and after 21:00 in São Paulo
+      # a date computed as "today" there is tomorrow for the API. Only on the
+      # suites, never on the servers, which must behave as in the image.
+      - name: UI suite
+        working-directory: trajetto-ui
+        env:
+          TZ: America/Sao_Paulo
+        run: npx playwright test -c playwright.ui.config.ts
+
+      - name: Accessibility suite
+        if: ${{ !cancelled() }}
+        working-directory: trajetto-ui
+        env:
+          TZ: America/Sao_Paulo
+        run: npx playwright test -c playwright.a11y.config.ts
+
+      - name: Responsive suite
+        if: ${{ !cancelled() }}
+        working-directory: trajetto-ui
+        env:
+          TZ: America/Sao_Paulo
+        run: npx playwright test -c playwright.responsive.config.ts
+
+      - name: Upload traces and server logs
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-suites-${{ github.run_id }}
+          path: |
+            trajetto-ui/test-results
+            api.log
+            ui.log
+          retention-days: 7

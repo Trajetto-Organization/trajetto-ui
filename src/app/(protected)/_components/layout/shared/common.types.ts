@@ -1,8 +1,4 @@
-import type {
-  Permission,
-  UserRole,
-  PermissionKey,
-} from "../../shared/common.types";
+import type { Permission, UserRole } from "../../shared/common.types";
 import { protectedNavIcons } from "../protected-navbar-items";
 
 interface UserLogged {
@@ -17,6 +13,8 @@ interface UserLogged {
   profileAccess?: {
     permissions?: Permission[];
   } | null;
+  /** Modules the company hired, resolved server side on every navigation. */
+  enabledModules?: string[];
 }
 
 interface ProtectedNavItem {
@@ -28,7 +26,8 @@ interface ProtectedNavItem {
   label?: string;
   description?: string;
   isActive?: boolean;
-  requiredPermission?: PermissionKey;
+  // No access flags here on purpose: `url` is the key, and app-routes owns
+  // which permission and which module that url needs.
   items?: ProtectedNavItem[];
 }
 

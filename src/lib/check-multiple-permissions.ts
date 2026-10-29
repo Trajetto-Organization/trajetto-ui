@@ -1,4 +1,6 @@
-import type { PermissionKey } from "@/app/(protected)/_components/shared/common.types";
+import type { PermissionKey } from "@/lib/permissions";
+import { getPermissionName } from "@/lib/permissions";
+
 import { useAuthStore } from "../store/auth-store";
 
 import { useEffect, useMemo } from "react";
@@ -81,31 +83,6 @@ function useCheckMultiplePermissions(
   }, [role, permissions, requiredPermissions]);
 }
 
-/**
- * Returns permission name in a human-readable format
- */
-function getPermissionName(permissionKey: PermissionKey): string {
-  const permissionNames: Record<PermissionKey, string> = {
-    branch_manage: "Gerenciar Filiais",
-    profile_access_manage: "Gerenciar Perfis de Acesso",
-    user_permission_manage: "Gerenciar Permissões de Usuário",
-    user_registration_manage: "Gerenciar Cadastro de Usuários",
-    part_manage: "Gerenciar Peças",
-    supplier_manage: "Gerenciar Fornecedores",
-    vehicle_type_manage: "Gerenciar Tipos de Veículo",
-    fuel_type_manage: "Gerenciar Tipos de Combustível",
-    driver_manage: "Gerenciar Motoristas",
-    service_order_manage: "Gerenciar Ordens de Serviço",
-    vehicle_manage: "Gerenciar Veículos",
-    service_order_part_manage: "Gerenciar Ordens de Serviço Por Peça",
-    account_payable_manage: "Gerenciar Contas a Pagar",
-    kanban_manage: "Gerenciar Kanban",
-    fine_manage: "Gerenciar Multas",
-    fuel_manage: "Gerenciar Abastecimentos",
-    vehicle_checklist_manage: "Gerenciar Checklist dos Veículos",
-  };
-
-  return permissionNames[permissionKey] || permissionKey;
-}
-
+// Re-exported so the dozens of components that import both from here keep
+// working; the map itself lives with the keys, in lib/permissions.
 export { useCheckMultiplePermissions, getPermissionName };

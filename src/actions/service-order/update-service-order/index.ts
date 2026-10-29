@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateServiceOrderSchema } from "@/schemas/create-update-service-order-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface ServiceOrderProps {
   message: string;
@@ -48,7 +52,7 @@ const handleUpdateServiceOrder = async (
   const serviceOrderData = updateServiceOrderValidation.data;
 
   try {
-    const response = await fetch(updateServiceOrder, {
+    const response = await apiFetch(updateServiceOrder, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -60,14 +64,22 @@ const handleUpdateServiceOrder = async (
 
     const { message } = (await response.json()) as ServiceOrderProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateServiceOrderError: { updateServiceOrderErrorMessage: message },
+        updateServiceOrderError: {
+          updateServiceOrderErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-service-order");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("service-order/update-service-order", error);
     return {
       updateServiceOrderError: {
         updateServiceOrderErrorMessage:

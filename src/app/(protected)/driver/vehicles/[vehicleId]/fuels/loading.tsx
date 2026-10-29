@@ -7,7 +7,7 @@ const Loading = (): JSX.Element => {
   return (
     <PageContainer>
       {/* Back Button Skeleton */}
-      <div className="mb-6">
+      <div data-tutorial="loading" className="mb-6">
         <Skeleton className="h-10 w-48" />
       </div>
 

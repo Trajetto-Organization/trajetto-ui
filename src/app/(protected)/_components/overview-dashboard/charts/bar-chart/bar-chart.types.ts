@@ -1,8 +1,8 @@
 interface MaintenanceCost {
   month?: string;
   date?: string;
-  preventive: number;
-  corrective: number;
+  internal: number;
+  external: number;
 }
 
 interface ChartBarDefaultProps {

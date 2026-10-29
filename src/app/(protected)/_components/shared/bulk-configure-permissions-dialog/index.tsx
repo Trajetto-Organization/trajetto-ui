@@ -32,6 +32,9 @@ import type {
   BulkConfigurePermissionsFormState,
 } from "./bulk-configure-permissions-dialog.types";
 import type { PermissionConfigMap } from "./hooks";
+import { guardFormAction } from "@/lib/action-result";
+import { permissionKeysInPlan } from "@/lib/route-access";
+import { useAuthStore } from "@/store/auth-store";
 
 const ALL_PERMISSION_KEYS = Object.values(PERMISSIONS) as string[];
 
@@ -52,6 +55,14 @@ const BulkConfigurePermissionsFormSubmit = ({
   handleClose,
 }: BulkConfigurePermissionsFormSubmitProps): JSX.Element => {
   const { pending } = useFormStatus();
+  const role = useAuthStore((state) => state.role);
+  const enabledModules = useAuthStore((state) => state.enabledModules);
+  // Rows of a module the company did not hire are not offered. A hidden key
+  // keeps its loaded level in `config`, so the replace-all save never wipes it.
+  const visibleKeys = permissionKeysInPlan(ALL_PERMISSION_KEYS, {
+    role,
+    enabledModules,
+  });
 
   return (
     <>
@@ -85,7 +96,7 @@ const BulkConfigurePermissionsFormSubmit = ({
         </div>
       ) : (
         <div className="space-y-0.5">
-          {ALL_PERMISSION_KEYS.map((key, index) => (
+          {visibleKeys.map((key, index) => (
             <div key={key}>
               <div
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between 
@@ -148,7 +159,7 @@ const BulkConfigurePermissionsFormSubmit = ({
                   </div>
                 </RadioGroup>
               </div>
-              {index < ALL_PERMISSION_KEYS.length - 1 && (
+              {index < visibleKeys.length - 1 && (
                 <Separator className="opacity-40" />
               )}
             </div>
@@ -200,7 +211,7 @@ const BulkConfigurePermissionsDialog = ({
   const [state, dispatch] = useFormState<
     BulkConfigurePermissionsFormState,
     FormData
-  >(handleBulkConfigurePermissions, defaultState);
+  >(guardFormAction(handleBulkConfigurePermissions), defaultState);
 
   const {
     formRef,

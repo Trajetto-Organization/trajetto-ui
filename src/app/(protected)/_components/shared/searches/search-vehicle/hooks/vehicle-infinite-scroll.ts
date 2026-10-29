@@ -1,184 +1,51 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useInfiniteQuery } from "react-query";
+import {
+  SYNCED_CATALOG_STALE_TIME_MS,
+  containsTerm,
+  useCursorSearch,
+} from "@/hooks/use-cursor-search";
 
-import { getCookies } from "@/actions/cookies";
-import { parseNDJSON } from "@/lib/parse-nd-json";
+import type { FetchVehicleResult } from "../search-vehicle-types";
 
-import type {
-  FetchVehicleProps,
-  FetchVehicleResult,
-} from "../search-vehicle-types";
+type VehicleItem = FetchVehicleResult["data"][number];
 
-const LIMIT = 10;
-
-const fetchVehicle = async ({
-  cursor,
-  businessId,
-  signal,
-}: FetchVehicleProps): Promise<FetchVehicleResult> => {
-  const tokenAccess = await getCookies("tkey");
-
-  try {
-    let url = `${process.env.NEXT_PUBLIC_HTTP_REQUEST}/vehicle/search-vehicle-business?limit=${LIMIT}`;
-
-    if (cursor) url += `&cursor=${cursor}`;
-    if (businessId) url += `&businessId=${businessId}`;
-
-    const response = await fetch(url, {
-      credentials: "include",
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept-Encoding": "gzip",
-        Authorization: `Bearer ${tokenAccess}`,
-      },
-      signal,
-    });
-
-    if (!response.ok) {
-      const errorClone = response.clone();
-      const errorData = await errorClone.json();
-
-      throw new Error(
-        errorData.message ||
-          `Erro HTTP: ${response.status} - ${response.statusText}`,
-      );
-    }
-
-    const { meta, data } = await parseNDJSON(response);
-
-    return {
-      data: data || [],
-      nextCursor: meta?.searchMeta?.nextCursor || null,
-      hasMore: meta?.searchMeta?.hasMore || false,
-    };
-  } catch (error: any) {
-    if (error.name === "AbortError") {
-      throw error;
-    }
-
-    throw new Error(error.message || "Erro ao carregar veículos");
-  }
-};
-
-function useVehicleInfiniteScroll(businessId: string) {
-  const observer = useRef<IntersectionObserver>();
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [immediateError, setImmediateError] = useState<boolean>(false);
-
-  const isMountedRef = useRef(true);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    return () => {
-      isMountedRef.current = false;
-
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-    };
-  }, []);
-
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-    isLoading,
-    isError,
-    refetch,
-  } = useInfiniteQuery({
-    queryKey: ["vehicle", businessId],
-    queryFn: ({ pageParam }) => {
-      if (!isMountedRef.current) {
-        return Promise.reject(new Error("Component unmounted"));
-      }
-
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      abortControllerRef.current = new AbortController();
-
-      return fetchVehicle({
-        cursor: pageParam,
-        businessId,
-        signal: abortControllerRef.current.signal,
-      });
-    },
-    getNextPageParam: (lastPage) => {
-      return lastPage.hasMore ? lastPage.nextCursor : undefined;
-    },
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    retry: 2,
-    enabled: !!businessId,
-    keepPreviousData: true,
-    onError: (error: any) => {
-      if (!isMountedRef.current) return;
-
-      setErrorMessage(error.message);
-      setImmediateError(true);
-
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    },
-    onSuccess: () => {
-      setImmediateError(false);
-      setErrorMessage(null);
-    },
-  });
-
-  const lastElementRef = useCallback(
-    (node: HTMLDivElement) => {
-      if (isLoading || !isMountedRef.current) return;
-      if (observer.current) observer.current.disconnect();
-
-      observer.current = new IntersectionObserver((entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasNextPage &&
-          !isFetching &&
-          !immediateError &&
-          isMountedRef.current
-        ) {
-          fetchNextPage();
-        }
-      });
-
-      if (node) observer.current.observe(node);
-    },
-    [fetchNextPage, hasNextPage, isFetching, isLoading, immediateError],
+/**
+ * The API's vehicle search (searchVehicleWithCursor): description, plate,
+ * brand, model and RENAVAM. The dispatcher's rows carry only some of them;
+ * a term none of the loaded rows matches still goes to the server.
+ */
+function vehicleMatches(vehicle: VehicleItem, term: string): boolean {
+  return containsTerm(
+    [
+      vehicle.description,
+      vehicle.license_plate,
+      vehicle.brand,
+      vehicle.model,
+      vehicle.renavam,
+    ],
+    term,
   );
-
-  const vehicles = useMemo(() => {
-    return data?.pages.flatMap((page) => page.data) || [];
-  }, [data]);
-
-  const handleRefetch = useCallback(() => {
-    if (!isMountedRef.current) return;
-
-    setImmediateError(false);
-    setErrorMessage(null);
-
-    refetch();
-  }, [refetch]);
-
-  return {
-    vehicles,
-    lastElementRef,
-    isFetching,
-    isLoading,
-    isError,
-    errorMessage,
-    refetch: handleRefetch,
-    hasError: isError || immediateError,
-  };
 }
 
-export { useVehicleInfiniteScroll };
+/**
+ * Vehicles of a company.
+ *
+ * `search` is the typed term, filtered by the API (see useCursorSearch). The
+ * list is kept fresh by `catalogChanged` (catalog-sync's `vehicle` root), so
+ * it is trusted for minutes instead of seconds.
+ */
+function useVehicleInfiniteScroll(businessId: string, search?: string) {
+  const { items, ...list } = useCursorSearch<VehicleItem>({
+    queryKey: ["vehicle", businessId],
+    path: "/vehicle/search-vehicle-business",
+    params: { businessId },
+    search,
+    enabled: !!businessId,
+    fallbackError: "Erro ao carregar veículos",
+    staleTime: SYNCED_CATALOG_STALE_TIME_MS,
+    matches: vehicleMatches,
+  });
+
+  return { vehicles: items, ...list };
+}
+
+export { useVehicleInfiniteScroll, vehicleMatches };

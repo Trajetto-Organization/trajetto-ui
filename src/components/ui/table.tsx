@@ -2,17 +2,39 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+import { TableScroller } from "./table-scroller";
+
+/**
+ * The table primitives, and where the client boundary sits around them.
+ *
+ * This file carries no directive on purpose, which makes it UNIVERSAL: it
+ * compiles into whichever graph imports it. A `loading.tsx` renders it on the
+ * server as static markup; a data table renders it in the browser. Both are
+ * correct, and neither pays for the other.
+ *
+ * It used to measure its own overflow here, with `useRef` and `useEffect`,
+ * and that one detail put the whole family on the client side of the line:
+ * `useRef` does not exist on the server, so every Server Component that
+ * rendered a `<Table>` crashed. It took down the /admin skeleton, and it was
+ * latent on /dashboard too — the same import, from a route that happened not
+ * to render its fallback in practice.
+ *
+ * The measurement now lives in `table-scroller.tsx`, which is one small client
+ * leaf. `Table` hands it the `<table>` as children, and a React element is
+ * exactly the kind of thing that crosses a Server -> Client boundary safely.
+ */
+
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
+  <TableScroller>
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
     />
-  </div>
+  </TableScroller>
 ));
 Table.displayName = "Table";
 

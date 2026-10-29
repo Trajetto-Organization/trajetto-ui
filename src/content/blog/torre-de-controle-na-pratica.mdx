@@ -1,0 +1,145 @@
+---
+title: "Torre de controle na prática: o que acompanhar num dia de operação"
+description: "O que olhar na torre de controle antes da primeira saída, durante as rotas e no fechamento do dia: pontualidade, funil de documentos, mapa, eventos e as exceções que pedem ação."
+slug: "torre-de-controle-na-pratica"
+date: "2026-09-28"
+updated: "2026-09-29"
+category: "operacao"
+tags: ["torre de controle", "monitoramento", "rotas", "app do motorista"]
+author: "Equipe Trajetto"
+seo:
+  title: "Torre de controle: o que acompanhar no dia"
+  description: "Pontualidade de saída, funil do dia, mapa e eventos: como ler a torre de controle de entregas e separar exceção de ruído."
+  keywords:
+    [
+      "torre de controle",
+      "torre de controle logística",
+      "monitoramento de entregas",
+      "rastreamento de motoristas",
+      "pontualidade de saída",
+      "gestão de rotas",
+    ]
+---
+
+A imagem clássica de uma torre de controle é uma televisão grande na parede, com um mapa cheio de pontinhos se mexendo. Ela impressiona em visita de cliente e ajuda pouco no dia a dia. Um mapa bonito não diz se a operação está bem. O que diz é a capacidade de perceber cedo o que está saindo do plano e agir enquanto ainda dá tempo.
+
+Este artigo propõe uma forma de usar a torre de controle ao longo de um dia de operação: o que olhar antes da primeira saída, o que acompanhar enquanto as rotas estão na rua e como fechar o dia. Os exemplos usam a torre do Trajetto, mas as perguntas valem para qualquer ferramenta.
+
+## As quatro perguntas que a torre precisa responder
+
+Toda informação na tela deveria ajudar a responder uma destas perguntas:
+
+1. **Saímos no horário?** Rotas que atrasam a saída atrasam todas as paradas.
+2. **Quanto do dia já foi feito?** Quantos documentos foram entregues, quantos falharam e quantos ainda estão na rua.
+3. **Onde está cada motorista?** Não por curiosidade, mas para responder a um cliente ou decidir um remanejamento.
+4. **O que deu errado?** Insucessos, ocorrências e comprovantes que precisam de conferência.
+
+Se um número na tela não responde a nenhuma delas, ele provavelmente é ruído.
+
+## Antes da primeira saída
+
+A maior parte dos problemas de um dia de entregas nasce antes de o primeiro caminhão sair. Uma checagem rápida no começo do turno evita horas de correria depois:
+
+- **Documentos do dia sem rota.** Entregas previstas para hoje que ainda estão pendentes e fora de qualquer rota não vão sair sozinhas.
+- **Rotas ainda em planejamento.** No Trajetto, a rota passa por quatro etapas: planejada, liberada, em andamento e concluída (ou cancelada). O motorista só vê a rota depois que ela é liberada. Uma rota que continua planejada na hora da saída é um motorista esperando no pátio.
+- **Horário de saída previsto.** Sem horário planejado, não existe atraso a medir. Preencha a saída prevista das rotas para que a pontualidade signifique alguma coisa.
+- **Ordem das paradas.** No Trajetto, a ordem das paradas é definida pelo despachante enquanto a rota está em planejamento. Depois que a rota sai, a ordem é a que o motorista está seguindo na tela do celular.
+
+## Pontualidade de saída
+
+O primeiro indicador do dia é a saída das rotas. A torre do Trajetto compara a saída real de cada rota com a saída planejada, e a leitura fica mais clara quando se separam cinco situações:
+
+| Situação                                          | Como ler                           |
+| ------------------------------------------------- | ---------------------------------- |
+| Saiu no horário, dentro de uma pequena tolerância | Nada a fazer                       |
+| Saiu atrasada                                     | Anotar a causa                     |
+| Ainda não saiu, mas o horário ainda não chegou    | Nada a fazer por enquanto          |
+| Passou do horário e não saiu                      | A exceção que pede ação agora      |
+| Não tinha horário de saída planejado              | Fica fora da conta de pontualidade |
+
+A separação importa. Juntar "sem horário" com "no horário" daria nota máxima a uma operação que simplesmente não planeja as saídas. E uma rota planejada para as dez que ainda não saiu às seis da manhã não é um problema. A leitura correta é comparar com o relógio: o que merece ação é a rota que passou do horário e continua no pátio.
+
+Quando uma rota atrasa, a pergunta seguinte é por quê. Motorista que não chegou, veículo com problema ou carga que não ficou pronta no horário são causas diferentes, com responsáveis diferentes. Anote a causa. Na reunião da semana, é ela que vai dizer se o atraso é pontual ou de processo.
+
+## O funil do dia
+
+Depois das saídas, a torre mostra os documentos do dia em forma de funil: pendentes, em rota, entregues, insucesso e canceladas. Cada coluna aparece mesmo quando está zerada, porque "nenhuma entrega falhou hoje" é uma das melhores informações que a tela pode dar.
+
+Ao lado do funil, o indicador de **finalizadas hoje** mostra quanto do dia já foi resolvido. Um detalhe de leitura: o insucesso conta como finalizado. Pode parecer estranho, mas a alternativa é pior. Uma barra que contasse só os sucessos ficaria parada em 80% num dia em que um quinto dos endereços recusou a entrega, e ninguém saberia dizer se ainda havia trabalho na rua. Finalizado quer dizer que aquela entrega não depende mais de uma ação do motorista hoje. A qualidade do resultado aparece no próprio funil, na coluna de insucesso.
+
+<Callout type="dica" title="O que olhar no funil">
+  Mais do que o número absoluto, observe o ritmo. Se no meio do dia muita coisa
+  ainda está "em rota" e pouca coisa foi finalizada, alguma rota está travada. O
+  mapa e os eventos ajudam a descobrir qual.
+</Callout>
+
+## O mapa: posição, frescor e o que ele não diz
+
+O mapa da torre mostra a última posição conhecida de cada motorista em rota. Alguns cuidados de leitura evitam conclusões erradas.
+
+### A posição só existe durante a rota
+
+No Trajetto, o app do motorista envia a localização em intervalos curtos, e apenas enquanto há uma rota em andamento. Fora da rota, não há rastreamento. Isso protege o motorista, cuja localização fora do trabalho não é assunto da empresa, e deixa claro o que o mapa representa: a operação, não a pessoa.
+
+### Sem posição recente não é, sozinho, problema
+
+Quando um motorista deixa de enviar posição, a causa pode ser simples: uma garagem sem sinal, o celular sem bateria, o aplicativo fechado. Hoje, a posição chega enquanto o app está aberto durante a rota. A torre marca à parte os motoristas que não enviam posição há mais de 10 minutos, justamente para que a pessoa olhe o contexto antes de concluir alguma coisa. Antes de ligar para o motorista, confira os últimos eventos daquela rota: uma comprovação registrada há pouco mostra que o trabalho está andando, mesmo com o mapa desatualizado.
+
+Quem terminou a rota não entra nessa conta. O veículo de uma rota concluída fica no mapa por 2 horas com a marca de concluída, para mostrar onde o dia terminou, e depois sai. Os horários da torre seguem o fuso da empresa, e "hoje" é o dia da empresa, não o do computador de quem olha.
+
+### A trilha do dia
+
+Ao selecionar um motorista, dá para ver o caminho que ele fez no dia. A trilha ajuda a responder perguntas concretas, como "ele passou no endereço?" ou "por que demorou tanto entre a terceira e a quarta parada?". Ela não serve para vigiar cada minuto do motorista, e usá-la dessa forma costuma sair caro em confiança da equipe.
+
+## Eventos e exceções: onde gastar atenção
+
+A lista de **últimos eventos** mostra o que acabou de acontecer na operação: avisos de "a caminho", chegadas, comprovações, mudanças de status feitas pelo escritório. Ela é útil para acompanhar o ritmo, mas a atenção da torre deve ir para as exceções.
+
+| Sinal                                      | Exceção ou ruído?   | O que fazer                                                                                 |
+| ------------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------- |
+| Pedido de autorização de ocorrência        | Exceção, com pressa | Autorizar ou negar com motivo: o motorista está esperando no endereço                       |
+| Ocorrência que impediu a entrega           | Exceção             | Ver o motivo e a foto, falar com o destinatário se for o caso e decidir se haverá reentrega |
+| Rota que passou do horário e não saiu      | Exceção             | Descobrir a causa e remanejar se preciso                                                    |
+| Comprovante na fila de auditoria           | Rotina com prazo    | Conferir dentro do prazo combinado                                                          |
+| Motorista sem enviar posição há 10 minutos | Depende             | Checar eventos recentes antes de ligar                                                      |
+| Ocorrência informativa                     | Normalmente ruído   | Ler no fechamento, não na hora                                                              |
+
+Quando uma ocorrência impede uma entrega, o Trajetto avisa os administradores e quem gerencia entregas na empresa. A decisão sobre o que fazer com aquela entrega, se ela volta para uma nova rota ou se é cancelada, está no artigo sobre [ocorrências de entrega e reentrega](/blog/ocorrencias-de-entrega-e-reentrega).
+
+### A fila de autorização
+
+Alguns tipos de ocorrência podem ser marcados para exigir autorização da torre. Quando o motorista registra um deles, o relato não muda nada na entrega até alguém decidir, e o pedido entra na fila **Aguardando autorização da torre**. A fila aparece no topo da torre de controle e na aba Ocorrências, só enquanto há pedido esperando, com os mais antigos primeiro, e se atualiza sozinha.
+
+Cada pedido mostra o tipo, o destinatário e o endereço, quem relatou, as respostas do formulário do tipo, o relato, as fotos e há quanto tempo ele espera. **Autorizar** aplica o efeito do tipo na hora; **negar** pede um motivo, que chega ao motorista junto com a decisão, no app e por notificação. Se duas pessoas decidirem o mesmo pedido ao mesmo tempo, vale a primeira, e a segunda vê quem decidiu e o quê. Sem resposta em 10 minutos, os administradores da empresa são avisados. E se o motorista conseguir entregar enquanto espera, o comprovante prevalece e o pedido sai da fila sem decisão.
+
+Trate essa fila como a exceção mais urgente da tela: do outro lado há um motorista parado numa calçada.
+
+## Falar com o motorista sem sair da tela
+
+Muitas exceções se resolvem com uma pergunta ao motorista. O Trajetto tem um chat entre o escritório e cada motorista, com texto, fotos e áudio, que funciona dentro do app. Duas vantagens sobre o aplicativo de mensagens pessoal: a conversa fica registrada junto com a operação, e o motorista não precisa misturar trabalho com a vida pessoal no próprio telefone.
+
+Uma regra que ajuda: combinados que mudam a operação ("pule a parada 5 e volte nela depois das 15h") devem ser escritos, não ditos por telefone. Assim, quem assumir a torre no turno seguinte encontra o histórico.
+
+## O ritmo de um dia
+
+Uma rotina simples para quem opera a torre:
+
+- **Começo do turno:** documentos do dia sem rota, rotas não liberadas, horários de saída planejados.
+- **Primeira hora de saídas:** pontualidade. Cada rota atrasada ganha uma causa anotada.
+- **Durante o dia:** exceções primeiro (pedidos de autorização, insucessos, rotas travadas), depois a fila de auditoria de comprovantes, depois o restante.
+- **Fechamento:** rotas concluídas, cargas que voltaram para a base e precisam ser reprogramadas, insucessos com decisão tomada e comprovantes do dia auditados.
+
+O fechamento é a etapa mais negligenciada. Uma entrega que falhou hoje e ficou sem decisão vira, amanhã, uma entrega esquecida.
+
+## O que fica para a reunião da semana
+
+A torre é para o dia. A análise de tendências pede outro momento e outros números, e boa parte deles sai da exportação de entregas e de ocorrências:
+
+- pontualidade de saída ao longo das semanas e as causas mais frequentes de atraso;
+- insucesso por tipo de ocorrência, por embarcador e por região;
+- tempo entre o envio do comprovante e a auditoria;
+- quantas entregas foram baixadas manualmente pelo escritório, e por quê.
+
+## Resumo
+
+Uma torre de controle útil responde a quatro perguntas: se as rotas saíram no horário, quanto do dia já foi resolvido, onde está cada motorista e o que deu errado. O mapa é uma das ferramentas, não o objetivo. Ler bem a tela é saber que um ponto parado pode ser só uma descarga, que "sem horário" não é "no horário" e que um insucesso é trabalho finalizado com resultado ruim, e não trabalho pendente. E o dia só termina quando cada exceção tem uma decisão registrada. Para quem está montando a rotina de conferência, o artigo sobre [comprovante de entrega digital](/blog/comprovante-de-entrega-digital) detalha a fila de auditoria.

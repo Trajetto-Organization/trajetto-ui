@@ -4,7 +4,7 @@ import PageContainer from "@/app/(protected)/_components/layout/protected-page-c
 const Loading = (): JSX.Element => {
   return (
     <PageContainer>
-      <div className="mb-8">
+      <div data-tutorial="loading" className="mb-8">
         <Skeleton className="h-8 w-64 mb-2" />
         <Skeleton className="h-4 w-96" />
       </div>

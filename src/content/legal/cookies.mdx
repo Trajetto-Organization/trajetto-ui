@@ -1,0 +1,176 @@
+---
+title: "Política de Cookies"
+description: "Os cookies e o armazenamento local que o Trajetto grava no navegador, um a um, com finalidade, duração e origem, e como controlá-los."
+slug: "cookies"
+updatedAt: "2026-10-09"
+effectiveAt: "2026-09-28"
+---
+
+## 1. Em resumo
+
+Cookies são pequenos arquivos que um site grava no navegador para lembrar de
+algo entre uma página e outra.
+
+- O Trajetto grava **quatro cookies**, todos primários (do próprio domínio do
+  Trajetto): três mantêm a entrada na área logada segura e um registra a
+  posição do menu lateral.
+- Quem visita as páginas públicas (início, páginas de produto, blog e estas
+  páginas legais) sem ter conta **não recebe nenhum cookie do Trajetto**.
+- **Não usamos cookies de publicidade, de medição de audiência nem de
+  rastreamento entre sites.**
+- Por isso não há aviso de consentimento: os cookies de sessão são
+  indispensáveis para entrar, e o de preferência só é gravado quando você mesmo
+  abre ou fecha o menu (seção 6). Se um dia adotarmos um cookie que não seja
+  indispensável, pediremos o seu consentimento antes e atualizaremos esta
+  página.
+- O app Android do motorista não usa cookies (seção 5).
+
+## 2. Cookies do Trajetto
+
+| Nome                                   | Para quê                                                                                                                                                                                                            | Duração                                                                                            | Tipo e atributos                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| <CookieName>tkey</CookieName>          | Leva o token de acesso que identifica você em cada tela da área logada. O token dentro dele vale 15 minutos e é renovado automaticamente enquanto a sessão está ativa                                               | Até 24 horas depois do último uso da plataforma; cada uso renova o prazo. Apagado ao sair da conta | Primário, necessário. HttpOnly, Secure, SameSite=Lax                                   |
+| <CookieName>rkey</CookieName>          | Leva o token de renovação, usado para emitir um novo token de acesso sem pedir a senha outra vez                                                                                                                    | Até 24 horas depois do último uso da plataforma; cada uso renova o prazo. Apagado ao sair da conta | Primário, necessário. HttpOnly, Secure, SameSite=Lax                                   |
+| <CookieName>tfc</CookieName>           | Liga a etapa da senha à etapa do código de verificação em duas etapas, para que só o navegador que acertou a senha possa enviar o código. Só é gravado para contas com a verificação em duas etapas ligada          | 30 minutos, ou até o código ser confirmado                                                         | Primário, necessário. HttpOnly, Secure, SameSite=Strict                                |
+| <CookieName>sidebar:state</CookieName> | Registra se você deixou o menu lateral da área logada aberto ou recolhido, para que ele volte do mesmo jeito quando você abrir a plataforma de novo. Guarda apenas "true" ou "false"; sem ele, o menu começa aberto | 7 dias                                                                                             | Primário, de preferência. Gravado pela própria página quando você abre ou fecha o menu |
+
+O que os atributos significam:
+
+- **HttpOnly:** scripts da página não conseguem ler o cookie, o que protege a
+  sessão contra roubo por código malicioso.
+- **Secure:** o cookie só trafega em conexão cifrada (HTTPS).
+- **SameSite:** o navegador não envia o cookie em requisições disparadas por
+  outros sites. Com **Strict**, nem mesmo ao chegar por um link externo.
+
+Nenhum desses cookies guarda senha. O token de acesso leva identificadores da
+sessão: o do usuário, o papel, a empresa e, para motoristas, o do cadastro de
+motorista. O token de renovação leva também o e-mail da conta. Os dois são
+assinados pelo servidor, o que impede alterá-los, e ficam fora do alcance dos
+scripts da página.
+
+## 3. Serviços de terceiros
+
+- **Verificação contra robôs (Cloudflare Turnstile).** Aparece nas telas de
+  entrada, de recuperação de senha e no formulário de orçamento. Ele roda num
+  quadro servido pela Cloudflare, que processa o endereço IP e sinais técnicos
+  do navegador para distinguir pessoas de robôs. O que esse quadro grave no
+  navegador pertence ao domínio da Cloudflare e segue a política dela; o
+  Trajetto não lê nem grava nada ali.
+- **Rede da Cloudflare.** O tráfego do site passa pela Cloudflare, que protege
+  a plataforma contra ataques. Conforme as proteções ativas, ela pode gravar
+  cookies técnicos próprios de segurança. Eles não são lidos pelo Trajetto.
+- **Mapas.** As imagens do mapa da torre de controle, da página da rota e do
+  seletor de local, na área logada, vêm hoje do OpenStreetMap (tile.openstreetmap.org), mantido pela
+  OpenStreetMap Foundation, no Reino Unido. Carregar essas imagens envia ao
+  OpenStreetMap o seu endereço IP e a área exibida; a busca de endereço do
+  seletor de local também passa por ele (Nominatim). As páginas públicas do
+  site não carregam mapas. O Trajetto não grava cookie nisso.
+- **Redes sociais.** Os ícones do rodapé são apenas links. Não há botões
+  incorporados, pixels nem widgets de redes sociais nas páginas; os cookies
+  dessas redes só entram em cena se você abrir o site delas.
+
+{/* REVISAR: (1) confirmar no painel da Cloudflare se Bot Fight Mode, Bot Management ou regras de rate limiting estão ativos (cookies __cf_bm e _cfuvid). Se estiverem, citar os nomes e prazos aqui, em prosa: são de terceiros e não entram na auditoria de CookieName. (2) O provedor dos mapas é o de hoje, fixo no código da web; quando a decisão 7.4 (MAP_TILE_URL) mudar a produção, trocar aqui e na Política de Privacidade (seções 9 e 13). */}
+
+## 4. O que fica guardado fora de cookie
+
+A área logada também usa o armazenamento local do navegador (localStorage, que
+persiste, e sessionStorage, que some ao fechar a aba). Nada disso é enviado
+automaticamente ao servidor.
+
+| O quê                                                                                                                               | Onde           | Para quê                                                               | Até quando                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Identificador do usuário e da empresa, papel, permissões e módulos da sua conta (`auth-store`)                                      | localStorage   | Montar menus e telas conforme o seu acesso. Não contém senha nem token | Apagado ao sair da conta                                           |
+| Tema claro ou escuro (`theme`)                                                                                                      | localStorage   | Lembrar o tema escolhido                                               | Até você limpar os dados do site                                   |
+| Tutoriais já vistos (`tutorial_` seguido da página)                                                                                 | localStorage   | Não repetir o tour guiado de uma página                                | Até você limpar os dados do site                                   |
+| Uso recente dos botões "Atualizar" e "Revalidar"                                                                                    | localStorage   | Aplicar o limite de uso desses botões                                  | Até você limpar os dados do site                                   |
+| Horário do último reenvio do código de verificação, numa entrada de nome fixo (`trajetto:2fa-resend-at`) que não leva dado da conta | localStorage   | Respeitar o intervalo entre reenvios do código de duas etapas          | Continua depois de sair da conta, até você limpar os dados do site |
+| Controles técnicos da aba: aviso depois de entrar, recarga depois de uma atualização do sistema e reconexão do tempo real           | sessionStorage | Evitar avisos repetidos e recargas em sequência                        | Ao fechar a aba                                                    |
+
+## 5. No app Android
+
+O app do motorista não usa cookies. No aparelho ficam:
+
+- no armazenamento seguro do Android, que guarda só os tokens da sessão e,
+  quando o Android não fornece o identificador do aparelho, um código de
+  instalação do app, que identifica o celular no PDF do comprovante;
+- no armazenamento comum do app: uma cópia do perfil (nome, e-mail, papel,
+  empresa e permissões) e, durante a verificação em duas etapas, o e-mail da
+  conta e o horário do último reenvio do código;
+- uma cópia das listas de trabalho por até 7 dias, para funcionar sem sinal;
+- os formulários começados e ainda não enviados (checklist, abastecimento,
+  comprovante e ocorrência), com as fotos, a assinatura, o nome de quem
+  recebeu e as respostas do formulário da ocorrência;
+- a fila de registros confirmados sem sinal, com as fotos, até o envio ao
+  servidor;
+- as posições da rota ainda não enviadas ao servidor e a última posição
+  guardada, com a identificação do motorista a quem pertencem;
+- a pausa em andamento (tipo, início, observação e local) e o toque de início
+  ou de fim ainda não enviado nem posto na fila, que, se o app for fechado no
+  meio, vai para a fila quando o mesmo motorista voltar a abri-lo;
+- as marcações de "a caminho" já confirmadas (parada, rota e horário);
+- os avisos da leitura automática do comprovante (a entrega e o texto do
+  aviso, com o nome do destinatário e o problema apontado) e as marcações dos
+  comprovantes enviados deste aparelho, na hora ou pela fila (a entrega, o
+  horário do toque em "Comprovar" e, quando havia, uma referência ao aviso que
+  o novo comprovante substitui: o horário e o identificador desse aviso, sem
+  o texto). A marcação é gravada no toque em "Comprovar" e desfeita se o
+  comprovante for recusado sem ir para a fila;
+- no cache do app, que o Android pode esvaziar quando precisa de espaço: as
+  mensagens de voz do chat já baixadas ou gravadas neste aparelho (até 50
+  arquivos ou 100 MB; as mais antigas saem primeiro), as imagens já exibidas
+  no app (fotos do chat, fotos do checklist e fotos de perfil) e cópias
+  temporárias das fotos e da assinatura feitas no app;
+- a preferência de tema do app (claro, escuro ou o do sistema), que é do
+  aparelho e não da conta;
+- marcações técnicas sem dado pessoal: a de que a permissão de localização em
+  segundo plano já foi pedida, para não pedir de novo, a de que a animação de
+  abertura já foi exibida e a de que a sessão foi encerrada neste aparelho.
+
+Sair da conta apaga a sessão, o perfil, o e-mail da verificação, a cópia das
+listas, os formulários não enviados, as marcações de "a caminho" e os avisos
+da leitura automática do comprovante. A fila fica até ser enviada. Continua
+no aparelho depois de sair da conta, separada por motorista, a pausa em
+andamento, assim como os arquivos do cache do app e o código de instalação
+do app. Ao sair, o app tenta
+enviar antes as posições pendentes da rota; as que não saírem ficam no
+aparelho até o mesmo motorista entrar de novo, e são descartadas quando outro
+motorista entra no app nele. O app não participa do backup automático do
+Android. Os detalhes e os prazos estão na
+[Política de Privacidade](/legal/privacidade).
+
+## 6. Base legal
+
+- <CookieName>tkey</CookieName>, <CookieName>rkey</CookieName> e
+  <CookieName>tfc</CookieName> são indispensáveis para o que você pediu, que é
+  entrar na plataforma com segurança. Eles se baseiam na execução do contrato
+  (LGPD, art. 7º, V) e no legítimo interesse na segurança da conta (art. 7º,
+  IX).
+- O `auth-store` e o horário do último reenvio do código fazem parte da
+  entrada e do funcionamento da área logada, e têm a mesma base dos cookies de
+  sessão. O primeiro identifica a conta, porque guarda o identificador do
+  usuário e da empresa; o segundo guarda só o horário.
+- <CookieName>sidebar:state</CookieName>, o tema, os tutoriais vistos e o limite
+  dos botões "Atualizar" guardam só preferências e controles de uso, sem dado
+  que identifique você. Existem para que a plataforma funcione como você
+  configurou (legítimo interesse, art. 7º, IX).
+
+## 7. Como controlar
+
+- Todo navegador permite ver, bloquear e apagar cookies e dados de sites, nas
+  configurações de privacidade.
+- Bloquear <CookieName>tkey</CookieName>, <CookieName>rkey</CookieName> ou
+  <CookieName>tfc</CookieName> impede a entrada na área logada.
+- Apagar <CookieName>sidebar:state</CookieName> faz o menu lateral começar
+  aberto na próxima visita. Limpar o armazenamento local faz os tutoriais
+  aparecerem de novo e o tema voltar ao do sistema.
+- Sair da conta apaga os cookies de sessão (<CookieName>tkey</CookieName> e
+  <CookieName>rkey</CookieName>) e o `auth-store`. O tema, os tutoriais vistos,
+  o limite dos botões e o horário do último reenvio do código continuam no
+  navegador até você limpar os dados do site.
+
+## 8. Mudanças e contato
+
+Esta lista é conferida automaticamente contra o código da plataforma: um
+cookie novo só entra no produto junto com a linha dele nesta página. A data da
+última revisão fica no topo. Dúvidas podem ser enviadas pelo canal em
+[Identificação do responsável](#identificacao).

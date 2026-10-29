@@ -1,0 +1,90 @@
+---
+title: Receber webhooks
+description: Como cadastrar um endpoint, o que chega em cada evento, como responder, deduplicar, ordenar e o que acontece quando o seu servidor falha.
+slug: webhooks
+updatedAt: 2026-09-29
+---
+
+Um webhook é uma chamada que o Trajetto faz ao seu servidor quando algo acontece: uma rota é liberada, uma entrega é concluída, um canhoto é enviado. Em vez de perguntar à API de tempos em tempos, você é avisado na hora.
+
+## Cadastrando um endpoint
+
+Em **Integrações → Webhooks**, clique em **Novo endpoint**, informe a URL e escolha os tópicos. A URL precisa ser `https` e alcançável pela internet: endereços internos, `localhost` e IPs privados são recusados no cadastro. Uma empresa pode ter até <MaxEndpoints />.
+
+No cadastro, o painel mostra o **segredo** do endpoint, que começa com `whsec_`. Ele aparece uma única vez: guarde-o, porque é com ele que você [verifica a assinatura](/docs/assinatura) de cada chamada.
+
+<Callout type="dica" title="Testando na sua máquina">
+  Exponha o servidor local por um túnel https (cloudflared, ngrok ou similar) e
+  cadastre a URL pública do túnel.
+</Callout>
+
+## Tópicos
+
+Um endpoint assina tópicos do catálogo ou curingas de um nível, como `delivery.*`, que cobrem todos os tópicos com aquele prefixo, inclusive os que o prefixo ganhar depois.
+
+<TopicTable />
+
+## O que chega
+
+Cada evento é um `POST` com corpo `application/json`, sempre no mesmo envelope:
+
+```json
+{
+  "id": "0192f7f0-5c1e-7a3b-9d2e-4f6a8b0c1d2e",
+  "sequence": 18342,
+  "topic": "delivery.delivered",
+  "created_at": "2026-09-29T14:02:11.000Z",
+  "data": {
+    "delivery_id": "0192f7f0-4a10-7c2e-8d3f-2b6a9e1c7d40",
+    "code": "PED-10452",
+    "invoice_key": "35260912345678000190550010000104521000104529",
+    "status": "DELIVERED",
+    "occurred_at": "2026-09-29T13:41:05.000Z"
+  }
+}
+```
+
+O exemplo mostra só parte de `data`. O formato completo de cada tópico está na [referência](/docs/referencia#webhooks).
+
+Os cabeçalhos que enviamos:
+
+<WebhookHeaders />
+
+## Respondendo
+
+Responda **2xx** o quanto antes. O que conta é o status: o corpo da sua resposta não muda nada. Grave o evento, responda e processe depois; um processamento lento dentro da requisição vira timeout e reenvio.
+
+| A sua resposta                 | O que acontece                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 2xx                            | Entregue.                                                                                                          |
+| 410 Gone                       | O endpoint é **desligado** inteiro, não só aquele evento. Para recusar um evento isolado, responda 2xx e ignore-o. |
+| 3xx                            | Redirecionamento não é seguido: conta como falha e também desliga o endpoint.                                      |
+| Outro 4xx, 5xx ou sem resposta | Falha: tentamos de novo, como mostra a tabela abaixo.                                                              |
+
+## Deduplicação
+
+A entrega é **pelo menos uma vez**. O mesmo evento pode chegar de novo: quando o seu servidor responde depois do nosso limite de espera, quando o nosso processo cai entre a sua resposta e o nosso registro, ou quando alguém reenvia pelo painel. Antes de gravar, confira se já processou aquele `id` (igual ao cabeçalho `X-Trajetto-Event-Id`), que é o mesmo em toda retentativa e em todo reenvio.
+
+## Ordem
+
+Os eventos **não chegam em ordem**: são enviados em paralelo, e uma retentativa chega depois de eventos mais novos. O campo `sequence` cresce, com lacunas, na ordem em que os eventos foram gerados e é o mesmo em toda retentativa. Aplique um evento só se a `sequence` dele for maior que a do último evento que você aplicou ao mesmo documento ou rota.
+
+## Hora do fato
+
+O `created_at` do envelope é quando o evento foi gerado, não quando a entrega aconteceu. O aplicativo do motorista guarda o que foi feito sem sinal e envia depois, às vezes horas depois. Por isso, `proof.registered`, o `delivery.delivered` que vem do canhoto e `occurrence.reported` trazem a hora do fato em `data.occurred_at`. Use-a para datar a entrega ou a ocorrência; nos demais eventos, `occurred_at` é nulo e vale o `created_at`.
+
+## Retentativas e desligamento
+
+Uma entrega que falha é repetida nestes intervalos:
+
+<RetrySchedule />
+
+Pausar o endpoint no painel é cancelar a inscrição: os eventos gerados durante a pausa não são guardados. Um endpoint desligado por falhas é religado em **Integrações → Webhooks → Reativar envios**, e os eventos guardados são enviados em seguida.
+
+## Reenvio manual
+
+Em **Integrações → Monitor de Envios** você vê cada tentativa, com o status e o tempo de resposta do seu servidor, e pode reenviar um evento dentro da janela de guarda. O reenvio mantém o mesmo `id` do evento, então a sua deduplicação continua valendo.
+
+## Sem webhooks
+
+Se o seu servidor não pode receber chamadas (atrás de um firewall, por exemplo), consulte `GET /integration/v1/events` de tempos em tempos, com a receita de [sincronização incremental](/docs/paginacao#eventos). O feed lê o histórico permanente das entregas, então consultar uma semana para trás não encontra buracos.

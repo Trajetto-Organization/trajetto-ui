@@ -1,0 +1,66 @@
+# Dependency updates (INFRA-16).
+#
+# Security updates also need "Dependabot alerts" and "Dependabot security
+# updates" switched on in the repository (or organization) settings; this
+# file adds the scheduled version updates that keep the pins moving:
+# - npm: minor and patch grouped into one weekly PR; majors one by one (Next
+#   14 → 15 is a migration, not a bump).
+# - github-actions: every action is pinned by commit SHA with its version in
+#   a comment, and Dependabot moves both together.
+# - docker: the base image is pinned by digest. A Node major is a decision
+#   (LTS line), not an update.
+#
+# `chore(...)` so semantic-release does not cut a release per bump.
+# `target-branch: staging`: every change reaches production through staging
+# first (deploy.yml builds the image there), dependency bumps included.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    target-branch: staging
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 10
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    target-branch: staging
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: chore(ci)
+
+  - package-ecosystem: docker
+    directory: "/"
+    target-branch: staging
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
+    # The runtime is Alpine plus the node binary of the Node image
+    # (Dockerfile): their bumps land in one PR. A new Alpine minor also needs
+    # the node tag's alpine<minor> suffix moved by hand —
+    # tests/unitaires/image-layers.test.ts fails until both agree.
+    groups:
+      base-images:
+        patterns: ["node", "alpine"]
+    commit-message:
+      prefix: chore(docker)

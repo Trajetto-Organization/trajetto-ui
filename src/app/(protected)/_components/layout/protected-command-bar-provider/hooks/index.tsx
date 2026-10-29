@@ -1,668 +1,79 @@
 import { useRouter } from "next/navigation";
-import {
-  BadgePercent,
-  Bell,
-  Building2,
-  Container,
-  Fuel,
-  Gauge,
-  Handshake,
-  Kanban,
-  Laptop,
-  LayoutDashboardIcon,
-  LifeBuoy,
-  Logs,
-  NotepadText,
-  Receipt,
-  ShieldUser,
-  Split,
-  SquareUser,
-  Truck,
-  TruckElectric,
-  User,
-  UserPlus,
-  Wallet,
-  CalendarCheckIcon,
-  Crown,
-} from "lucide-react";
 
-import type { UserRole } from "@/app/(protected)/_components/shared/common.types";
 import type {
   Action,
   UseCommandBarActions,
 } from "../protected-command-bar-provider.types";
 
-import { permissions } from "@/lib/permissions";
+import { canAccessPath, readablePermissionKeys } from "@/lib/route-access";
+
+import {
+  readRememberedTowerView,
+  towerEntryHref,
+} from "@/features/control-tower/lib/views";
+
+import {
+  navigationSurface,
+  paletteEntries,
+  protectedNavIcons,
+} from "../../protected-navbar-items";
 
 /**
- * Checks if user is a driver (BUSINESS_USER with driverId but no profileAccess)
+ * A driver is a BUSINESS_USER linked to a driver record — the same rule the
+ * layout uses to pick the driver shell and the API uses to pick the driver
+ * permission map.
  */
 function isDriver(user: UseCommandBarActions["user"]): boolean {
-  if (user.role !== "BUSINESS_USER") return false;
-  const hasDriverId = !!user.driverId;
-
-  const hasProfileAccess =
-    user.profileAccess &&
-    user.profileAccess.permissions &&
-    user.profileAccess.permissions.length > 0;
-
-  return hasDriverId && !hasProfileAccess;
+  return user.role === "BUSINESS_USER" && Boolean(user.driverId);
 }
 
-function useCommandBarActions({ user }: UseCommandBarActions) {
+/**
+ * The palette's actions: the same navigation list the sidebar reads, run
+ * through the same `canAccessPath`. An entry survives here exactly when its
+ * page would open — which is why this list can no longer disagree with the
+ * sidebar (NAV-DRIFT-1) or offer a page the edge then bounces (ACT-ROUTE-1).
+ */
+function useCommandBarActions({
+  user,
+  enabledModules = null,
+}: UseCommandBarActions): { actions: Action[] } {
   const router = useRouter();
 
-  // Specific actions for each role (excluding common ones)
-  const roleActionsMap: Record<UserRole, Action[]> = {
-    MASTER: [
-      {
-        id: "admin_dashboard",
-        name: "Administrativo",
-        section: "admin",
-        shortcut: ["d", "d"],
-        keywords: "administrativo",
-        icon: <Laptop className="w-5 h-5" />,
-        perform: () => router.push("/admin"),
-      },
-      {
-        id: "admin_kanban",
-        name: "Kanban",
-        section: "navegação",
-        shortcut: ["k", "b"],
-        keywords: "kanban",
-        icon: <Kanban className="w-5 h-5" />,
-        perform: () => router.push("/admin/kanban"),
-      },
-      {
-        id: "admin_fine",
-        name: "Multas",
-        section: "navegação",
-        shortcut: ["m", "t"],
-        keywords: "multa",
-        icon: <NotepadText className="w-5 h-5" />,
-        perform: () => router.push("/admin/fine"),
-      },
-      {
-        id: "admin_quote",
-        name: "Orçamentos",
-        section: "suporte",
-        shortcut: ["o", "r"],
-        keywords: "orçamentos",
-        icon: <Receipt className="w-5 h-5" />,
-        perform: () => router.push("/admin/quote"),
-      },
-      {
-        id: "admin_business",
-        name: "Empresas",
-        section: "empresa",
-        shortcut: ["a", "b"],
-        keywords: "empresas",
-        icon: <Building2 className="w-5 h-5" />,
-        perform: () => router.push("/admin/business"),
-      },
-      {
-        id: "admin_branches",
-        name: "Filiais",
-        section: "empresa",
-        shortcut: ["b", "a"],
-        keywords: "filiais",
-        icon: <Split className="w-5 h-5" />,
-        perform: () => router.push("/admin/branch"),
-      },
-      {
-        id: "admin_supplier",
-        name: "Fornecedores",
-        section: "fornecedor",
-        shortcut: ["f", "r"],
-        keywords: "fornecedores",
-        icon: <Handshake className="w-5 h-5" />,
-        perform: () => router.push("/admin/supplier"),
-      },
-      {
-        id: "admin_part",
-        name: "Peças",
-        section: "fornecedor",
-        shortcut: ["f", "o"],
-        keywords: "peças",
-        icon: <Container className="w-5 h-5" />,
-        perform: () => router.push("/admin/part"),
-      },
-      {
-        id: "admin_vehicle",
-        name: "Veículos",
-        section: "veículo",
-        shortcut: ["v", "c"],
-        keywords: "veículos",
-        icon: <Truck className="w-5 h-5" />,
-        perform: () => router.push("/admin/vehicle"),
-      },
-      {
-        id: "admin_type_vehicle",
-        name: "Tipo de veículo",
-        section: "veículo",
-        shortcut: ["v", "t"],
-        keywords: "tipo de veículo",
-        icon: <TruckElectric className="w-5 h-5" />,
-        perform: () => router.push("/admin/vehicle-type"),
-      },
-      {
-        id: "admin_fuel",
-        name: "Tipo de combustível",
-        section: "veículo",
-        shortcut: ["v", "d"],
-        keywords: "combustível",
-        icon: <Fuel className="w-5 h-5" />,
-        perform: () => router.push("/admin/fuel-type"),
-      },
-      {
-        id: "admin_supply",
-        name: "Abastecimento",
-        section: "veículo",
-        shortcut: ["v", "a"],
-        keywords: "abastecimento",
-        icon: <Gauge className="w-5 h-5" />,
-        perform: () => router.push("/admin/fuel"),
-      },
-      {
-        id: "admin_checklist",
-        name: "Checklist",
-        section: "veículo",
-        shortcut: ["v", "l"],
-        keywords: "checklist",
-        icon: <CalendarCheckIcon className="w-5 h-5" />,
-        perform: () => router.push("/admin/vehicle-checklist"),
-      },
-      {
-        id: "admin_driver",
-        name: "Motoristas",
-        section: "veículo",
-        shortcut: ["m", "o"],
-        keywords: "motoristas",
-        icon: <LifeBuoy className="w-5 h-5" />,
-        perform: () => router.push("/admin/driver"),
-      },
-      {
-        id: "admin_service_order",
-        name: "Ordem de serviço",
-        section: "ordens",
-        shortcut: ["o", "s"],
-        keywords: "ordem de serviço",
-        icon: <Logs className="w-5 h-5" />,
-        perform: () => router.push("/admin/service-order"),
-      },
-      {
-        id: "admin_service_order_part",
-        name: "Ordem de serviço por peça",
-        section: "ordens",
-        shortcut: ["o", "p"],
-        keywords: "ordem de serviço por peça",
-        icon: <BadgePercent className="w-5 h-5" />,
-        perform: () => router.push("/admin/service-order-part"),
-      },
-      {
-        id: "admin_account_payable",
-        name: "Contas a pagar",
-        section: "ordens",
-        shortcut: ["c", "p"],
-        keywords: "contas a pagar",
-        icon: <Wallet className="w-5 h-5" />,
-        perform: () => router.push("/admin/account-payable"),
-      },
-      {
-        id: "admin_profile_access",
-        name: "Perfil de acesso",
-        section: "usuário",
-        shortcut: ["p", "a"],
-        keywords: "perfil acesso",
-        icon: <SquareUser className="w-5 h-5" />,
-        perform: () => router.push("/admin/profile-access"),
-      },
-      {
-        id: "admin_permission",
-        name: "Permissão do usuário",
-        section: "usuário",
-        shortcut: ["p", "d"],
-        keywords: "permissão usuário",
-        icon: <ShieldUser className="w-5 h-5" />,
-        perform: () => router.push("/admin/permission"),
-      },
-      {
-        id: "admin_user_registration",
-        name: "Cadastro de usuário",
-        section: "usuário",
-        shortcut: ["c", "u"],
-        keywords: "cadastro usuário",
-        icon: <UserPlus className="w-5 h-5" />,
-        perform: () => router.push("/admin/user-registration"),
-      },
-      {
-        id: "admin_master_users",
-        name: "Usuários masters",
-        section: "usuário",
-        shortcut: ["m", "u"],
-        keywords: "cadastro usuário",
-        icon: <Crown className="w-5 h-5" />,
-        perform: () => router.push("/admin/master-users"),
-      },
-    ],
-    BUSINESS_ADMIN: [
-      {
-        id: "dashboard",
-        name: "Dashboard",
-        section: "navegação",
-        shortcut: ["d", "d"],
-        keywords: "dashboard",
-        icon: <LayoutDashboardIcon className="w-5 h-5" />,
-        perform: () => router.push("/dashboard"),
-      },
-      {
-        id: "kanban",
-        name: "Kanban",
-        section: "navegação",
-        shortcut: ["k", "b"],
-        keywords: "kanban",
-        icon: <Kanban className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/kanban"),
-      },
-      {
-        id: "fine",
-        name: "Multas",
-        section: "navegação",
-        shortcut: ["m", "t"],
-        keywords: "multa",
-        icon: <NotepadText className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/fine"),
-      },
-      {
-        id: "branches",
-        name: "Filiais",
-        section: "empresa",
-        shortcut: ["b", "a"],
-        keywords: "filiais",
-        icon: <Split className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/branch"),
-      },
-      {
-        id: "supplier",
-        name: "Fornecedores",
-        section: "fornecedor",
-        shortcut: ["f", "r"],
-        keywords: "fornecedores",
-        icon: <Handshake className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/supplier"),
-      },
-      {
-        id: "part",
-        name: "Peças",
-        section: "fornecedor",
-        shortcut: ["f", "o"],
-        keywords: "peças",
-        icon: <Container className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/part"),
-      },
-      {
-        id: "vehicle",
-        name: "Veículos",
-        section: "veículo",
-        shortcut: ["v", "c"],
-        keywords: "veículos",
-        icon: <Truck className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/vehicle"),
-      },
-      {
-        id: "type_vehicle",
-        name: "Tipo de veículo",
-        section: "veículo",
-        shortcut: ["v", "t"],
-        keywords: "tipo de veículo",
-        icon: <TruckElectric className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/vehicle-type"),
-      },
-      {
-        id: "fuel",
-        name: "Tipo de combustível",
-        section: "veículo",
-        shortcut: ["v", "d"],
-        keywords: "tipo de combustível",
-        icon: <Fuel className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/fuel-type"),
-      },
-      {
-        id: "supply",
-        name: "Cadastro de abastecimento",
-        section: "veículo",
-        shortcut: ["v", "a"],
-        keywords: "abastecimento",
-        icon: <Gauge className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/fuel"),
-      },
-      {
-        id: "checklist",
-        name: "Checklist",
-        section: "veículo",
-        shortcut: ["v", "l"],
-        keywords: "checklist",
-        icon: <CalendarCheckIcon className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/vehicle-checklist"),
-      },
-      {
-        id: "driver",
-        name: "Motoristas",
-        section: "veículo",
-        shortcut: ["m", "o"],
-        keywords: "motoristas",
-        icon: <LifeBuoy className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/driver"),
-      },
-      {
-        id: "service_order",
-        name: "Ordem de serviço",
-        section: "ordens",
-        shortcut: ["o", "s"],
-        keywords: "ordem de serviço",
-        icon: <Logs className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/service-order"),
-      },
-      {
-        id: "service_order_part",
-        name: "Ordem de serviço por peça",
-        section: "ordens",
-        shortcut: ["o", "p"],
-        keywords: "ordem de serviço por peça",
-        icon: <BadgePercent className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/service-order-part"),
-      },
-      {
-        id: "account_payable",
-        name: "Contas a pagar",
-        section: "ordens",
-        shortcut: ["c", "p"],
-        keywords: "contas a pagar",
-        icon: <Wallet className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/account-payable"),
-      },
-      {
-        id: "profile_access",
-        name: "Perfil de acesso",
-        section: "usuário",
-        shortcut: ["p", "a"],
-        keywords: "perfil acesso",
-        icon: <SquareUser className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/profile-access"),
-      },
-      {
-        id: "permission",
-        name: "Permissão do usuário",
-        section: "usuário",
-        shortcut: ["p", "d"],
-        keywords: "permissão usuário",
-        icon: <ShieldUser className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/permission"),
-      },
-      {
-        id: "user_registration",
-        name: "Cadastro de usuário",
-        section: "usuário",
-        shortcut: ["c", "u"],
-        keywords: "cadastro usuário",
-        icon: <UserPlus className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/user-registration"),
-      },
-    ],
-    BUSINESS_USER: [
-      {
-        id: "dashboard",
-        name: "Dashboard",
-        section: "navegação",
-        shortcut: ["d", "d"],
-        keywords: "dashboard",
-        icon: <LayoutDashboardIcon className="w-5 h-5" />,
-        perform: () => router.push("/dashboard"),
-      },
-      {
-        id: "kanban",
-        name: "Kanban",
-        section: "navegação",
-        shortcut: ["k", "b"],
-        keywords: "kanban",
-        icon: <Kanban className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/kanban"),
-      },
-      {
-        id: "fine",
-        name: "Multas",
-        section: "navegação",
-        shortcut: ["m", "t"],
-        keywords: "multa",
-        icon: <NotepadText className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/fine"),
-        requiredPermission: permissions.FINE_MANAGE,
-      },
-      {
-        id: "branches",
-        name: "Filiais",
-        section: "empresa",
-        shortcut: ["b", "a"],
-        keywords: "filiais",
-        icon: <Split className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/branch"),
-        requiredPermission: permissions.BRANCH_MANAGE,
-      },
-      {
-        id: "supplier",
-        name: "Fornecedores",
-        section: "fornecedor",
-        shortcut: ["f", "r"],
-        keywords: "fornecedores",
-        icon: <Handshake className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/supplier"),
-        requiredPermission: permissions.SUPPLIER_MANAGE,
-      },
-      {
-        id: "part",
-        name: "Peças",
-        section: "fornecedor",
-        shortcut: ["f", "o"],
-        keywords: "peças",
-        icon: <Container className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/part"),
-        requiredPermission: permissions.PART_MANAGE,
-      },
-      {
-        id: "vehicle",
-        name: "Veículos",
-        section: "veículo",
-        shortcut: ["v", "c"],
-        keywords: "veículos",
-        icon: <Truck className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/vehicle"),
-        requiredPermission: permissions.VEHICLE_MANAGE,
-      },
-      {
-        id: "type_vehicle",
-        name: "Tipo de veículo",
-        section: "veículo",
-        shortcut: ["v", "t"],
-        keywords: "tipo de veículo",
-        icon: <TruckElectric className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/vehicle-type"),
-        requiredPermission: permissions.VEHICLE_TYPE_MANAGE,
-      },
-      {
-        id: "fuel",
-        name: "Tipo de combustível",
-        section: "veículo",
-        shortcut: ["v", "d"],
-        keywords: "tipo de combustível",
-        icon: <Fuel className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/fuel-type"),
-        requiredPermission: permissions.FUEL_TYPE_MANAGE,
-      },
-      {
-        id: "supply",
-        name: "Cadastro de abastecimento",
-        section: "veículo",
-        shortcut: ["v", "a"],
-        keywords: "abastecimento",
-        icon: <Gauge className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/fuel"),
-        requiredPermission: permissions.FUEL_MANAGE,
-      },
-      {
-        id: "checklist",
-        name: "Checklist",
-        section: "veículo",
-        shortcut: ["v", "l"],
-        keywords: "checklist",
-        icon: <CalendarCheckIcon className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/vehicle-checklist"),
-        requiredPermission: permissions.VEHICLE_CHECKLIST_MANAGE,
-      },
-      {
-        id: "driver",
-        name: "Motoristas",
-        section: "veículo",
-        shortcut: ["m", "o"],
-        keywords: "motoristas",
-        icon: <LifeBuoy className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/driver"),
-        requiredPermission: permissions.DRIVER_MANAGE,
-      },
-      {
-        id: "service_order",
-        name: "Ordem de serviço",
-        section: "ordens",
-        shortcut: ["o", "s"],
-        keywords: "ordem de serviço",
-        icon: <Logs className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/service-order"),
-        requiredPermission: permissions.SERVICE_ORDER_MANAGE,
-      },
-      {
-        id: "service_order_part",
-        name: "Ordem de serviço por peça",
-        section: "ordens",
-        shortcut: ["o", "p"],
-        keywords: "ordem de serviço por peça",
-        icon: <BadgePercent className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/service-order-part"),
-        requiredPermission: permissions.SERVICE_ORDER_PART_MANAGE,
-      },
-      {
-        id: "account_payable",
-        name: "Contas a pagar",
-        section: "ordens",
-        shortcut: ["c", "p"],
-        keywords: "contas a pagar",
-        icon: <Wallet className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/account-payable"),
-        requiredPermission: permissions.ACCOUNT_PAYABLE_MANAGE,
-      },
-      {
-        id: "profile_access",
-        name: "Perfil de acesso",
-        section: "usuário",
-        shortcut: ["p", "a"],
-        keywords: "perfil acesso",
-        icon: <SquareUser className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/profile-access"),
-        requiredPermission: permissions.PROFILE_ACCESS_MANAGE,
-      },
-      {
-        id: "permission",
-        name: "Permissão do usuário",
-        section: "usuário",
-        shortcut: ["p", "d"],
-        keywords: "permissão usuário",
-        icon: <ShieldUser className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/permission"),
-        requiredPermission: permissions.USER_PERMISSION_MANAGE,
-      },
-      {
-        id: "user_registration",
-        name: "Cadastro de usuário",
-        section: "usuário",
-        shortcut: ["c", "u"],
-        keywords: "cadastro usuário",
-        icon: <UserPlus className="w-5 h-5" />,
-        perform: () => router.push("/dashboard/user-registration"),
-        requiredPermission: permissions.USER_REGISTRATION_MANAGE,
-      },
-    ],
+  const driver = isDriver(user);
+
+  const context = {
+    role: user.role,
+    permissions: readablePermissionKeys(user.permissions),
+    enabledModules,
+    isDriver: driver,
   };
 
-  // Common actions for all users (e.g. User Account)
-  const commonActions: Action[] = [
-    {
-      id: "account",
-      name: "Conta do usuário",
-      section: "conta",
-      shortcut: ["c", "c"],
-      keywords: "conta",
-      icon: <User className="w-5 h-5" />,
-      perform: () => router.push("/profile"),
-    },
-    {
-      id: "notifications",
-      name: "Notificações",
-      section: "conta",
-      shortcut: ["n", "t"],
-      keywords: "notificações",
-      icon: <Bell className="w-5 h-5" />,
-      perform: () => router.push("/notifications"),
-    },
-  ];
+  const actions = paletteEntries(navigationSurface(user.role, driver))
+    .filter((entry) => canAccessPath(entry.path, context))
+    .map<Action>((entry) => {
+      const Icon = protectedNavIcons[entry.icon];
 
-  let roleActions = roleActionsMap[user.role] || [];
+      return {
+        // The path is unique on a surface, and stable across renders.
+        id: `nav:${entry.path}`,
+        name: entry.paletteName ?? entry.title,
+        section: entry.section,
+        shortcut: entry.shortcut,
+        keywords: entry.keywords,
+        icon: <Icon className="w-5 h-5" />,
+        // A page outside the panel opens in its own tab, as the sidebar does.
+        // The Torre opens on the view this browser chose last, like the
+        // sidebar's link (read at the click: nothing here is rendered).
+        perform: () =>
+          entry.newTab
+            ? window.open(entry.path, "_blank", "noopener,noreferrer")
+            : router.push(
+                towerEntryHref(entry.path, readRememberedTowerView()),
+              ),
+        path: entry.path,
+      };
+    });
 
-  if (user.role === "BUSINESS_USER") {
-    // If it is a driver, show driver-specific actions
-    if (isDriver(user)) {
-      roleActions = [
-        {
-          id: "driver_kanban",
-          name: "Kanban",
-          section: "navegação",
-          shortcut: ["k", "b"],
-          keywords: "kanban",
-          icon: <Kanban className="w-5 h-5" />,
-          perform: () => router.push("/driver/kanban"),
-        },
-        {
-          id: "driver_vehicles",
-          name: "Meus Veículos",
-          section: "motorista",
-          shortcut: ["v", "c"],
-          keywords: "veículos motorista",
-          icon: <Truck className="w-5 h-5" />,
-          perform: () => router.push("/driver/vehicles"),
-        },
-        {
-          id: "driver_account_payable",
-          name: "Contas a pagar",
-          section: "ordens",
-          shortcut: ["c", "p"],
-          keywords: "contas a pagar",
-          icon: <Wallet className="w-5 h-5" />,
-          perform: () => router.push("/driver/account-payable"),
-        },
-      ];
-    } else {
-      // If you are an employee, filter by permissions
-      roleActions = roleActions.filter((action) => {
-        if (!action.requiredPermission) return true;
-
-        // Employees must have array permissions
-        if (!user.permissions || user.permissions.length === 0) return false;
-        return user.permissions.some(
-          (perm) => perm.permissionKey === action.requiredPermission,
-        );
-      });
-    }
-  }
-
-  // Merge common shares (all users can access /profile and /notifications)
-  const actions = [...roleActions, ...commonActions];
   return { actions };
 }
 

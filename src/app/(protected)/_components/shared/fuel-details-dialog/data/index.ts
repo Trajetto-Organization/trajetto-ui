@@ -35,6 +35,28 @@ const aiStatusConfig: Record<string, { color: string; label: string }> = {
     color: "bg-gray-50 text-gray-500 dark:bg-gray-900 dark:text-gray-400",
     label: "Não Analisado",
   },
+  // ADR 0010 §5: a "verified" read without a fraud check. Neutral on
+  // purpose: the km agrees, nothing more was judged.
+  km_matches: {
+    color: "bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300",
+    label: "Km confere",
+  },
 };
 
-export { aiStatusConfig };
+/** What "Km confere" means, when the reading carries no sentence of its own. */
+const KM_MATCHES_NOTE =
+  "Km lida confere com a informada. A leitura automática não identifica foto de tela ou montagem.";
+
+/**
+ * The status the dialog draws: the server's, except a "verified" whose
+ * reading did not judge fraud, which is "Km confere" (design P6.2). The API
+ * keeps `odometer_ai_status = "verified"`; only the words change.
+ */
+function fuelDisplayStatus(
+  status: string | undefined,
+  fraudNotAssessed: boolean,
+): string | undefined {
+  return status === "verified" && fraudNotAssessed ? "km_matches" : status;
+}
+
+export { aiStatusConfig, fuelDisplayStatus, KM_MATCHES_NOTE };

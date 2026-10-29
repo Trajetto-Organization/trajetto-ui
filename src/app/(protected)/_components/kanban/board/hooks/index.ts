@@ -17,6 +17,7 @@ import { sortableKeyboardCoordinates, arrayMove } from "@dnd-kit/sortable";
 
 import { handleReorderKanbanColumns } from "@/actions/kanban/reorder-kanban-columns";
 import { handleReorderKanbanCards } from "@/actions/kanban/reorder-kanban-cards";
+import { isStaleActionResult } from "@/lib/action-result";
 
 import type { KanbanCard, KanbanColumn } from "../../shared/common.types";
 import type {
@@ -355,6 +356,13 @@ function useKanbanBoard({ initialBoard }: UseKanbanBoardProps) {
             columns: columnsToReorder,
           })) as ReorderKanbanColumnState;
 
+          // The move did not happen; the board's own way back from a failed
+          // move is a reload, which also brings the new build.
+          if (isStaleActionResult(result)) {
+            window.location.reload();
+            return;
+          }
+
           if (result.reorderColumnsError) {
             toast.error(
               result.reorderColumnsError.reorderColumnsErrorMessage ||
@@ -421,6 +429,12 @@ function useKanbanBoard({ initialBoard }: UseKanbanBoardProps) {
         const result = (await handleReorderKanbanCards({
           cards: cardsToUpdate,
         })) as ReorderKanbanCardsState;
+
+        // Same as for columns: the reload is the board's recovery.
+        if (isStaleActionResult(result)) {
+          window.location.reload();
+          return;
+        }
 
         if (result.reorderCardsError) {
           toast.error(

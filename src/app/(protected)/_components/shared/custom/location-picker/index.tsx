@@ -30,6 +30,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PingEffect } from "./ping-effect";
 
 import { useLocationPicker } from "./hooks";
+import {
+  resultItemValue,
+  useResultHighlight,
+} from "./hooks/use-result-highlight";
+import {
+  geocodingErrorMessage,
+  isSearchableQuery,
+  isWeakMatch,
+  normalizeSearchQuery,
+} from "./geocoding";
 import type { LocationPickerProps } from "./location-picker.types";
 
 const LocationPicker = ({
@@ -44,6 +54,8 @@ const LocationPicker = ({
     geoError,
     isLoadingGPS,
     isSearching,
+    searchError,
+    retrySearch,
     openSearch,
     searchResults,
     selectedAddress,
@@ -60,6 +72,7 @@ const LocationPicker = ({
     isLoadingAddress,
     mapInstanceRef,
     mapRef,
+    tilesUnavailable,
     formatAddressFromNominatim,
   } = useLocationPicker({
     onLocationChange,
@@ -69,6 +82,10 @@ const LocationPicker = ({
     onLoadingChange,
   });
 
+  const normalizedQuery = normalizeSearchQuery(searchQuery);
+  const weakMatch = isWeakMatch(normalizedQuery, searchResults);
+  const highlight = useResultHighlight(searchResults, weakMatch);
+
   return (
     <div className="space-y-4">
       <div
@@ -77,7 +94,8 @@ const LocationPicker = ({
       >
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4" />
-          <div className="text-sm font-medium">Localização (Opcional)</div>
+          {/* "(opcional)" in lower case, like every other label (decision 3.3). */}
+          <div className="text-sm font-medium">Localização (opcional)</div>
 
           <TooltipProvider>
             <Tooltip>
@@ -134,7 +152,7 @@ const LocationPicker = ({
                   className={`truncate ${!selectedAddress ? "text-muted-foreground" : ""}`}
                 >
                   {selectedAddress ||
-                    "Pesquisar por Posto Shell, Av. Paulista, etc."}
+                    "Pesquisar endereço, bairro, cidade ou CEP"}
                 </span>
               </div>
 
@@ -166,10 +184,23 @@ const LocationPicker = ({
               )}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[400px] p-0" align="start">
-            <Command shouldFilter={false}>
+          {/* Exactly the trigger's width, following it on resize, like
+              every other combobox in the app. */}
+          <PopoverContent
+            className="w-[var(--radix-popover-trigger-width)] p-0"
+            align="start"
+            data-testid="address-search-popover"
+          >
+            <Command
+              shouldFilter={false}
+              value={highlight.value}
+              onValueChange={highlight.onValueChange}
+              onKeyDownCapture={highlight.onKeyDownCapture}
+              onPointerMoveCapture={highlight.onPointerMoveCapture}
+            >
               <CommandInput
-                placeholder="Digite o endereço, bairro ou cidade..."
+                placeholder="Digite o endereço, bairro, cidade ou CEP..."
+                aria-label="Endereço, bairro, cidade ou CEP"
                 value={searchQuery}
                 onValueChange={setSearchQuery}
               />
@@ -212,28 +243,27 @@ const LocationPicker = ({
                 )}
 
                 {/* Message sent when nothing has been typed yet and there are no results. */}
-                {!isSearching &&
-                  searchQuery.length === 0 &&
-                  searchResults.length === 0 && (
-                    <div
-                      className="p-8 text-center 
+                {!isSearching && normalizedQuery.length === 0 && (
+                  <div
+                    className="p-8 text-center 
                       text-sm text-muted-foreground"
-                    >
-                      <Search
-                        className="mx-auto h-8 w-8 
+                  >
+                    <Search
+                      className="mx-auto h-8 w-8 
                         text-muted-foreground/30 mb-3"
-                      />
-                      <p className="font-medium mb-1">Digite para pesquisar</p>
-                      <p className="text-xs">
-                        Ex: Estrada união indústria 5678, Petrópolis RJ
-                      </p>
-                    </div>
-                  )}
+                    />
+                    <p className="font-medium mb-1">Digite para pesquisar</p>
+                    <p className="text-xs">
+                      Ex.: Av. Paulista 1000, São Paulo · Centro, Cuiabá ·
+                      01310-100
+                    </p>
+                  </div>
+                )}
 
                 {/* Message displayed when less than 3 characters are typed. */}
                 {!isSearching &&
-                  searchQuery.length > 0 &&
-                  searchQuery.length < 3 && (
+                  normalizedQuery.length > 0 &&
+                  !isSearchableQuery(normalizedQuery) && (
                     <div
                       className="p-6 text-center 
                       text-xs text-muted-foreground"
@@ -242,9 +272,29 @@ const LocationPicker = ({
                     </div>
                   )}
 
+                {/* The geocoder failed: say so, with a way to try again */}
+                {!isSearching && searchError && (
+                  <div role="alert" className="p-6 text-center text-sm">
+                    <p className="font-medium">Busca indisponível</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {geocodingErrorMessage(searchError)}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={retrySearch}
+                    >
+                      Tentar novamente
+                    </Button>
+                  </div>
+                )}
+
                 {/* No results found */}
                 {!isSearching &&
-                  searchQuery.length >= 3 &&
+                  !searchError &&
+                  isSearchableQuery(normalizedQuery) &&
                   searchResults.length === 0 && (
                     <CommandEmpty>
                       <div className="py-8 text-center">
@@ -256,11 +306,25 @@ const LocationPicker = ({
                           Nenhum endereço encontrado
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Tente pesquisar de forma diferente
+                          Confira a grafia ou inclua a cidade e o estado
                         </p>
                       </div>
                     </CommandEmpty>
                   )}
+
+                {/* Always mounted: screen readers announce a live region's
+                    changes, not one inserted together with its text. */}
+                <div role="status" aria-live="polite">
+                  {!isSearching && searchResults.length > 0 && weakMatch && (
+                    <p
+                      className="px-3 pt-3 text-xs text-muted-foreground"
+                      data-testid="address-search-weak"
+                    >
+                      Nenhum endereço com esse nome. Confira a grafia; os
+                      resultados abaixo são aproximados.
+                    </p>
+                  )}
+                </div>
 
                 {!isSearching && searchResults.length > 0 && (
                   <CommandGroup
@@ -278,7 +342,7 @@ const LocationPicker = ({
                       return (
                         <CommandItem
                           key={result.place_id}
-                          value={`${result.place_id}-${result.display_name}`}
+                          value={resultItemValue(result)}
                           onSelect={() => handleSelectSearchResult(result)}
                           className="cursor-pointer py-3"
                         >
@@ -338,6 +402,13 @@ const LocationPicker = ({
           </div>
         )}
       </div>
+
+      {tilesUnavailable && (
+        <p className="text-xs text-muted-foreground">
+          Mapa de fundo indisponível neste ambiente. A busca, o GPS e o clique
+          no mapa continuam marcando a localização.
+        </p>
+      )}
 
       {/* Errors */}
       {(geoError || error) && (

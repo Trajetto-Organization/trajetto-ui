@@ -13,18 +13,26 @@ interface ProtectedCommandBarProps extends HTMLAttributes<HTMLElement> {
     profileAccess?: {
       permissions?: { permissionKey: PermissionKey }[];
     } | null;
+    /** Server-rendered fallback while the auth store has not confirmed yet. */
+    enabledModules?: string[];
   };
 }
 
 interface UseCommandBarActions {
   user: {
     role: UserRole;
-    permissions?: { permissionKey: PermissionKey }[];
+    /** Only the rows with canRead count; see `readablePermissionKeys`. */
+    permissions?: { permissionKey: PermissionKey; canRead?: boolean }[];
     driverId?: string | null;
     profileAccess?: {
       permissions?: { permissionKey: PermissionKey }[];
     } | null;
   };
+  /**
+   * Modules the company has hired. `null` means "not confirmed yet" and
+   * leaves the gate open rather than blanking the list.
+   */
+  enabledModules?: string[] | null;
 }
 
 interface Action {
@@ -35,7 +43,12 @@ interface Action {
   keywords: string;
   icon?: JSX.Element;
   perform: () => void;
-  requiredPermission?: PermissionKey;
+  /**
+   * Where the entry navigates to. It is also the access key: app-routes owns
+   * which permission and which module this path needs. Entries without a path
+   * are never gated.
+   */
+  path?: string;
 }
 
 export type { ProtectedCommandBarProps, UseCommandBarActions, Action };

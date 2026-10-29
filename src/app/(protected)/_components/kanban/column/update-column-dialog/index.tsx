@@ -9,27 +9,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Loader } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/utils";
 import FormInput from "@/components/shared/custom/form-input";
 
 import { handleUpdateKanbanColumn } from "@/actions/kanban/update-kanban-column";
 import { useUpdateColumnDialog } from "./hooks";
 
 import { Input } from "@/components/ui/input";
+
+import { ColorSwatches } from "../color-swatches";
 import type {
   UpdateColumnDialogFormState,
   UpdateColumnDialogProps,
@@ -38,6 +33,7 @@ import type {
 
 import { useHasPermission } from "@/lib/user-has-permission";
 import { permissions } from "@/lib/permissions";
+import { guardFormAction } from "@/lib/action-result";
 
 const UpdateColumnForm = ({
   column,
@@ -54,17 +50,6 @@ const UpdateColumnForm = ({
     permissions.KANBAN_MANAGE,
     "write",
   );
-
-  const predefinedColors = [
-    "#64748b", // Slate
-    "#3b82f6", // Blue
-    "#f59e0b", // Amber
-    "#8b5cf6", // Violet
-    "#22c55e", // Green
-    "#ef4444", // Red
-    "#ec4899", // Pink
-    "#06b6d4", // Cyan
-  ];
 
   // Function to check if any field has been changed
   const checkIfDirty = (newTitle: string, newColor: string) => {
@@ -107,61 +92,35 @@ const UpdateColumnForm = ({
           disabled={pending}
         />
 
-        <div className="space-y-2">
-          {state.updateColumnError?.color ? (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label
-                    className={cn("h-4 truncate text-red-500")}
-                    htmlFor="color"
-                  >
-                    {state.updateColumnError.color[0]}
-                  </Label>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="max-w-[300px]
-                  whitespace-normal break-words p-2"
-                >
-                  {state.updateColumnError.color[0]}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <Label className="h-4 truncate" htmlFor="color">
-              Cor da Coluna
-              <span className="text-red-500 ml-0.5">*</span>
-            </Label>
-          )}
-          <div className="flex gap-2">
-            {predefinedColors.map((presetColor) => (
-              <button
-                key={presetColor}
-                type="button"
-                className="w-8 h-8 rounded-md border-2 transition-all"
-                style={{
-                  backgroundColor: presetColor,
-                  borderColor: color === presetColor ? "#000" : "transparent",
-                }}
-                onClick={() => handleColorChange(presetColor)}
+        <FieldShell
+          label="Cor da Coluna*"
+          htmlFor="color"
+          error={state.updateColumnError?.color}
+        >
+          {(control) => (
+            <>
+              <ColorSwatches
+                value={color}
+                onChange={handleColorChange}
                 disabled={pending}
               />
-            ))}
-          </div>
-          <Input
-            id="color"
-            type="color"
-            name="color"
-            value={color}
-            onChange={(e) => handleColorChange(e.target.value)}
-            className="h-10 w-full cursor-pointer rounded-md"
-            disabled={pending}
-          />
-        </div>
+
+              <Input
+                {...control}
+                type="color"
+                name="color"
+                value={color}
+                onChange={(e) => handleColorChange(e.target.value)}
+                className="h-10 w-full cursor-pointer rounded-md"
+                disabled={pending}
+              />
+            </>
+          )}
+        </FieldShell>
       </div>
 
-      <DialogFooter className="mt-6 gap-1">
+      {/* Cancelar first; the layout follows the dialog's width (decision 3.2). */}
+      <DialogFormFooter className="mt-6">
         <Button
           type="button"
           variant="outline"
@@ -177,7 +136,7 @@ const UpdateColumnForm = ({
           Atualizar Coluna
           {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
         </Button>
-      </DialogFooter>
+      </DialogFormFooter>
     </>
   );
 };
@@ -188,7 +147,10 @@ const UpdateColumnDialog = ({
   column,
 }: UpdateColumnDialogProps): JSX.Element => {
   const defaultState: UpdateColumnDialogFormState = {};
-  const [state, dispatch] = useFormState(handleUpdateKanbanColumn, null);
+  const [state, dispatch] = useFormState(
+    guardFormAction(handleUpdateKanbanColumn),
+    null,
+  );
 
   const { formRef } = useUpdateColumnDialog({
     state,
@@ -198,7 +160,7 @@ const UpdateColumnDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent onInteractOutside={(e) => e.preventDefault()}>
+      <DialogScrollContent>
         <DialogHeader>
           <DialogTitle>Editar Coluna</DialogTitle>
           <DialogDescription>

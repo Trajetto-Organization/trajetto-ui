@@ -6,6 +6,10 @@ function useUpdateBusinessForm() {
     useState<boolean>(false);
 
   const [isAILimitOpen, setIsAILimitOpen] = useState<boolean>(false);
+  const [isVehicleLimitOpen, setIsVehicleLimitOpen] = useState<boolean>(false);
+
+  const [isEntitlementsOpen, setIsEntitlementsOpen] = useState<boolean>(false);
+
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
   const handleCloseUpdateBusiness = () => {
@@ -26,6 +30,20 @@ function useUpdateBusinessForm() {
     setIsAILimitOpen(!isAILimitOpen);
   };
 
+  const handleToggleVehicleLimit = () => {
+    if (isVehicleLimitOpen) {
+      toast.dismiss();
+    }
+
+    setIsDropdownOpen(false);
+    setIsVehicleLimitOpen(!isVehicleLimitOpen);
+  };
+
+  const handleToggleEntitlements = () => {
+    setIsDropdownOpen(false);
+    setIsEntitlementsOpen(!isEntitlementsOpen);
+  };
+
   const handleOpenDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -43,6 +61,10 @@ function useUpdateBusinessForm() {
     handleCloseUpdateBusiness,
     isAILimitOpen,
     handleCloseAILimit,
+    isVehicleLimitOpen,
+    handleToggleVehicleLimit,
+    isEntitlementsOpen,
+    handleToggleEntitlements,
     handleOpenDropdown,
     isDropdownOpen,
   };

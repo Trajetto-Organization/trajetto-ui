@@ -2,22 +2,38 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, type Labels } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
+/**
+ * The accessible names react-day-picker gives its controls. `locale` only
+ * translates what it formats with date-fns (month caption, weekday names);
+ * these stay English ("Go to previous month") unless passed, and every date
+ * field in the product renders this calendar.
+ */
+const PT_BR_LABELS: Partial<Labels> = {
+  labelPrevious: () => "Mês anterior",
+  labelNext: () => "Próximo mês",
+  labelMonthDropdown: () => "Mês",
+  labelYearDropdown: () => "Ano",
+  labelWeekNumber: (weekNumber) => `Semana ${weekNumber}`,
+};
+
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  labels,
   ...props
 }: CalendarProps) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      labels={{ ...PT_BR_LABELS, ...labels }}
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",

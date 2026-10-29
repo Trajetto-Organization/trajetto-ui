@@ -9,3 +9,8 @@ build
 # format, so the lint gate failed on it right after the first release —
 # and formatting it once would not help, since the next release rewrites it.
 CHANGELOG.md
+# Line-for-line copies of trajetto-api rules, guarded by the parity tests
+# (occurrence-category-rules, occurrence-form-rules). They must match the API
+# file byte for byte below the header, so they follow the API's formatting.
+src/features/deliveries/occurrence-types/category-rules.ts
+src/features/deliveries/occurrence-types/form-builder/rules.ts

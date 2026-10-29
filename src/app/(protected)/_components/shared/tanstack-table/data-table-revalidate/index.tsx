@@ -1,39 +1,54 @@
-import { useFormState } from "react-dom";
+"use client";
 
-import { handleRevalidateData } from "@/actions/revalidate-data";
-import { RevalidateButtonFormInner } from "@/app/(protected)/_components/shared/revalidate-button-ui";
+/*
+  The directive is load-bearing, not decoration: this is a shared primitive
+  built on client hooks, and twenty-one `page-actions.tsx` files import it.
+  One Server Component importing it without the directive is all it would
+  take to break /admin again.
+*/
+import type { FormEvent } from "react";
+
+import { usePageActionClassName } from "@/app/(protected)/_components/layout/protected-page-toolbar/page-toolbar-context";
+import { RevalidateButtonUI } from "@/app/(protected)/_components/shared/revalidate-button-ui";
+import { useRevalidateScreen } from "@/hooks/use-revalidate-screen";
 
 import type { DataTableRevalidateProps } from "./data-table-revalidate.types";
-import { useDataTableRevalidate } from "./hooks";
+import { useRefreshRateLimit } from "./hooks";
 
 const DataTableRevalidate = ({
-  revalidateData,
   rateLimit,
+  hideLabelOnMobile = false,
+  className,
 }: DataTableRevalidateProps) => {
-  const [state, dispatch] = useFormState(
-    async (_prevState: any, _formData: FormData) =>
-      await handleRevalidateData(revalidateData),
-    null,
-  );
+  // h-9 on /admin and /dashboard alike (decision 16.61); full width, so the
+  // row decides where it ends.
+  const rowClassName = usePageActionClassName();
+
+  const { revalidate, isRevalidating } = useRevalidateScreen();
 
   const { isRateLimited, cooldownRemaining, registerClick } =
-    useDataTableRevalidate(state, rateLimit, revalidateData);
+    useRefreshRateLimit(rateLimit);
 
-  const rateLimitedDispatch = (formData: FormData) => {
-    const canProceed = registerClick();
-    if (canProceed) {
-      dispatch(formData);
-    }
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    // A refused click must not reach the network, or the limit is decoration.
+    if (!registerClick()) return;
+
+    void revalidate();
   };
 
   return (
-    <form action={rateLimitedDispatch}>
-      <RevalidateButtonFormInner
+    // Still a form: the page layouts (and the responsive specs) size the
+    // button through this block wrapper.
+    <form onSubmit={handleSubmit}>
+      <RevalidateButtonUI
+        isLoading={isRevalidating}
         isRateLimited={isRateLimited}
         cooldownRemaining={cooldownRemaining}
-        label="Revalidar Dados"
-        className="h-8 w-full"
-        alwaysShowIcon={false}
+        className={className ?? rowClassName}
+        hideLabelOnMobile={hideLabelOnMobile}
+        type="submit"
       />
     </form>
   );

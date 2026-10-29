@@ -1,13 +1,13 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   BrainCircuit,
   Loader,
   Calendar,
   Building2,
   NotepadText,
-  BarChart3,
-  TrendingUp,
   Sparkles,
   Zap,
 } from "lucide-react";
@@ -24,25 +24,68 @@ import { Progress } from "@/components/ui/progress";
 
 import { Separator } from "@/components/ui/separator";
 
-import { formatNotificationDate } from "@/lib/format-values";
+import { EmptyState } from "@/components/shared/custom/empty-state";
+import { SelectBusinessEmptyState } from "@/components/shared/custom/select-business-empty-state";
+
 import { BusinessSelector } from "../../business-selector";
 
 import type { LimitsContentProps } from "./limits-content.types";
 import { useLimitsContent } from "./hooks";
+import { useAuthStore } from "@/store/auth-store";
+
+import { LimitStatusBadge } from "./limit-status-badge";
+import { VehicleSlotsCard } from "./vehicle-slots-card";
+
+import {
+  aiQuotaNote,
+  aiQuotaScope,
+  limitsPlanModules,
+  showsFineLookupCard,
+} from "./lib/ai-quota-scope";
+import {
+  AI_HIGH_USAGE_PERCENT,
+  nextResetSentence,
+  periodStartSentence,
+  remainingSentence,
+  usageRows,
+} from "./lib/ai-usage-copy";
 
 const LimitsContent = ({
   businessId: businessIdProp,
   mode,
   showBusinessSelector,
 }: LimitsContentProps): JSX.Element => {
-  const { aiUsage, isLoading, errorMessage, businessId } = useLimitsContent({
+  const {
+    aiUsage,
+    entitlements,
+    planStatus,
+    isLoading,
+    errorMessage,
+    businessId,
+  } = useLimitsContent({
     businessId: businessIdProp,
   });
+
+  // The company's modules: the plan's answer, else (company users only) the
+  // session's own list — a failed plan request must not bring the other
+  // module's rows back.
+  const sessionModules = useAuthStore((state) => state.enabledModules);
+  const planModules = limitsPlanModules(
+    entitlements?.modules,
+    mode,
+    sessionModules,
+  );
+
+  // Reservations of running analyses count toward the bar/badge (they are
+  // committed spend), but the "realizadas" number shows only what finished.
+  const aiInProgress = aiUsage?.ai_analysis_in_progress ?? 0;
 
   const usagePercentage =
     aiUsage && aiUsage.ai_analysis_limit > 0
       ? Math.min(
-          (aiUsage.ai_analysis_used / aiUsage.ai_analysis_limit) * 100,
+          ((aiUsage.ai_analysis_used + aiInProgress) /
+            aiUsage.ai_analysis_limit) *
+            100,
           100,
         )
       : 0;
@@ -50,51 +93,27 @@ const LimitsContent = ({
   const getStatusBadge = () => {
     if (!aiUsage) return null;
     if (aiUsage.ai_analysis_limit === 0) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-gray-100 
-          text-gray-700 border-gray-200"
-        >
-          Desabilitado
-        </Badge>
-      );
+      return <LimitStatusBadge tone="neutral">Desabilitado</LimitStatusBadge>;
     }
 
     if (usagePercentage >= 100) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-red-100 
-          text-red-800 border-red-200"
-        >
-          Limite atingido
-        </Badge>
-      );
+      return <LimitStatusBadge tone="danger">Limite atingido</LimitStatusBadge>;
     }
 
-    if (usagePercentage >= 70) {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-yellow-100 
-          text-yellow-800 border-yellow-200"
-        >
-          Uso elevado
-        </Badge>
-      );
+    if (usagePercentage >= AI_HIGH_USAGE_PERCENT) {
+      return <LimitStatusBadge tone="warning">Uso elevado</LimitStatusBadge>;
     }
 
-    return (
-      <Badge
-        variant="outline"
-        className="bg-green-100 
-        text-green-800 border-green-200"
-      >
-        Ativo
-      </Badge>
-    );
+    return <LimitStatusBadge tone="success">Ativo</LimitStatusBadge>;
   };
+
+  // The fines screen of this company: the MASTER's /admin pages take the
+  // company from the URL. The card only exists with Gestão de Frotas, and
+  // this page only for the MASTER and the company's admin, who both open it.
+  const finesHref =
+    mode === "admin" && businessId
+      ? `/admin/fine?businessId=${encodeURIComponent(businessId)}`
+      : "/dashboard/fine";
 
   // MASTER with no business selected — show selector + placeholder
   if (mode === "admin" && !businessId) {
@@ -106,15 +125,12 @@ const LimitsContent = ({
           </div>
         )}
 
-        <div
-          className="flex flex-col items-center border-dashed
-          justify-center h-80 rounded-lg border-2"
-        >
-          <Zap className="h-12 w-12 text-muted-foreground/40 mb-4" />
-          <p className="text-muted-foreground text-center text-sm">
-            Selecione uma empresa para visualizar seus limites de uso
-          </p>
-        </div>
+        {/* Same empty state as every screen with the selector on top
+            (decision 3.7). */}
+        <SelectBusinessEmptyState
+          icon={Zap}
+          description="Os limites de uso são contratados por empresa; escolha a empresa acima para ver o consumo e as vagas dela."
+        />
       </div>
     );
   }
@@ -122,16 +138,11 @@ const LimitsContent = ({
   // BUSINESS_ADMIN with no businessId in store
   if (mode === "dashboard" && !businessId) {
     return (
-      <div
-        className="flex flex-col items-center justify-center 
-        h-80 rounded-lg border-2 border-dashed"
-      >
-        <Building2 className="h-12 w-12 text-muted-foreground/40 mb-4" />
-        <p className="text-muted-foreground text-center text-sm">
-          Usuário não possui uma empresa associada. Entre em contato com o
-          administrador.
-        </p>
-      </div>
+      <EmptyState
+        icon={Building2}
+        title="Nenhuma empresa associada"
+        description="Seu usuário não está vinculado a uma empresa. Entre em contato com o administrador."
+      />
     );
   }
 
@@ -146,27 +157,33 @@ const LimitsContent = ({
 
       {/* Loading */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
+        <div
+          data-tutorial="loading"
+          className="flex items-center justify-center py-16"
+        >
           <Loader className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <>
-          {/* Limit cards — 2 columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Limit cards — 2 columns from lg: with the sidebar open, md
+              left two cards of ~190px each. Headers put the badge beside the
+              title from xl only, for the same reason. */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* AI Verification Card */}
             <Card
               className="shadow-sm hover:shadow-md transition-shadow"
               data-tutorial="ai-usage-card"
             >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
+              <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 xl:flex-row xl:items-center xl:justify-between">
+                <div className="min-w-0 space-y-1">
                   <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <BrainCircuit className="h-5 w-5 text-primary" />
+                    <BrainCircuit className="h-5 w-5 shrink-0 text-primary" />
                     Verificação IA
                   </CardTitle>
-                  <CardDescription>
-                    Leitura inteligente de abastecimentos e checklists
-                  </CardDescription>
+                  {/* One quota for the fleet readings and the proof
+                      analysis of Entregas (decision 6.9): the text follows
+                      the company's modules. */}
+                  <CardDescription>{aiQuotaScope(planModules)}</CardDescription>
                 </div>
                 {getStatusBadge()}
               </CardHeader>
@@ -179,8 +196,10 @@ const LimitsContent = ({
                     {/* Usage numbers */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
+                        {/* One unit per photo: a checklist with eight
+                            photos spends eight (AI-10). */}
                         <span className="text-muted-foreground">
-                          Verificações realizadas
+                          Fotos analisadas
                         </span>
                         <span className="font-semibold text-lg">
                           {aiUsage.ai_analysis_used}
@@ -188,6 +207,16 @@ const LimitsContent = ({
                             {" "}
                             / {aiUsage.ai_analysis_limit}
                           </span>
+                          {aiInProgress > 0 && (
+                            <Badge
+                              variant="outline"
+                              className="ml-2 text-xs font-normal
+                              bg-blue-50 text-blue-700 border-blue-200
+                              dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800"
+                            >
+                              {aiInProgress} em análise
+                            </Badge>
+                          )}
                         </span>
                       </div>
 
@@ -195,28 +224,65 @@ const LimitsContent = ({
                         value={usagePercentage}
                         className="h-2.5"
                         indicatorClassName="bg-blue-600"
+                        aria-label="Fotos da cota usadas no período"
                       />
 
                       <p className="text-xs text-muted-foreground">
-                        {aiUsage.ai_analysis_limit - aiUsage.ai_analysis_used >
-                        0
-                          ? `${aiUsage.ai_analysis_limit - aiUsage.ai_analysis_used} verificações restantes neste período`
-                          : aiUsage.ai_analysis_limit === 0
-                            ? "Verificação IA não habilitada para esta empresa"
-                            : "Todas as verificações foram utilizadas neste período"}
+                        {remainingSentence(
+                          aiUsage.ai_analysis_limit,
+                          aiUsage.ai_analysis_used,
+                          aiInProgress,
+                        )}
+                      </p>
+
+                      {/* What counts and what never does (ADR 0010): the
+                          reading is OCR on Trajetto's own servers. */}
+                      <p
+                        className="text-xs text-muted-foreground"
+                        data-testid="ai-quota-note"
+                      >
+                        {aiQuotaNote(planModules)}
                       </p>
                     </div>
 
+                    {/* What spent the photos, in the company's modules. */}
+                    {usageRows(aiUsage.ai_analysis_used_by_type, planModules)
+                      .length > 0 && (
+                      <ul
+                        className="space-y-1 text-xs"
+                        aria-label="Fotos analisadas por tipo"
+                      >
+                        {usageRows(
+                          aiUsage.ai_analysis_used_by_type,
+                          planModules,
+                        ).map((row) => (
+                          <li
+                            key={row.key}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span className="min-w-0 truncate text-muted-foreground">
+                              {row.label}
+                            </span>
+                            <span className="shrink-0 font-medium tabular-nums">
+                              {row.count.toLocaleString("pt-BR")}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
                     {/* Reset dates */}
                     <div className="space-y-2 pt-2 border-t">
-                      {aiUsage.ai_analysis_reset_at && (
+                      {periodStartSentence(
+                        aiUsage.ai_analysis_reset_at,
+                        aiUsage.ai_analysis_timezone,
+                      ) && (
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Calendar className="h-3.5 w-3.5 shrink-0" />
                           <span>
-                            Último reset:{" "}
-                            {formatNotificationDate(
+                            {periodStartSentence(
                               aiUsage.ai_analysis_reset_at,
-                              "pt-BR",
+                              aiUsage.ai_analysis_timezone,
                             )}
                           </span>
                         </div>
@@ -224,7 +290,12 @@ const LimitsContent = ({
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Calendar className="h-3.5 w-3.5 shrink-0" />
-                        <span>Próximo reset: dia 1º do próximo mês</span>
+                        <span>
+                          {nextResetSentence(
+                            aiUsage.ai_analysis_next_reset_at,
+                            aiUsage.ai_analysis_timezone,
+                          )}
+                        </span>
                       </div>
                     </div>
                   </>
@@ -237,108 +308,70 @@ const LimitsContent = ({
               </CardContent>
             </Card>
 
-            {/* Multas Card — Coming soon */}
-            <Card className="shadow-sm border-dashed">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <div className="space-y-1">
-                  <CardTitle
-                    className="text-base font-semibold flex 
-                    items-center gap-2 text-muted-foreground"
-                  >
-                    <NotepadText className="h-5 w-5" />
-                    Consulta de Multas
-                  </CardTitle>
-                  <CardDescription>
-                    Consultas automáticas de infrações
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="bg-primary/5 text-primary 
-                  border-primary/20 truncate block"
-                >
-                  Em breve
-                </Badge>
-              </CardHeader>
+            {/* The plan's vehicle slots, with the AI card's hierarchy. */}
+            <VehicleSlotsCard
+              entitlements={entitlements}
+              planStatus={planStatus}
+              planModules={planModules}
+            />
 
-              <Separator />
-
-              <CardContent
-                className="flex flex-col items-center 
-                justify-center py-10 text-center"
+            {/* Consulta de multas: not part of this version (the Celcoin
+                automation is out of scope), and the card says so instead of
+                promising it — no quota, no usage, no number. Fines are
+                Frotas: no card without the module. A full row, so the two
+                cards with numbers stay side by side above it. */}
+            {showsFineLookupCard(planModules) && (
+              <Card
+                className="shadow-sm border-dashed lg:col-span-2"
+                data-tutorial="fine-lookup-card"
               >
-                <Sparkles className="h-8 w-8 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">
-                  Limite mensal de consultas
-                </p>
-                <p className="text-xs text-muted-foreground/60 mt-1">
-                  Disponível em breve
-                </p>
-              </CardContent>
-            </Card>
+                <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 xl:flex-row xl:items-center xl:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2">
+                      <NotepadText className="h-5 w-5 shrink-0 text-muted-foreground" />
+                      Consulta de Multas
+                    </CardTitle>
+                    <CardDescription>
+                      Consultas automáticas de infrações
+                    </CardDescription>
+                  </div>
+                  <LimitStatusBadge tone="notice">
+                    Fora desta versão
+                  </LimitStatusBadge>
+                </CardHeader>
+
+                <Separator />
+
+                <CardContent className="flex items-start gap-3 pt-4">
+                  <Sparkles
+                    className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      A consulta automática de multas não faz parte desta
+                      versão: não há cota nem consumo a acompanhar.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      As multas recebidas são registradas na tela{" "}
+                      <Link
+                        href={finesHref}
+                        className="font-medium text-primary underline underline-offset-4 hover:text-primary/80"
+                      >
+                        Multas
+                      </Link>
+                      .
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* Analytics section — Coming soon */}
-          <Card className="shadow-sm border-dashed">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle
-                    className="text-base font-semibold flex 
-                    items-center gap-2 text-muted-foreground"
-                  >
-                    <BarChart3 className="h-5 w-5" />
-                    Analytics de Uso
-                  </CardTitle>
-                  <CardDescription>
-                    Gráficos e dados detalhados sobre o consumo dos serviços
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="bg-primary/5 text-primary 
-                  border-primary/20 truncate block"
-                >
-                  Em breve
-                </Badge>
-              </div>
-            </CardHeader>
-
-            <Separator />
-
-            <CardContent
-              className="flex flex-col items-center 
-              justify-center py-16 text-center"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                {Array.from([
-                  { height: "h-24", bg: "bg-muted/30" },
-                  { height: "h-12", bg: "bg-muted/40" },
-                  { height: "h-24", bg: "bg-muted/30" },
-                  { height: "h-12", bg: "bg-muted/40" },
-                  { height: "h-24", bg: "bg-muted/30" },
-                  { height: "h-12", bg: "bg-muted/40" },
-                  { height: "h-24", bg: "bg-muted/30" },
-                ]).map(({ height, bg }, index) => (
-                  <div
-                    key={index}
-                    className={`${height} w-8 ${bg} rounded-sm`}
-                  />
-                ))}
-              </div>
-              <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                <TrendingUp className="h-4 w-4" />
-                <p className="text-sm font-medium">
-                  Histórico de consumo, tendências e relatórios
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground/60 max-w-md">
-                Visualize gráficos de uso ao longo do tempo, compare períodos e
-                acompanhe a evolução do consumo de verificações IA e consultas
-                de multas.
-              </p>
-            </CardContent>
-          </Card>
+          {/* No "Analytics de Uso" placeholder: it promised charts of
+              fine lookups that are not in this version (decision 10.5 —
+              nothing the product does not do). The breakdown by kind above
+              is the usage detail that exists. */}
         </>
       )}
     </div>

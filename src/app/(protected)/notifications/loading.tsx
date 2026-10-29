@@ -7,7 +7,7 @@ const Loading = (): JSX.Element => {
   return (
     <PageContainer>
       {/* Header skeletons */}
-      <div className="mb-8">
+      <div data-tutorial="loading" className="mb-8">
         <Skeleton className="h-8 w-52 mb-2" /> {/* Title */}
         <Skeleton className="h-4 w-72" /> {/* Description */}
       </div>

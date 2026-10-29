@@ -1,11 +1,5 @@
 import type { CommandUserInputValue } from "../../common.types";
 
-interface FetchUserProps {
-  cursor?: string;
-  businessId: string;
-  signal?: AbortSignal;
-}
-
 interface FetchUserResult {
   data: any[];
   nextCursor: string | null;
@@ -20,4 +14,4 @@ interface SearchUserProps {
   isOptional?: boolean;
 }
 
-export type { FetchUserProps, FetchUserResult, SearchUserProps };
+export type { FetchUserResult, SearchUserProps };

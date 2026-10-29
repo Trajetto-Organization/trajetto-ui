@@ -1,0 +1,223 @@
+---
+title: "Controle de abastecimento com foto do odômetro: como detectar desvio e consumo anômalo"
+description: "Por que a foto do odômetro sustenta o controle de combustível, quais sinais indicam desvio e como separar consumo anômalo de erro de digitação antes de agir."
+slug: "controle-de-abastecimento-foto-do-odometro"
+date: "2026-09-28"
+category: "frotas"
+tags: ["abastecimento", "combustível", "odômetro", "consumo", "auditoria"]
+author: "Equipe Trajetto"
+seo:
+  title: "Controle de abastecimento com foto do odômetro"
+  description: "Como a foto do odômetro sustenta o controle de combustível da frota e quais sinais separam desvio, consumo anômalo e simples erro de digitação."
+  keywords:
+    [
+      "controle de abastecimento",
+      "foto do odômetro",
+      "consumo de combustível",
+      "km por litro",
+      "desvio de combustível",
+      "gestão de frotas",
+    ]
+---
+
+Combustível costuma ser o maior custo variável de uma frota rodoviária, e é também
+o mais fácil de perder de vista. Quando o controle se resume à nota do posto e a uma
+planilha preenchida no fim do mês, a empresa sabe quanto pagou, mas não sabe se
+pagou pelo que o veículo realmente rodou.
+
+O dado que resolve essa dúvida não é o valor da nota. É a quilometragem. Este artigo
+mostra por que a foto do odômetro é o ponto de apoio de todo o controle, como medir
+consumo sem se enganar, quais sinais apontam desvio e como investigar antes de
+concluir qualquer coisa.
+
+## Por que o odômetro sustenta todo o controle
+
+O consumo de um veículo é uma divisão simples: quilômetros rodados divididos pelos
+litros abastecidos. Os litros vêm da bomba e da nota fiscal, que são documentos.
+Os quilômetros vêm do odômetro, e em muitos controles eles são apenas um número que
+alguém digitou.
+
+Uma leitura de odômetro mal registrada contamina tudo o que depende dela:
+
+- **o consumo (km/l)**, porque a distância entre dois abastecimentos fica errada;
+- **o custo por quilômetro**, que é a base para comparar veículos, rotas e contratos;
+- **o calendário de manutenção preventiva**, que na maioria dos planos é contado em
+  quilômetros;
+- **a auditoria de desvio**, porque sem distância confiável não há como saber se
+  os litros cabem no trajeto feito.
+
+A foto do painel no momento do abastecimento transforma a quilometragem de uma
+declaração em uma evidência. Ela não impede o erro, mas permite conferir o número
+depois, por qualquer pessoa, sem depender da memória de quem abasteceu.
+
+## Como medir o consumo sem se enganar
+
+### Use o método do tanque cheio
+
+O consumo só é confiável quando o tanque é completado nos dois abastecimentos que
+delimitam o trecho. Nesse caso, os litros do segundo abastecimento são exatamente o
+que o veículo gastou para rodar a distância entre as duas leituras.
+
+| Abastecimento | Odômetro   | Litros | Tanque   |
+| ------------- | ---------- | ------ | -------- |
+| Anterior      | 120.000 km | 250    | Completo |
+| Atual         | 120.780 km | 260    | Completo |
+
+No exemplo, o veículo rodou 780 km e consumiu 260 litros: **3,0 km/l**. Se o
+abastecimento anterior tivesse sido parcial, o tanque já começaria o trecho sem
+estar cheio, os litros do segundo abastecimento incluiriam a reposição dessa falta
+e o consumo calculado sairia pior do que o real.
+
+<Callout type="dica" title="Uma regra simples para a equipe">
+  Combine que o abastecimento registrado é sempre de tanque completo. Quando
+  isso não for possível, anote nas observações. Um único abastecimento parcial
+  não estraga a análise, desde que se saiba qual foi.
+</Callout>
+
+### Compare o veículo com ele mesmo
+
+O consumo informado pelo fabricante é uma referência de catálogo. O que importa na
+auditoria é o comportamento habitual de cada veículo, na operação dele: um
+caminhão que roda em perímetro urbano, com paradas frequentes, nunca vai fazer a
+mesma média de um que roda em rodovia.
+
+Por isso, prefira comparar a média móvel dos últimos cinco a dez abastecimentos de
+cada veículo com o abastecimento atual. Um valor isolado pode ser só um trecho de
+serra ou uma semana de carga mais pesada. Uma piora que se repete é sinal.
+
+### Separe por tipo de veículo e de operação
+
+Ao olhar a frota inteira, agrupe veículos parecidos: mesmo tipo, mesma faixa de
+carga, mesmo tipo de trajeto. Comparar um utilitário com um cavalo mecânico só
+serve para esconder problemas dentro de uma média geral.
+
+## Sinais de desvio e de consumo anômalo
+
+Nenhum sinal abaixo prova irregularidade sozinho. Todos são motivo para olhar o
+registro com mais atenção.
+
+| Sinal                                                                   | O que pode indicar                                        | Como conferir                                    |
+| ----------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------ |
+| Litros acima da capacidade do tanque                                    | Abastecimento de outro veículo ou de galão                | Capacidade do tanque e nota fiscal               |
+| Quilometragem igual ou menor que a anterior                             | Erro de digitação ou foto antiga                          | Foto do odômetro e data do registro              |
+| Rendimento (km/l) persistentemente 15% a 20% abaixo da média do veículo | Desvio, vazamento, pneu descalibrado, injeção com defeito | Histórico do veículo e último checklist          |
+| Abastecimentos muito próximos com pouca distância entre eles            | Abastecimento fracionado para não chamar atenção          | Intervalo em km e em horas                       |
+| Posto fora do trajeto habitual                                          | Desvio de rota ou registro feito em outro lugar           | Localização do registro e rota do dia            |
+| Preço por litro acima do praticado na região                            | Acordo com o posto ou nota superfaturada                  | Média dos outros postos usados pela frota        |
+| Foto de uma tela, foto recortada ou painel de outro modelo              | Tentativa de reaproveitar evidência                       | Comparação com fotos anteriores do mesmo veículo |
+| Lançamentos concentrados no fim do mês, feitos pelo escritório          | Controle reconstruído depois, sem evidência               | Origem do registro (aplicativo ou web)           |
+
+Para o preço por litro, uma referência pública útil é o levantamento semanal de
+preços de combustíveis da ANP, que traz médias por município. Ele não substitui a
+negociação com os postos, mas mostra quando um valor foge muito do mercado local.
+
+## Desvio ou erro? Investigue antes de concluir
+
+Na prática, a maior parte das divergências tem explicação simples: um dígito
+trocado, um odômetro digital fotografado com reflexo, um abastecimento parcial que
+ninguém anotou. Tratar cada alerta como fraude destrói a confiança da equipe e faz
+os motoristas pararem de registrar com cuidado.
+
+Um roteiro que funciona:
+
+1. **Confira a evidência.** Abra a foto do odômetro e compare com o número
+   informado. Muitas divergências terminam aqui.
+2. **Olhe o contexto.** Veja os abastecimentos anteriores e seguintes do mesmo
+   veículo, o checklist mais recente e, se houver, a rota daquele dia.
+3. **Converse com o motorista.** Pergunte o que aconteceu, sem acusar. Registre a
+   explicação.
+4. **Decida e documente.** Corrija o dado quando for erro, abra uma ordem de
+   serviço quando for mecânico e siga o procedimento interno quando houver indício
+   de irregularidade.
+
+<Callout type="atencao" title="Alerta não é prova">
+  Uma divergência apontada pelo sistema, inclusive por inteligência artificial,
+  é um indício para uma pessoa avaliar. Decisões que afetam o motorista precisam
+  de análise humana, conversa e registro do que foi decidido.
+</Callout>
+
+## Uma rotina de auditoria semanal
+
+Controle de combustível funciona melhor como hábito curto e frequente do que como
+um mutirão no fechamento do mês. Um horário fixo por semana, sempre com o mesmo
+roteiro, costuma bastar:
+
+1. Liste os abastecimentos da semana com divergência de leitura ou suspeita
+   apontada.
+2. Revise as fotos desses registros.
+3. Compare o consumo de cada veículo com a própria média recente.
+4. Compare o preço por litro pago em cada posto com a média da frota.
+5. Verifique os registros feitos longe do trajeto habitual.
+6. Anote a conclusão de cada caso: erro corrigido, problema mecânico, orientação
+   ao motorista ou investigação aberta.
+
+Com o tempo, a lista de casos diminui. Motoristas que sabem que a foto é conferida
+registram melhor, e isso por si só reduz o trabalho de auditoria.
+
+## Como o Trajetto registra o abastecimento
+
+O Trajetto foi desenhado para que o registro correto seja o caminho mais curto, no
+aplicativo do motorista e no painel web.
+
+**A foto é obrigatória.** Todo abastecimento exige a foto do odômetro, inclusive
+quando é lançado pelo escritório. Junto com ela vão a quilometragem, os litros, o
+preço por litro (o total é calculado) e a data.
+
+**A localização acompanha o registro.** No aplicativo, a posição do GPS é
+capturada no momento do lançamento. O motorista pode ajustar o ponto no mapa, mas
+só até 500 metros da posição original, e o sistema guarda as duas: a capturada e a
+ajustada.
+
+**O motorista só lança o que é dele.** No aplicativo, o motorista registra
+abastecimento apenas de veículo vinculado a ele, e o tipo de combustível vem do
+cadastro do veículo, sem opção de troca.
+
+**A quilometragem precisa avançar.** O sistema recusa uma leitura que não seja
+maior que a anterior. A exceção é o registro que chega atrasado, como o feito sem
+sinal: ele é aceito quando cabe entre as leituras de abastecimentos e checklists
+daquela data, sem mexer no odômetro atual do veículo.
+
+**Sem sinal, sem perda.** O aplicativo guarda o abastecimento em uma fila e envia
+quando a conexão volta. Um reenvio nunca cria um registro duplicado.
+
+**A foto é lida automaticamente.** Quando o plano da empresa inclui análises de
+inteligência artificial e ainda há cota de análises no mês, a foto é lida depois
+do registro, na infraestrutura da Trajetto: a leitura encontra o número do painel,
+compara com o informado e classifica o resultado como "km confere", divergente ou
+ilegível. Ela não identifica foto de tela ou montagem; isso continua sendo
+conferido por uma pessoa. Antes do envio, o app também faz uma pré-checagem no
+próprio celular, sem internet, e avisa o motorista quando a km digitada não
+aparece na foto. Divergências geram um aviso para os administradores da empresa,
+e não para quem fez o registro. A conclusão continua sendo de uma pessoa.
+
+**O consumo aparece no detalhe.** Ao abrir um abastecimento, o painel mostra o
+consumo real ao lado do consumo esperado cadastrado no veículo e classifica a
+diferença: mais de 10% abaixo do esperado aparece como "Ruim". O consumo real usa
+os quilômetros rodados desde o abastecimento anterior e os litros do atual, por
+isso reflete a realidade quando a equipe completa o tanque, como explicado acima.
+A autonomia e o custo por quilômetro que o detalhe também mostra são estimativas
+feitas com o consumo esperado do cadastro, não com a distância realmente rodada. O
+custo real por quilômetro sai da conta do mês, descrita nos indicadores abaixo.
+
+**Os dados saem do sistema.** A listagem exporta os abastecimentos em CSV ou Excel
+com veículo, motorista, filial, data, litros, preço por litro, total e
+quilometragem, para análises mais longas ou para cruzar com a fatura do posto.
+
+## Indicadores para acompanhar todo mês
+
+- **Consumo médio (km/l) por veículo**, comparado com a média do próprio veículo
+  nos meses anteriores.
+- **Custo de combustível por quilômetro:** o gasto com combustível no mês dividido
+  pelos quilômetros rodados no mês, por veículo e por tipo de veículo.
+- **Preço médio pago por litro**, por posto e por região.
+- **Percentual de abastecimentos com divergência** entre a foto e o número
+  informado, e quantos foram erro, problema mecânico ou irregularidade.
+- **Percentual de registros feitos no momento do abastecimento**, pelo aplicativo,
+  em vez de lançados depois pelo escritório.
+
+Esses números conversam com o resto da gestão da frota. Uma piora de rendimento que
+não é desvio quase sempre é mecânica, e o próximo passo é o
+[checklist veicular diário](/blog/checklist-veicular-diario) e a
+[manutenção preventiva](/blog/manutencao-preventiva-e-corretiva). E o combustível
+é só uma das parcelas do [custo total da frota](/blog/custo-total-da-frota-tco),
+que precisa ser visto inteiro para orientar decisões.

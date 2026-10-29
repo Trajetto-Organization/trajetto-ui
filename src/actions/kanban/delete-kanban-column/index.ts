@@ -1,6 +1,9 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface DeleteKanbanColumnProps {
   message: string;
@@ -27,7 +30,7 @@ const handleDeleteKanbanColumn = async ({
   const deleteColumn = `${process.env.HTTP_REQUEST}/kanban/column/delete/${columnId}/business/${businessId}`;
 
   try {
-    const response = await fetch(deleteColumn, {
+    const response = await apiFetch(deleteColumn, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -37,14 +40,15 @@ const handleDeleteKanbanColumn = async ({
 
     const { message } = (await response.json()) as DeleteKanbanColumnProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        deleteColumnError: message,
+        deleteColumnError: message || refusalMessage(response.status),
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("kanban/delete-kanban-column", error);
     return {
       deleteColumnError:
         "Ocorreu um erro inesperado ao tentar deletar a coluna.",

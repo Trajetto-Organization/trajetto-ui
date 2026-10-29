@@ -1,7 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
 import { revalidateTagName } from "../../revalidate";
+import { apiFetch } from "@/lib/api-fetch";
 
 interface UploadAvatarResponse {
   message: string;
@@ -36,7 +39,7 @@ const handleUploadAvatar = async (state: any, formData: FormData) => {
   }
 
   try {
-    const response = await fetch(uploadAvatarUrl, {
+    const response = await apiFetch(uploadAvatarUrl, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -48,13 +51,14 @@ const handleUploadAvatar = async (state: any, formData: FormData) => {
 
     const { message } = (await response.json()) as UploadAvatarResponse;
 
-    if (!response.ok && message) {
-      return { avatarError: message };
+    if (!response.ok) {
+      return { avatarError: message || refusalMessage(response.status) };
     }
 
     await revalidateTagName("update-username");
     return { successMessage: message };
   } catch (error) {
+    logActionError("user/upload-avatar", error);
     return {
       avatarError:
         "Ocorreu um erro inesperado ao tentar fazer upload do avatar! Por favor, tente novamente.",

@@ -1,6 +1,10 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface DeleteProfileAccessProps {
   message: string;
@@ -19,7 +23,7 @@ const handleDeleteProfileAccess = async (profileAccessId: string) => {
   const deleteProfileAccess = `${process.env.HTTP_REQUEST}/profile-access/delete-profile-access/${profileAccessId}`;
 
   try {
-    const response = await fetch(deleteProfileAccess, {
+    const response = await apiFetch(deleteProfileAccess, {
       credentials: "include",
       method: "DELETE",
       headers: {
@@ -29,12 +33,19 @@ const handleDeleteProfileAccess = async (profileAccessId: string) => {
 
     const { message } = (await response.json()) as DeleteProfileAccessProps;
 
-    if (!response.ok && message) {
-      return { deleteProfileAccessError: message };
+    if (!response.ok) {
+      return {
+        deleteProfileAccessError: message || refusalMessage(response.status),
+      };
     }
+
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("delete-profile-access");
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("profile-access/delete-profile-access", error);
     return {
       deleteProfileAccessError:
         "Ocorreu um erro inesperado ao tentar deletar o perfil de acesso.",

@@ -2,23 +2,31 @@ import { getCookies } from "@/actions/cookies";
 import { parseJwt } from "@/lib/decode-jwt";
 
 import { ProtectedPageLoading } from "../protected-page-loading";
-import { ProtectedDriverPageLoading } from "../protected-driver-page-loading";
 
-const ProtectedDynamicLoading = async (): Promise<JSX.Element> => {
+interface ProtectedDynamicLoadingProps {
+  /** The sidebar state the person left; see ProtectedPageLoading. */
+  sidebarOpen?: boolean;
+}
+
+const ProtectedDynamicLoading = async ({
+  sidebarOpen = true,
+}: ProtectedDynamicLoadingProps = {}): Promise<JSX.Element> => {
   const token = await getCookies("tkey");
   const decodeJwt = parseJwt(token as string);
 
   const role = decodeJwt?.role;
   const driverId = decodeJwt?.driverId;
 
-  // Determine if user is a driver
+  // A driver's shell is the office's, with the driver's own menu (decision
+  // 4.8): same sidebar, same collapsed rail, same header.
   const isDriver = role === "BUSINESS_USER" && !!driverId;
 
-  if (isDriver) {
-    return <ProtectedDriverPageLoading />;
-  }
-
-  return <ProtectedPageLoading />;
+  return (
+    <ProtectedPageLoading
+      sidebarOpen={sidebarOpen}
+      surface={isDriver ? "driver" : "dashboard"}
+    />
+  );
 };
 
 export { ProtectedDynamicLoading };

@@ -1,6 +1,11 @@
 import {
+  Activity,
+  BadgePercent,
+  Bell,
+  BookOpen,
   Building2,
   CalendarCheckIcon,
+  Coffee,
   CircuitBoardIcon,
   Command,
   Container,
@@ -15,18 +20,25 @@ import {
   LifeBuoy,
   Logs,
   NotepadText,
+  Package,
+  Plug,
+  Radar,
   Receipt,
+  Route,
+  ShieldUser,
   Split,
+  SquareUser,
   Truck,
+  TruckElectric,
   User,
   UserPen,
+  UserPlus,
   UserX2Icon,
+  Wallet,
 } from "lucide-react";
 
 import type { UserRole } from "@/app/(protected)/_components/shared/common.types";
 import type { ProtectedNavItem } from "../shared/common.types";
-
-import { permissions } from "@/lib/permissions";
 
 const protectedNavIcons = {
   dashboard: LayoutDashboardIcon,
@@ -51,435 +63,722 @@ const protectedNavIcons = {
   fine: NotepadText,
   supply: Gauge,
   check: CalendarCheckIcon,
+  package: Package,
+  route: Route,
+  integration: Plug,
+  docs: BookOpen,
+  tower: Radar,
+  coffee: Coffee,
+  activity: Activity,
+  bell: Bell,
+  badgePercent: BadgePercent,
+  shieldUser: ShieldUser,
+  squareUser: SquareUser,
+  userPlus: UserPlus,
+  wallet: Wallet,
+  truckElectric: TruckElectric,
 };
 
-const protectedNavItemsByRole: Record<UserRole, ProtectedNavItem[]> = {
-  MASTER: [
+type NavIconKey = keyof typeof protectedNavIcons;
+
+/**
+ * One page, as every navigation surface offers it.
+ *
+ * `path` is the key: who may see the entry is decided by the route registry
+ * (app-routes) through `canAccessPath`, never by flags here.
+ */
+interface NavEntry {
+  path: string;
+  /** What the sidebar says, inside its group. */
+  title: string;
+  /** What ⌘K says, where there is no group around it to give context. */
+  paletteName?: string;
+  icon: NavIconKey;
+  /** ⌘K section. */
+  section: string;
+  shortcut: [string, string];
+  keywords: string;
+  /**
+   * `false` keeps the page out of the sidebar only. Reached from a card or
+   * the palette; still subject to the same verdict everywhere.
+   */
+  sidebar?: boolean;
+  /**
+   * Opens outside the app, in a new tab, wherever it is offered: a page that
+   * is not part of the panel (the public developer portal) must not take the
+   * user out of the one they were working in.
+   */
+  newTab?: boolean;
+}
+
+interface NavGroup {
+  title: string;
+  icon: NavIconKey;
+  items: NavEntry[];
+}
+
+type NavNode = NavEntry | NavGroup;
+
+type NavSurface = "admin" | "dashboard" | "driver";
+
+function isGroup(node: NavNode): node is NavGroup {
+  return "items" in node;
+}
+
+const DASHBOARD_USERS: NavGroup = {
+  title: "Usuários",
+  icon: "user",
+  items: [
     {
+      path: "/dashboard/profile-access",
+      title: "Perfil de acesso",
+      icon: "squareUser",
+      section: "usuário",
+      shortcut: ["p", "a"],
+      keywords: "perfil acesso",
+    },
+    {
+      path: "/dashboard/permission",
+      title: "Permissão de usuário",
+      paletteName: "Permissão do usuário",
+      icon: "shieldUser",
+      section: "usuário",
+      shortcut: ["p", "d"],
+      keywords: "permissão usuário",
+    },
+    {
+      path: "/dashboard/user-registration",
+      title: "Cadastro de usuário",
+      icon: "userPlus",
+      section: "usuário",
+      shortcut: ["c", "u"],
+      keywords: "cadastro usuário",
+    },
+  ],
+};
+
+/**
+ * The sidebar and the command palette, in one list per surface
+ * (NAV-DRIFT-1, decision 4.2).
+ *
+ * They were two hand-written lists and drifted: an employee with Entregas
+ * found Torre de Controle and Integrações in ⌘K and not in the sidebar, and
+ * ⌘K offered "Atividades recentes" to people the page then bounced. Both
+ * surfaces now derive from this and filter with the same `canAccessPath`.
+ */
+const NAVIGATION: Record<NavSurface, NavNode[]> = {
+  admin: [
+    {
+      path: "/admin",
       title: "Administrativo",
-      url: "/admin",
       icon: "laptop",
-      isActive: true,
-      items: [],
+      section: "admin",
+      shortcut: ["d", "d"],
+      keywords: "administrativo",
     },
     {
+      path: "/admin/kanban",
       title: "Kanban",
-      url: "/admin/kanban",
       icon: "Kanban",
+      section: "navegação",
+      shortcut: ["k", "b"],
+      keywords: "kanban",
     },
     {
+      path: "/admin/fine",
       title: "Multas",
-      url: "/admin/fine",
       icon: "fine",
+      section: "navegação",
+      shortcut: ["m", "t"],
+      keywords: "multa",
+    },
+    {
+      path: "/admin/deliveries",
+      title: "Entregas",
+      icon: "package",
+      section: "navegação",
+      shortcut: ["e", "n"],
+      keywords: "entregas embarcadores importações cadastros",
+    },
+    {
+      path: "/admin/routes",
+      title: "Rotas",
+      icon: "route",
+      section: "navegação",
+      shortcut: ["r", "t"],
+      keywords: "rotas paradas despacho roteiro",
+    },
+    {
+      path: "/admin/control-tower",
+      title: "Torre de Controle",
+      icon: "tower",
+      section: "navegação",
+      shortcut: ["t", "c"],
+      // The operation's views since the meeting of 14/10/2026.
+      keywords:
+        "torre controle mapa rastreamento veículos monitoramento rotas ocorrências atendimentos auditoria comprovantes",
+    },
+    {
+      path: "/admin/driver-pauses",
+      title: "Pausas dos motoristas",
+      icon: "coffee",
+      section: "navegação",
+      shortcut: ["p", "m"],
+      keywords:
+        "pausas almoço refeição descanso jornada interjornada lei 13.103 motoristas",
+    },
+    {
+      path: "/admin/integrations",
+      title: "Integrações",
+      icon: "integration",
+      section: "suporte",
+      shortcut: ["i", "g"],
+      keywords: "integrações api chave webhook",
+    },
+    {
+      // The public developer portal: palette only. The sidebar no longer
+      // links it (decision 16.60); the public site's footer does.
+      path: "/docs",
+      title: "Documentação da API",
+      icon: "docs",
+      section: "suporte",
+      shortcut: ["d", "a"],
+      keywords: "documentação api integração referência webhook openapi",
+      sidebar: false,
+      newTab: true,
+    },
+    {
+      // Opened from the overview's card; the sidebar never listed it.
+      path: "/admin/activity",
+      title: "Atividades recentes",
+      icon: "activity",
+      section: "suporte",
+      shortcut: ["a", "t"],
+      keywords: "atividades histórico auditoria",
+      sidebar: false,
     },
     {
       title: "Suporte",
-      url: "#",
       icon: "headphones",
-      isActive: true,
       items: [
         {
+          path: "/admin/quote",
           title: "Orçamentos",
-          url: "/admin/quote",
           icon: "receipt",
+          section: "suporte",
+          shortcut: ["o", "r"],
+          keywords: "orçamentos",
         },
       ],
     },
     {
       title: "Empresas",
-      url: "#",
       icon: "business",
-      isActive: true,
       items: [
         {
+          path: "/admin/business",
           title: "Cadastro de empresas",
-          url: "/admin/business",
+          paletteName: "Empresas",
           icon: "business",
+          section: "empresa",
+          shortcut: ["a", "b"],
+          keywords: "empresas",
         },
         {
+          path: "/admin/branch",
           title: "Cadastro de filiais",
-          url: "/admin/branch",
+          paletteName: "Filiais",
           icon: "split",
+          section: "empresa",
+          shortcut: ["b", "a"],
+          keywords: "filiais",
         },
       ],
     },
     {
       title: "Usuários",
-      url: "#",
       icon: "user",
-      isActive: true,
       items: [
         {
+          path: "/admin/profile-access",
           title: "Perfil de acesso",
-          url: "/admin/profile-access",
-          icon: "user",
+          icon: "squareUser",
+          section: "usuário",
+          shortcut: ["p", "a"],
+          keywords: "perfil acesso",
         },
         {
+          path: "/admin/permission",
           title: "Permissão de usuário",
-          url: "/admin/permission",
-          icon: "user",
+          paletteName: "Permissão do usuário",
+          icon: "shieldUser",
+          section: "usuário",
+          shortcut: ["p", "d"],
+          keywords: "permissão usuário",
         },
         {
+          path: "/admin/user-registration",
           title: "Cadastro de usuário",
-          url: "/admin/user-registration",
-          icon: "user",
+          icon: "userPlus",
+          section: "usuário",
+          shortcut: ["c", "u"],
+          keywords: "cadastro usuário",
         },
         {
+          path: "/admin/master-users",
           title: "Usuários masters",
-          url: "/admin/master-users",
           icon: "master",
+          section: "usuário",
+          shortcut: ["m", "u"],
+          keywords: "usuários masters",
         },
       ],
     },
     {
       title: "Fornecedores",
-      url: "#",
       icon: "container",
-      isActive: true,
       items: [
         {
+          path: "/admin/supplier",
           title: "Cadastro de fornecedor",
-          url: "/admin/supplier",
+          paletteName: "Fornecedores",
           icon: "handShake",
+          section: "fornecedor",
+          shortcut: ["f", "r"],
+          keywords: "fornecedores",
         },
         {
+          path: "/admin/part",
           title: "Cadastro de peças",
-          url: "/admin/part",
+          paletteName: "Peças",
           icon: "container",
+          section: "fornecedor",
+          shortcut: ["f", "o"],
+          keywords: "peças",
         },
       ],
     },
     {
       title: "Veículos",
-      url: "#",
       icon: "truck",
-      isActive: true,
       items: [
         {
+          path: "/admin/vehicle-type",
           title: "Tipo de veículo",
-          url: "/admin/vehicle-type",
-          icon: "truck",
+          icon: "truckElectric",
+          section: "veículo",
+          shortcut: ["v", "t"],
+          keywords: "tipo de veículo",
         },
         {
+          path: "/admin/fuel-type",
           title: "Tipo de combustível",
-          url: "/admin/fuel-type",
           icon: "fuel",
+          section: "veículo",
+          shortcut: ["v", "d"],
+          keywords: "tipo de combustível",
         },
         {
+          path: "/admin/fuel",
           title: "Cadastro de abastecimento",
-          url: "/admin/fuel",
+          paletteName: "Abastecimento",
           icon: "supply",
+          section: "veículo",
+          shortcut: ["v", "a"],
+          keywords: "abastecimento",
         },
         {
+          path: "/admin/driver",
           title: "Cadastro de motoristas",
-          url: "/admin/driver",
+          paletteName: "Motoristas",
           icon: "driver",
+          section: "veículo",
+          shortcut: ["m", "o"],
+          keywords: "motoristas",
         },
         {
+          path: "/admin/vehicle",
           title: "Cadastro de veículo",
-          url: "/admin/vehicle",
+          paletteName: "Veículos",
           icon: "truck",
+          section: "veículo",
+          shortcut: ["v", "c"],
+          keywords: "veículos",
         },
         {
+          path: "/admin/vehicle-checklist",
           title: "Checklist veicular",
-          url: "/admin/vehicle-checklist",
+          paletteName: "Checklist",
           icon: "check",
+          section: "veículo",
+          shortcut: ["v", "l"],
+          keywords: "checklist",
         },
       ],
     },
     {
       title: "Ordens",
-      url: "#",
       icon: "log",
-      isActive: true,
       items: [
         {
+          path: "/admin/service-order",
           title: "Ordem de serviço",
-          url: "/admin/service-order",
           icon: "log",
+          section: "ordens",
+          shortcut: ["o", "s"],
+          keywords: "ordem de serviço",
         },
         {
+          path: "/admin/service-order-part",
           title: "Ordem por peça",
-          url: "/admin/service-order-part",
-          icon: "log",
+          paletteName: "Ordem de serviço por peça",
+          icon: "badgePercent",
+          section: "ordens",
+          shortcut: ["o", "p"],
+          keywords: "ordem de serviço por peça",
         },
         {
+          path: "/admin/account-payable",
           title: "Contas a pagar",
-          url: "/admin/account-payable",
-          icon: "log",
+          icon: "wallet",
+          section: "ordens",
+          shortcut: ["c", "p"],
+          keywords: "contas a pagar",
         },
       ],
     },
   ],
-  BUSINESS_ADMIN: [
+
+  // BUSINESS_ADMIN and BUSINESS_USER share one list: what differs between
+  // them is the verdict, not the menu.
+  dashboard: [
     {
+      path: "/dashboard",
       title: "Dashboard",
-      url: "/dashboard",
       icon: "dashboard",
-      isActive: false,
-      items: [],
+      section: "navegação",
+      shortcut: ["d", "d"],
+      keywords: "dashboard",
     },
     {
+      path: "/dashboard/kanban",
       title: "Kanban",
-      url: "/dashboard/kanban",
       icon: "Kanban",
+      section: "navegação",
+      shortcut: ["k", "b"],
+      keywords: "kanban",
     },
     {
+      path: "/dashboard/branch",
       title: "Cadastro de filiais",
-      url: "/dashboard/branch",
+      paletteName: "Filiais",
       icon: "split",
+      section: "empresa",
+      shortcut: ["b", "a"],
+      keywords: "filiais",
     },
     {
+      path: "/dashboard/fine",
       title: "Multas",
-      url: "/dashboard/fine",
       icon: "fine",
+      section: "navegação",
+      shortcut: ["m", "t"],
+      keywords: "multa",
     },
     {
-      title: "Usuários",
-      url: "#",
-      icon: "user",
-      isActive: true,
-      items: [
-        {
-          title: "Perfil de acesso",
-          url: "/dashboard/profile-access",
-          icon: "user",
-        },
-        {
-          title: "Permissão de usuário",
-          url: "/dashboard/permission",
-          icon: "user",
-        },
-        {
-          title: "Cadastro de usuário",
-          url: "/dashboard/user-registration",
-          icon: "user",
-        },
-      ],
+      path: "/dashboard/deliveries",
+      title: "Entregas",
+      icon: "package",
+      section: "navegação",
+      shortcut: ["e", "n"],
+      keywords: "entregas embarcadores importações cadastros",
     },
+    {
+      path: "/dashboard/routes",
+      title: "Rotas",
+      icon: "route",
+      section: "navegação",
+      shortcut: ["r", "t"],
+      keywords: "rotas paradas despacho roteiro",
+    },
+    {
+      path: "/dashboard/control-tower",
+      title: "Torre de Controle",
+      icon: "tower",
+      section: "navegação",
+      shortcut: ["t", "c"],
+      // The operation's views since the meeting of 14/10/2026.
+      keywords:
+        "torre controle mapa rastreamento veículos monitoramento rotas ocorrências atendimentos auditoria comprovantes",
+    },
+    {
+      path: "/dashboard/driver-pauses",
+      title: "Pausas dos motoristas",
+      icon: "coffee",
+      section: "navegação",
+      shortcut: ["p", "m"],
+      keywords:
+        "pausas almoço refeição descanso jornada interjornada lei 13.103 motoristas",
+    },
+    {
+      path: "/dashboard/integrations",
+      title: "Integrações",
+      icon: "integration",
+      section: "suporte",
+      shortcut: ["i", "g"],
+      keywords: "integrações api chave webhook",
+    },
+    {
+      // Palette only, like on admin (decision 16.60).
+      path: "/docs",
+      title: "Documentação da API",
+      icon: "docs",
+      section: "suporte",
+      shortcut: ["d", "a"],
+      keywords: "documentação api integração referência webhook openapi",
+      sidebar: false,
+      newTab: true,
+    },
+    {
+      // Opened from the dashboard's card; the sidebar never listed it.
+      path: "/dashboard/activity",
+      title: "Atividades recentes",
+      icon: "activity",
+      section: "suporte",
+      shortcut: ["a", "t"],
+      keywords: "atividades histórico auditoria",
+      sidebar: false,
+    },
+    DASHBOARD_USERS,
     {
       title: "Fornecedores",
-      url: "#",
       icon: "container",
-      isActive: true,
       items: [
         {
+          path: "/dashboard/supplier",
           title: "Cadastro de fornecedor",
-          url: "/dashboard/supplier",
+          paletteName: "Fornecedores",
           icon: "handShake",
+          section: "fornecedor",
+          shortcut: ["f", "r"],
+          keywords: "fornecedores",
         },
         {
+          path: "/dashboard/part",
           title: "Cadastro de peças",
-          url: "/dashboard/part",
+          paletteName: "Peças",
           icon: "container",
+          section: "fornecedor",
+          shortcut: ["f", "o"],
+          keywords: "peças",
         },
       ],
     },
     {
       title: "Veículos",
-      url: "#",
       icon: "truck",
-      isActive: true,
       items: [
         {
+          path: "/dashboard/vehicle-type",
           title: "Tipo de veículo",
-          url: "/dashboard/vehicle-type",
-          icon: "truck",
+          icon: "truckElectric",
+          section: "veículo",
+          shortcut: ["v", "t"],
+          keywords: "tipo de veículo",
         },
         {
+          path: "/dashboard/fuel-type",
           title: "Tipo de combustível",
-          url: "/dashboard/fuel-type",
           icon: "fuel",
+          section: "veículo",
+          shortcut: ["v", "d"],
+          keywords: "tipo de combustível",
         },
         {
+          path: "/dashboard/fuel",
           title: "Cadastro de abastecimento",
-          url: "/dashboard/fuel",
           icon: "supply",
+          section: "veículo",
+          shortcut: ["v", "a"],
+          keywords: "abastecimento",
         },
         {
+          path: "/dashboard/driver",
           title: "Cadastro de motoristas",
-          url: "/dashboard/driver",
+          paletteName: "Motoristas",
           icon: "driver",
+          section: "veículo",
+          shortcut: ["m", "o"],
+          keywords: "motoristas",
         },
         {
+          path: "/dashboard/vehicle",
           title: "Cadastro de veículo",
-          url: "/dashboard/vehicle",
+          paletteName: "Veículos",
           icon: "truck",
+          section: "veículo",
+          shortcut: ["v", "c"],
+          keywords: "veículos",
         },
         {
+          path: "/dashboard/vehicle-checklist",
           title: "Checklist veicular",
-          url: "/dashboard/vehicle-checklist",
+          paletteName: "Checklist",
           icon: "check",
+          section: "veículo",
+          shortcut: ["v", "l"],
+          keywords: "checklist",
         },
       ],
     },
     {
       title: "Ordens",
-      url: "#",
       icon: "log",
-      isActive: true,
       items: [
         {
+          path: "/dashboard/service-order",
           title: "Ordem de serviço",
-          url: "/dashboard/service-order",
           icon: "log",
+          section: "ordens",
+          shortcut: ["o", "s"],
+          keywords: "ordem de serviço",
         },
         {
+          path: "/dashboard/service-order-part",
           title: "Ordem por peça",
-          url: "/dashboard/service-order-part",
-          icon: "log",
+          paletteName: "Ordem de serviço por peça",
+          icon: "badgePercent",
+          section: "ordens",
+          shortcut: ["o", "p"],
+          keywords: "ordem de serviço por peça",
         },
         {
+          path: "/dashboard/account-payable",
           title: "Contas a pagar",
-          url: "/dashboard/account-payable",
-          icon: "log",
+          icon: "wallet",
+          section: "ordens",
+          shortcut: ["c", "p"],
+          keywords: "contas a pagar",
         },
       ],
     },
   ],
-  BUSINESS_USER: [
+
+  // Decision 4.8: the driver's own pages, in a sidebar of their own. The
+  // registry still decides: Contas a pagar needs FLEET.
+  driver: [
     {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: "dashboard",
-      isActive: false,
-      items: [],
-    },
-    {
+      path: "/driver/kanban",
       title: "Kanban",
-      url: "/dashboard/kanban",
       icon: "Kanban",
+      section: "navegação",
+      shortcut: ["k", "b"],
+      keywords: "kanban",
     },
     {
-      title: "Cadastro de filiais",
-      url: "/dashboard/branch",
-      icon: "split",
-      requiredPermission: permissions.BRANCH_MANAGE,
-    },
-    {
-      title: "Multas",
-      url: "/dashboard/fine",
-      icon: "fine",
-      requiredPermission: permissions.FINE_MANAGE,
-    },
-    {
-      title: "Usuários",
-      url: "#",
-      icon: "user",
-      isActive: true,
-      items: [
-        {
-          title: "Perfil de acesso",
-          url: "/dashboard/profile-access",
-          icon: "user",
-          requiredPermission: permissions.PROFILE_ACCESS_MANAGE,
-        },
-        {
-          title: "Permissão de usuário",
-          url: "/dashboard/permission",
-          icon: "user",
-          requiredPermission: permissions.USER_PERMISSION_MANAGE,
-        },
-        {
-          title: "Cadastro de usuário",
-          url: "/dashboard/user-registration",
-          icon: "user",
-          requiredPermission: permissions.USER_REGISTRATION_MANAGE,
-        },
-      ],
-    },
-    {
-      title: "Fornecedores",
-      url: "#",
-      icon: "container",
-      isActive: true,
-      items: [
-        {
-          title: "Cadastro de fornecedor",
-          url: "/dashboard/supplier",
-          icon: "handShake",
-          requiredPermission: permissions.SUPPLIER_MANAGE,
-        },
-        {
-          title: "Cadastro de peças",
-          url: "/dashboard/part",
-          icon: "container",
-          requiredPermission: permissions.PART_MANAGE,
-        },
-      ],
-    },
-    {
-      title: "Veículos",
-      url: "#",
+      path: "/driver/vehicles",
+      title: "Meus veículos",
       icon: "truck",
-      isActive: true,
-      items: [
-        {
-          title: "Tipo de veículo",
-          url: "/dashboard/vehicle-type",
-          icon: "truck",
-          requiredPermission: permissions.VEHICLE_TYPE_MANAGE,
-        },
-        {
-          title: "Tipo de combustível",
-          url: "/dashboard/fuel-type",
-          icon: "fuel",
-          requiredPermission: permissions.FUEL_TYPE_MANAGE,
-        },
-        {
-          title: "Cadastro de abastecimento",
-          url: "/dashboard/fuel",
-          icon: "supply",
-          requiredPermission: permissions.FUEL_MANAGE,
-        },
-        {
-          title: "Cadastro de motoristas",
-          url: "/dashboard/driver",
-          icon: "driver",
-          requiredPermission: permissions.DRIVER_MANAGE,
-        },
-        {
-          title: "Cadastro de veículo",
-          url: "/dashboard/vehicle",
-          icon: "truck",
-          requiredPermission: permissions.VEHICLE_MANAGE,
-        },
-        {
-          title: "Checklist veicular",
-          url: "/dashboard/vehicle-checklist",
-          icon: "check",
-          requiredPermission: permissions.VEHICLE_CHECKLIST_MANAGE,
-        },
-      ],
+      section: "motorista",
+      shortcut: ["v", "c"],
+      keywords: "veículos motorista",
     },
     {
-      title: "Ordens",
-      url: "#",
-      icon: "log",
-      isActive: true,
-      items: [
-        {
-          title: "Ordem de serviço",
-          url: "/dashboard/service-order",
-          icon: "log",
-          requiredPermission: permissions.SERVICE_ORDER_MANAGE,
-        },
-        {
-          title: "Ordem por peça",
-          url: "/dashboard/service-order-part",
-          icon: "log",
-          requiredPermission: permissions.SERVICE_ORDER_PART_MANAGE,
-        },
-        {
-          title: "Contas a pagar",
-          url: "/dashboard/account-payable",
-          icon: "log",
-          requiredPermission: permissions.ACCOUNT_PAYABLE_MANAGE,
-        },
-      ],
+      path: "/driver/account-payable",
+      title: "Contas a pagar",
+      icon: "wallet",
+      section: "ordens",
+      shortcut: ["c", "p"],
+      keywords: "contas a pagar",
     },
   ],
 };
 
-export { protectedNavItemsByRole, protectedNavIcons };
-export type { ProtectedNavItem };
+/** Every session's own pages, palette only: the sidebar has its account menu. */
+const ACCOUNT_ENTRIES: NavEntry[] = [
+  {
+    path: "/profile",
+    title: "Conta do usuário",
+    icon: "user",
+    section: "conta",
+    shortcut: ["c", "c"],
+    keywords: "conta",
+    sidebar: false,
+  },
+  {
+    path: "/notifications",
+    title: "Notificações",
+    icon: "bell",
+    section: "conta",
+    shortcut: ["n", "t"],
+    keywords: "notificações",
+    sidebar: false,
+  },
+];
+
+function navigationSurface(role: UserRole, isDriver: boolean): NavSurface {
+  if (role === "MASTER") return "admin";
+  return isDriver ? "driver" : "dashboard";
+}
+
+/** Everything ⌘K may offer on a surface, before the access verdict. */
+function paletteEntries(surface: NavSurface): NavEntry[] {
+  const entries = NAVIGATION[surface].flatMap((node) =>
+    isGroup(node) ? node.items : [node],
+  );
+
+  return [...entries, ...ACCOUNT_ENTRIES];
+}
+
+/**
+ * The sidebar's tree for a surface, keeping only what `allow` lets through.
+ * A group has no page of its own, so it survives only while one child does.
+ */
+function sidebarItems(
+  surface: NavSurface,
+  allow: (path: string) => boolean = () => true,
+): ProtectedNavItem[] {
+  const toItem = (entry: NavEntry): ProtectedNavItem => ({
+    title: entry.title,
+    url: entry.path,
+    icon: entry.icon,
+  });
+
+  const visible = (entry: NavEntry) =>
+    entry.sidebar !== false && allow(entry.path);
+
+  return NAVIGATION[surface].flatMap<ProtectedNavItem>((node) => {
+    if (!isGroup(node)) return visible(node) ? [toItem(node)] : [];
+
+    const items = node.items.filter(visible).map(toItem);
+
+    return items.length > 0
+      ? [
+          {
+            title: node.title,
+            url: "#",
+            icon: node.icon,
+            isActive: true,
+            items,
+          },
+        ]
+      : [];
+  });
+}
+
+export {
+  ACCOUNT_ENTRIES,
+  NAVIGATION,
+  navigationSurface,
+  paletteEntries,
+  protectedNavIcons,
+  sidebarItems,
+};
+export type {
+  NavEntry,
+  NavGroup,
+  NavIconKey,
+  NavNode,
+  NavSurface,
+  ProtectedNavItem,
+};

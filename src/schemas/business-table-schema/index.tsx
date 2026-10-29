@@ -17,6 +17,10 @@ export const businessTableSchema = z.object({
   telephone: z.string(),
   email: z.string(),
   is_active: z.boolean().optional(),
+  vehicle_limit: z.number().optional(),
+  vehicle_count: z.number().optional(),
+  // The company's clock (decision 1.1); older API builds do not send it.
+  timezone: z.string().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 });

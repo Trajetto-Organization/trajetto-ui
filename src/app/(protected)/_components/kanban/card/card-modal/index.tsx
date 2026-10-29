@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
+  DialogFormFooter,
 } from "@/components/ui/dialog";
 
 import {
@@ -24,6 +24,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { FieldShell } from "@/components/shared/custom/field-shell";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,12 +32,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader, ShieldAlert, Trash2, CheckCircle2, Copy } from "lucide-react";
 import FormInput from "@/components/shared/custom/form-input";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import { handleCreateKanbanCard } from "@/actions/kanban/create-kanban-card";
@@ -54,6 +49,8 @@ import { useCardModal } from "./hooks";
 import { UserSelector } from "../../user-selector";
 
 import { toast } from "sonner";
+import { guardFormAction, isStaleActionResult } from "@/lib/action-result";
+import { copyWithFeedback } from "@/lib/copy-with-feedback";
 
 import { useKanbanQueryClient } from "../../hooks/query-client";
 import { useHasPermission } from "@/lib/user-has-permission";
@@ -63,6 +60,13 @@ import { useCardModalForm } from "./hooks/card-modal-form";
 
 import { DatePickerField } from "@/app/(protected)/_components/shared/custom/date-picker-field";
 import { SelectField } from "@/app/(protected)/_components/shared/custom/select-field";
+import { createKanbanCardSchema } from "@/schemas/create-kanban-card-schema";
+import { updateKanbanCardSchema } from "@/schemas/update-kanban-card-schema";
+import {
+  IGNORE_BLUR_ATTRIBUTE,
+  canSubmitForm,
+  useLiveValidation,
+} from "@/components/shared/live-validation";
 
 const CardModalForm = ({
   card,
@@ -98,9 +102,18 @@ const CardModalForm = ({
     title,
   } = useCardModalForm({ state, card, isEditing });
 
+  // Live validation (decision 16.700), with the action's own schema; the
+  // assignee is a pick from a list and is never invalid on its own.
+  const live = useLiveValidation({
+    schema: isEditing ? updateKanbanCardSchema : createKanbanCardSchema,
+    values: { title, description, priority, dueDate },
+    fields: ["title", "description", "priority", "dueDate"],
+    serverErrors: errorState,
+  });
+
   return (
     <>
-      <div className="space-y-4 mt-2">
+      <div ref={live.ref} className="space-y-4 mt-2">
         <div
           className="flex items-center justify-between
           p-4 bg-muted/30 rounded-lg border"
@@ -138,55 +151,37 @@ const CardModalForm = ({
           name="title"
           type="text"
           value={title}
-          errorName={errorState?.title}
+          errorName={live.errorOf("title")}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="Ex: Ordem de serviço do veículo..."
+          placeholder="Ex: Conferir documentos do veículo..."
           disabled={pending || !hasUserPermission}
         />
 
         {/* Description */}
-        <div className="space-y-2">
-          {errorState?.description ? (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Label
-                    className={cn("h-4 truncate text-red-500")}
-                    htmlFor="description"
-                  >
-                    {errorState.description}
-                  </Label>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="max-w-[300px]
-                  whitespace-normal break-words p-2"
-                >
-                  {errorState.description}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : (
-            <Label className="h-4 truncate" htmlFor="description">
-              Descrição
-              <span className="text-red-500 ml-0.5">*</span>
-            </Label>
+        <FieldShell
+          label="Descrição*"
+          htmlFor="description"
+          error={live.errorOf("description")}
+        >
+          {(control) => (
+            <Textarea
+              {...control}
+              name="description"
+              value={description}
+              onChange={(e) =>
+                hasUserPermission
+                  ? handleDescriptionChange(e.target.value)
+                  : null
+              }
+              placeholder="Descreva em detalhes a tarefa..."
+              className={cn(
+                "resize-none min-h-[100px]",
+                control["aria-invalid"] && "border-red-600 dark:border-red-500",
+              )}
+              disabled={pending}
+            />
           )}
-          <Textarea
-            id="description"
-            name="description"
-            value={description}
-            onChange={(e) =>
-              hasUserPermission ? handleDescriptionChange(e.target.value) : null
-            }
-            placeholder="Descreva em detalhes a tarefa..."
-            className={cn(
-              "resize-none min-h-[100px]",
-              errorState?.description && "border-red-500",
-            )}
-            disabled={pending}
-          />
-        </div>
+        </FieldShell>
 
         {/* Priority */}
         <SelectField
@@ -195,7 +190,7 @@ const CardModalForm = ({
           name="priority"
           value={priority}
           onChange={(value) => handlePriorityChange(value as PriorityProps)}
-          errorName={errorState?.priority}
+          errorName={live.errorOf("priority")}
           disabled={pending || !hasUserPermission}
           placeholder="Selecione a prioridade"
           options={[
@@ -212,8 +207,12 @@ const CardModalForm = ({
           htmlfor="dueDate"
           name="dueDate"
           value={dueDate}
-          onChange={handleDueDateChange}
-          errorName={errorState?.dueDate}
+          onChange={(value) => {
+            handleDueDateChange(value);
+            // A pick is a complete answer: judged without a blur.
+            live.touch("dueDate");
+          }}
+          errorName={live.errorOf("dueDate")}
           disabled={pending || !hasUserPermission}
           allowFutureDates={true}
         />
@@ -228,7 +227,7 @@ const CardModalForm = ({
           />
         )}
 
-        {/* ✅ Hidden input para o completed */}
+        {/* The checkbox is not a native input: the form posts this value. */}
         <input
           id="completed-hidden"
           type="hidden"
@@ -247,8 +246,8 @@ const CardModalForm = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
-                  <Trash2 className="h-4 w-4 text-red-500 mr-2" />
-                  <span className="text-sm text-red-500 font-medium">
+                  <Trash2 className="h-4 w-4 text-destructive mr-2" />
+                  <span className="text-sm text-destructive font-medium">
                     Zona de perigo
                   </span>
                 </div>
@@ -258,8 +257,7 @@ const CardModalForm = ({
                   size="sm"
                   onClick={() => setShowDeleteDialog(true)}
                   disabled={pending || !hasUserPermission}
-                  className="text-red-500 hover:text-red-600 
-                hover:bg-red-50 dark:hover:bg-red-950/20"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
                   Excluir card
                 </Button>
@@ -299,9 +297,7 @@ const CardModalForm = ({
                   type="button"
                   onClick={onDelete}
                   disabled={pending || isDeletingCard || !hasUserPermission}
-                  variant={"secondary"}
-                  className="bg-red-600/10 dark:bg-red-500/10 
-                dark:text-red-500 text-red-600"
+                  variant="destructive"
                 >
                   <ShieldAlert className="mr-1 size-5" />
                   <span>Deletar Card</span>
@@ -320,35 +316,31 @@ const CardModalForm = ({
             </AlertDialogContent>
           </AlertDialog>
 
-          <DialogFooter
-            className="mt-6 flex 
-            items-end justify-end"
-          >
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={pending}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  pending ||
-                  !title.trim() ||
-                  !description.trim() ||
-                  !dueDate ||
-                  (isEditing && !isDirty) ||
-                  !hasUserPermission
-                }
-              >
-                {isEditing ? "Atualizar" : "Criar"} Card
-                {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
-              </Button>
-            </div>
-          </DialogFooter>
+          {/* Cancelar first; the layout follows the dialog's width (decision 3.2). */}
+          <DialogFormFooter className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={pending}
+              {...{ [IGNORE_BLUR_ATTRIBUTE]: "" }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              // Criar stays enabled and explains what is missing; Atualizar
+              // waits for a change (decisions 16.701 and 2.5).
+              disabled={
+                pending ||
+                !canSubmitForm({ isEdit: isEditing, isDirty }) ||
+                !hasUserPermission
+              }
+            >
+              {isEditing ? "Atualizar" : "Criar"} Card
+              {pending && <Loader className="ml-2 h-4 w-4 animate-spin" />}
+            </Button>
+          </DialogFormFooter>
         </>
       )}
     </>
@@ -368,25 +360,21 @@ const CardModal = ({
   const { invalidateKanbanQueries } = useKanbanQueryClient();
   const [isCopied, setIsCopied] = useState<boolean>(false);
 
-  const handleCopyID = (cardId: string) => {
-    navigator.clipboard
-      .writeText(cardId)
-      .then(() => {
-        setIsCopied(true);
-        toast.success("ID do card copiado para a área de transferência!");
+  const handleCopyID = async (cardId: string) => {
+    if (!(await copyWithFeedback(cardId, "ID do card"))) return;
 
-        // Reset after 2 seconds
-        setTimeout(() => {
-          setIsCopied(false);
-        }, 2000);
-      })
-      .catch((err) => {
-        toast.error("Erro ao copiar o ID: " + err);
-      });
+    setIsCopied(true);
+
+    // Reset after 2 seconds
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
   };
 
   const [state, dispatch] = useFormState(
-    isEditing ? handleUpdateKanbanCard : handleCreateKanbanCard,
+    guardFormAction(
+      isEditing ? handleUpdateKanbanCard : handleCreateKanbanCard,
+    ),
     null,
   );
 
@@ -404,9 +392,13 @@ const CardModal = ({
     setIsDeletingCard(true);
 
     try {
-      const { successMessage, deleteCardError } = await handleDeleteKanbanCard({
+      const result = await handleDeleteKanbanCard({
         cardId: card.id,
       });
+
+      if (isStaleActionResult(result)) return;
+
+      const { successMessage, deleteCardError } = result;
 
       if (deleteCardError) {
         toast.error(deleteCardError);
@@ -428,17 +420,12 @@ const CardModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogScrollContent
-        className="max-w-xl"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogScrollContent className="max-w-xl">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="space-y-1.5 text-left">
-              <DialogTitle className="text-left">
-                {isEditing ? "Editar" : "Novo"} Card
-              </DialogTitle>
-              <DialogDescription className="text-left">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+            <div className="space-y-1.5">
+              <DialogTitle>{isEditing ? "Editar" : "Novo"} Card</DialogTitle>
+              <DialogDescription>
                 {isEditing
                   ? "Edite os detalhes do card existente"
                   : "Adicione um novo card à coluna"}
@@ -449,7 +436,7 @@ const CardModal = ({
                 type="button"
                 variant={isCopied ? "default" : "outline"}
                 size="sm"
-                onClick={() => handleCopyID(card.id)}
+                onClick={() => void handleCopyID(card.id)}
                 className={cn(
                   "flex items-center gap-2 text-xs transition-all duration-300",
                   isCopied && "bg-green-500 hover:bg-green-600 text-white",
@@ -488,6 +475,7 @@ const CardModal = ({
 
         <form
           ref={formRef}
+          noValidate
           action={(formData) => {
             if (isEditing) {
               formData.append("cardId", card.id);

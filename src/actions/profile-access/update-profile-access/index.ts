@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdateProfileAccessSchema } from "@/schemas/create-update-profile-access-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface EditBusinessProps {
   message: string;
@@ -45,7 +49,7 @@ const handleUpdateProfileAccess = async (
   const businessData = updateProfileAccessValidation.data;
 
   try {
-    const response = await fetch(updateProfileAccess, {
+    const response = await apiFetch(updateProfileAccess, {
       credentials: "include",
       method: "PATCH",
       headers: {
@@ -57,14 +61,22 @@ const handleUpdateProfileAccess = async (
 
     const { message } = (await response.json()) as EditBusinessProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateProfileAccessError: { updateProfileAccessErrorMessage: message },
+        updateProfileAccessError: {
+          updateProfileAccessErrorMessage:
+            message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-profile-access");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("profile-access/update-profile-access", error);
     return {
       updateProfileAccessError: {
         updateProfileAccessErrorMessage:

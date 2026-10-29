@@ -6,7 +6,6 @@ import type { Permission, UserRole } from "../shared/common.types";
 interface ProtectedLayoutLayoutProps {
   userLogged: UserLogged;
   children: ReactNode;
-  notificationError: boolean;
 }
 
 interface UserLoggedData {
@@ -16,6 +15,7 @@ interface UserLoggedData {
   role: UserRole;
   businessId?: string;
   permissions: Permission[];
+  enabledModules?: string[];
 }
 
 export type { ProtectedLayoutLayoutProps, UserLoggedData };

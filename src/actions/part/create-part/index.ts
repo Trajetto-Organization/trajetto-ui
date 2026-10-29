@@ -1,7 +1,11 @@
 "use server";
 
+import { refusalMessage } from "@/lib/api-error";
+import { logActionError } from "@/lib/log-action-error";
 import { createUpdatePartSchema } from "@/schemas/create-update-part-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
+import { revalidateTagName } from "@/actions/revalidate";
 
 interface CreatePartProps {
   message: string;
@@ -40,7 +44,7 @@ const handleCreatePart = async (state: any, createPartValues: FormData) => {
   const partData = createPartValidation.data;
 
   try {
-    const response = await fetch(createPart, {
+    const response = await apiFetch(createPart, {
       credentials: "include",
       method: "POST",
       headers: {
@@ -52,14 +56,21 @@ const handleCreatePart = async (state: any, createPartValues: FormData) => {
 
     const { message } = (await response.json()) as CreatePartProps;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        createPartError: { createPartErrorMessage: message },
+        createPartError: {
+          createPartErrorMessage: message || refusalMessage(response.status),
+        },
       };
     }
 
+    // Re-renders the screen in this same response: the client no longer
+    // asks for it in a second request.
+    await revalidateTagName("update-part");
+
     return { successMessage: message };
   } catch (error) {
+    logActionError("part/create-part", error);
     return {
       createPartError: {
         createPartErrorMessage:

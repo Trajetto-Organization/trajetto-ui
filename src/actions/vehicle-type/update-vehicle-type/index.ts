@@ -1,14 +1,18 @@
 "use server";
 
-import { createUpdateVehicleTypeSchema } from "@/schemas/create-update-vehicle-type-schema";
+import { logActionError } from "@/lib/log-action-error";
+import { updateVehicleTypeSchema } from "@/schemas/create-update-vehicle-type-schema";
 import { getCookies } from "../../cookies";
+import { apiFetch } from "@/lib/api-fetch";
 
-interface VehicleTypeProps {
+interface VehicleTypeResponse {
+  code?: string;
   message: string;
 }
 
+/** Saves an edit; the form sends only the fields that changed. */
 const handleUpdateVehicleType = async (
-  state: any,
+  state: unknown,
   updateVehicleTypeValues: FormData,
 ) => {
   const tokenAccess = await getCookies("tkey");
@@ -22,52 +26,48 @@ const handleUpdateVehicleType = async (
     };
   }
 
-  if (updateVehicleTypeValues.type === "RESET") {
-    return {};
-  }
-
   const vehicleTypeId = updateVehicleTypeValues.get("vehicleTypeId");
   const businessId = updateVehicleTypeValues.get("businessId");
 
-  const updateVehicleType = `${process.env.HTTP_REQUEST}/vehicle-type/update-vehicle-type/${vehicleTypeId}/business/${businessId}`;
-  const vehicleTypeValues = Object.fromEntries(
-    updateVehicleTypeValues.entries(),
-  );
+  const url = `${process.env.HTTP_REQUEST}/vehicle-type/update-vehicle-type/${vehicleTypeId}/business/${businessId}`;
 
-  const updateVehicleTypeValidation =
-    createUpdateVehicleTypeSchema.safeParse(vehicleTypeValues);
+  const {
+    businessId: _business,
+    vehicleTypeId: _type,
+    ...changes
+  } = Object.fromEntries(updateVehicleTypeValues.entries());
 
-  if (updateVehicleTypeValidation.error) {
-    const formatError = updateVehicleTypeValidation.error.flatten();
+  const validation = updateVehicleTypeSchema.safeParse(changes);
 
-    return {
-      updateVehicleTypeError: formatError.fieldErrors,
-    };
+  if (!validation.success) {
+    return { updateVehicleTypeError: validation.error.flatten().fieldErrors };
   }
 
-  const vehicleTypeData = updateVehicleTypeValidation.data;
-
   try {
-    const response = await fetch(updateVehicleType, {
+    const response = await apiFetch(url, {
       credentials: "include",
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${tokenAccess}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(vehicleTypeData),
+      body: JSON.stringify(validation.data),
     });
 
-    const { message } = (await response.json()) as VehicleTypeProps;
+    const { message } = (await response.json()) as VehicleTypeResponse;
 
-    if (!response.ok && message) {
+    if (!response.ok) {
       return {
-        updateVehicleTypeError: { updateVehicleTypeErrorMessage: message },
+        updateVehicleTypeError: {
+          updateVehicleTypeErrorMessage:
+            message || "Não foi possível atualizar o tipo de veículo.",
+        },
       };
     }
 
     return { successMessage: message };
   } catch (error) {
+    logActionError("vehicle-type/update-vehicle-type", error);
     return {
       updateVehicleTypeError: {
         updateVehicleTypeErrorMessage:

@@ -13,8 +13,12 @@ const allowedFuelTypes = [
 
 const createUpdateFuelTypeSchema = z.object({
   description: z.enum(allowedFuelTypes, {
-    errorMap: () => ({
-      message: "Combustível inválido. Selecione uma opção válida.",
+    // Nothing picked yet says what is missing (decision 16.702).
+    errorMap: (_issue, ctx) => ({
+      message:
+        ctx.data === undefined || ctx.data === null || ctx.data === ""
+          ? "Selecione o combustível."
+          : "Combustível inválido. Selecione uma opção válida.",
     }),
   }),
   businessId: z.string().min(1, "A empresa é obrigatória!"),

@@ -11,10 +11,11 @@ import {
   HomePanel,
   HomeStats,
 } from "@/components/site/home";
+import { homeJsonLd } from "@/components/site/home/json-ld";
 import { JsonLd } from "@/components/seo/json-ld";
 
 import { buildPageMetadata } from "@/lib/page-metadata";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { siteConfig } from "@/lib/site";
 
 const HOME_TITLE = `${siteConfig.name} | ${siteConfig.tagline}`;
 
@@ -29,34 +30,6 @@ export const metadata: Metadata = {
   }),
   title: { absolute: HOME_TITLE },
 };
-
-/** Who publishes the site and what it is, for search engines. */
-function homeJsonLd(): Record<string, unknown> {
-  const home = absoluteUrl("/");
-
-  return {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": `${home}#organization`,
-        name: siteConfig.name,
-        legalName: siteConfig.legalName,
-        url: home,
-        email: siteConfig.email,
-        logo: absoluteUrl("/favicon-512.png"),
-      },
-      {
-        "@type": "WebSite",
-        "@id": `${home}#website`,
-        name: siteConfig.name,
-        url: home,
-        inLanguage: siteConfig.locale,
-        publisher: { "@id": `${home}#organization` },
-      },
-    ],
-  };
-}
 
 /**
  * The landing page (design: Trajetto Home, hero "camadas"): the statement

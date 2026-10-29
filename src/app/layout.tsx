@@ -6,7 +6,7 @@ import { DeploymentSkewGuard } from "@/components/shared/deployment-skew-guard";
 import { StrictCspGuard } from "@/components/shared/strict-csp-guard";
 import { PublicConfigScript } from "@/env/public-config-script";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-init-script";
-import { TITLE_SUFFIX, siteConfig, siteUrl } from "@/lib/site";
+import { TITLE_SUFFIX, X_HANDLE, siteConfig, siteUrl } from "@/lib/site";
 
 import "./globals.css";
 
@@ -117,6 +117,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
     twitter: {
       card: "summary_large_image",
+      site: X_HANDLE,
+      creator: X_HANDLE,
       title: `${siteConfig.name} | ${siteConfig.tagline}`,
       description: siteConfig.description,
       images: ["/og-default.jpg"],

@@ -244,6 +244,24 @@ describe("buildContentSecurityPolicy", () => {
       "nonce" in options,
     );
   });
+
+  // Cloudflare Web Analytics, injected by the edge in front of the site. The
+  // per-request pages already ran it (the edge stamps the page's nonce on
+  // the script), but the prerendered ones blocked it: every visit to the
+  // landing page logged a CSP error, Lighthouse took it off Best Practices,
+  // and the public pages were missing from the metrics. Its beacon reports to
+  // /cdn-cgi/rum on the site's own origin, which 'self' covers.
+  it.each([
+    ["with a nonce (per-request pages)", { nonce: "abc" }],
+    ["without one (prerendered pages: the landing page, the blog)", {}],
+  ])("lets Cloudflare Web Analytics load %s", (_case, options) => {
+    const policy = buildContentSecurityPolicy(options);
+
+    expect(directive(policy, "script-src").split(" ")).toContain(
+      "https://static.cloudflareinsights.com",
+    );
+    expect(directive(policy, "connect-src").split(" ")).toContain("'self'");
+  });
 });
 
 /**

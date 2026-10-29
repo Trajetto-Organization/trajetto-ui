@@ -3,6 +3,7 @@ import { Instagram, Linkedin, Twitter } from "lucide-react";
 import { DocumentLink } from "@/components/shared/document-link";
 import { LEGAL_DOCUMENTS, legalPath } from "@/lib/content/legal-documents";
 import { FOOTER_SECTIONS } from "@/lib/public-pages";
+import { siteConfig } from "@/lib/site";
 
 import { SiteLogo } from "../site-logo";
 import { CopyrightYear } from "./copyright-year";
@@ -13,19 +14,18 @@ import { CopyrightYear } from "./copyright-year";
  * per-request CSP) and the prerendered pages keep next/link.
  */
 
-const SOCIAL_LINKS = [
-  {
-    label: "Trajetto no LinkedIn",
-    href: "https://www.linkedin.com/company/trajetto-official",
-    icon: Linkedin,
-  },
-  {
-    label: "Trajetto no Instagram",
-    href: "https://www.instagram.com/trajetto_official",
-    icon: Instagram,
-  },
-  { label: "Trajetto no X", href: "https://x.com/Trajetto", icon: Twitter },
-];
+const SOCIAL_ICONS = {
+  linkedin: Linkedin,
+  instagram: Instagram,
+  x: Twitter,
+} as const;
+
+// The same profiles the home page's JSON-LD lists as sameAs (src/lib/site.ts).
+const SOCIAL_LINKS = siteConfig.socialProfiles.map((profile) => ({
+  label: profile.label,
+  href: profile.href,
+  icon: SOCIAL_ICONS[profile.network],
+}));
 
 /** Short labels for the bottom row; the column above uses the full names. */
 const LEGAL_SHORT_LABELS: Record<string, string> = {

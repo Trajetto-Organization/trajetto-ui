@@ -11,7 +11,6 @@ export const metadata: Metadata = buildPageMetadata({
   socialTitle: "Entrar no Trajetto",
   description:
     "Entre na sua conta do Trajetto para acessar a gestão de frotas e de entregas da sua empresa.",
-  noindex: true,
 });
 
 const Login = (): JSX.Element => {

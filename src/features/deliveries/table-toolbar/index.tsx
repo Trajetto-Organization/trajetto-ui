@@ -226,8 +226,12 @@ export function DeliveriesTableToolbar<TData>({
           onChange={handleSearchWithLoading}
           disabled={error}
           isLoading={isPending || isLoading}
+          // From 200px up to 270px: the line breaks on the 200px basis and the
+          // box takes back its 270px from what is left. A fixed 270px left the
+          // period 24px of room at 1440px with the sidebar collapsed, and
+          // Linux's text metrics (CI) used them up: the period wrapped.
           wrapperClassName="w-full sm:w-auto
-          sm:min-w-[270px] sm:max-w-[270px]"
+          sm:flex-[1_1_200px] sm:min-w-[200px] sm:max-w-[270px]"
         />
       )}
 

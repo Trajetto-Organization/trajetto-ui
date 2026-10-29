@@ -204,8 +204,9 @@ Scripts usados pelos jobs:
   errado) e, quando o deployment termina em `error`, dispara de novo, até 3
   tentativas (`DOKPLOY_ATTEMPTS`). Foi assim que o download da imagem
   interrompido pelo IPv6 da VPS (27/10/2026) deixou de quebrar o run. A
-  causa, a rota IPv6 da VPS até o GitHub, se resolve no host: os downloads do
-  GHCR saem por IPv4 (`trajetto-api/docs/deploy.md`, seção 6.2). Exige
+  causa, a rota IPv6 da VPS até o GitHub, se resolve no host: o servidor
+  prefere IPv4 (`gai.conf` e `GODEBUG=netdns=cgo` no Docker,
+  `trajetto-api/docs/deploy.md`, seção 6.2). Exige
   https e nunca imprime a chave. Antes dele, o job confere os três secrets:
   nenhum = Dokploy ainda não existe (aviso, run verde); só alguns = erro de
   configuração (falha).

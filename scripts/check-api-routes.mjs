@@ -42,6 +42,31 @@ function shapeOf(template) {
 }
 
 /**
+ * The source with its comment lines blanked, so an example a comment gives
+ * (`relayUrl("/literal/path")`) is not read as a call. Line based, without a
+ * parser (the promote job runs this before any install): a line that starts
+ * with `//`, `*` or `*\/`, and every line of a block comment that starts at
+ * the beginning of a line. The newlines stay, so line numbers still match.
+ */
+function withoutCommentLines(source) {
+  let inBlock = false;
+
+  return source
+    .split("\n")
+    .map((line) => {
+      const code = line.trimStart();
+
+      if (inBlock || code.startsWith("/*")) {
+        inBlock = !line.includes("*/", inBlock ? 0 : line.indexOf("/*") + 2);
+        return "";
+      }
+
+      return code.startsWith("//") || code.startsWith("*") ? "" : line;
+    })
+    .join("\n");
+}
+
+/**
  * The API path shapes a set of source files builds, each with where it was
  * first seen.
  *
@@ -52,12 +77,14 @@ export function clientPathShapes(files) {
   const shapes = new Map();
 
   for (const { path, source } of files) {
-    for (const match of source.matchAll(CLIENT_URL)) {
+    const code = withoutCommentLines(source);
+
+    for (const match of code.matchAll(CLIENT_URL)) {
       const shape = shapeOf(match[1] ?? match[2] ?? match[3] ?? match[4] ?? "");
 
       if (!shape.startsWith("/") || shapes.has(shape)) continue;
 
-      const line = source.slice(0, match.index).split("\n").length;
+      const line = code.slice(0, match.index).split("\n").length;
       shapes.set(shape, `${path}:${line}`);
     }
   }

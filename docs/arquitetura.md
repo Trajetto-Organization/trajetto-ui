@@ -665,7 +665,9 @@ um release, respondendo uma mensagem clara.
 O que garante isso no pipeline: `scripts/check-api-routes.mjs` lê todo
 `${process.env.HTTP_REQUEST}/…`, `${await publicApiUrl()}/…` e
 `relayUrl("/…")` de `src/` e confere cada formato de caminho contra o
-`paths` do OpenAPI da API de produção (`/docs/json`). Ele não compara métodos
+`paths` do OpenAPI da API de produção (`/docs/json`). Linhas de comentário
+ficam de fora: um exemplo citado num comentário não é chamada (a primeira
+promoção da web parou em três desses, em 29/10/2026). Ele não compara métodos
 nem corpos. É um piso. O lado da API tem o teste equivalente,
 `trajetto-api/tests/unitaires/contract/client-routes.test.ts`, que lê este
 repositório.

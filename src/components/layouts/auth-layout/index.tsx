@@ -42,10 +42,13 @@ const AuthLayout = ({ children }: AuthLayoutProps): JSX.Element => {
                     className="h-12 w-12 origin-left transform-gpu text-neutral-700 
                     transition-all duration-300 ease-in-out group-hover:scale-75"
                   />
-                  <h3 className="text-xl font-semibold text-neutral-300">
+                  {/* The panel's own colour behind the lines, where the list
+                      paints nothing: a card cut at the list's clip edge still
+                      counts under them for axe, which would read its white. */}
+                  <h3 className="bg-zinc-900 text-xl font-semibold text-neutral-300">
                     Notificações
                   </h3>
-                  <p className="max-w-lg text-neutral-400">
+                  <p className="max-w-lg bg-zinc-900 text-neutral-400">
                     Seja notificado quando algo acontecer.
                   </p>
                 </div>

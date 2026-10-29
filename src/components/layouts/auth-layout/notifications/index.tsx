@@ -104,9 +104,13 @@ const Notifications = (): JSX.Element => {
 
   notifications = Array.from({ length: 10 }, () => notifications).flat();
 
+  // Clipped to its box, where the mask already cuts the paint: the list grows
+  // far past it, and unclipped those cards still lay under the heading below,
+  // for contrast checkers reading the DOM and on screen wherever the
+  // unprefixed `mask-image` is ignored (Chromium before 120).
   return (
     <div
-      className="absolute right-2 top-4 h-[300px] w-full border-none 
+      className="absolute right-2 top-4 h-[300px] w-full overflow-hidden border-none
       transition-all duration-300 ease-out group-hover:scale-105 px-4
       [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] "
     >

@@ -92,10 +92,13 @@ describe("the suites that need a running stack", () => {
     expect(existsSync(path)).toBe(true);
   });
 
-  it("run every night and on demand", () => {
+  it("run on demand and never on a schedule", () => {
+    // A nightly run repeated suites every staging push and pull request to
+    // main had already passed, and spent most of the month's Actions minutes.
     const source = read(".github", "workflows", "browser-suites.yml");
 
-    expect(source).toMatch(/schedule:\s*\r?\n(?:\s*#.*\r?\n)*\s*- cron: /);
+    expect(source).not.toMatch(/^\s*schedule:/m);
+    expect(source).not.toMatch(/- cron: /);
     expect(source).toContain("workflow_dispatch:");
   });
 

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The nightly browser job installs before it builds.
+ * The browser-suites job installs before it builds.
  *
  * Yarn 1 skips every devDependency when NODE_ENV is production. The web's
  * build needs several of them (typescript, tailwindcss, postcss, the bundle
@@ -53,7 +53,7 @@ describe("browser-suites.yml", () => {
 
   it("mints the form-login accounts after the MASTER sessions", () => {
     // The specs that sign in through the form read browser-users.json; the
-    // nightly job never wrote it and every one of them threw.
+    // job never wrote it and every one of them threw.
     const master = workflow.indexOf("npx tsx tests/load/mint-master.ts");
     const users = workflow.indexOf("npx tsx tests/load/mint-browser-users.ts");
 

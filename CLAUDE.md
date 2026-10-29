@@ -195,7 +195,7 @@ scripts/check-api-routes.mjs       gate de rotas do promote
   (audit, Prettier, `yarn lint` com as regras do ESLint que o `next build`
   aplica, tsc, unitários com cobertura, regras, gitleaks).
 - `browser-suites.yml`: `ui`, `a11y` e `responsive` contra a stack. Roda num
-  push em staging (via deploy), num PR para main e toda noite. Pula sem
+  push em staging (via deploy), num PR para main e sob demanda (sem agendamento). Pula sem
   `API_REPO_READ_TOKEN`.
 - `deploy.yml`:
   - push em `staging` → validação → **um** build `sha-<commit>` → tag

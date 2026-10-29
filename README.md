@@ -445,7 +445,7 @@ staging ─PR─▶ main ─merge─▶ aprovação ─▶ mesma imagem, por dig
   entre ambientes é lido em runtime do Environment da Application.
 - **Workflows** (`.github/workflows/`): `ci.yml` (audit, Prettier, ESLint,
   tsc, unitários com cobertura, regras, gitleaks), `browser-suites.yml`
-  (`ui`, `a11y`, `responsive`; push em staging, PR para main e toda noite) e
+  (`ui`, `a11y`, `responsive`; push em staging, PR para main e sob demanda) e
   `deploy.yml` (build, staging, promoção e release).
 - **Dokploy**: a Application `trajetto-ui` (provider Docker, imagem do GHCR)
   no projeto `trajetto-ui` de cada environment. O deploy chama a API do

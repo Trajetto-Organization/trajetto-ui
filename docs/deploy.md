@@ -161,8 +161,11 @@ Jobs:
 | ------------------- | ------------------------------------------------------------------------------------ |
 | `workflow_call`     | chamado pelo `deploy.yml` num push em `staging` (a imagem só é construída se passar) |
 | `pull_request`      | para `main`                                                                          |
-| `schedule`          | todo dia às 06:00 UTC (03:00 de Brasília)                                            |
 | `workflow_dispatch` | manual                                                                               |
+
+Não há agendamento: um build que passou aqui não roda de novo. A rodada
+noturna só repetia o que o push em `staging` e o PR para `main` já tinham
+aprovado, e consumia a maior parte dos minutos do mês do Actions.
 
 Ele sobe a stack do zero: Postgres 16 e Redis 7 como service containers, a
 API (checkout da mesma branch na `trajetto-api`), migrations, seed, as
@@ -858,7 +861,7 @@ Depois de cada deploy, procure no log da Application (Dokploy → Logs) por
 ## 16. Suítes de navegador no pipeline
 
 O `browser-suites.yml` roda num push em `staging` (antes do build), num PR
-para `main` e toda noite. Ele precisa do secret de repositório
+para `main` e sob demanda. Ele precisa do secret de repositório
 `API_REPO_READ_TOKEN`: um token fine-grained com dono
 `Trajetto-Organization`, acesso só ao repositório `trajetto-api` e
 _Contents: Read-only_. Sem o token, as suítes são **puladas** com um aviso no

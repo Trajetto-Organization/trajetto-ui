@@ -14,7 +14,7 @@
 # tag names its Alpine minor: the runtime base below must be the same one,
 # because this binary is built against that minor's musl and libstdc++
 # (tests/unitaires/image-layers.test.ts holds the two together).
-FROM node:22.21.1-alpine3.23@sha256:0340fa682d72068edf603c305bfbc10e23219fb0e40df58d9ea4d6f33a9798bf AS node
+FROM node:22.23.4-alpine3.23@sha256:6abbcf5dd6b231da109bcde1181db1d92bf78015ae1a9514d9807c1f857869db AS node
 
 # ---------------------------------------------------------
 # STAGE 2: The node binary, as a reproducible tree
@@ -47,7 +47,7 @@ RUN mkdir -p /out/usr/local/bin \
 # (ldd). Node bundles its own OpenSSL, CA store and full ICU — pt-BR dates
 # and America/Sao_Paulo need no tzdata package (the Node image had none
 # either).
-FROM alpine:3.23.7@sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63 AS base
+FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS base
 
 # First, and `--link`: a layer of its own that does not depend on the
 # Alpine one below, so an Alpine patch bump leaves this ~46 MB (compressed)

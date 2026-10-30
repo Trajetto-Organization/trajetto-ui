@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-import { docsSitemapPages } from "@/app/docs/_lib/guides";
+import { docsSitemapPages } from "@/app/docs/_lib/guide-index";
 import { getPosts } from "@/lib/content/blog";
 import { getLegalDocuments } from "@/lib/content/legal";
 import { PUBLIC_PAGES } from "@/lib/public-pages";

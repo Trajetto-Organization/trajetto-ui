@@ -128,6 +128,21 @@ describe("the guide registry", () => {
     ).toBeUndefined();
   });
 
+  // The sitemap lists the guides through guide-index.ts; the MDX compiler is
+  // guides.ts's, for the pages, and has no business in the sitemap's bundle.
+  it("reads the guides for the sitemap without the MDX compiler", () => {
+    const root = resolve(__dirname, "../..");
+    const index = readFileSync(
+      resolve(root, "src/app/docs/_lib/guide-index.ts"),
+      "utf8",
+    );
+    const sitemap = readFileSync(resolve(root, "src/app/sitemap.ts"), "utf8");
+
+    expect(index).not.toMatch(/@\/lib\/content\/mdx|@mdx-js/);
+    expect(sitemap).toContain('from "@/app/docs/_lib/guide-index"');
+    expect(sitemap).not.toContain('from "@/app/docs/_lib/guides"');
+  });
+
   it("offers the same components live and in tests", () => {
     expect(Object.keys(docsMdxComponents).sort()).toEqual(
       Object.keys(docsMdxComponentsFor(null)).sort(),

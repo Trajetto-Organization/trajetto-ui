@@ -33,12 +33,12 @@ describe("the app's text face", () => {
   it("loads the weights the app uses, bold included, on <html>", () => {
     const layout = readFileSync(path.join(ROOT, "src/app/layout.tsx"), "utf8");
     const inter =
-      /const inter = Inter\(\{[\s\S]*?\}\);/.exec(layout)?.[0] ?? "";
+      /const inter = localFont\(\{[\s\S]*?\n\}\);/.exec(layout)?.[0] ?? "";
 
     // font-medium (616 uses), font-semibold (242), font-bold (47): without
-    // 700 the browser fakes the bold.
-    for (const weight of ["400", "500", "600", "700"])
-      expect(inter).toContain(`"${weight}"`);
+    // 700 the browser fakes the bold. The file is variable: one range covers
+    // 400 to 700.
+    expect(inter).toMatch(/weight:\s*"400 700"/);
     expect(layout).toMatch(/<html[\s\S]*className=\{`\$\{inter\.variable\}/);
   });
 

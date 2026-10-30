@@ -426,10 +426,24 @@ Nomes antigos que não existem mais (o erro de boot cita o substituto):
 - O Turnstile (Cloudflare) protege login, recuperação de senha e orçamento.
   Num servidor de produção, ele é obrigatório. Um único wrapper
   (`src/components/shared/custom/captcha-turnstile`) desenha o widget com
-  estados explícitos (`captcha-machine.ts`): carregando (skeleton do tamanho
-  do widget, atrás dele), pronto, verificado, expirado, erro, tempo esgotado
-  (15 s sem token nem desafio) e script bloqueado. Erro e tempo esgotado
-  oferecem "Tentar novamente", que desenha um widget novo. Script bloqueado
+  estados explícitos (`captcha-machine.ts`): aguardando a pessoa, carregando
+  (skeleton do tamanho do widget, atrás dele), pronto, verificado, expirado,
+  erro, tempo esgotado (15 s sem token nem desafio) e script bloqueado. Nada
+  da Cloudflare carrega antes de a pessoa usar a página: o widget espera o
+  primeiro clique, toque ou tecla, ou o ponteiro se mover sobre o formulário
+  (`person-input.ts`; foco não conta, porque o `/forgot` foca o campo
+  sozinho; o ponteiro cobre o Firefox antes do 119 e o Safari antes do 17.5,
+  que não entregam nada do clique num botão desabilitado). Até lá, uma caixa
+  parada do tamanho do widget diz "Começa quando você usar o formulário". Uma
+  página já usada carrega na hora, pela ativação do navegador
+  (`navigator.userActivation`): a etapa 3 do orçamento e, no Chrome, o
+  `/login` aberto pelo "Entrar" do site. Assim o Lighthouse e
+  os robôs não recebem o quadro, os cookies nem as mensagens de console da
+  Cloudflare: num navegador com cookies de `cloudflare.com`, eles iam junto
+  com as requisições do widget e derrubavam o Best Practices do `/login` e
+  do `/forgot` para 77 (cookies de terceiros e o painel Issues). Erro e
+  tempo esgotado oferecem "Tentar novamente", que desenha um widget novo.
+  Script bloqueado
   oferece "Recarregar página": o `react-turnstile` 1.1.4 guarda a falha do
   `api.js` enquanto a página vive. O token fica no estado do formulário
   (`useCaptchaToken`) e num input oculto controlado. Ele só existe enquanto o
@@ -980,8 +994,9 @@ O que se mediu na build de produção e ficou travado por teste:
   `?view=<última>` (guardada no localStorage, `towerEntryHref`), então o
   servidor já renderiza a visão certa. Um link sem visão (aviso, favorito)
   ainda cai na visão padrão e o shell troca para a última no navegador.
-- **Layout shift do captcha:** o widget do Turnstile monta meio segundo
-  depois da página. O markup do servidor agora reserva a altura dele, e isso
+- **Layout shift do captcha:** o widget do Turnstile monta depois da página,
+  quando a pessoa começa a usá-la. O markup do servidor reserva a altura
+  dele, e isso
   tirou o deslocamento de 0,10 medido no `/login`
   (`tests/unitaires/captcha-layout-shift.test.tsx`). O iframe do widget é
   inline e a linha somava 6 px sob ele (71 px numa caixa de 65), o que ainda

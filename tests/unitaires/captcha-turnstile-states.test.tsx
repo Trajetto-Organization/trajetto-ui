@@ -136,7 +136,6 @@ function Harness(): JSX.Element {
         <CaptchaTurnstile
           {...captcha.widget}
           size="flexible"
-          delayMs={0}
           loadTimeoutMs={15_000}
         />
       ) : null}
@@ -161,6 +160,7 @@ const submitButton = () => $<HTMLButtonElement>('button[type="submit"]')!;
 const statusText = () => $('[role="status"]')?.textContent ?? "";
 const alertBox = () => $('[role="alert"]');
 const skeleton = () => $("[data-captcha-skeleton]");
+const idleBox = () => $("[data-captcha-idle]");
 const alive = () => fake.instances.filter((instance) => instance.alive);
 const widget = () => {
   const live = alive();
@@ -186,13 +186,35 @@ async function fire(callback: () => void): Promise<void> {
   });
 }
 
-async function mount(): Promise<void> {
+/** An input event, as the browser dispatches it under the page. */
+async function press(input: string): Promise<void> {
+  await act(async () => {
+    document.body.dispatchEvent(new Event(input, { bubbles: true }));
+  });
+}
+
+/** The sticky activation a browser keeps once a person used the page (jsdom has none). */
+function markActivated(): void {
+  Object.defineProperty(navigator, "userActivation", {
+    configurable: true,
+    value: { hasBeenActive: true, isActive: true },
+  });
+}
+
+/** A person's first input: the activation it leaves, and the event. */
+async function person(): Promise<void> {
+  markActivated();
+  await press("keydown");
+}
+
+/** Renders the form; a person uses the page unless told otherwise. */
+async function mount({ asPerson = true } = {}): Promise<void> {
   const host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
 
   await act(async () => root!.render(<Harness />));
-  // The wrapper's mount delay (0 here) runs on a timer.
+  if (asPerson) await person();
   await flush(1);
 }
 
@@ -223,9 +245,122 @@ afterEach(async () => {
   api = null;
   showWidget = null;
   document.body.innerHTML = "";
+  delete (navigator as { userActivation?: unknown }).userActivation;
   vi.unstubAllEnvs();
   vi.useRealTimers();
   vi.restoreAllMocks();
+});
+
+describe("before a person uses the page", () => {
+  it("holds the box with a still placeholder and loads nothing: no widget, not busy, never a timeout", async () => {
+    await mount({ asPerson: false });
+
+    expect(state()).toBe("idle");
+    expect(fake.instances).toHaveLength(0);
+    // Not the pulsing skeleton of a load: a still box that says what starts it.
+    expect(skeleton()).toBeNull();
+    expect(idleBox()).not.toBeNull();
+    expect(idleBox()!.getAttribute("aria-hidden")).toBe("true");
+    expect(idleBox()!.textContent).toContain(
+      "Começa quando você usar o formulário.",
+    );
+    expect(idleBox()!.getAttribute("style")).toContain("height: 65px");
+    expect(box().innerHTML).toContain("min-height: 65px");
+    expect(box().querySelector("[aria-busy]")).toBeNull();
+    expect(statusText()).toBe(
+      "A verificação de segurança começa quando você usar o formulário.",
+    );
+    expect(submitButton().disabled).toBe(true);
+    expect(submitButton().getAttribute("aria-describedby")).toBe(
+      api!.widget.statusId,
+    );
+
+    // The person may take their time: no watchdog runs before the start.
+    await flush(60_000);
+
+    expect(state()).toBe("idle");
+    expect(alertBox()).toBeNull();
+    expect(fake.instances).toHaveLength(0);
+  });
+
+  it.each(["pointerdown", "keydown", "touchstart"])(
+    "loads on the person's first %s, once",
+    async (input) => {
+      await mount({ asPerson: false });
+      await press(input);
+      await flush(1);
+
+      expect(state()).toBe("loading");
+      expect(alive()).toHaveLength(1);
+
+      await press("keydown");
+      await press("pointerdown");
+
+      expect(fake.mounts).toBe(1);
+    },
+  );
+
+  it("loads when a pointer moves over the form, not elsewhere on the page", async () => {
+    // Firefox before 119 and Safari before 17.5 send nothing for a press on
+    // the disabled submit: the pointer on its way there starts the check.
+    await mount({ asPerson: false });
+    const outside = document.createElement("div");
+    document.body.appendChild(outside);
+
+    await act(async () => {
+      outside.dispatchEvent(new Event("pointermove", { bubbles: true }));
+    });
+    await flush(1);
+
+    expect(state()).toBe("idle");
+
+    await act(async () => {
+      submitButton().dispatchEvent(new Event("pointermove", { bubbles: true }));
+    });
+    await flush(1);
+
+    expect(state()).toBe("loading");
+    expect(idleBox()).toBeNull();
+    expect(skeleton()).not.toBeNull();
+    expect(alive()).toHaveLength(1);
+  });
+
+  it("does not load on focus alone (the forgot form focuses its field on load)", async () => {
+    await mount({ asPerson: false });
+    const field = document.createElement("input");
+    document.body.appendChild(field);
+
+    await act(async () => field.focus());
+    await flush(1);
+
+    expect(document.activeElement).toBe(field);
+    expect(state()).toBe("idle");
+    expect(fake.instances).toHaveLength(0);
+  });
+
+  it("loads at once where the person already used the page (the browser's sticky activation)", async () => {
+    markActivated();
+    await mount({ asPerson: false });
+
+    expect(state()).toBe("loading");
+    expect(alive()).toHaveLength(1);
+  });
+
+  it("stops waiting when it unmounts before the person comes", async () => {
+    const removed = vi.spyOn(window, "removeEventListener");
+
+    await mount({ asPerson: false });
+    await act(async () => root!.unmount());
+    root = null;
+
+    expect(removed.mock.calls.map(([type]) => type)).toEqual(
+      expect.arrayContaining(["pointerdown", "keydown", "touchstart"]),
+    );
+
+    await press("keydown");
+
+    expect(fake.instances).toHaveLength(0);
+  });
 });
 
 describe("loading", () => {
@@ -498,7 +633,7 @@ describe("timeout", () => {
     const current = widget();
 
     await fire(() => current.props.onLoad?.("w", current.bound));
-    // The limit counts from the box's mount (mount() already ran 1 ms).
+    // The limit counts from the start (mount() already ran 1 ms after it).
     await flush(14_998);
     expect(state()).toBe("loading");
 
@@ -669,10 +804,10 @@ describe("a container narrower than the widget (the quote's step 3 on a phone)",
           onTokenChange={() => undefined}
           size="flexible"
           fallbackSize="compact"
-          delayMs={0}
         />,
       ),
     );
+    await person();
     await flush(1);
   }
 

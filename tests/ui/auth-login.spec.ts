@@ -108,13 +108,20 @@ test.describe("the login form", () => {
 
     // Staying on /login proves nothing: a wrong-credential round trip stays
     // there too. What proves the check ran first is that nothing was POSTed —
-    // neither the server action nor the API's login.
+    // neither the server action nor the API's login. The captcha's own
+    // requests to Cloudflare, which start with the click below, are not ours.
     const posts: string[] = [];
 
     page.on("request", (request) => {
-      if (request.method() === "POST") posts.push(request.url());
+      if (
+        request.method() === "POST" &&
+        new URL(request.url()).hostname !== "challenges.cloudflare.com"
+      )
+        posts.push(request.url());
     });
 
+    // A person's first input loads the captcha (person-input.ts); fill() makes none.
+    await email.click();
     await email.fill("nao-e-um-email");
     await page.getByLabel("Senha").fill(PASSWORD);
     await page.getByRole("button", { name: "Entrar" }).click();

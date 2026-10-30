@@ -19,23 +19,23 @@ const LAYOUT = readFileSync(
   "utf8",
 );
 
-/** The options object passed to `loader(...)` in the layout. */
-function optionsOf(loader: string): string {
-  const match = new RegExp(`=\\s*${loader}\\(\\{([\\s\\S]*?)\\}\\);`).exec(
-    LAYOUT,
-  );
+/** The options object passed to `localFont(...)` for the layout's `const`. */
+function optionsOf(constant: string): string {
+  const match = new RegExp(
+    `const ${constant} = localFont\\(\\{([\\s\\S]*?)\\n\\}\\);`,
+  ).exec(LAYOUT);
 
-  expect(match, loader).not.toBeNull();
+  expect(match, constant).not.toBeNull();
 
   return match![1];
 }
 
 describe("the root layout's fonts", () => {
   it("does not preload JetBrains Mono", () => {
-    expect(optionsOf("JetBrains_Mono")).toMatch(/preload:\s*false/);
+    expect(optionsOf("jetBrainsMono")).toMatch(/preload:\s*false/);
   });
 
-  it.each(["Inter", "Inter_Tight"])("keeps %s preloaded", (loader) => {
-    expect(optionsOf(loader)).not.toMatch(/preload:\s*false/);
+  it.each(["inter", "interTight"])("keeps %s preloaded", (constant) => {
+    expect(optionsOf(constant)).not.toMatch(/preload:\s*false/);
   });
 });

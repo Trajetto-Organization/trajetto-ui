@@ -72,7 +72,7 @@ usam.
 - **Nomes:** `tests/unitaires/<assunto>.test.ts` ou `.test.tsx`. São cerca de
   380 arquivos.
 - **Aliases** (`vitest.config.ts`): `@` → `src/`; `server-only` → o gêmeo
-  vazio do Next; `next/font/google` → `tests/unitaires/helpers/next-font-google.ts`.
+  vazio do Next; `next/font/local` → `tests/unitaires/helpers/next-font-local.ts`.
 - **Helpers** em `tests/unitaires/helpers/`: `render-html.ts` (renderiza
   componentes do servidor), `client-graph.ts` (grafo de imports do cliente),
   `contrast.ts` e `rendered-contrast.ts` (contraste WCAG),

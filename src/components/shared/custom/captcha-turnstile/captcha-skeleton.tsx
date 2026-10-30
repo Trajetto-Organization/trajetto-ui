@@ -1,3 +1,5 @@
+import { ShieldCheck } from "lucide-react";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -79,5 +81,42 @@ const CaptchaSkeleton = ({
   );
 };
 
-export { CaptchaSkeleton, WIDGET_HEIGHT_PX, WIDGET_MIN_WIDTH_PX };
+/**
+ * The widget's place before a person uses the page (captcha-machine.ts,
+ * idle): still, at the widget's exact size, and saying what starts the
+ * check, so it never reads as a load that does not end. Purely visual
+ * (aria-hidden): the status line says the same to screen readers.
+ */
+const CaptchaIdle = ({
+  size = "normal",
+  className,
+}: CaptchaSkeletonProps): JSX.Element => {
+  const compact = size === "compact";
+
+  return (
+    <div
+      aria-hidden="true"
+      data-captcha-idle=""
+      className={cn(
+        "flex rounded-md border border-border bg-card p-3 text-muted-foreground",
+        compact
+          ? "flex-col items-center justify-center gap-2 text-center"
+          : "items-center gap-3 px-4",
+        WIDGET_WIDTH_CLASS[size],
+        className,
+      )}
+      style={{ height: WIDGET_HEIGHT_PX[size] }}
+    >
+      <ShieldCheck className="size-5 shrink-0" />
+      <p className="m-0 text-xs leading-snug">
+        <span className="block font-medium text-foreground">
+          Verificação de segurança
+        </span>
+        Começa quando você usar o formulário.
+      </p>
+    </div>
+  );
+};
+
+export { CaptchaIdle, CaptchaSkeleton, WIDGET_HEIGHT_PX, WIDGET_MIN_WIDTH_PX };
 export type { CaptchaSize };

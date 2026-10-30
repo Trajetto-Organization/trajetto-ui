@@ -96,6 +96,9 @@ async function submitLogin(
     // the outcome is about timing, not about the login.
     await waitForHydration(page.getByLabel("Email"));
 
+    // The captcha loads on a person's first input (person-input.ts), and
+    // fill() makes none: the click on the field does, as a person's would.
+    await page.getByLabel("Email").click();
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Senha").fill(password);
     await page.getByRole("button", { name: "Entrar" }).click();

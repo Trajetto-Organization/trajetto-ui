@@ -51,6 +51,45 @@ describe("web fonts", () => {
     expect(unused).toEqual([]);
   });
 
+  it("builds without the network: no font is downloaded at build time", () => {
+    // next/font/google fetched the files from Google on every `next build`;
+    // a failed download failed the build (three times on 30/10/2026).
+    const google = sources
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .filter((file) =>
+        /from\s+["']next\/font\/google["']/.test(readFileSync(file, "utf8")),
+      )
+      .map((file) => path.relative(ROOT, file));
+
+    expect(google).toEqual([]);
+
+    const missing = fontLoaders.flatMap(({ file, text }) =>
+      [...text.matchAll(/src:\s*["'](\.[^"']+)["']/g)]
+        .map((match) => path.resolve(path.dirname(file), match[1]))
+        .filter((font) => !sources.includes(font))
+        .map((font) => path.relative(ROOT, font)),
+    );
+
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps each font's license next to it (SIL OFL)", () => {
+    const fonts = path.join(SRC, "app", "fonts");
+    const licenses = readdirSync(fonts).filter((name) =>
+      name.endsWith("-OFL.txt"),
+    );
+
+    expect(licenses.sort()).toEqual([
+      "Inter-OFL.txt",
+      "InterTight-OFL.txt",
+      "JetBrainsMono-OFL.txt",
+    ]);
+    for (const license of licenses)
+      expect(readFileSync(path.join(fonts, license), "utf8")).toContain(
+        "SIL OPEN FONT LICENSE Version 1.1",
+      );
+  });
+
   it("ships no font file under src that no loader references", () => {
     const loaderText = fontLoaders.map(({ text }) => text).join("\n");
 

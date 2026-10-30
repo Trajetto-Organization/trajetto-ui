@@ -1,3 +1,11 @@
+## [1.1.3](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.2...v1.1.3) (2026-10-30)
+
+
+### Bug Fixes
+
+* **web:** as fontes ficam no repositório e o build deixa de depender do Google ([cd50097](https://github.com/Trajetto-Organization/trajetto-ui/commit/cd5009764ab13566e26df905fd6fbef8d429ebaf))
+* **web:** o captcha só carrega quando a pessoa usa a página ([4b63579](https://github.com/Trajetto-Organization/trajetto-ui/commit/4b635796e04a748f85c2e9573e406324bd254318))
+
 ## [1.1.2](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.1...v1.1.2) (2026-10-30)
 
 

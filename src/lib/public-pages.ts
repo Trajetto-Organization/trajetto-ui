@@ -7,8 +7,9 @@ import { LEGAL_DOCUMENTS, legalPath } from "@/lib/content/legal-documents";
  * footer read it, so a page added here shows up in all three and none of
  * them can point at a page that does not exist.
  *
- * Login and password recovery are not here on purpose: they carry noindex
- * and have nothing to rank for.
+ * Login and password recovery are here for the sitemap only (no `nav`, no
+ * `footer`; the header has its own "Entrar"). The pages that carry a token
+ * (/forgot/password, /new-verification) say noindex and stay out.
  */
 export interface PublicPage {
   path: string;
@@ -93,6 +94,20 @@ export const PUBLIC_PAGES: readonly PublicPage[] = [
     priority: 0.8,
     changeFrequency: "yearly",
     footer: "institucional",
+  },
+  {
+    // The doors to the app: indexable, so a search for "Trajetto login"
+    // lands on the sign-in page, and listed with the rest of what is.
+    path: "/login",
+    label: "Entrar",
+    priority: 0.5,
+    changeFrequency: "yearly",
+  },
+  {
+    path: "/forgot",
+    label: "Recuperar senha",
+    priority: 0.3,
+    changeFrequency: "yearly",
   },
 ];
 

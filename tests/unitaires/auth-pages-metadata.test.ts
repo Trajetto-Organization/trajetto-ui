@@ -13,9 +13,8 @@ vi.mock("@/components/site/site-header", () => ({ SiteHeader: () => null }));
  * /login and /forgot said `index, follow` with the canonical and og:url set
  * to METADATA_BASE, the home page: each told Google it was the home page,
  * while the sitemap listed them at priority 1.0. Each now has its own
- * canonical. They stay indexable, so a search for "Trajetto login" lands on
- * the sign-in page, and out of the sitemap: the header links them from every
- * page, and they are doors, not content to rank.
+ * canonical. They are indexable, so a search for "Trajetto login" lands on
+ * the sign-in page, and in the sitemap with everything else that is.
  * The token pages (/forgot/password, /new-verification) inherited whatever
  * the layout said; robots.txt keeps crawlers out, and the meta says noindex
  * too for a link shared elsewhere.
@@ -93,13 +92,15 @@ describe("the sign-in pages", () => {
     },
   );
 
-  it("/login and /forgot stay out of the sitemap", async () => {
+  it("/login and /forgot are in the sitemap, the token pages are not", async () => {
     vi.stubEnv("METADATA_BASE", ORIGIN);
     const sitemap = (await import("@/app/sitemap")).default;
     const urls = (await sitemap()).map((entry) => new URL(entry.url).pathname);
 
-    expect(urls).not.toContain("/login");
-    expect(urls).not.toContain("/forgot");
+    expect(urls).toContain("/login");
+    expect(urls).toContain("/forgot");
+    expect(urls).not.toContain("/forgot/password");
+    expect(urls).not.toContain("/new-verification");
   });
 });
 

@@ -3,8 +3,8 @@ import { Metadata } from "next";
 import { LoginForm } from "@/components/auth/login-form";
 import { buildPageMetadata } from "@/lib/page-metadata";
 
-// A door, not content: kept out of search results (links still followed)
-// and out of the sitemap. Its own canonical; it used to point at the home.
+// Indexable and in the sitemap, so a search for "Trajetto login" lands here.
+// Its own canonical; it used to point at the home.
 export const metadata: Metadata = buildPageMetadata({
   path: "/login",
   title: "Entrar",

@@ -210,7 +210,7 @@ describe("/blog/[slug]", () => {
 });
 
 describe("sitemap.xml", () => {
-  it("lists the public pages on the canonical origin, and never login or recovery", () => {
+  it("lists the public pages on the canonical origin, and never a page with a token", () => {
     asProductionBuild();
 
     const urls = sitemap().map((entry) => entry.url);
@@ -222,7 +222,11 @@ describe("sitemap.xml", () => {
     }
 
     expect(urls.every((url) => url.startsWith(`${ORIGIN}/`))).toBe(true);
-    expect(urls.some((url) => /\/(login|forgot)\b/.test(url))).toBe(false);
+    expect(urls).toContain(`${ORIGIN}/login`);
+    expect(urls).toContain(`${ORIGIN}/forgot`);
+    expect(
+      urls.some((url) => /\/(forgot\/|new-verification|verificar)/.test(url)),
+    ).toBe(false);
     expect(new Set(urls).size).toBe(urls.length);
   });
 

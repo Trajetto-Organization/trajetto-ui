@@ -19,9 +19,7 @@ const Notification = ({
   return (
     <figure
       className={cn(
-        "relative mx-auto min-h-fit w-full max-w-[400px] cursor-pointer overflow-hidden rounded-2xl p-4",
-        // animation styles
-        "transition-all duration-200 ease-in-out hover:scale-[103%]",
+        "relative mx-auto min-h-fit w-full max-w-[400px] overflow-hidden rounded-2xl p-4",
         // light styles
         "bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
         // dark styles
@@ -50,7 +48,11 @@ const Notification = ({
           >
             <span className="text-sm sm:text-lg">{name}</span>
             <span className="mx-1">·</span>
-            <span className="text-xs text-gray-500">{time}</span>
+            {/* gray-500 on the dark theme's see-through card is 3.7:1 against
+                the zinc-900 panel; gray-400 is about 7:1. */}
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {time}
+            </span>
           </figcaption>
           <p className="text-sm font-normal text-black dark:text-white/60">
             {description}
@@ -108,8 +110,19 @@ const Notifications = (): JSX.Element => {
   // far past it, and unclipped those cards still lay under the heading below,
   // for contrast checkers reading the DOM and on screen wherever the
   // unprefixed `mask-image` is ignored (Chromium before 120).
+  //
+  // Inert, because it is a picture of the product rather than content: made-up
+  // notifications on a loop. Screen readers no longer read out up to 50 of
+  // them, nothing in it takes the pointer or focus, and contrast checkers skip
+  // it, as WCAG 1.4.3 exempts pure decoration. Each card fades in over 450ms
+  // every 1.4s, and Lighthouse, catching one halfway, failed /login on the
+  // half-transparent time label about one run in two.
   return (
     <div
+      // @ts-expect-error React 18 renders `inert` only from a string, the empty
+      // one giving the bare attribute, while the types Next pulls in
+      // (react/experimental) say boolean. React 19 takes `inert` as is.
+      inert=""
       className="absolute right-2 top-4 h-[300px] w-full overflow-hidden border-none
       transition-all duration-300 ease-out group-hover:scale-105 px-4
       [mask-image:linear-gradient(to_top,transparent_10%,#000_100%)] "

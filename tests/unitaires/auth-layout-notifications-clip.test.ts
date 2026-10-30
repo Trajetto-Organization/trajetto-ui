@@ -59,6 +59,12 @@ describe("the login panel's notification list and its heading", () => {
     expect(listBox.className).toMatch(/\[mask-image:/);
   });
 
+  // The bare attribute, as React 18 renders the empty string. Under React 19
+  // "" means false and this fails: the component switches to `inert` then.
+  it("marks the list inert: a picture of the product, not content", () => {
+    expect(listBox.getAttribute("inert")).toBe("");
+  });
+
   it("paints the panel's colour behind the heading's lines", () => {
     const panel = host.querySelector(".absolute.inset-0")!;
     const panelColour = Array.from(panel.classList).find((name) =>
@@ -134,6 +140,9 @@ describe.skipIf(!hasChromium)(
                   const where = `page +${shift}px, list +${offset}px`;
 
                   // Without the mask, nothing of the list below its box.
+                  // Inert content is left out of hit-testing, so the scan
+                  // could not see a card there: it looks with the list live.
+                  listBox.inert = false;
                   listBox.style.maskImage = "none";
                   const box = listBox.getBoundingClientRect();
                   const cardBox = card.getBoundingClientRect();
@@ -156,6 +165,7 @@ describe.skipIf(!hasChromium)(
                     }
                   }
                   listBox.style.maskImage = "";
+                  listBox.inert = true;
 
                   const run = await axe.run(block, {
                     runOnly: ["color-contrast"],
@@ -211,5 +221,62 @@ describe.skipIf(!hasChromium)(
         BROWSER_STEP_TIMEOUT_MS * 2,
       );
     }
+  },
+);
+
+/**
+ * Lighthouse failed /login again on colour contrast about one run in two: the
+ * time label of a card ("às 17:49", gray-500) at 2.64:1 against #d7d7d8. A
+ * card enters every 1.4s with a 450ms fade-in, and axe, run while one was
+ * still see-through, blended its white with the zinc-900 panel behind it.
+ *
+ * The list is inert now (decoration, which WCAG 1.4.3 exempts), and axe's
+ * colour-contrast rule does not take inert content at all: not one of its
+ * lines is weighed, at whatever point of a fade axe runs. Run once more with
+ * the list live, to show that the same lines are weighed without it.
+ */
+describe.skipIf(!hasChromium)(
+  `axe and the login panel's notification list${hasChromium ? "" : " — skipped: Chromium is not installed"}`,
+  () => {
+    it(
+      "weighs none of its lines, however far a card is into its fade",
+      async () => {
+        const result = await measureInChromium(
+          loginPage(),
+          async () => {
+            const axe = (
+              window as unknown as { axe: typeof import("axe-core") }
+            ).axe;
+            const card = document
+              .querySelector("figure")!
+              .closest(".stack-item")!;
+            const listBox = card.parentElement!.parentElement as HTMLElement;
+
+            const weighedInList = async () => {
+              const run = await axe.run(document, {
+                runOnly: ["color-contrast"],
+                elementRef: true,
+              });
+
+              return [...run.violations, ...run.incomplete, ...run.passes]
+                .flatMap((rule) => rule.nodes)
+                .filter((node) => listBox.contains(node.element as Node))
+                .map((node) => (node.element as Element).textContent);
+            };
+
+            const inert = await weighedInList();
+            listBox.inert = false;
+            const live = await weighedInList();
+
+            return { inert, live };
+          },
+          { width: 1350, height: 940, scripts: [AXE] },
+        );
+
+        expect(result.inert).toEqual([]);
+        expect(result.live).toContain("às 17:49");
+      },
+      BROWSER_STEP_TIMEOUT_MS,
+    );
   },
 );

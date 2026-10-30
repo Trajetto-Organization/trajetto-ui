@@ -8,17 +8,43 @@ import { applyMask } from "@/lib/format-values";
 import type { FieldProps, UseCepValidationProps } from "../shared/common.types";
 import { businessFieldsData } from "../data";
 
+/**
+ * ViaCEP answers in well under a second. While a lookup runs, the address
+ * fields and the submit are disabled, so a ViaCEP that stops answering must
+ * not hold them: each try gives up after this long.
+ */
+const CEP_LOOKUP_TIMEOUT_MS = 8_000;
+
+/** ViaCEP answered, and does not know the CEP: asking again will not help. */
+class CepNotFoundError extends Error {
+  constructor() {
+    super("CEP não encontrado");
+    this.name = "CepNotFoundError";
+  }
+}
+
 const fetchCep = async (numericCep: string) => {
-  const res = await fetch(`https://viacep.com.br/ws/${numericCep}/json/`);
-  const data = await res.json();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CEP_LOOKUP_TIMEOUT_MS);
 
-  if (data.erro) throw new Error("CEP não encontrado");
+  try {
+    const res = await fetch(`https://viacep.com.br/ws/${numericCep}/json/`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`ViaCEP respondeu ${res.status}`);
 
-  return {
-    city: data.localidade || "",
-    uf: data.uf || "",
-    street: data.logradouro || "",
-  };
+    const data = await res.json();
+
+    if (data.erro) throw new CepNotFoundError();
+
+    return {
+      city: data.localidade || "",
+      uf: data.uf || "",
+      street: data.logradouro || "",
+    };
+  } finally {
+    clearTimeout(timer);
+  }
 };
 
 function useCepQuery(cep: string) {
@@ -29,6 +55,11 @@ function useCepQuery(cep: string) {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     keepPreviousData: false, // Don't keep previous CEP data when searching for a new one
+    // One more try for a dropped connection or a timeout, none for an unknown
+    // CEP: at worst ~17 s before the fields are handed back to the person.
+    retry: (failureCount, error) =>
+      !(error instanceof CepNotFoundError) && failureCount < 1,
+    retryDelay: 1_000,
   });
 }
 
@@ -140,6 +171,7 @@ function useCepValidation({
 
   const {
     data: cepData,
+    error: cepFailure,
     isFetching: cepFetching,
     isError: cepError,
     isSuccess: cepSuccess,
@@ -217,12 +249,16 @@ function useCepValidation({
 
     // Only show error if not fetching (query completed with error)
     if (!cepFetching && cepError && numericCep.length === 8) {
-      toast.error("CEP inválido! Preencha manualmente");
+      toast.error(
+        cepFailure instanceof CepNotFoundError
+          ? "CEP não encontrado. Preencha o endereço manualmente."
+          : "Não foi possível consultar o CEP agora. Preencha o endereço manualmente.",
+      );
       // Remove from loading toast tracking so the toast shows again if user types the same CEP
       hasShownLoadingToastForCepRef.current.delete(numericCep);
       lastSuccessfulCepRef.current = "";
     }
-  }, [cepFetching, cepSuccess, cepData, cepError, numericCep]);
+  }, [cepFetching, cepSuccess, cepData, cepError, cepFailure, numericCep]);
 
   const handleFieldChange = useCallback((name: string, value: string) => {
     setFormValues((prev) => ({ ...prev, [name]: value }));

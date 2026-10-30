@@ -15,7 +15,10 @@ promoção para produção, o rollback e a operação do dia a dia.
 Documentos irmãos: [`variaveis-de-ambiente.md`](./variaveis-de-ambiente.md)
 (cada variável e o valor por ambiente), [`arquitetura.md`](./arquitetura.md) e
 [`testes.md`](./testes.md). A API e o serviço local de IA têm o manual deles
-em `trajetto-api/docs/deploy.md`.
+em `trajetto-api/docs/deploy.md`. O mapa da infraestrutura feita à mão (as
+contas, os painéis da Contabo, do Dokploy, da Cloudflare, do GitHub e da Expo,
+os tokens e o porquê de cada configuração) fica em
+[`trajetto-api/docs/infraestrutura.md`](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/infraestrutura.md).
 
 ## Sumário
 
@@ -1025,7 +1028,10 @@ no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 > e
 > [`trajetto-mobile/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-mobile/blob/main/docs/deploy.md).
 > Mudou aqui, mude nos outros dois. O detalhe de cada passo fica no manual do
-> repositório dono dele.
+> repositório dono dele. O que foi configurado à mão nos painéis (Contabo,
+> Dokploy, Cloudflare, GitHub, Expo, Resend e R2), os tokens e o porquê de cada
+> escolha ficam em
+> [`trajetto-api/docs/infraestrutura.md`](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/infraestrutura.md).
 
 ### Quem é quem
 

@@ -26,8 +26,11 @@ import {
  * the token.
  */
 
+/** The captcha once a person used the page: where every widget event lands. */
+const started = captchaReducer(INITIAL_CAPTCHA, { type: "start" });
+
 const run = (...events: CaptchaEvent[]): CaptchaMachine =>
-  events.reduce(captchaReducer, INITIAL_CAPTCHA);
+  events.reduce(captchaReducer, started);
 
 const at = (status: CaptchaStatus, drawn = true): CaptchaMachine => ({
   ...INITIAL_CAPTCHA,
@@ -38,13 +41,31 @@ const at = (status: CaptchaStatus, drawn = true): CaptchaMachine => ({
 const retryable = { kind: "retryable", code: "300030" } as const;
 
 describe("captchaReducer", () => {
-  it("starts loading, with nothing drawn and no failure", () => {
+  it("starts idle, with nothing requested, nothing drawn and no failure", () => {
     expect(INITIAL_CAPTCHA).toEqual({
-      status: "loading",
+      status: "idle",
       attempt: 0,
       drawn: false,
       failure: null,
     });
+  });
+
+  it("loads once a person uses the page", () => {
+    expect(started).toEqual({ ...INITIAL_CAPTCHA, status: "loading" });
+  });
+
+  it.each([
+    "loading",
+    "ready",
+    "verified",
+    "expired",
+    "error",
+    "timeout",
+    "blocked",
+  ] as const)("ignores a later start in %s (it only leaves idle)", (status) => {
+    const state = at(status);
+
+    expect(captchaReducer(state, { type: "start" })).toBe(state);
   });
 
   it("stays loading once the widget is drawn (the iframe has not painted yet)", () => {
@@ -94,14 +115,18 @@ describe("captchaReducer", () => {
     },
   );
 
-  it.each(["ready", "verified", "error", "blocked", "timeout"] as const)(
-    "ignores the watchdog in %s (nothing is pending)",
-    (status) => {
-      const state = at(status);
+  it.each([
+    "idle",
+    "ready",
+    "verified",
+    "error",
+    "blocked",
+    "timeout",
+  ] as const)("ignores the watchdog in %s (nothing is pending)", (status) => {
+    const state = at(status);
 
-      expect(captchaReducer(state, { type: "watchdog" })).toBe(state);
-    },
-  );
+    expect(captchaReducer(state, { type: "watchdog" })).toBe(state);
+  });
 
   it.each(["timeout", "error", "expired", "ready", "loading"] as const)(
     "accepts a late token after %s",
@@ -213,7 +238,13 @@ describe("what the person reads", () => {
       }),
     ).toMatch(/navegador não é compatível/);
 
-    for (const status of ["loading", "ready", "verified", "expired"] as const) {
+    for (const status of [
+      "idle",
+      "loading",
+      "ready",
+      "verified",
+      "expired",
+    ] as const) {
       expect(failureMessage(at(status))).toBeNull();
       expect(STATUS_TEXT[status]).not.toBe("");
     }
@@ -222,6 +253,12 @@ describe("what the person reads", () => {
   it("announces loading as loading, not as a passed check", () => {
     expect(STATUS_TEXT.loading).toBe("Carregando verificação de segurança…");
     expect(STATUS_TEXT.verified).toBe("Verificação de segurança concluída.");
+  });
+
+  it("says, before anything loads, what starts the check", () => {
+    expect(STATUS_TEXT.idle).toBe(
+      "A verificação de segurança começa quando você usar o formulário.",
+    );
   });
 });
 

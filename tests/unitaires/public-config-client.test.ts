@@ -154,9 +154,13 @@ describe("the captcha", () => {
       root!.render(
         createElement(CaptchaTurnstile, {
           onTokenChange: () => undefined,
-          delayMs: 0,
         }),
       );
+    });
+
+    // The widget loads on a person's first input (person-input.ts).
+    await act(async () => {
+      document.body.dispatchEvent(new Event("keydown", { bubbles: true }));
     });
 
     await act(async () => {

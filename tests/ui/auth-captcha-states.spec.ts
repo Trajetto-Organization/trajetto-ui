@@ -17,6 +17,11 @@ import { waitForHydration } from "./support/ui";
  * loaded by a nonced chunk under 'strict-dynamic'). The stub draws a grey
  * box and fires the callbacks the scenario asks for, and counts render,
  * reset and remove calls in `window.__ts`.
+ *
+ * Nothing of Cloudflare's loads before a person uses the page (a pointer, a
+ * key or a touch: person-input.ts), so each case clicks the e-mail field
+ * first, as someone starting to fill the form; the first case checks the
+ * page before that click.
  */
 
 const API_JS = /challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/;
@@ -128,9 +133,14 @@ const tokenField = (page: Page) =>
 
 /**
  * Opens a form and skips the test where the build has no captcha
- * (`next dev`: the forms render it only when NODE_ENV is production).
+ * (`next dev`: the forms render it only when NODE_ENV is production). On
+ * /login, a person then clicks the e-mail field, which starts the captcha.
  */
-async function open(page: Page, path: string): Promise<void> {
+async function open(
+  page: Page,
+  path: string,
+  { asPerson = true }: { asPerson?: boolean } = {},
+): Promise<void> {
   await page.goto(path, { waitUntil: "domcontentloaded" });
 
   if (path === "/login") await waitForHydration(page.getByLabel("Email"));
@@ -141,11 +151,95 @@ async function open(page: Page, path: string): Promise<void> {
       (await captcha(page).count()) === 0,
       "o Turnstile só monta na build de produção (NODE_ENV=production)",
     );
+
+    if (asPerson) await page.getByLabel("Email").click();
   }
 }
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
+});
+
+test.describe("login: nothing of Cloudflare's before a person uses the page", () => {
+  test("no request reaches challenges.cloudflare.com until a click; then the widget loads", async ({
+    page,
+  }) => {
+    // What Lighthouse counted as third-party cookies (Best Practices 77 in a
+    // browser holding cloudflare.com cookies) rode on these requests.
+    const toCloudflare: string[] = [];
+
+    page.on("request", (request) => {
+      if (CLOUDFLARE.test(request.url())) toCloudflare.push(request.url());
+    });
+
+    await stubTurnstile(page, "pass");
+    await open(page, "/login", { asPerson: false });
+
+    // An audit or a crawler: the page loads and no one touches it.
+    await page.waitForTimeout(3_000);
+
+    expect(
+      toCloudflare,
+      "o captcha carregou sem ninguém usar a página",
+    ).toEqual([]);
+    await expect(captcha(page)).toHaveAttribute("data-captcha-state", "idle");
+    // A still box that says what starts the check, not a load that never ends.
+    await expect(page.locator("[data-captcha-idle]")).toBeVisible();
+    await expect(page.locator("[data-captcha-idle]")).toContainText(
+      "Começa quando você usar o formulário.",
+    );
+    await expect(page.locator("[data-captcha-skeleton]")).toHaveCount(0);
+    await expect(captcha(page).locator("[aria-busy]")).toHaveCount(0);
+    await expect(
+      page
+        .getByRole("status")
+        .filter({ hasText: "começa quando você usar o formulário" }),
+    ).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Entrar" })).toBeDisabled();
+
+    const idle = await captcha(page).boundingBox();
+
+    await page.getByLabel("Email").click();
+
+    await expect(captcha(page)).toHaveAttribute(
+      "data-captcha-state",
+      "verified",
+      { timeout: 15_000 },
+    );
+    expect(toCloudflare.some((url) => API_JS.test(url))).toBe(true);
+    await expect(page.getByRole("button", { name: "Entrar" })).toBeEnabled();
+
+    // The placeholder held the widget's place: nothing moved when it came.
+    const verified = await captcha(page).boundingBox();
+
+    expect(idle?.height).toBeGreaterThanOrEqual(65);
+    expect(
+      Math.abs((verified?.height ?? 0) - (idle?.height ?? 0)),
+    ).toBeLessThan(1);
+  });
+
+  test("a pointer moving over the form starts it, so a filled-in form never waits on a dead button", async ({
+    page,
+  }) => {
+    await stubTurnstile(page, "pass");
+    await open(page, "/login", { asPerson: false });
+
+    await expect(captcha(page)).toHaveAttribute("data-captcha-state", "idle");
+
+    // Over the e-mail field, on the way to Entrar: no press, no key.
+    const field = await page.getByLabel("Email").boundingBox();
+
+    await page.mouse.move(field!.x + 10, field!.y + field!.height / 2, {
+      steps: 4,
+    });
+
+    await expect(captcha(page)).toHaveAttribute(
+      "data-captcha-state",
+      "verified",
+      { timeout: 15_000 },
+    );
+    await expect(page.getByRole("button", { name: "Entrar" })).toBeEnabled();
+  });
 });
 
 test.describe("login: Cloudflare unreachable", () => {

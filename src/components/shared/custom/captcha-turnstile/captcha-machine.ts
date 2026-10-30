@@ -2,6 +2,9 @@
  * The captcha's states, as a pure reducer (no React, no DOM), so every
  * transition is tested on its own (tests/unitaires/captcha-machine.test.ts).
  *
+ * - idle: nothing requested yet. A still box of the widget's size says what
+ *   starts the check, until a person uses the page (person-input.ts):
+ *   before that, no request reaches challenges.cloudflare.com.
  * - loading: the box shows a skeleton while api.js downloads and the iframe
  *   loads. The skeleton sits BEHIND the widget, so the iframe covers it the
  *   moment it paints (Turnstile has no "visible" callback).
@@ -15,6 +18,7 @@
  */
 
 type CaptchaStatus =
+  | "idle"
   | "loading"
   | "ready"
   | "verified"
@@ -42,6 +46,8 @@ interface CaptchaMachine {
 }
 
 type CaptchaEvent =
+  /** A person used the page (person-input.ts): the widget may load. */
+  | { type: "start" }
   /** onLoad: render() ran, the iframe is loading. */
   | { type: "drawn" }
   /** before-interactive-callback: a challenge the person must solve is shown. */
@@ -60,13 +66,16 @@ type CaptchaEvent =
   | { type: "retry" };
 
 const INITIAL_CAPTCHA: CaptchaMachine = {
-  status: "loading",
+  status: "idle",
   attempt: 0,
   drawn: false,
   failure: null,
 };
 
-/** The states in which the watchdog runs: something is expected to happen. */
+/**
+ * The states in which the watchdog runs: something is expected to happen.
+ * Not idle: the person may take as long as they like to start.
+ */
 const WAITING: ReadonlySet<CaptchaStatus> = new Set(["loading", "expired"]);
 
 function captchaReducer(
@@ -74,6 +83,9 @@ function captchaReducer(
   event: CaptchaEvent,
 ): CaptchaMachine {
   switch (event.type) {
+    case "start":
+      return state.status === "idle" ? { ...state, status: "loading" } : state;
+
     case "drawn":
       // A widget drawn again keeps a token it already issued (a token stays
       // valid at Cloudflare until it is used or expires).
@@ -189,6 +201,7 @@ const TIMEOUT_MESSAGE =
 
 /** Read by screen readers (polite); the failures go in an alert instead. */
 const STATUS_TEXT: Record<CaptchaStatus, string> = {
+  idle: "A verificação de segurança começa quando você usar o formulário.",
   loading: "Carregando verificação de segurança…",
   ready: "Conclua a verificação de segurança para continuar.",
   verified: "Verificação de segurança concluída.",

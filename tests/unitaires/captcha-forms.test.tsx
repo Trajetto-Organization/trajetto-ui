@@ -124,16 +124,37 @@ async function flush(ms: number): Promise<void> {
   });
 }
 
-async function mount(next: ReactElement): Promise<void> {
+/**
+ * A person's first key: the sticky activation the browser keeps after it
+ * (jsdom has none; it lets the quote's step 3 load at once), and the event.
+ */
+async function person(): Promise<void> {
+  Object.defineProperty(navigator, "userActivation", {
+    configurable: true,
+    value: { hasBeenActive: true, isActive: true },
+  });
+  await act(async () => {
+    document.body.dispatchEvent(new Event("keydown", { bubbles: true }));
+  });
+}
+
+/** Renders the form; a person uses the page unless told otherwise. */
+async function mount(
+  next: ReactElement,
+  { asPerson = true } = {},
+): Promise<void> {
   const host = document.createElement("div");
   document.body.appendChild(host);
   root = createRoot(host);
   element = next;
 
   await act(async () => root!.render(next));
-  // The wrapper mounts the widget after its 500 ms delay.
-  await flush(600);
+  if (asPerson) await person();
+  await flush(0);
 }
+
+const captchaState = () =>
+  $("[data-captcha-state]").getAttribute("data-captcha-state");
 
 /** A new server answer, as useFormState hands it over. */
 async function answer(state: unknown): Promise<void> {
@@ -207,20 +228,34 @@ afterEach(async () => {
   root = null;
   element = null;
   document.body.innerHTML = "";
+  delete (navigator as { userActivation?: unknown }).userActivation;
   vi.unstubAllEnvs();
   vi.useRealTimers();
 });
 
 describe("login", () => {
+  it("loads nothing of Cloudflare's until the person uses the form", async () => {
+    await mount(createElement(LoginForm), { asPerson: false });
+
+    expect(captchaState()).toBe("idle");
+    expect(fake.instances).toHaveLength(0);
+    expect(submitButton().disabled).toBe(true);
+    expect(tokenInput().value).toBe("");
+
+    await person();
+    await flush(0);
+
+    expect(captchaState()).toBe("loading");
+    expect(alive()).toHaveLength(1);
+  });
+
   it("keeps Entrar disabled until the widget issues a token, then sends it", async () => {
     await mount(createElement(LoginForm));
 
     expect(submitButton().textContent).toContain("Entrar");
     expect(submitButton().disabled).toBe(true);
     expect(tokenInput().value).toBe("");
-    expect($("[data-captcha-state]").getAttribute("data-captcha-state")).toBe(
-      "loading",
-    );
+    expect(captchaState()).toBe("loading");
 
     await solve("token-1");
 
@@ -270,6 +305,20 @@ describe("login", () => {
 });
 
 describe("forgot", () => {
+  it("its autofocus does not load the captcha; the person's first key does", async () => {
+    await mount(createElement(ForgotPasswordForm), { asPerson: false });
+
+    expect(document.activeElement).toBe($('input[name="email"]'));
+    expect(captchaState()).toBe("idle");
+    expect(fake.instances).toHaveLength(0);
+
+    await person();
+    await flush(0);
+
+    expect(captchaState()).toBe("loading");
+    expect(alive()).toHaveLength(1);
+  });
+
   it("draws a new widget and drops the spent token after the success", async () => {
     await mount(createElement(ForgotPasswordForm));
     expect(submitButton().disabled).toBe(true);
@@ -315,8 +364,8 @@ describe("quote", () => {
     await submit(form);
 
     expect(document.body.textContent).toMatch(/Etapa 3 de 3/);
-    // The wrapper's mount delay.
-    await flush(600);
+    // Reached by the person's input: the captcha loads at once.
+    await flush(0);
   }
 
   it("has no captcha before step 3", async () => {
@@ -356,11 +405,9 @@ describe("quote", () => {
     // "Continuar" back to step 3: a new widget, loading, the submit disabled.
     await submit($<HTMLFormElement>("form"));
     expect(document.body.textContent).toMatch(/Etapa 3 de 3/);
-    await flush(600);
+    await flush(0);
 
-    expect($("[data-captcha-state]").getAttribute("data-captcha-state")).toBe(
-      "loading",
-    );
+    expect(captchaState()).toBe("loading");
     expect(tokenInput().value).toBe("");
     expect(submitButton().disabled).toBe(true);
 

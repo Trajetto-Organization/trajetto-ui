@@ -29,11 +29,13 @@ import {
   type CaptchaEvent,
 } from "./captcha-machine";
 import {
+  CaptchaIdle,
   CaptchaSkeleton,
   WIDGET_HEIGHT_PX,
   WIDGET_MIN_WIDTH_PX,
   type CaptchaSize,
 } from "./captcha-skeleton";
+import { whenPersonActs } from "./person-input";
 
 /** How long the widget may take to issue a token or show a challenge. */
 const LOAD_TIMEOUT_MS = 15_000;
@@ -47,7 +49,6 @@ interface CaptchaTurnstileProps {
   resetSignal?: number;
   /** Id of the status text, for the submit's aria-describedby (useCaptchaToken). */
   statusId?: string;
-  delayMs?: number;
   loadTimeoutMs?: number;
   size?: CaptchaSize;
   /**
@@ -75,6 +76,10 @@ const hasTurnstileScript = (): boolean =>
  * (captcha-machine.ts): a skeleton while it loads, an alert with a way out
  * when it fails or hangs, and a token only while one is valid.
  *
+ * Nothing of Cloudflare's loads before a person uses the page (a pointer, a
+ * key or a touch: person-input.ts); until then a still box of the widget's
+ * size says what starts the check.
+ *
  * The box is in the server markup with the widget's height, so the iframe
  * that mounts later fills space already there instead of pushing the form
  * down (a 0.10 layout shift on /login). The skeleton sits behind the
@@ -85,14 +90,11 @@ const CaptchaTurnstile = ({
   onTokenChange,
   resetSignal = 0,
   statusId,
-  delayMs = 500,
   loadTimeoutMs = LOAD_TIMEOUT_MS,
   size: preferredSize = "normal",
   fallbackSize,
   className,
 }: CaptchaTurnstileProps): JSX.Element => {
-  const [shouldMount, setShouldMount] = useState<boolean>(false);
-
   // The quote's step 3 is 234 px wide on a 320 px phone: a flexible widget
   // (300 px minimum) was cut off at the card's edge.
   const boxRef = useRef<HTMLDivElement>(null);
@@ -168,10 +170,16 @@ const CaptchaTurnstile = ({
     if (attempt > 0) emitRef.current(null);
   }, [attempt]);
 
+  const idle = status === "idle";
+
   useEffect(() => {
-    const timer = setTimeout(() => setShouldMount(true), delayMs);
-    return () => clearTimeout(timer);
-  }, [delayMs]);
+    if (!idle) return;
+
+    return whenPersonActs(
+      () => dispatch({ type: "start" }),
+      boxRef.current?.closest("form") ?? null,
+    );
+  }, [idle]);
 
   // Watchdog: no token and no challenge in time means timeout, never an
   // endless skeleton. A late answer still counts (timeout → verified).
@@ -279,7 +287,9 @@ const CaptchaTurnstile = ({
         style={reserved}
         aria-busy={status === "loading" ? true : undefined}
       >
-        {status === "loading" ? (
+        {idle ? (
+          <CaptchaIdle size={size} className="absolute left-0 top-0" />
+        ) : status === "loading" ? (
           <CaptchaSkeleton size={size} className="absolute left-0 top-0" />
         ) : null}
 
@@ -288,7 +298,7 @@ const CaptchaTurnstile = ({
             descender added 6 px under it (71 px drawn in a 65 px box,
             measured with the always-pass key), moving the form on load. */}
         <div className="relative leading-[0]">
-          {shouldMount && resolvedSitekey ? (
+          {!idle && resolvedSitekey ? (
             <Turnstile
               key={attempt}
               sitekey={resolvedSitekey}

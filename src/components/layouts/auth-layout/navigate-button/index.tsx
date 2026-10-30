@@ -14,8 +14,9 @@ const NavigateButton = (): JSX.Element | null => {
 
   return (
     <div className="absolute left-6 group">
+      {/* Named by its visible text (the icons are aria-hidden), so a voice
+          command saying what is on screen finds it (WCAG 2.5.3). */}
       <Link
-        aria-label={isLoginPage ? "Voltar para home" : "Entrar"}
         href={isLoginPage ? "/" : "/login"}
         className={cn(
           buttonVariants({ variant: "ghost", className: "rounded-full group" }),

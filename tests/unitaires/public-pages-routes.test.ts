@@ -5,6 +5,7 @@ import * as legalPage from "@/app/legal/[policy]/page";
 import * as blogPostPage from "@/app/blog/[slug]/page";
 import * as blogOgImage from "@/app/blog/[slug]/opengraph-image";
 
+import { docsSitemapPages } from "@/app/docs/_lib/guides";
 import sitemap from "@/app/sitemap";
 import { GET as feed } from "@/app/feed.xml/route";
 
@@ -210,7 +211,7 @@ describe("/blog/[slug]", () => {
 });
 
 describe("sitemap.xml", () => {
-  it("lists the public pages on the canonical origin, and never login or recovery", () => {
+  it("lists the public pages on the canonical origin, and never a page with a token", () => {
     asProductionBuild();
 
     const urls = sitemap().map((entry) => entry.url);
@@ -222,7 +223,11 @@ describe("sitemap.xml", () => {
     }
 
     expect(urls.every((url) => url.startsWith(`${ORIGIN}/`))).toBe(true);
-    expect(urls.some((url) => /\/(login|forgot)\b/.test(url))).toBe(false);
+    expect(urls).toContain(`${ORIGIN}/login`);
+    expect(urls).toContain(`${ORIGIN}/forgot`);
+    expect(
+      urls.some((url) => /\/(forgot\/|new-verification|verificar)/.test(url)),
+    ).toBe(false);
     expect(new Set(urls).size).toBe(urls.length);
   });
 
@@ -258,6 +263,29 @@ describe("sitemap.xml", () => {
     // No content date, no lastmod: "today" on every crawl teaches Google to
     // ignore the field.
     expect(entries.get(`${ORIGIN}/sobre`)).not.toHaveProperty("lastModified");
+  });
+
+  // The developer portal's guides are indexable pages, and the sitemap had
+  // left them out: docsSitemapPages existed and nothing called it.
+  it("lists every page of the developer portal but the console redirect, dated by its guide", () => {
+    asProductionBuild();
+
+    const entries = sitemap();
+    const byUrl = new Map(entries.map((entry) => [entry.url, entry]));
+
+    for (const page of docsSitemapPages()) {
+      const entry = byUrl.get(`${ORIGIN}${page.path}`);
+
+      expect(entry, page.path).toBeDefined();
+      expect(entry?.lastModified, page.path).toEqual(
+        page.updatedAt ? new Date(`${page.updatedAt}T00:00:00Z`) : undefined,
+      );
+    }
+
+    expect(byUrl.has(`${ORIGIN}/docs/console`)).toBe(false);
+    expect(new Set(entries.map((entry) => entry.url)).size).toBe(
+      entries.length,
+    );
   });
 });
 

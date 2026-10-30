@@ -3,7 +3,7 @@ import { Metadata } from "next";
 import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 import { buildPageMetadata } from "@/lib/page-metadata";
 
-// Same as /login: out of search results, with its own canonical.
+// Same as /login: indexable, in the sitemap, with its own canonical.
 export const metadata: Metadata = buildPageMetadata({
   path: "/forgot",
   title: "Recuperar senha",

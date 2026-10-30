@@ -70,9 +70,9 @@ export default defineConfig({
       // error on the client one); tests run server code, so the empty twin.
       "server-only": "next/dist/compiled/server-only/empty.js",
       // A build-time transform in Next; the root layout calls it at import.
-      "next/font/google": path.resolve(
+      "next/font/local": path.resolve(
         __dirname,
-        "./tests/unitaires/helpers/next-font-google.ts",
+        "./tests/unitaires/helpers/next-font-local.ts",
       ),
     },
   },

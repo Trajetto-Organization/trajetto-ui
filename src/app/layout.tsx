@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import { DeploymentSkewGuard } from "@/components/shared/deployment-skew-guard";
@@ -13,26 +13,50 @@ import "./globals.css";
 
 /*
  * Self-hosted by next/font: the files are served from this origin, so the
- * CSP's font-src 'self' covers them and no request goes to Google. Inter
- * Tight stands in for the design's SF Pro Display, whose license does not
- * allow embedding it on a website. Exposed as CSS variables: Inter is the
- * whole product's text face (Tailwind's `font-sans`, so the app and the auth
- * pages too, decision 16.122), and the public site adds Inter Tight for display
- * headings and JetBrains Mono through the font-site-* utilities. 700 is for
- * the app's `font-bold` (47 uses), which would otherwise be a faux bold.
+ * CSP's font-src 'self' covers them and no request goes to Google. They live
+ * in ./fonts (Google Fonts' latin subset, where they came from: ./fonts/
+ * README.md), so the build reads them from the repository: with
+ * next/font/google it downloaded them on every build, and a failed download
+ * failed the build. Inter Tight stands in for the design's SF Pro Display,
+ * whose license does not allow embedding it on a website. Exposed as CSS
+ * variables: Inter is the whole product's text face (Tailwind's `font-sans`,
+ * so the app and the auth pages too, decision 16.122), and the public site
+ * adds Inter Tight for display headings and JetBrains Mono through the
+ * font-site-* utilities. 700 is for the app's `font-bold` (47 uses), which
+ * would otherwise be a faux bold.
+ *
+ * Inter and Inter Tight are variable files; each declares only the weights
+ * the product uses, as the Google loader did, so a weight outside them still
+ * snaps to the nearest one instead of drawing a new one. The unicode-range is
+ * the one Google gives its latin subset, written out in each call: next/font
+ * reads these options at build time and takes literals only.
  */
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const inter = localFont({
+  src: "./fonts/inter-latin.woff2",
+  weight: "400 700",
   display: "swap",
   variable: "--font-inter",
+  declarations: [
+    {
+      prop: "unicode-range",
+      value:
+        "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    },
+  ],
 });
 
-const interTight = Inter_Tight({
-  subsets: ["latin"],
-  weight: ["500", "600"],
+const interTight = localFont({
+  src: "./fonts/inter-tight-latin.woff2",
+  weight: "500 600",
   display: "swap",
   variable: "--font-inter-tight",
+  declarations: [
+    {
+      prop: "unicode-range",
+      value:
+        "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    },
+  ],
 });
 
 /*
@@ -42,11 +66,18 @@ const interTight = Inter_Tight({
  * preloaded: it is the landing hero's <h1> and the header's logo type, the
  * largest text above the fold.
  */
-const jetBrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["500"],
+const jetBrainsMono = localFont({
+  src: "./fonts/jetbrains-mono-latin.woff2",
+  weight: "500",
   display: "swap",
   variable: "--font-jetbrains-mono",
+  declarations: [
+    {
+      prop: "unicode-range",
+      value:
+        "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    },
+  ],
   preload: false,
 });
 

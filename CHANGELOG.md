@@ -1,3 +1,14 @@
+## [1.1.2](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.1...v1.1.2) (2026-10-30)
+
+
+### Bug Fixes
+
+* **web:** /login e /forgot entram no sitemap ([230b78c](https://github.com/Trajetto-Organization/trajetto-ui/commit/230b78c62f462ef0a4ee80c96af99648c61cd800))
+* **web:** o link "Voltar ao início" se chama pelo que mostra ([e08e0c0](https://github.com/Trajetto-Organization/trajetto-ui/commit/e08e0c008a30400fdba20b4a7690c0a2ab95abe3))
+* **web:** o painel de notificações do /login vira decorativo (inert) ([31f57a6](https://github.com/Trajetto-Organization/trajetto-ui/commit/31f57a6e9caeaf32fd62618c8e55936c48cbc3fc))
+* **web:** o sitemap lê os guias sem carregar o compilador de MDX ([9ccb9b2](https://github.com/Trajetto-Organization/trajetto-ui/commit/9ccb9b200b5a1222970a647beb2efa7455dc00ef))
+* **web:** os guias da documentação da API entram no sitemap ([e71374a](https://github.com/Trajetto-Organization/trajetto-ui/commit/e71374a6584ab896cfdbafeb7296374b08cab249))
+
 ## [1.1.1](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.0...v1.1.1) (2026-10-30)
 
 

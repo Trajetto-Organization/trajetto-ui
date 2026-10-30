@@ -1,3 +1,19 @@
+## [1.1.1](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.0...v1.1.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **web:** /login e /forgot passam a ser indexáveis ([af53af4](https://github.com/Trajetto-Organization/trajetto-ui/commit/af53af47763ac1530105df3108597d1f802a75f6))
+* **web:** a busca de CEP desiste sozinha e devolve os campos quando o ViaCEP não responde ([8fe4ca4](https://github.com/Trajetto-Organization/trajetto-ui/commit/8fe4ca4863b60b5050ffcee4b58656c31ecfa4b8))
+* **web:** o Reveal não pisca mais na hidratação e mede tudo antes de escrever ([406043b](https://github.com/Trajetto-Organization/trajetto-ui/commit/406043b2de2b8d1859deb1734d7d41ad72c349db))
+* **web:** o título "Notificações" do painel do login passa no contraste ([dcbddcc](https://github.com/Trajetto-Organization/trajetto-ui/commit/dcbddccab13b6fbc428d0854502668d8c39ed871))
+* **web:** política default de Trusted Types só para o loader do Turnstile ([b2f2c4a](https://github.com/Trajetto-Organization/trajetto-ui/commit/b2f2c4a746ba1ae891c401ba8dcedb76efc4ad87))
+
+
+### Performance Improvements
+
+* **web:** o CSS que só o app logado usa sai do globals.css ([18c9079](https://github.com/Trajetto-Organization/trajetto-ui/commit/18c907957f66d75d5162fad05075deb98a59058c))
+
 # [1.1.0](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.0.4...v1.1.0) (2026-10-29)
 
 

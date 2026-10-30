@@ -200,6 +200,35 @@ describe("a prerendered public page", () => {
   });
 });
 
+/**
+ * The Trusted Types default policy (src/lib/trusted-types-default-policy.ts)
+ * is an inline script of the root layout. Without its hash beside the nonce,
+ * the enforced policy blocks it on the per-request pages, /login among them,
+ * and react-turnstile's raw script.src goes on reporting a violation.
+ */
+describe("the Trusted Types default policy script", () => {
+  it.each([
+    ["/login", false],
+    ["/dashboard", true],
+  ])(
+    "is allowed by its hash on %s, beside the nonce",
+    async (path, withSession) => {
+      const { TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT_HASH } =
+        await import("@/lib/trusted-types-default-policy");
+      const response = await middleware(requestFor(path, withSession));
+      const scripts = directive(
+        response.headers.get("content-security-policy")!,
+        "script-src",
+      );
+
+      expect(scripts).toMatch(/'nonce-[A-Za-z0-9+/=]{16,}'/);
+      expect(scripts.split(" ")).toContain(
+        TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT_HASH,
+      );
+    },
+  );
+});
+
 describe("buildContentSecurityPolicy", () => {
   it("only allows eval in development", () => {
     expect(

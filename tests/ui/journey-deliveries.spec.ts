@@ -125,9 +125,12 @@ test("the MASTER registers the company through the form", async ({
   await field("responsible_name").fill("Responsável Jornada");
   await field("cep").pressSequentially("01001000");
 
-  // The CEP fills the address (ViaCEP); a field it could not fill stays
-  // editable and is filled here, as a person would.
-  await page.waitForTimeout(2_500);
+  // The CEP fills the address (ViaCEP), and the address fields stay disabled
+  // while it asks. Once they are back, a field it could not fill stays
+  // editable and is filled here, as a person would. ViaCEP may not answer at
+  // all (it stopped answering the runners on 29/10/2026): the lookup then
+  // gives up in ~17 s and hands the fields back.
+  await expect(field("city")).toBeEnabled({ timeout: 30_000 });
 
   for (const [name, value] of [
     ["city", "São Paulo"],

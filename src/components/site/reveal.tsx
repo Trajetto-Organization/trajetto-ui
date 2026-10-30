@@ -8,6 +8,7 @@ import {
   type ComponentPropsWithoutRef,
   type ElementType,
 } from "react";
+import { flushSync } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
@@ -46,46 +47,110 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-/** Below the fold right now (the part the observer would wait for). */
-function isBelowFold(element: Element): boolean {
-  const rect = element.getBoundingClientRect();
+/**
+ * The fold checks of one commit, measured together.
+ *
+ * Measuring an element and hiding it right away, one Reveal at a time, made
+ * every next measurement force a fresh layout (61 forced recalculations while
+ * the home page hydrated). The layout effects only queue a check; one
+ * microtask per commit, after React's commit and before the browser paints,
+ * reads every position first and then applies every write.
+ */
+interface FoldCheck {
+  /** The element whose position decides. */
+  trigger: Element;
+  /** The writes for an element found below the fold; returns their cleanup. */
+  hide: () => () => void;
+  /** Cleaned up before the flush: neither measured nor hidden. */
+  cancelled: boolean;
+  /** Undoes `hide`, once the flush ran it. */
+  cleanup?: () => void;
+}
 
-  return rect.top > window.innerHeight * 0.94;
+let foldChecks: FoldCheck[] = [];
+
+// queueMicrotask is missing on the oldest browsers Next 14 targets (Chrome
+// 64-70, Safari 12.0); a resolved promise runs the same microtask there.
+const scheduleMicrotask: (run: () => void) => void =
+  typeof queueMicrotask === "function"
+    ? (run) => queueMicrotask(run)
+    : (run) => void Promise.resolve().then(run);
+
+function flushFoldChecks(): void {
+  const checks = foldChecks.filter(({ cancelled }) => !cancelled);
+  foldChecks = [];
+
+  if (
+    checks.length === 0 ||
+    prefersReducedMotion() ||
+    typeof IntersectionObserver === "undefined"
+  )
+    return;
+
+  // Reads only: one layout for the whole batch.
+  const fold = window.innerHeight * 0.94;
+  const below = checks.map(
+    ({ trigger }) => trigger.getBoundingClientRect().top > fold,
+  );
+
+  // Writes only, nothing read in between. flushSync commits a count's zero
+  // (React state) here too: set from a microtask it would wait for a later
+  // task, and the final number would show for a frame before dropping to 0.
+  flushSync(() => {
+    checks.forEach((check, index) => {
+      if (below[index]) check.cleanup = check.hide();
+    });
+  });
+}
+
+/**
+ * Runs `hide` in this commit's flush if `trigger` is below the fold (the part
+ * the observer would wait for) by then; never under reduced motion or without
+ * IntersectionObserver. Returns the cleanup: before the flush it drops the
+ * check, after it undoes `hide`.
+ */
+function whenBelowFold(trigger: Element, hide: () => () => void): () => void {
+  const check: FoldCheck = { trigger, hide, cancelled: false };
+
+  // The first check of a commit schedules the flush.
+  if (foldChecks.push(check) === 1) scheduleMicrotask(flushFoldChecks);
+
+  return () => {
+    check.cancelled = true;
+    check.cleanup?.();
+  };
 }
 
 /**
  * Hides `element` if it is below the fold and reveals it on intersection.
  * Returns the cleanup. `onReveal` runs when it animates in (or never).
  * `trigger` is the element whose position decides (the element by default).
+ * The check runs with the commit's other ones, still before the first paint.
  */
 function observeReveal(
   element: HTMLElement,
   onReveal?: () => void,
   trigger: Element = element,
 ): () => void {
-  if (prefersReducedMotion() || typeof IntersectionObserver === "undefined") {
-    return () => {};
-  }
+  return whenBelowFold(trigger, () => {
+    element.setAttribute("data-site-reveal", "hidden");
 
-  if (!isBelowFold(trigger)) return () => {};
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting) return;
 
-  element.setAttribute("data-site-reveal", "hidden");
+      observer.disconnect();
+      // One frame between the hidden style and the transition, so the browser
+      // has the start state to animate from.
+      requestAnimationFrame(() => {
+        element.setAttribute("data-site-reveal", "shown");
+        onReveal?.();
+      });
+    }, OBSERVER_OPTIONS);
 
-  const observer = new IntersectionObserver(([entry]) => {
-    if (!entry?.isIntersecting) return;
+    observer.observe(trigger);
 
-    observer.disconnect();
-    // One frame between the hidden style and the transition, so the browser
-    // has the start state to animate from.
-    requestAnimationFrame(() => {
-      element.setAttribute("data-site-reveal", "shown");
-      onReveal?.();
-    });
-  }, OBSERVER_OPTIONS);
-
-  observer.observe(trigger);
-
-  return () => observer.disconnect();
+    return () => observer.disconnect();
+  });
 }
 
 type RevealProps<T extends ElementType = "div"> = {
@@ -124,13 +189,16 @@ const Reveal = <T extends ElementType = "div">({
   const origin =
     variant === "grow-x" ? "left" : variant === "grow-y" ? "bottom" : undefined;
 
+  // The delay is a custom property that only the shown rules read (globals.css).
+  // An inline transition-delay also applied to the hidden state, where a 0s
+  // transition plus the delay hid the element late, all at once.
   return (
     <Tag
       ref={ref}
       data-variant={variant}
       className={cn(className)}
       style={{
-        transitionDelay: delay ? `${delay}ms` : undefined,
+        "--site-reveal-delay": delay ? `${delay}ms` : undefined,
         transformOrigin: origin,
         ...style,
       }}
@@ -168,33 +236,32 @@ const CountUp = ({
   useIsomorphicLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
-    if (prefersReducedMotion() || typeof IntersectionObserver === "undefined")
-      return;
-    if (!isBelowFold(element)) return;
 
-    setShown(0);
-    let frame = 0;
+    return whenBelowFold(element, () => {
+      setShown(0);
+      let frame = 0;
 
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry?.isIntersecting) return;
+      const observer = new IntersectionObserver(([entry]) => {
+        if (!entry?.isIntersecting) return;
 
-      observer.disconnect();
-      const start = performance.now();
-      const tick = (now: number) => {
-        const k = Math.min(1, (now - start) / duration);
-        setShown(Math.round(value * (1 - Math.pow(1 - k, 3))));
-        if (k < 1) frame = requestAnimationFrame(tick);
+        observer.disconnect();
+        const start = performance.now();
+        const tick = (now: number) => {
+          const k = Math.min(1, (now - start) / duration);
+          setShown(Math.round(value * (1 - Math.pow(1 - k, 3))));
+          if (k < 1) frame = requestAnimationFrame(tick);
+        };
+        frame = requestAnimationFrame(tick);
+      }, OBSERVER_OPTIONS);
+
+      observer.observe(element);
+
+      return () => {
+        observer.disconnect();
+        cancelAnimationFrame(frame);
+        setShown(value);
       };
-      frame = requestAnimationFrame(tick);
-    }, OBSERVER_OPTIONS);
-
-    observer.observe(element);
-
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-      setShown(value);
-    };
+    });
   }, [value, duration]);
 
   return (

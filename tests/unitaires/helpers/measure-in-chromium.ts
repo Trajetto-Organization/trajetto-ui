@@ -98,12 +98,17 @@ async function tailwindFor(classes: string): Promise<string> {
 /**
  * Renders `element`, loads it with its Tailwind CSS into Chromium at `width`
  * and returns what `measure` computes there. `measure` runs IN the page, so
- * it can only use what it is given and the page's own globals.
+ * it can only use what it is given and the page's own globals — plus those
+ * of `scripts` (axe-core's source, say), added after the markup.
  */
 async function measureInChromium<T>(
   element: ReactElement,
   measure: () => T,
-  { width = 1024, height = 768 }: { width?: number; height?: number } = {},
+  {
+    width = 1024,
+    height = 768,
+    scripts = [],
+  }: { width?: number; height?: number; scripts?: string[] } = {},
 ): Promise<T> {
   const { html, classes } = await renderToMarkup(element);
   const css = await tailwindFor(classes);
@@ -116,6 +121,8 @@ async function measureInChromium<T>(
     await page.setContent(
       `<!doctype html><html><head><style>${css}</style></head><body>${html}</body></html>`,
     );
+
+    for (const content of scripts) await page.addScriptTag({ content });
 
     return (await page.evaluate(measure)) as T;
   } finally {

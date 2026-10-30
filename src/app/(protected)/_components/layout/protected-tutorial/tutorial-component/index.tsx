@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 
 import type { ParsedContent } from "./tutorial-component.types";
 import { useTutorialComponent } from "./hooks";
+// The card's own rules, loaded with this chunk rather than on every page.
+import "./tutorial-component.css";
 
 /** Only one tutorial card is ever mounted, so a constant id is enough. */
 const TUTORIAL_TITLE_ID = "tutorial-step-title";

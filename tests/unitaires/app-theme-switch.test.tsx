@@ -507,7 +507,8 @@ describe("theme switch styles", () => {
 });
 
 describe("dark map styles", () => {
-  const css = read("app/globals.css");
+  // The maps' own stylesheet, imported by each map (app-only-stylesheets.test.ts).
+  const css = read("features/control-tower/lib/leaflet-theme.css");
 
   it("recolors only the tile pane, keeping hues, and not over a native dark style", () => {
     const rule =

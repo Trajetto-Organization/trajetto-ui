@@ -10,7 +10,6 @@ export const metadata: Metadata = buildPageMetadata({
   socialTitle: "Recuperar a senha do Trajetto",
   description:
     "Recupere o acesso à sua conta do Trajetto: informe o seu e-mail para receber as instruções de redefinição de senha.",
-  noindex: true,
 });
 
 const ForgotPassword = (): JSX.Element => {

@@ -15,7 +15,10 @@ promoção para produção, o rollback e a operação do dia a dia.
 Documentos irmãos: [`variaveis-de-ambiente.md`](./variaveis-de-ambiente.md)
 (cada variável e o valor por ambiente), [`arquitetura.md`](./arquitetura.md) e
 [`testes.md`](./testes.md). A API e o serviço local de IA têm o manual deles
-em `trajetto-api/docs/deploy.md`.
+em `trajetto-api/docs/deploy.md`. O mapa da infraestrutura feita à mão (as
+contas, os painéis da Contabo, do Dokploy, da Cloudflare, do GitHub e da Expo,
+os tokens e o porquê de cada configuração) fica em
+[`trajetto-api/docs/infraestrutura.md`](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/infraestrutura.md).
 
 ## Sumário
 
@@ -161,8 +164,11 @@ Jobs:
 | ------------------- | ------------------------------------------------------------------------------------ |
 | `workflow_call`     | chamado pelo `deploy.yml` num push em `staging` (a imagem só é construída se passar) |
 | `pull_request`      | para `main`                                                                          |
-| `schedule`          | todo dia às 06:00 UTC (03:00 de Brasília)                                            |
 | `workflow_dispatch` | manual                                                                               |
+
+Não há agendamento: um build que passou aqui não roda de novo. A rodada
+noturna só repetia o que o push em `staging` e o PR para `main` já tinham
+aprovado, e consumia a maior parte dos minutos do mês do Actions.
 
 Ele sobe a stack do zero: Postgres 16 e Redis 7 como service containers, a
 API (checkout da mesma branch na `trajetto-api`), migrations, seed, as
@@ -858,7 +864,7 @@ Depois de cada deploy, procure no log da Application (Dokploy → Logs) por
 ## 16. Suítes de navegador no pipeline
 
 O `browser-suites.yml` roda num push em `staging` (antes do build), num PR
-para `main` e toda noite. Ele precisa do secret de repositório
+para `main` e sob demanda. Ele precisa do secret de repositório
 `API_REPO_READ_TOKEN`: um token fine-grained com dono
 `Trajetto-Organization`, acesso só ao repositório `trajetto-api` e
 _Contents: Read-only_. Sem o token, as suítes são **puladas** com um aviso no
@@ -1022,7 +1028,10 @@ no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 > e
 > [`trajetto-mobile/docs/deploy.md`](https://github.com/Trajetto-Organization/trajetto-mobile/blob/main/docs/deploy.md).
 > Mudou aqui, mude nos outros dois. O detalhe de cada passo fica no manual do
-> repositório dono dele.
+> repositório dono dele. O que foi configurado à mão nos painéis (Contabo,
+> Dokploy, Cloudflare, GitHub, Expo, Resend e R2), os tokens e o porquê de cada
+> escolha ficam em
+> [`trajetto-api/docs/infraestrutura.md`](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/infraestrutura.md).
 
 ### Quem é quem
 

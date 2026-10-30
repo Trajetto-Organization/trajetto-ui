@@ -6,6 +6,7 @@ import { DeploymentSkewGuard } from "@/components/shared/deployment-skew-guard";
 import { StrictCspGuard } from "@/components/shared/strict-csp-guard";
 import { PublicConfigScript } from "@/env/public-config-script";
 import { THEME_INIT_SCRIPT } from "@/lib/theme-init-script";
+import { TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT } from "@/lib/trusted-types-default-policy";
 import { TITLE_SUFFIX, X_HANDLE, siteConfig, siteUrl } from "@/lib/site";
 
 import "./globals.css";
@@ -159,6 +160,17 @@ const RootLayout = ({
           next-themes' own copy is switched off in the ThemeProvider.
         */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/*
+          The Trusted Types "default" policy, before hydration: lets the
+          captcha's api.js (set by react-turnstile as a raw string) through,
+          and nothing else. A constant text too, allowed by its hash
+          (src/lib/trusted-types-default-policy.ts).
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: TRUSTED_TYPES_DEFAULT_POLICY_SCRIPT,
+          }}
+        />
         {/*
           The public configuration (API URL, captcha key, map tiles) read
           from this server's environment, not from the build (decision 12.2).

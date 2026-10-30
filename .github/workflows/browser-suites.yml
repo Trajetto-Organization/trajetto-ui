@@ -12,7 +12,11 @@ name: Browser suites
 #   - every push to staging, called by deploy.yml (workflow_call): the image
 #     is only built after these suites pass;
 #   - every pull request to main, the same validation before production;
-#   - every night and on demand, against the default branch.
+#   - on demand (Run workflow).
+#
+# No schedule on purpose: a build that passed here is not run again. A
+# nightly run only repeated what the two gates above had already passed and
+# spent most of the month's Actions minutes.
 #
 # The pure rules (tests/E2E) run in ci.yml instead, as `yarn test:rules`.
 #
@@ -22,9 +26,6 @@ name: Browser suites
 # Without it the suites are skipped with a warning instead of failing, so a
 # repository that has not created the token yet still deploys.
 on:
-  schedule:
-    # 03:00 in São Paulo, when nobody is merging.
-    - cron: "0 6 * * *"
   pull_request:
     branches: [main]
   workflow_call:
@@ -36,7 +37,7 @@ on:
 permissions:
   contents: read
 
-# Called from deploy.yml, github.workflow is the caller's name: a nightly
+# Called from deploy.yml, github.workflow is the caller's name: a manual
 # run never cancels the suites a staging deploy is waiting on.
 concurrency:
   group: browser-suites-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
@@ -241,8 +242,8 @@ jobs:
           TURNSTILE_SITE_KEY: 1x00000000000000000000AA
           TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
           # A production server draws no public OSM by itself (decision 7.4);
-          # the nightly names it so the map specs see loaded tiles. A few
-          # tiles a night is within OSM's tile policy.
+          # this job names it so the map specs see loaded tiles. A few
+          # tiles a run is within OSM's tile policy.
           MAP_TILE_URL: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           MAP_TILE_ATTRIBUTION: "© colaboradores do OpenStreetMap"
         run: |

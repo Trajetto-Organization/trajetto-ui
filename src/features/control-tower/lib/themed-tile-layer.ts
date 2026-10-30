@@ -9,8 +9,8 @@ import type { MapTileSource, MapTiles } from "./map-tiles";
  * With a dark style configured (MAP_TILE_URL_DARK) the layer is swapped for
  * it whenever <html> turns `.dark`, and back. The container then carries
  * NATIVE_DARK_CLASS, which switches off the CSS filter that otherwise
- * recolors the light tiles (globals.css, "Maps in the dark theme"). Markers,
- * trails and popups live in other panes and are never touched.
+ * recolors the light tiles (leaflet-theme.css, "Maps in the dark theme").
+ * Markers, trails and popups live in other panes and are never touched.
  */
 
 /** On the map container while the tiles are the provider's dark style. */

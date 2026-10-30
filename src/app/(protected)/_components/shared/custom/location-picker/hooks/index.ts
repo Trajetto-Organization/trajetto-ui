@@ -16,6 +16,8 @@ import L from "leaflet";
 
 import { addThemedTileLayer } from "@/features/control-tower/lib/themed-tile-layer";
 import "leaflet/dist/leaflet.css";
+// The app's map theme, after Leaflet's own sheet.
+import "@/features/control-tower/lib/leaflet-theme.css";
 
 const BRAZIL_CENTER: [number, number] = [-14.235, -51.925];
 const BRAZIL_ZOOM = 4;

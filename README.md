@@ -73,6 +73,10 @@ Para percorrer esse mapa em ordem, um assunto por vez (o caminho de uma
 requisição, sessão, tenant, arquivos, filas, tempo real, importações, deploy
 e saúde), use o
 [Tour pela arquitetura, passo a passo](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/arquitetura-tour.md).
+O que foi configurado à mão fora do código (Contabo, Dokploy, Cloudflare,
+GitHub, Expo, Resend e R2), os tokens e o porquê de cada escolha também
+ficam na API:
+[`trajetto-api/docs/infraestrutura.md`](https://github.com/Trajetto-Organization/trajetto-api/blob/staging/docs/infraestrutura.md).
 
 ## O Trajetto em 1 minuto
 
@@ -445,7 +449,7 @@ staging ─PR─▶ main ─merge─▶ aprovação ─▶ mesma imagem, por dig
   entre ambientes é lido em runtime do Environment da Application.
 - **Workflows** (`.github/workflows/`): `ci.yml` (audit, Prettier, ESLint,
   tsc, unitários com cobertura, regras, gitleaks), `browser-suites.yml`
-  (`ui`, `a11y`, `responsive`; push em staging, PR para main e toda noite) e
+  (`ui`, `a11y`, `responsive`; push em staging, PR para main e sob demanda) e
   `deploy.yml` (build, staging, promoção e release).
 - **Dokploy**: a Application `trajetto-ui` (provider Docker, imagem do GHCR)
   no projeto `trajetto-ui` de cada environment. O deploy chama a API do

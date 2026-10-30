@@ -1,0 +1,133 @@
+/* ----------------------------------------------------------------
+   Leaflet theme of every map in the app (tower, route page, location
+   picker). Each map imports it right after leaflet/dist/leaflet.css,
+   so Leaflet's own sheet comes first and these rules ride in the
+   maps' chunks instead of globals.css, which every page loads
+   render-blocking, the public site included.
+   ---------------------------------------------------------------- */
+
+/* Custom Leaflet Popup Styles */
+/*
+  O mapa guarda os próprios z-index dentro dele.
+
+  O Leaflet numera os painéis de 400 a 700 e os controles até 1000. Esses
+  números são globais enquanto o container não abrir um contexto de
+  empilhamento próprio — e ele não abria. Resultado: todo popover, menu e
+  tooltip deste produto sai em `z-50`, ou seja, ATRÁS do mapa. Na torre de
+  controle o menu de notificações aparecia cortado, com o mapa por cima da
+  metade de baixo.
+
+  A correção é uma regra, não uma corrida de z-index: `isolation: isolate`
+  cria o contexto, e o `z-index: 0` o ancora no rodapé da pilha. Tudo que o
+  Leaflet faz passa a ser relativo a isso, e nada dele alcança um overlay
+  que está fora.
+*/
+.leaflet-container {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
+/* Leaflet's own sheet sets Helvetica/Arial on the map; popups, tooltips and
+   the attribution read in the app's Inter like the rest of the screen. */
+.leaflet-container.leaflet-container {
+  font-family: inherit;
+}
+
+.custom-popup .leaflet-popup-content-wrapper {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1);
+  padding: 0;
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 0;
+  min-width: 150px;
+}
+
+.custom-popup .leaflet-popup-tip {
+  background-color: white;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Dark mode support for popup */
+.dark .custom-popup .leaflet-popup-content-wrapper {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+.dark .custom-popup .leaflet-popup-tip {
+  background-color: hsl(var(--card));
+}
+
+/* ----------------------------------------------------------------
+   Maps in the dark theme (tower, route page, location picker)
+   With MAP_TILE_URL_DARK the provider's dark style is drawn and the
+   container carries .map-tiles-native-dark (themed-tile-layer.ts):
+   no filter. Without it the light tiles are recolored here, tile
+   pane only: markers, trails and labels sit in their own panes and
+   keep their colors. invert + hue-rotate turns the lightness around
+   and puts the hues back (190deg rather than 180deg pulls water from
+   teal to blue; past ~195deg yellow streets turn green). The old
+   saturate(.6) grayed the map out, so saturation is now slightly UP
+   to keep parks green and main roads orange, with contrast eased so
+   roads do not glare on the dark ground. Tuned on OSM over Rio
+   (water, parks) and central São Paulo (dense streets).
+   The controls and the attribution take the card colors.
+   ---------------------------------------------------------------- */
+.dark .leaflet-container {
+  background-color: hsl(var(--muted));
+}
+
+.dark .leaflet-container:not(.map-tiles-native-dark) .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(190deg) contrast(0.88) saturate(1.1);
+}
+
+.dark .leaflet-container .leaflet-bar {
+  border-color: hsl(var(--border));
+}
+
+.dark .leaflet-container .leaflet-bar a {
+  background-color: hsl(var(--card));
+  border-bottom-color: hsl(var(--border));
+  color: hsl(var(--card-foreground));
+}
+
+.dark .leaflet-container .leaflet-bar a:hover,
+.dark .leaflet-container .leaflet-bar a:focus-visible {
+  background-color: hsl(var(--accent));
+}
+
+.dark .leaflet-container .leaflet-control-attribution {
+  background-color: hsl(var(--card) / 0.85);
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .leaflet-container .leaflet-control-attribution a {
+  color: hsl(var(--foreground));
+}
+
+.dark .leaflet-tooltip {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}
+
+.dark .leaflet-tooltip-top::before {
+  border-top-color: hsl(var(--popover));
+}
+
+.dark .leaflet-tooltip-bottom::before {
+  border-bottom-color: hsl(var(--popover));
+}
+
+.dark .leaflet-tooltip-left::before {
+  border-left-color: hsl(var(--popover));
+}
+
+.dark .leaflet-tooltip-right::before {
+  border-right-color: hsl(var(--popover));
+}

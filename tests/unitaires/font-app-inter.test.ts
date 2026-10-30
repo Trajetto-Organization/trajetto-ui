@@ -43,7 +43,10 @@ describe("the app's text face", () => {
   });
 
   it("lets the maps' popups and credits inherit it instead of Leaflet's Helvetica", () => {
-    const css = readFileSync(path.join(ROOT, "src/app/globals.css"), "utf8");
+    const css = readFileSync(
+      path.join(ROOT, "src/features/control-tower/lib/leaflet-theme.css"),
+      "utf8",
+    );
 
     expect(css).toMatch(
       /\.leaflet-container\.leaflet-container \{\s*font-family: inherit;/,

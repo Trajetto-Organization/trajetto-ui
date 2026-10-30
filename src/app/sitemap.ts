@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 
+import { docsSitemapPages } from "@/app/docs/_lib/guides";
 import { getPosts } from "@/lib/content/blog";
 import { getLegalDocuments } from "@/lib/content/legal";
 import { PUBLIC_PAGES } from "@/lib/public-pages";
@@ -22,14 +23,32 @@ const sitemap = (): MetadataRoute.Sitemap => {
     return !latest || changed > latest ? changed : latest;
   }, null);
 
-  const pages: MetadataRoute.Sitemap = PUBLIC_PAGES.map((page) => ({
-    url: absoluteUrl(page.path),
-    changeFrequency: page.changeFrequency,
-    priority: page.priority,
-    ...(page.path === "/blog" && latestPost
-      ? { lastModified: day(latestPost) }
-      : {}),
-  }));
+  // The developer portal: each guide with its own revision day, the
+  // reference without one. /docs itself is a public page and takes the
+  // index guide's day.
+  const docsPages = docsSitemapPages();
+  const docsDay = new Map(docsPages.map((page) => [page.path, page.updatedAt]));
+
+  const pages: MetadataRoute.Sitemap = PUBLIC_PAGES.map((page) => {
+    const changed = page.path === "/blog" ? latestPost : docsDay.get(page.path);
+
+    return {
+      url: absoluteUrl(page.path),
+      changeFrequency: page.changeFrequency,
+      priority: page.priority,
+      ...(changed ? { lastModified: day(changed) } : {}),
+    };
+  });
+
+  const publicPaths = new Set(PUBLIC_PAGES.map((page) => page.path));
+  const docs: MetadataRoute.Sitemap = docsPages
+    .filter((page) => !publicPaths.has(page.path))
+    .map((page) => ({
+      url: absoluteUrl(page.path),
+      changeFrequency: "monthly",
+      priority: 0.5,
+      ...(page.updatedAt ? { lastModified: day(page.updatedAt) } : {}),
+    }));
 
   const blog: MetadataRoute.Sitemap = posts.map((post) => ({
     url: absoluteUrl(`/blog/${post.slug}`),
@@ -45,7 +64,7 @@ const sitemap = (): MetadataRoute.Sitemap => {
     priority: 0.3,
   }));
 
-  return [...pages, ...blog, ...legal];
+  return [...pages, ...docs, ...blog, ...legal];
 };
 
 export default sitemap;

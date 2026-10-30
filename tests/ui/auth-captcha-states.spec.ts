@@ -160,7 +160,28 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
 });
 
+/**
+ * A visitor who has not used the page, as Lighthouse or a crawler is.
+ * Playwright runs its own page scripts as a user gesture (its Chromium
+ * driver evaluates with `userGesture: true`), so waiting for hydration
+ * already marked the page as used and the captcha started at once. Pinned
+ * here to "never used": only real input can start it, as for Lighthouse,
+ * which evaluates without a gesture.
+ */
+async function asVisitorWhoHasNotActed(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, "userActivation", {
+      configurable: true,
+      get: () => ({ hasBeenActive: false, isActive: false }),
+    });
+  });
+}
+
 test.describe("login: nothing of Cloudflare's before a person uses the page", () => {
+  test.beforeEach(async ({ page }) => {
+    await asVisitorWhoHasNotActed(page);
+  });
+
   test("no request reaches challenges.cloudflare.com until a click; then the widget loads", async ({
     page,
   }) => {

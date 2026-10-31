@@ -64,7 +64,7 @@ jobs:
   # token's presence into an output the suites job can test.
   gate:
     name: Is the API checkout configured?
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
       enabled: ${{ steps.token.outputs.enabled }}

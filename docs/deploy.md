@@ -337,7 +337,10 @@ novo" não é solução para nada que esteja nesta lista:
   `docker buildx imagetools inspect postgres:16-alpine` (e
   `redis:7-alpine`), copie o `Digest` do índice e troque nos três
   repositórios no mesmo dia. O Dependabot não mexe em imagem citada dentro de
-  workflow.
+  workflow. O runner também é fixo: `ubuntu-24.04` em todo job, nunca
+  `ubuntu-latest`, que passou a migrar para o 26.04 em 19/10/2026 (o
+  Playwright 1.56 recusou o 26.04). Troque à mão, nos três repositórios,
+  quando o GitHub anunciar o fim do 24.04.
 - **Prazo em todo job (D4).** Cada job tem `timeout-minutes` com folga sobre
   a duração medida. Os jobs que só chamam outro workflow (`validate` e
   `browser-suites` do `deploy.yml`) herdam o prazo dos jobs chamados: o

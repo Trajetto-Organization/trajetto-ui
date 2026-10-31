@@ -45,7 +45,7 @@ defaults:
 jobs:
   validate:
     name: Validate (audit, lint, types, unit and rule tests)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Measured 5 to 8 minutes (30/10/2026).
     timeout-minutes: 30
 
@@ -266,7 +266,7 @@ jobs:
   # finding fails the job, and `--redact` keeps the secret out of the log.
   secrets:
     name: Secret scan (gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Measured under a minute (30/10/2026).
     timeout-minutes: 10
     permissions:

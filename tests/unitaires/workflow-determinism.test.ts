@@ -36,6 +36,22 @@ function stepsOf(job: string): Array<{ name: string; text: string }> {
 }
 
 describe("every workflow", () => {
+  // ubuntu-latest began moving to 26.04 on 19/10/2026, with no commit of
+  // ours (Playwright 1.56 refused it). Every job runs on a pinned image,
+  // bumped by hand in the three repositories.
+  it("runs every job on a pinned Ubuntu, never ubuntu-latest", () => {
+    for (const { name, text } of WORKFLOWS) {
+      const runners = [...text.matchAll(/\n\s+runs-on: (\S+)/g)].map(
+        (match) => match[1],
+      );
+
+      expect(runners.length, name).toBeGreaterThan(0);
+      for (const runner of runners) {
+        expect(runner, name).toMatch(/^ubuntu-\d{2}\.\d{2}$/);
+      }
+    }
+  });
+
   it.each(NAMES)("%s runs its steps under bash -eo pipefail (D5)", (name) => {
     const { text } = WORKFLOWS.find((each) => each.name === name)!;
 

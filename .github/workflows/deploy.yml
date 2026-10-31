@@ -90,7 +90,7 @@ jobs:
   # build; staging is never indexed, so its canonicals naming production are
   # right). See the Dockerfile.
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Measured 3 to 4 minutes with the GHA cache warm; a cold cache rebuilds
     # every layer.
     timeout-minutes: 45
@@ -388,7 +388,7 @@ jobs:
   # Dokploy API, as in trajetto-api) and METADATA_BASE_STAGING (the staging
   # site's origin).
   deploy-staging:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Measured 2 to 3 minutes. The margin covers the Dokploy script's
     # retries of a deployment that ends in error (6 tries, pauses of up to
     # 160 s) plus the 10-minute rollout check.
@@ -598,7 +598,7 @@ jobs:
   # reviewers configured (docs/deploy.md), makes a person approve before any
   # step runs. Its deployment branches should be limited to `main`.
   promote-production:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Measured 2 to 4 minutes. The margin covers the longest legitimate
     # waits: a staging run of the merged commit still going (up to 120 min,
     # staged-build.mjs), the API rolling under the route check (up to 10
@@ -871,7 +871,7 @@ jobs:
   # merge of main into staging (docs/deploy.md).
   release:
     name: Release (semantic-release)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Measured under a minute.
     timeout-minutes: 15
     needs: promote-production

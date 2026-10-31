@@ -1,3 +1,11 @@
+## [1.1.4](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.3...v1.1.4) (2026-10-31)
+
+
+### Bug Fixes
+
+* **ci:** pipeline vermelho só por defeito do código, nunca por rede ou tempo ([c3b3e03](https://github.com/Trajetto-Organization/trajetto-ui/commit/c3b3e03a0cdf2c979d7aaef3cc53ffbf2b281722))
+* **ci:** todo job roda num Ubuntu fixo (24.04), nunca no ubuntu-latest ([77edc73](https://github.com/Trajetto-Organization/trajetto-ui/commit/77edc73f497fab7fa71adb48734d68b0c265842b))
+
 ## [1.1.3](https://github.com/Trajetto-Organization/trajetto-ui/compare/v1.1.2...v1.1.3) (2026-10-30)
 
 

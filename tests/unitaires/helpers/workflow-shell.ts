@@ -172,12 +172,17 @@ export function sandbox(): Sandbox {
       const path = file(`step-${runs}.sh`, `set -eo pipefail\n${script}\n`);
       const output = file(`github-output-${runs}`, "");
       const summary = file(`github-summary-${runs}`, "");
+      // The sandbox's own files come last. A test's env often starts from
+      // process.env, and on a GitHub runner that carries the job's REAL
+      // GITHUB_OUTPUT: placed before it, the step wrote its outputs to the
+      // runner's file and every assertion on them read nothing (green
+      // locally, red in CI on 31/10/2026).
       const env: Record<string, string> = {
         ...(process.env as Record<string, string>),
+        ...options.env,
         GITHUB_OUTPUT: output,
         GITHUB_STEP_SUMMARY: summary,
         RUNNER_TEMP: root,
-        ...options.env,
       };
 
       // Windows spells it `Path`; two spellings in one block is ambiguous.

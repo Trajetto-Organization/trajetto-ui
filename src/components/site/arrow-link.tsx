@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import { DocumentLink } from "@/components/shared/document-link";
 import { cn } from "@/lib/utils";
@@ -75,25 +75,37 @@ function siteButtonClass({
   );
 }
 
-/** The moving arrow. Exported for custom buttons that want the same motion. */
+/**
+ * The moving arrow. Exported for custom links and buttons that want the
+ * same motion: the parent carries `group/arrow`. Forward (→) slides right;
+ * `back` (←, a link that returns, like "Blog" on an article) slides left.
+ */
 const MovingArrow = ({
   size = 18,
+  direction = "forward",
   className,
 }: {
   size?: number;
+  direction?: "forward" | "back";
   className?: string;
-}) => (
-  <ArrowRight
-    aria-hidden
-    width={size}
-    height={size}
-    className={cn(
-      "shrink-0 transition-transform duration-200 ease-out",
-      "group-hover/arrow:translate-x-1 group-focus-visible/arrow:translate-x-1 motion-reduce:!translate-x-0",
-      className,
-    )}
-  />
-);
+}) => {
+  const Icon = direction === "back" ? ArrowLeft : ArrowRight;
+
+  return (
+    <Icon
+      aria-hidden
+      width={size}
+      height={size}
+      className={cn(
+        "shrink-0 transition-transform duration-200 ease-out motion-reduce:!translate-x-0",
+        direction === "back"
+          ? "group-hover/arrow:-translate-x-1 group-focus-visible/arrow:-translate-x-1"
+          : "group-hover/arrow:translate-x-1 group-focus-visible/arrow:translate-x-1",
+        className,
+      )}
+    />
+  );
+};
 
 interface ArrowLinkProps extends SiteButtonStyle {
   href: string;

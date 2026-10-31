@@ -33,13 +33,7 @@ const PagerCard = ({
       className={cn(CARD, !previous && "flex-row-reverse text-right")}
     >
       {/* The previous card's arrow points back and slides left. */}
-      <MovingArrow
-        size={17}
-        className={cn(
-          previous &&
-            "rotate-180 group-hover/arrow:-translate-x-1 group-focus-visible/arrow:-translate-x-1",
-        )}
-      />
+      <MovingArrow size={17} direction={previous ? "back" : "forward"} />
       <span className="min-w-0 flex-1">
         <span className="block text-[12.5px] text-site-muted">
           {previous ? "Anterior" : "Próximo"}

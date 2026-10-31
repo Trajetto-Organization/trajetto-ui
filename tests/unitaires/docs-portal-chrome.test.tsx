@@ -96,7 +96,7 @@ describe("DocsPager", () => {
     // The previous arrow points back and slides left, not right.
     const previous = arrowOf("previous").split(/\s+/);
 
-    expect(previous).toContain("rotate-180");
+    expect(previous).toContain("lucide-arrow-left");
     expect(previous).toContain("group-hover/arrow:-translate-x-1");
     expect(previous).toContain("group-focus-visible/arrow:-translate-x-1");
     expect(previous).not.toContain("group-hover/arrow:translate-x-1");

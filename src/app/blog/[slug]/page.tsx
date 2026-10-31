@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import Link from "next/link";
 
-import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 
 import { blogMdxComponents } from "@/components/mdx";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -152,9 +152,9 @@ const BlogPostPage = async ({
             >
               <Link
                 href="/blog"
-                className="inline-flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-full border border-site-line2 bg-site-surface py-[7px] pl-[9px] pr-3 text-[13px] font-medium outline-none transition-colors hover:border-site-ink focus-visible:ring-2 focus-visible:ring-site-ink/40"
+                className="group/arrow inline-flex min-h-[36px] items-center gap-1.5 whitespace-nowrap rounded-full border border-site-line2 bg-site-surface py-[7px] pl-[9px] pr-3 text-[13px] font-medium outline-none transition-colors hover:border-site-ink focus-visible:ring-2 focus-visible:ring-site-ink/40"
               >
-                <ArrowLeft aria-hidden className="size-[15px]" />
+                <MovingArrow direction="back" size={15} />
                 Blog
               </Link>
               <Link

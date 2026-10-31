@@ -72,6 +72,28 @@ let host: HTMLDivElement | null = null;
 
 const sleep = (ms: number) => new Promise((done) => setTimeout(done, ms));
 
+/**
+ * Runs `check` until it passes (or the deadline does), letting React and the
+ * timers run between tries inside act().
+ */
+async function settle(check: () => void, ms = 5_000): Promise<void> {
+  const deadline = performance.now() + ms;
+
+  for (;;) {
+    try {
+      check();
+
+      return;
+    } catch (error) {
+      if (performance.now() >= deadline) throw error;
+    }
+
+    await act(async () => {
+      await sleep(20);
+    });
+  }
+}
+
 beforeEach(() => {
   seedPublicConfig({ apiUrl: "http://api.test" });
   requests.length = 0;
@@ -142,9 +164,17 @@ describe("SearchFuelType", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
 
-    // Past the picker's debounce.
-    await act(async () => {
-      await sleep(450);
+    // Until the debounce has fired, the request gone out and its answer been
+    // drawn. A fixed 450 ms for a 300 ms debounce, read synchronously after,
+    // failed whenever the event loop paused long enough (coverage, parallel
+    // workers) for the act() to close before the render.
+    await settle(() => {
+      expect(
+        requests.some((url) => url.searchParams.get("search") === "s10"),
+      ).toBe(true);
+      // "Diesel" does not contain "s10", yet it is the server's match: shown.
+      expect(host!.textContent).toContain("Diesel");
+      expect(host!.textContent).not.toContain("Gasolina");
     });
 
     const searched = requests.find(
@@ -153,9 +183,5 @@ describe("SearchFuelType", () => {
 
     expect(searched?.pathname).toBe("/fuel-type/search-fuel-type-business");
     expect(searched?.searchParams.get("businessId")).toBe(BUSINESS);
-
-    // "Diesel" does not contain "s10", yet it is the server's match: shown.
-    expect(host.textContent).toContain("Diesel");
-    expect(host.textContent).not.toContain("Gasolina");
   });
 });

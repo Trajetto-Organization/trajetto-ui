@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./support/test";
 
 import { fixtureBusinessId, openAsMaster } from "./support/operation";
 import { waitForHydration } from "./support/ui";

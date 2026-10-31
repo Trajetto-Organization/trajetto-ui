@@ -60,6 +60,15 @@ npx prisma migrate deploy
 
 ## 3. API e web
 
+Um segredo de encaminhamento **só desta máquina**, o mesmo nos três
+terminais (API, web e Playwright). Gere um valor de teste com 32 caracteres
+ou mais (por exemplo, `openssl rand -hex 32`) e exporte-o como
+`RATE_LIMIT_FORWARDER_SECRET` em cada terminal; nunca use o de staging ou de
+produção. Com ele, cada contexto do navegador é uma pessoa com o próprio
+endereço para o limite de login da API (oito por minuto por endereço). Sem
+ele, a suíte inteira divide um balde só, e os helpers de login param com a
+mensagem `a API limitou o login por endereço`.
+
 ```bash
 # trajetto-api, com o DATABASE_URL e o REDIS_URL do passo 1. API_HTTP_REQUEST
 # é o endereço público da própria API: vira o `servers` do documento público,
@@ -74,6 +83,13 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA \
 NODE_OPTIONS=--max-old-space-size=6144 NEXT_DEV_KEEP_PAGES=1 \
 npx next dev -p 3100
 ```
+
+Contra uma build de produção da web (o que o CI roda), acrescente ao
+servidor da web
+`TURNSTILE_SITEVERIFY_URL=http://127.0.0.1:3199/turnstile/v0/siteverify`: o
+login valida o token do captcha no dublê local que as configs do Playwright
+sobem sozinhas, e não na Cloudflare. A variável só vale com a chave secreta
+de teste acima.
 
 `NEXT_DEV_KEEP_PAGES=1` (só no `next dev`; ver `next.config.mjs`) mantém
 compiladas as rotas já abertas. Sem ele o `next dev` descarta uma rota parada
@@ -104,16 +120,31 @@ O processo do Playwright precisa do mesmo `DATABASE_URL` do passo 1: o 2FA, a
 troca de senha e as contas criadas no meio de uma jornada passam pelos
 scripts `mint-*.ts` do `trajetto-api`, que escrevem direto no banco
 descartável. Sem ele, `support/login.ts` para com a mensagem que diz isso.
+Ele também precisa do mesmo `RATE_LIMIT_FORWARDER_SECRET` do passo 3 e,
+contra o `next dev`, de `E2E_DEV_SERVER=1`: só então `waitForHydration`
+recarrega uma vez a página que recebeu um chunk ainda em compilação. Contra
+uma build de produção não há recarga: página que não hidrata é defeito.
 
 ```bash
-npx playwright test -c playwright.ui.config.ts
-npx playwright test -c playwright.responsive.config.ts
-npx playwright test -c playwright.a11y.config.ts
+E2E_DEV_SERVER=1 npx playwright test -c playwright.ui.config.ts
+E2E_DEV_SERVER=1 npx playwright test -c playwright.responsive.config.ts
+E2E_DEV_SERVER=1 npx playwright test -c playwright.a11y.config.ts
 ```
 
-Rode cada configuração com os workers dela (é como a noite roda), não só um
+Nada sai para a internet: tiles do mapa, o script do Turnstile, ViaCEP,
+Nominatim e o renderizador do console da API (Scalar, que a página da API
+pede ao jsDelivr) são respondidos por dublês locais em todo contexto do
+navegador (`support/external-doubles.ts`, `support/hermetic.ts`), e o que não
+tiver dublê é bloqueado e aparece no log. O arquivo do Scalar vem do registro
+do npm na primeira corrida do `docs-console.spec.ts`, conferido com o hash
+que a API fixa, e fica em `node_modules/.cache/trajetto-e2e`. Todo spec
+importa `test` e `expect` de `support/test.ts`.
+
+Rode cada configuração com os workers dela (é como o CI roda), não só um
 arquivo sozinho: as falhas que só aparecem com o servidor de dev compilando
-outras rotas ao mesmo tempo são as que importam.
+outras rotas ao mesmo tempo são as que importam. Cada configuração grava os
+resultados na própria pasta (`test-results/ui`, `test-results/a11y`,
+`test-results/responsive`).
 
 ## 5. Desligar
 

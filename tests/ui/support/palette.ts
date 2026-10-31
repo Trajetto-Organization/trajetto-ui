@@ -40,6 +40,9 @@ async function openPalette(page: Page) {
   return palette;
 }
 
+/** A search no entry of the palette can match (kbar's fuzzy threshold is 0.2). */
+const MATCHES_NOTHING = "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+
 /**
  * What the palette offers for a search, read as text.
  *
@@ -51,15 +54,58 @@ async function openPalette(page: Page) {
  * page by name and must not produce it.
  */
 async function paletteSearch(page: Page, query: string): Promise<string[]> {
-  const palette = await openPalette(page);
-
-  await page.getByPlaceholder("Digite um comando ou pesquise...").fill(query);
-
-  // kbar filters on input; give the list one frame to re-render.
-  await page.waitForTimeout(300);
+  await openPalette(page);
 
   const results = page.locator("[data-kbar-results]");
-  const text = (await results.count()) ? await results.innerText() : "";
+  const entries = results.locator("[data-kbar-item]");
+  const input = page.getByPlaceholder("Digite um comando ou pesquise...");
+
+  /*
+    kbar filters on a THROTTLED copy of the search (100 ms, then a render),
+    so a list read right after typing can still be the unfiltered one. That
+    is harmless for a presence and worthless for an absence: the unfiltered
+    first window simply does not reach the page asked for, and "not offered"
+    passed without anything having been searched. A fixed 300 ms only made
+    that rarer; comparing against the list read before typing did not help
+    either, because the virtualized list redraws itself once it has measured
+    its rows.
+
+    So the search starts from a state with a single possible look: a search
+    nothing matches (kbar's threshold is 0.2) empties the list, and an empty
+    list only exists once the filter has run. Then the real search: from
+    there, the first entry to appear can only be its answer.
+
+    A search with no answer leaves the list empty, which looks the same as
+    "not answered yet". That case is given ten times what the emptying
+    search just took on this page (two seconds at least) — the same filter
+    under the same load — before it reads as "nothing offered".
+  */
+  await expect(
+    entries.first(),
+    "o ⌘K abriu sem nenhuma entrada; a busca não mediria nada",
+  ).toBeAttached({ timeout: 10_000 });
+
+  const emptying = Date.now();
+
+  await input.fill(MATCHES_NOTHING);
+  await expect(entries, "o ⌘K não filtrou a lista").toHaveCount(0, {
+    timeout: 10_000,
+  });
+
+  const filterTook = Date.now() - emptying;
+
+  await input.fill(query);
+  await expect(input).toHaveValue(query);
+
+  const answered = await entries
+    .first()
+    .waitFor({ state: "attached", timeout: Math.max(2_000, filterTook * 10) })
+    .then(
+      () => true,
+      () => false,
+    );
+
+  const text = answered ? await results.innerText() : "";
 
   await page.keyboard.press("Escape");
   await expect(

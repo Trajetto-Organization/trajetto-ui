@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./support/test";
 
 import {
   CONTEXT,
@@ -128,12 +128,43 @@ test("keyboard dragging reorders and Descartar undoes", async ({ page }) => {
   await waitForHydration(handle);
   await handle.focus();
 
-  // One key at a time, as a person types: dnd-kit measures the next slot
-  // after each move, and keys sent in the same frame land before it has.
-  for (const key of ["Space", "ArrowDown", "ArrowDown", "Space"]) {
-    await page.keyboard.press(key);
-    await page.waitForTimeout(250);
+  /*
+    One key at a time, each sent only once the board has taken the one
+    before. Keys sent in the same frame land before dnd-kit has measured the
+    next slot; the fixed 250 ms between them usually covered that and, on a
+    loaded runner, sometimes did not.
+
+    What says each key was taken, rather than how long it might take:
+    - picked up: dnd-kit marks the handle `aria-pressed` while dragging. Its
+      keyboard sensor starts listening for the arrows in a timer queued at
+      that same moment, so a timer queued after it (afterPendingTimers) has
+      to run first;
+    - each arrow: the move is announced in dnd-kit's live region
+      ("<entrega> sobre a posição N de 3.", stop-announcements.ts). The
+      handle's own name keeps "posição 1 de 3" until the drop, so it cannot
+      say it.
+  */
+  const afterPendingTimers = () =>
+    page.evaluate(() => new Promise((done) => setTimeout(done, 0)));
+
+  await page.keyboard.press("Space");
+  await expect(handle).toHaveAttribute("aria-pressed", "true");
+  await afterPendingTimers();
+
+  for (const position of [2, 3]) {
+    await page.keyboard.press("ArrowDown");
+    // The announcement names the stop as the board does (a delivery with a
+    // code reads "<code> · <name>"), so the name is matched inside it.
+    await expect(
+      page
+        .getByText(
+          new RegExp(`${names[0]} sobre a posição ${position} de 3\\.`),
+        )
+        .first(),
+    ).toBeAttached();
   }
+
+  await page.keyboard.press("Space");
 
   await expect(
     page.getByRole("button", { name: `Arrastar ${names[0]}, posição 3 de 3` }),

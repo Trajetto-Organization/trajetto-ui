@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./support/test";
 
 import { managerForThisSpec } from "./support/operation";
 
@@ -115,25 +115,35 @@ test.describe("the phone drawer toggled quickly", () => {
       await expect(page.locator('[data-mobile="true"]')).toHaveCount(0);
 
       // Inside and around the window where only one of the two has finished.
+      // The pauses between the three presses ARE the stimulus (open, close,
+      // reopen `gap` ms into the close) and stay timed. What follows them is
+      // not: the verdict waits for the drawer to settle instead of reading
+      // it 700 ms later, and the next round starts from a drawer that has
+      // actually gone instead of 900 ms later — both durations of an
+      // animation, which stretch on a loaded runner. The bug this guards
+      // against does not settle (the stray overlay stays over the menu until
+      // tapped), so waiting for the right state cannot hide it.
       for (const gap of [0, 100, 170, 200, 230, 260, 290, 350]) {
         await page.keyboard.press("Control+b");
         await page.waitForTimeout(80);
         await page.keyboard.press("Control+b");
         await page.waitForTimeout(gap);
         await page.keyboard.press("Control+b");
-        await page.waitForTimeout(700);
 
-        const state = await drawerState(page);
-
-        expect(state, `reopened ${gap}ms into the close`).toEqual({
-          mounted: true,
-          state: "open",
-          overlayAbove: false,
-          hitInside: true,
-        });
+        await expect
+          .poll(() => drawerState(page), {
+            timeout: 5_000,
+            message: `reopened ${gap}ms into the close`,
+          })
+          .toEqual({
+            mounted: true,
+            state: "open",
+            overlayAbove: false,
+            hitInside: true,
+          });
 
         await page.keyboard.press("Escape");
-        await page.waitForTimeout(900);
+        await expect(page.locator('[data-mobile="true"]')).toHaveCount(0);
       }
     });
   }
@@ -198,8 +208,35 @@ test.describe("the sidebar menu's scrollbar", () => {
 
       if (width < 768) {
         await openDrawer(page);
-        await page.waitForTimeout(500);
+
+        // Measured at rest, not a fixed 500 ms after opening: the drawer
+        // slides in, and a hit test mid-slide reads the wrong pixels. Endless
+        // animations (a skeleton's pulse) never finish and are not waited on.
+        await page
+          .locator('[data-mobile="true"][data-sidebar="sidebar"]')
+          .evaluate((panel) =>
+            Promise.all(
+              panel
+                .getAnimations({ subtree: true })
+                // A paused one would never finish either.
+                .filter(
+                  (animation) =>
+                    animation.playState === "running" &&
+                    animation.effect?.getComputedTiming().endTime !== Infinity,
+                )
+                // A cancelled animation is at rest too.
+                .map((animation) => animation.finished.catch(() => undefined)),
+            ),
+          );
       }
+
+      // The scrollbar is drawn once the scroll area has measured its content.
+      await expect
+        .poll(() => barInfo(page, scope), {
+          timeout: 10_000,
+          message: "the menu should overflow at this height",
+        })
+        .not.toBeNull();
 
       const info = await barInfo(page, scope);
 

@@ -8,6 +8,15 @@ name: Browser suites
 # service containers, the API from its own checkout, the web from the
 # standalone build the image runs).
 #
+# The suites reach no third party (decision D7): map tiles, Turnstile's
+# api.js, ViaCEP, Nominatim and the API console's renderer are answered by
+# local doubles in the browser (tests/ui/support/hermetic.ts), the web's
+# login checks the captcha against a local siteverify double
+# (TURNSTILE_SITEVERIFY_URL), and the API keeps its e-mails in memory
+# (NODE_ENV=test). The tests reach no network. The setup still downloads, on
+# a cache miss, packages (npm, apt), Prisma's schema engine and Chromium,
+# and pulls the service images.
+#
 # When it runs:
 #   - every push to staging, called by deploy.yml (workflow_call): the image
 #     is only built after these suites pass;
@@ -43,6 +52,13 @@ concurrency:
   group: browser-suites-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
+# `bash` named explicitly: GitHub then runs every step with `-eo pipefail`,
+# so a command that fails in the middle of a pipe fails the step too (the
+# default `bash -e` only sees the last command of a pipe).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # `secrets` cannot be read in a job-level `if`, so a tiny job turns the
   # token's presence into an output the suites job can test.
@@ -73,11 +89,18 @@ jobs:
     # Pinned, not ubuntu-latest: Playwright installs Chromium's system deps
     # only on the Ubuntu releases it supports, and 1.56 refused 26.04.
     runs-on: ubuntu-24.04
+    # Measured 20 to 24 minutes on a 4-vCPU runner (30/10/2026); a 2-vCPU
+    # one takes longer, hence the margin.
     timeout-minutes: 90
 
+    # By digest, the multi-architecture index of each tag (30/10/2026): a
+    # tag moves with every upstream patch, and the same commit must meet the
+    # same Postgres and Redis. The same digests in the three repositories;
+    # to move them: `docker buildx imagetools inspect postgres:16-alpine`
+    # (and redis:7-alpine), then the new digest in all three (docs/deploy.md).
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab # postgres:16-alpine
         env:
           POSTGRES_USER: trajetto
           POSTGRES_PASSWORD: trajetto-password
@@ -93,7 +116,7 @@ jobs:
           - 54321:5432
 
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f # redis:7-alpine
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -120,6 +143,12 @@ jobs:
       # the API's env schema too, and it refuses to load without HTTP_REQUEST.
       HTTP_REQUEST: http://localhost:3100
       API_HTTP_REQUEST: http://localhost:3334
+      # The same test-only value for the API, the web and the Playwright
+      # process: each browser context of the suites is a person with an
+      # address of its own for the API's per-address login limit
+      # (tests/ui/support/hermetic.ts). Not a real secret: it exists only
+      # inside this job.
+      RATE_LIMIT_FORWARDER_SECRET: test-forwarder-secret-for-github-actions-only
 
     steps:
       - name: Checkout the web app
@@ -129,8 +158,13 @@ jobs:
 
       # The same branch in the sibling repository first: a change that spans
       # the repositories (routes, socket events) is tested against its own
-      # counterpart, not against their default branch. Falls back to the
-      # default branch when there is no branch of that name.
+      # counterpart. Falls back to the sibling's staging only when it answers
+      # that it has no branch of that name (ls-remote --exit-code: 2): work
+      # branches come from staging and go back to it, while main can be
+      # behind it (a change on staging not promoted yet would fail every work
+      # branch without a defect of its own). Any other failure (network,
+      # credentials: 128) is never read as "no branch": asked again, up to 4
+      # times with doubling pauses, then the job fails saying why (D8).
       - name: Pick the sibling branches
         id: refs
         env:
@@ -140,15 +174,33 @@ jobs:
           # The empty extraheader first: this repository's own checkout persisted
           # one, and two Authorization headers get a 400 (read as "no branch").
           auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          pause=${PROBE_RETRY_SECONDS:-5}
           for pair in api:trajetto-api; do
             key=${pair%%:*}
             repo=${pair#*:}
-            if git -c "http.https://github.com/.extraheader=" -c "http.https://github.com/.extraheader=$auth" ls-remote --exit-code --heads \
-              "https://github.com/Trajetto-Organization/${repo}.git" "refs/heads/${BRANCH}" > /dev/null; then
+            attempt=1
+            while :; do
+              rc=0
+              git -c "http.https://github.com/.extraheader=" -c "http.https://github.com/.extraheader=$auth" ls-remote --exit-code --heads \
+                "https://github.com/Trajetto-Organization/${repo}.git" "refs/heads/${BRANCH}" > /dev/null || rc=$?
+              if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
+                break
+              fi
+              if [ "$attempt" -ge 4 ]; then
+                echo "::error::git ls-remote não conseguiu consultar ${repo} (código ${rc}) em 4 tentativas: rede ou credencial (API_REPO_READ_TOKEN). Não é 'branch inexistente', então o job não cai na staging."
+                exit 1
+              fi
+              wait=$((pause * 2 ** (attempt - 1)))
+              echo "::warning::git ls-remote em ${repo} falhou (código ${rc}, tentativa ${attempt} de 4); nova tentativa em ${wait}s."
+              sleep "$wait"
+              attempt=$((attempt + 1))
+            done
+            if [ "$rc" -eq 0 ]; then
               echo "${key}=${BRANCH}" >> "$GITHUB_OUTPUT"
               echo "${repo}: branch ${BRANCH}"
             else
-              echo "${repo}: sem a branch ${BRANCH}; usando a padrão"
+              echo "${key}=staging" >> "$GITHUB_OUTPUT"
+              echo "::notice::${repo} não tem a branch ${BRANCH}: usando a staging, de onde saem as branches de trabalho."
             fi
           done
 
@@ -161,14 +213,41 @@ jobs:
           path: trajetto-api
           persist-credentials: false
 
+      # The exact Node of the images (node:22.21.1), not the latest 22 of
+      # the day.
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: "22.21.1"
           cache: "yarn"
           cache-dependency-path: |
             trajetto-ui/yarn.lock
             trajetto-api/yarn.lock
+
+      # The API's install runs @prisma/engines' postinstall, which downloads
+      # the schema engine from binaries.prisma.sh into ~/.cache/prisma (and
+      # copies it from there into node_modules). Kept between runs, keyed on
+      # the engines version of the API's yarn.lock: a run downloads it only
+      # when Prisma moves (decision D9).
+      - name: Read the API's Prisma engines version
+        id: prisma
+        run: |
+          version=$(node -e '
+            const lock = require("fs").readFileSync("trajetto-api/yarn.lock", "utf8");
+            const match = /^"?@prisma\/engines@[^\n]*\n\s+version "([^"]+)"/m.exec(lock);
+            if (!match) process.exit(1);
+            process.stdout.write(match[1]);
+          ') || {
+            version=none
+            echo "::warning::@prisma/engines não está no yarn.lock da API: o cache dos engines do Prisma não se aplica."
+          }
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the Prisma engines
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/prisma
+          key: prisma-engines-${{ runner.os }}-${{ steps.prisma.outputs.version }}
 
       # seed.ts writes load-context.json (the fifty admins and the drivers);
       # mint-master.ts writes browser-sessions.json (the MASTER and long-lived
@@ -176,7 +255,8 @@ jobs:
       # spec that needs a master threw before opening a page.
       # mint-browser-users.ts creates the accounts that sign in through the
       # form (browser-users.json; password WEB_E2E_PASSWORD or the test
-      # default). 2FA and create-user send through Ethereal: outbound network.
+      # default). Under NODE_ENV=test the API keeps those e-mails in memory:
+      # no outbound SMTP.
       - name: API — install, migrate, seed and mint the browser sessions
         working-directory: trajetto-api
         env:
@@ -219,6 +299,16 @@ jobs:
           yarn install --frozen-lockfile --production=false
           yarn build
 
+      # The API console's renderer for its double: taken once from the npm
+      # registry and checked against the API's pinned SHA-384
+      # (tests/ui/support/scalar-bundle.ts). Restored after the install, so
+      # yarn never touches it.
+      - name: Cache the API console renderer
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: trajetto-ui/node_modules/.cache/trajetto-e2e
+          key: e2e-scalar-${{ hashFiles('trajetto-api/src/routes/documentation/public-docs-console.ts') }}
+
       # The standalone server, as the image runs it (Dockerfile): `next start`
       # on an `output: "standalone"` build is not the production artifact and
       # Next warns that it does not support it. The image copies public/ and
@@ -241,9 +331,15 @@ jobs:
           # Cloudflare's documented always-pass test keys.
           TURNSTILE_SITE_KEY: 1x00000000000000000000AA
           TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+          # The login's token check goes to the local siteverify double the
+          # Playwright configs start (tests/ui/support/turnstile-siteverify-double.mjs),
+          # never to Cloudflare. Honoured only with the test secret above
+          # (src/lib/turnstile-siteverify.ts).
+          TURNSTILE_SITEVERIFY_URL: http://127.0.0.1:3199/turnstile/v0/siteverify
           # A production server draws no public OSM by itself (decision 7.4);
-          # this job names it so the map specs see loaded tiles. A few
-          # tiles a run is within OSM's tile policy.
+          # this job names its template so the map specs have a base map. No
+          # tile request leaves the runner: the browser gets each one from the
+          # suites' double (tests/ui/support/external-doubles.ts).
           MAP_TILE_URL: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           MAP_TILE_ATTRIBUTION: "© colaboradores do OpenStreetMap"
         run: |
@@ -258,9 +354,33 @@ jobs:
           tail -n 100 ../ui.log
           exit 1
 
+      # Chromium kept between runs, keyed on the installed Playwright: a run
+      # downloads the browser only when Playwright moves (decision D9).
+      - name: Read the Playwright version
+        id: playwright
+        working-directory: trajetto-ui
+        # Assigned first: a failed read inside `echo "…$(…)"` would not fail
+        # the step and would key the cache on an empty version.
+        run: |
+          version=$(node -p 'require("./node_modules/@playwright/test/package.json").version')
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Chromium
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # With the browser restored, `install` finds it and downloads nothing;
+      # `--with-deps` still asks apt for Chromium's system libraries, which
+      # the pinned runner mostly has already. apt repeats a failed download
+      # on its own (Acquire::Retries, set here so it does not depend on the
+      # runner image's own setting).
       - name: Install Chromium
         working-directory: trajetto-ui
-        run: npx playwright install --with-deps chromium
+        run: |
+          echo 'Acquire::Retries "5";' | sudo tee /etc/apt/apt.conf.d/90-trajetto-retries > /dev/null
+          npx playwright install --with-deps chromium
 
       # Each suite runs even when the one before failed: three independent
       # answers are worth more than the first failure.
@@ -269,6 +389,10 @@ jobs:
       # configs (timezoneId): the runner is UTC, and after 21:00 in São Paulo
       # a date computed as "today" there is tomorrow for the API. Only on the
       # suites, never on the servers, which must behave as in the image.
+      #
+      # A test that passed only on its retry (one, in CI) leaves the job
+      # green and becomes a warning with its name and a list in the run
+      # summary (tests/ui/support/run-summary-reporter.ts, decision D2).
       - name: UI suite
         working-directory: trajetto-ui
         env:
@@ -289,8 +413,13 @@ jobs:
           TZ: America/Sao_Paulo
         run: npx playwright test -c playwright.responsive.config.ts
 
+      # Every finished run, not only a failed one: a test that passed only on
+      # its retry is a warning in the run summary, and the trace of its first
+      # attempt (test-results/<suite>/) is what explains it. On a green run a
+      # hiccup of the artifact service must not turn it red.
       - name: Upload traces and server logs
-        if: ${{ failure() }}
+        if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-suites-${{ github.run_id }}

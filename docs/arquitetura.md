@@ -536,8 +536,10 @@ Ficar é defensável por dois motivos:
 A decisão não é permanente: o plano de saída tem data.
 
 `yarn audit --groups dependencies` em 28/10/2026: 3 críticos (os três
-abaixo), 25 altos, 16 moderados e 2 baixos. O `audit-ci` falha em qualquer
-crítico novo.
+abaixo), 25 altos, 16 moderados e 2 baixos. O `audit-ci` barra um crítico
+novo em todo push ou PR que mexe nas dependências; nos outros, o achado vira
+aviso no run e seção no resumo, e o Dependabot abre a correção (decisão D1,
+[deploy.md §3](deploy.md#3-os-workflows)).
 
 **Os três críticos (RCE).** Estão como exceção no `audit-ci.jsonc` pelos
 motivos abaixo:
@@ -604,7 +606,8 @@ ficam na configuração da Cloudflare e do Traefik, fora deste repositório.
      reiniciam um processo travado. Com 1 réplica, a web fica fora até o
      reinício; mais réplicas reduzem esse efeito, mas não o eliminam;
    - o corpo de Server Action limitado a 1 MB (padrão do Next 14);
-   - o `audit-ci`, que barra qualquer crítico novo.
+   - o `audit-ci`, que barra um crítico novo em toda mudança de dependência
+     e avisa nos outros pushes (decisão D1).
 
 **Endurecimento pendente** (fora desta rodada, porque mexe no
 `next.config.mjs`): `images.localPatterns` com só `/_next/static/media/**`.

@@ -4,7 +4,7 @@ import {
   type BrowserContext,
   type Locator,
   type Page,
-} from "@playwright/test";
+} from "./support/test";
 
 import {
   BASE,

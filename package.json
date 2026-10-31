@@ -90,6 +90,7 @@
     "@types/react-dom": "^18",
     "@types/react-input-mask": "3.0.2",
     "@vitest/coverage-v8": "1.6.0",
+    "audit-ci": "7.1.0",
     "axe-core": "4.10.3",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",

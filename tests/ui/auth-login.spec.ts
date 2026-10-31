@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./support/test";
 
 import {
   BASE,
@@ -19,8 +19,10 @@ import { waitForHydration } from "./support/ui";
  * (`mint-browser-users.ts`); nothing here touches a cookie by hand.
  */
 
-// Every login here goes through the form, and the API allows eight a minute
-// per address: a test may wait out the window once or twice (support/login).
+// Several logins through the form per test, each allowed up to a minute on a
+// runner that also hosts the stack (support/login). The API's eight logins a
+// minute per address no longer enter into it: each browser context is a
+// person with an address of its own (support/hermetic.ts).
 test.setTimeout(300_000);
 
 const USERS = browserUsers();

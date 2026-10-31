@@ -60,7 +60,7 @@ branch de trabalho ──push──▶ ci.yml (audit, Prettier, ESLint, tsc, uni
                           │
                      merge commit ──push──▶ deploy.yml
                                   ├─ promote-production  (environment `production`, aprovação)
-                                  │    acha sha-<commit de staging> ─▶ gate de rotas da API
+                                  │    acha o build que o staging serviu (staged-<commit>) ─▶ gate de rotas da API
                                   │    ─▶ tag `stable` = mesmo digest ─▶ deploy pela API do Dokploy (produção) ─▶ /build-id.json
                                   └─ release             semantic-release (tag, CHANGELOG, GitHub Release)
 ```
@@ -86,6 +86,10 @@ Os princípios que não mudam:
 - **O deploy só é verde quando o site serve o build novo.** Depois do
   deploy no Dokploy, o job espera o `/build-id.json` responder o commit promovido por
   90 s seguidos, mais do que a janela de 30 s do rollback automático do Swarm.
+- **O pipeline só reprova por defeito do código.** Versões e imagens fixas,
+  rede de terceiros só com repetição visível, nenhum erro de transporte lido
+  como resposta e nada de "rode de novo" (seção 3, "Regras de estabilidade
+  dos três workflows").
 
 Imagem: `ghcr.io/trajetto-organization/trajetto-ui`, Node 22 Alpine, saída
 `standalone` do Next, porta **3000**, health check em `/api/health`,
@@ -125,9 +129,48 @@ Passo a passo de uma mudança:
    `production`, e o job promove a imagem do commit de staging.
 7. O semantic-release cria a versão e commita o `CHANGELOG.md` em `main` com
    `[skip ci]`. **Depois de cada release, faça o merge de `main` em
-   `staging`** (`git checkout staging && git merge main && git push`) para o
-   staging receber o CHANGELOG. O promote ignora diferenças só no
-   `CHANGELOG.md`.
+   `staging`** para o staging receber o CHANGELOG. O promote ignora
+   diferenças só no `CHANGELOG.md`. Como esse merge só traz documentação,
+   ele pode ir com `[skip ci]` (próximo bloco):
+   `git checkout staging && git merge main -m "chore: merge main em staging [skip ci]" && git push`.
+
+**Commit só de documentação (`[skip ci]`).** Um commit que só mexe em
+documentação (arquivos `*.md` e a pasta `docs/`) pode ir para `staging` com
+`[skip ci]` na mensagem. O GitHub não roda workflow nenhum para ele, o que
+economiza a rodada inteira do pipeline. Isso é seguro desde 30/10/2026
+(decisão D11):
+
+- a imagem não muda: o `.dockerignore` tira `docs/` e `**/*.md` do build,
+  exatamente o que conta como documentação
+  (`.github/scripts/docs-only.mjs`, `tests/unitaires/docs-only.test.ts`);
+- o promote aceita o commit sem execução própria em staging e promove o build
+  do ancestral mais próximo que o staging serviu, desde que tudo entre os dois
+  seja documentação. Se alguma outra coisa entrou sem passar pelo pipeline, o
+  promote recusa e lista os arquivos (seção 11);
+- se o commit de documentação chegar enquanto o pipeline do commit anterior
+  ainda roda, esse run faz o deploy e grava o `staged-<commit>` dele mesmo
+  assim. Antes, ele via outro commit na ponta, pulava o deploy e ninguém
+  publicava.
+
+Dois cuidados que continuam valendo:
+
+- **PR para `main` com `[skip ci]` na ponta:** o GitHub também não roda os
+  workflows de `pull_request` quando a mensagem do commit da ponta do PR tem
+  `[skip ci]`. Se o Ruleset de `main` exige os checks do PR (seção 4), eles
+  ficam pendentes. Para destravar sem esperar outro commit, rode **Run
+  workflow** do `CI` e do `Browser suites` na branch `staging`: os checks
+  saem no mesmo commit e aparecem no PR. Confira também o **título do PR**:
+  num PR de um commit só, o GitHub o preenche com a mensagem desse commit, e
+  o título vai para o corpo do merge commit. Com `[skip ci]` no título, o
+  push em `main` não roda o `deploy.yml` e nada é promovido. Tire o
+  `[skip ci]` do título antes do merge.
+- Os testes que leem a documentação (links, trechos do `docs/deploy.md`) não
+  rodam num commit `[skip ci]`. Um erro neles aparece no próximo push com
+  código. Rode `yarn test:unit` antes de subir uma mudança grande de doc.
+
+Um commit que mexe em qualquer outra coisa (código, `package.json`,
+workflow, `Dockerfile`, `.mdx` do site) nunca vai com `[skip ci]`: o promote
+recusa.
 
 **Hotfix:** mesmo caminho, mais rápido. Branch `fix/...` → PR para
 `staging` → espere o deploy de staging → PR `staging` → `main`. Um commit
@@ -148,13 +191,33 @@ rodaria uma imagem sem aquela mudança.
 
 Jobs:
 
-- **`validate`**: `yarn install --frozen-lockfile` → `audit-ci` (CRITICAL
-  em dependência de produção falha; as exceções ficam em `audit-ci.jsonc`,
-  com data de revisão) → `yarn lint:check` (Prettier) → `yarn lint` (as
-  regras do ESLint que o `next build` aplica) → `yarn typecheck` →
-  `yarn test:unit --coverage` (publica o artefato `coverage-<sha>`) →
-  `yarn test:rules`. Com `API_REPO_READ_TOKEN`, faz checkout da API ao lado
-  para os testes de socket.
+- **`validate`**: `yarn install --frozen-lockfile` → `audit-ci` → `yarn
+lint:check` (Prettier) → `yarn lint` (as regras do ESLint que o `next
+build` aplica) → `yarn typecheck` → `yarn test:unit --coverage` (publica o
+  artefato `coverage-<sha>`; uma falha do serviço de artefatos não reprova,
+  porque a cobertura não é gate) → `yarn test:rules`. Com
+  `API_REPO_READ_TOKEN`, faz checkout da API ao lado para os testes de
+  socket (a branch é escolhida como no `browser-suites.yml`, abaixo).
+- **`audit-ci`** (decisão D1): um aviso CRITICAL numa dependência de
+  produção **bloqueia** só quando o push ou o PR mexe em `package.json`,
+  `yarn.lock`, `package-lock.json` ou `audit-ci.jsonc` (as exceções, com data
+  de revisão). Nos outros casos o audit roda, mas o achado vira um aviso no
+  run e uma seção no resumo, sem reprovar. O motivo: o banco de avisos é
+  vivo, e um aviso publicado hoje reprovava a próxima correção sem relação
+  com dependência, no mesmo commit que passou ontem. A base da comparação é
+  o commit base do PR, ou o commit de onde o push moveu a branch
+  (`.github/scripts/dependency-gate.mjs`). Sem base (branch nova, execução
+  manual) ou com a base indisponível, o audit bloqueia. Um audit que não
+  conseguiu falar com o registry (só a frase "Failed security audit due to"
+  é veredito) repete até 3 vezes com pausa crescente; persistindo, bloqueia
+  só onde um veredito bloquearia, com mensagem de rede, nunca como aviso de
+  segurança. O vigia contínuo é o Dependabot (_security updates_). Um aviso que aparece como "não bloqueia"
+  precisa ser tratado antes da próxima mudança de dependência, porque aí ele
+  bloqueia. Uma mudança de dependência que chegue à `staging` sem run próprio
+  (num `[skip ci]`, o que a regra da seção 2 proíbe, ou num run pendente que o
+  GitHub trocou pelo do push seguinte) não entra no diff do push seguinte, e
+  ali o achado só avisa. A produção continua protegida: o PR `staging → main`
+  compara com a `main`, vê a mudança e bloqueia.
 - **`secrets`**: gitleaks no **histórico inteiro**, com a imagem fixada por
   digest e `--redact`.
 
@@ -170,23 +233,42 @@ Não há agendamento: um build que passou aqui não roda de novo. A rodada
 noturna só repetia o que o push em `staging` e o PR para `main` já tinham
 aprovado, e consumia a maior parte dos minutos do mês do Actions.
 
-Ele sobe a stack do zero: Postgres 16 e Redis 7 como service containers, a
-API (checkout da mesma branch na `trajetto-api`), migrations, seed, as
-sessões de teste, a API em `:3334` e a web em `:3100` a partir do servidor
-`standalone` da build de produção. Depois roda `ui`, `a11y` e `responsive`
-no Chromium. Sem `API_REPO_READ_TOKEN`, o job `gate` pula tudo com um aviso.
-Detalhes na seção 16 e em `testes.md`.
+Ele sobe a stack do zero: Postgres 16 e Redis 7 como service containers
+(fixados por digest), a API (checkout da mesma branch na `trajetto-api`),
+migrations, seed, as sessões de teste, a API em `:3334` e a web em `:3100` a
+partir do servidor `standalone` da build de produção. Depois roda `ui`,
+`a11y` e `responsive` no Chromium. As suítes não chegam a nenhum terceiro:
+tiles, Turnstile, ViaCEP, Nominatim e o renderizador do console da API são
+dublês locais, e o login valida o captcha no dublê do siteverify
+(`TURNSTILE_SITEVERIFY_URL`). O job dá o mesmo `RATE_LIMIT_FORWARDER_SECRET`
+de teste à API, à web e ao Playwright: cada contexto do navegador é uma
+pessoa para o limite de login da API. Sem `API_REPO_READ_TOKEN`, o job
+`gate` pula tudo com um aviso. Detalhes na seção 16 e em `testes.md`.
+
+A branch da API: a mesma do push ou do PR, se a `trajetto-api` tiver uma com
+esse nome; senão, a padrão. Só a resposta "essa branch não existe" (código 2
+do `git ls-remote --exit-code`) cai na padrão, com um aviso no run. Um erro
+de rede ou de credencial é repetido até 4 vezes, com espera crescente, e
+depois o job falha dizendo que não foi "branch inexistente" (decisão D8).
+Antes, um erro de rede fazia a web ser testada em silêncio contra a `main`
+da API.
+
+O que fica em cache entre corridas (decisão D9): o Chromium do Playwright
+(chave na versão instalada do `@playwright/test`), os engines do Prisma que
+o `yarn install` da API baixa (`~/.cache/prisma`, chave na versão do
+`@prisma/engines` no `yarn.lock` da API) e o renderizador do console da API
+(chave no arquivo que fixa a versão dele na API).
 
 ### `deploy.yml`: build, staging, promote e release
 
-| Job                  | Roda em                                                                  | Faz                                                                                                                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `validate`           | push em `staging`                                                        | chama `ci.yml`                                                                                                                                                                                                  |
-| `browser-suites`     | push em `staging`                                                        | chama `browser-suites.yml`                                                                                                                                                                                      |
-| `build`              | push em `staging`, depois dos dois acima                                 | build **único** com cache GHA, SBOM e proveniência (`mode=min`), push de `sha-<commit>`, Trivy por digest (só relata até `IMAGE_SCAN_ENFORCE=true`)                                                             |
-| `deploy-staging`     | depois do `build` (environment `staging`)                                | confere se o run ainda é o HEAD de `staging` (runs mais velhos param, verdes), move `staging` para o digest, faz o deploy pela API do Dokploy, espera o `/build-id.json` e, por último, grava `staged-<commit>` |
-| `promote-production` | push em `main`, ou **Run workflow** em `main` (environment `production`) | acha a imagem (seção 11), roda o gate de rotas, move `stable` para o digest, faz o deploy no Dokploy, espera o `/build-id.json`                                                                                 |
-| `release`            | push em `main`, depois do promote                                        | semantic-release: tag, `CHANGELOG.md` e GitHub Release                                                                                                                                                          |
+| Job                  | Roda em                                                                  | Faz                                                                                                                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validate`           | push em `staging`                                                        | chama `ci.yml`                                                                                                                                                                                                                                             |
+| `browser-suites`     | push em `staging`                                                        | chama `browser-suites.yml`                                                                                                                                                                                                                                 |
+| `build`              | push em `staging`, depois dos dois acima                                 | build **único** com cache GHA, SBOM e proveniência (`mode=min`), push de `sha-<commit>`, Trivy por digest (só relata até `IMAGE_SCAN_ENFORCE=true`)                                                                                                        |
+| `deploy-staging`     | depois do `build` (environment `staging`)                                | confere se o run ainda é o HEAD de `staging` (runs mais velhos param, verdes, salvo se o HEAD novo só traz documentação), move `staging` para o digest, faz o deploy pela API do Dokploy, espera o `/build-id.json` e, por último, grava `staged-<commit>` |
+| `promote-production` | push em `main`, ou **Run workflow** em `main` (environment `production`) | acha o build que o staging serviu (seção 11), roda o gate de rotas, move `stable` para o digest, faz o deploy no Dokploy, espera o `/build-id.json`                                                                                                        |
+| `release`            | push em `main`, depois do promote                                        | semantic-release: tag, `CHANGELOG.md` e GitHub Release                                                                                                                                                                                                     |
 
 Antes do push, o `build` carrega a imagem no runner e roda um smoke test:
 o container sobe sem rede, com valores descartáveis, precisa passar no
@@ -207,8 +289,9 @@ Scripts usados pelos jobs:
   `trajetto-api` (um teste compara os dois). Chama `application.deploy` na
   API do Dokploy e acompanha o deployment que ele criou: falha na hora se o
   Dokploy não conseguir rodar o deploy (imagem que não baixa, chave ou id
-  errado) e, quando o deployment termina em `error`, dispara de novo, até 3
-  tentativas (`DOKPLOY_ATTEMPTS`). Foi assim que o download da imagem
+  errado) e, quando o deployment termina em `error`, dispara de novo, até 6
+  tentativas (`DOKPLOY_ATTEMPTS`), com pausas de 20, 40, 80, 160 e 160 s, cada
+  uma com um aviso no run. Foi assim que o download da imagem
   interrompido pelo IPv6 da VPS (27/10/2026) deixou de quebrar o run. A
   causa, a rota IPv6 da VPS até o GitHub, se resolve no host: o servidor
   prefere IPv4 (`gai.conf` e `GODEBUG=netdns=cgo` no Docker,
@@ -219,8 +302,64 @@ Scripts usados pelos jobs:
 - `.github/scripts/wait-for-build.mjs`: consulta `<site>/build-id.json` pela
   borda real (Cloudflare e Traefik) até responder o commit esperado por 90 s
   seguidos (`WAIT_STABLE_SECONDS`), com limite de 600 s
-  (`WAIT_TIMEOUT_SECONDS`).
+  (`WAIT_TIMEOUT_SECONDS`). Só uma **resposta** zera a janela: outro commit,
+  ou um build sem id. Uma consulta sem resposta (timeout, 5xx ou 52x da
+  borda, 403, uma página no lugar do JSON) não conta nem a favor nem contra,
+  e o total delas vai para um aviso e para o resumo (decisão D10). A janela
+  só fecha numa resposta do commit esperado, então erros sozinhos nunca
+  aprovam.
+- `.github/scripts/ghcr.mjs`: toda leitura e toda troca de tag no GHCR
+  (`digest`, `revision`, `create`). Separa a resposta "essa tag não existe"
+  (código 3) de um login recusado (falha na hora) e de um erro de transporte
+  (repetido até 4 vezes, com espera crescente e um aviso por tentativa,
+  depois falha dizendo que foi o registry). Antes, `2>/dev/null || true`
+  transformava um 502 do GHCR em "a imagem não existe".
+- `.github/scripts/staged-build.mjs`: no promote, acha o build que o staging
+  serviu para o commit do merge, espera um run de staging ainda em
+  andamento e aplica a regra do commit só de documentação (seção 11).
+- `.github/scripts/docs-only.mjs`: diz se a diferença entre dois commits é
+  só documentação (`*.md` e `docs/`). Usado pelo `deploy-staging` e pelo
+  promote.
+- `.github/scripts/dependency-gate.mjs`: decide se o `audit-ci` bloqueia
+  (seção acima).
 - `scripts/check-api-routes.mjs`: o gate de rotas (seção 13).
+
+### Regras de estabilidade dos três workflows
+
+Desde 30/10/2026, um pipeline só reprova por defeito do código. "Rode de
+novo" não é solução para nada que esteja nesta lista:
+
+- **Versões fixas (D3).** O Node dos workflows é o `22.21.1` das imagens,
+  nunca "o 22 do dia". Os service containers do `browser-suites.yml`
+  (`postgres:16-alpine` e `redis:7-alpine`) e o BuildKit do build
+  (`moby/buildkit:v0.33.1`) rodam por digest, com a tag ao lado. Os digests
+  de Postgres e Redis são os mesmos nos três repositórios. Para atualizar:
+  `docker buildx imagetools inspect postgres:16-alpine` (e
+  `redis:7-alpine`), copie o `Digest` do índice e troque nos três
+  repositórios no mesmo dia. O Dependabot não mexe em imagem citada dentro de
+  workflow.
+- **Prazo em todo job (D4).** Cada job tem `timeout-minutes` com folga sobre
+  a duração medida. Os jobs que só chamam outro workflow (`validate` e
+  `browser-suites` do `deploy.yml`) herdam o prazo dos jobs chamados: o
+  GitHub não aceita prazo neles.
+- **`bash -eo pipefail` em todo passo (D5).** Os três workflows declaram
+  `defaults.run.shell: bash`, e um comando que falha no meio de um pipe
+  reprova o passo. Nenhum passo lê a saída de um pipe sem conferir o código
+  (o `git ls-remote | cut` do `deploy-staging` deixava o HEAD vazio e pulava o
+  deploy, verde) nem usa `cmd | grep -q` (o `grep` fecha o pipe cedo e mata o
+  `cmd` com SIGPIPE).
+- **Rede de terceiros só com repetição visível.** Consulta ao repositório
+  irmão (D8), leitura do HEAD, GHCR, banco do Trivy, API do GitHub e o
+  `/docs/json` do gate repetem um erro de transporte com espera crescente e
+  um `::warning::` por tentativa, e depois falham dizendo o que foi. Uma
+  resposta (branch inexistente, tag inexistente, rota faltando, login
+  recusado) nunca é repetida como se fosse erro. Os testes nunca são
+  repetidos para esconder falha: a única nova tentativa é a das suítes de
+  navegador, e um teste que só passa nela vira aviso (`testes.md`, "Testes
+  instáveis").
+- **Cache nunca reprova (D9).** O `cache-to` do build tem
+  `ignore-error=true`, e os uploads de relatório (cobertura, traces) têm
+  `continue-on-error`.
 
 ## 4. Configurar o GitHub (uma vez)
 
@@ -729,41 +868,61 @@ O caminho normal é o merge do PR `staging` → `main`. O job
 
 1. **Espera a aprovação** do environment `production`. Nenhum passo roda
    antes.
-2. **Descobre qual build promover:**
+2. **Descobre o commit de staging:**
    - merge commit (dois pais): o **segundo pai** é o commit de `staging` que
-     foi mergeado. A imagem é `sha-<segundo pai>`;
+     foi mergeado;
    - fast-forward (um pai): o próprio commit de `main`;
    - se o merge tiver conteúdo diferente do commit de staging (fora o
      `CHANGELOG.md`), **falha**: main tem mudança que não passou por
      staging.
-3. **Valida a tag** (`sha-<sha>` ou `main-<sha>`) e lê o **digest** dela
-   no GHCR. Se a imagem não existir, falha com a explicação (merge com
-   squash ou rebase, ou commit que nunca passou por staging).
-   **Num merge**, exige também a tag `staged-<commit>` no **mesmo digest**.
-   Ela é gravada pelo `deploy-staging` como último passo, então só existe
-   para um build que passou no Trivy, virou a tag `staging` e (com a
-   conferência ligada) foi servido pelo site de staging. A imagem
-   `sha-<commit>` sozinha não basta: ela vai para o GHCR antes do scan e
-   fica lá quando o scan, o rollout de staging ou o run falha. Sem o
-   marcador, o promote falha com "o staging nunca rodou esse build". Se o
-   merge aconteceu antes de o deploy de staging terminar, espere ele
-   terminar e use _Re-run failed jobs_. O **Run workflow** (rollback) não
-   exige o marcador: ele aponta para builds antigos, alguns de antes do
-   marcador existir, e a tag digitada passa pela aprovação do environment.
-4. **Gate de rotas:** faz checkout do código daquele build em `promoted/` e
+3. **Acha o build que o staging serviu** para esse commit
+   (`.github/scripts/staged-build.mjs`), pela tag `staged-<commit>`. Ela é
+   gravada pelo `deploy-staging` como último passo, então só existe para um
+   build que passou no Trivy, virou a tag `staging` e (com a conferência
+   ligada) foi servido pelo site de staging. A imagem `sha-<commit>`
+   sozinha não basta: ela vai para o GHCR antes do scan e fica lá quando o
+   scan, o rollout de staging ou o run falha.
+   - **O run de staging desse commit ainda está rodando** (o merge chegou
+     antes de ele terminar): o promote espera ele terminar, até 120 min,
+     lendo o run pela API do GitHub, e confere o marcador de novo (decisão
+     D10). Antes, o promote falhava e a doc mandava dar _Re-run_.
+   - **O commit nunca rodou no staging** (um `[skip ci]`, seção 2): o
+     promote volta pela história de `staging` até o commit mais próximo com
+     `staged-<commit>` e promove o build dele, **se** tudo entre os dois for
+     documentação (`*.md` e `docs/`, que a imagem não contém). Se houver
+     qualquer outra mudança, falha listando os arquivos: ela nunca passou
+     pelo pipeline (decisão D11). Um merge com squash ou rebase cria um
+     commit que o staging nunca construiu, com código; cai aqui e é recusado
+     do mesmo jeito.
+   - **O run de staging terminou sem o marcador** (falhou, ou foi superado
+     por um commit mais novo antes do deploy): falha, com o link do run. O
+     staging nunca serviu esse build.
+4. **Valida a tag** (`sha-<sha>` ou `main-<sha>`) e lê o **digest** dela
+   no GHCR, e o commit de origem pelo rótulo da imagem, direto do registry,
+   sem baixar a imagem. Se a imagem não existir, falha com a explicação.
+   **Num merge**, exige também `staged-<commit>` no **mesmo digest**. Toda
+   consulta ao GHCR passa pelo `ghcr.mjs`: "a tag não existe" é resposta;
+   um erro de transporte é repetido e, se persistir, falha dizendo que foi o
+   GHCR. O **Run workflow** (rollback) não exige o marcador: ele aponta para
+   builds antigos, alguns de antes do marcador existir, e a tag digitada
+   passa pela aprovação do environment.
+5. **Gate de rotas:** faz checkout do código daquele build em `promoted/` e
    roda `node scripts/check-api-routes.mjs promoted/src` contra
-   `API_DOCS_URL`. Falha, listando as rotas, se alguma que o build chama não
-   estiver no OpenAPI da API de produção. Sem `API_DOCS_URL`, é pulado com
+   `API_DOCS_URL`. Se faltar rota, ou se a leitura falhar por rede ou 5xx,
+   lê de novo a cada 30 s por até 10 min (a API pode estar no meio do rolling,
+   com uma réplica antiga respondendo o `/docs/json`). Só no fim do prazo
+   falha, listando as rotas que ainda faltam. Uma leitura recusada (401, 403, 404) é configuração e falha na hora. Sem `API_DOCS_URL`, é pulado com
    aviso.
-5. **Move `stable`** para o digest, do lado do servidor
-   (`docker buildx imagetools create`), sem pull nem rebuild.
-6. **Deploy pela API do Dokploy** da Application de produção, com até 3
+6. **Move `stable`** para o digest, do lado do servidor
+   (`docker buildx imagetools create`, pelo `ghcr.mjs`), sem pull nem
+   rebuild.
+7. **Deploy pela API do Dokploy** da Application de produção, com até 6
    tentativas se o deployment terminar em erro. Sem os secrets, é pulado com
    aviso.
-7. **Espera** `https://www.intrajetto.com/build-id.json` responder o commit
+8. **Espera** `https://www.intrajetto.com/build-id.json` responder o commit
    promovido por 90 s seguidos. Se o Swarm reverter (health check falhou), o
    run falha.
-8. O job `release` cria a versão.
+9. O job `release` cria a versão.
 
 O resumo do run mostra o digest promovido. Guarde-o para um rollback.
 
@@ -806,8 +965,10 @@ diferentes, e nada entre elas garante a ordem.
    (`/health/readiness` 200 em todas). Durante o rolling, o `/docs/json`
    pode vir de qualquer réplica.
 2. **Web:** só então faça o merge `staging` → `main` da web. Se a API ainda
-   não serve uma rota nova, o gate de rotas **falha** e lista quais. Nada é
-   promovido. Promova a API e rode de novo (Re-run do job).
+   está convergindo, o gate de rotas espera até 10 min, lendo o `/docs/json`
+   de novo. Se a API não foi promovida, o gate **falha** no fim do prazo e
+   lista as rotas que faltam. Nada é promovido: é o gate funcionando, não
+   instabilidade. Promova a API e rode o job do promote de novo.
 
 Mudanças de rota seguem **expandir e depois contrair** (detalhes em
 `arquitetura.md`): a API nunca tira, no mesmo release, uma rota que a web em
@@ -875,8 +1036,13 @@ Ele faz checkout da `trajetto-api` na mesma branch (`staging` num push em
 staging; a branch de origem num PR). Por isso, mantenha a `staging` da API
 compatível com a `staging` da web.
 
-Em caso de falha, o run publica o artefato `browser-suites-<run id>`, com os
-traces do Playwright (`test-results/`) e os logs da API e da web.
+Toda corrida terminada (verde ou vermelha) publica o artefato
+`browser-suites-<run id>`, com os traces de cada suíte (`test-results/ui`,
+`test-results/a11y`, `test-results/responsive`) e os logs da API e da web.
+De um teste que só passou na nova tentativa fica o trace da primeira
+tentativa. Ele também vira um aviso no run e uma linha no resumo
+(`testes.md`, "Testes instáveis"). Uma falha do serviço de artefatos não
+reprova o job.
 
 ## 17. Recursos, logs e retenção de imagens
 
@@ -908,6 +1074,24 @@ não roda, o build não ganha `staged-<commit>`, e um merge dele em `main` é
 recusado no promote (seção 11). Um rollback manual pelo Run workflow para
 essa tag ainda seria aceito, então não use uma tag cujo build falhou no
 scan.
+
+O banco de vulnerabilidades do Trivy fica em cache entre corridas
+(`actions/cache`, uma chave por dia e pela versão do Trivy), e o download
+tem três tentativas (decisão D6). Se todas falharem, o scan usa a cópia do
+cache e o resumo diz de quando ela é. O resumo do run separa os três
+desfechos: **falha no download do banco**, **achados** e **o scan falhou**
+(erro do Trivy ou do GHCR). Só os achados são vulnerabilidade. Com
+`IMAGE_SCAN_ENFORCE=true`, só os achados reprovam o build; um scan que não
+conseguiu rodar (sem banco, Trivy ou GHCR com erro) vira aviso e linha no
+resumo, como na `trajetto-api`: vermelho é defeito do commit, e um registry
+fora do ar não é.
+
+**Pendência com data: 31/12/2026.** As três linhas do `.trivyignore` (e as
+mesmas três exceções do `audit-ci.jsonc`) vencem nesse dia. Depois dele, o
+Trivy volta a contar esses avisos; com `IMAGE_SCAN_ENFORCE=true`, todo build
+falharia. Antes da data: migre o Next (a saída planejada em
+`arquitetura.md`, "Next.js 14: versão e avisos de segurança") e apague as
+linhas, ou revise cada exceção e mova a data, com o motivo.
 
 ## 18. O que a Application não cobre: Traefik, logs e encerramento
 
@@ -999,26 +1183,33 @@ no host vale até o próximo deploy do Dokploy, que recria a spec sem ele.
 
 ## 19. Solução de problemas
 
-| Sintoma                                             | Causa provável                                                                                                | O que fazer                                                               |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Deploy "PULADO" no resumo                           | secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY` e `DOKPLOY_UI_APPLICATION_ID` ausentes                               | crie os três no environment certo (seção 6.5)                             |
-| `O Dokploy recusou o deploy`: HTTP 401/404          | chave revogada, id errado ou Application recriada (o id mudou)                                                | gere a chave ou copie o id de novo e atualize o secret                    |
-| `terminou em 'error' … depois de 3 tentativas`      | imagem que não baixa (credencial do GHCR, rede da VPS) ou spec recusada                                       | veja o log do deployment no painel (aba Deployments da Application)       |
-| `A imagem … não existe no GHCR` no promote          | merge com squash ou rebase, ou commit que não passou por staging                                              | refaça como merge commit, ou rode o workflow com um `image_tag` existente |
-| `O merge … difere do commit de staging`             | commit direto em `main`                                                                                       | leve a mudança para `staging`, espere o deploy e faça o merge de novo     |
-| Gate de rotas lista rotas faltando                  | web promovida antes da API                                                                                    | promova a API e dê Re-run no job                                          |
-| `/build-id.json` com 403 no run                     | WAF ou bot fight da Cloudflare                                                                                | exceção para `/build-id.json`                                             |
-| Run falha esperando o build e o site serve o antigo | o Swarm reverteu: o health check falhou                                                                       | veja o log da Application (variável faltando lista os nomes)              |
-| O servidor não sobe e lista variáveis               | obrigatória faltando ou inválida                                                                              | compare com `variaveis-de-ambiente.md`                                    |
-| Dokploy não puxa a imagem (`unauthorized`)          | token do GHCR vencido ou sem `read:packages`                                                                  | gere outro e atualize o registry                                          |
-| Toda chamada falha com erro de rede                 | API fora do ar ou `HTTP_REQUEST`/`PUBLIC_API_URL` errados                                                     | confira as duas URLs e a API                                              |
-| Login funciona e o tempo real não                   | `PUBLIC_API_URL` (o socket conecta nela) ou CORS da API (o `HTTP_REQUEST` da API deve ser a origem desta web) | confira as duas pontas                                                    |
-| 429 no login para todo mundo                        | `RATE_LIMIT_FORWARDER_SECRET` diferente da API                                                                | use o mesmo valor nos dois lados                                          |
-| Upload recusado pelo navegador                      | CORS do bucket ou origem fora da CSP                                                                          | regra CORS do R2 e `CSP_STORAGE_ORIGINS`                                  |
-| Mapa sem fundo em staging ou produção               | `MAP_TILE_URL` vazio                                                                                          | configure um provedor de tiles comercial                                  |
-| Staging aparecendo no Google                        | `APP_ENV` diferente de `staging`                                                                              | corrija e faça Redeploy. Peça remoção no Search Console                   |
-| Tela 404 logo depois de promover                    | web publicada antes da API                                                                                    | promova a API                                                             |
-| Suítes de navegador puladas                         | falta `API_REPO_READ_TOKEN`                                                                                   | crie o token (seção 16)                                                   |
+| Sintoma                                                         | Causa provável                                                                                                | O que fazer                                                                                |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Deploy "PULADO" no resumo                                       | secrets `DOKPLOY_URL`, `DOKPLOY_API_KEY` e `DOKPLOY_UI_APPLICATION_ID` ausentes                               | crie os três no environment certo (seção 6.5)                                              |
+| `O Dokploy recusou o deploy`: HTTP 401/404                      | chave revogada, id errado ou Application recriada (o id mudou)                                                | gere a chave ou copie o id de novo e atualize o secret                                     |
+| `terminou em 'error' … depois de 6 tentativas`                  | imagem que não baixa (credencial do GHCR, rede da VPS) ou spec recusada                                       | veja o log do deployment no painel (aba Deployments da Application)                        |
+| `A imagem … não existe no GHCR` no promote                      | merge com squash ou rebase, ou commit que não passou por staging                                              | refaça como merge commit, ou rode o workflow com um `image_tag` existente                  |
+| `O merge … difere do commit de staging`                         | commit direto em `main`                                                                                       | leve a mudança para `staging`, espere o deploy e faça o merge de novo                      |
+| `… não rodou no staging, e a diferença … não é só documentação` | um commit com código foi para `staging` com `[skip ci]` (ou um squash)                                        | leve a mudança para `staging` sem `[skip ci]`, espere o deploy e faça o merge de novo      |
+| `… rodou no staging (…), mas não tem o marcador`                | o run de staging daquele commit falhou ou foi superado antes do deploy                                        | corrija em `staging` (o link do run está na mensagem) e faça o merge de novo               |
+| Promote parado em `O run de staging … ainda está em andamento`  | o merge chegou antes de o staging terminar                                                                    | nada: ele espera o run terminar (até 120 min) e segue sozinho                              |
+| `O GHCR não respondeu sobre …` / `O GHCR recusou o acesso`      | o registry ficou fora mais que as 4 tentativas / login ou permissão `packages`                                | veja o status do GitHub / confira o `GITHUB_TOKEN` e o acesso do pacote (seção 4)          |
+| Gate de rotas lista rotas faltando                              | web promovida antes da API (o gate já esperou 10 min)                                                         | promova a API e rode o job do promote de novo                                              |
+| `git ls-remote não conseguiu consultar trajetto-api`            | rede ou `API_REPO_READ_TOKEN` vencido ou sem acesso                                                           | confira o token (seção 16); se for rede, o run seguinte passa                              |
+| Aviso `Audit de dependências: aviso (não bloqueia)`             | aviso novo numa dependência de produção, num push que não mexeu em dependência                                | atualize a dependência (PR do Dependabot) ou registre a exceção datada em `audit-ci.jsonc` |
+| `Trivy: falha no download do banco` no resumo                   | a fonte do banco do Trivy fora do ar e sem cópia em cache                                                     | nada a corrigir no código; a próxima corrida baixa de novo                                 |
+| `/build-id.json` com 403 no run                                 | WAF ou bot fight da Cloudflare                                                                                | exceção para `/build-id.json`                                                              |
+| Run falha esperando o build e o site serve o antigo             | o Swarm reverteu: o health check falhou                                                                       | veja o log da Application (variável faltando lista os nomes)                               |
+| O servidor não sobe e lista variáveis                           | obrigatória faltando ou inválida                                                                              | compare com `variaveis-de-ambiente.md`                                                     |
+| Dokploy não puxa a imagem (`unauthorized`)                      | token do GHCR vencido ou sem `read:packages`                                                                  | gere outro e atualize o registry                                                           |
+| Toda chamada falha com erro de rede                             | API fora do ar ou `HTTP_REQUEST`/`PUBLIC_API_URL` errados                                                     | confira as duas URLs e a API                                                               |
+| Login funciona e o tempo real não                               | `PUBLIC_API_URL` (o socket conecta nela) ou CORS da API (o `HTTP_REQUEST` da API deve ser a origem desta web) | confira as duas pontas                                                                     |
+| 429 no login para todo mundo                                    | `RATE_LIMIT_FORWARDER_SECRET` diferente da API                                                                | use o mesmo valor nos dois lados                                                           |
+| Upload recusado pelo navegador                                  | CORS do bucket ou origem fora da CSP                                                                          | regra CORS do R2 e `CSP_STORAGE_ORIGINS`                                                   |
+| Mapa sem fundo em staging ou produção                           | `MAP_TILE_URL` vazio                                                                                          | configure um provedor de tiles comercial                                                   |
+| Staging aparecendo no Google                                    | `APP_ENV` diferente de `staging`                                                                              | corrija e faça Redeploy. Peça remoção no Search Console                                    |
+| Tela 404 logo depois de promover                                | web publicada antes da API                                                                                    | promova a API                                                                              |
+| Suítes de navegador puladas                                     | falta `API_REPO_READ_TOKEN`                                                                                   | crie o token (seção 16)                                                                    |
 
 ## 20. Os três repositórios juntos
 

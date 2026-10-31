@@ -154,9 +154,26 @@ describe("the promotion of a merge into main", () => {
     expect(resolveStep).toContain("git rev-list --parents -n 1 HEAD");
     expect(resolveStep).toContain("git rev-parse HEAD^2");
     expect(resolveStep).toContain('source="$GITHUB_SHA"');
-    expect(resolveStep).toContain('echo "tag=sha-${source::7}"');
-    // Depth 2 brings both parents of a merge commit.
-    expect(step("Checkout the checker")).toContain("fetch-depth: 2");
+    // The tag comes from the build staging served for that commit
+    // (staged-build.mjs, tests/unitaires/staged-build.test.ts).
+    expect(resolveStep).toContain(
+      'SOURCE_SHA="$source" node .github/scripts/staged-build.mjs',
+    );
+    expect(resolveStep).toContain("GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}");
+    // The whole history: the script walks back to the nearest staged build.
+    expect(step("Checkout the checker")).toContain("fetch-depth: 0");
+    // It reads the staging runs of deploy.yml (a run still going is waited
+    // for), and GHCR, logged in before it.
+    expect(job).toMatch(/\n {6}actions: read\n/);
+    expect(
+      steps.findIndex((text) =>
+        text.startsWith("Log in to GitHub Container Registry"),
+      ),
+    ).toBeLessThan(
+      steps.findIndex((text) =>
+        text.startsWith("Resolve the build to promote"),
+      ),
+    );
   });
 
   it("refuses a merge whose content is not the staging commit's", () => {
@@ -168,9 +185,27 @@ describe("the promotion of a merge into main", () => {
   it("fails clearly when the commit has no staging image", () => {
     const find = step("Find the commit the image was built from");
 
-    expect(find).toContain("docker buildx imagetools inspect");
-    expect(find).toContain("não existe no GHCR");
+    // ghcr.mjs: exit 3 is the registry's "not found"; any other failure is
+    // GHCR not answering (retried, then reported as such), never "missing".
+    expect(find).toContain(
+      'digest=$(node .github/scripts/ghcr.mjs digest "$image") || rc=$?',
+    );
+    expect(find).toMatch(
+      /if \[ "\$rc" -eq 3 \]; then\n\s+echo "::error::A imagem \$\{image\} não existe no GHCR/,
+    );
     expect(find).toContain('echo "digest=${digest}"');
+    // The commit label from the registry, without pulling the image.
+    expect(find).toContain("node .github/scripts/ghcr.mjs revision");
+    expect(find).not.toContain("docker pull");
+  });
+
+  // A transport error of the registry read as "this tag does not exist" (or
+  // skipped a check) wherever the workflow asked `… 2>/dev/null || true`.
+  it("never takes a GHCR error for a missing tag", () => {
+    expect(workflow).not.toMatch(/imagetools inspect[^\n]*2>\/dev\/null/);
+    expect(workflow).not.toMatch(/imagetools[^\n]*\|\| true/);
+    // Every read and every tag move goes through ghcr.mjs.
+    expect(workflow).not.toMatch(/docker buildx imagetools/);
   });
 
   it("builds nothing", () => {
@@ -189,6 +224,9 @@ describe("the promotion of a merge into main", () => {
     expect(check).toContain("if: github.event_name == 'push'");
     expect(check).toContain(
       'marker="ghcr.io/trajetto-organization/trajetto-ui:staged-${IMAGE_TAG#sha-}"',
+    );
+    expect(check).toContain(
+      'staged=$(node .github/scripts/ghcr.mjs digest "$marker") || rc=$?',
     );
     expect(check).toContain('if [ "$staged" != "$DIGEST" ]; then');
     expect(check).toContain("exit 1");
@@ -216,6 +254,61 @@ describe("the promotion of a merge into main", () => {
     expect(staging).toContain("- name: Wait for the site to serve this build");
     // Nothing else writes the marker.
     expect(workflow.match(/--tag "?[^\s"]*:staged-/g) ?? []).toHaveLength(1);
+  });
+});
+
+/**
+ * A commit that only changes documentation (decision D11, 30/10/2026).
+ *
+ * A `[skip ci]` commit on staging runs no pipeline, so it has no image and
+ * no `staged-<7>` marker, and the promote of a merge whose staging head was
+ * such a commit failed for good ("rode de novo" could not help: there was
+ * no run to repeat). The promote now ships the build of the nearest staged
+ * ancestor when everything between is documentation, which the image never
+ * contains; and the run that deploys staging still deploys when the newer
+ * head only adds documentation. The rule and its behaviour are tested in
+ * docs-only.test.ts, staged-build.test.ts and deploy-staging-head.test.ts;
+ * this holds the wiring and the documentation together.
+ */
+describe("a commit that only changes documentation", () => {
+  const workflow = read(".github", "workflows", "deploy.yml");
+  const staging = workflow.slice(
+    workflow.indexOf("\n  deploy-staging:"),
+    workflow.indexOf("\n  promote-production:"),
+  );
+
+  it("is deployed by the run it sits on", () => {
+    const head = staging.slice(
+      staging.indexOf("- name: Is this run still staging's head?"),
+    );
+
+    expect(head).toContain(
+      'git merge-base --is-ancestor "$GITHUB_SHA" "$head"',
+    );
+    expect(head).toContain(
+      'node .github/scripts/docs-only.mjs "$GITHUB_SHA" "$head"',
+    );
+  });
+
+  it("is promoted through the build of its nearest staged ancestor, with the same rule", () => {
+    const script = read(".github", "scripts", "staged-build.mjs");
+
+    expect(script).toContain('from "./docs-only.mjs"');
+    expect(workflow).toContain(
+      'SOURCE_SHA="$source" node .github/scripts/staged-build.mjs',
+    );
+  });
+
+  it("is documented as the one safe use of [skip ci]", () => {
+    const deploy = read("docs", "deploy.md");
+
+    expect(deploy).toContain("**Commit só de documentação (`[skip ci]`).**");
+    // The GitHub behaviour that still needs a hand: required PR checks of a
+    // `[skip ci]` head never run on their own.
+    expect(deploy).toContain("**PR para `main` com `[skip ci]` na ponta:**");
+    expect(deploy).not.toMatch(
+      /Re-run failed jobs|dê Re-run|\(Re-run do job\)/,
+    );
   });
 });
 

@@ -21,6 +21,18 @@
  * Exit 0: every path has a route. Exit 1: some do not (listed). Exit 2: the
  * document could not be read — which blocks too, since "could not check" is
  * not "checked".
+ *
+ * It reads the document again until a deadline instead of judging one read
+ * (decision D10, 30/10/2026). While the API rolls, /docs/json comes from
+ * either replica, and an old one still lacks the new routes; a 5xx or a
+ * timeout mid-rollout is not an answer either. Each read has a timeout;
+ * missing routes and transport errors (network, 408, 429, 5xx) are read
+ * again every ROUTES_POLL_SECONDS (default 30) until ROUTES_WAIT_SECONDS
+ * (default 600) have passed, each retry a visible line. At the deadline it
+ * fails with what was last seen: the missing routes (exit 1), or the last
+ * error (exit 2). A refused read (401, 403, 404) is a configuration problem
+ * and fails at once (exit 2). An API that was never promoted still fails —
+ * at the deadline, listing the routes.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
@@ -143,6 +155,109 @@ function sourceFiles(dir) {
   });
 }
 
+/** Statuses that say nothing about the routes: read again. */
+const TRANSIENT_STATUS = (status) =>
+  status === 408 || status === 429 || status >= 500;
+
+/**
+ * One read of the API document.
+ *
+ * @returns {Promise<{ kind: "document", document: unknown }
+ *   | { kind: "transient" | "refused", reason: string }>}
+ */
+async function readDocument(url, headers) {
+  try {
+    const response = await fetch(url, {
+      headers,
+      signal: AbortSignal.timeout(30_000),
+    });
+
+    if (!response.ok) {
+      return {
+        kind: TRANSIENT_STATUS(response.status) ? "transient" : "refused",
+        reason: `the API document answered ${response.status}`,
+      };
+    }
+
+    try {
+      return { kind: "document", document: await response.json() };
+    } catch (error) {
+      // An edge page in place of the JSON (a challenge, a gateway error).
+      return {
+        kind: "transient",
+        reason: `the API document is not JSON (${error.message})`,
+      };
+    }
+  } catch (error) {
+    return {
+      kind: "transient",
+      reason: `the API document could not be read: ${error.message}`,
+    };
+  }
+}
+
+/**
+ * Reads the document until every path is served, or the deadline.
+ *
+ * @param {Map<string, string>} shapes
+ * @param {{
+ *   read: () => Promise<{ kind: string, document?: unknown, reason?: string }>,
+ *   sleep: (ms: number) => Promise<void>,
+ *   now: () => number,
+ *   log: (line: string) => void,
+ *   waitMs: number,
+ *   pollMs: number,
+ * }} deps
+ * @returns {Promise<{ code: 0 | 1 | 2, missing: string[], reason: string, reads: number }>}
+ */
+export async function checkRoutes(shapes, deps) {
+  const deadline = deps.now() + deps.waitMs;
+  let reads = 0;
+
+  for (;;) {
+    const result = await deps.read();
+    let missing = [];
+    let reason = "";
+    let code = 0;
+
+    reads += 1;
+
+    if (result.kind === "refused") {
+      return { code: 2, missing, reason: result.reason ?? "", reads };
+    }
+
+    if (result.kind === "transient") {
+      code = 2;
+      reason = result.reason ?? "";
+    } else {
+      try {
+        missing = missingRoutes(shapes, result.document);
+      } catch (error) {
+        // A document with no paths: an API mid-boot, or the wrong URL.
+        code = 2;
+        reason = error.message;
+      }
+
+      if (code === 0 && missing.length === 0) {
+        return { code: 0, missing, reason, reads };
+      }
+
+      if (code === 0) {
+        code = 1;
+        reason = `${missing.length} path(s) not served yet`;
+      }
+    }
+
+    if (deps.now() >= deadline) return { code, missing, reason, reads };
+
+    deps.log(
+      `[check-api-routes] read ${reads}: ${reason}; reading again in ${Number((deps.pollMs / 1000).toFixed(2))}s (until the deadline).`,
+    );
+
+    await deps.sleep(deps.pollMs);
+  }
+}
+
 async function main() {
   const url = process.env.API_DOCS_URL;
 
@@ -170,34 +285,36 @@ async function main() {
     headers.Authorization = `Basic ${credentials}`;
   }
 
-  let document;
+  const waitMs =
+    Math.max(0, Number(process.env.ROUTES_WAIT_SECONDS ?? 600)) * 1000;
 
-  try {
-    const response = await fetch(url, { headers });
+  const { code, missing, reason, reads } = await checkRoutes(shapes, {
+    read: () => readDocument(url, headers),
+    sleep: (ms) => new Promise((done) => setTimeout(done, ms)),
+    now: () => Date.now(),
+    log: (line) => console.log(line),
+    waitMs,
+    pollMs: Math.max(0, Number(process.env.ROUTES_POLL_SECONDS ?? 30)) * 1000,
+  });
 
-    if (!response.ok) {
-      console.error(`The API document answered ${response.status}.`);
-      process.exit(2);
-    }
-
-    document = await response.json();
-  } catch (error) {
-    console.error(`The API document could not be read: ${error.message}`);
-    process.exit(2);
+  if (reads > 1) {
+    console.log(
+      `::warning::The API document was read ${reads} times before the verdict.`,
+    );
   }
 
-  let missing;
-
-  try {
-    missing = missingRoutes(shapes, document);
-  } catch (error) {
-    console.error(error.message);
-    process.exit(2);
-  }
-
-  if (missing.length > 0) {
+  if (code === 2) {
     console.error(
-      `The production API does not serve ${missing.length} path(s) this build calls.\n` +
+      reads > 1
+        ? `${reason} (still after ${waitMs / 1000}s and ${reads} reads).`
+        : `${reason}.`,
+    );
+    process.exit(2);
+  }
+
+  if (code === 1) {
+    console.error(
+      `The production API does not serve ${missing.length} path(s) this build calls (still after ${waitMs / 1000}s).\n` +
         "Promote the API first (and wait for it to converge), then this build:\n",
     );
 

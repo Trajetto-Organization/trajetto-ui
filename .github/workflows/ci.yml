@@ -35,20 +35,31 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
+# `bash` named explicitly: GitHub then runs every step with `-eo pipefail`,
+# so a command that fails in the middle of a pipe fails the step too (the
+# default `bash -e` only sees the last command of a pipe).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   validate:
     name: Validate (audit, lint, types, unit and rule tests)
     runs-on: ubuntu-latest
+    # Measured 5 to 8 minutes (30/10/2026).
     timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
+      # The exact Node of the image (Dockerfile: node:22.21.1), not the
+      # latest 22 of the day: a new patch changes nothing in the code, and
+      # must not change the result.
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: "22.21.1"
           cache: "yarn"
 
       # The socket tests borrow socket.io (the server) from the API's
@@ -70,8 +81,13 @@ jobs:
 
       # The same branch in the sibling repository first: a change that spans
       # the repositories (routes, socket events) is tested against its own
-      # counterpart, not against their default branch. Falls back to the
-      # default branch when there is no branch of that name.
+      # counterpart. Falls back to the sibling's staging only when it answers
+      # that it has no branch of that name (ls-remote --exit-code: 2): work
+      # branches come from staging and go back to it, while main can be
+      # behind it (a change on staging not promoted yet would fail every work
+      # branch without a defect of its own). Any other failure (network,
+      # credentials: 128) is never read as "no branch": asked again, up to 4
+      # times with doubling pauses, then the job fails saying why (D8).
       - name: Pick the sibling branches
         id: refs
         if: steps.api.outputs.enabled == 'true'
@@ -82,15 +98,33 @@ jobs:
           # The empty extraheader first: this repository's own checkout persisted
           # one, and two Authorization headers get a 400 (read as "no branch").
           auth="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          pause=${PROBE_RETRY_SECONDS:-5}
           for pair in api:trajetto-api; do
             key=${pair%%:*}
             repo=${pair#*:}
-            if git -c "http.https://github.com/.extraheader=" -c "http.https://github.com/.extraheader=$auth" ls-remote --exit-code --heads \
-              "https://github.com/Trajetto-Organization/${repo}.git" "refs/heads/${BRANCH}" > /dev/null; then
+            attempt=1
+            while :; do
+              rc=0
+              git -c "http.https://github.com/.extraheader=" -c "http.https://github.com/.extraheader=$auth" ls-remote --exit-code --heads \
+                "https://github.com/Trajetto-Organization/${repo}.git" "refs/heads/${BRANCH}" > /dev/null || rc=$?
+              if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then
+                break
+              fi
+              if [ "$attempt" -ge 4 ]; then
+                echo "::error::git ls-remote não conseguiu consultar ${repo} (código ${rc}) em 4 tentativas: rede ou credencial (API_REPO_READ_TOKEN). Não é 'branch inexistente', então o job não cai na staging."
+                exit 1
+              fi
+              wait=$((pause * 2 ** (attempt - 1)))
+              echo "::warning::git ls-remote em ${repo} falhou (código ${rc}, tentativa ${attempt} de 4); nova tentativa em ${wait}s."
+              sleep "$wait"
+              attempt=$((attempt + 1))
+            done
+            if [ "$rc" -eq 0 ]; then
               echo "${key}=${BRANCH}" >> "$GITHUB_OUTPUT"
               echo "${repo}: branch ${BRANCH}"
             else
-              echo "${repo}: sem a branch ${BRANCH}; usando a padrão"
+              echo "${key}=staging" >> "$GITHUB_OUTPUT"
+              echo "::notice::${repo} não tem a branch ${BRANCH}: usando a staging, de onde saem as branches de trabalho."
             fi
           done
 
@@ -115,10 +149,80 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      # A CRITICAL advisory in a production dependency fails the branch
-      # (INFRA-16). The reasoned, dated exceptions live in audit-ci.jsonc.
+      # A CRITICAL advisory in a production dependency (INFRA-16; the
+      # reasoned, dated exceptions live in audit-ci.jsonc) BLOCKS only a
+      # change that touches the dependency tree or the allowlist: the
+      # advisory database is live, and an advisory published today must not
+      # fail an unrelated fix (decision D1). The decision and its base:
+      # .github/scripts/dependency-gate.mjs. Without a base to compare with
+      # (a new branch, a manual run) it blocks.
+      - name: Did this change touch the dependencies?
+        id: deps
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node .github/scripts/dependency-gate.mjs
+
+      # Otherwise the audit still runs, and a finding is a warning plus a
+      # section of the run summary, never a red job; Dependabot's security
+      # updates are the continuous watch. audit-ci itself is a devDependency
+      # pinned in yarn.lock, installed above: no download at audit time, and
+      # no transitive dependency that moves between runs.
+      #
+      # A verdict and a failure to audit are told apart, as in trajetto-api's
+      # audit-gate.sh: audit-ci says "Failed security audit due to ..." when
+      # it found an advisory. Any other non-zero exit is the registry's audit
+      # endpoint not answering (audit-ci 7.1.0 retries only a 503, with no
+      # pause): tried again, 3 times in all with growing pauses, and when it
+      # persists reported as such, blocking only where a verdict would.
       - name: Audit production dependencies
-        run: npx --yes audit-ci@7.1.0 --config audit-ci.jsonc
+        env:
+          BLOCKING: ${{ steps.deps.outputs.blocking }}
+          REASON: ${{ steps.deps.outputs.reason }}
+        run: |
+          log="$RUNNER_TEMP/audit-ci.log"
+          attempts=${AUDIT_ATTEMPTS:-3}
+          pause=${AUDIT_RETRY_SECONDS:-10}
+          verdict='Failed security audit due to'
+          status=0
+          for attempt in $(seq 1 "$attempts"); do
+            status=0
+            ./node_modules/.bin/audit-ci --config audit-ci.jsonc 2>&1 | tee "$log" || status=$?
+            if [ "$status" -eq 0 ] || grep -q "$verdict" "$log"; then
+              break
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              echo "::warning::O audit-ci não conseguiu auditar (código ${status}; tentativa ${attempt} de ${attempts}): rede ou registry, não um aviso de segurança. De novo em $((attempt * pause))s."
+              sleep $((attempt * pause))
+            fi
+          done
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+          if ! grep -q "$verdict" "$log"; then
+            if [ "$BLOCKING" != "false" ]; then
+              echo "::error::O audit-ci não conseguiu auditar depois de ${attempts} tentativas (código ${status}): o registry não respondeu. Não é um aviso de segurança, mas ${REASON:-a base não foi lida}, e uma mudança de dependência não passa sem auditoria. Rode de novo quando o registry voltar."
+              exit "$status"
+            fi
+            echo "::warning::O audit-ci não conseguiu auditar depois de ${attempts} tentativas (código ${status}): rede ou registry, não um aviso de segurança. Não bloqueia: ${REASON}."
+            {
+              echo "### Audit de dependências: não rodou (não bloqueia)"
+              echo
+              echo "O audit-ci não conseguiu falar com o registry (código ${status}) em ${attempts} tentativas: ${REASON}."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          advisories=$(grep -oE 'GHSA(-[0-9a-z]{4}){3}' "$log" | sort -u | paste -sd ' ' || true)
+          if [ "$BLOCKING" != "false" ]; then
+            echo "::error::audit-ci reprovou (código ${status}${advisories:+: ${advisories}}) e ${REASON:-a base não foi lida}."
+            exit "$status"
+          fi
+          echo "::warning::audit-ci reprovou (código ${status}${advisories:+: ${advisories}}), mas ${REASON}. Trate o aviso: atualize a dependência ou registre a exceção em audit-ci.jsonc."
+          {
+            echo "### Audit de dependências: aviso (não bloqueia)"
+            echo
+            echo "O audit-ci reprovou (código ${status}) num push que não mexe nas dependências: ${REASON}."
+            echo "Avisos: ${advisories:-veja o log do passo}. O Dependabot abre a atualização de segurança; trate antes de mexer em package.json ou yarn.lock, porque aí o audit bloqueia."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # First check of all, because it is the cheapest one. There is no point
       # spending minutes on tsc if the code is not even formatted.
@@ -138,8 +242,11 @@ jobs:
       - name: Unit tests (with coverage)
         run: yarn test:unit --coverage --coverage.reporter=text-summary --coverage.reporter=json-summary --coverage.reporter=html
 
+      # Not a gate (decision 13.1): a hiccup of the artifact service must not
+      # fail a validation that passed.
       - name: Publish the coverage report
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-${{ github.sha }}
@@ -160,6 +267,7 @@ jobs:
   secrets:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
+    # Measured under a minute (30/10/2026).
     timeout-minutes: 10
     permissions:
       contents: read

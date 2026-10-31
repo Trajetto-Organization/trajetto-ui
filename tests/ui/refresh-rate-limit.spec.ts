@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Request } from "@playwright/test";
+import { test, expect, type Page, type Request } from "./support/test";
 
 import { open } from "./support/operation";
 import { waitForHydration } from "./support/ui";

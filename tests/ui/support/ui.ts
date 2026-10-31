@@ -1,24 +1,51 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+
+/**
+ * Whether the suite runs against `next dev` (E2E_DEV_SERVER=1, the local
+ * recipe in tests/ui/README.md) rather than a production build (CI, the
+ * standalone server the image runs).
+ */
+const DEV_SERVER = process.env.E2E_DEV_SERVER === "1";
 
 /**
  * Clicks `trigger` until `target` shows.
  *
- * On the dev server a page is painted seconds before React hydrates it, and a
- * click in that gap does nothing: the dialog or menu never opens and the spec
- * fails about the product. A person in that gap clicks again; so does this,
- * for as long as `timeout` allows. A trigger that never opens its target
- * still fails, with the target named.
+ * A page is painted before React hydrates it — seconds on the dev server, a
+ * moment on a production build — and a click in that gap does nothing: the
+ * dialog or menu never opens and the spec fails about the product. A person
+ * in that gap clicks again; so does this, for as long as `timeout` allows.
+ * A trigger that never opens its target still fails, with the target named.
+ *
+ * A second click is noted on the test (`retry-click`), so the run summary
+ * shows how often the gap was hit instead of hiding it.
  */
 async function clickUntilVisible(
   trigger: Locator,
   target: Locator,
   timeout = 60_000,
 ): Promise<void> {
+  let clicks = 0;
+
   await expect(async () => {
-    if (!(await target.isVisible())) await trigger.click({ timeout: 5_000 });
+    if (!(await target.isVisible())) {
+      clicks += 1;
+      await trigger.click({ timeout: 5_000 });
+    }
 
     await expect(target).toBeVisible({ timeout: 3_000 });
   }).toPass({ timeout });
+
+  if (clicks > 1) {
+    const what = `${clicks} cliques em ${trigger} até abrir ${target}`;
+
+    console.warn(`[clique repetido] ${what}`);
+
+    try {
+      test.info().annotations.push({ type: "retry-click", description: what });
+    } catch {
+      // Outside a test: the log line is the record.
+    }
+  }
 }
 
 /**
@@ -42,16 +69,12 @@ async function waitForHydration(
       },
     );
 
-  /*
-    A chunk served while next dev was still compiling it can arrive cut short
-    ("SyntaxError: Invalid or unexpected token"): React never boots on that
-    page load, and waiting longer cannot help. A person reloads; so does
-    this, once, after half the budget. A page that does not hydrate after
-    the reload still fails, with the same message.
-  */
   const page = element.page();
+  const pageErrors: string[] = [];
   let chunkError = false;
   const onError = (error: Error) => {
+    pageErrors.push(`${error.name}: ${error.message}`.slice(0, 300));
+
     if (
       error.name === "SyntaxError" ||
       /ChunkLoadError|Loading chunk/i.test(error.message)
@@ -62,24 +85,48 @@ async function waitForHydration(
   page.on("pageerror", onError);
 
   try {
-    const half = Math.floor(timeout / 2);
+    /*
+      A production build gets the whole budget and no reload: it has no
+      compiler in the loop, so a page of it that does not hydrate is a
+      defect, and reloading it until it did made the gate green over it. It
+      fails here, with what the page threw.
+
+      On `next dev`, half the budget, then one reload — only for a broken
+      chunk: a chunk served while the dev server was still compiling it can
+      arrive cut short ("SyntaxError: Invalid or unexpected token"), React
+      never boots on that page load, and waiting longer cannot help. A
+      person reloads; so does this, once.
+    */
+    const firstBudget = DEV_SERVER ? Math.floor(timeout / 2) : timeout;
     const firstTry = await expect
-      .poll(() => hydrated().catch(() => false), { timeout: half })
+      .poll(() => hydrated().catch(() => false), { timeout: firstBudget })
       .toBe(true)
       .then(() => true)
       .catch(() => false);
 
     if (firstTry) return;
 
+    if (!(DEV_SERVER && chunkError)) {
+      throw new Error(
+        `o elemento não foi hidratado pelo React em ${firstBudget} ms` +
+          (pageErrors.length
+            ? `; erros da página: ${pageErrors.slice(0, 3).join(" | ")}`
+            : "; a página não lançou erro") +
+          (chunkError && !DEV_SERVER
+            ? " (chunk quebrado: contra o next dev, rode com E2E_DEV_SERVER=1)"
+            : ""),
+      );
+    }
+
     console.warn(
-      `[hydration] não hidratou em ${half} ms${chunkError ? " (chunk quebrado)" : ""}; recarregando uma vez`,
+      `[hydration] chunk quebrado do next dev; recarregando uma vez (${pageErrors[0] ?? ""})`,
     );
 
     await page.reload({ waitUntil: "domcontentloaded", timeout: 90_000 });
 
     await expect
       .poll(() => hydrated().catch(() => false), {
-        timeout: timeout - half,
+        timeout: timeout - firstBudget,
         message: "o elemento não foi hidratado pelo React",
       })
       .toBe(true);
@@ -90,17 +137,27 @@ async function waitForHydration(
 
 /**
  * Resolves once the page's realtime socket has joined (socket.io's "40"
- * connect frame on the API's /socket.io). Call it BEFORE navigating, then
- * await it before making another session act: an event emitted while the
- * page is still connecting reaches nobody, and the spec would fail about the
- * realtime path for a reason that is only about timing.
+ * connect frame on the API's /socket.io: the server sends it after its
+ * connection checks, and the rooms are joined in the same tick). Call it
+ * BEFORE navigating, then await it before making another session act: an
+ * event emitted while the page is still connecting reaches nobody, and the
+ * spec would fail about the realtime path for a reason that is only about
+ * timing.
+ *
+ * Its rejection is handled until awaited: a test that fails before awaiting
+ * it must not leave a timer that rejects in the middle of the next test.
  */
 function socketConnected(page: Page, timeout = 60_000): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+  const connected = new Promise<void>((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error("o socket da página não conectou")),
       timeout,
     );
+
+    page.once("close", () => {
+      clearTimeout(timer);
+      reject(new Error("a página fechou antes de o socket conectar"));
+    });
 
     page.on("websocket", (socket) => {
       if (!socket.url().includes("/socket.io/")) return;
@@ -113,6 +170,10 @@ function socketConnected(page: Page, timeout = 60_000): Promise<void> {
       });
     });
   });
+
+  connected.catch(() => undefined);
+
+  return connected;
 }
 
 export { clickUntilVisible, socketConnected, waitForHydration };

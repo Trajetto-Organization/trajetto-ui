@@ -1,6 +1,11 @@
-// Supply-chain gate (INFRA-16): `npx audit-ci` in ci.yml and deploy.yml fails
-// the build on a CRITICAL advisory in a PRODUCTION dependency. Highs are
-// Dependabot's job (security updates).
+// Supply-chain gate (INFRA-16): audit-ci (a devDependency pinned in yarn.lock)
+// in ci.yml, which deploy.yml calls, reports a CRITICAL advisory in a
+// PRODUCTION dependency. It fails the run only when the push or pull request
+// touches the dependency tree or this file; otherwise the finding is a
+// warning and a section of the run summary (decision D1,
+// .github/scripts/dependency-gate.mjs). An audit that could not reach the
+// registry is tried again and never reported as an advisory. Highs, and the
+// continuous watch, are Dependabot's job (security updates).
 //
 // Each allowlist entry says why the advisory does not reach production and
 // when to look again. Take it out as soon as the update lands. The three

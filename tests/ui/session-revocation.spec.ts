@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "./support/test";
 
 import {
   BASE,
@@ -120,7 +120,7 @@ test.afterAll(async () => {
 
 /** Signs the person in through the form and waits until the tab is live. */
 async function openTab(
-  browser: import("@playwright/test").Browser,
+  browser: import("./support/test").Browser,
   email: string,
 ) {
   const signed = await signedInContext(browser, { email });

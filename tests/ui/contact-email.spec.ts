@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./support/test";
 
 /**
  * The e-mail channel on /contato, in a real browser: the link answers only on
@@ -18,8 +18,27 @@ for (const width of [1440, 768, 390, 320]) {
     const link = page.locator("a[data-contact-email]");
     const button = page.getByRole("button", { name: "Copiar e-mail" });
     await expect(link).toBeVisible();
-    // Let the entrance animation settle before measuring.
-    await page.waitForTimeout(1_200);
+
+    // Measured at rest: the column slides in (CSS `tpUp`, under a second).
+    // Every running, finite animation on the link or on a box around it is
+    // waited for, instead of a fixed time after the link showed; a paused
+    // one (a reveal waiting to scroll in) never finishes and is left out.
+    await link.evaluate((anchor) => {
+      const moving: Array<Promise<unknown>> = [];
+
+      for (let node: Element | null = anchor; node; node = node.parentElement) {
+        for (const animation of node.getAnimations()) {
+          if (
+            animation.playState === "running" &&
+            animation.effect?.getComputedTiming().endTime !== Infinity
+          ) {
+            moving.push(animation.finished.catch(() => undefined));
+          }
+        }
+      }
+
+      return Promise.all(moving);
+    });
 
     const geometry = await link.evaluate((anchor) => {
       const range = document.createRange();

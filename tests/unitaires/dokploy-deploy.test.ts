@@ -176,7 +176,12 @@ const valid = (fake: Fake) => ({
   DOKPLOY_APPLICATION_ID: "abc123_XYZ-9",
 });
 
-describe("the Dokploy deploy step", () => {
+// Every case starts processes (git, bash, node) and waits for them to
+// exit. Vitest's 5 s default is a deadline for that exit, and with the whole
+// unit suite saturating the cores process start-up alone can take seconds.
+// The deadline is generous; the waits inside the scripts stay the fast ones
+// the env sets (the same reasoning as trajetto-api's dokploy-deploy.test.ts).
+describe("the Dokploy deploy step", { timeout: 30_000 }, () => {
   it("deploys the app it is given and succeeds only when THAT deployment is done", async () => {
     const fake = await fakeDokploy({
       history: [{ deploymentId: "old", status: "done" }],

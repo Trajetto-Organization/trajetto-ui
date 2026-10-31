@@ -83,8 +83,18 @@ describe("the workflows", () => {
     const ci = read(".github/workflows/ci.yml");
 
     expect(ci).toMatch(
-      /npx --yes audit-ci@\d+\.\d+\.\d+ --config audit-ci\.jsonc/,
+      /\.\/node_modules\/\.bin\/audit-ci --config audit-ci\.jsonc/,
     );
+    // The audit tool comes from yarn.lock, installed with the rest: an
+    // `npx --yes audit-ci@x` resolved its transitive dependencies anew on
+    // every run, from the registry, so the gate could change between runs.
+    const manifest = JSON.parse(read("package.json")) as {
+      devDependencies: Record<string, string>;
+    };
+
+    expect(manifest.devDependencies["audit-ci"]).toMatch(/^\d+\.\d+\.\d+$/);
+    for (const { name, text } of workflows)
+      expect(text, name).not.toMatch(/npx --yes audit-ci/);
     // deploy.yml runs ci.yml itself before it builds, audit included.
     expect(ci).toMatch(/\n {2}workflow_call:\r?\n/);
     expect(read(".github/workflows/deploy.yml")).toMatch(
@@ -161,10 +171,14 @@ describe("the workflows", () => {
         /continue-on-error: \$\{\{ vars\.IMAGE_SCAN_ENFORCE != 'true' \}\}/,
       );
       expect(job, name).toMatch(
-        /EXIT_CODE: \$\{\{ vars\.IMAGE_SCAN_ENFORCE == 'true' && '1' \|\| '0' \}\}/,
+        /ENFORCE: \$\{\{ vars\.IMAGE_SCAN_ENFORCE == 'true' && 'true' \|\| 'false' \}\}/,
       );
-      // The switch only enforces if Trivy gets it: its default exit code is 0.
-      expect(job, name).toMatch(/--exit-code "\$EXIT_CODE"/);
+      // A finding has an exit code of its own (Trivy's default is 0, which
+      // would hide it), so the step tells "found something" from "Trivy
+      // failed" (tests/unitaires/image-scan-steps.test.ts runs the step).
+      expect(job, name).toMatch(/--exit-code 5 "\$IMAGE"/);
+      // The database comes from the cached download, never from the scan.
+      expect(job, name).toMatch(/--skip-db-update/);
     }
   });
 });

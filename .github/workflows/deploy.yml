@@ -45,6 +45,17 @@ concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
+# `bash` named explicitly: GitHub then runs every step with `-eo pipefail`,
+# so a command that fails in the middle of a pipe fails the step too (the
+# default `bash -e` only sees the last command of a pipe).
+defaults:
+  run:
+    shell: bash
+
+# Every job has a timeout-minutes of its own, with margin over what it was
+# measured to take (30/10/2026). The two that call reusable workflows
+# (validate, browser-suites) take theirs from ci.yml and browser-suites.yml:
+# GitHub accepts no timeout on a job that only calls a workflow.
 jobs:
   # The same validation as every work branch and every PR to main: the
   # reusable ci.yml, not a copy of it.
@@ -79,7 +90,9 @@ jobs:
   # build; staging is never indexed, so its canonicals naming production are
   # right). See the Dockerfile.
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # Measured 3 to 4 minutes with the GHA cache warm; a cold cache rebuilds
+    # every layer.
     timeout-minutes: 45
     needs: [validate, browser-suites]
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
@@ -94,8 +107,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
+      # The BuildKit that runs the build, pinned by digest: the action's
+      # default was the moving `buildx-stable-1` tag of Docker Hub, so the
+      # builder could change between two runs of the same commit. v0.33.1 is
+      # what that tag pointed at on 30/10/2026 (the same digest).
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        with:
+          driver-opts: image=moby/buildkit:v0.33.1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
@@ -195,7 +214,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # ignore-error: the cache is an optimisation. BuildKit's default
+          # fails the whole build (sometimes after the push) when the GHA
+          # cache service refuses the export (429, 5xx, timeout), and staging
+          # stopped deploying for it (decision D9).
+          cache-to: type=gha,mode=max,ignore-error=true
           # Attestations next to the image (INFRA-16). Provenance in `min`
           # mode: `max` records the build args.
           sbom: true
@@ -211,9 +234,76 @@ jobs:
           echo "$DIGEST"
           echo "trajetto-ui:sha-${GITHUB_SHA::7} → ${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
 
+      # Trivy's vulnerability database, kept between runs (decision D6). It
+      # was downloaded by every scan, from a rate-limited source: now at most
+      # once a day, and a failed download falls back to the copy of the day
+      # before instead of leaving the scan without a database. Restored and
+      # saved apart, so a copy that failed to refresh is never stored as
+      # today's. The key names Trivy's version: another version may expect
+      # another database schema.
+      - name: Date of the vulnerability database
+        id: trivy-db
+        run: echo "day=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the vulnerability database
+        id: trivy-cache
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/trivy-cache
+          key: trivy-db-0.74.0-${{ steps.trivy-db.outputs.day }}
+          restore-keys: trivy-db-0.74.0-
+
+      # Trivy downloads only when the copy is older than the database's own
+      # next update, so a fresh restore costs nothing. Three tries, each
+      # failure a warning; the outcome goes to the summary, apart from the
+      # scan's findings.
+      - name: Download the vulnerability database
+        id: trivy-download
+        env:
+          TRIVY_CACHE: ${{ runner.temp }}/trivy-cache
+        run: |
+          mkdir -p "$TRIVY_CACHE"
+          for attempt in 1 2 3; do
+            if docker run --rm --user "$(id -u):$(id -g)" \
+              -v "$TRIVY_CACHE:/trivy-cache" \
+              aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+              image --cache-dir /trivy-cache --download-db-only --no-progress; then
+              echo "fresh=true" >> "$GITHUB_OUTPUT"
+              echo "db=ready" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning::O download do banco do Trivy falhou (tentativa ${attempt} de 3)."
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * ${TRIVY_RETRY_SECONDS:-15}))
+            fi
+          done
+          echo "fresh=false" >> "$GITHUB_OUTPUT"
+          if [ -f "$TRIVY_CACHE/db/metadata.json" ]; then
+            updated=$(sed -n 's/.*"UpdatedAt" *: *"\([^"]*\)".*/\1/p' "$TRIVY_CACHE/db/metadata.json")
+            echo "db=ready" >> "$GITHUB_OUTPUT"
+            echo "::warning::O banco do Trivy não baixou: o scan usa a cópia do cache (atualizada em ${updated:-data desconhecida})."
+            echo "Trivy: o download do banco falhou; o scan usa a cópia do cache (atualizada em ${updated:-data desconhecida})." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "db=missing" >> "$GITHUB_OUTPUT"
+            echo "::warning::O banco do Trivy não baixou e não há cópia em cache: o scan não roda (falha de download, não é achado)."
+            echo "Trivy: **falha no download do banco**, sem cópia em cache: o scan não rodou. Isto não é um achado." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Before the scan, so only the database is stored (the scan adds its
+      # own layer cache to the folder). A hiccup of the cache service must
+      # not fail the build.
+      - name: Save the vulnerability database
+        if: steps.trivy-download.outputs.fresh == 'true' && steps.trivy-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/trivy-cache
+          key: trivy-db-0.74.0-${{ steps.trivy-db.outputs.day }}
+
       # The image just pushed, by digest: CRITICAL vulnerabilities that
       # already have a fix (INFRA-16). Trivy runs from its image pinned by
-      # digest, with the job's token for GHCR.
+      # digest, with the job's token for GHCR, and never updates the
+      # database itself (the step above did).
       #
       # Report-only until the repository variable IMAGE_SCAN_ENFORCE is
       # `true`: the node:22.21.1-alpine base itself carried fixable criticals
@@ -222,24 +312,70 @@ jobs:
       # job. The image is already in GHCR as `sha-<commit>` by then (the scan
       # reads it by digest), but deploy-staging never runs, so the build gets
       # no `staged-<commit>` marker and a merge of it into main is refused.
+      #
+      # Trivy exits 5 on a finding (--exit-code 5) and anything else but 0
+      # when it failed (reading the image, the database): the summary tells
+      # the two apart, and a failure is tried again, up to 3 times. Only a
+      # finding fails, and only when enforced: a scan that could not run (no
+      # database, Trivy or GHCR failing) is a warning and a summary line, as
+      # in trajetto-api. A red run means a defect of the commit, and a
+      # registry or a database download down is not one (decision D6).
       - name: Scan the image for fixable critical vulnerabilities
-        # Report-only also means a Trivy hiccup (its database download is
-        # rate-limited) cannot fail the build.
+        # Report-only: nothing here fails the build.
         continue-on-error: ${{ vars.IMAGE_SCAN_ENFORCE != 'true' }}
         env:
           TRIVY_USERNAME: ${{ github.actor }}
           TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
           IMAGE: ghcr.io/trajetto-organization/trajetto-ui@${{ steps.build.outputs.digest }}
-          EXIT_CODE: ${{ vars.IMAGE_SCAN_ENFORCE == 'true' && '1' || '0' }}
+          ENFORCE: ${{ vars.IMAGE_SCAN_ENFORCE == 'true' && 'true' || 'false' }}
+          DB: ${{ steps.trivy-download.outputs.db }}
+          TRIVY_CACHE: ${{ runner.temp }}/trivy-cache
         run: |
-          # .trivyignore: the advisories reasoned out in audit-ci.jsonc, each
-          # with an expiry date; the container only sees it if it is mounted.
-          docker run --rm -e TRIVY_USERNAME -e TRIVY_PASSWORD \
-            -v "$PWD/.trivyignore:/.trivyignore:ro" \
-            aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
-            image --scanners vuln --severity CRITICAL --ignore-unfixed \
-            --ignorefile /.trivyignore \
-            --exit-code "$EXIT_CODE" "$IMAGE"
+          if [ "$DB" != "ready" ]; then
+            # The download step already put the warning and the summary line.
+            if [ "$ENFORCE" = "true" ]; then
+              echo "::warning::IMAGE_SCAN_ENFORCE=true, mas o banco do Trivy não está disponível (falha no download, não achado): o scan não rodou neste build."
+            fi
+            exit 0
+          fi
+          rc=0
+          for attempt in 1 2 3; do
+            rc=0
+            # .trivyignore: the advisories reasoned out in audit-ci.jsonc, each
+            # with an expiry date; the container only sees it if it is mounted.
+            docker run --rm --user "$(id -u):$(id -g)" -e TRIVY_USERNAME -e TRIVY_PASSWORD \
+              -v "$TRIVY_CACHE:/trivy-cache" \
+              -v "$PWD/.trivyignore:/.trivyignore:ro" \
+              aquasec/trivy:0.74.0@sha256:62b1e65e8869bc4b4c6aa4fa2b21595256c7c2f6018a9d9ad61caf87187c1969 \
+              image --cache-dir /trivy-cache --skip-db-update --no-progress \
+              --scanners vuln --severity CRITICAL --ignore-unfixed \
+              --ignorefile /.trivyignore \
+              --exit-code 5 "$IMAGE" || rc=$?
+            if [ "$rc" -eq 0 ] || [ "$rc" -eq 5 ]; then
+              break
+            fi
+            echo "::warning::O Trivy falhou ao examinar a imagem (código ${rc}, tentativa ${attempt} de 3)."
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * ${TRIVY_RETRY_SECONDS:-15}))
+            fi
+          done
+          case "$rc" in
+            0)
+              echo "Trivy: nenhuma vulnerabilidade CRITICAL com correção em sha-${GITHUB_SHA::7}." >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            5)
+              echo "Trivy: **achados** CRITICAL com correção em sha-${GITHUB_SHA::7} (a lista está no log do passo)." >> "$GITHUB_STEP_SUMMARY"
+              if [ "$ENFORCE" = "true" ]; then
+                echo "::error::O Trivy achou vulnerabilidades CRITICAL com correção (IMAGE_SCAN_ENFORCE=true)."
+                exit 1
+              fi
+              echo "::warning::O Trivy achou vulnerabilidades CRITICAL com correção (só relata até IMAGE_SCAN_ENFORCE=true)."
+              ;;
+            *)
+              echo "Trivy: **o scan falhou** (código ${rc}: erro do Trivy ou do GHCR, não achado)." >> "$GITHUB_STEP_SUMMARY"
+              echo "::warning::O scan do Trivy não rodou até o fim (código ${rc}) em 3 tentativas: falha do Trivy ou do GHCR, não achado."
+              ;;
+          esac
 
   # Staging redeploys on its own, with no approval: that is the whole point of
   # having it. The Dokploy staging Application pulls the `staging` tag, which
@@ -252,8 +388,11 @@ jobs:
   # Dokploy API, as in trajetto-api) and METADATA_BASE_STAGING (the staging
   # site's origin).
   deploy-staging:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    # Measured 2 to 3 minutes. The margin covers the Dokploy script's
+    # retries of a deployment that ends in error (6 tries, pauses of up to
+    # 160 s) plus the 10-minute rollout check.
+    timeout-minutes: 45
     needs: build
     if: github.ref == 'refs/heads/staging' && github.event_name == 'push'
     environment:
@@ -275,19 +414,82 @@ jobs:
         with:
           sparse-checkout: .github/scripts
 
+      # The scripts below run on the Node of the images, not on whatever
+      # Node the runner image ships that week.
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22.21.1"
+
       # Runs finish out of order: an older push whose build was slower would
       # move `staging` BACK after a newer run moved it forward. Only the run
       # of staging's current head deploys; an older one stops here, green,
       # and leaves staging to the newer run.
+      #
+      # Except when the newer head only adds documentation (docs-only.mjs:
+      # `*.md` and docs/, which the image never contains): a `[skip ci]`
+      # commit runs no pipeline, so nobody else would deploy, and its image
+      # would be this one byte for byte. This run deploys and marks its own
+      # build, and the promote of the newer commit finds it (decision D11).
+      #
+      # The head is read with retries: an empty or malformed answer is a
+      # failure to ask (it used to read as "staging moved on" and skip the
+      # deploy, green), never an answer (decision D5).
       - name: Is this run still staging's head?
         id: head
         run: |
-          head=$(git ls-remote origin "$GITHUB_REF" | cut -f1)
+          pause=${HEAD_RETRY_SECONDS:-5}
+          attempt=1
+          while :; do
+            rc=0
+            answer=$(git ls-remote origin "$GITHUB_REF") || rc=$?
+            head=${answer%%[[:space:]]*}
+            if [ "$rc" -eq 0 ] && [[ "$head" =~ ^[0-9a-f]{40}$ ]]; then
+              break
+            fi
+            if [ "$attempt" -ge 4 ]; then
+              echo "::error::Não foi possível ler o HEAD de ${GITHUB_REF} (git ls-remote: código ${rc}, resposta '${answer:0:80}') em 4 tentativas."
+              exit 1
+            fi
+            wait=$((pause * 2 ** (attempt - 1)))
+            echo "::warning::git ls-remote não devolveu o HEAD de ${GITHUB_REF} (código ${rc}, tentativa ${attempt} de 4); nova tentativa em ${wait}s."
+            sleep "$wait"
+            attempt=$((attempt + 1))
+          done
           if [ "$head" = "$GITHUB_SHA" ]; then
             echo "current=true" >> "$GITHUB_OUTPUT"
-          else
+            exit 0
+          fi
+          # The newer head and the history down to this commit.
+          attempt=1
+          until git fetch --no-tags --depth=100 origin "$head"; do
+            if [ "$attempt" -ge 4 ]; then
+              echo "::error::git fetch de ${head} falhou em 4 tentativas."
+              exit 1
+            fi
+            wait=$((pause * 2 ** (attempt - 1)))
+            echo "::warning::git fetch de ${head} falhou (tentativa ${attempt} de 4); nova tentativa em ${wait}s."
+            sleep "$wait"
+            attempt=$((attempt + 1))
+          done
+          ancestor=0
+          git merge-base --is-ancestor "$GITHUB_SHA" "$head" || ancestor=$?
+          docs=1
+          if [ "$ancestor" -eq 0 ]; then
+            docs=0
+            node .github/scripts/docs-only.mjs "$GITHUB_SHA" "$head" || docs=$?
+          elif [ "$ancestor" -ne 1 ]; then
+            echo "::error::git merge-base não comparou ${GITHUB_SHA} com ${head} (código ${ancestor})."
+            exit 1
+          fi
+          if [ "$docs" -eq 0 ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::staging já está em ${head}, que só acrescenta documentação a este build: este run faz o deploy e grava staged-${GITHUB_SHA::7}."
+          elif [ "$docs" -eq 1 ]; then
             echo "current=false" >> "$GITHUB_OUTPUT"
             echo "::notice::staging já está em ${head}: este run (${GITHUB_SHA}) não mexe no ambiente; o run do commit mais novo faz o deploy."
+          else
+            exit 1
           fi
 
       - name: Log in to GitHub Container Registry
@@ -299,12 +501,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # By digest, never by a tag that could have moved since the build.
+      # ghcr.mjs retries a transient registry error (the write is
+      # idempotent) and fails at once on a refused login (decision D10).
       - name: Move staging to this build
         if: steps.head.outputs.current == 'true'
         env:
           DIGEST: ${{ needs.build.outputs.digest }}
         run: |
-          docker buildx imagetools create \
+          node .github/scripts/ghcr.mjs create \
             --tag ghcr.io/trajetto-organization/trajetto-ui:staging \
             "ghcr.io/trajetto-organization/trajetto-ui@${DIGEST}"
           echo "trajetto-ui:staging → sha-${GITHUB_SHA::7} (${DIGEST})" >> "$GITHUB_STEP_SUMMARY"
@@ -380,7 +584,7 @@ jobs:
         env:
           DIGEST: ${{ needs.build.outputs.digest }}
         run: |
-          docker buildx imagetools create \
+          node .github/scripts/ghcr.mjs create \
             --tag "ghcr.io/trajetto-organization/trajetto-ui:staged-${GITHUB_SHA::7}" \
             "ghcr.io/trajetto-organization/trajetto-ui@${DIGEST}"
           echo "trajetto-ui:staged-${GITHUB_SHA::7} → ${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
@@ -394,8 +598,12 @@ jobs:
   # reviewers configured (docs/deploy.md), makes a person approve before any
   # step runs. Its deployment branches should be limited to `main`.
   promote-production:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    # Measured 2 to 4 minutes. The margin covers the longest legitimate
+    # waits: a staging run of the merged commit still going (up to 120 min,
+    # staged-build.mjs), the API rolling under the route check (up to 10
+    # min) and the Dokploy retries plus the rollout check.
+    timeout-minutes: 180
     if: >-
       github.ref == 'refs/heads/main'
       && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
@@ -403,6 +611,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # staged-build.mjs reads the staging runs of deploy.yml.
+      actions: read
 
     environment:
       name: production
@@ -415,28 +625,49 @@ jobs:
 
     steps:
       # This run's commit: the checker scripts, and (for a merge) the history
-      # needed to find the staging commit. Depth 2 brings a merge commit's
-      # two parents.
+      # staged-build.mjs walks back to the nearest build staging served.
       - name: Checkout the checker
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+
+      # The scripts below run on the Node of the images.
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22.21.1"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # Which build ships:
       # - Run workflow: the tag typed into the form.
       # - merge commit (two parents): the second parent is the staging head
-      #   that was merged, the commit the image was built from;
+      #   that was merged;
       # - fast-forward (one parent): main's new head IS the staging commit.
-      # A squash or rebase merge creates a commit staging never built: no
-      # image exists for it and the next step fails, saying so. A merge whose
-      # content differs from the staging commit (a hotfix pushed straight to
-      # main) is refused too: production would not run what main says.
-      # CHANGELOG.md is the one exception, written on main by the release.
+      # A merge whose content differs from the staging commit (a hotfix
+      # pushed straight to main) is refused: production would not run what
+      # main says. CHANGELOG.md is the one exception, written on main by the
+      # release.
+      #
+      # staged-build.mjs then finds the build staging served for that commit
+      # (its `staged-<7>` marker): it waits for a staging run of the commit
+      # still going instead of failing (decision D10), and a commit GitHub
+      # never ran (`[skip ci]`) promotes its nearest staged ancestor when
+      # everything in between is documentation, which the image never
+      # contains (decision D11). Anything else is refused with the reason. A
+      # squash or rebase merge creates a commit staging never built, with
+      # code changes since the last staged one: refused the same way.
       - name: Resolve the build to promote
         id: target
         env:
           EVENT: ${{ github.event_name }}
           INPUT_TAG: ${{ inputs.image_tag }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "tag=${INPUT_TAG}" >> "$GITHUB_OUTPUT"
@@ -454,8 +685,7 @@ jobs:
           else
             source="$GITHUB_SHA"
           fi
-          echo "tag=sha-${source::7}" >> "$GITHUB_OUTPUT"
-          echo "Commit de staging a promover: ${source}" >> "$GITHUB_STEP_SUMMARY"
+          SOURCE_SHA="$source" node .github/scripts/staged-build.mjs
 
       # Only an immutable build: `sha-<sha>`, or `main-<sha>` for builds
       # made before staging existed. Never `latest`/`stable`/`staging`, which
@@ -465,33 +695,31 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.target.outputs.tag }}
         run: |
-          if ! printf '%s' "$IMAGE_TAG" | grep -Eq '^(sha|main)-[0-9a-f]{7,40}$'; then
+          if ! grep -Eq '^(sha|main)-[0-9a-f]{7,40}$' <<< "$IMAGE_TAG"; then
             echo "::error::image_tag precisa ser sha-<sha> (ou main-<sha>, builds antigos); recebido: '$IMAGE_TAG'"
             exit 1
           fi
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       # The digest of the tag, read once: every later step uses the digest,
       # so the tag cannot move under the promote. The commit label is what
-      # the route check and the rollout check compare against.
+      # the route check and the rollout check compare against, read from the
+      # registry (no pull). ghcr.mjs tells a missing tag (exit 3) from GHCR
+      # failing to answer, which it retries and then reports as such.
       - name: Find the commit the image was built from
         id: revision
         env:
           IMAGE_TAG: ${{ steps.target.outputs.tag }}
         run: |
           image="ghcr.io/trajetto-organization/trajetto-ui:${IMAGE_TAG}"
-          if ! digest=$(docker buildx imagetools inspect "$image" --format '{{.Manifest.Digest}}' 2>/dev/null) || [ -z "$digest" ]; then
+          rc=0
+          digest=$(node .github/scripts/ghcr.mjs digest "$image") || rc=$?
+          if [ "$rc" -eq 3 ]; then
             echo "::error::A imagem ${image} não existe no GHCR. Só um commit que passou pelo pipeline de staging (push em staging) tem imagem: faça o merge de staging em main com merge commit ou fast-forward (squash/rebase criam um commit sem imagem), ou rode este workflow com um image_tag existente."
             exit 1
+          elif [ "$rc" -ne 0 ]; then
+            exit 1
           fi
-          docker pull --quiet "ghcr.io/trajetto-organization/trajetto-ui@${digest}" > /dev/null
-          sha=$(docker image inspect "ghcr.io/trajetto-organization/trajetto-ui@${digest}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')
+          sha=$(node .github/scripts/ghcr.mjs revision "ghcr.io/trajetto-organization/trajetto-ui@${digest}")
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
           echo "sha=${sha}" >> "$GITHUB_OUTPUT"
 
@@ -508,9 +736,12 @@ jobs:
           DIGEST: ${{ steps.revision.outputs.digest }}
         run: |
           marker="ghcr.io/trajetto-organization/trajetto-ui:staged-${IMAGE_TAG#sha-}"
-          staged=$(docker buildx imagetools inspect "$marker" --format '{{.Manifest.Digest}}' 2>/dev/null || true)
-          if [ -z "$staged" ]; then
-            echo "::error::${IMAGE_TAG} existe no GHCR, mas o staging nunca rodou esse build (falta ${marker}): o scan, o deploy de staging ou a conferência do rollout falhou, ou o run de staging ainda não terminou. Corrija em staging e faça o merge de novo, ou rode este job de novo quando o deploy de staging terminar."
+          rc=0
+          staged=$(node .github/scripts/ghcr.mjs digest "$marker") || rc=$?
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::${IMAGE_TAG} existe no GHCR, mas falta ${marker}: o staging nunca serviu esse build (o scan, o deploy de staging ou a conferência do rollout falhou). Corrija em staging e faça o merge de novo."
+            exit 1
+          elif [ "$rc" -ne 0 ]; then
             exit 1
           fi
           if [ "$staged" != "$DIGEST" ]; then
@@ -533,14 +764,14 @@ jobs:
           path: promoted
           persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: "22"
-
       # Skipped, with a warning, until API_DOCS_URL (plus DOCS_USER and
       # DOCS_PASSWORD, which /docs needs in production) are set in the
       # production environment — so the promote keeps working meanwhile.
+      #
+      # Not one read: missing routes and transport errors are read again
+      # until a 10-minute deadline (the API may still be rolling, with an
+      # old replica answering /docs/json), and only then fail, listing what
+      # is missing (decision D10).
       - name: Check the production API serves every path this build calls
         env:
           API_DOCS_URL: ${{ secrets.API_DOCS_URL }}
@@ -553,7 +784,8 @@ jobs:
           fi
           node scripts/check-api-routes.mjs promoted/src
 
-      # `imagetools create` retags server-side by digest, without pulling or
+      # `imagetools create` (through ghcr.mjs, which retries a transient
+      # registry error) retags server-side by digest, without pulling or
       # rebuilding, so production runs the exact bytes staging validated.
       # The digest goes to the run summary for the next rollback.
       - name: Promote image to stable
@@ -561,7 +793,7 @@ jobs:
           IMAGE_TAG: ${{ steps.target.outputs.tag }}
           DIGEST: ${{ steps.revision.outputs.digest }}
         run: |
-          docker buildx imagetools create \
+          node .github/scripts/ghcr.mjs create \
             --tag ghcr.io/trajetto-organization/trajetto-ui:stable \
             "ghcr.io/trajetto-organization/trajetto-ui@${DIGEST}"
           echo "trajetto-ui:stable → ${IMAGE_TAG} (${DIGEST})" >> "$GITHUB_STEP_SUMMARY"
@@ -639,7 +871,8 @@ jobs:
   # merge of main into staging (docs/deploy.md).
   release:
     name: Release (semantic-release)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    # Measured under a minute.
     timeout-minutes: 15
     needs: promote-production
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -660,7 +893,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: "22"
+          node-version: "22.21.1"
           cache: "yarn"
 
       - name: Install dependencies

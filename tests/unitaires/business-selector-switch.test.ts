@@ -551,8 +551,18 @@ describe("a company found only through the search", () => {
 
     const view = await pickXThroughTheSearch();
 
-    // Past the debounce: the list is page 1 again.
-    await wait(600);
+    // Past the debounce: the list is page 1 again. Waited for, not assumed
+    // after 600 ms — a loaded run took longer to fetch and draw page 1, and
+    // the check read the old list.
+    expect(
+      await until(
+        () =>
+          selector.filteredBusiness.map((company) => company.id).join() ===
+          [A, B].join(),
+        5_000,
+      ),
+      "a lista não voltou para a página 1",
+    ).toBe(true);
     expect(
       selector.filteredBusiness.map((company) => company.id),
     ).not.toContain(X);

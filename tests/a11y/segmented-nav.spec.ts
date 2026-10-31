@@ -1,6 +1,6 @@
 import { managerToken } from "../ui/support/operation";
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "../ui/support/test";
 
 import { readFileSync } from "node:fs";
 

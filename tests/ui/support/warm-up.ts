@@ -2,6 +2,8 @@ import { chromium, type Browser } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
 
+import { prepareContext } from "./hermetic";
+
 /**
  * Compiles every route the suite visits before the first test starts.
  *
@@ -104,6 +106,10 @@ async function visit(
 ): Promise<string[]> {
   const context = await browser.newContext();
   const failed: string[] = [];
+
+  // Its own browser, so the suites' fixture does not reach it: the map
+  // screens and /login would otherwise ask OpenStreetMap and Cloudflare.
+  await prepareContext(context);
 
   if (token) {
     await context.addCookies([

@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { nextClientAddress, prepareContext } from "./hermetic";
 import { waitForHydration } from "./ui";
 
 /**
@@ -19,6 +20,11 @@ import { waitForHydration } from "./ui";
  * in — the form, the server action, the cookies it sets, where each role
  * lands. These accounts have real passwords; they are created by
  * `trajetto-api/tests/load/mint-browser-users.ts` in the throwaway database.
+ *
+ * The captcha on the form is Cloudflare's script answered by a local double
+ * (support/external-doubles.ts) and, in CI, a local siteverify
+ * (tests/ui/support/turnstile-siteverify-double.mjs): a login never waits
+ * on Cloudflare.
  */
 const BASE = process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100";
 
@@ -75,62 +81,66 @@ function browserUsers(): BrowserUsers {
 }
 
 /**
- * Every login of the suite comes from one address, and the API allows eight
- * a minute per address (the anonymous login limit). A refusal there is the
- * product doing its job, not the thing under test — so the helper waits for
- * the window and tries again, and says so in the log. Anything else the form
- * prints is returned to the caller untouched.
+ * The API's per-address login limit answering.
+ *
+ * Each browser context of the suites is a person with an address of its own
+ * (support/hermetic.ts), and each API login below sends one too, so no test
+ * shares a bucket with another and the limit never answers in a healthy run.
+ * When it does, the forwarding is not set up — the web or the API without
+ * the same RATE_LIMIT_FORWARDER_SECRET — and every login of the run is back
+ * in one shared bucket. That is said at once, by name. Waiting the window
+ * out (what this helper used to do, 61 s at a time) made a test's duration
+ * depend on the other worker and hid the misconfiguration.
  */
 const RATE_LIMITED = /Limite de requisições excedido|Muitas tentativas/i;
+
+const SHARED_BUCKET =
+  "a API limitou o login por endereço. Nas suítes cada contexto do navegador " +
+  "é uma pessoa com o próprio endereço, e isso só funciona com o MESMO " +
+  "RATE_LIMIT_FORWARDER_SECRET na API, na web e no processo do Playwright " +
+  "(tests/ui/README.md, passo 3)";
 
 async function submitLogin(
   page: Page,
   email: string,
   password: string,
 ): Promise<void> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/login`, { waitUntil: "domcontentloaded" });
 
-    // Typed into the server HTML, a click on "Entrar" before React owns the
-    // form posts it without the client side (Turnstile token, checks), and
-    // the outcome is about timing, not about the login.
-    await waitForHydration(page.getByLabel("Email"));
+  // Typed into the server HTML, a click on "Entrar" before React owns the
+  // form posts it without the client side (Turnstile token, checks), and
+  // the outcome is about timing, not about the login.
+  await waitForHydration(page.getByLabel("Email"));
 
-    // The captcha loads on a person's first input (person-input.ts), and
-    // fill() makes none: the click on the field does, as a person's would.
-    await page.getByLabel("Email").click();
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Senha").fill(password);
-    await page.getByRole("button", { name: "Entrar" }).click();
+  // The captcha loads on a person's first input (person-input.ts), and
+  // fill() makes none: the click on the field does, as a person's would.
+  await page.getByLabel("Email").click();
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Senha").fill(password);
+  await page.getByRole("button", { name: "Entrar" }).click();
 
-    // Either the page leaves /login, or the form says something.
-    const outcome = await Promise.race([
-      page
-        .waitForURL((url) => !url.pathname.startsWith("/login"), {
-          timeout: 60_000,
-        })
-        .then(() => "left" as const),
-      page
-        .getByRole("heading", { name: "Autenticação (2FA)" })
-        .waitFor({ timeout: 60_000 })
-        .then(() => "two-factor" as const),
-      page
-        .getByText(RATE_LIMITED)
-        .waitFor({ timeout: 60_000 })
-        .then(() => "limited" as const),
-      page
-        .getByText("Credenciais inválidas!")
-        .waitFor({ timeout: 60_000 })
-        .then(() => "refused" as const),
-    ]).catch(() => "timeout" as const);
+  // Either the page leaves /login, or the form says something.
+  const outcome = await Promise.race([
+    page
+      .waitForURL((url) => !url.pathname.startsWith("/login"), {
+        timeout: 60_000,
+      })
+      .then(() => "left" as const),
+    page
+      .getByRole("heading", { name: "Autenticação (2FA)" })
+      .waitFor({ timeout: 60_000 })
+      .then(() => "two-factor" as const),
+    page
+      .getByText(RATE_LIMITED)
+      .waitFor({ timeout: 60_000 })
+      .then(() => "limited" as const),
+    page
+      .getByText("Credenciais inválidas!")
+      .waitFor({ timeout: 60_000 })
+      .then(() => "refused" as const),
+  ]).catch(() => "timeout" as const);
 
-    if (outcome !== "limited") return;
-
-    console.warn(
-      `[login] limite de login por endereço atingido; aguardando a janela (${email})`,
-    );
-    await page.waitForTimeout(61_000);
-  }
+  if (outcome === "limited") throw new Error(`${SHARED_BUCKET} (${email})`);
 }
 
 /** Signs in through the form and waits until the page has left /login. */
@@ -152,6 +162,10 @@ async function signedInContext(
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
   });
+
+  // Already done when `browser` is the suites' fixture (support/test.ts);
+  // explicit so a person's own address never depends on who passed it.
+  await prepareContext(context);
 
   // The tours would cover what the specs click; tutorial-tours.spec.ts owns them.
   await context.addInitScript(() => {
@@ -259,27 +273,35 @@ function ndjsonRows(body: string): Record<string, unknown>[] {
     .slice(1);
 }
 
+/**
+ * The headers that make an API call count as a person of its own, the way
+ * the web's server relays a browser's address (src/lib/api-forwarding.ts).
+ * Every call from this process leaves from the same loopback; a phone in
+ * the field would have its own address.
+ */
+function asSeparatePerson(): Record<string, string> {
+  const secret = process.env.RATE_LIMIT_FORWARDER_SECRET;
+
+  return secret
+    ? {
+        "x-trajetto-client-ip": nextClientAddress(),
+        "x-trajetto-forwarder-secret": secret,
+      }
+    : {};
+}
+
 /** Signs in through the API's login route (the phone app's path), no browser. */
 async function apiLogin(email: string): Promise<string> {
-  let response: Response | null = null;
+  const response = await fetch(`${API}/user/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...asSeparatePerson() },
+    body: JSON.stringify({ email, password: PASSWORD }),
+  });
 
-  // Same per-address login limit as the form (see RATE_LIMITED above).
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    response = await fetch(`${API}/user/session`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, password: PASSWORD }),
-    });
-
-    if (response.status !== 429) break;
-
-    console.warn(
-      `[login] limite de login por endereço atingido na API; aguardando a janela (${email})`,
-    );
-    await new Promise((resolveWait) => setTimeout(resolveWait, 61_000));
+  // Same per-address limit as the form (see RATE_LIMITED above).
+  if (response.status === 429) {
+    throw new Error(`${SHARED_BUCKET} (login de ${email} pela API)`);
   }
-
-  response = response as Response;
 
   const body = (await response.json()) as { token?: string; message?: string };
 

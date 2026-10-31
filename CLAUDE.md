@@ -62,7 +62,8 @@ yarn lint:check              # Prettier (o CI roda); yarn lint = ESLint
 Suítes de navegador (precisam da API em `:3334` e da web em `:3100`, veja
 `tests/ui/README.md`):
 `npx playwright test -c playwright.ui.config.ts` (e `.a11y.` /
-`.responsive.`).
+`.responsive.`). Contra o `next dev`, com `E2E_DEV_SERVER=1`, e sempre com o
+mesmo `RATE_LIMIT_FORWARDER_SECRET` de teste na API, na web e no Playwright.
 
 **Regras do dono para agentes:**
 
@@ -180,6 +181,11 @@ scripts/check-api-routes.mjs       gate de rotas do promote
   `// @vitest-environment node` na primeira linha.
 - `tests/E2E` nunca usa as fixtures `page`/`context`/`browser`. Teste de tela
   vai para `tests/ui`.
+- Spec das suítes de navegador importa `test` e `expect` de
+  `tests/ui/support/test.ts` (nenhum terceiro, um endereço por contexto).
+  Tela que chama um terceiro novo ganha dublê em
+  `tests/ui/support/external-doubles.ts`. Espere um estado, nunca um tempo
+  fixo no lugar dele (`docs/testes.md`, "Testes instáveis").
 - Mudou um workflow, o `Dockerfile`, a configuração da Application em
   `docs/deploy.md`, `src/env`, a CSP ou um doc
   citado por teste? Rode os testes que guardam isso (lista em

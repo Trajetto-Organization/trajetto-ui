@@ -2,6 +2,7 @@
 
 import { logActionError } from "@/lib/log-action-error";
 import { apiFetch } from "@/lib/api-fetch";
+import { turnstileSiteverifyUrl } from "@/lib/turnstile-siteverify";
 
 async function validateTurnstile(token: string | null) {
   if (!token) return false;
@@ -14,8 +15,10 @@ async function validateTurnstile(token: string | null) {
       return false;
     }
 
+    // Cloudflare, unless the secret is one of its test secrets and the
+    // browser suites named a local double (src/lib/turnstile-siteverify.ts).
     const result = await apiFetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      turnstileSiteverifyUrl(secret, process.env.TURNSTILE_SITEVERIFY_URL),
       {
         method: "POST",
         body: new URLSearchParams({

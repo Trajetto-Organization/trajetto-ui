@@ -1,4 +1,4 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Page } from "./support/test";
 
 import {
   BASE,
@@ -125,28 +125,18 @@ test("the MASTER registers the company through the form", async ({
   await field("responsible_name").fill("Responsável Jornada");
   await field("cep").pressSequentially("01001000");
 
-  // The CEP fills the address (ViaCEP), and the address fields stay disabled
-  // while it asks. Once they are back, a field it could not fill stays
-  // editable and is filled here, as a person would. ViaCEP may not answer at
-  // all (it stopped answering the runners on 29/10/2026): the lookup then
-  // gives up in ~17 s and hands the fields back.
+  // The CEP fills the address, with the address fields disabled while it
+  // asks. ViaCEP is answered by the suites' double (support/external-doubles.ts:
+  // 01001000 is Praça da Sé), so this is always the same path — the lookup
+  // that answers. It used to be the real ViaCEP, which stopped answering the
+  // runners on 29/10/2026: the test survived by filling whatever came back
+  // empty, so which path it exercised depended on the network. The lookup
+  // that fails is covered by tests/unitaires/cep-lookup-resilience.test.ts.
   await expect(field("city")).toBeEnabled({ timeout: 30_000 });
 
-  for (const [name, value] of [
-    ["city", "São Paulo"],
-    ["uf", "SP"],
-    ["street", "Praça da Sé"],
-  ] as const) {
-    const input = field(name);
-
-    if (
-      (await input.count()) &&
-      (await input.isEditable()) &&
-      !(await input.inputValue())
-    ) {
-      await input.fill(value);
-    }
-  }
+  await expect(field("city")).toHaveValue("São Paulo", { timeout: 15_000 });
+  await expect(field("uf")).toHaveValue("SP");
+  await expect(field("street")).toHaveValue("Praça da Sé");
 
   await field("address_number").fill("100");
 

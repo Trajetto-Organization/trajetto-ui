@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./support/test";
 
 /**
  * Decision 16.20, against the running server: the old English institutional

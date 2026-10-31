@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./support/test";
 
 import { BASE, driverToken, managerToken } from "./support/operation";
 import { paletteEntries, paletteSearch } from "./support/palette";
@@ -30,8 +30,10 @@ import { paletteEntries, paletteSearch } from "./support/palette";
   prove a driver cannot reach the office — fails saying the driver "caiu no
   login". A security assertion reporting a fixture's age.
 */
-const MANAGER = managerToken();
-const DRIVER = driverToken();
+// Resolved inside each test: this spec's own manager is chosen by its file
+// (support/operation.ts), which only a running test can name.
+const MANAGER = (): string => managerToken();
+const DRIVER = (): string => driverToken();
 
 /**
  * Where a driver lands in the WEB app.
@@ -84,7 +86,7 @@ test.describe("the back office sees the back office", () => {
   test("the manager has the pages in the sidebar and in ⌘K", async ({
     page,
   }) => {
-    await openAs(page, MANAGER, "/dashboard");
+    await openAs(page, MANAGER(), "/dashboard");
 
     expect(page.url(), "a gestora caiu no login").not.toContain("/login");
 
@@ -116,7 +118,7 @@ test.describe("the back office sees the back office", () => {
 
 test.describe("and the driver does not see the back office", () => {
   test("none of the pages shows up in the sidebar", async ({ page }) => {
-    await openAs(page, DRIVER, DRIVER_HOME);
+    await openAs(page, DRIVER(), DRIVER_HOME);
 
     expect(page.url(), "o motorista caiu no login").not.toContain("/login");
 
@@ -151,7 +153,7 @@ test.describe("and the driver does not see the back office", () => {
   });
 
   test("nor in ⌘K", async ({ page }) => {
-    await openAs(page, DRIVER, DRIVER_HOME);
+    await openAs(page, DRIVER(), DRIVER_HOME);
 
     const entries = await paletteEntries(page);
 
@@ -182,7 +184,7 @@ test.describe("and the driver does not see the back office", () => {
     // The offer is one thing; the door is another. A sidebar that hides the
     // link and a router that opens it anyway is worse than both.
     for (const target of OFFICE_PAGES) {
-      await openAs(page, DRIVER, target.path);
+      await openAs(page, DRIVER(), target.path);
 
       expect(
         page.url(),

@@ -34,16 +34,16 @@ essencial. Se os dois divergirem, vale o mais restritivo, e corrija o outro.
 
 Yarn 1 (`yarn.lock`), Node 22.
 
-| Tarefa                   | Comando                                                                                        |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| instalar                 | `yarn install`                                                                                 |
-| desenvolver              | `yarn dev` (API em `http://localhost:3333`, `.env` a partir do `.env.example`)                 |
-| tipos                    | `yarn typecheck`                                                                               |
-| unitários                | `yarn test:unit` ou `npx vitest run --dir tests/unitaires <filtro>`                            |
-| cobertura                | `yarn test:unit:coverage`                                                                      |
-| regras puras             | `yarn test:rules`                                                                              |
-| mutação                  | `yarn test:mutation` (lento, gate `break: 90`)                                                 |
-| navegador contra a stack | `npx playwright test -c playwright.{ui,a11y,responsive}.config.ts` (veja `tests/ui/README.md`) |
+| Tarefa                   | Comando                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| instalar                 | `yarn install`                                                                                                                              |
+| desenvolver              | `yarn dev` (API em `http://localhost:3333`, `.env` a partir do `.env.example`)                                                              |
+| tipos                    | `yarn typecheck`                                                                                                                            |
+| unitários                | `yarn test:unit` ou `npx vitest run --dir tests/unitaires <filtro>`                                                                         |
+| cobertura                | `yarn test:unit:coverage`                                                                                                                   |
+| regras puras             | `yarn test:rules`                                                                                                                           |
+| mutação                  | `yarn test:mutation` (lento, gate `break: 90`)                                                                                              |
+| navegador contra a stack | `npx playwright test -c playwright.{ui,a11y,responsive}.config.ts` (veja `tests/ui/README.md`; contra o `next dev`, com `E2E_DEV_SERVER=1`) |
 
 **Proibido para agentes neste repositório:**
 
@@ -113,6 +113,11 @@ Yarn 1 (`yarn.lock`), Node 22.
 - `happy-dom` por padrão. `// @vitest-environment node` para testes de
   arquivo, script ou servidor.
 - `tests/E2E` sem fixture de navegador. Tela com API vai para `tests/ui`.
+- Spec das suítes de navegador importa `test` e `expect` de
+  `tests/ui/support/test.ts` (nenhum terceiro, um endereço por contexto).
+  Tela que chama um terceiro novo ganha dublê em
+  `tests/ui/support/external-doubles.ts`. Espere um estado, nunca um tempo
+  fixo no lugar dele (`docs/testes.md`, "Testes instáveis").
 - Vários testes guardam os workflows, o Dockerfile, a configuração da
   Application do Dokploy e os docs
   (lista em `docs/testes.md`). Mudou um desses arquivos? Rode os testes

@@ -3,7 +3,7 @@
  * Waits until the site serves the build a deploy shipped, and fails when it
  * does not.
  *
- * The Dokploy step (.github/scripts/dokploy-webhook.mjs) only proves the
+ * The Dokploy step (.github/scripts/dokploy-deploy.mjs) only proves the
  * deploy was ACCEPTED: the rollout runs afterwards, and a build that fails
  * its healthcheck is rolled back by Swarm (failure_action: rollback) with
  * the old one still serving — a green run with nothing shipped.
@@ -12,6 +12,16 @@
  * the expected commit for a whole window longer than Swarm's rollback
  * monitor (30 s: the Dokploy Application's update config, docs/deploy.md
  * section 6.4). A rollback inside the window resets it.
+ *
+ * Only an answer resets the window: a valid build id that is not the
+ * expected commit (or a build with no id). A probe that got no answer (a
+ * timeout, a 5xx or 52x, a 403 from the edge, a body that is not the JSON
+ * of /build-id.json) counts neither for nor against: one such hiccup used to
+ * restart the 90 s as if Swarm had rolled back, and a flaky edge could run
+ * the whole timeout down with the right build serving (decision D10,
+ * 30/10/2026). The window still closes only on an answer of the expected
+ * commit, so a stretch of errors alone never passes. The failed probes are
+ * counted in a warning and in the summary.
  *
  * Environment:
  *   SITE_URL              public origin of the site (its canonical host)
@@ -77,7 +87,13 @@ const isExpected = (sha) =>
 
 let attempt = 0;
 
-/** What the site answers now: the sha, or why there is none. */
+/**
+ * What the site answers now. `error` is a probe with no answer (no build
+ * id was read); otherwise `sha` is the build's id, or null for a build made
+ * without GIT_SHA — an answer, from a build that is not this one.
+ *
+ * @returns {Promise<{ sha: string | null, answer: string, error: boolean }>}
+ */
 async function probe() {
   attempt += 1;
 
@@ -90,16 +106,42 @@ async function probe() {
       signal: AbortSignal.timeout(10_000),
     });
 
-    if (!response.ok) return { sha: null, answer: `HTTP ${response.status}` };
+    if (!response.ok) {
+      return { sha: null, answer: `HTTP ${response.status}`, error: true };
+    }
 
-    const body = await response.json();
-    const sha = typeof body?.sha === "string" ? body.sha.toLowerCase() : null;
+    let body;
 
-    return { sha, answer: sha ? `sha ${sha}` : "sem sha (build sem GIT_SHA)" };
+    try {
+      body = await response.json();
+    } catch {
+      return {
+        sha: null,
+        answer: `HTTP ${response.status} sem o JSON do /build-id.json`,
+        error: true,
+      };
+    }
+
+    if (!body || typeof body !== "object") {
+      return {
+        sha: null,
+        answer: `HTTP ${response.status} sem o JSON do /build-id.json`,
+        error: true,
+      };
+    }
+
+    const sha = typeof body.sha === "string" ? body.sha.toLowerCase() : null;
+
+    return {
+      sha,
+      answer: sha ? `sha ${sha}` : "sem sha (build sem GIT_SHA)",
+      error: false,
+    };
   } catch (error) {
     return {
       sha: null,
       answer: error instanceof Error ? error.message : String(error),
+      error: true,
     };
   }
 }
@@ -107,16 +149,40 @@ async function probe() {
 async function main() {
   const deadline = Date.now() + TIMEOUT_MS;
   let since = null;
+  let lastExpected = null;
   let last = "";
+  let probes = 0;
+  let errors = 0;
+  let lastError = "";
+
+  /** The failed probes, said once at the end (warning and summary). */
+  const reportErrors = () => {
+    if (errors === 0) return;
+
+    console.log(
+      `::warning::${errors} de ${probes} consultas ao ${ENDPOINT} ficaram sem resposta (última: ${lastError}). Não contaram a favor nem contra a janela de ${STABLE_MS / 1000}s.`,
+    );
+    summary(
+      `Site: ${errors} de ${probes} consultas ao /build-id.json sem resposta (última: ${lastError}); não zeraram a janela.`,
+    );
+  };
 
   for (;;) {
-    const { sha, answer } = await probe();
+    const { sha, answer, error } = await probe();
     const now = Date.now();
 
-    if (isExpected(sha)) {
+    probes += 1;
+
+    if (error) {
+      // No answer: neither for nor against the window.
+      errors += 1;
+      lastError = answer;
+    } else if (isExpected(sha)) {
       since ??= now;
+      lastExpected = now;
 
       if (now - since >= STABLE_MS) {
+        reportErrors();
         summary(
           `Site: ${ENDPOINT} serve ${EXPECTED} há ${Math.round((now - since) / 1000)}s.`,
         );
@@ -133,14 +199,26 @@ async function main() {
     }
 
     if (answer !== last) {
-      console.log(`[wait-for-build] ${answer}`);
+      console.log(
+        `[wait-for-build] ${answer}${error ? " (sem resposta: não conta para a janela)" : ""}`,
+      );
       last = answer;
     }
 
     if (now >= deadline) {
+      reportErrors();
+
+      if (since === null) {
+        fail(
+          `O site não serve ${EXPECTED} após ${TIMEOUT_MS / 1000}s (responde: ${answer}). O Swarm pode ter revertido o deploy: confira 'docker service ps --no-trunc <app>_trajetto-ui'.`,
+        );
+      }
+
+      // The window can only close on an answer of the expected commit:
+      // after the last one, nothing but probes with no answer.
       fail(
-        since === null
-          ? `O site não serve ${EXPECTED} após ${TIMEOUT_MS / 1000}s (responde: ${answer}). O Swarm pode ter revertido o deploy: confira 'docker service ps --no-trunc <app>_trajetto-ui'.`
+        error
+          ? `O site serviu ${EXPECTED} por ${Math.round((lastExpected - since) / 1000)}s e depois só deu consultas sem resposta até o fim de ${TIMEOUT_MS / 1000}s (última: ${answer}): sem resposta não há como confirmar a janela de ${STABLE_MS / 1000}s.`
           : `O site serve ${EXPECTED} há só ${Math.round((now - since) / 1000)}s, menos que a janela de ${STABLE_MS / 1000}s, ao fim de ${TIMEOUT_MS / 1000}s.`,
       );
     }

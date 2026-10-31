@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./support/test";
 
 import {
   CONTEXT,
@@ -8,6 +8,7 @@ import {
   open,
   ownDelivery,
 } from "./support/operation";
+import { socketConnected } from "./support/ui";
 
 /**
  * Whether the Rotas board follows the operation, or only the page load.
@@ -34,15 +35,20 @@ test.describe("the Rotas board while a route is created elsewhere", () => {
     /**
      * The socket, waited for instead of assumed.
      *
-     * The first version slept 2.5 seconds and hoped. Under three parallel
-     * workers that was sometimes not enough, and the failure said "a rota
-     * liberada não apareceu sozinha no quadro" — which reads as a broken
-     * product and was a browser that had not finished connecting. Worse, it
-     * also covers a real refusal: the handshake is rate limited per user, and
-     * a refused connection looks exactly the same from the assertion's side.
+     * Opened is not joined: the server reads the user, the driver
+     * eligibility and the refresh family before it answers the handshake,
+     * and only then joins the rooms. The first version slept 2.5 seconds
+     * after the socket opened and hoped; when the handshake took longer the
+     * release below reached nobody, and the first connection never asks
+     * again (no resync on a first connect), so the test failed saying "a rota
+     * liberada não apareceu sozinha no quadro" — a broken product, read off a
+     * browser that had not finished connecting. It waits for socket.io's
+     * connect frame instead ("40": sent once the checks passed, rooms joined
+     * in the same tick). A refused handshake never sends it, so a real
+     * refusal still fails here, by name.
      *
-     * The listener is attached BEFORE the navigation, or the connection the
-     * page opens on load happens before anything is watching.
+     * Both listeners are attached BEFORE the navigation, or the connection
+     * the page opens on load happens before anything is watching.
      */
     const socketOpened = page.waitForEvent("websocket", {
       // `next dev` opens its own hot-reload socket on the same page, and it
@@ -50,18 +56,17 @@ test.describe("the Rotas board while a route is created elsewhere", () => {
       predicate: (candidate) => candidate.url().includes("socket.io"),
       timeout: 45_000,
     });
+    const joined = socketConnected(page);
 
     await open(page, "/dashboard/routes");
 
     const socket = await socketOpened;
 
-    // Connected is not the same as in the room: the server reads the user, the
-    // driver eligibility and the refresh family before joining anything.
-    await page.waitForTimeout(2_500);
+    await joined;
 
     expect(
       socket.isClosed(),
-      "o socket foi fechado logo depois de abrir — handshake recusado?",
+      "o socket foi fechado logo depois de conectar — handshake recusado?",
     ).toBe(false);
 
     /**

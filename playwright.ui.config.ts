@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { browserSuiteDefaults } from "./tests/ui/support/suite-config";
+
 /**
  * Functional tests against the running stack.
  *
@@ -16,21 +18,28 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * Same requirements as the others: API on 3334, Next on 3100, and a seeded
  * `load-context.json` in the API repository.
+ *
+ * Specs import `test` from tests/ui/support/test.ts: every browser context
+ * is hermetic (third parties answered by local doubles) and is a person with
+ * an address of its own (support/hermetic.ts).
  */
 export default defineConfig({
+  ...browserSuiteDefaults,
   testDir: "./tests/ui",
+  // Its own folder: each run empties its outputDir first, and the three run
+  // one after the other in CI — a shared folder lost the traces of the
+  // suite before by the time the job uploaded them.
+  outputDir: "./test-results/ui",
   // Compiles every visited route on the dev server before the workers start
   // (see the file for the failures it removes).
   globalSetup: "./tests/ui/support/warm-up.ts",
   fullyParallel: true,
   // CI: the 4-vCPU runner also hosts Postgres, the API and the web server, so
-  // fewer browsers at once, and one retry for a timing flake. A real defect
-  // fails both attempts and still fails the job; a test that passed only on
-  // the retry is listed as "flaky" in the report, not hidden.
+  // fewer browsers at once. One retry there (support/suite-config.ts): a real
+  // defect fails both attempts and the job; a test that passed only on the
+  // retry becomes a warning and a line in the run summary, never silence.
   workers: process.env.CI ? 2 : 3,
-  retries: process.env.CI ? 1 : 0,
   timeout: 120_000,
-  reporter: [["list"]],
   use: {
     ...devices["Desktop Chrome"],
     baseURL: process.env.RESPONSIVE_BASE_URL ?? "http://localhost:3100",

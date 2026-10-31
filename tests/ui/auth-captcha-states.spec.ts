@@ -1,5 +1,11 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route } from "./support/test";
 
+import {
+  TURNSTILE_DUMMY_TOKEN,
+  TURNSTILE_FRAME_PREFIX,
+  TURNSTILE_SCRIPT_BODY,
+} from "./support/external-doubles";
+import { DOUBLES_PORT } from "./support/suite-config";
 import { waitForHydration } from "./support/ui";
 
 /**
@@ -12,11 +18,22 @@ import { waitForHydration } from "./support/ui";
  * (.github/workflows/browser-suites.yml, Turnstile's always-pass test keys)
  * and skips itself on `next dev`, where there is no captcha to test.
  *
- * Most cases replace Cloudflare's api.js with a stub served from the same
- * URL (so the page's CSP treats it exactly like the real one: same host,
- * loaded by a nonced chunk under 'strict-dynamic'). The stub draws a grey
- * box and fires the callbacks the scenario asks for, and counts render,
- * reset and remove calls in `window.__ts`.
+ * Nothing here reaches Cloudflare. Its api.js is the suites' double, served
+ * from the same URL (so the page's CSP treats it exactly like the real one:
+ * same host, loaded by a nonced chunk under 'strict-dynamic';
+ * support/external-doubles.ts). It draws a grey box and fires the callbacks
+ * the scenario asks for, and counts render, reset and remove calls in
+ * `window.__ts`. The widget's own frame, the part a stub that only draws a
+ * box would skip, is served from Cloudflare's host too and loaded under the
+ * page's CSP ("the widget's frame" below). The server's check of the token
+ * goes to the local siteverify double in CI (last case).
+ *
+ * There used to be one case against the real widget. It was the only test
+ * here that could fail because of Cloudflare and not because of the page,
+ * and what it alone proved — that Cloudflare's frame is allowed by the CSP —
+ * is now proved without Cloudflare (frame-src is also held by
+ * tests/unitaires/content-security-policy.test.ts). The real widget, with
+ * the real key, is what staging runs.
  *
  * Nothing of Cloudflare's loads before a person uses the page (a pointer, a
  * key or a touch: person-input.ts), so each case clicks the e-mail field
@@ -27,7 +44,7 @@ import { waitForHydration } from "./support/ui";
 const API_JS = /challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/;
 const CLOUDFLARE = /challenges\.cloudflare\.com/;
 
-type Scenario = "pass" | "error-once" | "expire" | "hang";
+type Scenario = "pass" | "error-once" | "expire" | "hang" | "frame";
 
 interface StubLog {
   renders: number;
@@ -36,65 +53,8 @@ interface StubLog {
   options: Array<Record<string, unknown>>;
 }
 
-/** Cloudflare's api.js, reduced to what react-turnstile calls. */
-const STUB = `(() => {
-  const log = (window.__ts = window.__ts || { renders: 0, removes: 0, resets: 0, options: [] });
-  const widgets = {};
-  let next = 0;
-  const run = (id) => {
-    setTimeout(() => {
-      const widget = widgets[id];
-      if (!widget) return;
-      const o = widget.options;
-      const scenario = window.__tsScenario || "pass";
-      if (scenario === "pass") o.callback && o.callback("XXXX.DUMMY.TOKEN." + id);
-      if (scenario === "error-once") {
-        window.__tsScenario = "pass";
-        o["error-callback"] && o["error-callback"]("300030");
-      }
-      if (scenario === "expire") {
-        o.callback && o.callback("XXXX.DUMMY.TOKEN." + id);
-        // Expires once; the renewal then never answers.
-        setTimeout(() => {
-          window.__tsScenario = "hang";
-          widgets[id] && o["expired-callback"] && o["expired-callback"]("x");
-        }, 400);
-      }
-    }, 200);
-  };
-  window.turnstile = {
-    render(el, options) {
-      const id = "stub-" + next++;
-      log.renders += 1;
-      log.options.push({
-        theme: options.theme,
-        language: options.language,
-        size: options.size,
-        refreshExpired: options["refresh-expired"],
-        responseField: options["response-field"],
-      });
-      const frame = document.createElement("div");
-      frame.setAttribute("data-stub-widget", id);
-      frame.style.height = "65px";
-      frame.style.background = "#9ca3af";
-      el.appendChild(frame);
-      widgets[id] = { frame, options };
-      run(id);
-      return id;
-    },
-    reset(id) { log.resets += 1; run(id); },
-    remove(id) {
-      log.removes += 1;
-      const widget = widgets[id];
-      if (widget) { widget.frame.remove(); delete widgets[id]; }
-    },
-    getResponse() { return undefined; },
-    isExpired() { return false; },
-    execute() {},
-  };
-  const onload = new URL(document.currentScript.src).searchParams.get("onload");
-  if (onload && typeof window[onload] === "function") window[onload]();
-})();`;
+/** The suites' api.js double (support/external-doubles.ts). */
+const STUB = TURNSTILE_SCRIPT_BODY;
 
 async function stubTurnstile(
   page: Page,
@@ -428,26 +388,125 @@ test.describe("login: the widget's answers (stubbed api.js)", () => {
   });
 });
 
-test.describe("login: the real widget (always-pass test key)", () => {
-  test("goes from skeleton to a token without moving the form", async ({
-    page,
-  }) => {
+test.describe("login: the widget's frame (Cloudflare's host, under the page's CSP)", () => {
+  test("loads, hands over the token and moves nothing", async ({ page }) => {
+    // Every CSP refusal on the page, the frame's included.
+    await page.addInitScript(() => {
+      const seen: string[] = [];
+
+      (window as unknown as { __csp: string[] }).__csp = seen;
+      document.addEventListener(
+        "securitypolicyviolation",
+        (event) => {
+          seen.push(`${event.violatedDirective} ${event.blockedURI}`);
+        },
+        true,
+      );
+    });
+
+    const framed: string[] = [];
+
+    page.on("requestfinished", (request) => {
+      if (request.url().includes(TURNSTILE_FRAME_PREFIX))
+        framed.push(request.url());
+    });
+
+    await stubTurnstile(page, "frame");
     await open(page, "/login");
 
     const before = await captcha(page).boundingBox();
 
+    // The token only comes from inside the frame, so "verified" means the
+    // frame was allowed, loaded and spoke to the page.
     await expect(captcha(page)).toHaveAttribute(
       "data-captcha-state",
       "verified",
-      { timeout: 30_000 },
+      { timeout: 15_000 },
     );
     const after = await captcha(page).boundingBox();
+
+    await expect(
+      captcha(page).locator(
+        'iframe[src^="https://challenges.cloudflare.com/"]',
+      ),
+    ).toHaveCount(1);
+    expect(
+      framed.length,
+      "o frame do widget não foi carregado",
+    ).toBeGreaterThanOrEqual(1);
+    const refusedWidget = (
+      await page.evaluate(
+        () => (window as unknown as { __csp: string[] }).__csp,
+      )
+    ).filter(
+      (violation) =>
+        violation.startsWith("frame-src") ||
+        violation.includes("challenges.cloudflare.com"),
+    );
+
+    expect(refusedWidget, "a CSP da página recusou algo do widget").toEqual([]);
 
     expect(Math.abs((after?.height ?? 0) - (before?.height ?? 0))).toBeLessThan(
       1,
     );
-    await expect(tokenField(page)).not.toHaveValue("");
+    await expect(tokenField(page)).toHaveValue(TURNSTILE_DUMMY_TOKEN);
     await expect(page.getByRole("button", { name: "Entrar" })).toBeEnabled();
+  });
+});
+
+test.describe("login: the server checks the token", () => {
+  test("a submitted login is checked with siteverify — the local double, never Cloudflare", async ({
+    page,
+  }) => {
+    const siteverifyStats = async (): Promise<number> => {
+      const response = await fetch(`http://127.0.0.1:${DOUBLES_PORT}/stats`);
+
+      return ((await response.json()) as { verifications: number })
+        .verifications;
+    };
+
+    await open(page, "/login");
+
+    const before = await siteverifyStats();
+
+    await expect(captcha(page)).toHaveAttribute(
+      "data-captcha-state",
+      "verified",
+      { timeout: 15_000 },
+    );
+
+    // An address with no account: the answer is the same "credenciais
+    // inválidas" as a wrong password, and no real account's lock counter
+    // (ten failures an hour) is touched.
+    await page.getByLabel("Email").fill(`ninguem.${Date.now()}@trajetto.test`);
+    await page.getByLabel("Senha").fill("Senha-que-nao-existe-1");
+    await page.getByRole("button", { name: "Entrar" }).click();
+
+    const outcome = await Promise.race([
+      page
+        .getByText("Credenciais inválidas!")
+        .waitFor({ timeout: 60_000 })
+        .then(() => "asked-the-api" as const),
+      page
+        .getByText("Falha no desafio de segurança.")
+        .waitFor({ timeout: 60_000 })
+        .then(() => "captcha-refused" as const),
+    ]).catch(() => "no-answer" as const);
+
+    expect(
+      outcome,
+      "captcha-refused: o servidor recusou o token (o dublê do siteverify não " +
+        "respondeu, ou o servidor da web está sem TURNSTILE_SITEVERIFY_URL " +
+        "apontando para ele); no-answer: o formulário não respondeu em 60 s",
+    ).toBe("asked-the-api");
+
+    // The login only reached the API because the check passed; the double
+    // counting it says the check was the local one.
+    expect(
+      await siteverifyStats(),
+      "o servidor validou o token em outro lugar (Cloudflare?): configure " +
+        `TURNSTILE_SITEVERIFY_URL=http://127.0.0.1:${DOUBLES_PORT}/turnstile/v0/siteverify no servidor da web`,
+    ).toBeGreaterThan(before);
   });
 });
 

@@ -17,8 +17,9 @@ const DOT_TEST_GLOB = "**/*.{test,spec}?(-d).?(c|m)[jt]s?(x)";
  *
  * The `test` script stays Playwright. Its tests/E2E suite is pure rules and
  * CI runs it as `test:rules` (one project, no browser); the suites that drive
- * a browser against a running stack run nightly in
- * .github/workflows/browser-suites.yml.
+ * a browser against a running stack run in
+ * .github/workflows/browser-suites.yml, on every staging push and every pull
+ * request to main.
  *
  * This runner is for what Playwright cannot reach without a live API and two
  * real accounts — the module-level singletons that decide what one user is

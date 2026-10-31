@@ -1,4 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./support/test";
+
+import { ensureScalarBundle } from "./support/scalar-bundle";
 
 /**
  * The two API documentation consoles in a real browser (DOCS-11 remainder).
@@ -25,6 +27,16 @@ function collectErrors(page: Page): string[] {
 }
 
 test.describe("the public console of the integration API (Scalar)", () => {
+  // The page loads Scalar from jsDelivr, which the suites never reach: the
+  // double serves the same file, from the npm registry, checked against the
+  // hash the API pins (support/scalar-bundle.ts). Fetched once, here, so a
+  // registry problem fails with its own message, not as a blank console.
+  test.beforeAll(async () => {
+    // Room for the download's three tries (a minute each, plus the pauses).
+    test.setTimeout(240_000);
+    await ensureScalarBundle();
+  });
+
   test("loads the reference, in Portuguese, with no console error", async ({
     page,
   }) => {

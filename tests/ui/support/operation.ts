@@ -1,7 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { readFileSync } from "node:fs";
-import { basename } from "node:path";
+import { dirname } from "node:path";
+
+import { specSlot } from "./spec-slot";
 
 /**
  * Setting up an operation through the API, the way another user would.
@@ -29,8 +31,15 @@ const API = process.env.LOAD_BASE_URL ?? "http://localhost:3334";
  * apareceu" — a message about the product for a problem that is entirely
  * about the fixture.
  *
- * Chosen by file name so a given spec always gets the same user (its data is
- * stable between runs) and different specs never share one.
+ * Chosen by the spec file's position among the spec files of its suite
+ * folder (sorted by name): specs that run side by side — the same suite —
+ * never share a user. It used to be a hash of the file name, and hashes
+ * collide: with fifty managers, four pairs of ui specs shared one, and every
+ * spec that asked for `managerToken()` shared managers[0]. A spec added to
+ * the folder shifts the ones after it to another manager of the same
+ * company, which no spec depends on (spec-slot.ts;
+ * tests/unitaires/browser-suite-sessions.test.ts holds every folder to the
+ * seed's fifty).
  */
 function managerForThisSpec(): string {
   /*
@@ -44,21 +53,36 @@ function managerForThisSpec(): string {
   const managers: string[] =
     sessionsIfPresent()?.managers ?? CONTEXT.managerTokens;
 
-  let name = "default";
+  return sessionForThisSpec(managers, "gestores");
+}
 
+/** The spec file of the running test (or hook). */
+function runningSpecFile(): string {
   try {
-    name = basename(test.info().file);
+    return test.info().file;
   } catch {
-    // Outside a test (a helper imported at module load); the first is fine.
+    throw new Error(
+      "o gestor do spec é escolhido pelo arquivo do teste: chame dentro de um teste ou de um hook, não no carregamento do módulo",
+    );
+  }
+}
+
+let warnedShortList = false;
+
+/** This spec's own entry of a list of sessions. */
+function sessionForThisSpec(sessions: string[], kind: string): string {
+  const file = runningSpecFile();
+  const { index, count } = specSlot(file);
+
+  if (count > sessions.length && !warnedShortList) {
+    warnedShortList = true;
+    console.warn(
+      `[sessões] ${count} specs em ${dirname(file)} e só ${sessions.length} ${kind}: ` +
+        "alguns specs vão dividir a mesma pessoa (semeie mais com LOAD_MANAGERS).",
+    );
   }
 
-  let hash = 0;
-
-  for (const character of name) {
-    hash = (hash * 31 + character.charCodeAt(0)) % 100_000;
-  }
-
-  return managers[hash % managers.length];
+  return sessions[Math.max(index, 0) % sessions.length];
 }
 
 /**
@@ -149,17 +173,25 @@ async function openAsMaster(page: Page, path: string): Promise<void> {
 const fixtureBusinessId = (): string => sessions().businessId;
 
 /**
- * A long-lived session of each kind, for the specs that need a SPECIFIC role
- * rather than "a manager of this file's own".
+ * A long-lived session of each kind, for the specs that ask for a role.
  *
  * Same reason as `managerForThisSpec`: the load seed's tokens live an hour,
  * and a browser suite that starts later signs in with a dead one. The app
  * reads the resulting 401 as "your session ended" and redirects to /login, so
  * a spec proving that a driver cannot see the office fails claiming the
  * driver "caiu no login" — a security assertion reporting a fixture's age.
+ *
+ * Every manager is an administrator of the same company, so "a manager" is
+ * this spec's own manager: the same choice as `managerForThisSpec`, never a
+ * fixed managers[0] whose per-user handshake budget every such spec — four
+ * of them at once in the a11y suite — spent together.
+ *
+ * The driver stays the first one: two specs ask for it, each opening a page
+ * or two, far inside one person's budget, and the seed spreads its drivers
+ * over several companies — the security spec keeps the one it was written
+ * against.
  */
-const managerToken = (): string =>
-  sessionsIfPresent()?.managers?.[0] ?? (CONTEXT.managerTokens[0] as string);
+const managerToken = (): string => managerForThisSpec();
 
 const driverToken = (): string =>
   sessionsIfPresent()?.drivers?.[0] ?? (CONTEXT.driverTokens[0] as string);

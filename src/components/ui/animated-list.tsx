@@ -1,8 +1,8 @@
 "use client";
 
-import React, { ReactElement, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { usePresenceList } from "@/hooks/use-presence-list";
+import { cn } from "@/lib/utils";
 
 export interface AnimatedListProps {
   className?: string;
@@ -10,36 +10,93 @@ export interface AnimatedListProps {
   delay?: number;
 }
 
+/**
+ * Cards kept mounted. The auth panel's box shows about three; the rest sit
+ * below its clip edge, and the one that leaves the window is dropped there.
+ */
+export const FEED_WINDOW = 6;
+
+/** The list's gap-4. */
+const GAP_PX = 16;
+
+// useLayoutEffect warns on the server; the slide only runs in a browser.
+const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/**
+ * A feed: a new card pops in at the top every `delay` ms and the stack
+ * slides down to make room, wrapping around the children forever.
+ *
+ * Only transform and opacity move, so the browser animates them on its
+ * compositor: the motion keeps going while the page's main thread is busy.
+ * The list used to transition grid-template-rows (a layout on the main
+ * thread in every frame), with up to 50 cards mounted and all of them
+ * collapsing at once when the loop restarted. In WebKit, where Turnstile's
+ * iframe runs on the page's main thread, the panel froze for up to 0.65 s
+ * whenever the captcha loaded (measured on /login, 31/10/2026).
+ *
+ * The slide is FLIP on the whole list: the new card is laid out at the top
+ * (one layout per step, not per frame), the list is moved up by that card's
+ * height and let go, and its transform transition (`.feed-list`) carries it
+ * back down. The card pops in with a keyframe (`.feed-card`).
+ *
+ * With reduced motion the feed stands still, full: a picture, not a loop.
+ */
 export const AnimatedList = React.memo(
   ({ className, children, delay = 1400 }: AnimatedListProps) => {
-    const [index, setIndex] = useState(0);
-    const childrenArray = React.Children.toArray(children);
+    const items = React.Children.toArray(children);
+    const count = items.length;
+
+    // Steps since mount; each card keeps the step it came in on as its key.
+    const [step, setStep] = useState(0);
+    const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-      const interval = setInterval(() => {
-        setIndex((prevIndex) => (prevIndex + 1) % childrenArray.length);
-      }, delay);
+      if (count === 0) return;
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        setStep(FEED_WINDOW - 1);
+        return;
+      }
+
+      const interval = setInterval(() => setStep((value) => value + 1), delay);
 
       return () => clearInterval(interval);
-    }, [childrenArray.length, delay]);
+    }, [count, delay]);
 
-    const itemsToShow = useMemo(
-      () => childrenArray.slice(0, index + 1).reverse(),
-      [index, childrenArray],
-    );
+    useIsomorphicLayoutEffect(() => {
+      const list = listRef.current;
+      const entering = list?.firstElementChild as HTMLElement | null;
 
-    // Keeps the outgoing card mounted while it collapses, so the stack below
-    // slides up smoothly rather than jumping.
-    const entries = usePresenceList(itemsToShow, (item) =>
-      String((item as ReactElement).key),
+      if (!list || !entering || step === 0) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      // Back to where the cards were, with no transition; reading layout
+      // commits that start, and clearing the inline style lets the class's
+      // transition run from it.
+      list.style.transition = "none";
+      list.style.transform = `translateY(${-(entering.offsetHeight + GAP_PX)}px)`;
+      void list.offsetHeight;
+      list.style.transition = "";
+      list.style.transform = "";
+    }, [step]);
+
+    if (count === 0) return null;
+
+    const shown = Array.from(
+      { length: Math.min(FEED_WINDOW, step + 1) },
+      (_, at) => step - at,
     );
 
     return (
-      <div className={`flex flex-col items-center gap-4 ${className}`}>
-        {entries.map(({ key, item, exiting }) => (
-          <AnimatedListItem key={key} exiting={exiting}>
-            {item}
-          </AnimatedListItem>
+      <div
+        ref={listRef}
+        className={cn("feed-list flex flex-col items-center gap-4", className)}
+      >
+        {shown.map((entered) => (
+          <div key={entered} className="feed-card mx-auto w-full">
+            {items[entered % count]}
+          </div>
         ))}
       </div>
     );
@@ -47,26 +104,3 @@ export const AnimatedList = React.memo(
 );
 
 AnimatedList.displayName = "AnimatedList";
-
-/**
- * Each item expands from a zero-height grid row on its first render, so the
- * items already on screen are pushed down by ordinary layout.
- *
- * That single CSS rule replaces what framer-motion needed three mechanisms for
- * here: `AnimatePresence` to keep exiting nodes around, the `layout` prop to
- * FLIP-animate the displacement, and a spring to drive it. See `.stack-item`
- * in globals.css.
- */
-export function AnimatedListItem({
-  children,
-  exiting = false,
-}: {
-  children: React.ReactNode;
-  exiting?: boolean;
-}) {
-  return (
-    <div data-exiting={exiting} className="stack-item mx-auto w-full">
-      <div>{children}</div>
-    </div>
-  );
-}

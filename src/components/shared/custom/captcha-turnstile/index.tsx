@@ -40,6 +40,16 @@ import { whenPersonActs } from "./person-input";
 /** How long the widget may take to issue a token or show a challenge. */
 const LOAD_TIMEOUT_MS = 15_000;
 
+/**
+ * How long the app's theme must hold before the widget follows it.
+ * Turnstile cannot recolour a drawn widget: react-turnstile removes it and
+ * draws another, which is a new challenge. Clicking the theme switch back
+ * and forth restarted the challenge on every click (a round trip to
+ * Cloudflare each, and no token until the clicking stopped); now only the
+ * theme that stays is drawn, once.
+ */
+const THEME_SETTLE_MS = 600;
+
 interface CaptchaTurnstileProps {
   /** Defaults to the site key of the running environment (TURNSTILE_SITE_KEY). */
   sitekey?: string;
@@ -111,6 +121,7 @@ const CaptchaTurnstile = ({
 
   const [machine, dispatch] = useReducer(captchaReducer, INITIAL_CAPTCHA);
   const { attempt, status } = machine;
+  const idle = status === "idle";
 
   const ownStatusId = useId();
   const describedId = statusId ?? ownStatusId;
@@ -120,8 +131,9 @@ const CaptchaTurnstile = ({
   const publicConfig = usePublicConfig();
   const resolvedSitekey = sitekey ?? publicConfig?.turnstileSiteKey ?? null;
 
-  // The app's theme, not the system's. Frozen while a token is held: a new
-  // theme redraws the widget, which would ask for a new challenge.
+  // The app's theme, not the system's: Turnstile's "auto" follows the
+  // operating system, and stays light on a page switched to dark (measured
+  // in Chromium, 31/10/2026).
   const { resolvedTheme } = useTheme();
   const appTheme: WidgetTheme =
     resolvedTheme === "dark" || resolvedTheme === "light"
@@ -138,12 +150,26 @@ const CaptchaTurnstile = ({
     dispatch({ type: "retry" });
   }
 
-  const verified = status === "verified";
+  // A widget that mounts now (the first one, a retry, the reset above) is
+  // drawn in the app's theme of now, never in the old one and redrawn a
+  // moment later: caught up during render, before it mounts.
+  const [themedAttempt, setThemedAttempt] = useState(attempt);
+  const mountsNow = idle || themedAttempt !== attempt;
 
-  // Caught up during render too, not in an effect: after a theme change
-  // while verified, the reset above mounted the new widget in the frozen
-  // theme and the effect then changed it, so Cloudflare drew it twice.
-  if (!verified && widgetTheme !== appTheme) setWidgetTheme(appTheme);
+  if (themedAttempt !== attempt) setThemedAttempt(attempt);
+  if (mountsNow && widgetTheme !== appTheme) setWidgetTheme(appTheme);
+
+  // A drawn widget follows the theme once it settles, verified or not. A
+  // held token stays valid while the widget is drawn again (Cloudflare
+  // checks it at siteverify, not in the widget), and the new widget's token
+  // replaces it.
+  useEffect(() => {
+    if (widgetTheme === appTheme) return;
+
+    const timer = setTimeout(() => setWidgetTheme(appTheme), THEME_SETTLE_MS);
+
+    return () => clearTimeout(timer);
+  }, [appTheme, widgetTheme]);
 
   const emitRef = useRef(onTokenChange);
   const alive = useRef(true);
@@ -169,8 +195,6 @@ const CaptchaTurnstile = ({
   useEffect(() => {
     if (attempt > 0) emitRef.current(null);
   }, [attempt]);
-
-  const idle = status === "idle";
 
   useEffect(() => {
     if (!idle) return;
@@ -354,6 +378,6 @@ const CaptchaTurnstile = ({
   );
 };
 
-export { CaptchaTurnstile, LOAD_TIMEOUT_MS };
+export { CaptchaTurnstile, LOAD_TIMEOUT_MS, THEME_SETTLE_MS };
 export { useCaptchaToken } from "./use-captcha-token";
 export type { CaptchaToken } from "./use-captcha-token";

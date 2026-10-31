@@ -93,7 +93,7 @@ const MOTION_PROPERTIES = [
   "opacity",
   "visibility",
   "filter",
-  // The auth notification stack grows rows through their grid track, and
+  // The site's accordions open through their grid track, and
   // collapsibles/the sidebar animate their size: none of it is a color.
   "grid-template-rows",
   "grid-template-columns",

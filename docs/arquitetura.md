@@ -332,7 +332,7 @@ resolve o problema inteiro num lugar só.
   todas as sessões abertas (`src/lib/catalog-sync.ts`).
 - Torre de controle, monitoramento, rotas, chat e alertas de ocorrência
   também escutam o socket (`src/hooks/use-route-events.ts`,
-  `use-operations-subscription.ts`, `use-presence-list.ts`). Uma rajada de
+  `use-operations-subscription.ts`). Uma rajada de
   eventos vira um refresh só, nunca dois em menos de 10 s
   (`src/features/control-tower/lib/refetch-scheduler.ts`).
 - Desde a reunião de 14/10/2026, a Torre tem visões em `?view=` (Rotas, a
@@ -450,8 +450,12 @@ Nomes antigos que não existem mais (o erro de boot cita o substituto):
   widget que o emitiu está montado e válido. O formulário descarta o token
   quando a resposta do servidor mostra que ele já foi verificado
   (`token-consumed.ts`: qualquer resposta que não seja só erro de campo). O
-  tema do widget segue o do app e fica congelado enquanto há token, para não
-  pedir outro desafio.
+  tema do widget segue o do app depois que ele para de mudar por 600 ms
+  (`THEME_SETTLE_MS`): o Turnstile não recolore um widget desenhado, e cada
+  tema novo é um widget e um desafio novos. Alternar o tema várias vezes
+  desenha o widget uma vez só, no tema que ficou; com token, o token vale até
+  o widget novo emitir outro. O `theme: "auto"` do Turnstile não serve: ele
+  segue o sistema operacional, não o tema do app.
 - Cabeçalhos fixos em `next.config.mjs`: HSTS com `preload`,
   `X-Robots-Tag: noindex` nas páginas com token (`/verificar`, `/acompanhar`),
   e nenhum `X-Powered-By`.

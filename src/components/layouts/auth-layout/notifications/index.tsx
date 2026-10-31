@@ -22,8 +22,10 @@ const Notification = ({
         "relative mx-auto min-h-fit w-full max-w-[400px] overflow-hidden rounded-2xl p-4",
         // light styles
         "bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)]",
-        // dark styles
-        "transform-gpu dark:bg-transparent dark:backdrop-blur-md dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
+        // dark styles (no backdrop blur: over the solid zinc-900 panel it
+        // blurred nothing visible, and cost a filter pass on every moving
+        // card in every frame)
+        "dark:bg-transparent dark:[border:1px_solid_rgba(255,255,255,.1)] dark:[box-shadow:0_-20px_80px_-20px_#ffffff1f_inset]",
       )}
     >
       <div className="flex flex-row items-center gap-3">
@@ -64,7 +66,8 @@ const Notification = ({
 };
 
 const Notifications = (): JSX.Element => {
-  let notifications = [
+  // The feed wraps around these on its own (AnimatedList).
+  const notifications = [
     {
       name: "Nova Multa Registrada",
       description: "Multa de R$ 195,23 registrada para o veículo ABC-1234.",
@@ -104,17 +107,15 @@ const Notifications = (): JSX.Element => {
     },
   ];
 
-  notifications = Array.from({ length: 10 }, () => notifications).flat();
-
-  // Clipped to its box, where the mask already cuts the paint: the list grows
-  // far past it, and unclipped those cards still lay under the heading below,
-  // for contrast checkers reading the DOM and on screen wherever the
-  // unprefixed `mask-image` is ignored (Chromium before 120).
+  // Clipped to its box, where the mask already cuts the paint: the feed keeps
+  // six cards, past it, and unclipped those cards still lay under the
+  // heading below, for contrast checkers reading the DOM and on screen
+  // wherever the unprefixed `mask-image` is ignored (Chromium before 120).
   //
   // Inert, because it is a picture of the product rather than content: made-up
-  // notifications on a loop. Screen readers no longer read out up to 50 of
-  // them, nothing in it takes the pointer or focus, and contrast checkers skip
-  // it, as WCAG 1.4.3 exempts pure decoration. Each card fades in over 450ms
+  // notifications on a loop. Screen readers no longer read them out, nothing
+  // in it takes the pointer or focus, and contrast checkers skip it, as WCAG
+  // 1.4.3 exempts pure decoration. Each card pops in over 450ms
   // every 1.4s, and Lighthouse, catching one halfway, failed /login on the
   // half-transparent time label about one run in two.
   return (

@@ -186,59 +186,42 @@ html[data-theme-transition]::view-transition-old(root) {
 }
 
 /* ================================================================
-   Rolling stack
+   Feed
    ----------------------------------------------------------------
-   Replaces `<AnimatePresence mode="popLayout">` plus the `layout` prop
-   on a list where new items are prepended and push the others down.
+   The auth panel's notifications (src/components/ui/animated-list.tsx):
+   a card pops in at the top and the stack slides down to make room.
 
-   Used by the auth notifications: row and card grow together out of
-   nothing, which is the look signed off there.
+   Transform and opacity only, so the compositor runs both: the motion
+   keeps going while the main thread is busy (Turnstile's iframe shares it
+   in WebKit). The slide is the list's own transform, set by the component
+   for one step (FLIP) and carried back here; nothing is laid out again
+   during the motion. The pop keeps the look signed off there: grows from
+   nothing, out of its top edge, with the overshoot the framer spring had.
 
-   The row that leaves collapses its own grid track back to
-   `0fr`. That collapse is what makes the rows below slide up instead of
-   snapping — the job framer-motion needed `layout` and FLIP measuring
-   for.
+   The global reduced-motion rule above cuts both to an instant, and the
+   component stops adding cards.
    ================================================================ */
 
-.stack-item {
-  display: grid;
-  grid-template-rows: 1fr;
-  opacity: 1;
-  transform: scale(1);
-
-  /* Anchored to the top, matching the old `originY: 0`: the card grows
-     downwards out of the row above instead of expanding from its middle. */
-  transform-origin: top center;
-
-  /* The overshoot in the transform curve stands in for the spring the
-     framer version used. Size and opacity keep an ordinary ease-out,
-     because overshooting a grid track would make the list jump. */
-  transition:
-    grid-template-rows 450ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 450ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 450ms cubic-bezier(0.34, 1.4, 0.64, 1);
+.feed-list {
+  transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
-@starting-style {
-  .stack-item {
-    grid-template-rows: 0fr;
-    opacity: 0;
+.feed-card {
+  transform-origin: top center;
+  animation: feed-pop 450ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
 
-    /* Grows from nothing, as the original `initial: { scale: 0 }` did. */
+@keyframes feed-pop {
+  from {
+    opacity: 0;
     transform: scale(0);
   }
-}
 
-.stack-item > * {
-  overflow: hidden;
-  min-height: 0;
-}
-
-.stack-item[data-exiting="true"] {
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transform: scale(0) translateY(-20px);
-  pointer-events: none;
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /*

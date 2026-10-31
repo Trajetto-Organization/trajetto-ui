@@ -14,6 +14,7 @@ import { renderHtml } from "./helpers/render-html";
 vi.mock("next/navigation", () => ({ usePathname: () => "/login" }));
 
 import { AuthLayout } from "@/components/layouts/auth-layout";
+import { FEED_WINDOW } from "@/components/ui/animated-list";
 
 const AXE = readFileSync(
   resolve(__dirname, "../../node_modules/axe-core/axe.min.js"),
@@ -32,8 +33,8 @@ const loginPage = () =>
  * Lighthouse failed /login on colour contrast: "Notificações" (text-neutral-300)
  * at 1.48:1 against #ffffff, though on screen it sits on the zinc-900 panel.
  *
- * The animated list above the heading grows to 50 white cards, far past its
- * 300px box. Only a mask-image fade hid them, and a mask is paint: in the DOM
+ * The animated list above the heading keeps six white cards, far past its
+ * 300px box (it once grew to 50). Only a mask-image fade hid them, and a mask is paint: in the DOM
  * the cards still ran down under the heading, which is where axe found white
  * (and where they were on screen in a browser that ignores the unprefixed
  * mask-image this ships, Chromium before 120). The list is now clipped to its
@@ -42,6 +43,10 @@ const loginPage = () =>
  * its whole box: a card cut by the clip edge still counts just below it.
  */
 describe("the login panel's notification list and its heading", () => {
+  it("measures the feed at its real size (six cards, filled in the page below)", () => {
+    expect(FEED_WINDOW).toBe(6);
+  });
+
   const host = document.createElement("div");
   host.innerHTML = renderHtml(loginPage());
 
@@ -81,7 +86,7 @@ describe("the login panel's notification list and its heading", () => {
 
 /**
  * The same, measured: the real markup and its Tailwind CSS in Chromium, the
- * list filled to its 50 cards, and axe's colour-contrast rule run on the
+ * list filled to its six cards, and axe's colour-contrast rule run on the
  * heading at every position of the list (one card's height, in 8px steps)
  * and with the page offset by 0–150px, since axe's 200px grid decides
  * whether a card cut at the clip edge is weighed against the text. Light
@@ -117,13 +122,14 @@ describe.skipIf(!hasChromium)(
               const card = heading.closest(".group")!;
               const first = document
                 .querySelector("figure")!
-                .closest(".stack-item")!;
+                .closest(".feed-card")!;
               const list = first.parentElement as HTMLElement;
               const listBox = list.parentElement as HTMLElement;
 
               // The server markup holds the first card; the list adds one
-              // every 1.4s up to 50.
-              for (let count = 1; count < 50; count += 1) {
+              // every 1.4s up to its window (FEED_WINDOW: this runs in the
+              // page, where the module is not in scope).
+              for (let count = 1; count < 6; count += 1) {
                 list.appendChild(first.cloneNode(true));
               }
 
@@ -249,7 +255,7 @@ describe.skipIf(!hasChromium)(
             ).axe;
             const card = document
               .querySelector("figure")!
-              .closest(".stack-item")!;
+              .closest(".feed-card")!;
             const listBox = card.parentElement!.parentElement as HTMLElement;
 
             const weighedInList = async () => {

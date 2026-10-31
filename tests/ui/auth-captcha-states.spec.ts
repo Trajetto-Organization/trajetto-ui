@@ -345,6 +345,61 @@ test.describe("login: the widget's answers (stubbed api.js)", () => {
     expect((await stubLog(page))?.options[0].theme).toBe("dark");
   });
 
+  // Turnstile cannot recolour a drawn widget: a new theme is a new widget
+  // and a new challenge. Each click of the switch used to be one; now the
+  // widget waits for the theme to stay (THEME_SETTLE_MS, 600 ms) and is
+  // drawn once, and a token it already gave stays valid meanwhile.
+  test("the theme switch clicked back and forth redraws the widget once, in the theme that stays, keeping the token", async ({
+    page,
+  }) => {
+    await setTheme(page, "light");
+    await stubTurnstile(page, "pass");
+    await open(page, "/login");
+
+    await expect(captcha(page)).toHaveAttribute(
+      "data-captcha-state",
+      "verified",
+      { timeout: 15_000 },
+    );
+
+    // Light → dark → light → dark, two frames apart: well inside the wait,
+    // however slow the runner's clicks would be.
+    await page.evaluate(async () => {
+      const toggle = document.querySelector<HTMLButtonElement>(
+        'button[aria-label^="Alternar para tema"]',
+      )!;
+      const frames = () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        );
+
+      for (let click = 0; click < 3; click += 1) {
+        toggle.click();
+        await frames();
+      }
+    });
+
+    await expect
+      .poll(async () => (await stubLog(page))?.renders, { timeout: 5_000 })
+      .toBe(2);
+    // And no more after it.
+    await page.waitForTimeout(1_500);
+
+    const log = await stubLog(page);
+    expect(log?.renders).toBe(2);
+    expect(log?.options.map((options) => options.theme)).toEqual([
+      "light",
+      "dark",
+    ]);
+    await expect(page.locator("html")).toHaveClass(/\bdark\b/);
+    await expect(captcha(page)).toHaveAttribute(
+      "data-captcha-state",
+      "verified",
+    );
+    await expect(tokenField(page)).toHaveValue(/^XXXX\.DUMMY\.TOKEN\./);
+    await expect(page.getByRole("button", { name: "Entrar" })).toBeEnabled();
+  });
+
   test("an error offers a retry that draws one new widget, never two", async ({
     page,
   }) => {

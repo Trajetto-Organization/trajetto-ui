@@ -179,7 +179,7 @@ describe("styles only the signed-in app paints stay out of globals.css", () => {
     expect(back).toEqual([]);
     // Non-vacuous: the rules that stay (used on public pages too) are read.
     expect(globals).toMatch(token(".scrollbar-none"));
-    expect(globals).toMatch(token(".stack-item"));
+    expect(globals).toMatch(token(".feed-card"));
   });
 
   it("finds the Leaflet maps by scanning src", () => {

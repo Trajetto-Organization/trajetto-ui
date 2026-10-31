@@ -115,6 +115,7 @@ vi.mock("@/env/use-public-config", () => ({
 
 import {
   CaptchaTurnstile,
+  THEME_SETTLE_MS,
   useCaptchaToken,
 } from "@/components/shared/custom/captcha-turnstile";
 
@@ -745,32 +746,109 @@ describe("the token's life", () => {
 });
 
 describe("theme", () => {
-  it("follows the app's theme while there is no token", async () => {
+  /** The app's theme switch, as next-themes reports it. */
+  async function switchTheme(theme: string): Promise<void> {
+    env.theme = theme;
+    await act(async () => root!.render(<Harness />));
+  }
+
+  it("follows the app's theme once it settles", async () => {
     env.theme = "light";
     await mount();
 
     expect(widget().props.theme).toBe("light");
 
-    env.theme = "dark";
-    await act(async () => root!.render(<Harness />));
+    await switchTheme("dark");
+    await flush(THEME_SETTLE_MS - 1);
+
+    expect(widget().props.theme).toBe("light");
+
+    await flush(1);
 
     expect(widget().props.theme).toBe("dark");
+    expect(widget().renders).toEqual(["light", "dark"]);
   });
 
-  it("is frozen while verified (no new challenge), and catches up after", async () => {
+  it("follows it while verified too, keeping the token until the new widget issues one", async () => {
     env.theme = "light";
     await mount();
     const current = await solve("token-1");
 
-    env.theme = "dark";
-    await act(async () => root!.render(<Harness />));
+    await switchTheme("dark");
+    await flush(THEME_SETTLE_MS);
 
-    expect(current.props.theme).toBe("light");
+    // Drawn again in place, in the new theme.
+    expect(widget()).toBe(current);
+    expect(current.renders).toEqual(["light", "dark"]);
+
+    // The redraw reports a load: the form keeps its token and may send.
+    await fire(() => current.props.onLoad?.("w2", current.bound));
+
+    expect(state()).toBe("verified");
     expect(tokenInput().value).toBe("token-1");
+    expect(submitButton().disabled).toBe(false);
 
-    await fire(() => current.props.onExpire?.("token-1", current.bound));
+    await fire(() =>
+      current.props.onSuccess?.("token-2", false, current.bound),
+    );
 
-    expect(current.props.theme).toBe("dark");
+    expect(tokenInput().value).toBe("token-2");
+  });
+
+  it("asks the person when the redraw needs them, like any challenge", async () => {
+    env.theme = "light";
+    await mount();
+    const current = await solve("token-1");
+
+    await switchTheme("dark");
+    await flush(THEME_SETTLE_MS);
+    await fire(() => current.props.onBeforeInteractive?.(current.bound));
+
+    // What the form says matches what the widget shows.
+    expect(state()).toBe("ready");
+    expect(tokenInput().value).toBe("");
+  });
+
+  it("draws nothing while the switch is clicked back and forth, then the theme that stays, once", async () => {
+    env.theme = "light";
+    await mount();
+
+    for (const theme of ["dark", "light", "dark", "light", "dark"]) {
+      await switchTheme(theme);
+      await flush(THEME_SETTLE_MS / 4);
+    }
+
+    // Every click restarted the challenge before; nothing yet.
+    expect(widget().renders).toEqual(["light"]);
+
+    await flush(THEME_SETTLE_MS);
+
+    expect(widget().renders).toEqual(["light", "dark"]);
+    expect(fake.mounts).toBe(1);
+  });
+
+  it("is not drawn again when the switching ends where it began", async () => {
+    env.theme = "light";
+    await mount();
+
+    await switchTheme("dark");
+    await flush(THEME_SETTLE_MS / 2);
+    await switchTheme("light");
+    await flush(THEME_SETTLE_MS * 2);
+
+    expect(widget().renders).toEqual(["light"]);
+  });
+
+  it("mounts in the theme of now when it starts after a switch", async () => {
+    env.theme = "light";
+    await mount({ asPerson: false });
+
+    // Nothing drawn yet: there is nothing to wait for.
+    await switchTheme("dark");
+    await person();
+    await flush(1);
+
+    expect(widget().renders).toEqual(["dark"]);
   });
 
   it("draws the widget a consumed token brings once, in the app's theme of now", async () => {

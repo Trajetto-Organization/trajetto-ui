@@ -99,20 +99,33 @@ const BlogExplorer = ({ posts, categories, intro }: BlogExplorerProps) => {
     setFilters(readFilters(params));
   }, []);
 
-  // State -> URL, debounced; replace (not push) so Back leaves the blog
-  // instead of undoing letters.
+  // State -> URL; replace (not push) so Back leaves the blog instead of
+  // undoing letters. Only typing is debounced. A chip, a tag or a page is a
+  // link, and the top loader starts its bar on the click of any link to
+  // another URL, then finishes it when the URL changes: written on the next
+  // task (after that click has finished dispatching), the bar completes at
+  // once. With the typing delay it crawled for 300 ms, and before
+  // nextjs-toploader 3 (which also finishes on replaceState) it never
+  // stopped.
   useEffect(() => {
     const search = toSearchString(filters);
     if (search === syncedSearch.current) return;
 
-    const timeout = setTimeout(() => {
-      syncedSearch.current = search;
-      window.history.replaceState(
-        window.history.state,
-        "",
-        `${window.location.pathname}${search}`,
-      );
-    }, URL_SYNC_DELAY_MS);
+    const typed =
+      readFilters(new URLSearchParams(syncedSearch.current)).query.trim() !==
+      filters.query.trim();
+
+    const timeout = setTimeout(
+      () => {
+        syncedSearch.current = search;
+        window.history.replaceState(
+          window.history.state,
+          "",
+          `${window.location.pathname}${search}`,
+        );
+      },
+      typed ? URL_SYNC_DELAY_MS : 0,
+    );
 
     return () => clearTimeout(timeout);
   }, [filters]);
